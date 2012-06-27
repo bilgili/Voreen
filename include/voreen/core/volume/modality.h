@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -50,7 +50,7 @@ public:
 
     static const std::vector<std::string>& getModalities();
 
-    // all known modalities    
+    // all known modalities
     static const Modality MODALITY_UNKNOWN;
     static const Modality MODALITY_ANY;
     static const Modality MODALITY_CT;

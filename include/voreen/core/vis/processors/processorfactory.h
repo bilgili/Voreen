@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,7 +38,6 @@ namespace voreen {
 
 class Processor;
 class Identifier;
-class TextureContainer;
 
 class ProcessorFactory {
 public:
@@ -49,24 +48,13 @@ public:
 
     static ProcessorFactory* getInstance();
 
-	// Returns processor information
-	std::string getProcessorInfo(Identifier);
+    // Returns processor information
+    std::string getProcessorInfo(Identifier);
 
     /**
      * Destroys the instance of this Singleton.
      */
     static void destroy();
-
-    /**
-     * Returns the Texture Container
-     */
-    voreen::TextureContainer* getTextureContainer();
-
-    /**
-     * sets the TextureContainer
-     *
-     */
-    void setTextureContainer(voreen::TextureContainer* tc);
 
     /**
      * intializes the ClassList by registering processors
@@ -84,8 +72,6 @@ private:
 
     std::map<Identifier, Processor*> classList_;
     std::vector<Identifier> knownClasses_;
-
-    TextureContainer* tc_;
 };
 
 } // namespace voreen

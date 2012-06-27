@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,62 +29,46 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvas.h"
 
-#include <QPainter>
-#include <QColorDialog>
-#include <QFileDialog>
-#include <QtGui>
+#include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/volume/volume.h"
+#include "voreen/core/volume/histogram.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/core/vis/transfunc/transfuncmappingkey.h"
 
-#include "voreen/qt/widgets/transfunc/transfuncgradient.h"
+#include <QAction>
+#include <QApplication>
+#include <QColor>
+#include <QColorDialog>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QString>
+#include <QToolTip>
+#include <QThread>
+
+#include <iostream>
 
 namespace voreen {
 
 using tgt::vec2;
 
-namespace {
-
-inline QColor Col2QColor(const tgt::col4& color) {
-    return QColor(color.r, color.g, color.b); // ignore alpha
+void HistogramThread::run() {
+    HistogramIntensity* hist = new HistogramIntensity(volume_, count_);
+    emit setHistogram(hist);
 }
 
-inline tgt::col4 QColor2Col(const QColor& color) {
-    return tgt::col4(color.red(), color.green(), color.blue(), 255); // ignore alpha
-}
-
-} // namespace
-
-const std::string TransFuncMappingCanvas::loggerCat_("voreen.qt.widgets.TransFuncMappingCanvas");
-
-TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget *parent, TransFuncIntensity* tf, TransFuncGradient* gradient,
-                                               MessageReceiver* msgReceiver, bool noColor,
-                                               bool rampMode, bool clipThresholds, QString xAxisText,
-                                               QString yAxisText, QString transferFuncPath)
-    : QWidget(parent),
-      gradient_(gradient),
-      tf_(tf),
-      xAxisText_(xAxisText),
-      yAxisText_(yAxisText),
-      transferFuncPath_(transferFuncPath),
-      msgReceiver_(msgReceiver),
-      isChanged_(false),
-      rampMode_(rampMode),
-      clipThresholds_(clipThresholds),
-      rampCenter_(0.f),
-      rampWidth_(0.f),
-      noColor_(noColor)
+TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFuncIntensity* tf, bool noColor,
+                                               bool clipThresholds, QString xAxisText,
+                                               QString yAxisText)
+    : QWidget(parent)
+    , tf_(tf)
+    , maximumIntensity_(255)
+    , clipThresholds_(clipThresholds)
+    , noColor_(noColor)
+    , xAxisText_(xAxisText)
+    , yAxisText_(yAxisText)
+    , histogramThread_(0)
 {
-    histogram_ = 0;
-    propertyKey_ = "caption";
-    defaultValue_ = 1.0;
-    caption_ = QString("caption");
-
-    //this can cause problems in dockwidget!
-	//setMinimumSize(128, 128);
-	
     xRange_ = vec2(0.f, 1.f);
     yRange_ = vec2(0.f, 1.f);
     padding_ = 12;
@@ -93,70 +77,122 @@ TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget *parent, TransFuncIntensi
     pointSize_ = 10;
     selectedKey_ = 0;
     selectedLeftPart_ = true;
-    splitFactor_ = 1.5;
+    splitFactor_ = 1.5f;
     minCellSize_ = 8;
-    gridSnap_ = false;
-    curDataset_ = 0;
-    showHistogram_ = false;
-
-    // distribute messages via distributor, if no message receiver specified
-    if (!msgReceiver_)
-        msgReceiver_ = tgt::Singleton<MessageDistributor>::getPtr();
-
-    setThreshold(0.0f,1.0f);
-    minThresholdGap_ = 0.008f;
     dragging_ = false;
     dragLine_ = -1;
+    dragLineAlphaLeft_ = -1.f;
+    dragLineAlphaRight_ = -1.f;
 
+    histogramPainter_ = new HistogramPainter(this, xRange_, yRange_, padding_, arrowLength_);
+
+    setObjectName("TransFuncMappingCanvas");
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
     setFocus();
-    setCursor(Qt::CrossCursor);
-    if (gradient_)
-        gradient_->setTransFunc(tf_);
+
+    setThreshold(0.f, 1.f);
 
     if (!noColor_) {
         QAction* cc = new QAction(tr("Change color of key"), this);
-        contextMenu_.addAction(cc);
+        keyContextMenu_.addAction(cc);
         connect(cc, SIGNAL(triggered()), this, SLOT(changeCurrentColor()));
     }
 
     splitMergeAction_ = new QAction(tr(""), this); // Text will be set later
-    contextMenu_.addAction(splitMergeAction_);
+    keyContextMenu_.addAction(splitMergeAction_);
     connect(splitMergeAction_, SIGNAL(triggered()), this, SLOT(splitMergeKeys()));
 
     zeroAction_ = new QAction("", this); // Text will be set later
-    contextMenu_.addAction(zeroAction_);
+    keyContextMenu_.addAction(zeroAction_);
     connect(zeroAction_, SIGNAL(triggered()), this, SLOT(zeroKey()));
 
     deleteAction_ = new QAction(tr("Delete this key"), this);
-    contextMenu_.addAction(deleteAction_);
+    keyContextMenu_.addAction(deleteAction_);
     connect(deleteAction_, SIGNAL(triggered()), this, SLOT(deleteKey()));
 
-    connect(this, SIGNAL(changed()), this, SLOT(onChanged()));
-
     loadAction_ = new QAction(tr("Load transfer function..."), this);
-    fileMenu_.addAction(loadAction_);
-    connect(loadAction_, SIGNAL(triggered()), this, SLOT(readFromDisc()));
+    noKeyContextMenu_.addAction(loadAction_);
+    connect(loadAction_, SIGNAL(triggered()), this, SIGNAL(loadTransferFunction()));
 
     saveAction_ = new QAction(tr("Save transfer function..."), this);
-    fileMenu_.addAction(saveAction_);
-    connect(saveAction_, SIGNAL(triggered()), this, SLOT(saveToDisc()));
+    noKeyContextMenu_.addAction(saveAction_);
+    connect(saveAction_, SIGNAL(triggered()), this, SIGNAL(saveTransferFunction()));
 
     resetAction_ = new QAction(tr("Reset transfer function"), this);
-    fileMenu_.addAction(resetAction_);
-    connect(resetAction_, SIGNAL(triggered()), this, SLOT(setStandardFunc()));
+    noKeyContextMenu_.addAction(resetAction_);
+    connect(resetAction_, SIGNAL(triggered()), this, SLOT(resetTransferFunc()));
 }
 
-void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
+TransFuncMappingCanvas::~TransFuncMappingCanvas() {
+    if (histogramThread_) {
+        histogramThread_->wait(); // wait for thread to finish before deleting
+        delete histogramThread_;
+    }
+}
+
+//--------- methods for reacting on Qt events ---------//
+
+void TransFuncMappingCanvas::showNoKeyContextMenu(QMouseEvent *event) {
+    noKeyContextMenu_.popup(event->globalPos());
+}
+
+void TransFuncMappingCanvas::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    //resize hisotgrampainter as well
+    histogramPainter_->resize(width(), height());
+    gridSpacing_ = vec2(1.0, 1.0);
+    // refine gridSpacing_ as good as possible
+    vec2 factor = vec2(0.1f, 0.2f);
+    for (int k=0; k<2; ++k) {
+        for (int component=0; component<2; ++component) {
+            vec2 cellSize = wtos(gridSpacing_) - wtos(vec2(0.0, 0.0));
+            cellSize[component] *= factor[k];
+            while (cellSize[component] > minCellSize_) {
+                gridSpacing_[component] *= factor[k];
+                cellSize[component] *= factor[k];
+            }
+            cellSize[component] /= factor[k];
+        }
+    }
+}
+
+void TransFuncMappingCanvas::showKeyContextMenu(QMouseEvent* event) {
+    // Set context-dependent text for menu items
+
+    // Split/merge
+    QString splitMergeText;
+    if (selectedKey_->isSplit())
+        splitMergeText = tr("Merge this key");
+    else
+        splitMergeText = tr("Split this key");
+    splitMergeAction_->setText(splitMergeText);
+
+    // Zero/unzero
+    QString zeroText;
+    if (selectedLeftPart_)
+        zeroText = tr("Zero to the left");
+    else
+        zeroText = tr("Zero to the right");
+    zeroAction_->setText(zeroText);
+
+    // allow deletion of keys only if there are more than two keys
+    deleteAction_->setEnabled(tf_->getNumKeys() > 2);
+
+    keyContextMenu_.popup(event->globalPos());
+}
+
+void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
+    //the histogram is automatically painted onto this widget
+    //we do not need to call the paintevent for the Histogrampainter directly
     event->accept();
     QPainter paint(this);
 
     // put origin in lower lefthand corner
     QMatrix m;
     m.translate(0.0, static_cast<float>(height())-1);
-    m.scale(1.0, -1.0);
+    m.scale(1.f, -1.f);
     paint.setMatrix(m);
 
     paint.setMatrixEnabled(true);
@@ -171,64 +207,24 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     paint.setPen(QColor(220, 220, 220));
     paint.setRenderHint(QPainter::Antialiasing, false);
 
-    vec2 pmin = snapToGrid(vec2(0.f, 0.f));
-    vec2 pmax = snapToGrid(vec2(1.f, 1.f));
+    vec2 pmin = vec2(0.f, 0.f);
+    vec2 pmax = vec2(1.f, 1.f);
 
     for (float f=pmin.x; f<pmax.x+gridSpacing_.x*0.5; f+=gridSpacing_.x) {
-        vec2 p = wtos(vec2(f, 0.0));
-        vec2 a = wtos(vec2(0.0, 0.f));
-        vec2 b = wtos(vec2(0.0, 1.f));
+        vec2 p = wtos(vec2(f, 0.f));
+        vec2 a = wtos(vec2(0.f, 0.f));
+        vec2 b = wtos(vec2(0.f, 1.f));
         paint.drawLine(QPointF(p.x, a.y),
                        QPointF(p.x, b.y));
     }
 
     for (float f=pmin.y; f<pmax.y+gridSpacing_.y*0.5; f+=gridSpacing_.y) {
-        vec2 p = wtos(vec2(0.0, f));
-        vec2 a = wtos(vec2(0.f, 0.0));
-        vec2 b = wtos(vec2(1.f, 0.0));
+        vec2 p = wtos(vec2(0.f, f));
+        vec2 a = wtos(vec2(0.f, 0.f));
+        vec2 b = wtos(vec2(1.f, 0.f));
         paint.drawLine(QPointF(a.x, p.y),
                        QPointF(b.x, p.y));
     }
-
-    // ----------------------------------------------
-
-    if (showHistogram_ && histogram_) {
-        // draw histogram
-        paint.setPen(Qt::NoPen);
-        paint.setBrush(QColor(200, 0, 0, 120));
-        //paint.setBrush(QColor(128, 0, 0, 64));
-        paint.setRenderHint(QPainter::Antialiasing, true);
-
-        int histogramWidth = histogram_->getBucketCount();
-
-        QPointF *points = new QPointF[histogramWidth + 2];
-
-        float max = 0.0;
-        for (int i=0; i<histogramWidth; ++i)
-            if (static_cast<float>(histogram_->getValue(i)) > max)
-                max = static_cast<float>(histogram_->getValue(i));
-
-        for (int x=0; x<histogramWidth; ++x) {
-            float value = static_cast<float>(histogram_->getValue(x))/max;
-            value = powf(value, 0.2f);
-            vec2 p = wtos(vec2(static_cast<float>(x)/histogramWidth, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
-            points[x].rx() = p.x;
-            points[x].ry() = p.y;
-        }
-        vec2 p;
-        p = wtos(vec2(1.0, yRange_[0]));
-        points[histogramWidth].rx() = p.x;
-        points[histogramWidth].ry() = p.y;
-        p = wtos(vec2(0.0, yRange_[0]));
-        points[histogramWidth + 1].rx() = p.x;
-        points[histogramWidth + 1].ry() = p.y;
-
-        paint.drawPolygon(points, histogramWidth + 2);
-
-        delete[] points;
-    }
-
-    // ----------------------------------------------
 
     // draw x and y axes
     paint.setRenderHint(QPainter::Antialiasing, true);
@@ -241,7 +237,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     xRange_[0] = 0.f;
     xRange_[1] = 1.f;
 
-    vec2 origin = wtos(vec2(0.0f, 0.0f));
+    vec2 origin = wtos(vec2(0.f, 0.f));
     origin.x = floor(origin.x) + 0.5f;
     origin.y = floor(origin.y) + 0.5f;
 
@@ -266,13 +262,13 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
 
     paint.drawConvexPolygon(arrow, 3);
 
-    paint.scale(-1, 1);
-    paint.rotate(180);
+    paint.scale(-1.f, 1.f);
+    paint.rotate(180.f);
     paint.drawText(static_cast<int>(width() - 6.2f * padding_), static_cast<int>(-1 * (origin.y - 0.8f * padding_)), xAxisText_);
     paint.drawText(static_cast<int>(1.6f * padding_), static_cast<int>(-1 * (height() - 1.85f * padding_)), yAxisText_);
 
-    paint.rotate(180);
-    paint.scale(-1, 1);
+    paint.rotate(180.f);
+    paint.scale(-1.f, 1.f);
 
     xRange_[0] = oldx0_;
     xRange_[1] = oldx1_;
@@ -281,68 +277,53 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
 
     // draw mapping function
     QPen pen = QPen(Qt::darkRed);
-    pen.setWidthF(1.5);
+    pen.setWidthF(1.5f);
     paint.setPen(pen);
 
     origin = wtos(vec2(0.f));
 
-    if (tf_->isEmpty()) {
-        vec2 a = wtos(vec2(0.f, 0.f));
-        vec2 b = wtos(vec2(1.f, 0.f));
-
-        paint.drawLine(QPointF(a.x, a.y), QPointF(b.x, b.y));
-
+    vec2 old;
+    for (int i=0; i<tf_->getNumKeys(); ++i) {
+        TransFuncMappingKey *key = tf_->getKey(i);
+        vec2 p = wtos(vec2(key->getIntensity(), key->getColorL().a / 255.f));
+        if (i == 0)  {
+            if (tf_->getKey(0)->getIntensity() > 0.f)
+                paint.drawLine(QPointF(wtos(vec2(0.f, 0.f)).x, p.y),
+                               QPointF(p.x - 1.f, p.y));
+        }
+        else {
+            paint.drawLine(QPointF(old.x + 1.f, old.y),
+                           QPointF(p.x - 1.f, p.y));
+        }
+        old = p;
+        if (key->isSplit())
+            old = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.f));
     }
-    else {
-        vec2 old;
-        for (int i=0; i<tf_->getNumKeys(); ++i) {
-            TransFuncMappingKey *key = tf_->getKey(i);
-            vec2 p = wtos(vec2(key->getIntensity(), key->getColorL().a / 255.0));
-            if (i == 0)  {
-                if (tf_->getKey(0)->getIntensity() > 0.f)
-                    paint.drawLine(QPointF(wtos(vec2(0.f, 0.0)).x, p.y),
-                                   QPointF(p.x - 1.0, p.y));
-            }
-            else {
-                paint.drawLine(QPointF(old.x + 1.0, old.y),
-                               QPointF(p.x - 1.0, p.y));
-            }
-            old = p;
-            if (key->isSplit())
-                old = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.0));
-        }
-        if ( tf_->getKey(tf_->getNumKeys()-1)->getIntensity() < 1.f ) {
-            paint.drawLine(QPointF(old.x + 1.0, old.y),
-                           QPointF(wtos(vec2(1.f, 0.0)).x, old.y));
-        }
+    if (tf_->getKey(tf_->getNumKeys()-1)->getIntensity() < 1.f) {
+        paint.drawLine(QPointF(old.x + 1.f, old.y),
+                       QPointF(wtos(vec2(1.f, 0.f)).x, old.y));
+    }
 
-        /*
-        for (int x=0; x<width(); x++) {
-            float p = stow(vec2(x, 0.0)).x;
-            float y = tf_->getMappingForValue(p);
-            vec2 d = wtos(vec2(p, y));
-            paint.drawLine(QPointF(d.x, d.y),
-                           QPointF(d.x+1.0, d.y));
-        }
-        */
-
+    if (xRange_[1] != xRange_[0])
         paintKeys(paint);
-    }
 
     // ----------------------------------------------
 
-    // show threshold function
-    paint.setPen(Qt::lightGray);
-    paint.setBrush(Qt::Dense4Pattern);
-    int tw = static_cast<int>(wtos(vec2(1.f, 1.f)).x - wtos(vec2(0.f, 0.f)).x);
-    int th = static_cast<int>(wtos(vec2(1.f, 1.f)).y - wtos(vec2(0.f, 0.f)).y);
+    // grey out threshold area
+    paint.setBrush(QBrush(QColor(192, 192, 192, 230), Qt::SolidPattern));
+    paint.setPen(Qt::NoPen);
+    vec2 upperRight = wtos(vec2(1.f));
+    vec2 lowerLeft = wtos(vec2(0.f));
+    int w = static_cast<int>(upperRight.x - lowerLeft.x);
+    int h = static_cast<int>(upperRight.y - lowerLeft.y);
 
-    if (thresholdL_ > 0.0f) {
-        paint.drawRect(static_cast<int>(origin.x), static_cast<int>(origin.y), static_cast<int>(thresholdL_ * tw + 1), th);
+    if (thresholdL_ > 0.f) {
+        paint.drawRect(static_cast<int>(origin.x), static_cast<int>(origin.y),
+                       static_cast<int>(thresholdL_ * w + 1), h);
     }
-    if (thresholdU_ < 1.0f) {
-        paint.drawRect(static_cast<int>(origin.x + floor(thresholdU_ * tw)),
-                       static_cast<int>(origin.y), static_cast<int>((1 - thresholdU_) * tw + 1), th);
+    if (thresholdU_ < 1.f) {
+        paint.drawRect(static_cast<int>(origin.x + floor(thresholdU_ * w)),
+                       static_cast<int>(origin.y), static_cast<int>((1 - thresholdU_) * w + 1), h);
     }
 
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -351,19 +332,18 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     paint.setBrush(Qt::NoBrush);
     paint.drawRect(0, 0, width() - 1, height() - 1);
 
-    if (gradient_)
-        gradient_->update();
+    paint.setMatrixEnabled(false);
+    if (histogramThread_ && !histogramThread_->isFinished()) {
+        paint.setPen(Qt::red);
+        paint.drawText(QRectF(0, 7, width() - 1, height() - 8), tr("Calculating histogram..."), QTextOption(Qt::AlignHCenter));
+    }
 }
 
 void TransFuncMappingCanvas::mousePressEvent(QMouseEvent* event) {
-	if (event->button() == Qt::LeftButton) {
-	    msgReceiver_->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
-        isChanged_ = false;
-    }
+    if (event->button() == Qt::LeftButton)
+        emit switchInteractionMode(true);
 
     event->accept();
-    tgt::vec2 sHit = tgt::vec2(event->x(), static_cast<float>(height()) - event->y());
-    tgt::vec2 hit = stow(sHit);
 
     dragLine_ = hitLine(vec2(event->x(), event->y()));
     if (dragLine_ >= 0 && event->modifiers() == Qt::ShiftModifier) {
@@ -371,10 +351,13 @@ void TransFuncMappingCanvas::mousePressEvent(QMouseEvent* event) {
         return;
     }
 
+    tgt::vec2 sHit = tgt::vec2(event->x(), static_cast<float>(height()) - event->y());
+    tgt::vec2 hit = stow(sHit);
+
     // see if a key was selected
     selectedKey_ = 0;
     for (int i=0; i<tf_->getNumKeys(); ++i) {
-        TransFuncMappingKey *key = tf_->getKey(i);
+        TransFuncMappingKey* key = tf_->getKey(i);
         tgt::vec2 sp = wtos(tgt::vec2(key->getIntensity(), key->getColorL().a / 255.0));
         tgt::vec2 spr = wtos(tgt::vec2(key->getIntensity(), key->getColorR().a / 255.0));
         if (key->isSplit()) {
@@ -402,92 +385,48 @@ void TransFuncMappingCanvas::mousePressEvent(QMouseEvent* event) {
     }
 
 
-    if (selectedKey_ == 0 && event->button() == Qt::RightButton) {
-        handleContextMenu(event);
+    if (event->button() == Qt::RightButton) {
+        if (selectedKey_ == 0)
+            showNoKeyContextMenu(event);
+        else
+            showKeyContextMenu(event);
         return;
     }
 
-    if (selectedKey_ != 0) {
-
-        if (event->button() == Qt::LeftButton) {
-            dragging_ = true;
-            if (selectedKey_->isSplit() && !selectedLeftPart_)
-                emit colorChanged( Col2QColor(selectedKey_->getColorR()) );
-            else
-                emit colorChanged( Col2QColor(selectedKey_->getColorL()) );
-        }
-        else if (event->button() == Qt::RightButton) {
-            handleRightClick(event);
-            return;
-        }
-        /*
-        //FIXME: the following lines slow down the widget usage drastically
-       if (selectedKey_->isSplit()) {
-            if (selectedLeftPart_) {
-                emit updateCoordinates(selectedKey_->getIntensity(),
-                                       selectedKey_->getColorL().a / 255.0);
-                emit exclusiveModeChangedWithDataSource(true, selectedKey_->
-                                                        getIntensity() - 0.001);
-            }
-            else {
-                emit updateCoordinates(selectedKey_->getIntensity(),
-                                       selectedKey_->getColorR().a / 255.0);
-                emit exclusiveModeChangedWithDataSource(true, selectedKey_->
-                                                        getIntensity() + 0.001);
-            }
-        }
-        else {
-            emit updateCoordinates(selectedKey_->getIntensity(),
-                                   selectedKey_->getColorL().a / 255.0);
-            emit exclusiveModeChangedWithDataSource(true, selectedKey_->
-                                                    getIntensity());
-        }
-        repaint();
-        emit changed();
-        */
+    if (selectedKey_ != 0 && event->button() == Qt::LeftButton) {
+        dragging_ = true;
+        //keep values within valid range
+        hit = tgt::clamp(hit, 0.f, 1.f);
+        updateCoordinates(event->pos(), hit);
+        if (selectedKey_->isSplit() && !selectedLeftPart_)
+            emit colorChanged(Col2QColor(selectedKey_->getColorR()));
+        else
+            emit colorChanged(Col2QColor(selectedKey_->getColorL()));
         return;
     }
 
-    // insert new key
-    if (hit.x >= 0.f && hit.x <= 1.f && hit.y >= 0.f && hit.y <= 1.f &&
+    // no key was selected -> insert new key
+    if (hit.x >= 0.f && hit.x <= 1.f &&
+        hit.y >= 0.f && hit.y <= 1.f &&
         event->button() == Qt::LeftButton)
     {
         insertNewKey(hit);
         dragging_ = true;
         dragLine_ = -1;
+        updateCoordinates(event->pos(), hit);
+        update();
+        emit colorChanged(Col2QColor(selectedKey_->getColorL()));
+        emit changed();
     }
-
-    update();
-}
-
-void TransFuncMappingCanvas::mouseReleaseEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton) {
-        dragging_ = false;
-        dragLine_ = -1;
-    }
-    event->accept();
-    emit clearCoordinates();
-    emit exclusiveModeChangedWithDataSource(false, 0.0);
-
-	if (event->button() == Qt::LeftButton) {
-		msgReceiver_->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-        if (isChanged_)
-            msgReceiver_->postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-        isChanged_ = false;
-        repaint();
-	}
 }
 
 void TransFuncMappingCanvas::mouseMoveEvent(QMouseEvent* event) {
-    using tgt::vec2;
-
     event->accept();
     mousePos_ = event->pos();
 
     vec2 sHit = vec2(event->x(), static_cast<float>(height()) - event->y());
     vec2 hit = stow(sHit);
-    if (gridSnap_)
-        hit = snapToGrid(hit);
+
 
     if (!dragging_ && hitLine(vec2(event->x(), event->y())) >= 0 && event->modifiers() == Qt::ShiftModifier)
         setCursor(Qt::SizeVerCursor);
@@ -495,415 +434,153 @@ void TransFuncMappingCanvas::mouseMoveEvent(QMouseEvent* event) {
         unsetCursor();
 
     if (dragLine_ >= 0) {
+        // a line between 2 keys is moved (shift modifier was used)
         float delta = dragLineStartY_ - event->y();
-        for (int i=0; i < tf_->getNumKeys(); ++i) {
-            TransFuncMappingKey *key = tf_->getKey(i);
-            if (i == dragLine_) {
-                float f = wtos(vec2(key->isSplit() ? key->getAlphaR() : key->getAlphaL())).y;
-                f += delta;
-                f = stow(vec2(f)).y;
-                if (f < 0.f)
-                    f = 0.f;
-                if (f > 1.f)
-                    f = 1.f;
-                key->setAlphaR(f);
-
-                tf_->updateKey(key);
-            }
-            else if (i == dragLine_ + 1) {
-                float f = wtos(vec2(key->getAlphaL())).y;
-                f += delta;
-                f = stow(vec2(f)).y;
-                if (f < 0.f)
-                    f = 0.f;
-                if (f > 1.f)
-                    f = 1.f;
-                key->setAlphaL(f);
-                tf_->updateKey(key);
-            }
+        dragLineStartY_ = event->y();
+        //left key
+        TransFuncMappingKey* key = tf_->getKey(dragLine_);
+        if (dragLineAlphaLeft_ == -1.f)
+            dragLineAlphaLeft_ = key->isSplit() ? key->getAlphaR() : key->getAlphaL();
+        dragLineAlphaLeft_ = wtos(vec2(dragLineAlphaLeft_)).y;
+        dragLineAlphaLeft_ += delta;
+        dragLineAlphaLeft_ = stow(vec2(dragLineAlphaLeft_)).y;
+        if (dragLineAlphaLeft_ < 0.f)
+            dragLineAlphaLeft_ = 0.f;
+        if (dragLineAlphaLeft_ > 1.f)
+            dragLineAlphaLeft_ = 1.f;
+        key->setAlphaR(dragLineAlphaLeft_);
+        tf_->updateKey(key);
+        if (tf_->getNumKeys() >= dragLine_+1) {
+            //right key - when existing
+            key = tf_->getKey(dragLine_+1);
+            if (dragLineAlphaRight_ == -1.f)
+                dragLineAlphaRight_ = key->getAlphaL();
+            dragLineAlphaRight_ = wtos(vec2(dragLineAlphaRight_)).y;
+            dragLineAlphaRight_ += delta;
+            dragLineAlphaRight_ = stow(vec2(dragLineAlphaRight_)).y;
+            if (dragLineAlphaRight_ < 0.f)
+                dragLineAlphaRight_ = 0.f;
+            if (dragLineAlphaRight_ > 1.f)
+                dragLineAlphaRight_ = 1.f;
+            key->setAlphaL(dragLineAlphaRight_);
+            tf_->updateKey(key);
         }
-
         repaint();
         emit changed();
-
-        dragLineStartY_ = event->y();
         return;
     }
 
-    if (!dragging_) return;
+    // return when no key was inserted or selected
+    if (!dragging_)
+        return;
 
     // keep location within valid texture coord range
-    if (hit.x < 0.f)
-        hit.x = 0.f;
-    if (hit.x > 1.f)
-        hit.x = 1.f;
-    if (hit.y < 0.f)
-        hit.y = 0.f;
-    if (hit.y > 1.f)
-        hit.y = 1.f;
+    hit = tgt::clamp(hit, 0.f, 1.f);
 
     if (selectedKey_ != 0) {
-        if (rampMode_) {
-            tgtAssert(tf_->getNumKeys() == 2, "more than two keys in ramp mode");
-            TransFuncMappingKey* leftKey = tf_->getKey(0);
-            TransFuncMappingKey* rightKey = tf_->getKey(1);
-            if (selectedKey_ == leftKey) {
-                // obey ramp function restrictions:
-                // left key has to stay left of right key
-                hit.x = std::min<float>(hit.x, rightKey->getIntensity());
-                // max width = 1.f, min center = 0.f
-                float minX = rightKey->getIntensity() - 1.f;
-                float maxY = std::min(-minX, 0.5f);
-                hit.y = std::min(hit.y, maxY);
-                if (rightKey->getIntensity() == 1.f) {
-                    minX = rightKey->getIntensity() - rightKey->getColorL().a / 255.0;
-                    hit.x = std::max(hit.x, minX);
-                }
-                // moving left upwards only allowed if at left border (ramp function)
-                if (hit.x != 0.f) {
-                    hit.y = 0.f;
-                }
-
-            } else {
-                // obey ramp function restrictions:
-                // right key has to stay right of right key
-                hit.x = std::max<float>(hit.x, tf_->getKey(0)->getIntensity());
-                // max width = 1.f, max center = 1.f
-                float maxX = leftKey->getIntensity() + 1.f;
-                float minY = std::max(2.f - maxX, 0.5f);
-                hit.y = std::max(hit.y, minY);
-                if (leftKey->getIntensity() == 0.f) {
-                    float maxX = 1.f - leftKey->getColorL().a / 255.0;
-                    hit.x = std::min(hit.x, maxX);
-                }
-                // moving right downwards only allowed if at right border (ramp function)
-                if (hit.x != 1.f) {
-                    hit.y = 1.f;
-                }
-            }
+        updateCoordinates(event->pos(), hit);
+        if (event->modifiers() != Qt::ShiftModifier) {
             selectedKey_->setIntensity(hit.x);
-            selectedKey_->setAlphaL(hit.y);
-            calcRampParamsFromKeys();
         }
-        else {
-            if (event->modifiers() != Qt::ShiftModifier)
-	            selectedKey_->setIntensity(hit.x);
-		    if (event->modifiers() != Qt::ControlModifier) {
-			    if (selectedKey_->isSplit()) {
-				    if (selectedLeftPart_)
-                        selectedKey_->setAlphaL(hit.y);
-				    else
-                        selectedKey_->setAlphaR(hit.y);
-			    }
+        if (event->modifiers() != Qt::ControlModifier) {
+            if (selectedKey_->isSplit()) {
+                if (selectedLeftPart_)
+                    selectedKey_->setAlphaL(hit.y);
                 else
-				    selectedKey_->setAlphaL(hit.y);
-		    }
+                    selectedKey_->setAlphaR(hit.y);
+            }
+            else
+                selectedKey_->setAlphaL(hit.y);
         }
-        tf_->updateKey(selectedKey_);
-        repaint();
-        emit updateCoordinates(hit.x, hit.y);
-        if (selectedKey_->isSplit()) {
-            if (selectedLeftPart_) {
-                emit exclusiveModeChangedWithDataSource(true, hit.x - 0.001);
+        bool selectedFound = false;
+        for (size_t i = 0; i < tf_->getKeys().size(); ++i) {
+            TransFuncMappingKey* key = tf_->getKey(static_cast<int>(i));
+            //is the tf key the selected one?
+            if (key == selectedKey_) {
+                selectedFound = true;
+                continue;
+            }
+            if (selectedFound) {
+                //change intensity of key if its lower than the intensity of selectedKey_
+                if (key->getIntensity() < selectedKey_->getIntensity())
+                    key->setIntensity(selectedKey_->getIntensity());
             }
             else {
-                emit exclusiveModeChangedWithDataSource(true, hit.x + 0.001);
+                //change intensity of key if its higher than the intensity of selectedKey_
+                if (key->getIntensity() > selectedKey_->getIntensity())
+                    key->setIntensity(selectedKey_->getIntensity());
             }
         }
-        else {
-            emit exclusiveModeChangedWithDataSource(true, hit.x);
-        }
+        tf_->updateKey(selectedKey_);
+
+        repaint();
         emit changed();
+    }
+}
+
+void TransFuncMappingCanvas::mouseReleaseEvent(QMouseEvent* event) {
+    event->accept();
+    if (event->button() == Qt::LeftButton) {
+        dragging_ = false;
+        dragLine_ = -1;
+        dragLineAlphaLeft_ = -1.f;
+        dragLineAlphaRight_ = -1.f;
+        hideCoordinates();
+        update();
+        emit switchInteractionMode(false);
     }
 }
 
 void TransFuncMappingCanvas::mouseDoubleClickEvent(QMouseEvent *event) {
     event->accept();
-    changeCurrentColor();
+    if (event->button() == Qt::LeftButton)
+        changeCurrentColor();
 }
 
 void TransFuncMappingCanvas::keyPressEvent(QKeyEvent* event) {
-    if (event->key() == Qt::Key_Shift && underMouse() && !dragging_ && hitLine(vec2(mousePos_.x(), mousePos_.y())) >= 0)
+    if (event->key() == Qt::Key_Shift                    && underMouse() &&
+        hitLine(vec2(mousePos_.x(), mousePos_.y())) >= 0 && !dragging_)
+    {
         setCursor(Qt::SizeVerCursor);
+    }
 }
 
-void TransFuncMappingCanvas::keyReleaseEvent(QKeyEvent* /*event*/) {
+void TransFuncMappingCanvas::keyReleaseEvent(QKeyEvent* event) {
     unsetCursor();
-}
-
-void TransFuncMappingCanvas::paintKeys(QPainter& paint) {
-    for (int i=0; i<tf_->getNumKeys(); ++i) {
-        TransFuncMappingKey *key = tf_->getKey(i);
-        tgt::vec2 p = wtos(tgt::vec2(key->getIntensity(), key->getColorL().a / 255.0));
-        int props;
-        if (key->isSplit()) {
-            props = MARKER_LEFT;
-            if (key == selectedKey_ && selectedLeftPart_)
-                props |= MARKER_SELECTED;
-
-            drawMarker(paint, key->getColorL(), p, props);
-
-            p = wtos(tgt::vec2(key->getIntensity(), key->getColorR().a / 255.0));
-            props = MARKER_RIGHT;
-            if (key == selectedKey_ && !selectedLeftPart_)
-                props |= MARKER_SELECTED;
-
-            drawMarker(paint, key->getColorR(), p, props);
-        }
-        else {
-            props = MARKER_NORMAL;
-            if (key == selectedKey_)
-                props |= MARKER_SELECTED;
-            drawMarker(paint, key->getColorL(), p, props);
-        }
+    if (event->key() == Qt::Key_Delete && selectedKey_ != 0) {
+        event->accept();
+        deleteKey();
     }
-//     gradient_->repaint();
 }
 
-void TransFuncMappingCanvas::insertNewKey(tgt::vec2& hit) {
-    // don't insert new keys in ramp mode
-    if (rampMode_)
+//--------- slots ---------//
+
+void TransFuncMappingCanvas::changeCurrentColor(const QColor& c) {
+    if (!selectedKey_ || !c.isValid())
         return;
 
-    if (hit.x < 0.f)
-        hit.x = 0.f;
-    if (hit.y < 0.f)
-        hit.y = 0.f;
-    if (hit.x > 1.f)
-        hit.x = 1.f;
-    if (hit.y > 1.f)
-        hit.y = 1.f;
-
-    if (gridSnap_)
-        hit = snapToGrid(hit);
-
-    TransFuncMappingKey *key = new TransFuncMappingKey(hit.x, QColor2Col(Qt::lightGray));
-
-//     key->setIntensity(hit.x);
-//     key->getColorL().a = (hit.y);
-//     key->setSplit(false);
-    key->setAlphaL(hit.y);
-    tf_->addKey(key);
-    TransFuncMappingKey* leftKey = getOtherKey(key, true);
-    TransFuncMappingKey* rightKey = getOtherKey(key, false);
-
-    // interpolate color of inserted key from neighbouring keys
-    // (weighted by distance)
-    tgtAssert( tf_->getNumKeys() >= 2, "Less than two transfer mapping keys!");
-    tgt::col4 keyColor;
-    if (!leftKey)
-        keyColor = rightKey->getColorL();
-    else if (!rightKey)
-        keyColor = leftKey->getColorR();
+    tgt::col4 tgtcolor = QColor2Col(c);
+    bool changedColor = false;
+    if (selectedKey_->isSplit() && !selectedLeftPart_) {
+        tgtcolor.a = selectedKey_->getColorR().a;
+        if (selectedKey_->getColorR() != tgtcolor) {
+            selectedKey_->setColorR(tgtcolor);
+            changedColor = true;
+        }
+    }
     else {
-        float leftSource = leftKey->getIntensity();
-        float rightSource = rightKey->getIntensity();
-        float distSource = rightSource - leftSource;
-        tgt::vec4 leftColor = static_cast<tgt::vec4>(leftKey->getColorR());
-        tgt::vec4 rightColor = static_cast<tgt::vec4>(rightKey->getColorL());
-
-        keyColor = static_cast<tgt::col4>(
-            leftColor* ( (distSource-(hit.x-leftSource))/distSource  ) +
-            rightColor*( (distSource-(rightSource-hit.x))/distSource ) );
-    }
-    key->setColorL( keyColor );
-
-    selectedKey_ = key;
-
-    repaint();
-    emit updateCoordinates(hit.x, hit.y);
-    emit exclusiveModeChangedWithDataSource(true, hit.x);
-    emit colorChanged( Col2QColor(keyColor) );
-    emit changed();
-}
-
-void TransFuncMappingCanvas::handleRightClick(QMouseEvent* event) {
-    Q_ASSERT(selectedKey_ != 0);
-
-    //
-    // Set context-dependent text for menu items
-    //
-
-    // no context menu in ramp mode
-    if (rampMode_)
-        return;
-
-    // Split/merge
-    splitMergeAction_->setText((selectedKey_->isSplit() ? tr("Merge this key") : tr("Split this key")));
-
-    // Zero/unzero
-    QString zeroText;
-    zeroText = tr("Zero ");
-
-    if (selectedLeftPart_)
-        zeroText += tr("to the left");
-    else
-        zeroText += tr("to the right");
-
-    zeroAction_->setText(zeroText);
-
-    // allow deletion of keys only if there are more than two keys
-    deleteAction_->setEnabled( tf_->getNumKeys() > 2);
-
-    contextMenu_.popup(event->globalPos());
-}
-
-void TransFuncMappingCanvas::handleContextMenu(QMouseEvent *event) {
-    fileMenu_.popup(event->globalPos());
-}
-
-void TransFuncMappingCanvas::dataSourceChanged(Volume* newDataset) {
-    curDataset_ = newDataset;
-    showHistogram_ = false;
-    if (histogram_)
-        delete histogram_;
-    histogram_ = 0;
-    //toggleShowHistogram(true);
-    repaint();
-}
-
-void TransFuncMappingCanvas::setThreshold(float l, float u) {
-    thresholdL_=l;
-    thresholdU_=u;
-    if (thresholdU_-thresholdL_ < minThresholdGap_) {
-        if (thresholdL_ < 1.f-minThresholdGap_)
-            thresholdU_ = thresholdL_ + minThresholdGap_;
-        else
-            thresholdL_ = thresholdU_ - minThresholdGap_;
-
+        tgtcolor.a = selectedKey_->getColorL().a;
+        if (selectedKey_->getColorL() != tgtcolor) {
+            selectedKey_->setColorL(tgtcolor);
+            changedColor = true;
+        }
     }
 
-    if (clipThresholds_)
-        xRange_ = vec2(thresholdL_, thresholdU_);
-
-    update();
-}
-
-void TransFuncMappingCanvas::setRampMode(bool on) {
-    if ( on && rampMode_ == false) {
-        setStandardFunc();
-        setRampParams(0.5f, 1.f);
+    if (changedColor) {
         update();
-    }
-    rampMode_ = on;
-}
-
-void TransFuncMappingCanvas::setRampParams(float rampCenter, float rampWidth) {
-
-    tgtAssert(rampCenter >= 0.f && rampCenter <= 1.f, "ramp center out of range [0;1]");
-    tgtAssert(rampWidth >= 0.f && rampWidth <= 1.f, "ramp width out of range [0;1]");
-
-    rampCenter_ = rampCenter;
-    rampWidth_ = rampWidth;
-
-    if (rampMode_) {
-        calcKeysFromRampParams();
-        repaint();
         emit changed();
+        emit colorChanged(c);
     }
-}
-
-void TransFuncMappingCanvas::getRampParams(float &rampCenter, float &rampWidth) {
-    rampCenter = rampCenter_;
-    rampWidth = rampWidth_;
-}
-
-void TransFuncMappingCanvas::readFromDisc(QString fileName) {
-    clean();
-    QFile file(fileName);
-    bool res = file.open(QIODevice::ReadOnly);
-    if (res) {
-        QDataStream in(&file);
-        qint32 size;
-        in >> size;
-        LDEBUG("loadingsize("<< sizeof(size)<<"): " << size);
-        for (int i=0;i<size;i++) {
-            qint32 inten;
-            qint32 trans;
-            float intensity;
-            float transparency;
-            QColor color;
-            bool split;
-            in >> inten;
-            intensity = static_cast<float>(inten) / 255.f;
-            in >> trans;
-            transparency = static_cast<float>(trans) / 255.f;
-            in >> color;
-            in >> split;
-            TransFuncMappingKey* key = new TransFuncMappingKey(intensity, QColor2Col(color) );
-            key->setAlphaL(transparency);
-            key->setSplit(split);
-            if (split) {
-                qint32 spTrans;
-                float splitTransparency;
-                QColor altColor;
-                in >> altColor;
-                in >> spTrans;
-                splitTransparency = static_cast<float>(spTrans) / 255.f;
-                key->setColorR( QColor2Col(altColor) );
-                key->setAlphaR(splitTransparency);
-            }
-            tf_->addKey(key);
-        }
-        file.close();
-    }
-    else {
-        std::cerr << "Could not open file, using standard transfer-function..." << std::endl;
-        setStandardFunc();
-    }
-    tf_->updateTexture();
-    emit changed();
-}
-
-void TransFuncMappingCanvas::saveToDisc(QString fileName) {
-    QFile file(fileName);
-    file.open(QIODevice::WriteOnly);
-    QDataStream out(&file);
-
-	out << (qint32)tf_->getNumKeys();
-    for (int i=0; i<tf_->getNumKeys(); ++i) {
-        out << static_cast<qint32>(tf_->getKey(i)->getIntensity() * 255.f);
-		out << static_cast<qint32>(tf_->getKey(i)->getAlphaL() * 255.f);
-        out << Col2QColor(tf_->getKey(i)->getColorL());
-        out << tf_->getKey(i)->isSplit();
-        if (tf_->getKey(i)->isSplit()) {
-            out << Col2QColor(tf_->getKey(i)->getColorR());
-            out << (qint32)(tf_->getKey(i)->getAlphaR() * 255.f);
-        }
-    }
-    file.close();
-}
-
-void TransFuncMappingCanvas::clean() {
-    tf_->clearKeys();
-    selectedKey_ = 0;
-    update();
-}
-
-QSize TransFuncMappingCanvas::minimumSizeHint () const {
-    return QSize(50,20);
-}
-
-QSize TransFuncMappingCanvas::sizeHint () const {
-    return QSize(200, 100);
-}
-
-QSizePolicy TransFuncMappingCanvas::sizePolicy () const {
-    return QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-}
-
-void TransFuncMappingCanvas::setTransFunc(TransFuncIntensity* tf) {
-    tf_ = tf;
-    selectedKey_ = 0;
-    repaint();
-}
-
-void TransFuncMappingCanvas::setXAxisText(const std::string& text) {
-    xAxisText_ = QString(text.c_str());
-}
-
-void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
-    yAxisText_ = QString(text.c_str());
 }
 
 void TransFuncMappingCanvas::splitMergeKeys() {
@@ -911,71 +588,8 @@ void TransFuncMappingCanvas::splitMergeKeys() {
         return;
 
     selectedKey_->setSplit(!selectedKey_->isSplit());
+    update();
     emit changed();
-    repaint();
-}
-
-void TransFuncMappingCanvas::unselectKey() {
-
-    selectedKey_ = 0;
-    repaint();
-};
-
-void TransFuncMappingCanvas::deleteKey() {
-    if (!selectedKey_)
-        return;
-
-    tf_->removeKey(selectedKey_);
-    selectedKey_ = 0;
-
-    repaint();
-    emit changed();
-}
-
-void TransFuncMappingCanvas::changeCurrentColor(const QColor& c) {
-    tgt::col4 tgtcolor = QColor2Col(c);
-
-    if (!selectedKey_ || rampMode_)
-        return;
-    if (c.isValid()) {
-        bool change = true;
-        if (selectedKey_->isSplit() && !selectedLeftPart_) {
-            tgtcolor.a = selectedKey_->getColorR().a;
-            if (selectedKey_->getColorR() != tgtcolor)
-                selectedKey_->setColorR(tgtcolor);
-            else
-                change = false;
-        }
-        else {
-            tgtcolor.a = selectedKey_->getColorL().a;
-            if (selectedKey_->getColorL() != tgtcolor)
-                selectedKey_->setColorL(tgtcolor);
-            else
-                change = false;
-        }
-
-        if (change) {
-            emit changed();
-            emit colorChanged(c);
-            repaint();
-        }
-    }
-}
-
-void TransFuncMappingCanvas::changeCurrentColor() {
-    if (!selectedKey_ || rampMode_ || noColor_)
-        return;
-
-    msgReceiver_->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-    QColor oldColor;
-    if (selectedKey_->isSplit() && !selectedLeftPart_)
-        oldColor = Col2QColor( selectedKey_->getColorR() );
-    else 
-        oldColor = Col2QColor( selectedKey_->getColorL() );
-    
-    QColor newColor = QColorDialog::getColor(oldColor, 0);
-    if (newColor.isValid())
-        changeCurrentColor(newColor);
 }
 
 void TransFuncMappingCanvas::zeroKey() {
@@ -1000,87 +614,25 @@ void TransFuncMappingCanvas::zeroKey() {
     else
         selectedKey_->setAlphaR(0.0);
 
+    update();
     emit changed();
-    repaint();
 }
 
-void TransFuncMappingCanvas::gradAlphaKey() {
-    if (!selectedKey_)
+void TransFuncMappingCanvas::deleteKey() {
+    if (!selectedKey_ || tf_->getNumKeys() < 3)
         return;
 
-    TransFuncMappingKey* otherKey = getOtherKey(selectedKey_, selectedLeftPart_);
-    if (otherKey) {
-        if (!otherKey->isSplit())
-            otherKey->setSplit(true);
-    }
-
-    if (!selectedKey_->isSplit())
-        selectedKey_->setSplit(true);
-
-    emit changed();
-    repaint();
-}
-
-void TransFuncMappingCanvas::readFromDisc() {
-    QFileDialog fileDialog(this,
-        tr("Choose a transfer function to open"),
-        transferFuncPath_,
-        #ifdef VRN_WITH_DEVIL
-            tr("Transfer Function (*.tf *.tfi *.lut *.table *.plist *.bmp *.png *.jpg *.gif *.tga *.tif)"));
-        #else
-            tr("Transfer Function (*.tf *.tfi *.lut *.table *.plist)"));
-        #endif
-
-    if ( fileDialog.exec() && !fileDialog.selectedFiles().empty() ) {
-
-        QString fileName = fileDialog.selectedFiles().at(0);
-
-        if (!fileName.isEmpty()) {
-            if (fileName.endsWith(".tf", Qt::CaseInsensitive))
-                readFromDisc(fileName);
-            else
-                tf_->load(fileName.toStdString());
-
-            // update dialog path
-            transferFuncPath_ = fileDialog.directory().path();
-
-            repaint();
-            emit changed();
-        }
-    }
-}
-
-void TransFuncMappingCanvas::saveToDisc() {
-    QFileDialog fileDialog(this);
-    fileDialog.setDefaultSuffix(tr("tfi"));
-    fileDialog.setWindowTitle(tr("Choose a filename to save transfer function"));
-    fileDialog.setDirectory(transferFuncPath_);
-    QStringList filters;
-    filters << tr("Transfer function (*.tfi)")
-            << tr("Transfer function image (*.png)");
-    fileDialog.setFilters(filters);
-    fileDialog.setAcceptMode(QFileDialog::AcceptSave);
-    QStringList fileList;
-
-    if (fileDialog.exec()) {
-        fileList = fileDialog.selectedFiles();
-        if (fileDialog.selectedFilter() == filters[0])
-            tf_->save(fileList.at(0).toStdString());
-        else
-            tf_->savePNG(fileList.at(0).toStdString(), 512);
-        
-        // update dialog path
-        transferFuncPath_ = fileDialog.directory().path();
-    }
-}
-
-void TransFuncMappingCanvas::setStandardFunc() {
-    tf_->createStdFunc();
+    tf_->removeKey(selectedKey_);
     selectedKey_ = 0;
-    rampCenter_ = 0.5f;
-    rampWidth_ = 1.f;
+
+    update();
     emit changed();
-    repaint();
+}
+
+void TransFuncMappingCanvas::resetTransferFunc() {
+    selectedKey_ = 0;
+    emit resetTransferFunction();
+    update();
 }
 
 void TransFuncMappingCanvas::toggleClipThresholds(bool enabled) {
@@ -1090,54 +642,61 @@ void TransFuncMappingCanvas::toggleClipThresholds(bool enabled) {
     else
         xRange_ = vec2(0.f, 1.f);
 
+    histogramPainter_->setxRange(xRange_);
+
     update();
 }
 
-void TransFuncMappingCanvas::toggleGridSnap(bool enabled) {
-    gridSnap_ = enabled;
-}
+//--------- protected helper functions ---------//
 
-void TransFuncMappingCanvas::toggleShowHistogram(bool enabled) {
-    if (!curDataset_)
+void TransFuncMappingCanvas::changeCurrentColor() {
+    if (!selectedKey_ || noColor_)
         return;
 
-    int histogramWidth = 256;
-    
-    int bits = curDataset_->getBitsStored();
-    switch (bits) {
-    case 8:
-        histogramWidth = 256;
-        break;
-    case 12:
-        histogramWidth = 512;
-        break;
-    case 16:
-        histogramWidth = 512;
-        break;
-    case 32:
-        histogramWidth = 256;
-        break;
-    }
-
-    if (enabled && !showHistogram_) {
-        if (histogram_)
-            showHistogram_ = true;
-        else if (!histogram_ && curDataset_) {
-            QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-            histogram_ = new HistogramIntensity(curDataset_, histogramWidth);
-            QApplication::restoreOverrideCursor();
-            showHistogram_ = enabled;
-        }
-        else
-            showHistogram_ = false;
-    }
+    QColor oldColor;
+    if (selectedKey_->isSplit() && !selectedLeftPart_)
+        oldColor = Col2QColor( selectedKey_->getColorR() );
     else
-        showHistogram_ = enabled;
-    repaint();
+        oldColor = Col2QColor( selectedKey_->getColorL() );
+
+    QColor newColor = QColorDialog::getColor(oldColor, 0);
+    if (newColor.isValid())
+        changeCurrentColor(newColor);
 }
 
-void TransFuncMappingCanvas::onChanged() {
-    isChanged_ = true;
+void TransFuncMappingCanvas::insertNewKey(vec2& hit) {
+    hit = tgt::clamp(hit, 0.f, 1.f);
+
+    TransFuncMappingKey* key = new TransFuncMappingKey(hit.x, QColor2Col(Qt::lightGray));
+
+    tf_->addKey(key);
+    TransFuncMappingKey* leftKey = getOtherKey(key, true);
+    TransFuncMappingKey* rightKey = getOtherKey(key, false);
+
+    // interpolate color of inserted key from neighbouring keys
+    // (weighted by distance)
+    // the alpha value is determined by hit.y
+    tgt::col4 keyColor;
+    if (!leftKey)
+        keyColor = rightKey->getColorL();
+    else if (!rightKey)
+        keyColor = leftKey->getColorR();
+    else {
+        float leftSource = leftKey->getIntensity();
+        float rightSource = rightKey->getIntensity();
+        float distSource = rightSource - leftSource;
+        tgt::vec4 leftColor = static_cast<tgt::vec4>(leftKey->getColorR());
+        tgt::vec4 rightColor = static_cast<tgt::vec4>(rightKey->getColorL());
+
+        keyColor = static_cast<tgt::col4>(
+            leftColor* ( (distSource-(hit.x-leftSource))/distSource  ) +
+            rightColor*( (distSource-(rightSource-hit.x))/distSource ) );
+    }
+    key->setColorL(keyColor);
+    //overwrite alpha value with clicked position
+    key->setAlphaL(hit.y);
+
+    selectedKey_ = key;
 }
 
 TransFuncMappingKey* TransFuncMappingCanvas::getOtherKey(TransFuncMappingKey* selectedKey, bool selectedLeftPart) {
@@ -1152,127 +711,65 @@ TransFuncMappingKey* TransFuncMappingCanvas::getOtherKey(TransFuncMappingKey* se
     return otherKey;
 }
 
-void TransFuncMappingCanvas::calcKeysFromRampParams() {
-    tgtAssert(tf_->getNumKeys() == 2, "more than two keys in ramp mode");
-    TransFuncMappingKey* key0 = tf_->getKey(0);
-    TransFuncMappingKey* key1 = tf_->getKey(1);
-    key0->setIntensity(rampCenter_ - rampWidth_/2.f);
-    key0->getColorL().a = 0;
-    key1->setIntensity(rampCenter_ + rampWidth_/2.f);
-    key1->getColorL().a = 255;
-    if (key0->getIntensity() < 0.f) {
-        key0->getColorL().a = static_cast<unsigned char>(255.f * (-key0->getIntensity()*1.f/(key1->getIntensity()-key0->getIntensity())));
-        key0->setIntensity(0.f);
-    }
-    if (key1->getIntensity() > 1.f) {
-        key1->getColorL().a = static_cast<unsigned char>(255.f * ((1.f-key0->getIntensity())*1.f/(key1->getIntensity()-key0->getIntensity())));
-        key1->setIntensity(1.f);
-    }
-    tf_->updateKey(key0);
-    tf_->updateKey(key1);
-    calcRampParamsFromKeys();
-}
-
-void TransFuncMappingCanvas::calcRampParamsFromKeys() {
-    tgtAssert(tf_->getNumKeys() == 2, "more than two keys in ramp mode");
-    TransFuncMappingKey* key0 = tf_->getKey(0);
-    TransFuncMappingKey* key1 = tf_->getKey(1);
-    float left = key0->getIntensity();
-    float right = key1->getIntensity();
-    if (left == 0.f) {
-        left = - key0->getColorL().a / 255.0 * (key1->getIntensity() - key0->getIntensity()) /
-            (key1->getColorL().a / 255.0 - key0->getColorL().a / 255.0);
-    }
-    if (right == 1.f) {
-        right = 1.f + (1.f - key1->getColorL().a / 255.0) * (key1->getIntensity() - key0->getIntensity()) /
-            (key1->getColorL().a / 255.0 - key0->getColorL().a / 255.0);
-    }
-    rampCenter_ = (right + left) / 2.f;
-    rampWidth_ = right - left;
-}
-
 int TransFuncMappingCanvas::hitLine(const tgt::vec2& p) {
     int hit = -1;
     vec2 sHit = vec2(p.x, static_cast<float>(height()) - p.y);
     vec2 old;
     for (int i=0; i < tf_->getNumKeys(); ++i) {
-        TransFuncMappingKey *key = tf_->getKey(i);
-        vec2 p = wtos(vec2(key->getIntensity(), key->getColorL().a / 255.0));
-//         if (i == 0) {
-//             paint.drawLine(QPointF(wtos(vec2(x0_, 0.0)).x, p.y),
-//                            QPointF(p.x - 1.0, p.y));
-//         } else {
-//             paint.drawLine(QPointF(old.x + 1.0, old.y),
-//                            QPointF(p.x - 1.0, p.y));
-//         }
+        TransFuncMappingKey* key = tf_->getKey(i);
+        vec2 p = wtos(vec2(key->getIntensity(), key->getColorL().a / 255.f));
         if (i > 0) {
-            vec2 p1 = vec2(old.x + 1.0, old.y);
-            vec2 p2 = vec2(p.x - 1.0, p.y);
+            vec2 p1 = vec2(old.x + 1.f, old.y);
+            vec2 p2 = vec2(p.x - 1.f, p.y);
             float s = (p2.y - p1.y) / (p2.x - p1.x);
-            float a = p1.y + (sHit.x - p1.x) * s;
-            if (sHit.x >= p1.x+10 && sHit.x <= p2.x-10 && abs(static_cast<int>(sHit.y) - static_cast<int>(a)) < 5) {
+            int a = static_cast<int>(p1.y + (sHit.x - p1.x) * s);
+            if ((sHit.x >= p1.x+10) && (sHit.x <= p2.x-10) && (abs(static_cast<int>(sHit.y) - a) < 5)) {
                 hit = i - 1;
             }
         }
 
         old = p;
         if (key->isSplit())
-            old = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.0));
+            old = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.f));
     }
-//         paint.drawLine(QPointF(old.x + 1.0, old.y),
-//                        QPointF(wtos(vec2(x1_, 0.0)).x, old.y));
     return hit;
 }
 
-tgt::vec2 TransFuncMappingCanvas::wtos(tgt::vec2 p) {
-    float sx, sy;
-    sx = (p.x - xRange_[0]) / (xRange_[1] - xRange_[0]) * (static_cast<float>(width()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
-    sy = (p.y - yRange_[0]) / (yRange_[1] - yRange_[0]) * (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
-    return tgt::vec2(sx, sy);
-}
+void TransFuncMappingCanvas::paintKeys(QPainter& paint) {
+    for (int i=0; i<tf_->getNumKeys(); ++i) {
+        TransFuncMappingKey *key = tf_->getKey(i);
+        vec2 p = wtos(vec2(key->getIntensity(), key->getColorL().a / 255.0));
+        int props;
+        if (key->isSplit()) {
+            props = MARKER_LEFT;
+            if (key == selectedKey_ && selectedLeftPart_)
+                props |= MARKER_SELECTED;
 
-tgt::vec2 TransFuncMappingCanvas::stow(tgt::vec2 p) {
-    float wx, wy;
-    wx = (p.x - padding_) / (static_cast<float>(width()) - 2 * padding_ - 1.5 * arrowLength_) * (xRange_[1] - xRange_[0]) + xRange_[0];
-    wy = (p.y - padding_) / (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) * (yRange_[1] - yRange_[0]) + yRange_[0];
-    return tgt::vec2(wx, wy);
-}
+            drawMarker(paint, key->getColorL(), p, props);
 
-tgt::vec2 TransFuncMappingCanvas::snapToGrid(tgt::vec2 p) {
-    tgt::vec2 n;
-    n.x = tgt::round(p.x / gridSpacing_.x) * gridSpacing_.x;
-    n.y = tgt::round(p.y / gridSpacing_.y) * gridSpacing_.y;
-    return n;
-}
+            p = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.0));
+            props = MARKER_RIGHT;
+            if (key == selectedKey_ && !selectedLeftPart_)
+                props |= MARKER_SELECTED;
 
-void TransFuncMappingCanvas::resizeEvent(QResizeEvent* /*event*/) {
-    gridSpacing_ = vec2(1.0, 1.0);
-    // refine gridSpacing_ as good as possible
-    float factor[2] = {0.1f, 0.2f};
-    for (int k=0; k<2; ++k) {
-        for (int component=0; component<2; ++component) {
-            vec2 cellSize = wtos(gridSpacing_) - wtos(vec2(0.0, 0.0));
-            cellSize[component] *= factor[k];
-            while (cellSize[component] > minCellSize_) {
-                gridSpacing_[component] *= factor[k];
-                cellSize[component] *= factor[k];
-            }
-            cellSize[component] /= factor[k];
+            drawMarker(paint, key->getColorR(), p, props);
+        }
+        else {
+            props = MARKER_NORMAL;
+            if (key == selectedKey_)
+                props |= MARKER_SELECTED;
+            drawMarker(paint, key->getColorL(), p, props);
         }
     }
 }
 
 void TransFuncMappingCanvas::drawMarker(QPainter& paint, const tgt::col4& tgtcolor, const tgt::vec2& p, int props) {
-    QColor color = Col2QColor(tgtcolor);
-
-    if (props & MARKER_ALPHA)
-        paint.setBrush(QBrush(Qt::red, Qt::Dense4Pattern));
-    else if (noColor_)
+    if (noColor_)
         paint.setBrush(Qt::transparent);
     else
-        paint.setBrush(color);
+        paint.setBrush(Col2QColor(tgtcolor));
 
-    QPen pen(QBrush((props & MARKER_ZEROED) ? Qt::black : Qt::darkGray), Qt::SolidLine);
+    QPen pen(QBrush(Qt::darkGray), Qt::SolidLine);
     if (props & MARKER_SELECTED)
         pen.setWidth(3);
     paint.setPen(pen);
@@ -1291,6 +788,97 @@ void TransFuncMappingCanvas::drawMarker(QPainter& paint, const tgt::col4& tgtcol
         paint.drawEllipse(QRectF(p.x - pointSize_/2, p.y - pointSize_/2,
                                  pointSize_, pointSize_));
     }
+}
+
+QColor TransFuncMappingCanvas::Col2QColor(const tgt::col4& color) {
+    return QColor(color.r, color.g, color.b); // ignore alpha
+}
+
+tgt::col4 TransFuncMappingCanvas::QColor2Col(const QColor& color) {
+    return tgt::col4(color.red(), color.green(), color.blue(), 255); // ignore alpha
+}
+
+tgt::vec2 TransFuncMappingCanvas::wtos(vec2 p) {
+    float sx = (p.x - xRange_[0]) / (xRange_[1] - xRange_[0]) * (static_cast<float>(width())  - 2 * padding_ - 1.5 * arrowLength_) + padding_;
+    float sy = (p.y - yRange_[0]) / (yRange_[1] - yRange_[0]) * (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
+    return vec2(sx, sy);
+}
+
+tgt::vec2 TransFuncMappingCanvas::stow(vec2 p) {
+    float wx = (p.x - padding_) / (static_cast<float>(width())  - 2 * padding_ - 1.5 * arrowLength_) * (xRange_[1] - xRange_[0]) + xRange_[0];
+    float wy = (p.y - padding_) / (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) * (yRange_[1] - yRange_[0]) + yRange_[0];
+    return vec2(wx, wy);
+}
+
+//--------- additional functions ---------//
+
+QSize TransFuncMappingCanvas::minimumSizeHint () const {
+    return QSize(300,100);
+}
+
+QSize TransFuncMappingCanvas::sizeHint () const {
+    return QSize(300, 100);
+}
+
+QSizePolicy TransFuncMappingCanvas::sizePolicy () const {
+    return QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+}
+
+
+void TransFuncMappingCanvas::setThreshold(float l, float u) {
+    thresholdL_ = l;
+    thresholdU_ = u;
+    if (clipThresholds_)
+        xRange_ = vec2(thresholdL_, thresholdU_);
+
+    histogramPainter_->setxRange(xRange_);
+
+    update();
+}
+
+void TransFuncMappingCanvas::hideCoordinates() {
+    QToolTip::hideText();
+}
+
+void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
+    std::ostringstream os;
+    os.precision(2);
+    os.setf(std::ios::fixed, std::ios::floatfield);
+    os << values.x*maximumIntensity_ << " / " << values.y*255.f;
+    QToolTip::showText(mapToGlobal(pos), QString(os.str().c_str()));
+}
+
+void TransFuncMappingCanvas::volumeChanged(Volume* volume, int count) {
+    if (histogramThread_) {
+        histogramThread_->wait(); // wait for old thread to finish before deleting
+        delete histogramThread_;
+    }
+    histogramPainter_->setHistogram(0);
+
+    // calculate new histogram in background thread and propagate to HistogramPainter
+    histogramThread_ = new HistogramThread(volume, count, this);
+    connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
+            histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
+    connect(histogramThread_, SIGNAL(finished()),
+            this, SLOT(update()));
+    update();
+    histogramThread_->start();
+
+    maximumIntensity_ = count - 1;
+}
+
+void TransFuncMappingCanvas::setTransFunc(TransFuncIntensity* tf) {
+    tf_ = tf;
+    selectedKey_ = 0;
+    repaint();
+}
+
+void TransFuncMappingCanvas::setXAxisText(const std::string& text) {
+    xAxisText_ = QString(text.c_str());
+}
+
+void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
+    yAxisText_ = QString(text.c_str());
 }
 
 } // namespace voreen

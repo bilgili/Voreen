@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -131,7 +131,7 @@ VevoVolumeReader::VevoVolumeReader()
 VolumeSet* VevoVolumeReader::read(const string &fname)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
-    tgt::ivec3 dimensions;
+    tgt::ivec3 dimensions(0);
     tgt::vec3 spacing;
     string fileName;
     size_t pos;
@@ -140,7 +140,7 @@ VolumeSet* VevoVolumeReader::read(const string &fname)
         LERROR("Opening single 2D frames stack, no volume dataset can be"
                "reconstructed from one file.");
         exit(EXIT_FAILURE);
-    } 
+    }
     else if ((pos = fname.rfind("rdm")) != string::npos) {
         std::vector<string> filenames;
 
@@ -152,14 +152,15 @@ VolumeSet* VevoVolumeReader::read(const string &fname)
     }
 
     if (dimensions == tgt::ivec3::zero) {
+        //FIXME: this is alway true, something missing?
         LERROR("Wrong dimensions acquired from Vevo info file: " << fname);
         volDS_ = new VolumeUInt8(tgt::vec3(8));
     }
 
-    VolumeSet* volumeSet = new VolumeSet(0, fname);
-    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
+    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fname));
+    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
-    VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volDS_, 0.0f);
+    VolumeHandle* volumeHandle = new VolumeHandle(volDS_, 0.0f);
     volumeHandle->setOrigin(fname, "unknown", 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
     return volumeSet;
@@ -210,7 +211,7 @@ void VevoVolumeReader::loadFramesDescrFromFile(const string& fname,
     while (getline(in, s)) {
         size_t frameNum = 0, frameOffset = 0, frameSize = 0;
         unsigned short f_direction;
-        double frameTstamp;
+        double frameTstamp = 0.0;
         // remove \n
         s.erase(s.end() - 1);
         std::vector<string> v = splitLine(s, ",");
@@ -337,7 +338,7 @@ void VevoVolumeReader::loadECGValues(string f, size_t ecgds, size_t ecgoffset,
             ecgvals.push_back(buf);
         }
 
-        LINFO("Loaded " << ecgvals.size() << " ECG samples.")
+        LINFO("Loaded " << ecgvals.size() << " ECG samples.");
     }
 
     fin.close();
@@ -511,12 +512,12 @@ size_t VevoVolumeReader::loadRawFrame(VevoFrame& frame, char *to) {
         LERROR("Error reading frame: ");
 
         if (fin.rdstate() & std::ios_base::failbit)
-            LERROR("\tFormat error during reading (failbit)")
-            else
+            LERROR("\tFormat error during reading (failbit)");
+        else
             if (fin.rdstate() & std::ios_base::badbit)
-                LERROR("\tStream corrupted, i.e. invalid offset (badbit)")
+                LERROR("\tStream corrupted, i.e. invalid offset (badbit)");
             else
-            LERROR("\tStream totally b0rked!")
+                LERROR("\tStream totally b0rked!");
 
             fin.clear();
     }

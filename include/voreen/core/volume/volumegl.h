@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -87,7 +87,7 @@ public:
      * everthing will work fine and a call to \a applyTransFunc isn't
      * necessary at all.
      */
-    VolumeGL(Volume* volume, const TransFunc* tf = 0, float alphaScale = 1.f,
+    VolumeGL(Volume* volume, TransFunc* tf = 0, float alphaScale = 1.f,
              tgt::Texture::Filter filter = tgt::Texture::LINEAR) throw (std::bad_alloc);
 
     /// This class will not delete its \a volume_.
@@ -175,18 +175,18 @@ public:
      */
     static int getMax3DTexSize();
 
-	/**
+    /**
      * Use this method to tell VolumeGL how much memory on the video card
      * is available for textures.
      *
      * @param Available memory (in megabytes)
      */
-	static void setAvailableGpuMemory(int availableGpuMemory);
+    static void setAvailableGpuMemory(int availableGpuMemory);
 
-	/**
+    /**
      * Return the maximal memory size VolumeGL can use on the video card (in megabytes)
      */
-	static int getAvailableGpuMemory();
+    static int getAvailableGpuMemory();
 
     //
     // further methods
@@ -219,19 +219,19 @@ public:
      *      \e Warinng This will only have an effect when tfSupport_ is \e NOT
      *      equal SHADER!.
      */
-    void applyTransFunc(const TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
+    void applyTransFunc(TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
 
 protected:
     /**
      * Used internally by the constructor and applyTransFunc.
      */
-    void generateTextures(const TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
+    void generateTextures(TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
 
     /**
      * Used internally to upload newly created textures. If there is no Fragment
      * Shader support available a paletted Texture will be created.
      */
-    void uploadTexture( const TransFunc* tf, float alphaScale,
+    void uploadTexture( TransFunc* tf, float alphaScale,
                         Volume* v,
                         const tgt::mat4& matrix,
                         const tgt::vec3& llf,
@@ -261,10 +261,10 @@ private:
 
     static LargeVolumeSupport lvSupport_;
     static int max3DTexSize_;
-	/**
-	* The memory available on the video card in megabyte
-	*/
-	static int availableGpuMemory_;
+    /**
+    * The memory available on the video card in megabyte
+    */
+    static int availableGpuMemory_;
 };
 
 typedef TemplateMessage<VolumeGL*> VolumeGLMsg;

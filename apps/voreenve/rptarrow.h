@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -49,16 +49,16 @@ public:
      */
     RptArrow(QGraphicsItem* sourceNode, QGraphicsItem* destNode=0);
     ~RptArrow();
-    
+
     /**
      * Returns the item where the arrow starts.
      */
-	QGraphicsItem* getSourceNode() { return source_; }
-    
+    QGraphicsItem* getSourceNode() { return source_; }
+
     /**
      * Returns the item the arrow is pointing on (may be 0).
      */
-	QGraphicsItem* getDestNode() { return dest_; }
+    QGraphicsItem* getDestNode() { return dest_; }
 
     /**
      * Sets the dest item.
@@ -70,15 +70,15 @@ public:
      * This function has only an effect if the arrow has both, a source- and a dest-node.
      */
     void adjust();
-    
+
     /**
      * Adjusts the arrow so that it points to the given QPointF.
      */
-    void adjust(QPointF dest);
+    void adjust(QPointF& dest);
 
     /**
      * Used to identfy an item in the scene as RptArrow
-     */     
+     */
     enum { Type = UserType + 4 };
 
     /**
@@ -89,7 +89,7 @@ public:
     QRectF boundingRect() const;
     QPointF center() const;
     QPainterPath shape() const;
-    
+
     /**
      * Shows the Texture Container Target Tooltip if available - returns this-Pointer in case
      * of success
@@ -98,7 +98,7 @@ public:
     QGraphicsItem* rptTooltip() const;
 
 protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
     /**
     * Returns the mapped texture container target for the port of the source port.

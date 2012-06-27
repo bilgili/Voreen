@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -48,7 +48,7 @@ class Polygon3D;
 /**
  * Class for the faces of a Polygon in 3D
  *
- * @author  Dirk Feldmann 
+ * @author  Dirk Feldmann, 2008 A.D.
  */
 class PolygonFace3D {
 public:
@@ -65,7 +65,7 @@ public:
             return (*f1 < *f2);
         }
     };
-    
+
     /**
      * Faces are ordered by their ids, so that a strict weak order can be performed and
      * a std::set can be used
@@ -76,7 +76,7 @@ public:
      * Constructor for a face with the give ID and the given normal
      */
     PolygonFace3D(const unsigned long ID, const tgt::vec3& normal);
-    
+
     PolygonFace3D(const PolygonFace3D& face);
 
     /**
@@ -98,7 +98,7 @@ public:
     bool operator>=(const PolygonFace3D& f) const;
 
     /**
-     * <b>INSERT</b> the given edge in the list of edges at 
+     * <b>INSERT</b> the given edge in the list of edges at
      * its correct position.
      *
      * @return  true if the insertion was successull, false if the
@@ -311,7 +311,7 @@ public:
      * or call <code>addEdge()</code> on the vertices afterwards.
      * This is necessary as edges might only be used temporary and would destroy vertex-connections
      * on their deletion.
-     * 
+     *
      * @param   parent  Polygon which holds a list this edge is contained it. <code>disconnect()</code>
      *                  makes use of this member to remove this vertex from the parent polygons list.
      *                  Therefore this parameter should not be NULL, except for temporary edges.
@@ -429,7 +429,7 @@ public:
     void disconnect(const EdgeVertex3D* const v);
 
     /**
-     * Decides, whether one of this edge's vertices is identical to the 
+     * Decides, whether one of this edge's vertices is identical to the
      * given vertx v.
      *
      * @return  true, if v is identical to one of the vertices of this edge, false otherwise
@@ -525,7 +525,7 @@ public:
     ~EdgeVertex3D();
 
     EdgeVertex3D& operator=(const EdgeVertex3D& vertex);
-    
+
     /**
      * Vertices are definied to be equal if the vectors
      * are component-wise equal.
@@ -632,9 +632,9 @@ public:
      * If no such edge exists, a NULL-pointer is returned.
      */
     Edge3D* findEdge(EdgeVertex3D* const v1, EdgeVertex3D* const v2);
-    
+
     /**
-     * Removes the given edge from the polygons edge list, but does not 
+     * Removes the given edge from the polygons edge list, but does not
      * delete it.
      */
     bool removeEdge(Edge3D* const e);
@@ -645,9 +645,9 @@ public:
      * if it consists of at least 3 different vertices. The vertices are connected in the order of
      * of their indexing but clockwise or counter-clockwise orientations may mess.
      *
-     * @param   vertices    Pointer to an array of vertices which belong to the face. If a vertex 
+     * @param   vertices    Pointer to an array of vertices which belong to the face. If a vertex
      *                      alread exisits within the polygon, no dupplication will be made.
-     * @param   numVertices Size of the vertex-array > 1. Must not be greater than the 
+     * @param   numVertices Size of the vertex-array > 1. Must not be greater than the
      *                      actual array but may be less.
      * @param   indices     Pointer to an array of indices for the vertex-array. The order of the indices
      *                      predefines a clockwise or counter-clockwise orientation for the face.
@@ -703,7 +703,7 @@ public:
      * <b>NOTE:</b>
      * maxFace_ is probably greater than the number of faces.
      */
-    unsigned long getNumFaces() const;        
+    unsigned long getNumFaces() const;
 
     /**
      * Connects all vertices on the edges which share the given vertex.
@@ -744,7 +744,7 @@ public:
      * <code>glBegin(GL_POLYGON)</code> will unlikely succeed.
      */
     const EdgeVertex3D::VertexSet& getVertices() const;
-    
+
     /**
      * Clip the Polygon against a plane represented by a point on it and its
      * normal.
@@ -763,7 +763,7 @@ protected:
      * <b>ATTENTION:</b> uses special comparison-function!
      */
     EdgeVertex3D::VertexSet vertices_;
-    
+
     /**
      * hash_set for edge-pointers (cannot be orderd).
      * <b>ATTENTION:</b> uses special comparison-function!

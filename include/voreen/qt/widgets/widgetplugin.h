@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -42,24 +42,29 @@ namespace voreen {
 class WidgetPlugin : public QWidget {
     Q_OBJECT
 public:
-    WidgetPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0) : QWidget(parent), msgReceiver_(msgReceiver) {};
-    virtual ~WidgetPlugin() {};
+    WidgetPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0)
+        : QWidget(parent), msgReceiver_(msgReceiver)
+    {}
+    
+    virtual ~WidgetPlugin() {}
 
     QIcon getIcon();
     virtual void createWidgets() = 0;
     virtual void createConnections() = 0;
-	virtual void setMessageReceiver(MessageReceiver* receiver);
+    virtual void setMessageReceiver(MessageReceiver* receiver);
+
+    virtual bool usable(const std::vector<Processor*>& processors);
 
 public slots:
-	virtual void startTracking();
-	virtual void stopTracking();
-	virtual void repaintCanvases();
+    virtual void startTracking();
+    virtual void stopTracking();
+    virtual void repaintCanvases();
 
 protected:
     virtual void postMessage(Message* msg, const Identifier& dest = Message::all_);
-    
+
     QIcon icon_;
-	MessageReceiver* msgReceiver_;
+    MessageReceiver* msgReceiver_;
 };
 
 } // namespace voreen

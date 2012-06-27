@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -52,7 +52,7 @@ MatVolumeReader::MatVolumeReader() {
 MatVolumeReader::~MatVolumeReader() {
 }
 
-VolumeSet* MatVolumeReader::read(const std::string& fileName, bool generateVolumeGL)
+VolumeSet* MatVolumeReader::read(const std::string& fileName)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     LINFO("MatVolumeReader: Trying to parse " << fileName << "...");
@@ -77,7 +77,7 @@ VolumeSet* MatVolumeReader::read(const std::string& fileName, bool generateVolum
     matClose(pmat);
     pmat = matOpen(fileName.c_str(), "r");
 
-    VolumeSet* volSet = new VolumeSet(0, fileName);
+    VolumeSet* volSet = new VolumeSet(tgt::File::fileName(fileName));
 
     // Get headers of all variables.
     for (int i=0; i<numDir; ++i) {
@@ -88,13 +88,13 @@ VolumeSet* MatVolumeReader::read(const std::string& fileName, bool generateVolum
             throw tgt::CorruptedFileException();
         }
 
-        readMatFile(pa, volSet, dir[i], generateVolumeGL);
+        readMatFile(pa, volSet, dir[i]);
     }
     mxFree(dir);
     return volSet;
 }
 
-void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bool generateVolumeGL) {
+void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name) {
     LINFO("Details for " << name);
     int dims = mxGetNumberOfDimensions(pa);
     LINFO("  has " << dims << " dimensions.");
@@ -117,7 +117,7 @@ void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bo
                     throw tgt::CorruptedFileException();
                 }
                 else {
-                    readMatFile(cell, volSet, name, generateVolumeGL);
+                    readMatFile(cell, volSet, name);
                 }
             }
             break;
@@ -125,7 +125,7 @@ void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bo
         case mxSTRUCT_CLASS:
             LINFO("  structure mxArray.");
             for (int j = 0; j < mxGetNumberOfFields(pa); ++j) {
-                readMatFile(mxGetFieldByNumber(pa, 0, j), volSet, const_cast<char*>(mxGetFieldNameByNumber(pa, j)), generateVolumeGL);
+                readMatFile(mxGetFieldByNumber(pa, 0, j), volSet, const_cast<char*>(mxGetFieldNameByNumber(pa, j)));
             }
             break;
         case mxCHAR_CLASS:
@@ -138,36 +138,36 @@ void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bo
             break;
         case mxDOUBLE_CLASS:
             LINFO("double-precision, floating-point numbers.");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxSINGLE_CLASS:
             LINFO("single-precision, floating-point numbers.");
             LWARNING("The reader for this format is not tested.");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxINT8_CLASS:
             LINFO("signed 8-bit integers. ");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxUINT8_CLASS:
             LINFO("unsigned 8-bit integers. ");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxINT16_CLASS:
             LINFO("signed 16-bit integers. ");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxUINT16_CLASS:
             LINFO("unsigned 16-bit integers.");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxINT32_CLASS:
             LINFO("signed 32-bit integers.");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxUINT32_CLASS:
             LINFO("unsigned 32-bit integers.");
-            readMatrix(pa, volSet, name, generateVolumeGL);
+            readMatrix(pa, volSet, name);
             break;
         case mxINT64_CLASS:
             LINFO("signed 64-bit integers.");
@@ -188,7 +188,7 @@ void MatVolumeReader::readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bo
     }
 }
 
-void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name, bool generateVolumeGL) {
+void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name) {
     int dims = mxGetNumberOfDimensions(pa);
     const MatSizeType* matDim = mxGetDimensions(pa);
     tgt::ivec3 dim(matDim[0], matDim[1], matDim[2]);
@@ -206,7 +206,7 @@ void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name, boo
             LERROR("  Matrix has " << dims << " dimensions. Currently only matrices with 3 or 4 dimensions are supported.");
             return;
     }
-    VolumeSeries* series = new VolumeSeries(volSet, name);
+    VolumeSeries* series = new VolumeSeries(name);
     volSet->addSeries(series);
     for (int w=0; w<wMax; ++w) {
         LINFO("  Read and add volume " << w);
@@ -237,15 +237,13 @@ void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name, boo
                 dataset = readMatrix<uint32_t>(pa, dim, matDim, w);
                 break;
         }
-        VolumeHandle* handle = new VolumeHandle(series, dataset, static_cast<const float>(w));
+        VolumeHandle* handle = new VolumeHandle(dataset, static_cast<const float>(w));
         handle->setOrigin(
-            series->getParentVolumeSet()->getName(),
+            series->getParentSet()->getName(),
             name,
             static_cast<const float>(w));
         series->addVolumeHandle(handle);
-        if (generateVolumeGL)
-            handle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
     }
 }
 
-} //namespace
+} // namespace voreen

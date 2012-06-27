@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,33 +35,33 @@
 
 namespace voreen {
 
-	class DatasetCreator : public Processor {
-	public:
-		DatasetCreator();
+    class DatasetCreator : public Processor {
+    public:
+        DatasetCreator();
 
-		virtual void createDataset();
+        virtual void createDataset();
 
-		void process(LocalPortMapping* portMapping);
+        void process(LocalPortMapping* portMapping);
 
-		void processMessage(Message* msg, const Identifier& dest=Message::all_);
+        void processMessage(Message* msg, const Identifier& dest=Message::all_);
 /*
-		VolumeContainer* getVolumeContainer() {
-			return volumeContainer_;
-		}
+        VolumeContainer* getVolumeContainer() {
+            return volumeContainer_;
+        }
 
-		void setVolumeContainer(VolumeContainer* volumeContainer) {
-			volumeContainer_ = volumeContainer;
-		}
+        void setVolumeContainer(VolumeContainer* volumeContainer) {
+            volumeContainer_ = volumeContainer;
+        }
 */
-	protected:
-		std::string slicePath_;
-		std::string datasetName_;
+    protected:
+        std::string slicePath_;
+        std::string datasetName_;
 
-		//VolumeContainer* volumeContainer_;
+        //VolumeContainer* volumeContainer_;
 
-		int volumeNumber_;
+        int volumeNumber_;
 
-	};
+    };
 
 
 } //namespace voreen

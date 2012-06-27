@@ -64,6 +64,8 @@ namespace tgt {
 */
 template<class T>
 struct Matrix2 {
+    typedef T ElemType;
+
     enum {
         size = 4,
         cols = 2,
@@ -200,6 +202,8 @@ const Matrix2<T> Matrix2<T>::identity = Matrix2<T>
 */
 template<class T>
 struct Matrix3 {
+    typedef T ElemType;
+
     enum {
         size = 9,
         cols = 3,
@@ -391,6 +395,8 @@ const Matrix3<T> Matrix3<T>::identity = Matrix3<T>
 */
 template<class T>
 struct Matrix4 {
+    typedef T ElemType;
+
     enum {
         size = 16,
         cols = 4,
@@ -1005,11 +1011,10 @@ Matrix4<T> Matrix4<T>::createLookAt(const Vector3<T>& eye, const Vector3<T>& foc
     Vector3<T> strafe = normalize(cross(look, normalize(up)));
     Vector3<T> up2    = cross(strafe, look);
 
-    Matrix4<T> m;
-    m[0] = Vector4<T>( strafe, T(0) );
-    m[1] = Vector4<T>( up2, T(0) );
-    m[2] = Vector4<T>( -look, T(0) );
-    m[3] = Vector4<T>( T(0), T(0), T(0), T(1) );
+    Matrix4<T> m(Vector4<T>( strafe, T(0) ),
+                 Vector4<T>( up2, T(0) ),
+                 Vector4<T>( -look, T(0) ),
+                 Vector4<T>( T(0), T(0), T(0), T(1) ));
 
     return m * Matrix4<T>::createTranslation(-eye);
 }

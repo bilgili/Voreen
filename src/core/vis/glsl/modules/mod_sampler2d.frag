@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,11 +41,11 @@ uniform vec2 screenDimRCP_;
         vec2 texCoordsNormalized = texCoords * screenDimRCP_;
         return texture2D(texture, texCoordsNormalized);
     }
-    
+
 // definitions for textures of type GL_TEXTURE_RECTANGLE_ARB
 #elif defined(VRN_TEXTURE_RECTANGLE)
 
-    #extension GL_ARB_texture_rectangle : enable    
+    #extension GL_ARB_texture_rectangle : enable
 
     #define SAMPLER2D_TYPE sampler2DRect
 

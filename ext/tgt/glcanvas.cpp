@@ -28,6 +28,7 @@
 #include "tgt/painter.h"
 
 #include <cstdlib>
+#include <stdio.h>
 
 namespace tgt {
 
@@ -138,26 +139,27 @@ bool GLCanvas::takeScreenshot(std::string fname) {
     uselessChar = 0; uselessInt = 0;
 
     // Write useless data.
-    fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
-    fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
+    size_t written = 0;
+    written += fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
+    written += fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
 
     // Now image type.
-    fwrite(&imageType, sizeof(unsigned char), 1, pFile);
+    written += fwrite(&imageType, sizeof(unsigned char), 1, pFile);
 
     // Write useless data.
-    fwrite(&uselessInt, sizeof(short int), 1, pFile);
-    fwrite(&uselessInt, sizeof(short int), 1, pFile);
-    fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
-    fwrite(&uselessInt, sizeof(short int), 1, pFile);
-    fwrite(&uselessInt, sizeof(short int), 1, pFile);
+    written += fwrite(&uselessInt, sizeof(short int), 1, pFile);
+    written += fwrite(&uselessInt, sizeof(short int), 1, pFile);
+    written += fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
+    written += fwrite(&uselessInt, sizeof(short int), 1, pFile);
+    written += fwrite(&uselessInt, sizeof(short int), 1, pFile);
 
     // Write the size that you want.
-    fwrite(&width, sizeof(short int), 1, pFile);
-    fwrite(&height, sizeof(short int), 1, pFile);
-    fwrite(&bits, sizeof(unsigned char), 1, pFile);
+    written += fwrite(&width, sizeof(short int), 1, pFile);
+    written += fwrite(&height, sizeof(short int), 1, pFile);
+    written += fwrite(&bits, sizeof(unsigned char), 1, pFile);
 
     // Write useless data.
-    fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
+    written += fwrite(&uselessChar, sizeof(unsigned char), 1, pFile);
 
     // Get image size.
     Size = width * height * colorMode;
@@ -170,12 +172,13 @@ bool GLCanvas::takeScreenshot(std::string fname) {
     }
 
     // Finally write the image.
-    fwrite(image, sizeof(unsigned char), Size, pFile);
+    written += fwrite(image, sizeof(unsigned char), Size, pFile);
 
     // close the file.
     fclose(pFile);
     delete[] image;
-    return true;
+
+    return (written > 0);
 }
 
 const ivec4& GLCanvas::getRgbaSize() const {

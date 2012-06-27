@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -48,7 +48,7 @@ int main( int argc, char ** argv )
     freopen("voreenapp-log.txt", "w", stdout);
     freopen("voreenapp-errors.txt", "w", stderr);
 #else
-	//Hack für Anzeige der Konsole unter Windows und die Umleitung von
+    //Hack für Anzeige der Konsole unter Windows und die Umleitung von
     //cout und cerr dorthin
     AllocConsole();
     freopen("CONIN$", "r", stdin);
@@ -57,43 +57,43 @@ int main( int argc, char ** argv )
 #endif // _DEBUG
 #endif // WIN32
 
-	QApplication a( argc, argv );
+    QApplication a( argc, argv );
 
 
-	ThresholdWidget threshold;
-	threshold.show();
+    ThresholdWidget threshold;
+    threshold.show();
 
-	/*
-	SliderSpinBoxWidget sliderSpinBox;
-	sliderSpinBox.setEnabled(false);
-	sliderSpinBox.show();
-	*/
+    /*
+    SliderSpinBoxWidget sliderSpinBox;
+    sliderSpinBox.setEnabled(false);
+    sliderSpinBox.show();
+    */
 
-	/*
-	QtCanvas canvas(0);
-	canvas.show();
-	*/
+    /*
+    QtCanvas canvas(0);
+    canvas.show();
+    */
 
-	/*
-	TransferFunc1D func;
-	Ui::TransferFuncExample ui;
-	QWidget transferFuncWidget;
-	ui.setupUi(&transferFuncWidget);
-	func.loadBMP("../../transferFunc/transferfunc0.bmp");
-	ui.transferFunc->addTransferFunc(&func);
-	func.loadBMP("../../transferFunc/transferfunc1.bmp");
-	ui.transferFunc->addTransferFunc(&func);
-	func.loadBMP("../../transferFunc/transferfunc2.bmp");
-	ui.transferFunc->addTransferFunc(&func);
-	func.loadBMP("../../transferFunc/transferfunc3.bmp");
-	ui.transferFunc->addTransferFunc(&func);
-	func.loadBMP("../../transferFunc/transferfunc4.bmp");
-	ui.transferFunc->addTransferFunc(&func);
-	ui.transferFunc->setCurrentIndex(0);
-	transferFuncWidget.show();
-	*/
+    /*
+    TransferFunc1D func;
+    Ui::TransferFuncExample ui;
+    QWidget transferFuncWidget;
+    ui.setupUi(&transferFuncWidget);
+    func.loadBMP("../../transferFunc/transferfunc0.bmp");
+    ui.transferFunc->addTransferFunc(&func);
+    func.loadBMP("../../transferFunc/transferfunc1.bmp");
+    ui.transferFunc->addTransferFunc(&func);
+    func.loadBMP("../../transferFunc/transferfunc2.bmp");
+    ui.transferFunc->addTransferFunc(&func);
+    func.loadBMP("../../transferFunc/transferfunc3.bmp");
+    ui.transferFunc->addTransferFunc(&func);
+    func.loadBMP("../../transferFunc/transferfunc4.bmp");
+    ui.transferFunc->addTransferFunc(&func);
+    ui.transferFunc->setCurrentIndex(0);
+    transferFuncWidget.show();
+    */
 
-	a.connect( &a, SIGNAL( lastWindowClosed() ), &a, SLOT( quit() ) );
+    a.connect( &a, SIGNAL( lastWindowClosed() ), &a, SLOT( quit() ) );
     return a.exec();
 }
 } // namespace voreen

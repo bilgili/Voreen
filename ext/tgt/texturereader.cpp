@@ -140,6 +140,11 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
         compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
         break;
 
+    case 12: //HDR
+        t->format_ = GL_RGB;
+        t->internalformat_ = GL_RGB;
+        t->bpp_ = 3;
+        break;
     default:
         LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
         return false;

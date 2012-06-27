@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,233 +32,267 @@
 
 #include "voreen/core/vis/transfunc/transfunc.h"
 
-#include "tgt/tgt_gl.h"
-
 class FramebufferObject;
 class TiXmlDocument;
+class TiXmlElement;
 
 namespace voreen {
 
-/** 
- *  This class represents a two-dimensional intensity-gradient based transfer function.
- *
- *  - x-axis: intensity
- *  - y-axis: gradient magnitude
- *  
- *  The transfer function is defined by passing its lookup table directly. If you
- *  are looking for a more convenient way of editing, you should have a look at 
- *  TransFuncIntensityGradientPrimitiveContainer.
- *
- *  Internally, the transfer function is represented by a two-dimensional RGBA texture
- *  of type GL_FLOAT.
- * 
- */
-class TransFuncIntensityGradient : public TransFunc {
-
-public:
-
-    /**
-     * Constructor.
-     *
-     * Width and height specifie the lookup table's / texture's dimensions and have to be greater zero.
-     *
-     */
-    TransFuncIntensityGradient(int width = 256, int height = 256);
-    virtual ~TransFuncIntensityGradient();
-    virtual std::string getShaderDefines();
-
-    /** 
-     *  Use this function to define the transfer function's look up table.
-     *  
-     *  @param data the lookup table in RGBA format. Its dimension must match
-     *      the transfer function's dimensions, i.e. width*height*4. 
-     *      Value range: [0.0:1.0]
-     *
-     *  @note data is passed to the transfer function's texture and must therefore not
-     *      be externally deleted after calling this function!
-     */
-    virtual void setPixelData(GLfloat* data);
-
-    /// Returns the transfer function's lookup table in RGBA format. Value range: [0.0:1.0]
-    const GLfloat* getPixelData() const;
-    
-    /// Returns the transfer function's lookup table in RGBA format. Value range: [0.0:1.0]
-    GLfloat* getPixelData();
-    
-    /// Returns the lookup table's width, i.e. the number of elements along the intensity axis.
-    int getWidth() const;
-
-    /// Returns the lookup table's height, i.e. the number of elements along the gradient magnitude axis.
-    int getHeight() const;
-    
-    /// Clears the transfer function, i.e. all lookup-table values are set to zero.
-    void clear();
-
-    /**
-     * Saves the transfer function as PNG.
-     *
-     * @warning Make sure DevIL is inited before calling this function!
-     */
-    void savePNG(const std::string& fname) const;
-
-    /// Call this, if the transfer function's pixel data has changed.
-    virtual void updateTexture();
-
-protected:
-    static const std::string loggerCat_;
-};
-
-// ----------------------------------------------------------------------------
-
 class TransFuncPrimitive;
 
-/** 
- *   This class provides an interface for conveniently setting up a two-dimensional 
- *   intensity-gradient based transfer function.
- *   
- *   The transfer function is edited by adding / removing TransFuncPrimitive objects.
- *   Internally, the primitives are rendered to a texture, therefore FBO support is needed. 
+/**
+ * This class represents a two-dimensional intensity-gradient based transfer function.
+ *
+ * - x-axis: intensity
+ * - y-axis: gradient magnitude
+ *
+ * The transfer function is defined by passing its lookup table directly or primitives that
+ * can be added and editited with TransFuncEditorIntensityGradient. Internally, the transfer
+ * function is represented by a two-dimensional RGBA texture of type GL_FLOAT.
  */
-class TransFuncIntensityGradientPrimitiveContainer : public TransFuncIntensityGradient {
-    FramebufferObject*  fbo_;       // The framebuffer object used for rendering to the texture
-    std::vector<TransFuncPrimitive*> primitives_;
-    static const std::string loggerCat_;
+class TransFuncIntensityGradient : public TransFunc {
 public:
-    TransFuncIntensityGradientPrimitiveContainer(int size);
-    virtual ~TransFuncIntensityGradientPrimitiveContainer();
-    virtual std::string getShaderDefines();
+    /**
+     * Constructor
+     *
+     * @param width width of the texture of the transfer function
+     * @param height height of the texture of the transfer function
+     */
+    TransFuncIntensityGradient(int width = 256, int height = 256);
 
-    void addPrimitive(TransFuncPrimitive* p) { primitives_.push_back(p); }
+    /**
+     * Destructor
+     *
+     * - deletes all primitives the transfer function consists of
+     * - deletes the framebuffer object
+     */
+    virtual ~TransFuncIntensityGradient();
+
+    /**
+     * Operator to compare two TransFuncIntensityGradient's. True is returned when
+     * height and width are the same in both transfer functions and all texel in this
+     * transfer function have the same value as the corresponding texel in the other
+     * transfer function.
+     *
+     * @param tf transfer function that is compared with this transfer function
+     * @return true when width and height and all texel are the same in both transfer functions, false otherwise
+     */
+    bool operator==(const TransFuncIntensityGradient& tf);
+
+    /**
+     * Operator to compare two TransFuncIntensityGradient's. False is returned when
+     * height and width are the same in both transfer functions and all texel in this
+     * transfer function have the same value as the corresponding texel in the other transfer function.
+     *
+     * @param tf transfer function that is compared with this transfer function
+     * @return false when width and height and texel are the same in both transfer functions, true otherwise
+     */
+    bool operator!=(const TransFuncIntensityGradient& tf);
+
+    /**
+     * Creates a new texture that will be bound to the internal used framebuffer object.
+     * The created texture is uploaded to the gpu.
+     */
+    void createTex();
+
+    /**
+     * Sets the scaling factor in y direction for the primitive coordinates to the given value.
+     * That is necessary because the histogram is scaled to the maximum gradientlength that occurs
+     * in the current rendered dataset. Usually this length is smaller than the highest possible
+     * gradientlength. The factor is passed to the primitives when they are painted.
+     *
+     * @param factor scaling factor for primitive coordinates in y direction
+     */
+    void setScaleFactor(float factor);
+
+    /**
+     * The central entry point for loading a gradient transfer function.
+     * The file extension is extracted and based on that the apropriate
+     * load function is called. If there is no extension, loading will be unsuccessful.
+     *
+     * Currently supported extensions include:
+     * tfig
+     *
+     * @param filename the filename, which should be opened
+     * @return true, if loading was succesful, false otherwise
+     */
+    bool load(const std::string& filename);
+
+    /**
+     * Reads all primitives with all settings from the given Xml element.
+     *
+     * @param elem the Xml element all primitives are read from
+     */
+    void loadPrimitivesFromXml(TiXmlElement* elem);
+
+    /**
+     * Saves the transfer function to a file. Any data in the file will be overwritten.
+     * The supported extensions include:
+     * tfig, png
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true, if the operation was successfull, false otherwise
+     */
+    bool save(const std::string& filename);
+
+    /**
+     * Saves a Xml representation of all primitives in the given Xml element.
+     *
+     * @param root Xml element all primitives are saved in
+     */
+    void savePrimitivesToXml(TiXmlElement* root);
+
+    /**
+     * Adds the given primitive to the transfer function.
+     *
+     * @param p the primitive that is added to the transfer function
+     */
+    void addPrimitive(TransFuncPrimitive* p);
+
+    /**
+     * Removes the given primitive from the transfer function. The primitive is deleted as well.
+     *
+     * @param p the primitve that will be removed from transfer function
+     */
     void removePrimitive(TransFuncPrimitive* p);
-    TransFuncPrimitive* getPrimitive(int i) { return primitives_[i]; }
-    ///Paint all the primitives.
+
+    /**
+     * Returns the primitive that is under the mouse cursor or 0 if there is none.
+     *
+     * @param pos position of the mouse cursor
+     * @return primitive that is under the mouse cursor or 0 if there is none
+     */
+    TransFuncPrimitive* getPrimitiveForClickedControlPoint(tgt::vec2 pos);
+
+    /**
+     * Calls paint for all primitives with the scaling factor as parameter
+     */
     void paint();
-    ///Paint all the primitives for selection
-    void paintSelection();
-    ///Paint all the primitives for editing
+
+    /**
+     * Paints all primitives for selection purposes.
+     */
+    void paintForSelection();
+
+    /**
+     * Paints all primitives for display in an editor. Control points are added for every primitive.
+     * An oultine is added to the selected primitive.
+     */
     void paintInEditor();
 
-    ///Returns the primitive which has a control point closest to the mouse cursor (or null if none)
-    TransFuncPrimitive* getControlPointUnderMouse(tgt::vec2 m);
+    /**
+     * Use this function to define the transfer function's look up table.
+     *
+     * @param data the lookup table in RGBA format. Its dimension must match
+     *     the transfer function's dimensions, i.e. width*height*4.
+     *     Value range: [0.0:1.0]
+     *
+     * @note data is passed to the transfer function's texture and must therefore not
+     *     be externally deleted after calling this function!
+     */
+    void setPixelData(GLfloat* data);
 
-    ///saves the transfer function to xml file fname
-    void save(const std::string& fname);
-    ///loads the transfer function from xml file fname
-    bool load(const std::string& fname);
+    /**
+     * Returns the transfer function's lookup table in RGBA format. The values are lying in
+     * range [0.0:1.0]
+     *
+     * @return transfer function lookup table
+     */
+    const GLfloat* getPixelData() const;
 
-    ///Removes all primitives
+    /**
+     * Returns the transfer function's lookup table in RGBA format. The values are lying in
+     * range [0.0:1.0]
+     *
+     * @return transfer function lookup table
+     */
+    GLfloat* getPixelData();
+
+    /**
+     * Returns the width of the texture of the transfer function, i.e. the number of elements
+     * along the intensity axis.
+     *
+     * @return width of the transfer function
+     */
+    int getWidth() const;
+
+    /**
+     * Returns the height of the texture of the transfer function, i.e. the number of elements
+     * along the gradient magnitude axis.
+     *
+     * @return height of the transfer function
+     */
+    int getHeight() const;
+
+    /**
+     * Clears the transfer function, i.e. all primitives of the transfer function are
+     * deleted.
+     */
     void clear();
-    
-    ///Check if init was completed without errors (FBO!)
-    bool initOk() { return fbo_ != 0; }
-    
-    ///Update TF Texture
-    ///Note: You have to set the current drawbuffer after calling this method
+
+    /**
+     * Renders the transfer function to texture using a framebuffer object.
+     * The viewport is set to the dimensions of the texture and paint() is called
+     * for every primitive.
+     */
     void updateTexture();
+
+    /**
+     * Returns the i.th primitive of the transfer function or 0
+     * if no such primitive exists.
+     */
+    TransFuncPrimitive* getPrimitive(int i);
+
+    /**
+     * Returns a define for the usage of this transfer function in a shader.
+     * More specifically, "#define TF_SAMPLER_TYPE sampler2D" is returned.
+     *
+     * @return define for the usage of this transfer function in a shader
+     */
+    const std::string getShaderDefines() const;
+
+    /**
+     * Returns a string representation of the samplertype used by this transfer function, e.g.
+     * "sampler2D" is returned.
+     *
+     * @return the sampler type used by this transfer function
+     */
+    const std::string getSamplerType() const;
+
+protected:
+    /**
+     * Saves the transfer function to a Xml file. Returns true if the operation
+     * was successful and false otherwise.
+     *
+     * @param filename name of the file the transfer function is saved to
+     * @return true when save was successful, false otherwise
+     */
+    bool saveTfig(const std::string& filename);
+
+    /**
+     * Saves the transfer function to an image. Returns true if the operation
+     * was successful and false otherwise.
+     *
+     * @param filename name of the file the transfer function is saved to
+     * @return true when save was successful, false otherwise
+     */
+    bool saveImage(const std::string& filename);
+
+    /**
+     * Loads a gradient transfer function from a XML-File with ending tfig.
+     *
+     * @param filename the name of the file that sould be opened
+     * @return true, if loading was succesful, false otherwise
+     */
+    bool loadTfig(const std::string& filename);
+
+    std::vector<TransFuncPrimitive*> primitives_; ///< primitives the transfer function consists of
+    float scaleFactor_; ///< scaling factor for the y coordinate of the primitives
+
+private:
+    static const std::string loggerCat_; ///< the logger category
 };
 
-// ----------------------------------------------------------------------------
+} // namespace voreen
 
-/// Interface for primitives in 2 dimensional transfer functions
-class TransFuncPrimitive {
-protected:
-    tgt::col4 color_;
-    bool selected_;
-
-    float fuzziness_;
-    float cpSize_;
-public:
-    TransFuncPrimitive(tgt::col4 col) : color_(col), selected_(false), cpSize_(0.02f) {}
-    TransFuncPrimitive() { color_ = tgt::col4(255, 255, 0, 255); selected_ = false; }
-    virtual ~TransFuncPrimitive() {}
-
-    ///Paint for use in transfer function
-    virtual void paint()=0;
-    ///Paint in editor (with outlines, control points...)
-    virtual void paintInEditor()=0;
-    ///Paint in given color glColor3ub(id,123,123) for selection
-    virtual void paintSelection(GLubyte id)=0;
-    ///Paint a control point at position v
-    virtual void paintControlPoint(const tgt::vec2& v);
-
-    void setColor(const tgt::col4& c) { color_ = c; }
-    tgt::col4 getColor() { return color_; }
-
-    ///Primitives with high fuzziness (0.0->1.0) have a alpha gradient towards their border.
-    void setFuzziness(float f) { fuzziness_ = f;}
-    float getFuzziness() { return fuzziness_; }
-
-    ///Returns the distance from m to the closest control point of this primitive
-    virtual float getClosestControlPointDist(tgt::vec2 m) = 0;
-    ///Returns true if a control point is under the mouse cursor and grabs this control point.
-    virtual bool mousePress(tgt::vec2 m) = 0;
-    ///Finished grabbing of control point
-    virtual void mouseRelease(tgt::vec2 m) = 0;
-    ///If a control point is grabbed: move only this point else: move the whole primitive
-    virtual void mouseDrag(tgt::vec2 offset) = 0;
-
-    ///Set selection state. If a primitive is selected it is usually painted different in the editor.
-    virtual void setSelected(bool s) { selected_ = s; }
-
-    ///Save primitive in xml tree.
-    virtual void save(TiXmlElement* root) = 0;
-    ///Load primitive from xml tree.
-    virtual void load(TiXmlElement* root) = 0;
-};
-
-// ----------------------------------------------------------------------------
-
-///A Quad.
-class TransFuncQuad : public TransFuncPrimitive {
-protected:
-    tgt::vec2 coords_[4];
-    int grabbed_;
-
-public:
-    TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col);
-    TransFuncQuad() {}
-    void paint();
-    void paintSelection(GLubyte id);
-    void paintInEditor();
-
-    virtual float getClosestControlPointDist(tgt::vec2 m);
-    virtual bool mousePress(tgt::vec2 m);
-    virtual void mouseRelease(tgt::vec2 /*m*/) { grabbed_ = -1; }
-    virtual void mouseDrag(tgt::vec2 offset);
-
-    virtual void save(TiXmlElement* root);
-    virtual void load(TiXmlElement* root);
-};
-
-// ----------------------------------------------------------------------------
-
-///Two splines, the space inbetween the two is filled.
-class TransFuncBanana : public TransFuncPrimitive {
-protected:
-    tgt::vec2 coords_[4];
-    //       1
-    //
-    //       2
-    //0            3
-    int steps_;
-    int grabbed_;
-
-public:
-    TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col);
-    TransFuncBanana() {}
-    void paint();
-    void paintSelection(GLubyte id);
-    void paintInEditor();
-    virtual float getClosestControlPointDist(tgt::vec2 m);
-    virtual bool mousePress(tgt::vec2 m);
-    virtual void mouseRelease(tgt::vec2 /*m*/) { grabbed_ = -1; }
-    virtual void mouseDrag(tgt::vec2 offset);
-
-    virtual void save(TiXmlElement* root);
-    virtual void load(TiXmlElement* root);
-protected:
-    void paintInner();
-};
-
-}
-#endif //VRN_TRANSFUNCINTENSITYGRADIENT_H
+#endif // VRN_TRANSFUNCINTENSITYGRADIENT_H

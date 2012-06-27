@@ -64,10 +64,6 @@ public:
     /// DO NOT CONFUSE WITH getRuntime() !!
     static uint64_t getTicks();
 
-    /// You can use this function for hard benchmarks!!!
-    /// @return CPU clock cycles since RESET or REBOOT
-    static uint64_t getClockCycles();
-    
     /// This is the function that returns the current runtime of the stopwatch in milliseconds.
     clock_t getRuntime();
 

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,16 +37,28 @@
 #include <QMessageBox>
 #include <QErrorMessage>
 #include <QPushButton>
+#include <QUrl>
 
+#include "voreen/core/application.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/volume/volumesetcontainer.h"
 #include "voreen/qt/ioprogressdialog.h"
 #include "voreen/qt/widgets/volumesetwidget.h"
 
+#include <sstream>
+
 namespace voreen {
 
-// protected methods for VolumeSetTreeWidget
+VolumeSetWidget::VolumeSetTreeWidget::VolumeSetTreeWidget(QWidget* parent)
+  : QTreeWidget(parent)
+{
+    setAcceptDrops(true);
+    setColumnCount(1);
+    setHeaderLabel(tr("Volumes"));
+    setHeaderItem(0);
+    setAnimated(false);
+}
 
 void VolumeSetWidget::VolumeSetTreeWidget::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData()->hasFormat("application/x-volumesetitem")) {
@@ -72,7 +84,7 @@ void VolumeSetWidget::VolumeSetTreeWidget::dragMoveEvent(QDragMoveEvent* event) 
         event->ignore();
 }
 
-bool VolumeSetWidget::VolumeSetTreeWidget::dropMimeData(QTreeWidgetItem* parent, 
+bool VolumeSetWidget::VolumeSetTreeWidget::dropMimeData(QTreeWidgetItem* parent,
                                                         int /*index*/, const QMimeData* data,
                                                         Qt::DropAction /*action*/)
 {
@@ -82,7 +94,7 @@ bool VolumeSetWidget::VolumeSetTreeWidget::dropMimeData(QTreeWidgetItem* parent,
     // The mime data contain the pointer which has been casted to a qulonglong
     //
     QByteArray itemData = data->data("application/x-volumesetitem");
-    AbstractVolumeSetTreeItem* aitem = 
+    AbstractVolumeSetTreeItem* aitem =
         reinterpret_cast<AbstractVolumeSetTreeItem*>(itemData.toULongLong());
 
     // The dragable item is either a VolumeSeries- or a VolumeHandleItem.
@@ -94,8 +106,8 @@ bool VolumeSetWidget::VolumeSetTreeWidget::dropMimeData(QTreeWidgetItem* parent,
     VolumeHandleItem* draggedVolumeHandle = dynamic_cast<VolumeHandleItem*>(aitem);
     VolumeSetItem* droppedVolumeSet = dynamic_cast<VolumeSetItem*>(parent);
     VolumeSeriesItem* droppedVolumeSeries = dynamic_cast<VolumeSeriesItem*>(parent);
-    
-    // If an item containing a VolumeSeries is dropped onto an item containing 
+
+    // If an item containing a VolumeSeries is dropped onto an item containing
     // a VolumeSet, move the series to the set, if it is not already a child of
     // it!
     //
@@ -128,7 +140,7 @@ void VolumeSetWidget::VolumeSetTreeWidget::mousePressEvent(QMouseEvent* event) {
     AbstractVolumeSetTreeItem* item = dynamic_cast<AbstractVolumeSetTreeItem*>(itemAt(event->pos()));
     if (item == 0)
         return;
-    
+
     if ((item->getType() != typeid(VolumeSeries*))
         && (item->getType() != typeid(VolumeHandle*)))
         return;
@@ -145,11 +157,9 @@ void VolumeSetWidget::VolumeSetTreeWidget::mousePressEvent(QMouseEvent* event) {
 }
 
 // private methods for VolumeSetTreeWidget
-//
 
 void VolumeSetWidget::VolumeSetTreeWidget::moveItem(VolumeSeriesItem* child, VolumeSetItem* newParent) {
     // move the data contained in the item
-    //
     VolumeSetItem* oldParent = dynamic_cast<VolumeSetItem*>(child->parent());
     if (oldParent == 0)
         return;
@@ -159,27 +169,11 @@ void VolumeSetWidget::VolumeSetTreeWidget::moveItem(VolumeSeriesItem* child, Vol
     if ((oldVolumeSet != 0) && (newVolumeSet != 0)) {
         VolumeSeries* volumeSeries = oldVolumeSet->removeSeries(child->getItemData());
         newVolumeSet->addSeries(volumeSeries);
-        // As the name of the VolumeSeries may change due to insertion into another
-        // VolumeSet, reset the name of the item. E.g. if there is a VolumeSeries
-        // named "unknown" already contained within the VolumeSet and another
-        // VolumeSeries of the same name will be inserted, the name will be
-        // changed to "unknown 2" by addSeries()
-        //
-        child->setText(0, QString(volumeSeries->getLabel().c_str()));
     }
-
-    // move the item itself
-#if QT_VERSION >= 0x040300    
-    child->parent()->removeChild(child);
-#else
-    child->parent()->takeChild(child->parent()->indexOfChild(child));
-#endif
-    newParent->addChild(child);
 }
 
 void VolumeSetWidget::VolumeSetTreeWidget::moveItem(VolumeHandleItem* child, VolumeSeriesItem* newParent) {
     // move the data contained in the item
-    //
     VolumeSeriesItem* oldParent = dynamic_cast<VolumeSeriesItem*>(child->parent());
     if (oldParent == 0)
         return;
@@ -189,25 +183,7 @@ void VolumeSetWidget::VolumeSetTreeWidget::moveItem(VolumeHandleItem* child, Vol
     if ((oldVolumeSeries != 0) && (newVolumeSeries != 0)) {
         VolumeHandle* volumeHandle = oldVolumeSeries->removeVolumeHandle(child->getItemData());
         newVolumeSeries->addVolumeHandle(volumeHandle);
-        // As the timestep of the VolumeHandle may change due to insertion into another
-        // VolumeSet, reset the name of the item. E.g. if there is a VolumeHandle for
-        // timestep 0.0f already contained within the VolumeSeries and another
-        // VolumeHandle of the same timestep will be inserted, the timestep will be
-        // changed to 1.0f by addVolumeHandle()
-        //
-        char name[20] = {0};
-        sprintf(name, "%f", volumeHandle->getTimestep());//FIXME: use c++
-        child->setText(0, QString(name));
     }
-
-    // move the item itself
-    //
-#if QT_VERSION >= 0x040300    
-    child->parent()->removeChild(child);
-#else
-    child->parent()->takeChild(child->parent()->indexOfChild(child));
-#endif
-    newParent->addChild(child);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,11 +196,12 @@ VolumeSetWidget::VolumeSetWidget(VolumeSetContainer* const volumeSetContainer,
     : QDialog(parent, flags)
     , volumeSetContainer_(volumeSetContainer)
     , availableLevelsMask_(levels)
+      //TODO: should ask the VolumeSerializerPopulator for extensions that it can handle
     , fileExtFilter_("Volume data (*.DAT *.I4D *.PVM *.RDM *.RDI *.HDR *.SW *.SEG *.TUV "
-                     "*.ZIP *.TIFF *.TIF *.MAT *.HV *.NRRD *.NHDR)")
-    , currentDir_(QDir::currentPath().toStdString())
+                     "*.ZIP *.TIFF *.TIF *.MAT *.MV *.HV *.NRRD *.NHDR)")
+    , currentDir_(VoreenApplication::app()->getVolumePath())
     , allowAddingMultipleFiles_(true)
-    , progress_(new IOProgressDialog(this))
+    , progress_(new IOProgressDialog(parent))
     , allowClose_(allowClose)
     , useProgress_(true)
 {
@@ -233,27 +210,86 @@ VolumeSetWidget::VolumeSetWidget(VolumeSetContainer* const volumeSetContainer,
     dicomDirDialog_ = 0;
 #endif
     volumeSerializerPopulator_ = new VolumeSerializerPopulator(progress_);
-    createWidgets();
 
-    connect(btnLoad_, SIGNAL(clicked()), 
+    // create widgets
+
+    treeVolumeSets_ = new VolumeSetTreeWidget();
+
+    groupAdd_ = new QGroupBox(tr("add"));
+    QVBoxLayout* groupLayout = new QVBoxLayout(groupAdd_);
+    btnLoad_ = new QPushButton(tr("add"), groupAdd_);
+    btnLoadDICOM_ = new QPushButton(tr("add DICOM slices"), groupAdd_);
+    btnLoadDICOMDir_ = new QPushButton(tr("add DICOMDIR"), groupAdd_);
+    groupLayout->addWidget(btnLoad_);
+    groupLayout->addWidget(btnLoadDICOM_);
+    groupLayout->addWidget(btnLoadDICOMDir_);
+    groupAdd_->setLayout(groupLayout);
+    groupAdd_->adjustSize();
+
+    groupRemove_ = new QGroupBox(tr("remove"));
+    groupLayout = new QVBoxLayout(groupRemove_);
+    btnUnload_ = new QPushButton(tr("remove"), groupRemove_);
+    groupLayout->addWidget(btnUnload_);
+    groupRemove_->setLayout(groupLayout);
+    groupRemove_->adjustSize();
+
+    groupModality_ = new QGroupBox(tr("modality"));
+    groupLayout = new QVBoxLayout(groupModality_);
+    comboModality_ = new QComboBox(groupModality_);
+
+    // add the names of all available modalities to the combo box
+    const std::vector<std::string>& modNames = Modality::getModalities();
+    for (size_t i = 0; i < modNames.size(); ++i) {
+        modalityIndices_.insert(std::pair<std::string, int>(modNames[i], static_cast<int>(i)));
+        comboModality_->addItem(QString(modNames[i].c_str()));
+    }
+
+    groupLayout->addWidget(comboModality_);
+    groupModality_->setLayout(groupLayout);
+    groupModality_->adjustSize();
+
+    layout_ = new QGridLayout();
+    layout_->addWidget(treeVolumeSets_, 0, 0, (allowClose_ ? 5 : 4), 1);
+    layout_->addWidget(groupAdd_, 0, 1);
+    layout_->addWidget(groupRemove_, 1, 1);
+    layout_->addWidget(groupModality_, 2, 1);
+
+    QPushButton* updateBtn = new QPushButton(tr("Update"));
+    connect(updateBtn, SIGNAL(clicked()), this,  SLOT(updateContent()));
+    layout_->addWidget(updateBtn, 3, 1);
+
+    if (allowClose_) {
+        QPushButton* closeBtn = new QPushButton(tr("Close"));
+        connect(closeBtn, SIGNAL(clicked()), this,  SLOT(accept()));
+        layout_->addWidget(closeBtn, 4, 1);
+    }
+
+    setLayout(layout_);
+    adjustSize();
+
+    // connections
+
+    connect(btnLoad_, SIGNAL(clicked()),
         this, SLOT(buttonAddClicked()));
-    connect(btnLoadDICOM_, SIGNAL(clicked()), 
+    connect(btnLoadDICOM_, SIGNAL(clicked()),
         this, SLOT(buttonAddDICOMClicked()));
-    connect(btnLoadDICOMDir_, SIGNAL(clicked()), 
+    connect(btnLoadDICOMDir_, SIGNAL(clicked()),
         this, SLOT(buttonAddDICOMDirClicked()));
-    connect(btnUnload_, SIGNAL(clicked()), 
+    connect(btnUnload_, SIGNAL(clicked()),
         this, SLOT(buttonRemoveClicked()));
-    connect(comboModality_, SIGNAL(currentIndexChanged(const QString&)), 
+    connect(comboModality_, SIGNAL(currentIndexChanged(const QString&)),
         this, SLOT(comboModalitySelectionChanged(const QString&)));
-    connect(treeVolumeSets_, SIGNAL(itemSelectionChanged()), 
+    connect(treeVolumeSets_, SIGNAL(itemSelectionChanged()),
         this, SLOT(treeItemSelectionChanged()));
-    connect(treeVolumeSets_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), 
+    connect(treeVolumeSets_, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
         this, SLOT(treeItemChanged(QTreeWidgetItem*, int)));
 
     VolumeRootItem* root = new VolumeRootItem("VolumeSetContainer", 0);
     treeVolumeSets_->addTopLevelItem(root);
     root->setExpanded(true);
     root->setSelected(true);
+
+    volumeSetContainer_->addObserver(this);
 }
 
 VolumeSetWidget::~VolumeSetWidget() {
@@ -270,10 +306,8 @@ VolumeSetWidget::~VolumeSetWidget() {
     delete progress_;
 }
 
-void VolumeSetWidget::updateContent(VolumeSetContainer* vsc) {
-    if (vsc)
-        volumeSetContainer_ = vsc;
-    if ((volumeSetContainer_ == 0) || (treeVolumeSets_ == 0))
+void VolumeSetWidget::updateContent() {
+    if (!volumeSetContainer_)
         return;
 
     treeVolumeSets_->clear();
@@ -284,6 +318,23 @@ void VolumeSetWidget::updateContent(VolumeSetContainer* vsc) {
     root->setSelected(true);
     treeVolumeSets_->update();
 }
+
+void VolumeSetWidget::setVolumeSetContainer(VolumeSetContainer* vsc) {
+    // do not observe the old VolumeSetContainer any longer
+    //
+    removeObserved(volumeSetContainer_);
+    volumeSetContainer_ = vsc;
+
+    // add this as an Observer for the new VolumeSetContainer
+    //
+    volumeSetContainer_->addObserver(this);
+
+    // As we are impatient, we won't wait for the Observable object
+    // (the VolumeSetContainer) to call notify() to update the content
+    // of this widget, so we do it ourselves.
+    //
+    updateContent();
+ }
 
 void VolumeSetWidget::setAllowAddingMultipleFiles(const bool allow) {
     allowAddingMultipleFiles_ = allow;
@@ -320,6 +371,10 @@ std::vector<std::string> VolumeSetWidget::openFileDialog() {
     dlg.setAcceptMode(QFileDialog::AcceptOpen);
     dlg.setFileMode(allowAddingMultipleFiles_ ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
 
+    QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getVolumePath().c_str());
+    dlg.setSidebarUrls(urls);
+    
     std::vector<std::string> filenames;
     if (dlg.exec() == QDialog::Accepted) {
         currentDir_ = dlg.directory().path().toStdString();
@@ -332,28 +387,19 @@ std::vector<std::string> VolumeSetWidget::openFileDialog() {
     return filenames;
 }
 
-void VolumeSetWidget::clear(){
-    volumeSetContainer_->clear();
-    updateContent();
-}
+void VolumeSetWidget::clear() { volumeSetContainer_->clear(); }
 
 void VolumeSetWidget::addVolumeSets(const std::vector<std::string>& filenames) {
-    bool update = false;
-    for (size_t i = 0; i < filenames.size(); ++i) {
-        if (loadVolumeSet(filenames[i]) != 0)
-            update = true;
-    }
-    if (update)
-        updateContent();
+    for (size_t i = 0; i < filenames.size(); ++i)
+        loadVolumeSet(filenames[i]);
 }
 
-void VolumeSetWidget::addVolumeSeries(const std::vector<std::string>& filenames, 
+void VolumeSetWidget::addVolumeSeries(const std::vector<std::string>& filenames,
                                       VolumeSet* parentVolumeSet)
 {
     if (parentVolumeSet == 0)
         return;
 
-    bool update = false;
     for (size_t i = 0; i < filenames.size(); ++i) {
         VolumeSet* vs = loadVolumeSet(filenames[i], false);
         if (vs == 0)
@@ -362,16 +408,10 @@ void VolumeSetWidget::addVolumeSeries(const std::vector<std::string>& filenames,
         const VolumeSeries::SeriesSet& series = vs->getSeries();
         VolumeSeries::SeriesSet::const_iterator it = series.begin();
         for (; it != series.end(); ++it) {
-            VolumeSeries* s = *it;
-            if (s != 0) {
-                if (parentVolumeSet->addSeries(s))
-                    update = true;
-            }
+            if (*it != 0)
+                parentVolumeSet->addSeries(*it);
         }
     }   // for (filenames)
-
-    if (update)
-        updateContent();
 }
 
 void VolumeSetWidget::addVolumeHandles(const std::vector<std::string>& filenames,
@@ -380,7 +420,6 @@ void VolumeSetWidget::addVolumeHandles(const std::vector<std::string>& filenames
     if (parentVolumeSeries == 0)
         return;
 
-    bool update = false;
     for (size_t i = 0; i < filenames.size(); ++i) {
         VolumeSet* volumeset = loadVolumeSet(filenames[i], false);
         if (volumeset == 0)
@@ -390,23 +429,14 @@ void VolumeSetWidget::addVolumeHandles(const std::vector<std::string>& filenames
         VolumeSeries::SeriesSet::const_iterator it = series.begin();
         for (; it != series.end(); ++it) {
             VolumeSeries* s = *it;
-            if (s == 0)
-                continue;
-
             const VolumeHandle::HandleSet& handles = s->getVolumeHandles();
             VolumeHandle::HandleSet::const_iterator itHandles = handles.begin();
             for (; itHandles != handles.end(); ++itHandles) {
-                VolumeHandle* handle = *itHandles;
-                if (handle != 0) {
-                    if (parentVolumeSeries->addVolumeHandle(handle))
-                        update = true;
-                }
+                if (*itHandles != 0)
+                    parentVolumeSeries->addVolumeHandle(*itHandles);
             }
         }   // for (series)
     }   // for (filenames)
-
-    if (update)
-        updateContent();
 }
 
 VolumeSet* VolumeSetWidget::loadVolumeSet(const std::string& filename, const bool addToContainer) {
@@ -433,10 +463,8 @@ VolumeSet* VolumeSetWidget::loadVolumeSet(const std::string& filename, const boo
         progress_->hide();
     QApplication::restoreOverrideCursor();
 
-    if (volumeSet && addToContainer) {
-        if (volumeSetContainer_->addVolumeSet(volumeSet))
-            updateContent();
-    }
+    if (volumeSet && addToContainer)
+        volumeSetContainer_->addVolumeSet(volumeSet);
 
     return volumeSet;
 }
@@ -487,11 +515,8 @@ void VolumeSetWidget::dicomDirDialogFinished() {
         progress_->hide();
     QApplication::restoreOverrideCursor();
 
-    if (volumeSet == 0)
-        return;
-
-    if (volumeSetContainer_->addVolumeSet(volumeSet))
-        updateContent();
+    if (volumeSet)
+        volumeSetContainer_->addVolumeSet(volumeSet);
 }
 
 void VolumeSetWidget::loadDicomFiles(const std::string& dir) {
@@ -518,32 +543,23 @@ void VolumeSetWidget::loadDicomFiles(const std::string& dir) {
         progress_->hide();
     QApplication::restoreOverrideCursor();
 
-    if (volumeSet == 0)
-        return;
-
-    if (volumeSetContainer_->addVolumeSet(volumeSet))
-        updateContent();
+    if (volumeSet)
+        volumeSetContainer_->addVolumeSet(volumeSet);
 }
 
 #else
 
-void VolumeSetWidget::dicomDirDialogFinished() {
-}
+void VolumeSetWidget::dicomDirDialogFinished() { }
 
-void VolumeSetWidget::loadDicomDir(const std::string& /*file*/) {
-}
+void VolumeSetWidget::loadDicomDir(const std::string& /*file*/) { }
 
-void VolumeSetWidget::loadDicomFiles(const std::string& /*dir*/) {
-}
+void VolumeSetWidget::loadDicomFiles(const std::string& /*dir*/) { }
 
 #endif // VRN_WITH_DCMTK
 
 // public slots:
 
 void VolumeSetWidget::buttonAddClicked() {
-    if (treeVolumeSets_ == 0)
-        return;
-
     const QList<QTreeWidgetItem*>& items = treeVolumeSets_->selectedItems();
     if (items.empty())
         return;
@@ -551,21 +567,15 @@ void VolumeSetWidget::buttonAddClicked() {
     QTreeWidgetItem* item = items.first();
     std::vector<std::string> filenames = openFileDialog();
     if (!filenames.empty()) {
-            VolumeRootItem* rootItem = dynamic_cast<VolumeRootItem*>(item);
-            VolumeSetItem* volsetItem = dynamic_cast<VolumeSetItem*>(item);
-            VolumeSeriesItem* volseriesItem = dynamic_cast<VolumeSeriesItem*>(item);
-            if (volsetItem != 0) {
-                addVolumeSeries(filenames, volsetItem->getItemData());
-                updateContent();
-            }
-            else if (volseriesItem != 0) {
-                addVolumeHandles(filenames, volseriesItem->getItemData());
-                updateContent();
-            }
-            else if (rootItem != 0) {
-                addVolumeSets(filenames);
-                updateContent();
-            }
+        VolumeRootItem* rootItem = dynamic_cast<VolumeRootItem*>(item);
+        VolumeSetItem* volsetItem = dynamic_cast<VolumeSetItem*>(item);
+        VolumeSeriesItem* volseriesItem = dynamic_cast<VolumeSeriesItem*>(item);
+        if (volsetItem != 0)
+            addVolumeSeries(filenames, volsetItem->getItemData());
+        else if (volseriesItem != 0)
+            addVolumeHandles(filenames, volseriesItem->getItemData());
+        else if (rootItem != 0)
+            addVolumeSets(filenames);
     }
 }
 
@@ -596,9 +606,6 @@ void VolumeSetWidget::buttonAddDICOMDirClicked() {
 }
 
 void VolumeSetWidget::buttonRemoveClicked() {
-    if (treeVolumeSets_ == 0)
-        return;
-
     const QList<QTreeWidgetItem*>& items = treeVolumeSets_->selectedItems();
     if (items.empty())
         return;
@@ -609,14 +616,9 @@ void VolumeSetWidget::buttonRemoveClicked() {
 
     if (item->getType() == typeid(VolumeSet*)) {
         VolumeSetItem* volsetItem = dynamic_cast<VolumeSetItem*>(item);
-        if (volsetItem != 0) {
+        if (volsetItem != 0)
             volumeSetContainer_->deleteVolumeSet(volsetItem->getItemData());
-            // finally delete the item itself
-            treeVolumeSets_->removeItemWidget(volsetItem, treeVolumeSets_->currentColumn());
-            delete volsetItem;
-        }
-    }
-    else if (item->getType() == typeid(VolumeSeries*)) {
+    } else if (item->getType() == typeid(VolumeSeries*)) {
         // if the item is a VolumeSeriesItem, cast it
         //
         VolumeSeriesItem* seriesItem = dynamic_cast<VolumeSeriesItem*>(item);
@@ -625,17 +627,12 @@ void VolumeSetWidget::buttonRemoveClicked() {
             // be a VolumeSetItem.
             //
             VolumeSetItem* volsetItem = dynamic_cast<VolumeSetItem*>(seriesItem->parent());
-            if ((volsetItem != 0) && (volsetItem->getItemData() != 0)) {
-                // now delete the VolumeSeries contained in the VolumeSeriesItem 
+            if ((volsetItem != 0) && (volsetItem->getItemData() != 0))
+                // now delete the VolumeSeries contained in the VolumeSeriesItem
                 // from the parent VolumeSet contained in the parent VolumeSetItem
                 volsetItem->getItemData()->deleteSeries(seriesItem->getItemData());
-            }
-            // finally delete the item itself
-            treeVolumeSets_->removeItemWidget(seriesItem, treeVolumeSets_->currentColumn());
-            delete seriesItem;
         }
-    }
-    else if (item->getType() == typeid(VolumeHandle*)) {
+    } else if (item->getType() == typeid(VolumeHandle*)) {
         // if the item is a VolumeHandleItem, cast it
         //
         VolumeHandleItem* handleItem = dynamic_cast<VolumeHandleItem*>(item);
@@ -644,20 +641,16 @@ void VolumeSetWidget::buttonRemoveClicked() {
             // be a VolumeSeriesItem.
             //
             VolumeSeriesItem* seriesItem = dynamic_cast<VolumeSeriesItem*>(handleItem->parent());
-            if ((seriesItem != 0) && (seriesItem->getItemData() != 0)) {
-                // now delete the VolumeHandle contained in the VolumeHandleItem 
+            if ((seriesItem != 0) && (seriesItem->getItemData() != 0))
+                // now delete the VolumeHandle contained in the VolumeHandleItem
                 // from the parent VolumeSeries contained in the parent VolumeSeriesItem
                 seriesItem->getItemData()->deleteVolumeHandle(handleItem->getItemData());
-            }
-            // finally delete the item itself
-            treeVolumeSets_->removeItemWidget(handleItem, treeVolumeSets_->currentColumn());
-            delete handleItem;
         }
     }
 }
 
 void VolumeSetWidget::comboModalitySelectionChanged(const QString& text) {
-    if (treeVolumeSets_ == 0 || text == "")
+    if (text.isEmpty())
         return;
 
     const QList<QTreeWidgetItem*>& items = treeVolumeSets_->selectedItems();
@@ -670,15 +663,9 @@ void VolumeSetWidget::comboModalitySelectionChanged(const QString& text) {
 
     VolumeSeries* series = vsi->getItemData();
     series->setModality(Modality(text.toStdString()));
-    treeVolumeSets_->blockSignals(true);
-    vsi->setText(0, QString(series->getLabel().c_str()));
-    treeVolumeSets_->blockSignals(false);
 }
 
 void VolumeSetWidget::treeItemSelectionChanged() {
-    if (treeVolumeSets_ == 0 || btnLoad_ == 0)
-        return;
-
     const QList<QTreeWidgetItem*>& items = treeVolumeSets_->selectedItems();
     if (items.empty())
         return;
@@ -692,8 +679,7 @@ void VolumeSetWidget::treeItemSelectionChanged() {
         btnUnload_->setEnabled(false);
         btnUnload_->setText("not possible");
         comboModality_->setEnabled(false);
-    }
-    else {
+    } else {
         btnLoadDICOM_->setEnabled(false);
         btnLoadDICOMDir_->setEnabled(false);
         btnUnload_->setEnabled(true);
@@ -703,8 +689,7 @@ void VolumeSetWidget::treeItemSelectionChanged() {
             btnLoad_->setText("add VolumeSeries");
             btnUnload_->setText("remove VolumeSet");
             comboModality_->setEnabled(false);
-        }
-        else if (item->getType() == typeid(VolumeSeries*)) {
+        } else if (item->getType() == typeid(VolumeSeries*)) {
             btnLoad_->setEnabled(true);
             btnLoad_->setText("add VolumeHandle");
             btnUnload_->setText("remove VolumeSeries");
@@ -712,8 +697,7 @@ void VolumeSetWidget::treeItemSelectionChanged() {
             VolumeSeriesItem* vsi = dynamic_cast<VolumeSeriesItem*>(item);
             if (vsi != 0)
                 setModalityComboIndex(vsi->getItemData()->getModality().getName());
-        }
-        else if (item->getType() == typeid(VolumeHandle*)) {
+        } else if (item->getType() == typeid(VolumeHandle*)) {
             btnLoad_->setEnabled(false);
             btnLoad_->setText("not possible");
             btnUnload_->setText("remove VolumeHandle");
@@ -741,31 +725,14 @@ void VolumeSetWidget::treeItemChanged(QTreeWidgetItem* item, int column) {
         VolumeSeries* series = volumeSeriesItem->getItemData();
         std::string prevName = series->getLabel();
         std::string name = volumeSeriesItem->text(column).toStdString();
-        if (name == prevName)
-            return;
-
-        treeVolumeSets_->blockSignals(true);
-        if (!series->setName(name))
-            volumeSeriesItem->setText(0, QString(prevName.c_str()));
-        else
-            volumeSeriesItem->setText(0, QString(series->getLabel().c_str()));
-        treeVolumeSets_->blockSignals(false);
-
-    }
-    else if (volumeHandleItem != 0) {
+        if (name != prevName)
+            series->setName(name);
+    } else if (volumeHandleItem != 0) {
         VolumeHandle* handle = volumeHandleItem->getItemData();
         float prevTimestep = handle->getTimestep();
         float timestep = volumeHandleItem->text(column).toFloat();
-        if (timestep == prevTimestep)
-            return;
-
-        treeVolumeSets_->blockSignals(true);
-        if (!handle->setTimestep(timestep)) {
-            char name[20] = {0};
-            sprintf(name, "%f", prevTimestep);//FIXME: use c++
-            volumeHandleItem->setText(0, name);
-        }
-        treeVolumeSets_->blockSignals(false);
+        if (timestep != prevTimestep)
+            handle->setTimestep(timestep);
     }
 }
 
@@ -773,16 +740,13 @@ void VolumeSetWidget::treeItemChanged(QTreeWidgetItem* item, int column) {
 //
 
 void VolumeSetWidget::appendVolumeSets(VolumeRootItem* node) {
-    if ((node == 0) || (volumeSetContainer_ == 0))
+    if (node == 0 || volumeSetContainer_ == 0)
         return;
 
-    const VolumeSet::VSPSet& volsets = volumeSetContainer_->getVolumeSets();
-    VolumeSet::VSPSet::const_iterator it = volsets.begin();
+    const VolumeSet::VolumeSetSet& volsets = volumeSetContainer_->getVolumeSets();
+    VolumeSet::VolumeSetSet::const_iterator it = volsets.begin();
     for (; it != volsets.end(); ++it) {
         VolumeSet* volumeSet = *it;
-        if (volumeSet == 0)
-            continue;
-              
         if ((availableLevelsMask_ & VolumeSetWidget::LEVEL_VOLUMESETS) != 0) {
             QTreeWidgetItem* volsetItem = new VolumeSetItem(volumeSet->getName(), volumeSet);
             volsetItem->setFlags(Qt::ItemIsDropEnabled | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -818,7 +782,8 @@ void VolumeSetWidget::appendVolumeSeries(QTreeWidgetItem* node, VolumeSet* const
 }
 
 void VolumeSetWidget::appendVolumeHandles(QTreeWidgetItem* node,
-                                          VolumeSeries* const volumeSeries) {
+                                          VolumeSeries* const volumeSeries)
+{
     if ((node == 0) || (volumeSeries == 0))
         return;
 
@@ -830,79 +795,29 @@ void VolumeSetWidget::appendVolumeHandles(QTreeWidgetItem* node,
             continue;
 
         if ((availableLevelsMask_ & VolumeSetWidget::LEVEL_VOLUMEHANDLES) != 0) {
-            char buffer[20] = {0};
-            sprintf(buffer, "%f", handle->getTimestep());//FIXME: use c++
-            QTreeWidgetItem* handleItem = new VolumeHandleItem(std::string(buffer), handle);
-            handleItem->setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEditable 
-                | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            std::ostringstream oss;
+            oss.setf(std::ios_base::fixed);
+            oss << handle->getTimestep();
+            QTreeWidgetItem* handleItem = new VolumeHandleItem(oss.str(), handle);
+            handleItem->setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEditable
+                                 | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             node->addChild(handleItem);
         }
     }
 }
 
-void VolumeSetWidget::createWidgets() {
-    treeVolumeSets_ = new VolumeSetTreeWidget(this);
-
-    groupAdd_ = new QGroupBox(tr("add"), this);
-    QVBoxLayout* groupLayout = new QVBoxLayout(groupAdd_);
-	btnLoad_ = new QPushButton(tr("add"), groupAdd_);
-    btnLoadDICOM_ = new QPushButton(tr("add DICOM slices"), groupAdd_);
-    btnLoadDICOMDir_ = new QPushButton(tr("add DICOMDIR"), groupAdd_);
-    groupLayout->addWidget(btnLoad_);
-    groupLayout->addWidget(btnLoadDICOM_);
-    groupLayout->addWidget(btnLoadDICOMDir_);
-    groupAdd_->setLayout(groupLayout);
-    groupAdd_->adjustSize();
-
-    groupRemove_ = new QGroupBox(tr("remove"), this);
-    groupLayout = new QVBoxLayout(groupRemove_);
-	btnUnload_ = new QPushButton(tr("remove"), groupRemove_);
-    groupLayout->addWidget(btnUnload_);
-    groupRemove_->setLayout(groupLayout);
-    groupRemove_->adjustSize();
-
-    groupModality_ = new QGroupBox(tr("modality"), this);
-    groupLayout = new QVBoxLayout(groupModality_);
-    comboModality_ = new QComboBox(groupModality_);
-
-    // add the names of all available modalities to the combo box
-    //
-    const std::vector<std::string>& modNames = Modality::getModalities();
-    modalityIndices_.clear();
-    for (size_t i = 0; i < modNames.size(); ++i) {
-        modalityIndices_.insert(std::pair<std::string, int>(modNames[i], static_cast<int>(i)));
-        comboModality_->addItem(QString(modNames[i].c_str()));
-    }
-    
-    
-    groupLayout->addWidget(comboModality_);
-    groupModality_->setLayout(groupLayout);
-    groupModality_->adjustSize();
-
-	layout_ = new QGridLayout(this);
-    layout_->addWidget(treeVolumeSets_, 0, 0, allowClose_ ? 4 : 3, 1);
-	layout_->addWidget(groupAdd_, 0, 1);
-	layout_->addWidget(groupRemove_, 1, 1);
-    layout_->addWidget(groupModality_, 2, 1);
-
-    if (allowClose_) {
-        QPushButton* closeBtn = new QPushButton(tr("Close"));
-        connect(closeBtn, SIGNAL(clicked()), this,  SLOT(accept()));
-        layout_->addWidget(closeBtn, 3, 1);
-    }
-    
-    setLayout(layout_);
-    adjustSize();
-}
-
 void VolumeSetWidget::setModalityComboIndex(const std::string& modalityName) {
-    if ((modalityName.empty()) || (comboModality_ == 0)
-        || (modalityIndices_.empty()))
+    if (modalityName.empty() || !comboModality_ || modalityIndices_.empty())
         return;
 
     ModalityIndexMap::iterator it = modalityIndices_.find(modalityName);
     if (it != modalityIndices_.end())
         comboModality_->setCurrentIndex(it->second);
+}
+
+void VolumeSetWidget::notify(const Observable* const /*source*/) {
+    updateContent();
+    emit volumeSetChanged();
 }
 
 } // namespace

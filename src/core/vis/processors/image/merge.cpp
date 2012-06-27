@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,14 +29,12 @@
 
 //TODO: load the right headers
 #include "voreen/core/vis/processors/image/merge.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 #include "tgt/assert.h"
 #include "tgt/glmath.h"
 #include "tgt/vector.h"
 
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen {
 
@@ -53,7 +51,7 @@ Merge::Merge()
 }
 
 const std::string Merge::getProcessorInfo() const {
-	return "Merges two sources";
+    return "Merges two sources";
 }
 
 void Merge::renderTwo(int source0, int source1, int /*pass*/) {

@@ -25,6 +25,7 @@
 #include "tgt/logmanager.h"
 
 #include <ctime>
+#include <stdio.h>
 
 using namespace std;
 
@@ -66,7 +67,7 @@ std::string Log::getTimeString() {
 	tm *now = 0;
 	time(&long_time);
 	now = localtime(&long_time);
-	char SzBuffer[300];
+	char SzBuffer[256];
     sprintf(SzBuffer, "%.2i:%.2i:%.2i", now->tm_hour, now->tm_min, now->tm_sec);
 	string temp(SzBuffer);
 	return temp;
@@ -77,7 +78,7 @@ std::string Log::getDateString() {
 	tm *now = 0;
 	time(&long_time);
 	now = localtime(&long_time);
-	char SzBuffer[300];
+	char SzBuffer[256];
     sprintf(SzBuffer, "%.2i.%.2i.%.4i", now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
 	string temp(SzBuffer);
 	return temp;
@@ -96,9 +97,12 @@ std::string Log::getLevelString(LogLevel level) {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-void TextLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &/*extendedInfo*/) {
+void TextLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
+                          const std::string &/*extendedInfo*/)
+{
     if (!file_)
         return;
+    
 	std::string output = "";
 	if (dateStamping_)
         output += "[" + getDateString() + "] ";
@@ -153,7 +157,9 @@ std::string ConsoleLog::getLevelColor(LogLevel) {
 }
 #endif
 
-void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &/*extendedInfo*/) {
+void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
+                             const std::string &/*extendedInfo*/)
+{
     std::string output = getLevelColor(level);
 
     if (dateStamping_)
@@ -218,10 +224,13 @@ std::string HtmlLog::getLevelColor(LogLevel level) {
     }
 }
 
-void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo) {
+void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
+                          const std::string &extendedInfo)
+{
     if (!file_)
         return;
-	std::string output = "\t\t\t<tr bgcolor=\"" + getLevelColor(level) + "\">\n";
+
+    std::string output = "\t\t\t<tr bgcolor=\"" + getLevelColor(level) + "\">\n";
 	if (dateStamping_)
         output += "\t\t\t\t<td>" + getDateString() + "</td>\n";
 	if (timeStamping_)
@@ -235,7 +244,7 @@ void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::str
 }
 
 HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-	file_ = fopen((LogMgr.getLogDir()+filename).c_str(),"w");
+	file_ = fopen((LogMgr.getLogDir()+filename).c_str(), "w");
 	tgtAssert(file_, "HtmltLog assert: failed to open file");
 
 	timeStamping_ = timeStamping;
@@ -245,7 +254,8 @@ HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStampi
 
     if (!file_)
         return;
-	std::string output = "<html>\n\t<head>\n\t\t<title>TGT Logfile</title>\n\t</head>\n\t"
+
+    std::string output = "<html>\n\t<head>\n\t\t<title>TGT Logfile</title>\n\t</head>\n\t"
         "<body>\n\n\t<table cellpadding=3 cellspacing=0 border=1>\n\t\t"
         "<CAPTION>TGT Logfile</CAPTION>\n\n\t\t<THEAD>\n\t\t\t<TR>\n";
 	if (dateStamping_)
@@ -275,16 +285,14 @@ bool HtmlLog::isOpen() {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 LogManager::LogManager(const std::string& logDir)
-    : logDir_(logDir), consoleLog_(0) {
-}
+    : logDir_(logDir), consoleLog_(0)
+{}
 
 
 LogManager::~LogManager() {
 	vector<Log*>::iterator it;
- 	for ( it = logs_.begin(); it != logs_.end(); it++ )	{
-		if (*it != 0)
-			delete (*it);
-	}
+ 	for (it = logs_.begin(); it != logs_.end(); it++)
+        delete (*it);
     
     if (consoleLog_)
         delete consoleLog_;
@@ -294,35 +302,22 @@ void LogManager::reinit(const std::string& logDir) {
     logDir_ = logDir;
 }
 
-void LogManager::log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo) {
-    #ifndef tgtDebug
-// 		if (level == Debug) return;
-    #endif
+void LogManager::log(const std::string &cat, LogLevel level, const std::string &msg,
+                     const std::string &extendedInfo)
+{
     vector<Log*>::iterator it;
-    for ( it = logs_.begin(); it != logs_.end(); it++ ) {
-        if (*it != 0) {
+    for (it = logs_.begin(); it != logs_.end(); it++) {
+        if (*it != 0)
             (*it)->log(cat, level, msg, extendedInfo);
-        }
     }
     if (consoleLog_)
         consoleLog_->log(cat, level, msg, extendedInfo);
 }
 
-void LogManager::logf(const std::string &cat, LogLevel level, const char* Format, ... ) {
-	char Text[256];
-	va_list ap;
-	va_start(ap, Format);
-	vsprintf(Text, Format, ap);
-	va_end(ap);
-	std::string StrText = Text;
-	log(cat, level, StrText);
-}
-
 void LogManager::addLog(Log* log) {
     ConsoleLog* clog = dynamic_cast<ConsoleLog*>(log);
     if (clog) {
-        if (consoleLog_) 
-            delete consoleLog_;
+        delete consoleLog_;
         consoleLog_ = clog;
     }
     else

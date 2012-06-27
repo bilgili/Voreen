@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,6 +31,7 @@
 #define VRN_VOREENTOOLWINDOW_H
 
 #include <QWidget>
+#include <QDockWidget>
 
 namespace voreen {
 
@@ -38,20 +39,46 @@ class VoreenToolWindow : public QWidget {
     Q_OBJECT
 public:
     VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "");
-
     QAction* action() const { return action_; }
 
 signals:
     void visibilityChanged(bool visible);
-    
+
 protected:
     void hideEvent(QHideEvent* event);
     void showEvent(QShowEvent* event);
-    
+
 private:
     QAction* action_;
 };
 
-} // namespace voreen
+class VoreenToolDockWindowTitle : public QWidget {
+	Q_OBJECT
+public:
+	VoreenToolDockWindowTitle(QDockWidget* parent);
+	virtual QSize sizeHint() const;
+	virtual QSize minimumSizeHint() const;
+protected:
+	virtual void paintEvent(QPaintEvent *event);
+	void mousePressEvent(QMouseEvent* event);
+private:
+	QPixmap closeButton_;
+	QPixmap undockButton_;
+};
+
+class VoreenToolDockWindow : public QDockWidget {
+	Q_OBJECT
+public:
+	VoreenToolDockWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "");
+
+signals:
+	void visibilityChanged(bool visible);
+
+protected:
+	void hideEvent(QHideEvent* event);
+	void showEvent(QShowEvent* event);
+};
+
+} // namespace
 
 #endif // VRN_VOREENTOOLWINDOW_H

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,34 +28,33 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/depthmask.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
 DepthMask::DepthMask()
-    : GenericFragment("pp_depthmask"),
+    : ImageProcessor("pp_depthmask"),
     lambda_("set.depthMaskLambda", "Lambda", 5.0f, 0.0f, 10.0f)
 {
     setName("Depth Masking");
     addProperty(&lambda_);
 
-	createInport("image.inport");
-	createOutport("image.outport");
+    createInport("image.inport");
+    createOutport("image.outport");
 }
 
 const std::string DepthMask::getProcessorInfo() const {
-	return "Performs unsharp masking the depth buffer as presented by Luft et al. in 2006.";
+    return "Performs unsharp masking the depth buffer as presented by Luft et al. in 2006.";
 }
 
 void DepthMask::process(LocalPortMapping* portMapping) {
-	int source = portMapping->getTarget("image.inport");
+    int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 
     tc_->setActiveTarget(dest, "DepthMask::process");
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	analyzeDepthBuffer(source);
+    analyzeDepthBuffer(source);
 
     // bind shading result from previous ray cast
     glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));

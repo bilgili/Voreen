@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,19 +28,19 @@
  **********************************************************************/
 
 #ifndef VRN_COMMANDS_REGISTRATION_H
-#define VRN_COMMANDS_REGISTRATION_H 
+#define VRN_COMMANDS_REGISTRATION_H
 
-#include "command.h"
+#include "voreen/core/cmdparser/command.h"
 #include "voreen/core/volume/volumeatomic.h"
 
 #include "tgt/math.h"
 
-namespace voreen { 
+namespace voreen {
 
 class CommandRegistration : public Command {
 
 public:
-    CommandRegistration(){};
+    CommandRegistration(const std::string& name = "", const std::string& shortName = "", const std::string& info = "", const std::string& parameterList = "", const int argumentNum = 1);
     bool execute(const std::vector<std::string>& parameters) = 0;
 
 protected:
@@ -50,15 +50,17 @@ protected:
 class CommandRegistrationUniformScaling : public CommandRegistration {
 public:
     CommandRegistrationUniformScaling();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
-   
+
 };
 
 class CommandRegistrationAffine : public CommandRegistration {
 public:
     CommandRegistrationAffine();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
-   
+
 };
 
 }   //namespace voreen

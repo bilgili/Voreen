@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -57,26 +57,26 @@ public:
      * @param processors the processors to share their properties
      * @param equalize if true the processors properties will be adjusted when they are added
      */
-    PropertySet(std::vector<Processor*> processors, bool equalize = true);    
+    PropertySet(std::vector<Processor*> processors, bool equalize = true);
 
 
-	virtual const Identifier getClassName() const {return "Miscellaneous.Propertyset";}
-    
+    virtual const Identifier getClassName() const {return "Miscellaneous.Propertyset";}
+
     /**
      * Set the processors for this property set.
      */
     void setProcessors(std::vector<Processor*> processors);
-    
+
     /**
      * Add a processor to the Processor vector.
      */
     void addProcessor(Processor* processor);
-    
+
     /**
      * Remove a Processor from the Processor vector.
      */
     bool removeProcessor(Processor* processor);
-    
+
     /**
      * Clear the processor vector.
      */
@@ -88,10 +88,10 @@ public:
     std::vector<Processor*> getProcessors() const { return processors_; }
 
     /*
-     * Pure virtual function from superclass. 
+     * Pure virtual function from superclass.
      */
     virtual const Identifier getClassName() {return "PropertySet.PropertySet";}
-    virtual Processor* create() {return new PropertySet;}
+    virtual Processor* create() const {return new PropertySet;}
     void process(LocalPortMapping* /*localPortMapping*/) {}
 
 
@@ -101,11 +101,6 @@ public:
     void setProperties(Identifier id);
 
     virtual void processMessage(Message* msg, const Identifier& dest);
-
-    /**
-     * Returns the Transfer Function.
-     */
-    TransFunc* getTransFunc();
 
     /**
      * Returns the volumeHandle that is used in this propertyset
@@ -127,7 +122,7 @@ public:
     */
     virtual TiXmlElement* serializeToXml() const;
     virtual TiXmlElement* serializeToXml(const std::map<Processor*, int> idMap) const;
-    
+
     /**
     * Updates the PropertySet from xml
     */
@@ -138,6 +133,7 @@ public:
     void removeFromMeta(std::string elemName) { meta_.removeData(elemName); }
     void clearMeta() { meta_.clearData(); }
     TiXmlElement* getFromMeta(std::string elemName) { return meta_.getData(elemName); }
+    std::vector<TiXmlElement*> getAllFromMeta() { return meta_.getAllData(); }
 
     static const std::string XmlElementName_;
 
@@ -147,15 +143,17 @@ public:
      */
     static PropertySet* getTmpPropSet();
 
+    virtual std::string getXmlElementName() const;
+
 private:
     // properties get created depending on the contained processors
     void createProperties();
 
     std::vector<Processor*> processors_;
     bool equalize_;
-    
+
     static PropertySet* tmpPropSet_;
-    
+
     MetaSerializer meta_;
 };
 

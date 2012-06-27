@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,25 +47,25 @@ public:
     QPointF point() { return p_; }
     void setPoint(QPoint p);
     qreal distance(const QPoint & p) const;
-    
+
 public slots:
     /**
      * This will stop the timer if p is farer away from the initialisation point than radius and returns true
      * otherwise false
      */
     bool isDistant(const QPoint & p);
-    
+
     /**
      * This will restart the timer if p is farer away from the initialisation point than radius and set the point to p
      */
     void resetIfDistant(const QPoint & p, int msec);
-    
+
 protected:
 
     QPoint p_;
     qreal radius_;
 };
-    
+
 } //namespace voreen
 
 #endif // VRN_RPTTOOLTIPTIMER_H

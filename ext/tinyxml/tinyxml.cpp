@@ -1296,15 +1296,29 @@ void TiXmlAttribute::StreamOut( TIXML_OSTREAM * stream ) const
 
 int TiXmlAttribute::QueryIntValue( int* ival ) const
 {
-	if ( sscanf( value.c_str(), "%d", ival ) == 1 )
+	if ( sscanf( value.c_str(), "%d", ival ) == 1 ) 
 		return TIXML_SUCCESS;
 	return TIXML_WRONG_TYPE;
 }
 
 int TiXmlAttribute::QueryDoubleValue( double* dval ) const
 {
-	if ( sscanf( value.c_str(), "%lf", dval ) == 1 )
+#ifndef WIN32
+    // need to switch to default locale "C" to prevent problems when current locale uses comma
+    // instead of decimal point
+    const char* oldlocale = setlocale(LC_NUMERIC, "C");
+#endif
+    
+	if ( sscanf( value.c_str(), "%lf", dval ) == 1 ) {
 		return TIXML_SUCCESS;
+#ifndef WIN32
+        setlocale(LC_NUMERIC, oldlocale);
+#endif
+    }
+
+#ifndef WIN32
+        setlocale(LC_NUMERIC, oldlocale);
+#endif   
 	return TIXML_WRONG_TYPE;
 }
 
@@ -1321,13 +1335,23 @@ void TiXmlAttribute::SetIntValue( int _value )
 
 void TiXmlAttribute::SetDoubleValue( double _value )
 {
-	char buf [256];
+#ifndef WIN32
+    // need to switch to default locale "C" to prevent problems when current locale uses comma
+    // instead of decimal point
+    const char* oldlocale = setlocale(LC_NUMERIC, "C");
+#endif
+
+    char buf [256];
 	#if defined(TIXML_SNPRINTF)		
 		TIXML_SNPRINTF( buf, sizeof(buf), "%lf", _value);
 	#else
 		sprintf (buf, "%lf", _value);
 	#endif
 	SetValue (buf);
+
+#ifndef WIN32
+        setlocale(LC_NUMERIC, oldlocale);
+#endif   
 }
 
 int TiXmlAttribute::IntValue() const

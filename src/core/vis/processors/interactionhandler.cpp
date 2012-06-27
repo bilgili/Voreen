@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,14 +28,15 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/interactionhandler.h"
+#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen{
 
 
 InteractionHandler::InteractionHandler() : tgt::EventListener(), defaultEventTypes_(tgt::Event::ALLEVENTTYPES) {
-	
+
 }
-    
+
 InteractionHandler::~InteractionHandler(){
     MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_, (tgt::EventListener*)this));
 }

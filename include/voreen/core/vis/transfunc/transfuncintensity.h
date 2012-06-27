@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,179 +27,228 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VRN_TRANSFUNCINTENSITYKEYS_H
-#define VRN_TRANSFUNCINTENSITYKEYS_H
-
-#include "tgt/gpucapabilities.h"
-#include "tgt/vector.h"
+#ifndef VRN_TRANSFUNCINTENSITY_H
+#define VRN_TRANSFUNCINTENSITY_H
 
 #include "voreen/core/vis/transfunc/transfunc.h"
 
-#ifdef VRN_WITH_DEVIL
-    #include <IL/il.h>
-#endif
+#include "tgt/vector.h"
 
 namespace voreen {
 
 class TransFuncMappingKey;
-/*
-class TransFuncIntensity : public TransFunc {
-    virtual std::string getShaderDefines();
-};
-*/
-//---------------------------------------------------------------------------
 
 /**
  * One dimensional transfer function based on intensity value.
- * \sa TransFuncMappingKey, TransFuncIntensity
  */
 class TransFuncIntensity : public TransFunc {
 public:
-    /** Tries to generate Texture of size width, testing for max. tex size, NPOT support, etc.
-     * Warning: Needs opengl context!
-     * \param width The resulting texture width
+    /**
+     * Constructor
+     *
+     * @param width desired width of the transfer function
      */
     TransFuncIntensity(int width = 256);
 
-    /** Copy constructor.
-     * Warning: Needs opengl context!
-     * \param tf The adress of the TransFuncIntensity instance, which is to be copied.
+    /**
+     * Copy constructor.
+     *
+     * @param tf the adress of the TransFuncIntensity instance, which is copied
      */
     TransFuncIntensity(const TransFuncIntensity& tf);
-    
+
+    /**
+     * Destructor - deletes the keys of the transfer function
+     */
     virtual ~TransFuncIntensity();
 
     /**
-     * Generates a texture with the appropriate width.
-     * \param width The width of the texture being created
+     * Operator to compare two TransFuncIntensity objects. True is returned when the width of the
+     * texture is the same and all keys are equal. Otherwise false is returned.
+     *
+     * @param tf transfer function that is compared with this transfer function
+     * @return true when the keys of both transfer functions are equal
      */
-    void createTex(int width);
+    bool operator==(const TransFuncIntensity& tf);
+
+    /**
+     * Operator to compare two TransFuncIntensity objects. False is returned when the width of the
+     * texture is the same and all keys are equal. Otherwise true is returned.
+     *
+     * @param tf transfer function that is compared with this transfer function
+     * @return true when the keys of both transfer functions differ or the width of the texture
+     *         is not the same, false otherwise
+     */
+    bool operator!=(const TransFuncIntensity& tf);
+
+    /**
+     * Returns a define for the usage of this transfer function in a shader.
+     * More specifically, "#define TF_SAMPLER_TYPE sampler1D" is returned.
+     *
+     * @return define for the usage of this transfer function in a shader
+     */
+    const std::string getShaderDefines() const;
+
+    /**
+     * Returns a string representation of the samplertype used by this transfer function, e.g.
+     * "sampler1D" is returned.
+     *
+     * @return the sampler type used by this transfer function
+     */
+    const std::string getSamplerType() const;
+
+    /**
+     * Generates the texture for the current transfer function.
+     */
+    void createTex();
 
     /**
      * Creates a default function.
      * Generates two keys:
-     * One at intensity 0 with the color (0,0,0,0) ; 
+     * One at intensity 0 with the color (0,0,0,0) ;
      * another one at intensity 1 with the color (255,255,255,255)
      */
     void createStdFunc();
 
     /**
-     * Creates the default function for alpha.
-     * Generates two keys:
-     * One at intensity 0 with the color (91 173 255 255)
-     * another one at intensity 1 with the color (91 173 255 255)
-     */
-    void createAlphaFunc();
-
-    /**
      * Calculates the average for the segment [segStart,segEnd).
-     * \param segStart The start of the segment
-     * \param segEnd The end of the segment; the value itself is not part of the calculation
-     * \return A vector containing the average
+     *
+     * @param segStart the start of the segment
+     * @param segEnd the end of the segment; the value itself is not part of the calculation
+     * @return a vector containing the average value for the segment
      */
-    virtual tgt::vec4 getMeanValue(float segStart, float segEnd) const;
+    tgt::vec4 getMeanValue(float segStart, float segEnd) const;
 
     /**
      * Returns the value to which the input value is being mapped.
      * The procedures handles missing keys and out-of-range values gracefully.
-     * \param value The intensity value for which the mapping is requested
-     * \return The value the input value is mapped to.
+     *
+     * @param value the intensity value for which the mapping is requested
+     * @return the value the input value is mapped to.
      */
     tgt::col4 getMappingForValue(float value) const;
-    
-    /**
-     * Re-generates the texture from the already existing keys.
-     * If the texture was empty before the call, a new texture is created automatically
-     */
-    virtual void updateTexture();
 
     /**
-     * Re-generates the texture from the already existing keys, but restricts the output to an
-     * area between leftValue and rightValue. That means, the transfer function will be limited
-     * to this area.
-     * \param leftValue The lower boundary
-     * \param rightValue The upper boundary
-     * \sa updateTexture()
+     * Re-generates the texture from the already existing keys.
+     * If the texture was empty before the call, a new texture is created automatically.
      */
-    virtual void updateTexture(int leftValue, int rightValue);
+    void updateTexture();
 
     /**
      * Returns the number of keys in this transfer function.
-     * \return the number of keys
+     *
+     * @return the number of keys
      */
     int getNumKeys() const;
 
     /**
      * Returns the key at i-th position. Keys are sorted by their intensities in ascending order.
-     * If a value outside of [0, getNumKeys] is passed, it will be clamped to the appropirate values.
-     * \param the i-th key will be returned
-     * \return the pointer to the appropriate key
+     * If a value outside of [0, getNumKeys()] is passed, it will be clamped to the appropriate values.
+     *
+     * @param i the i-th key will be returned
+     * @return the pointer to the appropriate key
      */
     TransFuncMappingKey* getKey(int i) const;
 
     /**
      * Returns all keys. Keys are sorted by their intensities in ascending order.
-     * \return a vector containing all the keys
+     *
+     * @return a vector containing all the keys
      */
     const std::vector<TransFuncMappingKey*> getKeys() const;
 
     /**
+    * Replaces the current keys by the passed ones.
+    *
+    * @param keys the new keys
+    */
+    void setKeys(std::vector<TransFuncMappingKey*> keys);
+
+    /**
      * Adds a key to the property mapping function.
      * It will be automatically inserted into the correct position.
-     * \param The key to be added.
+     *
+     * @param key the key to be added
      */
     void addKey(TransFuncMappingKey* key);
 
     /**
      * Updates a key within the property mapping function.
      * Call this method when intensity of a key is changed.
-     * \param The key to be updated.
+     *
+     * @param key the key to be updated
      */
     void updateKey(TransFuncMappingKey* key);
 
     /**
-     * Remove a key from the property mapping function.
+     * Removes the given key from the transfer function.
      * Also deletes the passed key.
-     * \param The key to be removed.
+     *
+     * @param key the key that will be removed.
      */
     void removeKey(TransFuncMappingKey* key);
 
     /**
-     * Removes all keys from the property mapping function.
+     * Removes all keys from the transfer function.
      */
     void clearKeys();
 
     /**
-     * This method returns whether the mapping function is not constant,
-     * that is if any other key is not the same as the first one.
-     * \return Whether the mapping is significant.
-     */
-    bool isSignificant() const;
-
-    /**
      * This method returns whether the mapping function is empty.
      * i.e., it contains no mapping keys.
-     * \return Is the mapping function empty?
+     *
+     * @return Is the mapping function empty?
      */
     bool isEmpty() const;
 
-    virtual std::string getShaderDefines();
-
     /**
-     * Saves the mapping function as a xml file.
-     * Use extension .tfi as extension.   Any data in the file will be overwritten
-     * \param filename The location of the file
-     * \return true, if the operation was successfull ; false otherwise
+     * Saves the transfer function to a file. Any data in the file will be overwritten.
+     * The supported extensions include:
+     * tfi, lut, png
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true, if the operation was successfull, false otherwise
      */
     bool save(const std::string& filename);
 
     /**
-     * Saves TF as png image.
-     * Any data in the file will be overwritten.
-     * \param width The width of the resulting png-images
-     * \return true, if the operation was successful ; false otherwise
+     * Saves transfer function to a xml file. The extension of the file is tfi.
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true, if the operation was successfull, false otherwise
      */
-    bool savePNG(const std::string& filename, int width);
+    bool saveTfi(const std::string& filename);
+
+    /**
+     * Saves the XML description of all keys to the given TiXmlElement.
+     *
+     * @param root the xml element the description of keys is saved to
+     */
+    void saveKeys(TiXmlElement* root);
+
+    /**
+     * Saves the lower and upper threshold values to the given xml root element.
+     *
+     * @param root the xml element the thresholds are saved to.
+     */
+    void saveThreshold(TiXmlElement* root);
+
+    /**
+     * Saves transfer function as image using the DevIL library.
+     * Any data in the file will be overwritten.
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true if the operation was successful, false otherwise
+     */
+    bool saveImage(const std::string& filename);
+
+    /**
+     * Saves the transfer function as a regular text file with 255 rows of R G B values.
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true if the operation was successful, false otherwise
+     */
+    bool saveLUT(const std::string& filename);
 
     /**
      * The central entry point for loading a transfer function. The file extension is extracted
@@ -207,49 +256,83 @@ public:
      * If there is no extension, loading will be unsuccessful.
      *
      * Currently supported extensions include:
-     * tfi , lut , table , plist , bmp , png
+     * tfi , lut , table , plist , jpg , png
      *
-     * \param filename The filename, which should be opened
-     * \return true, if loading succeeds ; false otherwise
-     * \sa loadXML(),loadImageJ(), loadTextTable(), loadOsirixCLUT()
+     * @param filename the name of the file, which should be opened
+     * @return true if loading succeeds, false otherwise
      */
     bool load(const std::string& filename);
 
+    /**
+     * Loads the keys of the transfer function from the given xml element.
+     *
+     * @param keys the xml element that contains the description of the keys of the transfer function
+     */
+    void loadKeys(TiXmlElement* keys);
+
+    /**
+     * Loads the threshold values from the given xml element.
+     *
+     * @param root xml element that contains a xml representation of the threshold values
+     */
+    void loadThreshold(TiXmlElement* root);
+
+    /**
+     * Sets the lower and upper intensity thresholds to given values. The thresholds have to be normalized
+     * to the range [0,1]. The texture is not updated at this time.
+     *
+     * @param lower lower threshold
+     * @param upper upper threshold
+     */
+    void setThresholds(float lower, float upper);
+
+    /**
+     * Sets the lower and upper intensity thresholds to given values. The thresholds have to be normalized
+     * to the range [0,1]. The texture is not updated at this time.
+     *
+     * @param threshold lower and upper threshold
+     */
+    void setThresholds(const tgt::vec2& thresholds);
+
+    /**
+     * Returns the lower and upper intensity thresholds of the tranfer function.
+     * The thresholds are normalized within the range [0,1].
+     */
+    tgt::vec2 getThresholds() const;
+
 protected:
     /**
-     * The internal representation of the set of keys
-     */
-    std::vector<TransFuncMappingKey*> keys_;
-    static const std::string loggerCat_;
-
-    /**
      * Loads a transfer function out of an ordinary image file. For this method, DevIL is required.
-     * \param filename The filename, which should be opened
-     * \return true, if loading was successful ; false otherwise
+     *
+     * @param filename the name of the file, which should be opened
+     * @return true if loading succeeds, false otherwise
      */
-    bool loadWithDevIL(const std::string& filename);
+    bool loadImage(const std::string& filename);
 
     /**
-     * Loads an mapping function from an xml file.
-     * \param filename The location of the file, which should be opened
-     * \return true, if the operation was successfull ; false otherwise
+     * Loads a transfer function from an file with ending tfi.
+     *
+     * @param filename the name of the file, which should be opened
+     * @return true if loading succeeds, false otherwise
      */
-    bool loadFromXML(const std::string& filename);
+    bool loadTfi(const std::string& filename);
 
     /**
      * Loads a transfer function from a text file.
      * This format is used by Klaus Engel in his preintegration volume renderer.
      * Its just 256 rows of 4 entries each. -> RGBA
-     * \param filename The filename of the text table
-     * \return true, if the operation was successful ; false otherwise
+     *
+     * @param filename the name of the file, which should be opened
+     * @return true if loading succeeds, false otherwise
      */
     bool loadTextTable(const std::string& filename);
 
     /**
      * Loads a transfer function from an Osirix CLUT file.
      * Osirix CLUT doesn't support an alpha channel. So all values will be set opaque.
-     * \param filename The filename of the CLUT file
-     * \return true, if the operation was successful, false otherwise
+     *
+     * @param filename the name of the CLUT file
+     * @return true if loading succeeds, false otherwise
      */
     bool loadOsirixCLUT(const std::string& filename);
 
@@ -261,20 +344,20 @@ protected:
      * ii)  binary LUT's saved in a raw format, lacking additional data.
      * iii) a LUT in a simple text format, also with a 'missing' header
      *
-     * \param filename The sourcefile which is to be opened
-     * \return true, if the load was successful ; false otherwise
+     * @param filename the name of the file, which should be opened
+     * @return true if loading succeeds, false otherwise
      */
     bool loadImageJ(const std::string& filename);
 
     /**
-    * Opens a binary LUT-File. There a two possibilities for a binary file; raw and NIH
-    * the NIH type includes additional data about version information and the number of colors.
-    * No alpha-channel information is included in a LUT file. All values will be opaque.
-    * 
-    * \param fileStream The already opened file stream used to extract the data
-    * \param raw Should the file be treated as raw data?
-    * \return 256 if the load was successful,  0 otherwise
-    */
+     * Opens a binary LUT-File. There a two possibilities for a binary file; raw and NIH
+     * the NIH type includes additional data about version information and the number of colors.
+     * No alpha-channel information is included in a LUT file. All values will be opaque.
+     *
+     * @param fileStream the already opened file stream used to extract the data
+     * @param raw should the file be treated as raw data?
+     * @return 256 if the load was successful, 0 otherwise
+     */
     int openImageJBinary(std::ifstream& fileStream, bool raw);
 
     /**
@@ -285,8 +368,8 @@ protected:
      * In both cases rows beginning with a non-integer character will be ignored.
      * No alpha-channel information is included in a the file. All values will be opaque.
      *
-     * \param fileStream The already opened file stream used to extract the data
-     * \return 256 if the load was successful,  0 otherwise
+     * @param fileStream the already opened file stream used to extract the data
+     * @return 256 if the load was successful, 0 otherwise
      */
     int openImageJText(std::ifstream& fileStream);
 
@@ -296,17 +379,19 @@ protected:
      * The method extrapolates the extrema of the colorchannels and puts a key in those places,
      * where the difference between neighboring entries is not linear.
      *
-     * \param data An array of width*4 entries of bytes
-     * \param width How many pairs of RGBA are given? width must be >= 2
+     * @param data an array of width*4 entries of bytes
      */
-    void generateKeys(char* data, int width = 256);
+    void generateKeys(unsigned char* data);
 
-    /** 
+    /**
      * Used not only to extract neccessary information but also to fast-forward through the header
      * Buffersize is given static, because the procedure shouldn't be edited if 64bit compiler is used
      * (and therefor the sizes i.e. int, double might change)
      * These functions are 'inline', because it might be faster if they are inlined by the compiler
      * (okay, not quite _that_ convincing i admit).
+     *
+     * @param stream the already opened file stream used to extract the data
+     * @return the read int value
      */
     inline int readInt(std::ifstream& stream);
 
@@ -319,6 +404,16 @@ protected:
      * \sa TransFuncIntensity::readInt(std::ifstream& stream)
      */
     inline double readDouble(std::ifstream& stream);
+
+
+    std::vector<TransFuncMappingKey*> keys_; ///< internal representation of the transfer function as a set of keys
+
+    float lowerThreshold_; ///< lower threshold
+    float upperThreshold_; ///< upper threshold
+
+    static const std::string loggerCat_; ///< logger category
 };
-}
-#endif //VRN_TRANSFUNCINTENSITYKEYS_H
+
+} // namespace voreen
+
+#endif // VRN_TRANSFUNCINTENSITY_H

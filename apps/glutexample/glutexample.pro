@@ -5,6 +5,8 @@ TARGET = glutexample
 TEMPLATE	= app
 LANGUAGE	= C++
 
+CONFIG += console
+
 CONFIG -= qt
 
 

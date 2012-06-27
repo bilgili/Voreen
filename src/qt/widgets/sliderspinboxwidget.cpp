@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,7 +39,7 @@ namespace voreen {
 SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent ) :
     QWidget(parent)
 {
-	setObjectName(QString::fromUtf8("SliderSpinBoxWidget"));
+    setObjectName(QString::fromUtf8("SliderSpinBoxWidget"));
     resize(QSize(156, 86).expandedTo(minimumSizeHint()));
     QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
     sizePolicy.setHorizontalStretch(0);
@@ -80,20 +80,20 @@ SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent ) :
     connect( sliderSLD, SIGNAL( sliderReleased() ), this, SLOT( sliderReleased() ) );
     connect( spinBoxSPB, SIGNAL( valueChanged(int) ), this, SLOT( setValue(int) ) );
     connect( spinBoxSPB, SIGNAL( editingFinished() ), this, SLOT( spinEditingFinished() ) );
-	value_ = getValue();
+    value_ = getValue();
 }
 
 QSize SliderSpinBoxWidget::sizeHint () const {
-	return QSize(160,22);
+    return QSize(160,22);
 }
 
 void SliderSpinBoxWidget::setValue(int value) {
-	if (value != value_) {
-		value_ = value;
-		sliderSLD->setValue(value_);
-		spinBoxSPB->setValue(value_);
-		emit valueChanged(value_);
-	}
+    if (value != value_) {
+        value_ = value;
+        sliderSLD->setValue(value_);
+        spinBoxSPB->setValue(value_);
+        emit valueChanged(value_);
+    }
 }
 
 void SliderSpinBoxWidget::setMaxValue( int value ) {
@@ -109,15 +109,15 @@ void SliderSpinBoxWidget::setMinValue( int value ) {
 }
 
 int SliderSpinBoxWidget::getMinValue()const {
-	return sliderSLD->minimum();
+    return sliderSLD->minimum();
 }
 
 int SliderSpinBoxWidget::getMaxValue()const {
-	return sliderSLD->maximum();
+    return sliderSLD->maximum();
 }
 
 int SliderSpinBoxWidget::getValue()const {
-	return sliderSLD->value();
+    return sliderSLD->value();
 }
 
 void SliderSpinBoxWidget::sliderPressed() {
@@ -134,7 +134,7 @@ void SliderSpinBoxWidget::spinEditingFinished() {
 }
 
 bool SliderSpinBoxWidget::isSliderDown()const {
-	return sliderSLD->isSliderDown();
+    return sliderSLD->isSliderDown();
 }
 
 void SliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
@@ -149,7 +149,7 @@ void SliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
 DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) :
     QWidget(parent)
 {
-	setObjectName(QString::fromUtf8("DoubleSliderSpinBoxWidget"));
+    setObjectName(QString::fromUtf8("DoubleSliderSpinBoxWidget"));
     resize(QSize(156, 86).expandedTo(minimumSizeHint()));
     QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
     sizePolicy.setHorizontalStretch(0);
@@ -196,19 +196,19 @@ DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) :
 }
 
 QSize DoubleSliderSpinBoxWidget::sizeHint () const {
-	return QSize(160,22);
+    return QSize(160,22);
 }
 
 void DoubleSliderSpinBoxWidget::setValue(double value) {
-	if (value != value_) {
-		value_ = value;
-		spinBoxSPB->setValue(value_);
+    if (value != value_) {
+        value_ = value;
+        spinBoxSPB->setValue(value_);
         sliderSLD->blockSignals(true);
         sliderSLD->setValue( static_cast<int>((spinBoxSPB->value() - spinBoxSPB->minimum()) /
                                    (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum()) );
         sliderSLD->blockSignals(false);
         emit valueChanged(value_);
-	}
+    }
 }
 
 void DoubleSliderSpinBoxWidget::setMaxValue( double value ) {
@@ -235,13 +235,13 @@ void DoubleSliderSpinBoxWidget::setDecimals(int decimals) {
 
     spinBoxSPB->setDecimals(decimals);
 }
-    
+
 double DoubleSliderSpinBoxWidget::getMaxValue() const {
-	return spinBoxSPB->maximum();
+    return spinBoxSPB->maximum();
 }
 
 double DoubleSliderSpinBoxWidget::getValue() const {
-	return spinBoxSPB->value();
+    return spinBoxSPB->value();
 }
 
 double DoubleSliderSpinBoxWidget::getSingleStep() const {
@@ -251,7 +251,7 @@ double DoubleSliderSpinBoxWidget::getSingleStep() const {
 int DoubleSliderSpinBoxWidget::getDecimals() const {
     return spinBoxSPB->decimals();
 }
-    
+
 void DoubleSliderSpinBoxWidget::sliderPressed() {
     emit sliderPressedChanged(true);
 }
@@ -266,7 +266,7 @@ void DoubleSliderSpinBoxWidget::spinEditingFinished() {
 }
 
 bool DoubleSliderSpinBoxWidget::isSliderDown() const {
-	return sliderSLD->isSliderDown();
+    return sliderSLD->isSliderDown();
 }
 
 void DoubleSliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {

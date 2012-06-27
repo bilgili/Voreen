@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,53 +35,150 @@
 namespace voreen {
 
 /**
-*   One of multiple Keys that define a TransfuncIntensityKeys.
-*   Each key has a intensity at which it is located and can be split in two parts
-*   with different colors.
-*/
+ * One of multiple keys that define a TransfuncIntensity.
+ * Each key has an intensity at which it is located and a color.
+ * Furthermore it can be split in two parts with two different colors.
+ */
 class TransFuncMappingKey {
 public:
+    /**
+     * Constructor
+     *
+     * @param i intensity at which this key is located
+     * @param color the color of this key
+     */
     TransFuncMappingKey(float i, const tgt::col4& color);
-    virtual ~TransFuncMappingKey();
-    
+
+    /**
+     * Standard Destructor
+     */
+    ~TransFuncMappingKey();
+
+    /**
+     * Operator to compare two TransFuncMappingKeys. True is returned when both keys
+     * have the same intensity, color and split status. Otherwise false is returned.
+     *
+     * @param key key that is compared with this key
+     * @return true if both keys have same split status, same color and same intensity, false otherwise
+     */
+    bool operator==(const TransFuncMappingKey& key);
+
+    /**
+     * Operator to compare two TransFuncMappingKeys. True is returned when both keys
+     * differ in color, intensity or split status. Otherwise false is returned.
+     *
+     * @param key key that is compared with this key
+     * @return true if both keys differ in split status, color or intensity, false otherwise
+     */
+    bool operator!=(const TransFuncMappingKey& key);
+
+    /**
+     * Sets the color of the left part of the key to the given value.
+     *
+     * @param color color the left part of the key will be set to
+     */
     void setColorL(const tgt::col4& color);
+
+    /**
+     * Sets the color of the left part of the key to the given value.
+     *
+     * @param color color the left part of the key will be set to
+     */
     void setColorL(const tgt::ivec4& color);
+
+    /**
+     * Returns the color of the left part of the key.
+     *
+     * @return color of the left part of the key
+     */
     tgt::col4& getColorL();
+
+    /**
+     * Sets the color of the right part of the key to the given value.
+     *
+     * @param color color the right part of the key will be set to
+     */
     void setColorR(const tgt::col4& color);
+
+    /**
+     * Sets the color of the right part of the key to the given value.
+     *
+     * @param color color the right part of the key will be set to
+     */
     void setColorR(const tgt::ivec4& color);
+
+    /**
+     * Returns the color of the right part of the key.
+     *
+     * @return color of the right part of the key
+     */
     tgt::col4& getColorR();
-    ///Set Alpha as float (0.0->1.0)
+
+    /**
+     * Sets the alpha value of the right part of the key to the given value.
+     * The value has to be in the range 0.f-1.f.
+     *
+     * @param a alpha value the right part of the key will be set to
+     */
     void setAlphaR(float a);
-    ///Set Alpha as float (0.0->1.0)
+
+    /**
+     * Sets the alpha value of the left part of the key to the given value.
+     * The value has to be in the range 0.f-1.f.
+     *
+     * @param a alpha value the left part of the key will be set to
+     */
     void setAlphaL(float a);
-    ///Get Alpha as float (0.0->1.0)
+
+    /**
+     * Returns the alpha value of the right part of the key as float (0.f-1.f).
+     *
+     * @return alpha value of the right part of the key
+     */
     float getAlphaR();
-    ///Get Alpha as float (0.0->1.0)
+
+    /**
+     * Returns the alpha value of the left part of the key as float (0.f-1.f).
+     *
+     * @return alpha value of the left part of the key
+     */
     float getAlphaL();
+
     /**
-     * Returns wether the key is split or not.
+     * Returns whether the key is split or not.
      *
-     * @return The key is split.
+     * @return true if the key is split, false otherwise.
      */
-    virtual bool isSplit();
-    
+    bool isSplit();
+
     /**
-     * Split/unsplit the current key.
+     * Splits or unsplits this key.
      *
-     * @param split \c true to split, \c false to merge.
-     * @param useLeft In case of joining: use the left color (else use right)
+     * @param split true to split, false to merge
+     * @param useLeft in case of joining: use the left color (else use right)
      */
-    virtual void setSplit(bool split, bool useLeft=true);
-    virtual float getIntensity();
-    ///Set the intensity at which the key is located.
-    ///Note: TFIK has to be sorted
-    virtual void setIntensity(float i);
+    void setSplit(bool split, bool useLeft=true);
+
+    /**
+     * Returns the intensity at which the key is located.
+     *
+     * @return intensity at which the key is located
+     */
+    float getIntensity();
+
+    /**
+     * Sets the intensity of the key to the given value. The keys of the transfer function
+     * have to be sorted after this.
+     *
+     * @param i new intensity of the key
+     */
+    void setIntensity(float i);
 
 private:
-    float intensity_;
-    tgt::col4 colorL_;
-    tgt::col4 colorR_;
-    bool split_;
+    float intensity_;  ///< intensity at which the key is located
+    tgt::col4 colorL_; ///< color of the left part of the key
+    tgt::col4 colorR_; ///< color of the right part of the key
+    bool split_;       ///< is the key split?
 };
 
 } // namespace voreen

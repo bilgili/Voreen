@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* @(#) $Id: zconf.h,v 1.3 2005/07/22 20:44:42 Tadeusz Dracz Exp $ */
+/* @(#) $Id$ */
 
 #ifndef ZCONF_H
 #define ZCONF_H
@@ -16,7 +16,7 @@
 	#pragma warning (disable : 4244)
 	#pragma warning (disable : 4702)
 	#pragma warning (disable : 4206)
-#endif // _MSC_VER > 1000
+#endif
 
 
 /*
@@ -24,50 +24,88 @@
  * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
  */
 #ifdef Z_PREFIX
-#  define deflateInit_  z_deflateInit_
-#  define deflate       z_deflate
-#  define deflateEnd    z_deflateEnd
-#  define inflateInit_  z_inflateInit_
-#  define inflate       z_inflate
-#  define inflateEnd    z_inflateEnd
-#  define deflateInit2_ z_deflateInit2_
-#  define deflateSetDictionary z_deflateSetDictionary
-#  define deflateCopy   z_deflateCopy
-#  define deflateReset  z_deflateReset
-#  define deflateParams z_deflateParams
-#  define deflateBound  z_deflateBound
-#  define deflatePrime          z_deflatePrime
-#  define inflateInit2_ z_inflateInit2_
-#  define inflateSetDictionary z_inflateSetDictionary
-#  define inflateSync   z_inflateSync
-#  define inflateSyncPoint z_inflateSyncPoint
-#  define inflateCopy   z_inflateCopy
-#  define inflateReset  z_inflateReset
-#  define inflateBack           z_inflateBack
-#  define inflateBackEnd        z_inflateBackEnd
-#  define compress      z_compress
-#  define compress2     z_compress2
-#  define compressBound z_compressBound
-#  define uncompress    z_uncompress
-#  define adler32       z_adler32
-#  define crc32         z_crc32
-#  define get_crc_table z_get_crc_table
-#  define zError                z_zError
-
-#  define alloc_func            z_alloc_func
-#  define free_func             z_free_func
-#  define in_func               z_in_func
-#  define out_func              z_out_func
-#  define Byte          z_Byte
-#  define uInt          z_uInt
-#  define uLong         z_uLong
-#  define Bytef         z_Bytef
-#  define charf         z_charf
-#  define intf          z_intf
-#  define uIntf         z_uIntf
-#  define uLongf        z_uLongf
-#  define voidpf        z_voidpf
-#  define voidp         z_voidp
+//#  define deflateInit		zarch_deflateInit
+#  define deflateInit_		zarch_deflateInit_
+#  define deflate			zarch_deflate
+#  define deflateEnd		zarch_deflateEnd
+//#  define deflateInit2	zarch_deflateInit2
+#  define deflateInit2_		zarch_deflateInit2_
+#  define deflateSetDictionary zarch_deflateSetDictionary
+#  define deflateCopy		zarch_deflateCopy
+#  define deflateReset		zarch_deflateReset
+#  define deflateParams		zarch_deflateParams
+#  define deflateBound		zarch_deflateBound
+#  define deflatePrime      zarch_deflatePrime
+#  define deflateSetHeader	zarch_deflateSetHeader
+#  define deflateTune		zarch_deflateTune
+//#  define inflateInit		zarch_inflateInit
+//#  define inflateInit2	zarch_inflateInit2
+#  define inflateInit2_		zarch_inflateInit2_
+#  define inflateInit_		zarch_inflateInit_
+#  define inflate			zarch_inflate
+#  define inflateEnd		zarch_inflateEnd
+#  define inflateSetDictionary zarch_inflateSetDictionary
+#  define inflateSync		zarch_inflateSync
+#  define inflateSyncPoint zarch_inflateSyncPoint
+#  define inflateCopy		zarch_inflateCopy
+#  define inflateReset		zarch_inflateReset
+//#  define inflateBackInit	zarch_inflateBackInit
+#  define inflateBackInit_	zarch_inflateBackInit_
+#  define inflateBack       zarch_inflateBack
+#  define inflateBackEnd    zarch_inflateBackEnd
+#  define inflatePrime		zarch_inflatePrime
+#  define inflateGetHeader	zarch_inflateGetHeader
+#  define compress			zarch_compress
+#  define compress2			zarch_compress2
+#  define compressBound		zarch_compressBound
+#  define uncompress		zarch_uncompress
+#  define adler32			zarch_adler32
+#  define adler32_combine	zarch_adler32_combine
+#  define crc32_combine		zarch_crc32_combine
+#  define deflate_copyright zarch_deflate_copyright
+#  define inflate_copyright zarch_inflate_copyright
+#  define crc32				zarch_crc32
+#  define get_crc_table		zarch_get_crc_table
+#  define zError            zarch_zError
+#  define z_stream			zarch_z_stream
+#  define z_stream_s		zarch_z_stream_s
+#  define alloc_func        zarch_alloc_func
+#  define free_func         zarch_free_func
+#  define in_func           zarch_in_func
+#  define out_func          zarch_out_func
+#  define Byte				zarch_Byte
+#  define uInt				zarch_uInt
+#  define uLong				zarch_uLong
+#  define uLongLong			zarch_uLongLong
+#  define Bytef				zarch_Bytef
+#  define charf				zarch_charf
+#  define intf				zarch_intf
+#  define uIntf				zarch_uIntf
+#  define uLongf			zarch_uLongf
+#  define voidpf			zarch_voidpf
+#  define voidp				zarch_voidp
+#  define deflate_state		zarch_deflate_state
+#  define deflate_slow		zarch_deflate_slow
+#  define deflate_fast		zarch_deflate_fast
+#  define deflate_stored	zarch_deflate_stored
+#  define z_streamp			zarch_z_streamp
+#  define deflate_rle		zarch_deflate_rle
+#  define inflate_state		zarch_inflate_state
+#  define inflate_fast		zarch_inflate_fast
+#  define inflate_table		zarch_inflate_table
+#  define updatewindow		zarch_updatewindow
+//#  define inflate_mode	zarch_inflate_mode
+//#  define send_bits		zarch_send_bits
+#  define zlibVersion		zarch_zlibVersion
+#  define zlibCompileFlags	zarch_zlibCompileFlags
+#  define zError			zarch_zError
+#  define _tr_init			zarch_tr_init
+#  define _tr_tally			zarch_tr_tally
+#  define _tr_flush_block	zarch_tr_flush_block
+#  define _tr_align			zarch_tr_align
+#  define _tr_stored_block	zarch_tr_stored_block
+#  define _dist_code		zarch_dist_code
+#  define _length_code		zarch_length_code
 #endif
 
 #if defined(__MSDOS__) && !defined(MSDOS)
@@ -273,6 +311,10 @@ typedef unsigned char  Byte;  /* 8 bits */
 #endif
 typedef unsigned int   uInt;  /* 16 bits or more */
 typedef unsigned long  uLong; /* 32 bits or more */
+
+#include "../_features.h"
+
+	typedef unsigned long uLongLong;
 
 #ifdef SMALL_MEDIUM
    /* Borland C/C++ and some old MSC versions ignore FAR inside typedef */

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -40,34 +40,34 @@ VoreenToolBar::VoreenToolBar(QWidget* parent)
 {
     logo_ = QPixmap(":/widgetstyle/logo.png");
 
-	QPalette newPalette; 
-	newPalette.setBrush(QPalette::Window, QBrush(Qt::black)); 
-	setPalette(newPalette);
-	setBackgroundRole(QPalette::Window);
+    QPalette newPalette;
+    newPalette.setBrush(QPalette::Window, QBrush(Qt::black));
+    setPalette(newPalette);
+    setBackgroundRole(QPalette::Window);
 
     setWindowTitle(tr("Voreen Toolbar"));
     setObjectName("VoreenToolBar");
-    setAttribute(Qt::WA_AlwaysShowToolTips);   
+    setAttribute(Qt::WA_AlwaysShowToolTips);
 
     QHBoxLayout* contentLayout = new QHBoxLayout();
     setLayout(contentLayout);
     contentLayout->setSizeConstraint(QLayout::SetFixedSize);
-    
+
     // spacer for the logo and toolbar height
     QSpacerItem* spacer = new QSpacerItem(60, 46, QSizePolicy::Fixed, QSizePolicy::Fixed);
-    
-	// check buttons
+
+    // check buttons
     buttonLayout_ = new QHBoxLayout();
     buttonLayout_->setSpacing(0);
-    
-	// action buttons
+
+    // action buttons
     toolLayout_ = new QHBoxLayout();
     toolLayout_->setSpacing(0);
 
-	// fit everything together and leave some space for the logo
+    // fit everything together and leave some space for the logo
     contentLayout->addItem(spacer);
-	contentLayout->addLayout(toolLayout_);
-	contentLayout->addLayout(buttonLayout_);
+    contentLayout->addLayout(toolLayout_);
+    contentLayout->addLayout(buttonLayout_);
 }
 
 void VoreenToolBar::registerToolWindow(VoreenToolWindow* toolWindow) {
@@ -75,66 +75,65 @@ void VoreenToolBar::registerToolWindow(VoreenToolWindow* toolWindow) {
 
     button->setCheckable(true);
     button->setToolTip(toolWindow->action()->text());
-	buttonLayout_->addWidget(button);
+    buttonLayout_->addWidget(button);
 
     // connect button and action
     connect(button, SIGNAL(toggled(bool)), toolWindow->action(), SLOT(setChecked(bool)));
-	connect(toolWindow->action(), SIGNAL(toggled(bool)), button, SLOT(setChecked(bool)));
+    connect(toolWindow->action(), SIGNAL(toggled(bool)), button, SLOT(setChecked(bool)));
 }
 
 void VoreenToolBar::addToolButtonAction(QAction* action){
     VoreenButton* button = new VoreenButton(action->icon());
     button->setToolTip(action->toolTip());
-	toolLayout_->addWidget(button);
+    toolLayout_->addWidget(button);
     connect(button, SIGNAL(clicked()), action, SLOT(trigger()));
 }
 
 void VoreenToolBar::paintEvent(QPaintEvent* /*e*/) {
-	QPainter painter(this);
+    QPainter painter(this);
 
-	QColor button_color = QColor(50, 50, 50);
-	QColor m_shadow = QColor(Qt::black);
-	const float roundness = 0.0;
+    QColor button_color = QColor(50, 50, 50);
+    QColor m_shadow = QColor(Qt::black);
 
     // outline
-	painter.setPen(QPen(QBrush(Qt::black), 2.0));
-	QPainterPath outline;
-	outline.addRoundRect(0, 0, rect().width(), rect().height(), roundness, roundness);
-	painter.setOpacity(1.0);
-	painter.drawPath(outline);
+    painter.setPen(QPen(QBrush(Qt::black), 2.0));
+    QPainterPath outline;
+    outline.addRect(0, 0, rect().width(), rect().height());
+    painter.setOpacity(1.0);
+    painter.drawPath(outline);
 
-	// gradient
-	QLinearGradient gradient(0, 0, 0, rect().height());
-	gradient.setSpread(QGradient::ReflectSpread);
-	gradient.setColorAt(0.0, button_color);
-	gradient.setColorAt(0.4, m_shadow);
-	gradient.setColorAt(0.6, m_shadow);
-	gradient.setColorAt(1.0, button_color);
+    // gradient
+    QLinearGradient gradient(0, 0, 0, rect().height());
+    gradient.setSpread(QGradient::ReflectSpread);
+    gradient.setColorAt(0.0, button_color);
+    gradient.setColorAt(0.4, m_shadow);
+    gradient.setColorAt(0.6, m_shadow);
+    gradient.setColorAt(1.0, button_color);
 
-	QBrush brush(gradient);
-	painter.setBrush(brush); 
-	painter.setPen(QPen(QBrush(button_color), 2.0));
+    QBrush brush(gradient);
+    painter.setBrush(brush);
+    painter.setPen(QPen(QBrush(button_color), 2.0));
 
-	// main button
-	QPainterPath painter_path;
-	painter_path.addRoundRect(1, 1, rect().width() - 2, rect().height() - 2, roundness, roundness);
-	painter.setClipPath(painter_path);
+    // main button
+    QPainterPath painter_path;
+    painter_path.addRect(1, 1, rect().width() - 2, rect().height() - 2);
+    painter.setClipPath(painter_path);
 
-	painter.setOpacity(1.0);
-	painter.drawRoundRect(1, 1, rect().width() - 2, rect().height() - 2, roundness, roundness);
+    painter.setOpacity(1.0);
+    painter.drawRect(1, 1, rect().width() - 2, rect().height() - 2);
 
-	// draw logo
-	QRect logoPos = rect();
-	float logoOffset = (rect().height() - logo_.height()) / 2.0;
-    logoPos.setLeft(logoPos.left() + logoOffset);
-	logoPos.setTop(logoPos.top() + logoOffset);
-	painter.drawPixmap(logoPos.topLeft(), logo_);
+    // draw logo
+    QRect logoPos = rect();
+    float logoOffset = (rect().height() - logo_.height()) / 2.0;
+    logoPos.setLeft(static_cast<int>(logoPos.left() + logoOffset));
+    logoPos.setTop(static_cast<int>(logoPos.top() + logoOffset));
+    painter.drawPixmap(logoPos.topLeft(), logo_);
 
-	// glass highlight
-	painter.setBrush(QBrush(Qt::white));
-	painter.setPen(QPen(QBrush(Qt::white), 0.01));
-	painter.setOpacity(0.30);
-	painter.drawRect(1, 1, rect().width() - 2, (rect().height() / 2) - 2);
+    // glass highlight
+    painter.setBrush(QBrush(Qt::white));
+    painter.setPen(QPen(QBrush(Qt::white), 0.01));
+    painter.setOpacity(0.30);
+    painter.drawRect(1, 1, rect().width() - 2, (rect().height() / 2) - 2);
 }
 
 void VoreenToolBar::mousePressEvent(QMouseEvent* event) {

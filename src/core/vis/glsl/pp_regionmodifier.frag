@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -46,7 +46,7 @@ void main() {
     vec4 sourceColor = textureLookup2D(shadeTex_, vec2(fragCoord.x, fragCoord.y) ).rgba;
     vec4 maskColor = textureLookup2D(shadeTexMask_, vec2(fragCoord.x, fragCoord.y) ).rgba;
     vec4 destColor = sourceColor;
-	// this does not reliably work due to limited accuracy of floating-point numbers:
+    // this does not reliably work due to limited accuracy of floating-point numbers:
     //   if (maskColor == segmentId_) {
     if ( round(maskColor.a*255.0) == round(segmentId_.a*255.0) ) {
         #ifdef RV_MODE_REPLACE

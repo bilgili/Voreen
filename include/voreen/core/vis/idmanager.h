@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -83,7 +83,7 @@ inline bool operator==(const IDF &x, const std::string &y) {
 
 /**
  * IDManager class for picking
- * usage: 
+ * usage:
  * Processor: addNewPickObj() - startBufferRenderering() - stopBufferRendering()
  * Validation: isClicked()
  */
@@ -106,7 +106,7 @@ class IDManager {
 public:
     IDManager();
 
-	static IDManagerContents* getContent() {return content_;}
+    static IDManagerContents* getContent() {return content_;}
 
     /**
      * adds new picking object to the manager
@@ -127,7 +127,7 @@ public:
     void signalizeNewRenderingPass();
 
     /**
-     * Sets rendering target to picking buffer 
+     * Sets rendering target to picking buffer
      * Sets the correct color for picking object
      */
     void startBufferRendering(Identifier identIN);
@@ -138,7 +138,7 @@ public:
     void stopBufferRendering();
 
     /**
-     * Validates picking objects position 
+     * Validates picking objects position
      */
     bool isClicked(Identifier ident, int x, int y);
 
@@ -161,7 +161,7 @@ public:
      *
      * NOTE: in contrast to methods <code>getIDadPos()</code> and
      * <code>isClicked()</code>, this methods flips the y-coordinate!
-     * The caller has to pass the y-component in screen coordinates 
+     * The caller has to pass the y-component in screen coordinates
      * like it is obtained for example by Qt mousePressEvent().
      *
      */

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -66,7 +66,7 @@ float bernsteinDerivative(float u, int comp, int deg) {
     else if (deg == comp)
         return factor*comp*pow(u,static_cast<float>(comp-1));
     else
-        return 	factor*( comp*pow(u,static_cast<float>(comp-1))*pow(1-u, static_cast<float>(deg-comp))
+        return     factor*( comp*pow(u,static_cast<float>(comp-1))*pow(1-u, static_cast<float>(deg-comp))
         - pow(u, static_cast<float>(comp))*(deg-comp)*pow(1-u, static_cast<float>(deg-comp-1)) );
 }
 
@@ -95,7 +95,7 @@ float evalPolynomialDerivative(float t, void* params) {
 float evalPolynomialCurve2DTangentMagnitude(float t, void* params) {
     Polynomial xpoly = (static_cast<Polynomial*>(params))[0];
     Polynomial ypoly = (static_cast<Polynomial*>(params))[1];
-    return sqrt( pow(evalPolynomialDerivative(t, &xpoly), 2) + 
+    return sqrt( pow(evalPolynomialDerivative(t, &xpoly), 2) +
         pow(evalPolynomialDerivative(t, &ypoly), 2) );
 }
 
@@ -103,7 +103,7 @@ float evalPolynomialCurve3DTangentMagnitude(float t, void* params) {
     Polynomial xpoly = (static_cast<Polynomial*>(params))[0];
     Polynomial ypoly = (static_cast<Polynomial*>(params))[1];
     Polynomial zpoly = (static_cast<Polynomial*>(params))[2];
-    return sqrt( pow(evalPolynomialDerivative(t, &xpoly), 2) + 
+    return sqrt( pow(evalPolynomialDerivative(t, &xpoly), 2) +
         pow(evalPolynomialDerivative(t, &ypoly), 2) +
         pow(evalPolynomialDerivative(t, &zpoly), 2) );
 }
@@ -152,10 +152,10 @@ bool Curve3DPolynomial::calcFunction(float curveLength) {
         zfunc_.coeff = new float[numCoeff_];
     }
 
-    /* 
+    /*
     Calculate a least-squares-fit of the polynomial function to the control points.
     For each coordinate (x,y,z) there is one polynomial function. The least-squares-fit
-    is performed by solving the linear equation system X*c=y, 
+    is performed by solving the linear equation system X*c=y,
     where X(i,j)=i^j and y holds the control points coordinates.
     */
 
@@ -272,10 +272,10 @@ bool Curve2DPolynomial::calcFunction(float curveLength) {
         yfunc_.coeff = new float[numCoeff_];
     }
 
-    /* 
+    /*
     Calculate a least-squares-fit of the polynomial function to the control points.
     For each coordinate (x,y,z) there is one polynomial function. The least-squares-fit
-    is performed by solving the linear equation system X*c=y, 
+    is performed by solving the linear equation system X*c=y,
     where X(i,j)=i^j and y holds the control points coordinates.
     */
 
@@ -287,7 +287,7 @@ bool Curve2DPolynomial::calcFunction(float curveLength) {
     for (int i=0; i<static_cast<int>(ctrlPoints_.size()); i++)
         for (int j=0; j<numCoeff_; j++)
             X[i][j] = pow((float)i, (float)j);
-    
+
     JAMA::QR<float> QR_Matrix(X);
 
     // x(t)
@@ -406,7 +406,7 @@ vec3 BezierPatch::getPoint(float s, float t) {
         for (int j=0; j<=degreeT_; ++j) {
             result += bernstein(s,i,degreeS_)*bernstein(t,j,degreeT_)*
                 ctrlPoints_[j*(degreeS_+1)+i];
-        }		
+        }
     }
     return result;
 }
@@ -417,7 +417,7 @@ vec3 BezierPatch::getTangentS(float s, float t) {
         for (int j=0; j<=degreeT_; ++j) {
             result += bernsteinDerivative(s,i,degreeS_)*bernstein(t,j,degreeT_)*
                 ctrlPoints_[j*(degreeS_+1)+i];
-        }		
+        }
     }
     return result;
 }
@@ -428,7 +428,7 @@ vec3 BezierPatch::getTangentT(float s, float t) {
         for (int j=0; j<=degreeT_; ++j) {
             result += bernstein(s,i,degreeS_)*bernsteinDerivative(t,j,degreeT_)*
                 ctrlPoints_[j*(degreeS_+1)+i];
-        }		
+        }
     }
     return result;
 }
@@ -456,19 +456,19 @@ void BezierPatch::render(int s_steps, int t_steps, bool genTexCoords, GLuint tex
             vec3 last0 = getPoint(s,0.f);
             vec3 last1 = getPoint(s+s_offset,0.f);
             glBegin(GL_QUAD_STRIP);
-            if (genTexCoords) 
+            if (genTexCoords)
                 glMultiTexCoord2f( texUnit, s, 0.f );
             glVertex3fv(last0.elem);
-            if (genTexCoords) 
+            if (genTexCoords)
                 glMultiTexCoord2f( texUnit, s+s_offset, 0.f );
             glVertex3fv(last1.elem);
             for (float t=t_offset; t<1.01f; t += t_offset) {
                 vec3 cur0 = getPoint(s, t);
                 vec3 cur1 = getPoint(s+s_offset, t);
-                if (genTexCoords) 
+                if (genTexCoords)
                     glMultiTexCoord2f(texUnit, s,t);
                 glVertex3fv(cur0.elem);
-                if (genTexCoords) 
+                if (genTexCoords)
                     glMultiTexCoord2f(texUnit, s+s_offset,t);
                 glVertex3fv(cur1.elem);
 
@@ -497,7 +497,7 @@ void BezierPatch::render(int s_steps, int t_steps, bool genTexCoords, GLuint tex
     ctrlPoints[3*i+1] = point.y;
     ctrlPoints[3*i+2] = point.z;
     }
-    glMap2f(GL_MAP2_VERTEX_3, 0, 1, 3, degreeS_+1, 0, 1, 
+    glMap2f(GL_MAP2_VERTEX_3, 0, 1, 3, degreeS_+1, 0, 1,
         (degreeS_+1)*3, degreeT_+1, ctrlPoints);
 
     GLfloat texpts[2][2][2] = {{{0.0, 0.0}, {0.0, 1.0}},

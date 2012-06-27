@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,9 +29,9 @@
 
 #include "modules/vrn_shaderincludes.frag"
 
-uniform SAMPLER2D_TYPE entryPoints_;	                // ray entry points
+uniform SAMPLER2D_TYPE entryPoints_;                    // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;               // ray entry points depth
-uniform SAMPLER2D_TYPE exitPoints_;	                    // ray exit points
+uniform SAMPLER2D_TYPE exitPoints_;                        // ray exit points
 uniform SAMPLER2D_TYPE exitPointsDepth_;                // ray exit points depth
 
 uniform sampler3D volume_;                              // volume dataset
@@ -65,44 +65,42 @@ vec4 directRendering(in vec3 first, in vec3 last) {
             vec4 voxel = textureLookup3D(volume_, volumeParameters_, sample);
 
             float intensity = voxel.a;
-			#if defined(USE_SEGMENTATION)
-				intensity *= applySegmentation(sample);
-			#endif
+            #if defined(USE_SEGMENTATION)
+                intensity *= applySegmentation(sample);
+            #endif
 
-			if (intensity >= lowerThreshold_ && intensity < upperThreshold_) {
-				// no shading is applied
-				vec4 color = applyTF(voxel);
+            // no shading is applied
+            vec4 color = applyTF(transferFunc_, voxel);
 
-				// perform compositing
-				if (color.a > 0.0) {
-					// multiply alpha by raycastingQualityFactorRCP_
-					// to accomodate for variable slice spacing
-					color.a *= raycastingQualityFactorRCP_;
-					result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
-					result.a = result.a + (1.0 -result.a) * color.a;
-				}
+            // perform compositing
+            if (color.a > 0.0) {
+                // multiply alpha by raycastingQualityFactorRCP_
+                // to accomodate for variable slice spacing
+                color.a *= raycastingQualityFactorRCP_;
+                result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
+                result.a = result.a + (1.0 -result.a) * color.a;
+            }
 
-				// save first hit ray parameter for depth value calculation
-				if (depthT < 0.0 && result.a > 0.0)
-					depthT = t;
+            // save first hit ray parameter for depth value calculation
+            if (depthT < 0.0 && result.a > 0.0)
+                depthT = t;
 
-				// early ray termination
-				if (result.a >= 1.0) {
-					result.a = 1.0;
-					finished = true;
-				}
+            // early ray termination
+            if (result.a >= 1.0) {
+                result.a = 1.0;
+                finished = true;
+            }
 
-			}
             t += stepIncr;
             finished = finished || (t > tend);
         }
     }
 
     // calculate depth value from ray parameter
-	gl_FragDepth = 1.0;
+    gl_FragDepth = 1.0;
     if (depthT >= 0.0)
-		gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z,
-												        textureLookup2D(exitPointsDepth_, gl_FragCoord.xy).z);
+        gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z,
+                                                        textureLookup2D(exitPointsDepth_, gl_FragCoord.xy).z);
 
 
     return result;
@@ -114,7 +112,7 @@ vec4 directRendering(in vec3 first, in vec3 last) {
 void main() {
 
     vec3 frontPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
-	vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
+    vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
 
     //determine whether the ray has to be casted
     if (frontPos == backPos) {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -71,8 +71,9 @@ VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tg
         Modality::MODALITY_UNKNOWN,
         -1.0f,
         "",
+        "",
         6);                 // loading offset
-            
+
     VolumeSet* volumeSet = rawReader.read(fileName);
     fixOrigins(volumeSet, fileName);
     return volumeSet;
@@ -192,31 +193,28 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
         }
     }
 
-    // check wether necessary meta-data could be read
+    // check whether necessary meta-data could be read
     if (objectFilename == "") {
         LERROR("No raw file specified");
         error = true;
     }
-    
+
     if (hor(lessThanEqual(resolution,ivec3(0, 0, 0)))) {
         LERROR("Invalid resolution or resolution not specified: " << resolution[0] << " x " <<
-               resolution[1] << " x " << resolution[2])
+               resolution[1] << " x " << resolution[2]);
         error = true;
     }
 
     if (!error) {
         RawVolumeReader rawReader(getProgress());
         rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, zeroPoint,
-            transformation, modality, timeStep, metaString);
+            transformation, modality, timeStep, metaString, unit);
 
         // do we have a relative path?
         if ((objectFilename.substr(0, 1) != "/")  && (objectFilename.substr(0, 1) != "\\") &&
             (objectFilename.substr(1, 2) != ":/") && (objectFilename.substr(1, 2) != ":\\"))
         {
-            size_t p = fileName.find_last_of("\\");
-            if (p == std::string::npos)
-                p = fileName.find_last_of("/");
-
+            size_t p = fileName.find_last_of("\\/");
             // construct path relative to dat file
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
@@ -238,25 +236,25 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName)
     std::fstream fin(fileName.c_str(), std::ios::in | std::ios::binary);
     if (!fin.good() || fin.eof() || !fin.is_open())
         throw tgt::FileNotFoundException("Unable to open dat file for reading", fileName);
-    
+
     // Determine the dimensions of the volume (provided it is one).
     // They are stored in the first 3 blocks as 2 bytes each.
     tgt::Vector3<unsigned short> dimensions;
 
     fin.read(reinterpret_cast<char*>(dimensions.elem), sizeof(dimensions));
-    
+
     // Calculate the supposed size of the file:
     // *2  because each voxel is saved as 2 bytes
     // +6  because of the header in which the dimension-information reside
     long supposedSize = (dimensions.x * dimensions.y * dimensions.z * sizeof(unsigned short)) + sizeof(dimensions);
 
-    // Jump to the end of the file and 
+    // Jump to the end of the file and
     // get the real size of the file in bytes
     fin.seekg(0, std::ios_base::end);
     long realSize = static_cast<long>(fin.tellg());
 
     fin.close();
-    
+
     if (realSize == supposedSize)
         return readVolumeFile(fileName, tgt::ivec3(dimensions));
     else

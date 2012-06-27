@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,33 +32,33 @@
 
 namespace voreen {
 
-	NoiseVolume::NoiseVolume(tgt::vec3 dimensions) {
-		volumeGL_ = 0;
-		volume_ = new Volume4xUInt8(dimensions, tgt::vec3(1.0), 8);
+    NoiseVolume::NoiseVolume(tgt::vec3 dimensions) {
+        volumeGL_ = 0;
+        volume_ = new Volume4xUInt8(dimensions, tgt::vec3(1.0), 8);
 
-		srand((unsigned)time(0));
-		for (int x=0;x<dimensions.x;x++) {
-			//srand(32);
-			for (int y=0;y<dimensions.y;y++) {
-				for (int z=0;z<dimensions.z;z++) {
-					volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 0);
-					volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 1);
-					volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 2);
-					volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 3);
-				}
-			}
-		}
-	}
+        srand((unsigned)time(0));
+        for (int x=0;x<dimensions.x;x++) {
+            //srand(32);
+            for (int y=0;y<dimensions.y;y++) {
+                for (int z=0;z<dimensions.z;z++) {
+                    volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 0);
+                    volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 1);
+                    volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 2);
+                    volume_->setVoxelFloat(static_cast<float>(rand()%255), tgt::ivec3(x,y,z), 3);
+                }
+            }
+        }
+    }
 
-	NoiseVolume::~NoiseVolume() {
-		delete volume_;
-		delete volumeGL_;
-	}
+    NoiseVolume::~NoiseVolume() {
+        delete volume_;
+        delete volumeGL_;
+    }
 
-	VolumeGL* NoiseVolume::getVolumeGL() {
-		if (!volumeGL_)
-			volumeGL_ = new VolumeGL(volume_);
-		return volumeGL_;
-	}
+    VolumeGL* NoiseVolume::getVolumeGL() {
+        if (!volumeGL_)
+            volumeGL_ = new VolumeGL(volume_);
+        return volumeGL_;
+    }
 
 } // namespace voreen

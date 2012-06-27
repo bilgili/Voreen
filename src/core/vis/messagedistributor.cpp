@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -98,13 +98,10 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
 }
 
 MessageDistributor::iterator MessageDistributor::insert(MessageReceiver* mr) {
-    tgtAssert(!contains(mr), "Message receiver already inserted");
-
     return ReceiverMap::insert(std::make_pair(mr->getTag(), mr));
 }
 
 void MessageDistributor::remove(MessageReceiver* mr) {
-    // TODO use equal_range here for performance
     iterator iter = begin();
     while ((iter != end()) && (iter->second != mr) )
         ++iter;

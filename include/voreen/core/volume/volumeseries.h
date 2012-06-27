@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -43,70 +43,63 @@ namespace voreen {
 class VolumeSet;
 
 /**
- * This class holds a series for one VolumeSet. A VolumeSet can have several VolumeSeries.
- * A VolumeSeries hold one or more VolumeHandles. The VolumeSeries can be considered as
- * the "real" (medical) modalities like PET, CT, MR, etc. but also hold "artificial modalilities"
- * like gradients, etc..
- * VolumeSeries are identified by the name and classified by a modality. Several VolumeSeries
- * of the same modality with different names can be contained within a VolumeSet.
- *
- * @author  Dirk Feldmann, July - September 2008
+ * Holds a series of VolumeHandles for a VolumeSet. A VolumeSet can have several VolumeSeries.
+ * The VolumeSeries can be considered as the "real" (medical) modalities like PET, CT, or MR,
+ * but also hold "artificial modalities" like gradients.
  */
 class VolumeSeries : public Serializable {
 public:
+    friend class VolumeSet; // for setParentSet()
+
     /**
      * Comparator structure for ensuring that the comparison of VolumeSeries used
-     * by the std::set compares the dereferenced pointers and not the pointers 
+     * by the std::set compares the dereferenced pointers and not the pointers
      * themselves!
      */
     struct VolumeSeriesComparator {
         bool operator()(const VolumeSeries* const series1, const VolumeSeries* const series2) const {
-            if ( (series1 == 0) || (series2 == 0) )
+            if (series1 == 0 || series2 == 0)
                 return false;
-            return (*series1 < *series2);
+            else
+                return (*series1 < *series2);
         }
     };
     typedef std::set<VolumeSeries*, VolumeSeriesComparator> SeriesSet;
 
     /**
-     * Ctor.
-     * @param   parentSet   VolumeSet this VolumeSeries object belongs to.
-     *  This parameter should not be NULL. It will be changed on calling
-     *  <code>VolumeSet::addSeries()</code> as a VolumeSeries can only be
-     *  contained in one VolumeSet.
+     * Constructor.
      * @param   name    The name of this VolumeSeries. Usually it is identical
      *  to the name of the modality and eventually expanded by a number counting
      *  the already contained VolumeSeries of the same modality within a certain
      *  VolumeSet.
      * @param   modality    The modality of this series.
      */
-    VolumeSeries(VolumeSet* const parentSet, const std::string& name = "unknown",
-        const Modality& modality = Modality::MODALITY_UNKNOWN);
+    VolumeSeries(const std::string& name = "unknown",
+                 const Modality& modality = Modality::MODALITY_UNKNOWN);
 
-	VolumeSeries(const VolumeSeries& series);
+    VolumeSeries(const VolumeSeries& series);
 
     /**
-     * Dtor causing all contained VolumeHandles and therefore all volume data contained
-     * to become deleted.
+     * Deletes all VolumeHandles in this VolumeSeries.
      */
-	~VolumeSeries();
+    ~VolumeSeries();
 
     VolumeSeries& operator=(const VolumeSeries& m);
 
     /**
      * Comparison of VolumeSeries ist based on the lexicographic
-     * comparison of their names (std::string objects).
+     * comparison of their names.
      */
-	bool operator==(const VolumeSeries& m) const;
+    bool operator==(const VolumeSeries& m) const;
     bool operator!=(const VolumeSeries& m) const;
     bool operator<(const VolumeSeries& m) const;
 
-	friend std::ostream& operator<<(std::ostream& os, const VolumeSeries& m);
+    friend std::ostream& operator<<(std::ostream& os, const VolumeSeries& m);
 
     /**
      * Return the name of the Series. A Series is identified by its name.
      */
-	const std::string& getName() const;
+    const std::string& getName() const;
 
     /**
      * Set the name for this object. This is required if a series with the
@@ -140,14 +133,7 @@ public:
     /**
      * Return the VolumeSet this VolumeSeres object belongs to.
      */
-    VolumeSet* getParentVolumeSet() const;
-
-    /**
-     * Sets the given VolumeSet as the new parent for this VolumeSeries. It is
-     * usually only called from <code>VolumeSet::addSeries()</code>. Use this 
-     * method carefully! 
-     */
-    void setParentVolumeSet(VolumeSet* const volumeSet);
+    VolumeSet* getParentSet() const;
 
     /**
      * Returns all VolumeHandles held by this Series.
@@ -155,11 +141,10 @@ public:
     const VolumeHandle::HandleSet& getVolumeHandles() const;
 
     /**
-     * Returns the VolumeHandle* for the given <b>index</b>. The index is the 
+     * Returns the VolumeHandle for the given <b>index</b>. The index is the
      * position within the map.
      *
-     * @return  NULL if no such handle exists or otherwise a pointer to the handle.
-     *          That pointer could still be NULL!
+     * @return  0 if no such handle exists or otherwise a pointer to the handle.
      */
     VolumeHandle* getVolumeHandle(const int index) const;
 
@@ -173,84 +158,72 @@ public:
      * Modality::MODALITY_UNKNOWN or otherwise false.
      */
     bool isUnknown() const;
-	
+
     /**
-     * Add the given VolumeHandle to the VolumeSeries object if
-     * it does not already exist and returns true then.
-     * If the handle is NULL or already contained, false will be returned.
+     * Add the given VolumeHandle to the VolumeSeries.
      *
-     * If the handle is already contained in the VolumeSeries, it will not be
-     * inserted and if it is not identical (on pointer comparison) to the one
-     * contained, the given one will be deleted and replaced by the contained
-     * VolumeHandle, unless the parameter forceInsertion is set to "true".
-     * If so, the insertion should never fail as the given handle's timestep
-     * will be set to the currently greatest contained timestep + 1.0f.
+     * Depending on the state of the parameter forceInsertion the timestep of the VolumeHandle
+     * will increased to prevent collisions with existing VolumeHandles in this VolumeSeries.
      *
-     * Besides, the parent VolumeSeries of the given handle is set to this.
+     * The parent VolumeSeries of the given handle is set to this VolumeSeries.
      *
-     * @param   handle The VolumeHandle to be inserted.
-     * @param   forceInsertion  Indicates whether insertion may fail or not.
-     *  If it is set to "true", the timestep of the handle will be eventually
-     *  adapted to become the greatest and the insertion should not fail.
-     * @return  "true" if insertion is successful, "false" otherwise. If the
+     * @param handle The VolumeHandle to be inserted.
+     * @param forceInsertion  Indicates whether insertion may fail or not.
+     *  If it is set to "true", the timestep of the handle will be
+     *  set to the new maximum and the insertion should not fail.
+     * @return "true" if insertion is successful, "false" otherwise. If the
      *  parameter forceInsertion is set to "true", this method should always
      *  return "true".
      */
-    bool addVolumeHandle(VolumeHandle*& handle, const bool forceInsertion = true);
+    bool addVolumeHandle(VolumeHandle* handle, const bool forceInsertion = true);
 
     /**
-     * Returns the VolumeHandle* for the given timestep. A VolumeHandle
-     * is identified by the timestep associated to it.
-     *
-     * @return  NULL if no such handle exists or otherwise a pointer to the handle.
-     *          That pointer could still be NULL!
+     * Returns the given VolumeHandle if is already stored in this VolumeSeries and
+     * 0 otherwise.
      */
     VolumeHandle* findVolumeHandle(VolumeHandle* const handle) const;
 
     /**
-     * Returns the VolumeHandle* for the given timestep. A VolumeHandle
-     * is identified by the timestep associated to it.
-     *
-     * @return  NULL if no such handle exists or otherwise a pointer to the handle.
-     *          That pointer could still be NULL!
+     * Returns the VolumeHandle for the given timestep or 0 if none exists.
+     * A VolumeHandle is identified by the timestep associated to it.
      */
     VolumeHandle* findVolumeHandle(const float timestep) const;
 
     /**
      * If the given VolumeHandle is contained in this VolumeSeries, it will
-     * be removed from it and returned. Otherwise NULL will be returned.
+     * be removed from it and returned. Otherwise 0 will be returned.
      *
-     * <b>NOTE: The VolumeHandle will NOT be deleted! Use <code>deleteVolumeHandle()</code>
-     * to remove AND delete the VolumeHandle.</b>
+     * Note: The VolumeHandle will not be deleted! Use <code>deleteVolumeHandle()</code>
+     * to remove and delete the VolumeHandle.
      */
     VolumeHandle* removeVolumeHandle(VolumeHandle* const handle);
 
     /**
      * If a a VolumeHandle of the given timestep is contained in this VolumeSeries, it will
-     * be removed from it and returned. Otherwise NULL will be returned.
+     * be removed from it and returned. Otherwise 0 will be returned.
      *
-     * <b>NOTE: The VolumeHandle will NOT be deleted! Use <code>deleteVolumeHandle()</code>
-     * to remove AND delete the VolumeHandle.</b>
+     * Note: The VolumeHandle will not be deleted! Use <code>deleteVolumeHandle()</code>
+     * to remove and delete the VolumeHandle.
      */
     VolumeHandle* removeVolumeHandle(const float timestep);
 
     /**
      * If the given VolumeHandle is contained in this VolumeSeries, it will
-     * be removed from it, deleted and "true" will be returned. Otherwise 
+     * be removed from it, deleted and "true" will be returned. Otherwise
      * "false" will be returned.
      *
-     * <b>NOTE: The VolumeHandle will be deleted! Use <code>removeVolumeHandle()</code>
-     * to remove the VolumeHandle only.</b>
+     * Note: The VolumeHandle will be deleted! Use <code>removeVolumeHandle()</code>
+     * to remove the VolumeHandle only.
      */
     bool deleteVolumeHandle(VolumeHandle* const handle);
 
     /**
-     * If a VolumeHandle of the given timestep is contained in this VolumeSeries, 
-     * it will be removed from it, deleted and "true" will be returned. Otherwise 
+     * If a VolumeHandle of the given timestep is contained in this VolumeSeries,
+     * it will be removed from it, deleted and "true" will be returned. Otherwise
      * "false" will be returned.
      *
-     * <b>NOTE: The VolumeHandle will be deleted! Use <code>removeVolumeHandle()</code>
-     * to remove the VolumeHandle only.</b>
+     * Note: The VolumeHandle will be deleted! Use <code>removeVolumeHandle()</code>
+     * to remove the VolumeHandle only.
      */
     bool deleteVolumeHandle(const float timestep);
 
@@ -274,12 +247,8 @@ public:
     /**
      * Updates the object from XML.
      */
-    void updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap);
     virtual void updateFromXml(TiXmlElement* elem);
-    
-    /**
-     * TODO docs
-     */
+
     static std::set<std::string> getFileNamesFromXml(TiXmlElement* elem);
 
     /**
@@ -292,13 +261,19 @@ public:
     static const std::string XmlElementName;
 
 protected:
-    std::string name_;  /** name of this series */
-    Modality modality_; /** the modality of this series */
-    VolumeHandle::HandleSet handles_;   /** all VolumeHandles stored in this series */
-    float maximumTimestep_; /** currently greatest timestep from all VolumeHandles contained */
-    VolumeSet* parentVolumeSet_; /** the VolumeSet this series is contained in */
+    std::string name_;                  ///< name of this series
+    Modality modality_;                 ///< the modality of this series
+    VolumeHandle::HandleSet handles_;   ///< all VolumeHandles stored in this series
+    float maximumTimestep_;             ///< currently greatest timestep from all VolumeHandles contained
+    VolumeSet* parentSet_;              ///< the VolumeSet this series is contained in
 
 private:
+    /**
+     * Sets the given VolumeSet as the new parent for this VolumeSeries. It is
+     * usually only called from <code>VolumeSet::addSeries()</code>.
+     */
+    void setParentSet(VolumeSet* const volumeSet);
+
     /**
      * Sets the attribute maximumTimestep_ to a valid value.
      */

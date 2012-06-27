@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,7 +32,7 @@
 
 #include "widgetplugin.h"
 #include "clipperwidget.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/cubeproxygeometry.h"
 #include <QPushButton>
 
 namespace voreen {
@@ -40,26 +40,26 @@ namespace voreen {
 class ClippingPlugin : public WidgetPlugin {
     Q_OBJECT
 public:
-	ClippingPlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
+    ClippingPlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
 
 protected:
     virtual void createWidgets();
     virtual void createConnections();
-    
+
 public slots:
     void updateXClippingPlanes();
     void updateYClippingPlanes();
     void updateZClippingPlanes();
-	void sliderPressedChanged(bool pressed);
+    void sliderPressedChanged(bool pressed);
     void cropDataset();
 
 private:
     ClipperWidget* clipXWidget_;
-	ClipperWidget* clipYWidget_;
-	ClipperWidget* clipZWidget_;
-    QPushButton*    cropButton_; 
+    ClipperWidget* clipYWidget_;
+    ClipperWidget* clipZWidget_;
+    QPushButton*    cropButton_;
 
-	CubeProxyGeometry *pg_;
+    CubeProxyGeometry* pg_;
 };
 
 } // namespace voreen

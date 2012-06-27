@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,41 +30,28 @@
 #ifndef VRN_BACKGROUND_H
 #define VRN_BACKGROUND_H
 
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
 /**
  * Creates a special background.
  */
-class Background : public GenericFragment {
+class Background : public ImageProcessor {
 public:
     Background();
     ~Background();
 
-	virtual const Identifier getClassName() const;
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create();
+    virtual const Identifier getClassName() const;
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const;
+
+    virtual int initializeGL();
+
     /**
     * Render-Method: draws the existing content over a background
     */
-	void process(LocalPortMapping* portMapping);
-    /**
-    * Process voreen message, accepted identifiers:
-    * - setBackgroundColor
-    * - setBackgroundFirstColor
-    * - setBackgroundSecondColor
-    * - setBackgroundAngle
-    * - set.backgroundModeAsString, possible values:
-    *    -# Monochrome
-    *    -# Gradient
-    *    -# Radial
-    *    -# Cloud
-    *    -# Texture
-    * - set.backgroundfilenameAsString
-    * - set.backgroundtile
-    */
-	virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    void process(LocalPortMapping* portMapping);
 
     /// Possible backgrounds:
     enum BackgroundModes {
@@ -92,42 +79,43 @@ protected:
     */
     void renderBackground();
 
+    void setBackgroundModeEvt();
+
     /**
     * load (and create) needed textures
     */
-	void loadTexture();
+    void loadTexture();
     /**
     * create an alpha-circle
     */
-	void createRadialTexture();
+    void createRadialTexture();
     /**
     * create a cloud texture
     */
-	void createCloudTexture();
+    void createCloudTexture();
     /**
     * blurs an image really slow
     */
-	GLubyte* blur(GLubyte* image, int size);
+    GLubyte* blur(GLubyte* image, int size);
     /**
     * doubles an image and blurs it afterwards
     */
-	GLubyte* resize(GLubyte* image, int size);
+    GLubyte* resize(GLubyte* image, int size);
     /**
     * copy an image 4 times
     */
-	GLubyte* tile(GLubyte* image, int size);
+    GLubyte* tile(GLubyte* image, int size);
 
     ColorProp firstcolor_;
-	ColorProp secondcolor_;
-    BackgroundModes mode_;
-    EnumProp* modeProp_;
-    ConditionProp* condProp_;
+    ColorProp secondcolor_;
     IntProp angle_;
     tgt::Texture* tex_;
     bool textureloaded_;
-
     FileDialogProp filename_;
     FloatProp tile_;
+    BackgroundModes mode_;
+    EnumProp* modeProp_;
+
 };
 
 } // namespace

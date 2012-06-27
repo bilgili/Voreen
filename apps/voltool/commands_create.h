@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,32 +28,36 @@
  **********************************************************************/
 
 #ifndef VRN_COMMANDS_CREATE_H
-#define VRN_COMMANDS_CREATE_H 
+#define VRN_COMMANDS_CREATE_H
 
-#include "command.h"
+#include "voreen/core/cmdparser/command.h"
 #include "voreen/core/volume/volumeatomic.h"
 
-namespace voreen { 
+namespace voreen {
+
+class CommandGenerateMask : public Command {
+public:
+    CommandGenerateMask();
+    bool checkParameters(const std::vector<std::string>& parameters);
+    bool execute(const std::vector<std::string>& parameters);
+};
 
 class CommandCreate : public Command {
 public:
     CommandCreate();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
-    
+
+protected:
+    void fillPlane(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 normal, uint8_t value);
+    void fillCircle(VolumeUInt8* vds, tgt::vec3 center, float radius, uint8_t value);
+    void fillOrientedCircle(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 normal, float radius, uint8_t value);
     void fillSphere(VolumeUInt8* vds, tgt::vec3 center, float radius, uint8_t value);
     void fillEllipsoid(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 radius, uint8_t value);
     void fillBox(VolumeUInt8* vds, tgt::ivec3 start, tgt::ivec3 end, uint8_t value);
     void fillOrientedBox(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 dir, float lengthA, float lengthB, float yStart, float yEnd, uint8_t value);
     void applyPerturbation(Volume* vds, tgt::ivec3 dimensions, tgt::vec3 frequency, tgt::vec3 amplitude);
 };
-
-class CommandGenerateMask : public Command {
-public:
-    CommandGenerateMask();
-    bool execute(const std::vector<std::string>& parameters);
-    
-};
-
 
 }   //namespace voreen
 

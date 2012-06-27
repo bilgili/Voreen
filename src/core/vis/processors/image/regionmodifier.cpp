@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,7 +37,7 @@ const Identifier RegionModifier::shadeTexUnit1_ = "shadeTexUnit1";
 const Identifier RegionModifier::depthTexUnit1_ = "depthTexUnit1";
 
 RegionModifier::RegionModifier()
-    : GenericFragment("pp_regionmodifier"),
+    : ImageProcessor("pp_regionmodifier"),
       mode_(MODE_BLEND),
       segmentId_("set.segmentId", "Segment-ID", Color(1.0, 0.0, 0.0, 1.0)),
       destColor_("set.destColor", "color", Color(0.0, 0.0, 1.0, 1.0))
@@ -49,7 +49,8 @@ RegionModifier::RegionModifier()
     std::vector<std::string> modes;
     modes.push_back("replace");
     modes.push_back("blend");
-    modeProp_ = new EnumProp("set.RegionModifierMode", "Set Mode", modes, &needRecompileShader_, 0);
+    modeProp_ = new EnumProp("set.RegionModifierMode", "Set Mode", modes, 0, true, true);
+    modeProp_->onChange(CallMemberAction<RegionModifier>(this, &RegionModifier::setRegionModifierModeEvt));
     addProperty(modeProp_);
     addProperty(&segmentId_);
     addProperty(&destColor_);
@@ -63,7 +64,7 @@ RegionModifier::RegionModifier()
 }
 
 const std::string RegionModifier::getProcessorInfo() const {
-	return "Highlights a part of an image using a segmentation image.";
+    return "Highlights a part of an image using a segmentation image.";
 }
 
 void RegionModifier::compile() {
@@ -72,7 +73,7 @@ void RegionModifier::compile() {
 }
 
 std::string RegionModifier::generateHeader() {
-    std::string header = GenericFragment::generateHeader();
+    std::string header = ImageProcessor::generateHeader();
     header += "#define " + modeDefinesMap_[mode_] + "\n";
     return header;
 }
@@ -80,8 +81,8 @@ std::string RegionModifier::generateHeader() {
 void RegionModifier::process(LocalPortMapping* portMapping) {
     compileShader(); // need this because of conditioned compilation
 
-	int source =  portMapping->getTarget("image.input");
-	int mask =  portMapping->getTarget("image.mask");
+    int source =  portMapping->getTarget("image.input");
+    int mask =  portMapping->getTarget("image.mask");
     int dest = portMapping->getTarget("image.outport");
 
     tc_->setActiveTarget(dest, "RegionModifier::process");
@@ -95,7 +96,7 @@ void RegionModifier::process(LocalPortMapping* portMapping) {
     glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
     LGL_ERROR;
 
-    // bind shading and (not) depth from mask 
+    // bind shading and (not) depth from mask
     glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
     glBindTexture(tc_->getGLTexTarget(mask), tc_->getGLTexID(mask));
     //glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
@@ -122,24 +123,17 @@ void RegionModifier::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 }
 
-void RegionModifier::processMessage(Message* msg, const Identifier& dest) {
-	GenericFragment::processMessage(msg, dest);
-    if (msg->id_ == "set.segmentId") {
-        segmentId_.set(msg->getValue<Color>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.destColor") {
-        destColor_.set(msg->getValue<Color>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.RegionModfifierMode") {
-        std::string modeStr = msg->getValue<std::string>();
-        if (modeStr == "replace")
+void RegionModifier::setRegionModifierModeEvt() {
+    if (modeProp_ == 0)
+        return;
+    const int mode = modeProp_->get();
+    switch(mode) {
+        case 0:
             mode_ = MODE_REPLACE;
-        else if (modeStr == "blend")
+            break;
+        case 1:
             mode_ = MODE_BLEND;
-        needRecompileShader_ = true;
-        invalidate();
+            break;
     }
 }
 

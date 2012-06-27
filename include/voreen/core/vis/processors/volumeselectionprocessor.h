@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,10 +31,7 @@
 #define VRN_VOLUMESELECTIONPROCESSOR_H
 
 #include "processor.h"
-
-#ifndef VRN_OBSERVER_H
 #include "voreen/core/volume/observer.h"
-#endif
 
 namespace voreen {
 
@@ -42,16 +39,14 @@ class VolumeSet;
 class VolumeSeries;
 class VolumeHandle;
 
-class VolumeSelectionProcessor : public Processor, public Observer
-{
-
-public: 
+class VolumeSelectionProcessor : public Processor, public Observer {
+public:
     VolumeSelectionProcessor();
     ~VolumeSelectionProcessor();
-    	
+
     virtual const Identifier getClassName() const;
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create();
+    virtual Processor* create() const;
 
     virtual void process(LocalPortMapping* portMapping);
     virtual void processMessage(Message* msg, const Identifier& dest);
@@ -62,8 +57,8 @@ public:
     void setVolumeSeries(VolumeSeries* const volumeSeries);
     void setVolumeHandle(VolumeHandle* const volumeHandle);
 
-    static const Identifier msgSetCurrentModality_;
-    static const Identifier msgSetCurrentTimestep_;
+    void setCurrentSeries(const std::string& seriesName);
+    void setCurrentTimestep(int timestepIndex);
 
     /**
      * Implementation of the method inherited from <code>class Observer</code>.
@@ -78,13 +73,19 @@ public:
      */
     virtual void notify(const Observable* const /*source = 0*/) {}
 
+    static const Identifier msgSetCurrentModality_;
+    static const Identifier msgSetCurrentTimestep_;
+
 protected:
+    void currentSeriesChanged();
+    void currentTimestepChanged();
+
     VolumeSet* curVolumeSet_;
     VolumeSeries* volumeSeries_;
     VolumeHandle* volumeHandle_;
 
-    EnumProp* modalitiesProp_;
-    IntProp* timestepProp_;
+    StringSelectionProp* modalityProp_;
+    IntProp timestepProp_;
     std::vector<std::string> availableModalities_;
 
     Identifier volumeSetInportName_;
@@ -93,10 +94,8 @@ protected:
 private:
     void updateAvailableModalities();
     void updateAvailableTimesteps();
-    void setCurrentSeries(const std::string& seriesName);
-    void setCurrentTimestep(const int timestepIndex);
 };
 
-} // namespace
+} // namespace voreen
 
 #endif // VRN_VOLUMESELECTIONPROCESSOR_H

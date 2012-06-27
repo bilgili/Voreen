@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,154 +30,161 @@
 #ifndef VRN_TRANSFUNC_H
 #define VRN_TRANSFUNC_H
 
-#include "voreen/core/vis/message.h"
+#include "tgt/texture.h"
+#include "tgt/vector.h"
 
-#include "tgt/texturemanager.h"
+#include <vector>
+#include <string>
 
-class string;
 class TiXmlElement;
-
 
 namespace voreen {
 
-class TextureManager;
-class VolumeRenderer;
-class TransFuncIntensity;
-class TransFunc;
-
-typedef TemplateMessage<TransFunc*> TransFuncPtrMsg;
-
 /**
- * Base class for transfer functions.
+ * Abstract base class for transfer functions.
  */
 class TransFunc {
 public:
     /**
-    * Standard constructor
-    */
-    TransFunc();
+     * Constructor
+     *
+     * @param width width of transfer function
+     * @param height of transfer function
+     */
+    TransFunc(int width = 256, int height = 1);
 
     /**
-    * Standard destructor
-    */
+     * Standard destructor
+     */
     virtual ~TransFunc();
 
     /**
-    * Creates a transfer function out of the data contained in the file.
-    * \param filename The path to the file in which the data is stored
-    * \return Was the load successful?
-    */
-    virtual bool load(const std::string filename);
+     * Creates a transfer function out of the data contained in the file given by filename.
+     *
+     * @param filename The path to the file in which the data is stored
+     * @return true when the load was successful, false otherwise
+     */
+    virtual bool load(const std::string& filename) = 0;
 
     /**
-    * Returns the shader defines needed to work with this type of TF (see mod_transfunc.frag)
-    */
-    virtual std::string getShaderDefines() = 0;
+     * Returns a define for the usage of transfer functions in shaders.
+     * For 1D transfer functions the define looks like: "#define TF_SAMPLER_TYPE sampler1D \n"
+     * and with sampler2D for 2D transfer functions.
+     *
+     * @return define for usage of transfer functions in shaders
+     */
+    virtual const std::string getShaderDefines() const = 0;
 
     /**
-    * Bind the TF texture
-    */
+     * Returns a string representation of the samplertype, e.g. "sampler1D" for 1D transfer
+     * functions and "sampler2D" for 2D transfer functions.
+     *
+     * @return string representaion of the samplertype used by the transfer function
+     */
+    virtual const std::string getSamplerType() const = 0;
+
+    /**
+     * Sets the width and height of the transfer function to the given values.
+     * The texture is not updated at this point.
+     *
+     * @param width width of the transfer function
+     * @param height height of the transfer function
+     */
+    void setTextureDimension(int width, int height);
+
+    /**
+     * Marks the texture of the transfer function as invalid.
+     * That means that the texture needs to be updated before next bind.
+     */
+    void textureUpdateNeeded();
+
+    /**
+     * Binds the tf texture.
+     */
     void bind();
 
     /**
-    * Returns the active texture
-    * \return the active texture
-    */
+     * Returns the texture of the transfer function.
+     *
+     * @return the texture of the transfer function
+     */
     tgt::Texture* getTexture();
-    
-    /**
-    * Returns the active constant texture
-    * \return the active constant texture
-    */
-    const tgt::Texture* getTexture() const;
 
     /**
-    * Creates a new TinyXML Element consisting of the elements of v
-    * \param root The root element to which the new element is added
-    * \param v The vector containing the data which is to be saved
-    */
-    static void saveXml(TiXmlElement* root, const tgt::vec2& v);
-
-
-    /**
-    * Creates a new TinyXML Element consisting of the elements of c
-    * \param root The root element to which the new element is added
-    * \param c The vector containing the data which is to be saved
-    */
-    static void saveXml(TiXmlElement* root, const tgt::col4& c);
-
+     * Returns a vector that contains the endings of suppported file formats for loading.
+     *
+     * @return vector with endings of supported file formats
+     */
+    const std::vector<std::string>& getLoadFileFormats();
 
     /**
-    * Loads two entries out of the TinyXML Element root and saves them into v
-    * \param root The TinyXML Element containing two elements "x" and "y"
-    * \param v The adress of the vector
-    */
-    static void loadXml(TiXmlElement* root, tgt::vec2& v);
-
+     * Returns a vector that contains the endings of suppported file formats for saving.
+     *
+     * @return vector with endings of supported file formats
+     */
+    const std::vector<std::string>& getSaveFileFormats();
 
     /**
-    * Loads two entries out of the TinyXML Element root and saves them into c
-    * \param root The TinyXML Element containing four elements "r","g","b" and "a"
-    * \param c The adress of the vector
-    */
-    static void loadXml(TiXmlElement* root, tgt::col4& c);
+     * Creates a new TinyXML Element consisting of the elements of v.
+     *
+     * @param root the root element to which the new element is added
+     * @param v the vector containing the data which is to be saved
+     */
+    void saveXml(TiXmlElement* root, const tgt::vec2& v);
+
+    /**
+     * Creates a new TinyXML Element consisting of the elements of c.
+     *
+     * @param root the root element to which the new element is added
+     * @param c the vector containing the data which is to be saved
+     */
+    void saveXml(TiXmlElement* root, const tgt::col4& c);
+
+    /**
+     * Loads two entries out of the TinyXML Element root and saves them into v.
+     *
+     * @param root the TinyXML element containing two elements "x" and "y"
+     * @param v the adress of the vector
+     */
+    void loadXml(TiXmlElement* root, tgt::vec2& v);
+
+    /**
+     * Loads two entries out of the TinyXML Element root and saves them into c.
+     *
+     * @param root the TinyXML element containing four elements "r","g","b" and "a"
+     * @param c the adress of the vector
+     */
+    void loadXml(TiXmlElement* root, tgt::col4& c);
 
 protected:
-    tgt::Texture* tex_;
-    static const std::string loggerCat_;
+
+    /**
+     * Updates the texture of the transfer function. It is called before the texture is bound
+     * to a textureunit. Must be reimplemented in every subclass.
+     */
+    virtual void updateTexture() = 0;
+
+    tgt::Texture* tex_; ///< the texture of the transfer function
+
+    std::vector<std::string> loadFileFormats_; ///< endings that are supported for loading a transfer function
+    std::vector<std::string> saveFileFormats_; ///< endings that are supported for saving a transfer function
+
+    bool textureUpdateNeeded_; ///< indicates whether the texture of the transfer function has to be updated or not
+    tgt::ivec2 dimension_; ///< dimensions of the transfer function texture
+
+private:
+    /**
+     * Adapts the given width and height of transfer function to graphicscard capabilities.
+     * The result is stored in the given parameters.
+     *
+     * @param width desired width for the transfer function
+     * @param height desired height for the transfer function
+     */
+    void fitDimension(int& width, int& height);
+
+    static const std::string loggerCat_; ///< logger category
 };
 
-/**
-* Two dimensional transfer function.
-* \sa TransFunc
-*/
-class TransFunc2D : public TransFunc {
+} // namespace voreen
 
-public:
-    /**
-    * Standard constructor
-    */
-    TransFunc2D();
-
-    /**
-    * Standard destructor
-    */
-	virtual ~TransFunc2D();
-
-    /**
-    * Loads a transfer function from nearly any image file, with alpha channel (using DevIL).
-    * \param filename The location of the file which is to be loaded
-    * \return was the load successful?
-    */
-    bool load(const std::string& filename);
-
-    //TODO: elaborate doxygen comment necessary
-    static TransFunc2D* createPreIntegration(TransFunc *source);
-    
-    /**
-    * Returns the color of a pixel for using in a Qt Pixmap.
-    * \param x The x-coordinate of the pixel
-    * \param y The y-coordinate of the pixel
-    * \return The color value of the pixel
-    */
-    uint getPixelInQtFormat(uint x, uint y);
-
-    /**
-    * Sets color of a pixel. Retrives color in Qt format.
-    * Texture must be updated manually by invalidateGLTex() and checkTexture() (which should of
-    * course NOT be called for every pixel)
-    * \param x The x-coordinate of the pixel
-    * \param y The y-coordinate of the pixel
-    */
-    virtual void setPixelFromQtFormat(uint x, uint y, uint color);
-
-    /**
-    * Returns the shader defines needed to work with this type of TF
-    * \return The defines
-    */
-    virtual std::string getShaderDefines();
-};
-
-} // namespace
-
-#endif //VRN_TRANSFUNC_H
+#endif // VRN_TRANSFUNC_H

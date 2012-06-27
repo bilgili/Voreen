@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -101,7 +101,7 @@ bool Observer::removeObservedFriend(Observable* const observed) {
     // try to remove this on the observed object, as this method
     // is only to be called from Observable, so the removal is
     // not necessary or has already been done!
-    // 
+    //
     if (observed == 0)
         return false;
     observeds_.erase(observed);
@@ -178,8 +178,7 @@ void Observable::notifyObservers() const {
 
     std::set<Observer*>::const_iterator it = observers_.begin();
     for (std::set<Observer*>::const_iterator it = observers_.begin();
-        it != observers_.end();
-        ++it)
+        it != observers_.end(); ++it)
     {
         if (*it != 0)
             (*it)->notify(this);

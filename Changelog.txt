@@ -1,14 +1,57 @@
 Voreen Changelog
 ----------------
 
+2009-07-06: Snapshot r18 (voreen-6845)
+-------------------------------------
+
+   * VoreenVE now has two modes of operation: network mode and visualization
+     mode. The visualization replaces the old VoreenDev application.
+      o The entire state of VoreenVE can be saved/restored into workspace files
+        (*.vws).
+      o Switched to use docking for most tool windows.
+      o The visibilty of individual properties and entire processors in
+        visualization mode can be configured using the 'eye' buttons in network
+        editor mode.
+      o Processor-specific tool windows are only shown when the network
+        contains the processor.
+      o Status messages are shown in debug console widget instead of default
+        Windows console
+      o Show alpha channel in tooltips over processor connections.
+      o Added snapshot plugin.
+
+    * Many improvements in the transfer function editor
+      o Switch between 'Intensity', 'Intensity Ramp', 'Intensity Pet' and
+        'Intensity Gradient (2D)'.
+      o Histogram is calculated in a background thread.
+      o Integrated intensity threshold into transfer function.
+
+    * Added new volumeset 'walnut.dat': a CT scan of a walnut (courtesy of
+      European Institut of Molecular Imaging (EIMI), Muenster, Germany)
+    * The example networks were restructured and cleaned up.
+    * ZipVolumeReader now automatically reads all volume files contained in a
+      .zip files (requires the ZipArchive library).
+    * The (optional) font rendering now require FreeType and FTGL.
+
+    * Processors
+      o New volume processors for operating on volume data, see
+        'volumeinversion.vnw' for an example.
+      o New SliceSequenceRenderer and SingleSliceRenderer for 2D visualization.    
+      o Simple interactive segmentation using region growing, see 'regiongrowing.vnw'.
+
+    * Added a Windows installer for the snapshot release.
+
+    * Voreen can now be installed with 'make install' on unix, 
+      see INSTALL_PREFIX in config-default.txt
+
+
 2009-02-13: Snapshot r13 (voreen-5688)
---------------------------------------
+-------------------------------------
   
     * Redesigned GUI for VoreenVE, using multiple tool windows instead of dock
       widgets, work in progress
  
     * Added network for labeling processor, use with NCAT example data set from
-	  the voreen.org website (requires FreeType activated in config.txt):
+      the voreen.org website (requires FreeType activated in config.txt):
       o load network 'labeling.vnw'
       o load data sets 'ncat_phantom_medium.dat' and 'ncat_phantom_segmentation.dat'
       o attach 'ncat_phantom_medium.dat' to left VolumeSetSource processor

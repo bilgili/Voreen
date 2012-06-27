@@ -1,3 +1,32 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifndef XMLSERIALIZABLE_H
 #define XMLSERIALIZABLE_H
 #include "tinyxml/tinyxml.h"
@@ -37,7 +66,7 @@ public:
     };
 
     /**
-     * Default constructor.  
+     * Default constructor.
      *
      * @param init. If true - serialId_ will get the next available
      * number and -1 in other case (for later call of deserialize).
@@ -76,9 +105,9 @@ public:
      * @throw WRONG_IDENTIFIER if classIdentifier is wrong
      * @throw ATTRIBUT_ERROR  if an attribut could not be initialized
      */
-    virtual void deserialize(const TiXmlElement* xml) 
+    virtual void deserialize(const TiXmlElement* xml)
         throw (XmlSerializable::Exceptions);
-  
+
     /**
      * Init Pointers. You should get all needed Pointers from
      * getPointer function and throw
@@ -88,7 +117,7 @@ public:
     virtual void initPointers() throw(XmlSerializable::Exceptions) {}
 
     /**
-     * Get pointer to an serializable object with given id. 
+     * Get pointer to an serializable object with given id.
      * @param serialId - id of searched object.
      * @return pointer to object or 0, if such an object does not exist.
      */
@@ -106,7 +135,7 @@ public:
      * </code>
      */
     virtual const Identifier& getClassIdentifier() const = 0;
-    
+
     /**
      * Factory design pattern method: implement on derived
      * classes as follows:
@@ -122,10 +151,10 @@ public:
      * Every child class can create a static instance of SubType of
      * XmlSerializableRegister and pass it to this function for
      * providing full automaticaly deserializing.
-     */ 
+     */
     static void registerNewClass(const Identifier& classID, XmlSerializable* (*creatorMethod)(void));
     //static void registerNewClass(XmlSerializableRegister* newClass);
-    
+
     /**
      * You can create a new class of your need just by passing
      * TiXmlElement to this function. If such a class is registered
@@ -152,19 +181,19 @@ public:
 
 protected:
     /**
-     * serial id . 
+     * serial id .
      */
     int serialId_;
 
 private:
     static int idCounter_;
-	/**
-	* Replace static members with static functions because of
+    /**
+    * Replace static members with static functions because of
     * static initialization order fiasco look at
-	* http://www.parashift.com/c++-faq-lite/ctors.html
-	*/
-	static std::list<XmlSerializable*>* getAllObjects();
-	//static std::list<XmlSerializableRegister*>* getAllClasses();
+    * http://www.parashift.com/c++-faq-lite/ctors.html
+    */
+    static std::list<XmlSerializable*>* getAllObjects();
+    //static std::list<XmlSerializableRegister*>* getAllClasses();
 
     typedef XmlSerializable* (*creatorMethod_)(void);
     typedef std::map<Identifier, creatorMethod_> ClassMap;
@@ -175,7 +204,7 @@ private:
 
 class XmlSerializableRegister {
 public:
-    XmlSerializableRegister(const Identifier& identifier, 
+    XmlSerializableRegister(const Identifier& identifier,
         XmlSerializable* (*creatorMethod)(void));
     const Identifier& getClassIdentifier() const;
 private:

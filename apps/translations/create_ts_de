@@ -1,2 +1,0 @@
-# Creates or updates a translation file (voreen_de.ts) for German GUI translations
-lupdate ../../src/qt ../../include/voreen/qt ../voreendev ../voreenpub -ts voreen_de.ts

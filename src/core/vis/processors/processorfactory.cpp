@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,14 +29,13 @@
 
 #include "voreen/core/vis/processors/processorfactory.h"
 
-
 #include <algorithm> // for sorting vectors
 #include <functional>
 
 #include "voreen/core/vis/clippingplanewidget.h"
+#include "voreen/core/vis/processors/entryexitpoints/cubeentryexitpoints.h"
+#include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
 #include "voreen/core/vis/processors/geometrytestprocessor.h"
-#include "voreen/core/vis/processors/volumesetsourceprocessor.h"
-#include "voreen/core/vis/processors/volumeselectionprocessor.h"
 #include "voreen/core/vis/processors/image/background.h"
 #include "voreen/core/vis/processors/image/blur.h"
 #include "voreen/core/vis/processors/image/cacherenderer.h"
@@ -45,34 +44,45 @@
 #include "voreen/core/vis/processors/image/colordepth.h"
 #include "voreen/core/vis/processors/image/combine.h"
 #include "voreen/core/vis/processors/image/compositer.h"
+#include "voreen/core/vis/processors/image/crosshair.h"
 #include "voreen/core/vis/processors/image/depthmask.h"
 #include "voreen/core/vis/processors/image/depthoffield.h"
 #include "voreen/core/vis/processors/image/edgedetect.h"
 #include "voreen/core/vis/processors/image/geometryprocessor.h"
+#include "voreen/core/vis/processors/image/glow.h"
 #include "voreen/core/vis/processors/image/labeling.h"
 #include "voreen/core/vis/processors/image/nullrenderer.h"
 #include "voreen/core/vis/processors/image/regionmodifier.h"
+#include "voreen/core/vis/processors/image/renderstore.h"
 #include "voreen/core/vis/processors/image/threshold.h"
-#include "voreen/core/vis/processors/render/entryexitpoints.h"
-#include "voreen/core/vis/processors/render/sliceentrypoints.h"
-#include "voreen/core/vis/processors/render/idraycaster.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
-#include "voreen/core/vis/processors/render/sliceproxygeometry.h"
-#include "voreen/core/vis/processors/render/simpleraycaster.h"
-#include "voreen/core/vis/processors/render/singlevolumeraycaster.h"
+#include "voreen/core/vis/processors/proxygeometry/axialsliceproxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/cubecutproxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/cubeproxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/multipleaxialsliceproxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/sliceproxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/slicingproxygeometry.h"
 #include "voreen/core/vis/processors/render/firsthitrenderer.h"
-#include "voreen/core/vis/processors/render/slicingproxygeometry.h"
-#include "voreen/core/vis/processors/render/slicerenderer.h"
+#include "voreen/core/vis/processors/render/idraycaster.h"
+#include "voreen/core/vis/processors/render/segmentationraycaster.h"
+#include "voreen/core/vis/processors/render/simpleraycaster.h"
+#include "voreen/core/vis/processors/render/singleslicerenderer.h"
+#include "voreen/core/vis/processors/render/singlevolumeraycaster.h"
+#include "voreen/core/vis/processors/render/sliceentrypoints.h"
+#include "voreen/core/vis/processors/render/slicesequencerenderer.h"
+#include "voreen/core/vis/processors/render/volumeeditor.h"
+#include "voreen/core/vis/processors/volume/regiongrowing.h"
+#include "voreen/core/vis/processors/volume/volumeinversion.h"
+#include "voreen/core/vis/processors/volumeselectionprocessor.h"
+#include "voreen/core/vis/processors/volumesetsourceprocessor.h"
 
 namespace voreen {
 
 ProcessorFactory* ProcessorFactory::instance_ = 0;
 
 ProcessorFactory::ProcessorFactory() {
-    tc_ = 0;
     initializeClassList();
 }
-
 
 ProcessorFactory::~ProcessorFactory() {
     for (std::map <Identifier, Processor*>::iterator it = classList_.begin();
@@ -81,7 +91,6 @@ ProcessorFactory::~ProcessorFactory() {
     {
         delete it->second;
     }
-    classList_.clear();
 }
 
 ProcessorFactory* ProcessorFactory::getInstance() {
@@ -123,45 +132,43 @@ void ProcessorFactory::registerClass(Processor* newClass) {
     knownClasses_.push_back(newClass->getClassName());
 
     // sort knownClasses_ in alphabetical order
-    //
-    // This way is maybe the most suitable: inserting the processor at the
-    // correct position would only take O(n) whereas sort() requires
-    // O(n * log(n)) time. But insertion into a vector in the middle
-    // also requires O(n).... Besides, after initialization, insertion will
-    // be probably rare and therefore resorting the entire vector would be
-    // fast enough. rfc (Dirk)
-    //
     std::sort(knownClasses_.begin(), knownClasses_.end(), std::less<voreen::Identifier>());
 }
 
 void ProcessorFactory::initializeClassList() {
-    registerClass(new CubeProxyGeometry());
-    registerClass(new SliceProxyGeometry());
+
+    registerClass(new AxialSliceProxyGeometry());
     registerClass(new CubeCutProxyGeometry());
+    registerClass(new CubeProxyGeometry());
+    registerClass(new MultipleAxialSliceProxyGeometry());
+    registerClass(new SliceProxyGeometry());
 
     registerClass(new CubeEntryExitPoints());
     registerClass(new SliceEntryPoints());
 
-    registerClass(new SimpleRaycaster());
-    registerClass(new SingleVolumeRaycaster());
-    registerClass(new FirstHitRenderer());
-    registerClass(new IDRaycaster());
-    registerClass(new RegionModifier());
-    registerClass(new Threshold());
-    registerClass(new DepthMask());
+    registerClass(new Background());
+    registerClass(new Blur());
     registerClass(new ColorDepth());
-    registerClass(new DepthOfField());
     registerClass(new Combine());
     registerClass(new Compositer());
-    registerClass(new Blur());
+    registerClass(new CrossHair());
+    registerClass(new DepthMask());
+    registerClass(new DepthOfField());
     registerClass(new EdgeDetect());
+    registerClass(new FirstHitRenderer());
+    registerClass(new Glow());
+    registerClass(new IDRaycaster());
     registerClass(new Labeling());
-    registerClass(new Background());
+    registerClass(new RegionModifier());
+    registerClass(new SegmentationRaycaster());
+    registerClass(new SimpleRaycaster());
+    registerClass(new SingleVolumeRaycaster());
+    registerClass(new Threshold());
+    registerClass(new VolumeEditor());
 
     registerClass(new GeomBoundingBox());
     registerClass(new GeomLightWidget());
     registerClass(new GeometryProcessor());
-    registerClass(new GeomRegistrationMarkers());
 
     registerClass(new ClippingPlaneWidget());
 
@@ -169,21 +176,16 @@ void ProcessorFactory::initializeClassList() {
     registerClass(new CanvasRenderer());
     registerClass(new CacheRenderer());
     registerClass(new NullRenderer());
-    registerClass(new OutputProcessor());
+    registerClass(new RenderStore());
 
     registerClass(new VolumeSetSourceProcessor());
     registerClass(new VolumeSelectionProcessor());
 
-    registerClass(new SliceRenderer3D());
     registerClass(new SingleSliceRenderer());
+    registerClass(new SliceSequenceRenderer());
+
+    registerClass(new RegionGrowingProcessor());
+    registerClass(new VolumeInversion());
 }
 
-void ProcessorFactory::setTextureContainer(voreen::TextureContainer* tc){
-    tc_ = tc;
-}
-
-voreen::TextureContainer* ProcessorFactory::getTextureContainer(){
-    return tc_;
-}
-
-} // namespace
+} // namespace voreen

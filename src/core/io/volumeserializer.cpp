@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,23 +29,11 @@
 
 #include "voreen/core/io/volumeserializer.h"
 
-#include <algorithm>
 #include <cstring>
 
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/io/volumewriter.h"
-
-namespace {
-
-// extracts the extension of a given filename and transforms it to lowercase
-std::string extractExtensionLowerCase(const std::string& filename) {
-    std::string extension = filename.substr(filename.rfind(".") + 1, filename.length());
-    std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
-
-    return extension;
-}
-
-} // namespace 
+#include "tgt/filesystem.h"
 
 namespace voreen {
 
@@ -75,18 +63,45 @@ VolumeSerializer::~VolumeSerializer() {
 VolumeSet* VolumeSerializer::load(const std::string& filename)
     throw (tgt::FileException, std::bad_alloc)
 {
-    std::string extension = extractExtensionLowerCase(filename);
+    std::string realfile = filename;
+    std::string extension = tgt::File::fileExtension(filename, true);
+
+    // Special handling for DICOM "URLs", as DICOM file often have new extension. Also allows
+    // specifiying entire directories by adding a trailing '/' or '\'.
+    if (filename.find("dicom://") == 0) {
+        extension = "dicom";
+        realfile = filename.substr(8); // strip dicom://
+    }
+
     if (readers_.find(extension) == readers_.end())
         throw tgt::UnsupportedFormatException(extension, filename);
     VolumeReader* reader = readers_.find(extension)->second;
-    VolumeSet* volumeSet = reader->read(filename);
+    VolumeSet* volumeSet = reader->read(realfile);
     return volumeSet;
+}
+
+VolumeHandle* VolumeSerializer::loadFromOrigin(VolumeHandle::Origin origin) {
+    std::string extension;
+        
+    if (origin.filename.find("zip://") == 0) {
+        // The filename starts with "zip://"
+        extension = "zip";
+        origin.filename = origin.filename.substr(6);
+    }
+    else
+        extension = tgt::File::fileExtension(origin.filename, true);
+    
+    if (readers_.find(extension) == readers_.end())
+        throw tgt::UnsupportedFormatException(extension, origin.filename);
+    VolumeReader* reader = readers_.find(extension)->second;
+    VolumeHandle* volumeHandle = reader->readFromOrigin(origin);
+    return volumeHandle;    
 }
 
 void VolumeSerializer::save(const std::string& filename, Volume* volume)
     throw (tgt::FileException)
 {
-    std::string extension = extractExtensionLowerCase(filename);
+    std::string extension = tgt::File::fileExtension(filename, true);
 
     if (writers_.find(extension) != writers_.end())
         writers_.find(extension)->second->write(filename, volume);

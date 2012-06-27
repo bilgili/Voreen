@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,27 +33,27 @@
 #include <QtPlugin>
 
 ThresholdWidgetPlugin::ThresholdWidgetPlugin(QObject *parent) : QObject(parent) {
-	initialized = false;
+    initialized = false;
 }
 
 bool ThresholdWidgetPlugin::isContainer() const {
-	return false;
+    return false;
 }
 
 bool ThresholdWidgetPlugin::isInitialized() const {
-	return initialized;
+    return initialized;
 }
 
 QIcon ThresholdWidgetPlugin::icon() const {
-	return QIcon();
+    return QIcon();
 }
 
 QString ThresholdWidgetPlugin::codeTemplate() const {
-	return "";
+    return "";
 }
 
 QString ThresholdWidgetPlugin::domXml() const {
-	return "<widget class=\"ThresholdWidget\" name=\"TresholdWidget\">\n"
+    return "<widget class=\"ThresholdWidget\" name=\"TresholdWidget\">\n"
                " <property name=\"geometry\">\n"
                "  <rect>\n"
                "   <x>0</x>\n"
@@ -70,34 +70,34 @@ QString ThresholdWidgetPlugin::domXml() const {
 }
 
 QString ThresholdWidgetPlugin::group() const {
-	return "Voreen Widgets";
+    return "Voreen Widgets";
 }
 
 QString ThresholdWidgetPlugin::includeFile() const {
-	return "voreen/qt/thresholdwidget.h";
+    return "voreen/qt/thresholdwidget.h";
 }
 
 QString ThresholdWidgetPlugin::name() const {
-	return "ThresholdWidget";
+    return "ThresholdWidget";
 }
 
 QString ThresholdWidgetPlugin::toolTip() const {
-	return "";
+    return "";
 }
 
 QString ThresholdWidgetPlugin::whatsThis() const {
-	return "";
+    return "";
 }
 
 QWidget *ThresholdWidgetPlugin::createWidget(QWidget *parent) {
-	return new ThresholdWidget(parent);
+    return new ThresholdWidget(parent);
 }
 
 void ThresholdWidgetPlugin::initialize(QDesignerFormEditorInterface* /*core*/) {
-	if(initialized) {
-		return;
-	}
-	initialized = true;
+    if(initialized) {
+        return;
+    }
+    initialized = true;
 }
 
 Q_EXPORT_PLUGIN2(thresholdwidgetplugin, ThresholdWidgetPlugin)

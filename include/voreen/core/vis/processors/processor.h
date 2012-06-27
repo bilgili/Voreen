@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,39 +38,64 @@
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/message.h"
-#include "voreen/core/vis/property.h"
 #include "voreen/core/xml/serializable.h"
 #include "voreen/core/vis/processors/port.h"
-
-
-namespace tgt {
-class Shader;
-}
+#include "voreen/core/vis/processors/portmapping.h"
+#include "voreen/core/volume/volumehandlevalidator.h"
+#include "voreen/core/vis/properties/allproperties.h"
+#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen {
 
 class ProxyGeometry;
-class PortMapping;
-class LocalPortMapping;
 class GeometryContainer;
-class TextureContainer;        
+class TextureContainer;
 
-class PropertyOwner {
+class HasShader {
+public:
+    HasShader();
+
+    virtual ~HasShader();
+
+    /**
+     * Invalidate the shader, so that recompiling is performed before the next
+     * rendering.
+     */
+    virtual void invalidateShader();
+
+protected:
+    /**
+     * Compile the shader if necessary.
+     *
+     * Checks the bool flag isShaderValid_ and calls the virtual method compile()
+     * if necessary. So derived classes should place their compile code there and
+     * call the method invalidateShader() when recompiling is required.
+     */
+    virtual void compileShader();
+
+    /**
+     * Compile and link the shader program
+     */
+    virtual void compile() = 0;
+
+private:
+    bool needRecompileShader_; ///< should the shader recompiled?
 };
+
+// ------------------------------------------------------------------------- //
 
 /**
  * The base class for all processor classes used in Voreen.
  */
-class Processor : public MessageReceiver, public Serializable, public PropertyOwner {
+class Processor : public MessageReceiver, public Serializable {
 public:
     enum Status {
         VRN_OK                  = 0x200,
-        VRN_OPENGL_INSUFFICIENT = 0x201,
         VRN_ERROR               = 0x202
     };
 
-    // One site of a connection between to processors. Needed for serialization.
-    struct ConnectionSite {
+    // One side of a connection between two processors. Needed for serialization.
+    struct ConnectionSide {
         int processorId;
         std::string portId;
         int order;
@@ -78,8 +103,8 @@ public:
 
     // Needed to be able to sort connections based on the order of the outgoing side.
     struct ConnectionCompare {
-        bool operator() ( std::pair< ConnectionSite, ConnectionSite > l,
-                          std::pair< ConnectionSite, ConnectionSite > r) {
+        bool operator() ( std::pair< ConnectionSide, ConnectionSide > l,
+                          std::pair< ConnectionSide, ConnectionSide > r) {
             // connect outgoing connections with lower order prior to those with higher order
             return (l.second.order<r.second.order);
         }
@@ -87,23 +112,27 @@ public:
 
     // Needed for Serialization.
     // Note: The order for the first port is not really needed.
-    typedef std::vector< std::pair< ConnectionSite, ConnectionSite > > ConnectionMap;
+    typedef std::vector< std::pair< ConnectionSide, ConnectionSide > > ConnectionMap;
 
-    
+
     /**
      * @param camera The tgt::Camera which is used with this class.
-     * @param tc Some processor subclasses must know of the TextureContainer.
+     * @param tc Some processor subclasses must know the TextureContainer.
      */
-    Processor(tgt::Camera* camera=0, TextureContainer* tc = 0);
-    
+    Processor(tgt::Camera* camera = 0, TextureContainer* tc = 0);
+
     virtual ~Processor();
-    
+
     virtual const Identifier getClassName() const = 0;
     static const Identifier getClassName(TiXmlElement* processorElem);
-    virtual Processor* create() = 0;
 
-    /// This virtual -- here abstract -- method shall be called if the processor should be processed.
-	virtual void process(LocalPortMapping* portMapping) /*throw (std::exception)*/ = 0;
+    virtual Processor* create() const = 0;
+
+    virtual Processor* clone() const //= 0;
+    // TODO: remove this implementation as soon as all Processors have a clone()-method
+    {
+        return create();
+    }
 
     /**
      * Should be called after OpenGL is initialized, initializes the processor.
@@ -112,30 +141,26 @@ public:
      */
     virtual int initializeGL();
 
-    /**
-     * This method shall be called before a processor::process() call
-     * but only if another processor was used before.
-     */
-    virtual void init();
+    /// Returns the error code which occured during \a initializeGL().
+    int getInitStatus() const;
 
-	/**
-    * CoProcessors add a function pointer to their CoprocessorOutports. This 
-    * function pointer usually points to this function, which is overwritten in the
-    * CoProcessors.
-    */
+
+    /// This method is called when the processor should be processed.
+    virtual void process(LocalPortMapping* portMapping) = 0;
+
+    /**
+     * CoProcessors add a function pointer to their CoprocessorOutports. This
+     * function pointer usually points to this function, which is overwritten in the
+     * CoProcessors.
+     */
     virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
-
-    /**
-     * Call this method before calling processor::process() of another processor object.
-     */
-    virtual void deinit();
 
     virtual void setTextureContainer(TextureContainer* tc);
     virtual TextureContainer* getTextureContainer();
 
     virtual void setCamera(tgt::Camera* camera);
 
-    /// Returns the camera used by this class.
+    /// Returns the camera used by this processor.
     virtual tgt::Camera* getCamera() const;
 
     /// Returns the light source position in world coordinates
@@ -164,29 +189,36 @@ public:
     /// Returns the name of this processor.
     std::string getName() const;
 
-	// Returns processor information
-	virtual const std::string getProcessorInfo() const;
+    // Returns processor information
+    virtual const std::string getProcessorInfo() const;
 
-    /// Set the size of this processor. Forces an update of the projection matrix.
+    /// Set the size of this processor.
     virtual void setSize(const tgt::ivec2& size);
 
-    /// Set the size of this processor. Forces an update of the projection matrix.
+    /// Set the size of this processor.
     virtual void setSize(const tgt::vec2& size);
 
+    /// Returns the size of the processor canvas.
+    tgt::ivec2 getSize() const;
+
+    /// Returns the size of the processor canvas as a float.
+    /// Non-integer values can be introduces by the CoarsenessRenderer.
+    tgt::vec2 getSizeFloat() const;
+    
     /// Marks that the processor needs to be updated
     virtual void invalidate();
 
-    /// Adds a property for the automatic generated GUI.
+    /// Adds a property to this processor
     virtual void addProperty(Property* prop);
 
     /// Returns the properties.
     virtual const Properties& getProperties() const;
 
     /**
-    * Returns the inports of this processor.
-    */
+     * Returns the inports of this processor.
+     */
     virtual std::vector<Port*> getInports() const;
-    
+
     /**
     * Returns the outports of this processor.
     */
@@ -195,58 +227,96 @@ public:
     /**
     * Returns the coprocessor inports of this processor.
     */
-	virtual std::vector<Port*> getCoProcessorInports() const;
+    virtual std::vector<Port*> getCoProcessorInports() const;
 
     /**
     * Returns the coprocessor outports of this processor.
     */
-	virtual std::vector<Port*> getCoProcessorOutports() const;
+    virtual std::vector<Port*> getCoProcessorOutports() const;
 
     /**
     * Returns the private ports of this processor.
     */
-	virtual std::vector<Port*> getPrivatePorts() const;
+    virtual std::vector<Port*> getPrivatePorts() const;
 
     /**
-    * Returns the port that contains (or better that is represented by) the given Identifier. 
+    * Returns the port that contains (or better that is represented by) the given Identifier.
     */
-	virtual Port* getPort(Identifier ident);
+    virtual Port* getPort(Identifier ident);
 
     /**
-    * Creates a new inport for this processor.
-    * @param type The identifier by which this port is adressed in the processor. Something like "image.entrypoints" for example.
-    * @param allowMultipleConnections Can multiple ports be connected to this processor? This should usually be false
-    */
-	virtual void createInport(Identifier type, bool allowMultipleConnections = false);
-	
-    /**
-    * Creates a new outport for this processor.
-    * @param type The identifier by which this port is adressed in the processor. Something like "image.entrypoints" for example.
-    * @param inportIdent Some processors need to render to the same rendertarget they got their input from. If this is neccessary,
-    *                    inportIdent holds the Identifier of that inport.
-    * @param isPersistent Should the render result carried by this port be persistent in the TC?
-    */
-    virtual void createOutport(Identifier type, bool isPersistent = false,Identifier inportIdent="dummy.port.unused");
+     * Creates a new inport for this processor.
+     *
+     * @param type The identifier by which this port is adressed in the processor. Something
+     * like "image.entrypoints" for example.
+     * @param allowMultipleConnections Can multiple ports be connected to this processor? This
+     * should usually be false
+     */
+    virtual void createInport(Identifier type, bool allowMultipleConnections = false);
 
     /**
-    * Creates a new CoProcessorInport for this processor.
-    * @param type The identifier by which this port is adressed in the processor. Something like "image.entrypoints" for example.
-    * @param allowMultipleConnections Can multiple ports be connected to this processor? This should usually be false
-    */
-	virtual void createCoProcessorInport(Identifier type, bool allowMultipleConnections = false);
-	
+     * Creates a new outport for this processor.
+     *
+     * @param type The identifier by which this port is adressed in the processor. Something
+     *             like "image.entrypoints" for example.
+     * @param isPersistent Should the render result carried by this port be persistent in the TC?
+     * @param inportIdent Some processors need to render to the same rendertarget they got their
+     *                    input from. If this is neccessary, inportIdent holds the Identifier of
+     *                    that inport.
+     */
+    virtual void createOutport(Identifier type, bool isPersistent = false,
+                               Identifier inportIdent = "dummy.port.unused");
+
     /**
-    * Creates a new outport for this processor.
-    *
-    * @param type The identifier by which this port is adressed in the processor. Something
-    *             like "image.entrypoints" for example.
-    * @param function CoProcessors add a functionpointer to one of their functions (usually the
-    *                 "call" function). This is that pointer. Use "&Renderer::call" as that
-    *                 pointer if you are unsure
-    * @param allowMultipleConnections Can multiple ports be connected to this processor?
-    *        Default is true for outports
+     * Contains an outport which actually contains the passed data. The data will be deleted
+     * together with the port. This method is a generalization of <code>createOutport()</code>
+     * and is used for the VolumeSet / VolumeHandle concept enabling to pass pointers through
+     * the network.
+     *
+     * @param   type    Identifies determining what kind of port the created port shall become
+     *                  (e.g. "volumehandle.input")
+     * @param   data    the data which become mapped to the port mapping and are acutally passed
+     *                  to the </code>process()</code> methods of connected processors.
+     * @param   isPersistend    just like in <code>createOutport()</code>
+     * @param   inportIdent    just like in <code>createOutport()</code>
+     */
+    template<typename T>
+    void createGenericOutport(Identifier type, const T data, const bool isPersistent = false,
+                              const Identifier& inportIdent = "dummy.port.unused")
+    {
+        Port* newOutport = new GenericOutPort<T>(type, data, this, isPersistent);
+        outports_.push_back(newOutport);
+        if (inportIdent != "dummy.port.unused") {
+            if (getPort(inportIdent) != 0)
+                outportToInportMap_.insert(std::pair<Port*, Port*>(newOutport, getPort(inportIdent)));
+            else
+                LWARNING("Couldn't find the inport in Processor::createGenericOutport())");
+        }
+    }
+
+    /**
+     * Creates a new CoProcessorInport for this processor.
+     *
+     * @param type The identifier by which this port is adressed in the processor. Something
+     * like "image.entrypoints" for example.
+     * @param allowMultipleConnections Can multiple ports be connected to this processor? This
+     * should usually be false
+     */
+    virtual void createCoProcessorInport(Identifier type, bool allowMultipleConnections = false);
+
+    /**
+     * Creates a new outport for this processor.
+     *
+     * @param type The identifier by which this port is adressed in the processor. Something
+     *             like "image.entrypoints" for example.
+     * @param function CoProcessors add a functionpointer to one of their functions (usually the
+     *                 "call" function). This is that pointer. Use "&Renderer::call" as that
+     *                 pointer if you are unsure
+     * @param allowMultipleConnections Can multiple ports be connected to this processor?
+     *        Default is true for outports
     */
-    virtual void createCoProcessorOutport(Identifier type, FunctionPointer function=0, bool allowMultipleConnections = true);
+    virtual void createCoProcessorOutport(Identifier type, FunctionPointer function = 0,
+                                          bool allowMultipleConnections = true);
 
     /**
      * Creates a new private port for this processor. Private ports are ports that get a render
@@ -254,11 +324,11 @@ public:
      * up in rptgui). The combiner for example needs two temporary TC targets to work correctly,
      * and this is how it gets them. Just create two privatePorts and render your temporary
      * render results to those targets. Private ports are always persistent.
-     * 
+     *
      * @param type The identifier by which this port is adressed in the processor. Something
      * like "image.entrypoints" for example.
      */
-	virtual void createPrivatePort(Identifier type);
+    virtual void createPrivatePort(Identifier type);
 
     /**
      * Connects one outport of this processor with one inport of another processor. You can use
@@ -272,18 +342,18 @@ public:
     /**
      * Tests if the outport of this processor can be connected to the inport of the other processor
      */
-	virtual bool testConnect(Port* outport, Port* inport);
+    virtual bool testConnect(Port* outport, Port* inport);
 
     /**
      * Disconnectes the outport of this processor from the inport from another processor
      */
     virtual bool disconnect(Port* outport, Port* inport);
-    
+
     /**
      * Returns the name of the xml element used when serializing the object
      */
     virtual std::string getXmlElementName() const;
-    
+
     /**
      * Overridden Serializable methods - serialize and deserialize everything except connections
      */
@@ -293,15 +363,15 @@ public:
     /**
      * serializes the Processor to xml
      */
-    TiXmlElement* serializeToXml(const std::map<Processor*,int> idMap) const;
-     
+    TiXmlElement* serializeToXml(const std::map<Processor*, int> idMap) const;
+
     /**
      * Updates the processor xml and returns connection info so that
      * processors can be connected, after all have been read, in the form
      * (id, ConnectionMap)
      */
-    std::pair<int, ConnectionMap> getMapAndupdateFromXml(TiXmlElement* processorElem);
-    
+    std::pair<int, ConnectionMap> getMapAndUpdateFromXml(TiXmlElement* processorElem);
+
     /**
      * Serialization for metadata
      */
@@ -309,6 +379,7 @@ public:
     void removeFromMeta(std::string elemName);
     void clearMeta();
     TiXmlElement* getFromMeta(std::string elemName) const;
+    std::vector<TiXmlElement*> getAllFromMeta() const;
     bool hasInMeta(std::string elemName) const;
 
     /**
@@ -317,68 +388,50 @@ public:
     bool getIsCoprocessor() const;
 
     /**
-     * Sets whether this processor is a coprocessor or not. If you want to create a coprocessor you have
-     * to use this function in the constructor of your processor. This is far from optimal of course, we 
-     * should have a CoProcessor class, but we dont't :) 
-     */ 
+     * Sets whether this processor is a coprocessor or not. If you want to create a coprocessor
+     * you have to use this function in the constructor of your processor.
+     */
     void setIsCoprocessor(bool b);
 
     /**
-     * Returns whether the render results of this processor are currently cached or not. The networkevaluator
-     * checks this before every rendering, you shouldn't have to use this function at all.
-     */
-    bool getCached() const;
-
-    /**
-     * Sets whether the render results of this processor are currently cached or not. The networkevaluator
-     * can do this after every rendering, you shouldn't have to use this function at all.
-     */
-	void setCached(bool b);
-
-    /**
-     * Checks if it is possible to cache the render results of this processor. (That means if every outport is somehow
-     * connected to a cacherenderer, not necesserily directly). The networkevaluator checks this when analyzing a network.
-     */
-	bool getCachable() const;
-
-    /**
-     * Sets if it is possible to cache the render results of this processor. (That means if every outport is somehow
-     * connected to a cacherenderer, not necesserily directly). The networkevaluator does this when analyzing a network.
-     */
-	void setCachable(bool b);
-
-    /// Returns the error code which occured during \a initializeGL().
-    int getInitStatus() const;
-
-    /// Returns the size of the processor canvas.
-    tgt::ivec2 getSize() const;
-
-    /// Returns the size of the processor canvas.
-    tgt::vec2 getSizeFloat() const;
-
-    /**
-     * Returns the projection matrix which was used set
-     * after the last setSize call. If you override setSize it is important
-     * to set \a projectionMatrix_ accordingly.
-     */
-    tgt::mat4 getProjectionMatrix() const;
-
-    /**
-     * Tells the processor the size of the canvas.
+     * Returns whether the processor supports caching of it's results  or not.
      *
-     * @param size size of the canvas
+     * @return true when the processor supports caching, false otherwise
      */
-    void setCanvasSize(const tgt::ivec2& size);
+    bool getCacheable() const;
 
-    /** 
-	 * Set the GeometryContainer. The container must be the same as used by the
-     * network evaluator. Therefore it will be set by the later.
+    /**
+     * Sets if the results of this processor can be cachend, e.g. whether this processor
+     * supports caching or not.
+     *
+     * @param b is caching supported by this processor?
+     */
+    void setCacheable(bool b);
+
+    // FIXME: should be temporary and somehow combined with exisiting cachabel attribute (df)
+    /**
+     * Determines whether the caching of VolumeHandles on this processor's outports shall be used. 
+     * Note that only processors with outports passing VolumeHandle* are concerned of this 
+     * setting. The setting has no effect if no VolumeHandle* outports exist on this processor.
+     */
+    void enableVolumeCaching(bool enable) { useVolumeCaching_ = enable; }
+    
+    // FIXME: should be temporary and somehow combined with exisiting cachabel attribute (df)
+    /**
+     * Indicates whether ports passing VolumeHandle* of this processor make use of caching or
+     * not. Note that return value is irrelevant for processors not passing VolumeHandle*.
+     */
+    bool usesVolumeCaching() const { return useVolumeCaching_; }
+
+    /**
+     * Set the GeometryContainer. The container must be the same as used by the
+     * network evaluator. Therefore it will be set by the latter.
      */
     virtual void setGeometryContainer(GeometryContainer* geoCont);
 
     virtual GeometryContainer* getGeometryContainer() const;
 
-	/**
+    /**
      * Returns the inport with the identifier type
      * @param type unique port type
      * @return port with given type, null if not existing
@@ -392,34 +445,29 @@ public:
      */
     Port* getOutport(Identifier type);
 
-    std::map<Port*,Port*> getOutportToInportMap();
+    std::map<Port*, Port*> getOutportToInportMap();
 
     /// Is this processor an end processors as it does not have any output port?
     virtual bool isEndProcessor() const;
-    
+
+    /**
+     * Returns the state of this Processor object. The state is defined
+     * by the set of the values of all Property objects held by this processor.
+     * The returned value is basically meaningless and only serves for compared 
+     * to a previously obtained value.
+     * If those values are equal, not state change has occured. If the values
+     * are different, the state of the processor has been changed.
+     *
+     * This is used i.e. by the NetworkEvaluator in order to apply caching for
+     * data.
+     */
+    std::string getState() const;
+
     // identifiers commonly used in processors
     static const Identifier setBackgroundColor_;
     static const std::string XmlElementName_;
 
 protected:
-    /**
-     * Are the render results of this processor cachable? That means are all outports somehow connected to a cacherenderer. Only
-     * used in the networkevaluator.
-     */
-	bool cachable_;
-
-    /**
-     * Are the render results of this processor currently cached? The networkevaluator checks this before rendering.
-     */ 
-	bool cached_;
-
-    /**
-     * Is this processor a coprocessor? If you want to create a coprocessor you have
-     * to use the setIsCoProcessor(bool) function in the constructor of your processor. This is far from optimal of course, we 
-     * should have a CoProcessor class, but we dont't :) 
-     */
-	bool isCoprocessor_; //just temporary until we introduce coprocessors classes
-    
     /// Renders a screen aligned quad.
     void renderQuad();
 
@@ -436,11 +484,12 @@ protected:
      * @note This function should be called for every shader before every rendering pass!
      * @param shader the shader to set up
      */
+    //TODO: remove, a general processor has no shaders. joerg
     virtual void setGlobalShaderParameters(tgt::Shader* shader);
 
     /**
-     * \brief Updates the current OpenGL context according to the 
-     *        object's lighting properties (e.g. lightPosition_). 
+     * \brief Updates the current OpenGL context according to the
+     *        object's lighting properties (e.g. lightPosition_).
      *
      * The following parameters are set for GL_LIGHT0:
      * - Light source position
@@ -454,20 +503,28 @@ protected:
      */
     virtual void setLightingParameters();
 
-    // FIXME: does not work anymore
+    // FIXME: does not work anymore, deprecated
     /// Internally used for making high resolution screenshots.
     void setSizeTiled(uint width, uint height);
+
+    bool cacheable_; ///< is caching supported by this processor?
+    bool useVolumeCaching_;
+
+    /**
+     * Is this processor a coprocessor? If you want to create a coprocessor you have to use the
+     * setIsCoProcessor(bool) function in the constructor of your processor.
+     */
+    bool isCoprocessor_;
 
     GeometryContainer* geoContainer_; ///< container that holds geomtry, e.g. points or pointlists
 
     tgt::Camera* camera_;   ///< the camera that will be used in rendering
     TextureContainer* tc_;  ///< manages render targets. That are textures or the framebuffer.
-    TexUnitMapper tm_;      ///< manages texture units 
+    TexUnitMapper tm_;      ///< manages texture units
 
     std::string name_;      ///< name of the processor
     tgt::vec2 size_;        ///< size of the viewport of the processor
-    tgt::ivec2 canvasSize_; ///< size of the canvas
-	
+
     ColorProp backgroundColor_; ///< the color of the background
 
     /// The position of the light source used for lighting calculations in world coordinates
@@ -491,43 +548,43 @@ protected:
     /// The material's specular exponent according to the Phong lighting model
     FloatProp materialShininess_;
 
-    std::vector<Property*> props_; ///< vector with all properties of the processor
+    Properties props_; ///< vector with all properties of the processor
+
+    int initStatus_; ///< status of OpenGL initialization
 
     static const std::string loggerCat_; ///< category used in logging
-
-    int initStatus_; ///< status of initialization
 
 private:
 
     /**
      * Some processors need to render to the same rendertarget they got their input from. If this is neccessary,
      * you can specify that in the createOutport function, which then makes an entry in this map. This map is then
-     * analyzed in the networkevaluator, where the appropriate rendertargets are given. 
+     * analyzed in the networkevaluator, where the appropriate rendertargets are given.
      */
-    std::map<Port*,Port*> outportToInportMap_;
+    std::map<Port*, Port*> outportToInportMap_;
 
-	/**
+    /**
      * List of ports that specifies which inputs this processor needs.
      */
     std::vector<Port*> inports_;
-    
+
     /**
      * List of ports that specifies which outputs this processor creates
      */
     std::vector<Port*> outports_;
 
     /**
-     * The CoProcessorInports this processor has. 
+     * The CoProcessorInports this processor has.
      */
-	std::vector<Port*> coProcessorInports_;
+    std::vector<Port*> coProcessorInports_;
 
     /**
      * The CoProcessorOutports this Coprocessor has. (Only CoProcessors should have CoProcessorOutports)
      */
-	std::vector<Port*> coProcessorOutports_;
+    std::vector<Port*> coProcessorOutports_;
 
     /**
-     * The private ports this processor has. PrivatePorts are mapped to rendertargets no other processor has access to. 
+     * The private ports this processor has. PrivatePorts are mapped to rendertargets no other processor has access to.
      */
     std::vector<Port*> privatePorts_;
 
@@ -536,6 +593,6 @@ private:
 
 typedef TemplateMessage<Processor*> ProcessorPtrMsg;
 
-} // namespace
+} // namespace voreen
 
 #endif // VRN_PROCESSOR_H

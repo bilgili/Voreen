@@ -29,38 +29,28 @@
 
 #include "voreen/core/cmdparser/command.h"
 
+#include <sstream>
+
 namespace voreen {
 
-Command::Command() : loggerCat_("voreen.Command") {
-}
-
-const std::string Command::getName() {
-    return name_;
-}
-
-const std::string Command::getShortName() {
-    return shortName_;
-}
-
-const std::string Command::getParameterList() {
-    return parameterList_;
-}
-
-const std::string Command::getInfo() {
-    return "";
-}
+Command::Command(const std::string& name, const std::string& shortName, const std::string& infoText,
+                 const std::string& parameterList, const int argumentNum, const bool allowMultipleCalls)
+: name_(name)
+, shortName_(shortName)
+, infoText_(infoText)
+, parameterList_(parameterList)
+, argumentNum_(argumentNum)
+, allowMultipleCalls_(allowMultipleCalls)
+{}
 
 const std::string Command::usage() {
-    bool shortNameExists = (getShortName() != "");
-    bool parameterListExists = (getParameterList() != "");
-
     std::string result = "[";
-    if (shortNameExists)
+    if (getShortName() != "")
         result = result + "<" + getShortName() + "|" + getName() + ">";
     else
         result += getName();
 
-    if (parameterListExists)
+    if (getParameterList() != "")
         result = result + " " + getParameterList();
 
     result += "]";
@@ -68,36 +58,22 @@ const std::string Command::usage() {
     return result;
 }
 
-int Command::castInt(const std::string& s) throw (SyntaxException) {
-    std::istringstream iss(s);
-    int t;
-    bool conversionFailed = (iss >> std::dec >> t).fail();
-    if (conversionFailed)
-        throw SyntaxException("Failed to convert parameter to integer");
-    else
-        return t;
-}
-    
-bool Command::isInt(const std::string& s) {
-    std::istringstream iss(s);
-    int t;
-    return (iss >> std::dec >> t);
+const std::string Command::help() {
+	std::string result;
+	if (getShortName() != "")
+		result = getShortName() + "|" + getName() + ": \t" + getInfoText();
+	else
+		result = getName() + ": \t" + getInfoText();
+
+	return result;
 }
 
-float Command::castFloat(const std::string& s) throw (SyntaxException) {
-    std::istringstream iss(s);
-    float t;
-    bool conversionFailed = (iss >> std::dec >> t).fail();
-    if (conversionFailed)
-        throw SyntaxException("Failed to convert parameter to float");
-    else
-        return t;
+bool Command::checkParameters(const std::vector<std::string>& parameters) {
+    return (parameters.size() == static_cast<size_t>(getArgumentNumber()));
 }
 
-bool Command::isFloat(const std::string& s) {
-    std::istringstream iss(s);
-    float t;
-    return (iss >> std::dec >> t);
+bool Command::isValueInSet(const std::string value, std::set<std::string>* set) {
+    return (set->find(value) != set->end());
 }
 
 }   //namespace voreen

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,13 @@
 #ifndef VRN_RPTGUIITEM_H
 #define VRN_RPTGUIITEM_H
 
-#include <QtGui>
+#include <QGraphicsItem>
+#include <QGraphicsTextItem>
+#include <QObject>
+#include <QString>
+
+#include <vector>
+
 #include "voreen/core/vis/identifier.h"
 
 
@@ -48,38 +54,32 @@ class RptPropertySetItem;
  * corresponds to the interface of the original processor- and port-classes.
  */
 class RptGuiItem : public QObject, public QGraphicsItem {
-
     Q_OBJECT
-
 public:
     /**
      * Constructor.
      */
-    RptGuiItem(std::string name="", QGraphicsItem* parent=0);
-    
-    ~RptGuiItem();
+    RptGuiItem(std::string name = "", QGraphicsItem* parent = 0);
+
+    virtual ~RptGuiItem();
 
     /**
      * Returns the name of this gui item.
      */
-    std::string getName() const;
-
-    /**
-     * Sets the item's name.
-     */
-    virtual void setName(std::string name);
+    const std::string getName() const;
 
     /**
      * Returns the represented processor
      */
     virtual Processor* getProcessor(RptPortItem* port) = 0;
 
-	virtual RptPortItem* getPortItem(Identifier ident);
+    virtual RptPortItem* getPortItem(Identifier ident);
 
     /**
      * Returns the inports of this processor item.
      */
     std::vector<RptPortItem*> getInports() {return inports_;}
+    
     /**
      * Returns the inports of this processor item.
      */
@@ -89,15 +89,17 @@ public:
      * Returns the coprocessor inports of this processor item.
      */
     std::vector<RptPortItem*> getCoProcessorInports() {return coProcessorInports_;}
+    
     /**
      * Returns the coprocessor inports of this processor item.
      */
     std::vector<RptPortItem*> getCoProcessorOutports() {return coProcessorOutports_;}
-    
+
     /**
      * Returns the inport-item belonging to the given port.
      */
     RptPortItem* getInport(Port* port);
+    
     /**
      * Returns the outport-item belonging to the given port.
      */
@@ -108,6 +110,7 @@ public:
      * If no such port exits returns 0.
      */
     RptPortItem* getInport(Identifier type);
+    
     /**
      * Returns the outport with the matching type.
      * If no such port exits returns 0.
@@ -141,13 +144,14 @@ public:
      * Same as connect, but creates an arrow.
      */
     bool connectAndCreateArrow(RptPortItem* outport, RptPortItem* inport);
-    
+
     void connectGuionly(RptPortItem* outport, RptPortItem* inport);
 
     /**
      * Disconnects the given ports. Returns true if disconnecting successful.
      */
     bool disconnect(RptPortItem* outport, RptPortItem* inport);
+   
     /**
      * Disconnects everything connected to this item. Returns true if disconnecting successful.
      */
@@ -157,12 +161,12 @@ public:
      * Adds the given property set.
      */
     void addPropertySet(RptPropertySetItem* propSet);
-    
+
     /**
      * Returns the property sets this item belongs to.
      */
     std::vector<RptPropertySetItem*> getPropertySets() { return propertySets_; }
-    
+
     /**
      * Removes the given property set.
      */
@@ -179,7 +183,7 @@ public:
      * Removes arrows connected to the given item from the scene.
      */
     void removeArrows(RptGuiItem* item);
-    
+
     /**
      * Removes all the arrows connected to this item from the scene.
      */
@@ -194,57 +198,29 @@ public:
      * Refresh source and dest points of connected arrows and repaint them.
      */
     virtual void adjustArrows();
-    
-    // TESTING
-    int getCollisionPriority() { return collisionPriority_; }
-    void setCollisionPriority(int c) { collisionPriority_ = c; }
 
     void contentChanged();
 
     QRectF boundingRect() const;
-    
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+
+    void enterRenameMode();
 
 signals:
-    /**
-     * Send when delete is clicked in context menu.
-     */
-    void deleteSignal();
     void changed();
 
-
-private slots:
-    /**
-     * Action for context menu. Sends deleteSignal (connected in mainwindow).
-     */
-    void deleteActionSlot();
-    void renameActionSlot();
-
-    /**
-     * Changes name of gui item. Called when the text items text gets changed.
-     */
-    void renameSlot(std::string name);
+public slots:
+    void renameFinished();
+    virtual void nameChanged();
 
 protected:
-    // create ports
-    void createIO();
-
-    void createContextMenu();
-
-    /*
+    /**
      * Does what has to be done on a state change (like a position change),
      * e.g. repaint the connected arrows.
      */
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-
-    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
-
-    // item that shows the name of type_
-    RptTextItem* textItem_;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+    
 
     // inports, outports
     std::vector<RptPortItem*> inports_;
@@ -257,11 +233,8 @@ protected:
     // property sets
     std::vector<RptPropertySetItem*> propertySets_;
 
-    QMenu contextMenu_;
-
-private:        
-    // TESTING
-    int collisionPriority_;
+    // item that shows the name of type_
+    RptTextItem* textItem_;
 };
 
 //---------------------------------------------------------------------------
@@ -270,7 +243,7 @@ private:
  * Representation of a Port in the scene.
  */
 class RptPortItem : public QGraphicsItem {
-    
+
 public:
     /**
      * Constructor.
@@ -281,14 +254,14 @@ public:
 
     /**
      * Used to identfy an item in the scene as RptPortItem
-     */  
+     */
     enum { Type = UserType + 1 };
 
     /**
      * Returns the type that identifies this item as a RptPortItem.
      */
     int type() const { return Type; }
-    
+
     /**
      * Returns the type of the represented port.
      */
@@ -308,7 +281,7 @@ public:
      * Returns the ProcessorItems that are connected to this PortItem.
      */
     std::vector<RptPortItem*>& getConnected();
-    
+
     /**
      * Connects given port to this PortItem.
      */
@@ -333,11 +306,11 @@ public:
      * Adjusts and updates the arrows.
      */
     void adjustArrows();
-    
+
     /**
      * Returns true, if an arrow to the given PortItem exists.
      */
-    bool doesArrowExist(RptPortItem*);
+    bool doesArrowExist(RptPortItem* item);
 
     QRectF boundingRect() const;
 
@@ -345,15 +318,13 @@ protected:
     // sets the color depending on port type
     void setColor();
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
-
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
     void mousePressEvent(QGraphicsSceneMouseEvent* event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
 
-private:    
+private:
     // list of outgoing arrows
     std::vector<RptArrow*> arrowList_;
     // list of gui items that are connected to this port.
@@ -369,39 +340,35 @@ private:
 
 //---------------------------------------------------------------------------
 
-
 class RptTextItem : public QGraphicsTextItem {
-
     Q_OBJECT
-
 public:
     RptTextItem(const QString& text, RptGuiItem* parent = 0, QGraphicsScene* scene = 0);
 
+    ~RptTextItem();
+
     /**
      * Used to identfy an item in the scene as RptPortItem
-     */  
+     */
     enum { Type = UserType + 9 };
 
     /**
      * Returns the type that identifies this item as a RptPortItem.
      */
     int type() const { return Type; }
-
-    void setContextMenu(QMenu* contextMenu);
+    
+    void setFocus(Qt::FocusReason focusReason = Qt::OtherFocusReason);
+    void setPlainText(const QString& text);
 
 protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event);
-    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
+    void keyPressEvent(QKeyEvent* event);
 
 signals:
-    /**
-     * Sends the new text.
-     */
-    void sendText(std::string text);
+    void renameFinished();
+    void textChanged();
 
 private:
-    QMenu* contextMenu_;
+    QString previousText_;
 };
 
 } //namespace voreen

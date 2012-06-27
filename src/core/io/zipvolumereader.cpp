@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,26 +27,16 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/io/textfilereader.h"
 #include "voreen/core/io/zipvolumereader.h"
-#include "voreen/core/io/rawvolumereader.h"
-#include "voreen/core/io/pvmvolumereader.h"
-#include "voreen/core/io/quadhidacvolumereader.h"
 
-#include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/application.h"
 #include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/multivolumereader.h"
+#include "voreen/core/io/volumeserializerpopulator.h"
+#include "voreen/core/io/volumeserializer.h"
 
-#include "tgt/exception.h"
-#include "tgt/vector.h"
-#include "tgt/texturemanager.h"
-
-#include <fstream>
-#include <iostream>
-
-// TODO: this is the stdafx.h from ZipArchive
-// is this header here really necessary?
-#include <ziparchive/stdafx.h>
 #include <ziparchive/ZipArchive.h>
+#include <fstream>
 
 using std::string;
 
@@ -54,260 +44,109 @@ namespace voreen {
 
 const std::string ZipVolumeReader::loggerCat_("voreen.io.ZipVolumeReader");
 
-ZipVolumeReader::ZipVolumeReader(IOProgress* progress /*= 0*/) : VolumeReader(progress)
+ZipVolumeReader::ZipVolumeReader(VolumeSerializerPopulator* populator, IOProgress* progress)
+  : VolumeReader(progress),
+    populator_(populator)
 {
     name_ = "Zip Reader";
     extensions_.push_back("zip");
 }
 
-bool ZipVolumeReader::parseDescFile(const std::string& filename) {
-    int nbrTags;
-    string objectType;
-    string gridType;
-    string version;
-    VolInfo* volInfo = 0;
-    tgt::vec3 resolution;
-    tgt::vec3 sliceThickness;
-    std::string format;
-    std::string objectModel;
-    bool error = false;
+VolumeHandle* ZipVolumeReader::readFromOrigin(const VolumeHandle::Origin& origin) {
+    VolumeHandle* result = 0;
 
-    TextFileReader reader(filename);
-
-    format = "UCHAR";
-    objectModel = "I";
-
-    if (!reader ) {
-        LERROR("Unable to open " << filename);
-        return false;
-    }
-    std::string type;
-    std::istringstream args;
-    bool ready = false;
-    while (reader.getNextLine(type, args) && ready == false) {
-        LINFO("Type : " << type);
-        if (type == "version:") {
-            args >> version;
-            LINFO(version);
-            if (version != "1.0") {
-                LWARNING("Version not supported: " << version);
-                error = true;
-                ready = true;
-            }
-        }
-        else if (type == "resolution:") {
-            args >> resolution[0];
-            args >> resolution[1];
-            args >> resolution[2];
-            LINFO("Value: " << resolution[0] << " x " <<
-                  resolution[1] << " x " << resolution[2]);
-        }
-        else if (type == "slicethickness:") {
-            args >> sliceThickness[0] >> sliceThickness[1] >> sliceThickness[2];
-            LINFO("Value: " << sliceThickness[0] << " " <<
-                  sliceThickness[1] << " " << sliceThickness[2]);
-        }
-        else if (type == "format:") {
-            args >> format;
-            LINFO("Value: " << format);
-        }
-        else if (type == "nbrtags:") {
-            args >> nbrTags;
-            LINFO("Value: " << nbrTags);
-        }
-        else if (type == "objecttype:") {
-            args >> objectType;
-            LINFO("Value: " << objectType);
-        }
-        else if (type == "objectmodel:") {
-            args >> objectModel;
-            LINFO("Value: " << objectModel);
-        }
-        else if (type == "modality:") {
-            if (!volInfo ) {
-                LERROR("Filename must precede"
-                       "this token.");
-                error = true;
-            }
-            std::string modality;
-            args >> modality;
-            volInfo->modality_ = modality;
-            LINFO("Value: " << volInfo->modality_);
-        }
-        else if (type == "gridtype:") {
-            args >> gridType;
-            LINFO("Value: " << gridType);
-        }
-        else if (type == "filename:") {
-            if (volInfo) {
-                volInfos_.push_back(volInfo);
-            }
-            volInfo = new VolInfo(resolution, sliceThickness, format, objectModel);
-            args >> volInfo->filename_;
-            LINFO("Value: " << volInfo->filename_);
-        }
-        else if (type == "extinfo:") {
-            if (!volInfo ) {
-                LERROR("Filename must precede"
-                       "this token.");
-                error = true;
-            }
-            string extInfo;
-            getline(args, extInfo);
-            volInfo->extInfo_.push_back(extInfo);
-            LINFO("Value: " << extInfo);
-        }
-        else if (type == "timestamp:") {
-            if (!volInfo ) {
-                LERROR("Filename must precede"
-                       "this token.");
-                error = true;
-            }
-            args >> volInfo->timeStamp_;
-            LINFO("Value: " << volInfo->timeStamp_);
-        }
-        else if (type == "metastring:") {
-            if (!volInfo ) {
-                LERROR("Filename must precede"
-                       "this token.");
-                error = true;
-            }
-            args >> volInfo->metaString_;
-            LINFO("Value: " << volInfo->metaString_);
-        }
-        else {
-            LERROR("Unknown type");
-            error = true;
-        }
-        if (args.fail() ) {
-            LERROR("Format error");
-            error = true;
-        }
-    }
-    if (volInfo) {
-        volInfos_.push_back(volInfo);
-        volInfo = 0;
-    }
-    return !error;
-}
-
-VolumeSet* ZipVolumeReader::read(const std::string &fileName)
-    throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
-{
-    LINFO("ZipVolumeReader: " << fileName);
-
-    CZipArchive zip;
-    volInfos_.clear();
+    // Remove the prefix "zip://"
+    size_t extensionPos = origin.filename.find(".zip");
+    std::string zipName = origin.filename.substr(0, extensionPos + 4);
+    std::string fileName = origin.filename.substr(extensionPos + 5);
 
     try {
-        zip.Open(fileName.c_str());
-        int descIndex = zip.FindFile("description.txt");
-        if (descIndex == -1) {
-            LERROR("Description file not found.");
-            return 0;
-        }
-        VolumeSet* volumeSet = new VolumeSet(0, fileName);
-        CZipMemFile descFile;
-        zip.ExtractFile(descIndex, ".");
-        parseDescFile("description.txt");
-        remove("description.txt");
-        if (getProgress())
-            getProgress()->setNumSteps(volInfos_.size());
-        for(unsigned int i=0; i<volInfos_.size(); ++i) {
-            VolInfo *volInfo = volInfos_.at(i);
-            int indexInZip = zip.FindFile(volInfo->filename_.c_str());
-            if (indexInZip == -1) {
-                LERROR("File not found: " << volInfo->filename_);
+        CZipArchive zip;
+        zip.Open(zipName.c_str());
+
+        int indexFile = zip.FindFile(fileName.c_str());
+        std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
+
+        if (indexFile != ZIP_FILE_INDEX_NOT_FOUND) {
+            for (int iter = 0; iter < zip.GetCount(); ++iter)
+                zip.ExtractFile(iter, temporaryPath.c_str());
+
+            VolumeSet* volumeSet = populator_->getVolumeSerializer()->load(temporaryPath + "/" + fileName);
+            VolumeHandle::Origin origin = volumeSet->getAllVolumeHandles().at(0)->getOrigin();
+            std::string originWithoutTempDir = origin.filename.substr(temporaryPath.length() + 1);
+            origin.filename = "zip://" + zipName + "/" + originWithoutTempDir;
+            volumeSet->getAllVolumeHandles().at(0)->setOrigin(origin);
+            result = volumeSet->getAllVolumeHandles().at(0);
+
+            for (int iter = 0; iter < zip.GetCount(); ++iter) {
+                std::string path = temporaryPath + "/" + zip.GetFileInfo(iter)->GetFileName();
+                remove(path.c_str());
             }
-            else {
-                LINFO("Load file " << volInfo->filename_.c_str());
 
-                std::string endingtest = volInfo->filename_;
-                std::transform(endingtest.begin(), endingtest.end(), endingtest.begin(), tolower);
-
-                VolumeSet* curVolumeSet = 0;
-                if (volInfo->filename_.find(".raw") != std::string::npos) {
-                    zip.ExtractFile(indexInZip, ".");
-                    RawVolumeReader reader;
-                    reader.readHints( volInfo->resolution_, volInfo->sliceThickness_, 8,
-                                     volInfo->objectModel_, volInfo->format_, 0,
-                                     tgt::mat4::identity, Modality::MODALITY_UNKNOWN, -1.f, volInfo->metaString_ );
-                    curVolumeSet = reader.read(volInfo->filename_);
-                    remove(volInfo->filename_.c_str());
-                }
-                else if (volInfo->filename_.find(".pvm") != std::string::npos) {
-#ifdef VRN_WITH_PVM
-                    zip.ExtractFile(indexInZip, ".");
-                    PVMVolumeReader reader(NULL);
-                    curVolumeSet = reader.read(volInfo->filename_);
-                    remove(volInfo->filename_.c_str());
-#else // VRN_WITH_PVM
-                    LERROR("PVM found in zip-file, but program was compiled without PVM-support.");
-#endif // VRN_WITH_PVM
-                }
-                else if (volInfo->filename_.find(".i4d") != std::string::npos) {
-                    zip.ExtractFile(indexInZip, ".");
-                    QuadHidacVolumeReader reader;
-                    curVolumeSet = reader.read(volInfo->filename_);
-                    remove(volInfo->filename_.c_str());
-                }
-                else {
-                    zip.ExtractFile(indexInZip, ".");
-                    Volume* volume = (Volume*)TexMgr.load(volInfo->filename_, tgt::Texture::LINEAR, false);
-                    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
-                    volumeSet->addSeries(volumeSeries);
-                    VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volume, 0.0f);
-                    volumeSeries->addVolumeHandle(volumeHandle);
-
-                    remove(volInfo->filename_.c_str());
-                }
-
-                if( curVolumeSet != 0 ) {
-                    const VolumeSeries::SeriesSet& seriesSet = curVolumeSet->getSeries();
-                    VolumeSeries::SeriesSet::const_iterator itSeries = seriesSet.begin();
-                    for( ; itSeries != seriesSet.end(); ++itSeries ) {
-                        if( *itSeries == 0 )
-                            continue;
-
-                        // create a new VolumeSeries based on the ones from the temporary VolumeSet,
-                        // set its modality to the one from volInfo and add it to the final VolumeSet in
-                        // volumeSet
-                        //
-                        VolumeSeries* newSeries = new VolumeSeries(volumeSet, (*itSeries)->getName(), volInfo->modality_);
-                        volumeSet->addSeries(newSeries, false);
-
-                        // iterate over all handles in the temporary VolumeSet in curVolumeSet
-                        // to remove them from it and append them to the final VolumeSet volumeSet.
-                        // This prevents from the need of copying the volumes and preserves
-                        // them from being deleted on deleting curVolumeSet!
-                        //
-                        const VolumeHandle::HandleSet& handleSet = (*itSeries)->getVolumeHandles();
-                        VolumeHandle::HandleSet::const_iterator itHandle = handleSet.begin();
-                        for( ; itHandle != handleSet.end(); ) {
-                            if( *itHandle == 0 )
-                                continue;
-                            VolumeHandle* handle = (*itSeries)->removeVolumeHandle(*(itHandle++));
-                            handle->setTimestep(volInfo->timeStamp_);
-                            handle->setOrigin(fileName, (*itSeries)->getName(), volInfo->timeStamp_);
-                            newSeries->addVolumeHandle(handle, true);
-                        }
-                        
-                    }
-                    delete curVolumeSet;
-                    curVolumeSet = 0;
-                }
-                if (getProgress())
-                    getProgress()->set(i);
-            }   // else
-        }   // for
-        zip.Close();
-        return volumeSet;
-    }   // try
+        }
+        else
+            throw tgt::FileNotFoundException("Specific file within zip file not found", origin.filename);
+    }
     catch (CZipException e) {
-        LERROR("ZipArchive: " << e.GetErrorDescription());
+        throw tgt::FileException("ZipVolumeReader::readFromOrigin(" + origin.filename + "): " + e.GetErrorDescription());
     }
 
-    return 0;
+    return result;
+}
+
+VolumeSet* ZipVolumeReader::read(const std::string& fileName)
+    throw (tgt::FileException, std::bad_alloc)
+{
+
+    try {
+        CZipArchive zip;
+        zip.Open(fileName.c_str());
+
+        int indexFile = zip.FindFile("index.mv");
+        std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
+        std::string indexFilePath = temporaryPath + "/index.mv";
+
+        // No index file exists, so we have to create one ourselves
+        if (indexFile == ZIP_FILE_INDEX_NOT_FOUND) {
+            std::ofstream file(indexFilePath.c_str());
+            
+            for (int iter = 0; iter < zip.GetCount(); ++iter) {
+                std::string packedFileName = zip.GetFileInfo(iter)->GetFileName();
+                // Put all filenames in the index.mv which end with dat
+                if (packedFileName.find(".dat") != std::string::npos)
+                    file << packedFileName.c_str() << std::endl;
+            }
+            file.close();
+        }
+
+        // Extract all volumes from the archive and save them locally
+        for (int iter = 0; iter < zip.GetCount(); ++iter)
+            zip.ExtractFile(iter, temporaryPath.c_str());
+        
+        // Load the volumes with the help of a temporary multivolumereader
+        VolumeSet* volumeSet = MultiVolumeReader(populator_, getProgress()).read(indexFilePath);
+        volumeSet->setName(tgt::File::fileName(fileName));
+
+        // Set the correct origins
+        for (size_t iter = 0; iter < volumeSet->getAllVolumeHandles().size(); ++iter) {
+            VolumeHandle::Origin origin = volumeSet->getAllVolumeHandles().at(iter)->getOrigin();
+            std::string originWithoutTempDir = origin.filename.substr(temporaryPath.length() + 1);
+            origin.filename = "zip://" + fileName + "/" + originWithoutTempDir;
+            volumeSet->getAllVolumeHandles().at(iter)->setOrigin(origin);
+        }
+
+        // Delete the extracted (and the possibly created index) files
+        remove(indexFilePath.c_str());
+        for (int iter = 0; iter < zip.GetCount(); ++iter) {
+            std::string path = temporaryPath + "/" + zip.GetFileInfo(iter)->GetFileName();
+            remove(path.c_str());
+        }
+
+        return volumeSet;
+    }
+    catch (CZipException e) {
+        throw tgt::FileException("ZipVolumeReader::read(" + fileName + "): " + e.GetErrorDescription());
+    }
 }
 
 } // namespace voreen

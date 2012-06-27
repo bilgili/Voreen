@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -45,9 +45,7 @@ class Port;
  * corresponds to the interface of the original processor- and port-classes.
  */
 class RptProcessorItem : public RptGuiItem {
-
     Q_OBJECT
-
 public:
     /**
      * Constructor.
@@ -72,7 +70,7 @@ public:
 
     Identifier getType() { return type_; }
 
-    virtual void setName(std::string name);
+    void setName(const std::string& name);
 
     /**
      * Returns the type that identifies this item's class.
@@ -81,27 +79,27 @@ public:
 
     /**
      * @param id used to identify specific object
-     * Returns the represented 
+     * Returns the represented
      */
     Processor* getProcessor(RptPortItem* /*port*/=0) { return processor_; }
-    
+
     RptProcessorItem& saveMeta();
     RptProcessorItem& loadMeta();
 
     /**
      * Used to identfy an item in the scene as RptProcessorItem
-     */     
+     */
     enum { Type = UserType + 2 };
 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
-	// Constructs a QRectF for round boxes. 
-	QRectF boundingRect() const;
+    // Constructs a QRectF for round boxes.
+    QRectF boundingRect() const;
     // Constructs a QRectF for drawing processors.
-	QRectF drawingRect() const;
-	// Constructs a QPainterPath for round buttons. 
+    QRectF drawingRect() const;
+    // Constructs a QPainterPath for round buttons.
     QPainterPath coprocessorBoundingPath(QRectF) const;
-	QPainterPath canvasBoundingPath(QRectF) const;
+    QPainterPath canvasBoundingPath(QRectF) const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
     /** DropEvent for dropping VolumeSets onto VolumeSetSourceProcessors.
@@ -115,12 +113,11 @@ public:
 
 public slots:
     void aggregateActionSlot();
+    void nameChanged();
 
 signals:
     void aggregateSignal();
-
-protected:
-    void createContextMenu();
+    void processorNameChanged();
 
 private:
     // sets the color depending on processor type

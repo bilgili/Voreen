@@ -1,20 +1,48 @@
-#ifndef     __FTGLTextureFont__
-#define     __FTGLTextureFont__
+/*
+ * FTGL - OpenGL font library
+ *
+ * Copyright (c) 2001-2004 Henry Maddocks <ftgl@opengl.geek.nz>
+ * Copyright (c) 2008 Sam Hocevar <sam@zoy.org>
+ * Copyright (c) 2008 Sean Morrison <learner@brlcad.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
-#include "FTFont.h"
-#include "FTVector.h"
-#include "FTGL.h"
+#ifndef __ftgl__
+#   warning This header is deprecated. Please use <FTGL/ftgl.h> from now.
+#   include <FTGL/ftgl.h>
+#endif
 
-class FTTextureGlyph;
+#ifndef __FTTextureFont__
+#define __FTTextureFont__
+
+#ifdef __cplusplus
 
 
 /**
- * FTGLTextureFont is a specialisation of the FTFont class for handling
+ * FTTextureFont is a specialisation of the FTFont class for handling
  * Texture mapped fonts
  *
  * @see     FTFont
  */
-class  FTGL_EXPORT FTGLTextureFont : public FTFont
+class  FTGL_EXPORT FTTextureFont : public FTFont
 {
     public:
         /**
@@ -22,130 +50,54 @@ class  FTGL_EXPORT FTGLTextureFont : public FTFont
          *
          * @param fontFilePath  font file path.
          */
-        FTGLTextureFont( const char* fontFilePath);
-        
+        FTTextureFont(const char* fontFilePath);
+
         /**
          * Open and read a font from a buffer in memory. Sets Error flag.
+         * The buffer is owned by the client and is NOT copied by FTGL. The
+         * pointer must be valid while using FTGL.
          *
          * @param pBufferBytes  the in-memory buffer
          * @param bufferSizeInBytes  the length of the buffer in bytes
          */
-        FTGLTextureFont( const unsigned char *pBufferBytes, size_t bufferSizeInBytes);
-        
+        FTTextureFont(const unsigned char *pBufferBytes,
+                      size_t bufferSizeInBytes);
+
         /**
          * Destructor
          */
-        virtual ~FTGLTextureFont();
+        virtual ~FTTextureFont();
 
+    protected:
         /**
-            * Set the char size for the current face.
+         * Construct a glyph of the correct type.
          *
-         * @param size      the face size in points (1/72 inch)
-         * @param res       the resolution of the target device.
-         * @return          <code>true</code> if size was set correctly
-         */
-        virtual bool FaceSize( const unsigned int size, const unsigned int res = 72);
-
-        /**
-         * Renders a string of characters
-         * 
-         * @param string    'C' style string to be output.   
-         */
-        virtual void Render( const char* string);
-        
-        /**
-         * Renders a string of characters
-         * 
-         * @param string    wchar_t string to be output.     
-         */
-        virtual void Render( const wchar_t* string);
-
-        
-    private:
-        /**
-         * Construct a FTTextureGlyph.
+         * Clients must override the function and return their specialised
+         * FTGlyph.
          *
-         * @param glyphIndex The glyph index NOT the char code.
-         * @return  An FTTextureGlyph or <code>null</code> on failure.
+         * @param slot  A FreeType glyph slot.
+         * @return  An FT****Glyph or <code>null</code> on failure.
          */
-        inline virtual FTGlyph* MakeGlyph( unsigned int glyphIndex);
-                
-        /**
-         * Get the size of a block of memory required to layout the glyphs
-         *
-         * Calculates a width and height based on the glyph sizes and the
-         * number of glyphs. It over estimates.
-         */
-        inline void CalculateTextureSize();
-
-        /**
-         * Creates a 'blank' OpenGL texture object.
-         *
-         * The format is GL_ALPHA and the params are
-         * GL_TEXTURE_WRAP_S = GL_CLAMP
-         * GL_TEXTURE_WRAP_T = GL_CLAMP
-         * GL_TEXTURE_MAG_FILTER = GL_LINEAR
-         * GL_TEXTURE_MIN_FILTER = GL_LINEAR
-         * Note that mipmapping is NOT used
-         */
-        inline GLuint CreateTexture();
-        
-        /**
-         * The maximum texture dimension on this OpenGL implemetation
-         */
-        GLsizei maximumGLTextureSize;
-        
-        /**
-         * The minimum texture width required to hold the glyphs
-         */
-        GLsizei textureWidth;
-        
-        /**
-         * The minimum texture height required to hold the glyphs
-         */
-        GLsizei textureHeight;
-        
-        /**
-         *An array of texture ids
-         */
-         FTVector<GLuint> textureIDList;
-        
-        /**
-         * The max height for glyphs in the current font
-         */
-        int glyphHeight;
-
-        /**
-         * The max width for glyphs in the current font
-         */
-        int glyphWidth;
-
-        /**
-         * A value to be added to the height and width to ensure that
-         * glyphs don't overlap in the texture
-         */
-        unsigned int padding;
-        
-        /**
-         *
-         */
-         unsigned int numGlyphs;
-        
-        /**
-         */
-        unsigned int remGlyphs;
-
-        /**
-         */
-        int xOffset;
-
-        /**
-         */
-        int yOffset;
-
+        virtual FTGlyph* MakeGlyph(FT_GlyphSlot slot);
 };
 
+#define FTGLTextureFont FTTextureFont
 
-#endif // __FTGLTextureFont__
+#endif //__cplusplus
 
+FTGL_BEGIN_C_DECLS
+
+/**
+ * Create a specialised FTGLfont object for handling texture-mapped fonts.
+ *
+ * @param file  The font file name.
+ * @return  An FTGLfont* object.
+ *
+ * @see  FTGLfont
+ */
+FTGL_EXPORT FTGLfont *ftglCreateTextureFont(const char *file);
+
+FTGL_END_C_DECLS
+
+#endif // __FTTextureFont__
 

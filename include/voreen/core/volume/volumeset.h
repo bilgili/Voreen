@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,32 +41,35 @@ namespace voreen {
 
 class VolumeSetContainer;
 
+/**
+ * Contains VolumeSeries that are identified by their name and classified by a modality.
+ * Several VolumeSeries of the same modality with different names can be contained within a
+ * VolumeSet.
+ */
 class VolumeSet : public Serializable {
 public:
+    friend class VolumeSetContainer; // for setParentContainer()
+
     /**
      * Struct used as a comparator for std::set. The set stores pointers, but the comparsion
      * has to be done on the objects, not on the pointers!
      */
     struct VolumeSetComparator {
         bool operator()(const VolumeSet* const set1, const VolumeSet* const set2) const {
-            if ((set1 == 0) || (set2 == 0))
+            if (set1 == 0 || set2 == 0)
                 return false;
             else
                 return (*set1 < *set2);
         }
     };
 
-    typedef std::set<VolumeSet*, VolumeSetComparator> VSPSet;
-
-    /**
-     * Default ctor. Probably you don't want to and don't need to use this.
-     */
-    VolumeSet();
+    //TODO: stupid name but anything else would be illogical. joerg
+    typedef std::set<VolumeSet*, VolumeSetComparator> VolumeSetSet;
 
     /**
      * A VolumeSet is identified by the given name which is usually the file name.
      */
-    VolumeSet(VolumeSetContainer* const parent, const std::string& filename);
+    VolumeSet(const std::string& filename = "");
 
     /**
      * Dtor causing all contained VolumeSeries to become deleted. The deletion of
@@ -84,8 +87,7 @@ public:
     bool operator==(const VolumeSet& volset) const;
 
     /**
-     * Returns the name of the VolumeSet. Usually this is the file name
-     * including the absolute path.
+     * Returns the name of the VolumeSet. Usually this is the file name.
      */
     const std::string& getName() const;
 
@@ -93,68 +95,53 @@ public:
 
     const VolumeSetContainer* getParentContainer() const;
 
-    void setParentContainer(VolumeSetContainer* const parent);
-
     /**
-     * Returns the first Volume* from the first handle in the first
-     * series being available.
+     * Returns the first Volume from the first handle in the first series being available.
      */
     Volume* getFirstVolume() const;
 
     /**
      * Returns a std::vector containing all VolumeHandle
      * pointers from all VolumeSeries within this VolumeSet.
-     * The pointers contained in the vector are all non-NULL. Otherwise
+     * The pointers contained in the vector are all non-null. Otherwise
      * they would not have been added.
      */
     std::vector<VolumeHandle*> getAllVolumeHandles() const;
 
     /**
      * Force all Series in this VolumeSet to become of the given type.
-     * Therefore a new Series with the given Modality is created and
-     * all VolumeHandles are added to this new VolumeSeries. The existing
-     * VolumeSeries are deleted afterwards.
      */
     void forceModality(const Modality& modality);
 
     /**
-     * Adds the given VolumeSeries to the VolumeSet if it is not
-     * already contained. The return value is then "true". Otherwise
-     * or if the given VolumeSeries is NULL, false will be returned.
+     * Adds the given VolumeSeries to the VolumeSet.
      *
-     * If the VolumeSeries is already contained and is not identical
-     * (on pointer comparison) to the given on, the latter will be 
-     * deleted and replaced by the one from the VolumeSet object, unless
-     * the parameter forceInsertion is set to "true".
-     * If so, the insertion should never fail and the given VolumeSeries'
-     * name will be changed by appending the number of contained series with
-     * the same modality. E.g. "unknown" will become "unknown 2" and it
-     * will be inserted.
+     * Depending on the state of the parameter forceInsertion the name of the VolumeSeries
+     * will be changed by appending the number of contained series with the same modality,
+     * e.g., "unknown" will become "unknown 2".
      *
-     * Besides, the parent VolumeSet of the given series is set to this.
+     * The parent VolumeSet of the given series is set to this VolumeSet.
      *
-     * @param   series  The VolumeSeries to be inserted
-     * @param   forceInsertion  Indicates, wether the insertion may not fail
-     *  and therefor eventually the name of the givne VolumeSeries has to be
-     * altered or not.
-     * @return  "true" if the insertion succeeds, "false" otherwise. If the
+     * @param series  The VolumeSeries to be inserted
+     * @param forceInsertion  Indicates whether the insertion may not fail
+     *  and therefore eventually the name of the given VolumeSeries may be
+     *  altered.
+     * @return "true" if the insertion succeeds, "false" otherwise. If the
      * parameter forceInsertion is set to "true", this method should always
      * return "true".
      */
-    bool addSeries(VolumeSeries*& series, const bool forceInsertion = true);
-
-    /**
-     * Returns the VolumeSeries stored in this VolumeSet matching the name
-     * of the given VolumeSeries if such an object exists. Otherwise NULL is
-     * retuned.
-     */
-    VolumeSeries* findSeries(VolumeSeries* const series);
+    bool addSeries(VolumeSeries* series, const bool forceInsertion = true);
 
     /**
      * Returns the VolumeSeries stored in this VolumeSet matching the given
-     * name if such an object exists. Otherwise NULL is retuned.
+     * name if such an object exists. Otherwise 0 is retuned.
      */
     VolumeSeries* findSeries(const std::string& seriesName);
+
+    /**
+     * Returns the given VolumeSeries if it is already stored in this VolumeSet or 0 otherwise.
+     */
+    VolumeSeries* findSeries(VolumeSeries* const series);
 
     /**
      * Returns all VolumeSeries from this VolumeSet having the same modality
@@ -165,13 +152,13 @@ public:
 
     /**
      * If the given VolumeSeries exists within this VolumeSet, it is removed
-     * and returned, but it will not be deleted. Otherwise NULL is returned.
+     * and returned, but it will not be deleted. Otherwise 0 is returned.
      */
     VolumeSeries* removeSeries(VolumeSeries* const series);
 
     /**
      * If a VolumeSeries with the given name exists within this VolumeSet, it
-     * is removed and returned, but it will not be deleted. Otherwise NULL is
+     * is removed and returned, but it will not be deleted. Otherwise 0 is
      * returned.
      */
     VolumeSeries* removeSeries(const std::string& name);
@@ -189,7 +176,7 @@ public:
      * Otherwise "false" is returned.
      */
     bool deleteSeries(VolumeSeries* const series);
-    
+
     /**
      * If a VolumeSeries with the given name is stored within this VolumeSet,
      * it will will be removed from it and deleted, and "true" will be returned.
@@ -213,7 +200,7 @@ public:
      * Returns the names of all VolumeSeries stored in this VolumeSet.
      */
     std::vector<std::string> getSeriesNames() const;
-   
+
     /**
      * Returns the name of the xml element used when serializing the object
      */
@@ -223,13 +210,12 @@ public:
      * Serializes the object to XML.
      */
     virtual TiXmlElement* serializeToXml() const;
-    
+
     /**
      * Updates the object from XML.
      */
-    void updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap);
     virtual void updateFromXml(TiXmlElement* elem);
-    
+
     /**
      * TODO docs
      */
@@ -239,15 +225,16 @@ public:
      * This message is sent to VolumeSetSourceProcessor in order to
      * indicate changes on the VolumeSet, so that the processors
      * can update their properties. The Processors therefor must be
-     * be registred at the MessageDistributor what is usually done 
+     * be registred at the MessageDistributor what is usually done
      * within their ctors.
      */
     static const Identifier msgUpdateVolumeSeries_;
-    
+
     /** Holds the name of the xml element used when serializing the object */
     static const std::string XmlElementName;
 
 protected:
+    void setParentContainer(VolumeSetContainer* const parent);
     void notifyObservers();
 
     VolumeSeries::SeriesSet series_;    /** The VolumeSeries stored in this VolumeSet */

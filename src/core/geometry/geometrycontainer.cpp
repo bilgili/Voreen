@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -73,7 +73,7 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
             return false;
         }
     }
-    
+
     // If name and ID have been successfully linked, so they can be assigned
     // to Geometry object. If the assignment fails, the (name, id) entry
     // will be removed from the map again and the method will fail.
@@ -84,7 +84,7 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
         }
         return false;
     }
-    
+
     pair< map<int, Geometry*>::iterator, bool > ret2;
     ret2 = geos_.insert( pair<int, Geometry*>(id, geo) );
     if ( ret2.second == false ) {
@@ -147,7 +147,7 @@ Geometry* GeometryContainer::removeGeometry(const int id) {
     if ( itID == names_.end() ) {
         return 0;
     }
-    
+
     // delete map entries
     //
     names_.erase(itID);
@@ -217,12 +217,12 @@ bool GeometryContainer::replaceGeometry(const int id, Geometry* geo) {
     if ( (geo == 0) || (id == 0) ) {
         return false;
     }
-    
+
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
     if ( itGeo == geos_.end() ) {
         return false;
     }
-    
+
     Geometry* pOldGeo = itGeo->second;
     if ( initGeometry(geo, pOldGeo->getName(), id) == true ) {
         delete pOldGeo;
@@ -232,7 +232,7 @@ bool GeometryContainer::replaceGeometry(const int id, Geometry* geo) {
         // mark the concerned pointer as a pointer
         // which has been replaced.
         //
-        // NOTE: this attribute can only be set as GeometryContainer 
+        // NOTE: this attribute can only be set as GeometryContainer
         // class is friend to Geometry class! This construction was been
         // build in order to avoid taking care of a further map which
         // tracks replaced pointers.

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -64,7 +64,7 @@ private:
     */
     OverviewRenderer* or_;
     bool leftPressed_;
-    bool rightPressed_;   
+    bool rightPressed_;
     float oldMouseX_;
     float oldMouseY_;
     tgt::vec3 translation_;

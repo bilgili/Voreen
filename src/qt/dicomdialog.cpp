@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -65,14 +65,14 @@ ServerConfigDialog::ServerConfigDialog() {
     incomingPort_ = new QSpinBox();
     incomingPort_->setMinimum(0);
     incomingPort_->setMaximum(65535);
-    
+
     okButton_ = new QPushButton("Ok");
     okButton_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     cancelButton_ = new QPushButton("Cancel");
     cancelButton_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    
+
     QGridLayout *layout = new QGridLayout(this);
-    
+
     layout->addWidget(new QLabel(tr("Remote address:")),1,0);
     layout->addWidget(hostname_,1,1,1,3);
 
@@ -86,8 +86,8 @@ ServerConfigDialog::ServerConfigDialog() {
     layout->addWidget(destAE_,4,1,1,3);
 
     layout->addWidget(new QLabel(tr("Incoming port")),5,0);
-    layout->addWidget(incomingPort_,5,1,1,3);    
-    
+    layout->addWidget(incomingPort_,5,1,1,3);
+
     sslCheck_ = new QCheckBox(tr("SSL"));
     layout->addWidget(sslCheck_,6,0);
     layout->addWidget(new QLabel("Client key file"),7,0);
@@ -105,17 +105,17 @@ ServerConfigDialog::ServerConfigDialog() {
     layout->addWidget(serverCert_,9,1);
     selectServerCert_ = new QPushButton(tr("..."));
     layout->addWidget(selectServerCert_,9,2);
-    
+
     layout->addWidget(okButton_,11,0);
     layout->addWidget(cancelButton_,11,1);
-    
+
     enableSSL(false);
-    
+
     connect(sslCheck_, SIGNAL(stateChanged(int)), this, SLOT(enableSSL(int)));
     connect(selectClientKey_, SIGNAL(clicked()), this, SLOT(selectClientKey()));
     connect(selectClientCert_, SIGNAL(clicked()), this, SLOT(selectClientCert()));
     connect(selectServerCert_, SIGNAL(clicked()), this, SLOT(selectServerCert()));
-    
+
     connect(okButton_, SIGNAL(clicked()), this, SLOT(save()));
     connect(cancelButton_, SIGNAL(clicked()), this, SLOT(cancel()));
 }
@@ -159,12 +159,12 @@ void ServerConfigDialog::editConfig(ServerConfig* conf) {
     callAE_->setText(conf->callAE_);
     destAE_->setText(conf->destAE_);
     incomingPort_->setValue(conf->inPort_);
-    
+
     sslCheck_->setCheckState((Qt::CheckState)conf->sslEnabled_);
     clientKey_->setText(conf->clientKey_);
     clientCert_->setText(conf->clientCert_);
     serverCert_->setText(conf->serverCert_);
-    
+
     enableSSL(sslCheck_->checkState());
 }
 
@@ -175,7 +175,7 @@ void ServerConfigDialog::save() {
     currentConf_->callAE_ = callAE_->text();
     currentConf_->destAE_ = destAE_->text();
     currentConf_->inPort_ = incomingPort_->value();
-    //     
+    //
     currentConf_->sslEnabled_ = sslCheck_->checkState();
     currentConf_->clientKey_ = clientKey_->text();
     currentConf_->clientCert_ = clientCert_->text();
@@ -194,11 +194,11 @@ void ServerConfigDialog::cancel() {
 
 ServerDialog::ServerDialog() {
     setWindowTitle("Dicom Downloader");
-    
+
 
     listWidget_ = new SeriesListWidget();
     configDialog_ = new ServerConfigDialog();
-    
+
     serverCombo_ = new QComboBox();
     serverCombo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     newServerButton_ = new QPushButton("New");
@@ -216,9 +216,9 @@ ServerDialog::ServerDialog() {
     outputDirectory_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     changeDirectoryButton_ = new QPushButton("...");
     changeDirectoryButton_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    
+
     loadServers();
-    
+
     connect(newServerButton_, SIGNAL(clicked()), this, SLOT(addServer()));
     connect(deleteServerButton_, SIGNAL(clicked()), this, SLOT(deleteServer()));
     connect(serverCombo_, SIGNAL(currentIndexChanged(int)), this, SLOT(displayConfig(int)));
@@ -230,7 +230,7 @@ ServerDialog::ServerDialog() {
     connect(changeDirectoryButton_, SIGNAL(clicked()), this, SLOT(selectOutputDir()));
 #endif
     QGridLayout *layout = new QGridLayout;
-    
+
     layout->addWidget(new QLabel("Server:"),0,0,(Qt::Alignment)0);
     layout->addWidget(serverCombo_,0,1,(Qt::Alignment)0);
     fillCombo();
@@ -245,9 +245,9 @@ ServerDialog::ServerDialog() {
     layout->addWidget(outputDirectory_,4,1,1,3,(Qt::Alignment)0);
     layout->addWidget(changeDirectoryButton_,4,4,1,1,(Qt::Alignment)0);
 #endif
-    
+
     listWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
+
     setLayout(layout);
 //     if (servers_.size() > 0)
 //         displayConfig(servers_[0]);
@@ -277,7 +277,7 @@ void ServerDialog::loadServers() {
     QString targetPath = settings.value("outputDir").toString();
     outputDirectory_->setText(targetPath);
     ServerConfig conf;
-    
+
     for (int i=0; i<numservers; ++i) {
         QString keyname = "server";
         keyname += (i+1);
@@ -287,12 +287,12 @@ void ServerDialog::loadServers() {
         conf.callAE_ = settings.value(keyname+"/callae", "").toString ();
         conf.destAE_ = settings.value(keyname+"/destae", "").toString ();
         conf.inPort_ = settings.value(keyname+"/inport", 5679).toInt();
-        
+
         conf.sslEnabled_ = settings.value(keyname+"/sslenabled", 0).toInt();
         conf.clientKey_ = settings.value(keyname+"/clientkey", "").toString ();
         conf.clientCert_ = settings.value(keyname+"/clientcert", "").toString ();
         conf.serverCert_ = settings.value(keyname+"/servercert", "").toString ();
-        
+
         servers_.push_back(conf);
     }
 }
@@ -309,7 +309,7 @@ void ServerDialog::saveServers() {
         settings.setValue(keyname+"/callae", servers_[i].callAE_);
         settings.setValue(keyname+"/destae", servers_[i].destAE_);
         settings.setValue(keyname+"/inport", servers_[i].inPort_);
-        
+
         settings.setValue(keyname+"/sslenabled", servers_[i].sslEnabled_);
         settings.setValue(keyname+"/clientkey", servers_[i].clientKey_);
         settings.setValue(keyname+"/clientcert", servers_[i].clientCert_);
@@ -359,7 +359,7 @@ void ServerDialog::updateList()
 {
     QString url = QString("%1:%2/%3").arg(servers_[currentConf_].hostname_)
         .arg(servers_[currentConf_].serverPort_).arg(servers_[currentConf_].callAE_);
-    
+
     voreen::DicomVolumeReader volumeReader;
     if (servers_[currentConf_].sslEnabled_) {
         security_ = voreen::DicomSecurityOptions(servers_[currentConf_].clientKey_.toStdString(),
@@ -417,24 +417,24 @@ void ServerDialog::open() {
 #ifdef VRN_DICOMLOADER
     if (listWidget_->getSelectedSeriesInstanceUID().empty())
         return;
-        
+
     int numImages = listWidget_->getSelectedNumImages();
     std::cout << "Downloading " << numImages << " images\n";
     pd_ = new QProgressDialog("Downloading...", "Cancel", 0, numImages);
     connect(pd_, SIGNAL(canceled()), this, SLOT(cancelDownload()));
     pd_->setValue(0);
-    
+
     t_ = new QTimer(this);
     connect(t_, SIGNAL(timeout()), this, SLOT(updateProgressbar()));
     t_->start(100);
-        
-    
+
+
     QString targetPath = outputDirectory_->text();
     if (targetPath.isEmpty())
         return;
 
     repaint();
-    
+
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     std::string configFile = (QApplication::applicationDirPath()
                               + "/dicomloader-storescp.cfg").toStdString();
@@ -449,7 +449,7 @@ void ServerDialog::open() {
         QMessageBox::critical(this, "Init Connection",
                               QString("Invalid connection parameters for DicomMoveSCU"),
                               QMessageBox::Ok, QMessageBox::NoButton);
-        
+
         t_->stop();
         pd_->setValue(numImages);
         return;
@@ -491,7 +491,7 @@ void ServerDialog::downloadFinished() {
         QMessageBox::critical(0, QString("Series move"),
                               QString("Failed to move series"),
                               QMessageBox::Ok, QMessageBox::NoButton);
-                              
+
     pd_->close();
 }
 
@@ -517,9 +517,9 @@ SeriesListWidget::SeriesListWidget() {
     table = new QTableWidget(20, headers.size());
     table->setHorizontalHeaderLabels(headers);
     table->setSortingEnabled(true);
-    
+
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    
+
     filter_ = new QLineEdit();
     connect(filter_, SIGNAL(textChanged(const QString&)),
             this, SLOT(updateFilter(const QString&)));
@@ -530,10 +530,10 @@ SeriesListWidget::SeriesListWidget() {
     filterCombo_->addItem("PatientID");
     filterCombo_->addItem("StudyDate");
     filterCombo_->addItem("StudyTime");
-    filterCombo_->addItem("Modality");    
-    
+    filterCombo_->addItem("Modality");
+
     connect(table, SIGNAL(itemSelectionChanged ()), this, SIGNAL(seriesSelected()));
-    
+
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(new QLabel("Search:"),0,0);
     layout->addWidget(filter_,0,1);
@@ -541,7 +541,7 @@ SeriesListWidget::SeriesListWidget() {
     layout->addWidget(filterCombo_,1,1,1,1);
     layout->addWidget(table, 2, 0, 1, 2);
     setLayout(layout);
-    
+
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
@@ -550,7 +550,7 @@ namespace {
     public:
         QTableWidgetItemDate(QDate date)
             : QTableWidgetItem(date.toString("dd.MM.yyyy")) {}
-        
+
         bool operator< ( const QTableWidgetItem & other ) const {
             QDate date = QDate::fromString(other.text(), "dd.MM.yyyy");
             return (QDate::fromString(text(), "dd.MM.yyyy") < date);
@@ -570,7 +570,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
         QTableWidgetItem* it = new QTableWidgetItem(QString::fromStdString((*theIterator).uid_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 0, it);
-        
+
         it = new QTableWidgetItem(QString::fromStdString((*theIterator).numImages_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 1, it);
@@ -578,11 +578,11 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
         it = new QTableWidgetItem(QString::fromStdString((*theIterator).patientsName_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 2, it);
-        
+
         it = new QTableWidgetItem(QString::fromStdString((*theIterator).patientId_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 3, it);
-        
+
         temp = (*theIterator).studyDate_;
         if (temp.length() == 8) {
             int y = (temp[0]-'0')*1000+(temp[1]-'0')*100+(temp[2]-'0')*10+(temp[3]-'0');
@@ -595,7 +595,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
             it = new QTableWidgetItem(QString::fromStdString(temp));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 4, it);
-        
+
         temp = (*theIterator).studyTime_;
         if (temp.length() >= 6) {
             temp.insert(4,":");
@@ -605,7 +605,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
             it = new QTableWidgetItem(QString::fromStdString(temp));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 5, it);
-        
+
         it = new QTableWidgetItem(QString::fromStdString((*theIterator).modality_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 6, it);
@@ -613,10 +613,10 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
         it = new QTableWidgetItem(QString::fromStdString((*theIterator).description_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 7, it);
-        
+
         ++c;
     }
-    table->setSortingEnabled(true);  // re-enable sorting   
+    table->setSortingEnabled(true);  // re-enable sorting
 }
 
 std::string SeriesListWidget::getSelectedSeriesInstanceUID() {
@@ -636,7 +636,7 @@ int SeriesListWidget::getSelectedNumImages() {
 void SeriesListWidget::updateFilter(const QString & text) {
     QTableWidgetItem* it;
     int cur = filterCombo_->currentIndex();
-    
+
     if (text == "") {
         for (int r=0; r<table->rowCount(); ++r) {
             for (int c=0; c<table->columnCount(); ++c) {
@@ -679,26 +679,26 @@ void SeriesListWidget::updateFilter(const QString & text) {
 DicomDirDialog::DicomDirDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("DicomDir");    
+    setWindowTitle("DicomDir");
 
     listWidget_ = new SeriesListWidget();
     openButton_ = new QPushButton("Open");
     openButton_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  
+
     connect(openButton_, SIGNAL(clicked()), this, SLOT(open()));
-  
+
     QGridLayout *layout = new QGridLayout;
-    
+
     layout->addWidget(listWidget_,0,0,(Qt::Alignment)0);
     layout->addWidget(openButton_,1,0,(Qt::Alignment)0);
-    
+
     listWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
+
     setLayout(layout);
 
     // set initial size
-    resize(600, 300);        
-    
+    resize(600, 300);
+
 //     if (servers_.size() > 0)
 //         displayConfig(servers_[0]);
 

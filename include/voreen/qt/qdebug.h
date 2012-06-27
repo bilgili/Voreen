@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -48,35 +48,35 @@ class QDebugStream: public std::basic_streambuf< char, std::char_traits< char > 
   typedef std::char_traits< char > traits_t;
 public:
 
-	void setConsole(QTextEdit* console) {
-		console_ = console;
-	}
+    void setConsole(QTextEdit* console) {
+        console_ = console;
+    }
 
-	virtual int_type overflow(int_type v) {
-		if (v == '\n') {
-			console_->append(infoStr_.c_str());
-			infoStr_.clear();
-		} else infoStr_.push_back(v);
-		return v;
-	}
+    virtual int_type overflow(int_type v) {
+        if (v == '\n') {
+            console_->append(infoStr_.c_str());
+            infoStr_.clear();
+        } else infoStr_.push_back(v);
+        return v;
+    }
 
-	virtual std::streamsize xsputn(const char *p, std::streamsize n) {
-		infoStr_.append(p, p + n);
-		size_t pos = 0;
-		while (pos != std::string::npos) {
-			pos = infoStr_.find('\n');
-			if (pos != std::string::npos) {
-				std::string tmp(infoStr_.begin(), infoStr_.begin() + pos);
-				console_->append(tmp.c_str());
-				console_->ensureCursorVisible();
-				infoStr_.erase(infoStr_.begin(), infoStr_.begin() + pos + 1);
-			}
-		}
-		return n;
-	}
+    virtual std::streamsize xsputn(const char *p, std::streamsize n) {
+        infoStr_.append(p, p + n);
+        size_t pos = 0;
+        while (pos != std::string::npos) {
+            pos = infoStr_.find('\n');
+            if (pos != std::string::npos) {
+                std::string tmp(infoStr_.begin(), infoStr_.begin() + pos);
+                console_->append(tmp.c_str());
+                console_->ensureCursorVisible();
+                infoStr_.erase(infoStr_.begin(), infoStr_.begin() + pos + 1);
+            }
+        }
+        return n;
+    }
 
 private:
-	QTextEdit*  console_;
-	std::string infoStr_;
-}; 
+    QTextEdit*  console_;
+    std::string infoStr_;
+};
 #endif

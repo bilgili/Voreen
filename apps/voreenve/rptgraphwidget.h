@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,6 +39,7 @@
 namespace voreen {
 
 class NetworkEvaluator;
+class RptNetwork;
 
 /**
  * Interface for GraphicsItems with custom Tooltips
@@ -46,7 +47,7 @@ class NetworkEvaluator;
 class HasRptTooltip {
 public:
     virtual ~HasRptTooltip() {}
-    
+
     /**
      * Returns the custom Tooltip or 0 if none is available
      */
@@ -73,13 +74,14 @@ public:
     void clearScene();
 
     /**
-     * Adds an item to the scene, and moves it by given pos.
+     * Adds a processor to the scene and moves it to the given position.
      */
-    void addItem(RptGuiItem* item, QPoint pos);
+    void addProcessor(RptProcessorItem* processor, const QPoint& pos);
+
     /**
-     * Adds an item to the scene, using position of the item.
+     * Adds a processor to the scene, using its current position.
      */
-    void addItem(RptGuiItem* item);
+    void addProcessor(RptProcessorItem* processor);
 
     /**
      * Adds a Widget that drop events should be accepted from.
@@ -90,15 +92,16 @@ public:
 
     void updateSelectedItems();
 
-    // set center of graph widget
+    /// set center of graph widget
     void setCenter(QPointF);
-    // centers graph widget
+
+    /// centers graph widget
     void center();
 
     /**
      * Returns the scene.
      */
-	QGraphicsScene* getScene(){ return scene_; }
+    QGraphicsScene* getScene(){ return scene_; }
 
     /**
      * Returns the number of RptProcessorItems currently selected
@@ -111,12 +114,22 @@ public:
     NetworkEvaluator* getEvaluator() const { return evaluator_; }
 
     QSize sizeHint() const { return QSize(400, 600); }
+
+    void scaleView(float maxFactor);
+
+    void setNetwork(RptNetwork* network);
+    RptNetwork* getNetwork() const { return rptnet_; }
     
 signals:
     /**
      * Sent when a processor item is dropped. (connected in mainwindow)
      */
     void processorAdded(Identifier id, QPoint pos);
+
+    /**
+    * Sent when a processor item is dropped. (connected in mainwindow)
+    */
+    void processorAdded(RptProcessorItem* procItem);
 
     /**
      * Sent when an aggregation is dropped to the graphWidget. (connected in mainwindow)
@@ -128,33 +141,31 @@ signals:
      * The parameter processor is 0 when no processor was selected.
      */
     void processorSelected(Processor* processor);
-    
+
     /**
-     * Sent by context menu (connected in mainwindow).
+     * Sent by context menu
      */
     void copySignal();
     void pasteSignal();
 
-    /**
-     * Sent by double click on item.
-     */
+    void deleteSignal();
+    
     void showPropertiesSignal();
 
 private slots:
-    /**
-     * Action for context menu. Sends copySignal (connected in mainwindow).
-     */
     void copyActionSlot();
     void pasteActionSlot();
-    void updateScene(const QList<QRectF> &rects );
 
+    void deleteActionSlot();
+    void renameActionSlot();
+    
     void showRptTooltip();
 
 protected:
-    void createContextMenu();
+    void createContextMenus();
     void paintEvent(QPaintEvent* event);
+    void resizeEvent(QResizeEvent* event);
 
-    void scaleView(qreal scaleFactor);
     void wheelEvent(QWheelEvent* event);
 
     void dragEnterEvent(QDragEnterEvent* event);
@@ -167,13 +178,16 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event);
     void mouseDoubleClickEvent(QMouseEvent* event);
 
+    void keyReleaseEvent(QKeyEvent* event);
+
     void contextMenuEvent(QContextMenuEvent* event);
 
     void showRptTooltip(const QPoint& pos, HasRptTooltip* hastooltip);
 
-    QMenu contextMenu_;
 private:
-    void createConnections();
+    QMenu contextMenu_;
+    QMenu rightClickMenuSingle_;
+    QMenu rightClickMenuMultiple_;
 
     QGraphicsScene* scene_;
     // construed as translation vector
@@ -193,6 +207,8 @@ private:
     RptTooltipTimer* ttimer_;
 
     NetworkEvaluator* evaluator_;
+    RptNetwork* rptnet_;
+    bool needsScale_;
 };
 
 } // namespace voreen

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -40,7 +40,7 @@ namespace voreen {
 // public methods
 //
 
-PolygonFace3D::PolygonFace3D(const unsigned long id, const tgt::vec3& normal) 
+PolygonFace3D::PolygonFace3D(const unsigned long id, const tgt::vec3& normal)
 : id_(id), normal_(normal), rebuildVertexList_(true)
 {}
 
@@ -127,7 +127,7 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
         }
 
         // check if the first vertex is part of the current regarded edge
-        // 
+        //
         if (cur->isPartOf(v1)) {
             // if second is also part, the edges are equal and no insertion has to be made
             //
@@ -174,7 +174,7 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
             break;
     }   // for (; itCur != edges_.end(); ++itCur, ++itNext)
 
-    // if the edge has not been inserted, is not equal to any other edge, 
+    // if the edge has not been inserted, is not equal to any other edge,
     // insert it at the back of the list
     //
     if ( (equal == false) && (inserted == false) ) {
@@ -216,7 +216,7 @@ void PolygonFace3D::sortEdges() {
                 v = e->getSecond();
             else
                 v = e->getFirst();
-            
+
             newList.push_back(e);
             edges_.erase(it);
             it = edges_.begin();
@@ -306,8 +306,8 @@ void PolygonFace3D::buildVertexList() {
     // in the output list must occur in the next edge.
     // if it does not, swap the both first inserted points.
     //
-    if ( (it != edges_.end()) 
-        && ( ! (last == (*it)->getFirst()->getVertex()) ) 
+    if ( (it != edges_.end())
+        && ( ! (last == (*it)->getFirst()->getVertex()) )
         && ( ! (last == (*it)->getSecond()->getVertex())) )
     {
         std::swap(vertices_.front(), vertices_.back());
@@ -330,7 +330,7 @@ void PolygonFace3D::buildVertexList() {
         //
         if ( (last == e->getSecond()->getVertex()) && ( !(vertices_.front() == v1) ) )
             vertices_.push_back( v1 );
-        
+
         last = vertices_.back(); // update the last inserted point
     }
 

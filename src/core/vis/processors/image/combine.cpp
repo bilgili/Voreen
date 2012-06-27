@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,7 +28,6 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/combine.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
@@ -61,32 +60,31 @@ Combine::Combine()
     blendModeMethods_.push_back("Alpha Depth Compositing");
     blendModeMethodDefines_.push_back("COMBINE_DEPTH_ALPHA_COMPOSITING");
 
-    blendMode_ = new EnumProp("Combine.set.blendMode", "Set blend mode:", blendModeMethods_, &needRecompileShader_, 0, false);
+    blendMode_ = new EnumProp("Combine.set.blendMode", "Set blend mode:", blendModeMethods_, 0, true, true);
     addProperty(blendMode_);
-    cond_ = new ConditionProp("blendModeCond", blendMode_);
-    addProperty(cond_);
-    firstModifyColor_.setAutoChange(true);
-    firstModifyColor_.setConditioned("blendModeCond", 2);
-    secondModifyColor_.setAutoChange(true);
-    secondModifyColor_.setConditioned("blendModeCond", 2);
+    //cond_ = new ConditionProp("blendModeCond", blendMode_);
+    //addProperty(cond_);
+    // FIXME commented out due to new property system
+    //firstModifyColor_.setConditioned("blendModeCond", 2);
+    // FIXME commented out due to new property system
+    //secondModifyColor_.setConditioned("blendModeCond", 2);
     addProperty(&firstModifyColor_);
     addProperty(&secondModifyColor_);
-    blendFactor_.setAutoChange(true);
-    blendFactor_.setConditioned("blendModeCond", 4);
+    // FIXME commented out due to new property system
+    //blendFactor_.setConditioned("blendModeCond", 4);
     addProperty(&blendFactor_);
-	backgroundColor_.setAutoChange(true);
-	addProperty(&backgroundColor_);
+    addProperty(&backgroundColor_);
 
     setName("Combine PP");
 }
 
 Combine::~Combine() {
     delete blendMode_;
-    delete cond_;
+    //delete cond_;
 }
 
 const std::string Combine::getProcessorInfo() const {
-	return "Combines the result of two Renderer objects with a set of blending methods.";
+    return "Combines the result of two Renderer objects with a set of blending methods.";
 }
 
 void Combine::compile() {
@@ -123,7 +121,7 @@ void Combine::renderTwo(int source0, int source1, int /*pass*/) {
     program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
     program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
-	if (blendMode_->get() == 2 || blendMode_->get() == 3) {
+    if (blendMode_->get() == 2 || blendMode_->get() == 3) {
         program_->setUniform("backgroundColor_", backgroundColor_.get());
     }
     if (blendMode_->get() == 2) {
@@ -143,6 +141,7 @@ void Combine::renderTwo(int source0, int source1, int /*pass*/) {
 void Combine::processMessage(Message* msg, const Identifier& dest) {
     Collect::processMessage(msg, dest);
 
+    /*
     if (msg->id_ == "Combine.set.blendMode") {
         blendMode_->set(msg->getValue<int>());
         invalidate();
@@ -155,6 +154,7 @@ void Combine::processMessage(Message* msg, const Identifier& dest) {
         secondModifyColor_.set(msg->getValue<tgt::Color>());
         invalidate();
     }
+    */
 }
 
 } // voreen namespace

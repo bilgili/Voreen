@@ -30,113 +30,109 @@
 #ifndef VRN_CMDLINEPARSER_H
 #define VRN_CMDLINEPARSER_H
 
+#include "voreen/core/vis/exception.h"
+
 // These includes in the header file is intentional
-// The programmers should only has to include "commandlineparser.h" to use the functionality
+// The user should only has to include "commandlineparser.h" to use the full functionality
+// The 'basic' classes
 #include "voreen/core/cmdparser/command.h"
-#include "voreen/core/cmdparser/command_boolean.h"
-#include "voreen/core/cmdparser/command_float.h"
-#include "voreen/core/cmdparser/command_integer.h"
+#include "voreen/core/cmdparser/singlecommand.h"
+#include "voreen/core/cmdparser/multiplecommand.h"
+
+// The directly usable ones
 #include "voreen/core/cmdparser/command_loglevel.h"
-#include "voreen/core/cmdparser/command_string.h"
+#include "voreen/core/cmdparser/predefinedcommands.h"
 
 namespace voreen {
 
-class Command;
-
-class CommandNameAssignedTwiceException : public std::exception {};
-
-/**
- * This class manages commandline arguments and is able to execute them. This is done by adding
- * \sa Commands to this class. In these Commands the functionality for an explicit commandline argument
- * is codified.
- * To use this class you have to create a CommandlineParser and then use the \sa addCommand method.
- * The commands are tested and executed in the \sa execute method. Each command will be checked for the
- * correct amount of parameters and then will be executed. If either of those goes wrong, a unix-like
- * "usage" message will be displayed to <code>std::cout</code>.
- *
- * Showcase use:
- * We have three <code>Command</code>s called "-command1" "-load <name>" "-maximize" with 0,1 and 0
- * parameters respectively.
- * In the main method of the programm we create a CommandlineParser, call \sa setCommandLine
- * with the argc and argv arguments from the c main method and consecutively \sa addCommand
- * each of the three commands. Afterwards we can use the \sa execute method and pass the args
- * parameter from the c(++) main method. The rest will be done by this class.
- * \sa Command
- */
 class CommandlineParser {
 public:
     /**
-     * Initializes the CommandlineParser.
-     * \param programName The Name of the Program. Necessary for the "usage" output
+     * Default constructor which does nothing fancy at all
+     * \param programName The name of the program. Used in the \sa displayUsage and \sa displayHelp methods
      */
-    CommandlineParser(std::string programName);
+    CommandlineParser(const std::string programName = "");
 
     /**
-     * Deletes all the added Commands aswell
+     * The destructor will also delete all the contained classes within
      */
     ~CommandlineParser();
 
     /**
-     * Stores the commandline arguments into a vector. This is done by seperating the string
-     * along the dashes and grouping the arguments. The first argument (the program name) is
-     * omitted.
-     * e.g. "voreen.exe -flag1 -command2 argument3 -flag4"
-     * will be converted to a vector:
-     * ("flag1"), ("-command2 argument3"), ("flag4")
-     * \param argc The count of arguments
-     * \param argv The arguments themselves
+     * Sets the commandline given from the main method.
+     * \param argc The number of arguments
+     * \param argv The arguments themself
      */
     void setCommandLine(int argc, char** argv);
 
-    /** 
-     * Parses and executes all commands. This method first checks, if all the given commands
-     * exist in this commandline parser and have the correct (i.e. right amount and right type)
-     * parameters. If that is so, the commands will be executed consecutively.
-     * If either this or the testing before is unsuccessful, the program will be terminated
-     * and the \sa usage method will be called.
-     * \sa usage
+    /**
+     * Sets the commandline given from the main method.
+     * \param arguments The arguments
+     */
+    void setCommandLine(std::vector<std::string> arguments);
+
+    /**
+     * Parses the commandline, evaluates all the commands and executes them. The nameless command
+     * will be checked last, but executed first. Other executions might be somewhat random
      */
     void execute();
 
     /**
-     * Prints the "usage" lines to <code>std::cout</code> containing all the accessible commands and
-     * the associated info-lines. This method simply puts a header containing the information
-     * about the program name above a list of usage-infos of the commands being administrated
-     * in this commandline parser.
+     * Add a new command to the parser.
+     * \param cmd The new command
+     * \throws CommandNameAssignedTwiceException self explanatory
      */
-    void usage();
+    void addCommand(Command* cmd) throw (VoreenException);
 
     /**
-     * Adds \sa command to the parser.
-     * It will be checked if either name (short or long) is already exists in the commandline parser.
-     * \param cmd The command you want to add
-     * \throws CommandNameAssignedTwiceException If a name would be assigned twice.
+     * Add a new command to take care of the nameless arguments
+     * \param cmd The command responsible for those arguments
+     * \throws CommandAlreadyAssignedException self explanatory again
      */
-    void addCommand(Command* cmd) throw(CommandNameAssignedTwiceException);
+    void addCommandForNamelessArguments(Command* cmd) throw (VoreenException);
 
-private:
+    /// Returns the first commandline argument containing the path and the executable name
+    std::string getProgramPath() const { return programPath_; }
+
+    /// Sets the verbosity of the commandline parser. When set, each (command,argument) pair will be
+    /// printed to std::cout
+    void setVerbosity(const bool verbosity) { verbosity_ = verbosity; }
+
     /**
-     * Fetches a command from the vector identifies by a (short) name.
-     * \param shortOrLongName The name of the command. This can either be the short or the long name.
-     * \return The appropriate command
+     * Prints the usage information to the std::cout.
+     * \param displayHelp Should the <code>help</code> section be printed as well?
      */
+    void displayUsage();
+
+    /// Print the full help text to the std::cout
+    void displayHelp();
+
+
+protected:
+    /// Returns the command with a specific <code>shortName</code> or <code>name</code>. If no such
+    /// command exists, 0 is returned
     Command* getCommand(std::string shortOrLongName);
 
-    /**
-     * Terminates the program and displays the usage message to std::cout
-     * \param msg The message which should be displayed
-     */
+    /// Bail out, display the message <code>msg</code> and display the usage
     void exitWithError(const std::string& msg);
 
-    /// This vector contains all the added commands
+    /// The stored commands
     std::vector<Command*> commands_;
-    /// The name of the creating program. Necessary for the \sa usage command
+
+    /// The command we want to use for nameless arguments    
+    Command* commandForNamelessArguments_;
+
+    /// All the arguments passed onto this parser
+    std::vector<std::string> arguments_;
+
+    /// The path to the program + filename
+    std::string programPath_;
+
+    /// The name of the program used in the \sa usage method
     std::string programName_;
-    /// The commandline being stored from the \sa setCommandLine method
-    std::vector<std::string> commandlineArguments_;
-    /// If the first argument of the argument list didn't start with a dash,we have
-    /// to exit the program at a different place
-    bool argumentListWasWrong;
+
+    /// Controls the verbosity of the commandline parser in regard to execution
+    bool verbosity_;
 };
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -70,7 +70,7 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
         if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<unsigned char>::getZero())
             zeroString = "ZeroPoint:\t" + vol->getZeroPoint();
 
-    } 
+    }
     else if (VolumeUInt16* vol = dynamic_cast<VolumeUInt16*>(volume)) {
         if (vol->getBitsStored() == 12)
             format = "USHORT_12";
@@ -83,7 +83,7 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
         if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<unsigned short>::getZero())
             zeroString = "ZeroPoint:\t" + vol->getZeroPoint();
 
-    } 
+    }
     else if (Volume4xUInt8* vol = dynamic_cast<Volume4xUInt8*>(volume)) {
         format = "UCHAR";
         model = "RGBA";
@@ -135,27 +135,33 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
     else
         LERROR("Format currently not supported");
 
-    tgt::ivec3 dimensions = volume->getDimensions();
-    tgt::vec3 spacing = volume->getSpacing();
-    tgt::mat4 transformation = volume->meta().getTransformation();
-    std::string metaString = volume->meta().getString();
-
     datout << "ObjectFileName:\t" << VolumeMetaData::getFileNameWithoutPath(rawname) << std::endl;
+
+    tgt::ivec3 dimensions = volume->getDimensions();
     datout << "Resolution:\t" << dimensions.x << " " << dimensions.y << " " << dimensions.z << std::endl;
+
+    tgt::vec3 spacing = volume->getSpacing();
     datout << "SliceThickness:\t" << spacing.x << " " << spacing.y << " " << spacing.z << std::endl;
+
     datout << "Format:\t\t" << format << std::endl;
     datout << "ObjectModel:\t" << model << std::endl;
-    datout << "TransformMatrix: row0\t" << transformation[0][0] << " " << transformation[0][1] << " "
-                                        << transformation[0][2] << " " << transformation[0][3] << std::endl;
-    datout << "TransformMatrix: row1\t" << transformation[1][0] << " " << transformation[1][1] << " "
-                                        << transformation[1][2] << " " << transformation[1][3] << std::endl;
-    datout << "TransformMatrix: row2\t" << transformation[2][0] << " " << transformation[2][1] << " "
-                                        << transformation[2][2] << " " << transformation[2][3] << std::endl;
-    datout << "TransformMatrix: row3\t" << transformation[3][0] << " " << transformation[3][1] << " "
-                                        << transformation[3][2] << " " << transformation[3][3] << std::endl;
-    if ( !metaString.empty() ) 
-        datout << "MetaString:\t" << metaString << std::endl;
+
+    // write transformation matrix unless it is the identity matrix
+    tgt::mat4 transformation = volume->meta().getTransformation();
+    if (transformation != tgt::mat4::createIdentity())
+        datout << "TransformMatrix: row0\t" << transformation[0][0] << " " << transformation[0][1] << " "
+               << transformation[0][2] << " " << transformation[0][3] << std::endl
+               << "TransformMatrix: row1\t" << transformation[1][0] << " " << transformation[1][1] << " "
+               << transformation[1][2] << " " << transformation[1][3] << std::endl
+               << "TransformMatrix: row2\t" << transformation[2][0] << " " << transformation[2][1] << " "
+               << transformation[2][2] << " " << transformation[2][3] << std::endl
+               << "TransformMatrix: row3\t" << transformation[3][0] << " " << transformation[3][1] << " "
+               << transformation[3][2] << " " << transformation[3][3] << std::endl;
     
+    std::string metaString = volume->meta().getString();
+    if (!metaString.empty())
+        datout << "MetaString:\t" << metaString << std::endl;
+
     datout << zeroString << std::endl;
     datout.close();
 

@@ -1,4 +1,3 @@
-
 /**********************************************************************
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
@@ -167,7 +166,7 @@ protected:
  */
 class LogManager {
 public:
-	LogManager(const std::string& logDir = "./");
+	LogManager(const std::string& logDir = "");
 	~LogManager();
 
     /// Initialize logmanager, put all logfiles in logDir
@@ -176,9 +175,6 @@ public:
 
     /// Log message
 	void log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
-
-    /// Log message formated with sprintf
-	void logf(const std::string &cat, LogLevel level, const char* Format, ... );
 
     /// Add a log to the manager, from now all messages recieved by the manager are also distributed to this log.
     /// All logs are deleted upon destruction of the manager!
@@ -198,64 +194,68 @@ protected:
 
 #define LogMgr tgt::Singleton<tgt::LogManager>::getRef()
 
+// Use "do { ... } while (0)" to allow "if (foo) LINFO("bar"); else ...", which would fail
+// otherwise.
+// Compare: http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
+
 #ifdef TGT_DEBUG
     #ifdef __GNUC__
         #define LDEBUG(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Debug, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LINFO(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Info, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LWARNING(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Warning, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LERROR(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Error, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LFATAL(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Fatal, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
         
         //with category parameter:
         #define LDEBUGC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Debug, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LINFOC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Info, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LWARNINGC(cat, msg) \
         { \
@@ -266,132 +266,132 @@ protected:
         }
 
         #define LERRORC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Error, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LFATALC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Fatal, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
     #else
         #define LDEBUG(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Debug, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LINFO(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Info, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LWARNING(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Warning, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LERROR(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Error, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LFATAL(msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Fatal, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
         
         //with category parameter:
         #define LDEBUGC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Debug, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LINFOC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Info, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LWARNINGC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Warning, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LERRORC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Error, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LFATALC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Fatal, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
      #endif
 #else
     #define LDEBUG(msg)
 
     #define LINFO(msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(loggerCat_, tgt::Info, _tmp.str()); \
-    }
+    } while (0)
 
     #define LWARNING(msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(loggerCat_, tgt::Warning, _tmp.str()); \
-    }
+    } while (0)
 
     #define LERROR(msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(loggerCat_, tgt::Error, _tmp.str()); \
-    }
+    } while (0)
 
     #define LFATAL(msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(loggerCat_, tgt::Fatal, _tmp.str()); \
-    }
+    } while (0)
 
     //
     // with category parameter
@@ -400,32 +400,32 @@ protected:
     #define LDEBUGC(cat, msg)
 
     #define LINFOC(cat, msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(cat, tgt::Info, _tmp.str()); \
-    }
+    } while (0)
 
     #define LWARNINGC(cat, msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(cat, tgt::Warning, _tmp.str()); \
-    }
+    } while (0)
 
     #define LERRORC(cat, msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(cat, tgt::Error, _tmp.str()); \
-    }
+    } while (0)
 
     #define LFATALC(cat, msg) \
-    { \
+    do { \
         std::ostringstream _tmp; \
         _tmp << msg; \
         LogMgr.log(cat, tgt::Fatal, _tmp.str()); \
-    }
+    } while (0)
     
 #endif //TGT_DEBUG
 

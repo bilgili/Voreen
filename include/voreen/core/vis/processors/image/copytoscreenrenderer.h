@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -48,17 +48,17 @@ namespace voreen {
  */
 class CopyToScreenRenderer : public Processor {
 public:
-	/**
-	 * Default constructor.
-	 * @param camera the \c Camera object used in this pipeline.
-	 * @param tc the \c TextureContainer object to use. \see TextureContainer
-	 */
-	CopyToScreenRenderer(tgt::Camera* camera=0, TextureContainer* tc = 0);
+    /**
+     * Default constructor.
+     * @param camera the \c Camera object used in this pipeline.
+     * @param tc the \c TextureContainer object to use. \see TextureContainer
+     */
+    CopyToScreenRenderer(tgt::Camera* camera=0, TextureContainer* tc = 0);
     ~CopyToScreenRenderer();
 
-	virtual const Identifier getClassName() const { return "Miscellaneous.CopyToScreenRenderer"; }
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() { return new CopyToScreenRenderer(); }
+    virtual const Identifier getClassName() const { return "Miscellaneous.CopyToScreenRenderer"; }
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const { return new CopyToScreenRenderer(); }
 
     virtual int initializeGL();
 
@@ -68,13 +68,13 @@ public:
     virtual void invalidate();
 
     /**
-	 * Indicates if this \c CopyToScreenRenderer caches its producer's
-	 * rendering result. If caching is true, the CopyToScreenRenderer
-	 * only updates it current rendering, if it has received an \c
-	 * invalidate() since last \c render() call.
-	 * default:true
-	 */
-	void setCaching(bool caching);
+     * Indicates if this \c CopyToScreenRenderer caches its producer's
+     * rendering result. If caching is true, the CopyToScreenRenderer
+     * only updates it current rendering, if it has received an \c
+     * invalidate() since last \c render() call.
+     * default:true
+     */
+    void setCaching(bool caching);
 
     /**
      * If ignoreCoarseness is set to true, the \c CopyToScreenRenderer
@@ -87,14 +87,14 @@ public:
      */
     void setIgnoreCoarseness(bool ignoreCoarseness);
 
-protected:   
+protected:
     /**
      * True if the coarseness factor is not passed through to the attached
      * producer. \see coarsenessFactor_
      */
     bool ignoreCoarseness_;
 
-	/**
+    /**
      * Indicates if the coarseness factor is ignored. \see setIgnoreCoarseness
      */
     BoolProp useCoarseness_;
@@ -110,9 +110,9 @@ protected:
      */
     tgt::Shader* raycastPrg_;
 
-	/**
-	 * True if the rendering of the attached producer is cached.
-	 */
+    /**
+     * True if the rendering of the attached producer is cached.
+     */
     bool caching_;
 
     /**

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -45,7 +45,7 @@ namespace voreen {
 class BackgroundPlugin : public WidgetPlugin {
     Q_OBJECT
 public:
-	BackgroundPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0);
+    BackgroundPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0);
     ~BackgroundPlugin();
 
     /**
@@ -54,31 +54,31 @@ public:
      * \see Background
      */
     enum BackgroundLayouts {
-        MONOCHROME  = 1, 
-        GRADIENT    = 2,   
-        RADIAL      = 4,     
-        CLOUD       = 8,     
+        MONOCHROME  = 1,
+        GRADIENT    = 2,
+        RADIAL      = 4,
+        CLOUD       = 8,
         TEXTURE     = 16,
-        ALL_LAYOUTS = 31 
+        ALL_LAYOUTS = 31
     };
-    
+
     void setIsSliceRenderer(bool isSlice);
     void enableBackgroundLayouts(int bitString);
     void disableBackgroundLayouts(int bitString);
 
 protected:
-        
+
     virtual void createConnections();
     virtual void initGL();
 
     /// Creates the widgets
     virtual void createWidgets();
-    
+
     /// In this function the initial values for all parameters are set.
     void initParameters();
     /// Enables / disables widgets depending on the current background layout.
     void setWidgetState();
-    
+
 public slots:
 
     void setBackgroundLayout(int);
@@ -105,7 +105,7 @@ private:
     QSpinBox* spinBoxTile_;
 
     bool isSliceRenderer_;
-    
+
     // rendering parameters
     BackgroundLayouts backgroundLayout_;
     tgt::Color backgroundColor_;
@@ -113,7 +113,7 @@ private:
     tgt::Color backgroundSecondColor_;
     int backgroundAngle_;
     int backgroundTile_;
-    
+
     // this is a bitstring determining the layouts to offer the user
     int activeLayouts_;
 

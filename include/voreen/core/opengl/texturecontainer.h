@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -50,7 +50,7 @@ class Renderbuffer;
 #ifdef VRN_WITH_RENDER_TO_TEXTURE
 // This forward declaration is done to prevent indirectly including Xlib.h into the entire
 // project, which would introduce some pretty nasty global defines (e.g. "Status").
-class RenderTexture; 
+class RenderTexture;
 #endif
 
 namespace voreen {
@@ -193,7 +193,7 @@ public:
      */
     virtual void initializeTarget(int id, int attr);
 
-	/**
+    /**
      * Makes the rendertarget id the active RenderTarget.
      *
      * If the new rt is an fbo and the fbo isn't active, it will be activated and
@@ -206,9 +206,10 @@ public:
                                  CubemapOrientation cubemapOrientation = VRN_NONE) = 0;
 
     /**
-     * TODO: Work in progress: This function currently only supports a vector with 2 elements,
-     *        the first render target is set normally (as when calling activateTarget), the
-     *        second render target is only set as a color attachment.
+     * Makes the rendertarget ids in the vector targets active.
+     *
+     * @param targets ids of the new active rendertargets.
+     * @param debugLabel debuglabel
      */
     virtual void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "") = 0;
 
@@ -377,7 +378,6 @@ public:
     int getCurrentMemorySize();
 
     friend std::ostream& operator<<(std::ostream& os, const TextureContainer& tc);
-    GLuint shadowTexID_;//FIXME: remove? joerg
 
 protected:
     /**
@@ -404,7 +404,7 @@ protected:
      */
     struct RenderTarget {
         RenderTarget();
-        ~RenderTarget(); 
+        ~RenderTarget();
         int attr_;
         bool free_;
         std::string debugLabel_;
@@ -419,7 +419,7 @@ protected:
         RenderTexture* rt_;
 #endif
     };
-    
+
     /// Pointer to the list of RenderTargets
     RenderTarget *rt_;
     /// Current capacity of RenderTargets
@@ -481,7 +481,7 @@ protected:
      */
     TextureContainerFBO(int numRT, bool sharing = false);
 public:
-    friend TextureContainer* TextureContainer::createTextureContainer(int numRT, bool sharin, 
+    friend TextureContainer* TextureContainer::createTextureContainer(int numRT, bool sharin,
         TextureContainer::TextureContainerType type);
     ~TextureContainerFBO();
 
@@ -512,7 +512,7 @@ public:
      */
     virtual void initializeTarget(int id, int attr);
 
-	/**
+    /**
      * Makes the rendertarget id the active RenderTarget.
      *
      * If the new rt is an fbo and the fbo isn't active, it will be activated and
@@ -525,9 +525,10 @@ public:
                                  CubemapOrientation cubemapOrientation = VRN_NONE);
 
     /**
-     * Work in progress: This function currently only supports a vector with 2 elements,
-     *        the first render target is set normally (as when calling activateTarget), the
-     *        second render target is only set as a color attachment.
+     * Makes the rendertarget ids in the vector targets active.
+     *
+     * @param targets ids of the new active rendertargets.
+     * @param debugLabel debuglabel
      */
     void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "");
 
@@ -585,8 +586,7 @@ public:
     FramebufferObject* getFBO();
 
     friend std::ostream& operator<<(std::ostream& os, const TextureContainerFBO& tc);
-    GLuint shadowTexID_; //TODO: remove? joerg
-    
+
 protected:
     /**
      * Select appropriate texture types (depending on graphics board.)
@@ -648,7 +648,7 @@ class TextureContainerRTT : public TextureContainer  {
 public:
     friend TextureContainer* TextureContainer::createTextureContainer(int numRT, bool sharin,
                                                                       TextureContainer::TextureContainerType type);
-    
+
     ~TextureContainerRTT();
 
     virtual TextureContainerType getTextureContainerType();
@@ -691,9 +691,7 @@ public:
                                  CubemapOrientation cubemapOrientation = VRN_NONE);
 
     /**
-     * Work in progress: This function currently only supports a vector with 2 elements,
-     *        the first render target is set normally (as when calling activateTarget), the
-     *        second render target is only set as a color attachment.
+     * Multiple rendertargets are not available with render to texture.
      */
     virtual void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "");
 
@@ -737,7 +735,7 @@ public:
      * @param id Id of the rt.
      */
     virtual GLenum getGLDepthTexTarget(int id);
-    
+
     /**
      * Resizes all stored elements.
      *
@@ -747,7 +745,7 @@ public:
 
 protected:
     TextureContainerRTT(int numRT, bool sharing = false);
-    
+
     virtual void unattach(int id);
     virtual void unattach(std::vector<int> id);
 

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,18 +32,25 @@
 
 #include "widgetplugin.h"
 
-#include <QTextEdit>
+class QTextEdit;
 
 namespace voreen {
+
+class ConsoleLogQt;
 
 class ConsolePlugin : public WidgetPlugin {
     Q_OBJECT
 public:
     ConsolePlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
 
+    void log(const std::string& msg);
+
 protected:
     virtual void createWidgets();
     virtual void createConnections();
+
+    ConsoleLogQt* log_;
+    QTextEdit* consoleText_;
 };
 
 } // namespace voreen

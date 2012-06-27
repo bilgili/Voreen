@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,7 +41,7 @@ RptPropertySetItem::RptPropertySetItem(QGraphicsScene* scene, QGraphicsItem* par
     if (scene)
         scene->addItem(this);
     createContextMenu();
-	color_ = QColor(233,218,176);
+    color_ = QColor(233,218,176);
 }
 
 RptPropertySetItem::RptPropertySetItem(std::vector<RptGuiItem*> processors, QGraphicsScene* scene, QGraphicsItem* parent)
@@ -60,12 +60,12 @@ RptPropertySetItem::RptPropertySetItem(std::vector<RptGuiItem*> processors, QGra
     }
     pos /= processors.size();
     pos.setX(pos.x() + 200);
-    
+
     setPos(pos);
 
     adjustArrows();
     createContextMenu();
-	color_ = QColor(233,218,176);
+    color_ = QColor(233,218,176);
 }
 
 RptPropertySetItem::RptPropertySetItem(PropertySet* propertySet, const std::map<Processor*,RptProcessorItem*> processorMap, QGraphicsScene* scene, QGraphicsItem* parent)
@@ -99,10 +99,6 @@ RptPropertySetItem::~RptPropertySetItem() {
     propertySet_ = 0;
 }
 
-void RptPropertySetItem::setName(std::string name) {
-    RptGuiItem::setName(name);
-}
-
 RptPropertySetItem& RptPropertySetItem::saveMeta() {
     TiXmlElement* meta = new TiXmlElement("RptPropertySetItem");
     meta->SetAttribute("x", static_cast<int>(x()));
@@ -117,14 +113,14 @@ RptPropertySetItem& RptPropertySetItem::loadMeta() {
     float x,y;
     if (meta->QueryFloatAttribute("x",&x) != TIXML_SUCCESS || meta->QueryFloatAttribute("y",&y) != TIXML_SUCCESS)
         throw XmlAttributeException("The Position of a PropertySetItem remains unknown!");
-    if (meta->Attribute("name"))
-        setName(meta->Attribute("name"));
+//    if (meta->Attribute("name"))
+  //      setName(meta->Attribute("name"));
     setPos(x,y);
     return *this;
 }
 
 void RptPropertySetItem::createContextMenu() {
-    RptGuiItem::createContextMenu();
+/*    RptGuiItem::createContextMenu();
 
     // createActions
     QAction* equalize = new QAction(tr("Equalize"), this);
@@ -133,7 +129,7 @@ void RptPropertySetItem::createContextMenu() {
     contextMenu_.addAction(equalize);
 
     // connect actions
-    QObject::connect(equalize, SIGNAL(triggered()), this, SLOT(equalizeSlot()));
+    QObject::connect(equalize, SIGNAL(triggered()), this, SLOT(equalizeSlot()));*/
 }
 
 void RptPropertySetItem::equalizeSlot() {
@@ -150,7 +146,7 @@ void RptPropertySetItem::updateToolTip() {
     setToolTip(QString(s.c_str()));
 }
 
-bool RptPropertySetItem::connectGuiItem(RptGuiItem* item) {   
+bool RptPropertySetItem::connectGuiItem(RptGuiItem* item) {
     if (item->type() == RptProcessorItem::Type) {
         propertySet_->addProcessor(static_cast<RptProcessorItem*>(item)->getProcessor());
         guiItems_.push_back(item);
@@ -334,7 +330,7 @@ void RptPropertySetItem::adjustArrows() {
     }
 }
 
-QVariant RptPropertySetItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+QVariant RptPropertySetItem::itemChange(GraphicsItemChange change, const QVariant& value) {
     if (change == ItemPositionChange) {
         adjustArrows();
     }
@@ -353,7 +349,7 @@ QRectF RptPropertySetItem::boundingRect() const {
     return newRect;
 }
 
-QPainterPath RptPropertySetItem::propertySetItemPath(QRectF rect) const {
+QPainterPath RptPropertySetItem::propertySetItemPath(QRectF& rect) const {
     int offset = static_cast<int>(qMin(rect.width(), rect.height()) / 4.f);
 
     qreal x1, y1, x2, y2;
@@ -377,13 +373,13 @@ QPainterPath RptPropertySetItem::propertySetItemPath(QRectF rect) const {
     return path;
 }
 
-void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) {
+void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget*) {
     painter->setPen(Qt::NoPen);
-	painter->setBrush(Qt::darkGray);
+    painter->setBrush(Qt::darkGray);
     QRectF shadowRect(boundingRect().left()+3,boundingRect().top()+3,boundingRect().width(), boundingRect().height());
     painter->drawPath(propertySetItemPath(shadowRect));
-    
-	// draw linear gradient for top highlight and bottom darkening
+
+    // draw linear gradient for top highlight and bottom darkening
     QLinearGradient linGradient(0, 0, 0, boundingRect().height());
     linGradient.setColorAt(0.0, color_.light(220));
     linGradient.setColorAt(0.1, color_);
@@ -391,7 +387,8 @@ void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     linGradient.setColorAt(1, Qt::black);
     painter->setBrush(linGradient);
 
-	painter->drawPath(propertySetItemPath(boundingRect()));
+    QRectF rect = boundingRect(); // must put this in a variable first
+    painter->drawPath(propertySetItemPath(rect));
 
     if (option->state & QStyle::State_MouseOver)
         painter->setBrush(QColor(255, 255, 255, 70));
@@ -399,7 +396,7 @@ void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
         painter->setPen(QPen(Qt::green, 3));
     }
 
-    painter->drawPath(propertySetItemPath(boundingRect()));
+    painter->drawPath(propertySetItemPath(rect));
 }
 
 //---------------------------------------------------------------------------
@@ -416,7 +413,7 @@ QRectF RptPropertyPort::boundingRect() const {
     return rect;
 }
 
-void RptPropertyPort::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) {    
+void RptPropertyPort::paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget*) {
     painter->setBrush(Qt::gray);
     painter->setPen(QPen(Qt::black, 0));
 
@@ -431,19 +428,19 @@ void RptPropertyPort::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
 
 }
 
-void RptPropertyPort::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+void RptPropertyPort::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     line_ = new QGraphicsLineItem();
     scene()->addItem(line_);
     line_->setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     QGraphicsItem::mousePressEvent(event);
 }
 
-void RptPropertyPort::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+void RptPropertyPort::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
     line_->setLine(QLineF(scenePos(),event->scenePos()));
     QGraphicsItem::mouseMoveEvent(event);
 }
 
-void RptPropertyPort::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+void RptPropertyPort::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     if (scene()->itemAt(event->scenePos())) {
 
         if (scene()->itemAt(event->scenePos())->type() == RptProcessorItem::Type
@@ -460,12 +457,11 @@ void RptPropertyPort::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
             RptGuiItem* item = static_cast<RptGuiItem*>(scene()->itemAt(event->scenePos())->parentItem());
             static_cast<RptPropertySetItem*>(parentItem())->connectGuiItem(item);
         }
-        
+
     }
 
     delete line_;
     QGraphicsItem::mouseReleaseEvent(event);
 }
-
 
 } //namespace voreen

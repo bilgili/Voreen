@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -42,14 +42,13 @@ IOProgressDialog::IOProgressDialog(QWidget* parent)
 }
 
 IOProgressDialog::~IOProgressDialog() {
-    delete progressDialog_;
     delete time_;
 }
 
 void IOProgressDialog::update() {
     // time to wait between progress bar updates
     const int MINIMAL_UPDATE_WAIT = 50;
-    
+
     if ((time_->elapsed() > MINIMAL_UPDATE_WAIT || progress_ == progressDialog_->maximum())
         && progressDialog_->value() != progress_)
     {

@@ -1,15 +1,44 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #include "voreen/core/xml/xmlserializable.h"
 
 namespace voreen{
 int XmlSerializable::idCounter_ = 0;
 
-XmlSerializable::XmlSerializable(bool init) 
+XmlSerializable::XmlSerializable(bool init)
 {
     if (init)
         serialId_ = idCounter_++;
     else
         serialId_ = -1;
-    
+
     getAllObjects()->push_front(this);
 }
 
@@ -43,10 +72,10 @@ void XmlSerializable::deserialize(const TiXmlElement* xml) throw (XmlSerializabl
 XmlSerializable* XmlSerializable::getPointer(int serialId) {
     if (serialId < 0)
         return 0;
-    
+
     XmlSerializable* tmp;
     std::list<XmlSerializable*>::iterator it;
-	std::list<XmlSerializable*>* allObjects = getAllObjects();
+    std::list<XmlSerializable*>* allObjects = getAllObjects();
     for (it = allObjects->begin(); it != allObjects->end(); ++it) {
         tmp = static_cast<XmlSerializable*>(*it);
         if(serialId == tmp->getSerialId())
@@ -55,20 +84,20 @@ XmlSerializable* XmlSerializable::getPointer(int serialId) {
     return 0;
 }
 
-// FIXME: replace std::list for XmlSerializableRegister by using std::set in 
+// FIXME: replace std::list for XmlSerializableRegister by using std::set in
 // order to achieve runtime of O(log(n)) instead of O(n).
 //
 /*
 void XmlSerializable::registerNewClass(XmlSerializableRegister* newClass) {
     const Identifier& newClassIdentifier = newClass->getClassIdentifier();
     std::list<XmlSerializableRegister*>::iterator it;
-	std::list<XmlSerializableRegister*>* allClasses = getAllClasses();
-	for(it = allClasses->begin(); it != allClasses->end(); ++it) {
+    std::list<XmlSerializableRegister*>* allClasses = getAllClasses();
+    for(it = allClasses->begin(); it != allClasses->end(); ++it) {
         XmlSerializableRegister* tmp = static_cast<XmlSerializableRegister*>(*it);
-		const Identifier& oldClassIdentifier = tmp->getClassIdentifier();
+        const Identifier& oldClassIdentifier = tmp->getClassIdentifier();
         if (newClassIdentifier == oldClassIdentifier)
             return;
-	}
+    }
     allClasses->push_front(newClass);
 }
 */
@@ -153,14 +182,14 @@ void XmlSerializable::writeBoolAttribute(std::string attributeName, bool value,
     xml->SetAttribute(attributeName,textValue);
 }
 
-bool XmlSerializable::readBoolAttribute(std::string attributeName, 
+bool XmlSerializable::readBoolAttribute(std::string attributeName,
                                         const TiXmlElement* xml)
     throw (XmlSerializable::Exceptions)
 {
     const char* value = xml->Attribute(attributeName);
     if (value == 0)
         throw XmlSerializable::ATTRIBUT_ERROR;
-    
+
     if (strcmp(value, "true") == 0)
         return true;
     else if (strcmp(value, "false") == 0)
@@ -179,7 +208,7 @@ XmlSerializable::ClassMap& XmlSerializable::getAllClasses() {
     return *allClasses;
 }
 
-// FIXME: replace std::list for XmlSerializableRegister by using std::set in 
+// FIXME: replace std::list for XmlSerializableRegister by using std::set in
 // order to achieve runtime of O(log(n)) instead of O(n).
 //
 /*
@@ -191,7 +220,7 @@ std::list<XmlSerializableRegister*>* XmlSerializable::getAllClasses() {
 
 //----------------------------------------------------------------------------
 
-XmlSerializableRegister::XmlSerializableRegister(const Identifier& identifier, 
+XmlSerializableRegister::XmlSerializableRegister(const Identifier& identifier,
     XmlSerializable* (*creatorMethod)(void))
     : identifier_(identifier)
 {

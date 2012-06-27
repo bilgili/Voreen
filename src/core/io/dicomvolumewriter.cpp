@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -151,14 +151,14 @@ bool DicomVolumeWriter::writeDicomFile(const DicomVolumeDescription &desc, Volum
 
     if (VolumeUInt8* v = dynamic_cast<VolumeUInt8*>(volume))
         voxels = (char*)v->voxel();
-    else if (VolumeUInt16* v = dynamic_cast<VolumeUInt16*>(volume)) 
+    else if (VolumeUInt16* v = dynamic_cast<VolumeUInt16*>(volume))
         voxels = (char*)v->voxel();
 
     if (voxels == 0) {
         LWARNING("Invalid volume format");
         return false;
     }
-    
+
     char uid[100];
     DcmDataset *dataset = fileformat.getDataset();
 
@@ -230,7 +230,7 @@ bool DicomVolumeWriter::writeDicomFile(const DicomVolumeDescription &desc, Volum
 
     int pixelLength = volume->getDimensions().x * volume->getDimensions().y * volume->getBytesPerVoxel();
     char *pixelData = (char*)(voxels + pixelLength * layer);
-    
+
     dataset->putAndInsertUint8Array(DCM_PixelData, (const Uint8*)pixelData, pixelLength);
 
     DJ_RPLossless rp_lossless(6, 0);
@@ -285,7 +285,7 @@ bool DicomVolumeWriter::writeDicomFiles(const DicomVolumeDescription &desc,  Vol
         // Simulate DCM_ImagePositionPatient
         sprintf((char*)&s, "0\\0\\%d", i);
         dataset->putAndInsertString(DCM_ImagePositionPatient, s, true);
-        
+
         char filename[1000];
         sprintf((char*)&filename, "%s%03i%s", fileNamePrefix.c_str(), i + 1, fileNameSuffix.c_str());
         writeDicomFile(desc, volume, i, fileformat, filename);

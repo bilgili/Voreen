@@ -34,6 +34,9 @@
 #include "tgt/assert.h"
 #include "tgt/singleton.h"
 #include "tgt/gpucapabilities.h"
+#ifdef WIN32
+    #include "tgt/gpucapabilitieswindows.h"
+#endif
 #include "tgt/modelmanager.h"
 #include "tgt/tesselator.h"
 #include "tgt/texturemanager.h"
@@ -109,6 +112,9 @@ void initGL(InitFeature::Features featureset) {
     LINFOC("tgt::initGL", "Glew version: " << glewGetString(GLEW_VERSION));
     if (featureset & InitFeature::GPU_PROPERTIES )
         Singleton<GpuCapabilities> ::init(new GpuCapabilities());
+#ifdef WIN32
+        Singleton<GpuCapabilitiesWindows> ::init(new GpuCapabilitiesWindows());
+#endif
     if (featureset & InitFeature::TESSELATOR)
         Singleton<Tesselator>    ::init(new Tesselator());
     if (featureset & InitFeature::TEXTURE_MANAGER) {
@@ -137,6 +143,10 @@ void initGL(InitFeature::Features featureset) {
 void deinitGL() {
     if (Singleton<GpuCapabilities> ::isInited())
         Singleton<GpuCapabilities> ::deinit();
+#ifdef WIN32
+    if (Singleton<GpuCapabilitiesWindows> ::isInited())
+        Singleton<GpuCapabilitiesWindows> ::deinit();
+#endif
     if (Singleton<ShaderManager> ::isInited())
         Singleton<ShaderManager> ::deinit();
     if (Singleton<ModelManager>  ::isInited())

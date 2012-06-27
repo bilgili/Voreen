@@ -1,0 +1,8 @@
+# CT scan of a walnut
+# data set courtesy of European Institut of Molecular Imaging (EIMI)
+# Muenster, Germany (http://www.uni-muenster.de/EIMI/)
+ObjectFileName:	walnut.raw
+Resolution:	128 96 114
+SliceThickness:	1 1 1
+Format:		USHORT
+ObjectModel:	I

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -64,8 +64,10 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Identifier& i);
 
     const std::string& getName() const;
-	/// returns substrings of strings divided by "."
+    /// returns substrings of strings divided by "."
     const std::string getSubString(int index) const;
+
+    operator std::string() const { return name_; }
 
 protected:
     std::string name_;

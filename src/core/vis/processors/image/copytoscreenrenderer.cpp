@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,6 @@
 
 #include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
 
 namespace voreen {
@@ -55,7 +54,7 @@ CopyToScreenRenderer::~CopyToScreenRenderer() {
 }
 
 const std::string CopyToScreenRenderer::getProcessorInfo() const {
-	return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to "
+    return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to "
            "render (copy) its producer's rendering result to screen. Additionally it is able to cache "
            "the producer's rendering, if no parameters regarding any element of the producer have been "
            "changed since last <i>render()</i> call. An object of this class can also be used within the "
@@ -84,7 +83,7 @@ void CopyToScreenRenderer::processMessage(Message* msg, const Identifier& dest) 
     {
         if (msg->getValue<bool>() != useCoarseness_.get()) {
             useCoarseness_.set(msg->getValue<bool>());
-			MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::unsetCachedBackward_,this),"evaluator");
+            MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::unsetCachedBackward_,this),"evaluator");
             invalidate();
         }
     }

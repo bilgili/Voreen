@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -54,7 +54,7 @@ public:
      * @name Name of the processor
      */
     void addProcessorName(const std::string& name);
-        
+
     void processMessage(Message* msg, const Identifier& dest);
 
 protected:
@@ -63,15 +63,15 @@ protected:
 
     uint64_t totalTime_;
     int frameCount_;
-    
+
     void beforeProcess(Processor* p);
     void afterProcess(Processor* p);
-    
+
     uint64_t getTicks();
 
-    static const std::string loggerCat_;    
+    static const std::string loggerCat_;
 };
 
 } // namespace
-    
+
 #endif //VRN_BENCHMARK_H

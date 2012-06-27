@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,52 +27,47 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef SNAPSHOTPLUGIN_H
-#define SNAPSHOTPLUGIN_H
+#ifndef VRN_SNAPSHOTPLUGIN_H
+#define VRN_SNAPSHOTPLUGIN_H
 
-#include "widgetplugin.h"
-#include "voreen/core/vis/voreenpainter.h"
-#include "tgt/qt/qtcanvas.h"
+#include "voreen/qt/widgets/widgetplugin.h"
 
-#include <QPushButton>
-#include <QToolButton>
-#include <QSpinBox>
-#include <QLabel>
-#include <QFileDialog>
-#include <QLineEdit>
-#include <QSlider>
-#include <QProgressDialog>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
+#include <vector>
+
+class QToolButton;
+class QSpinBox;
+class QComboBox;
 
 namespace voreen {
+
+class VoreenPainter;
 
 class SnapshotPlugin : public WidgetPlugin {
     Q_OBJECT
 public:
     SnapshotPlugin(QWidget* parent, VoreenPainter* painter);
-    SnapshotPlugin();
+    ~SnapshotPlugin();
 
-protected:
-    virtual void createWidgets();
-    virtual void createConnections();
+    void createWidgets();
+    void createConnections();
 
-    public slots:
+public slots:
     void makeSnapshot();
-    void updateAntialiasingLabel();
+    void widthSpinChanged(int value);
+    void heightSpinChanged(int value);
+    void sizeComboChanged(int index);
 
- private:
-    tgt::QtCanvas* canvas_;
+private:
     VoreenPainter* painter_;
-    QToolButton *buMakeSnapshot_;
-    QSpinBox *spWidth_, *spHeight_;
-    QSlider *slAntialiasing_;
-    QLabel *laAntialiasing_;
+    QComboBox* sizeCombo_;
+    QToolButton* buMakeSnapshot_;
+    QSpinBox* spWidth_;
+    QSpinBox* spHeight_;
     QString path_;
 
-    //static bool snapshotProgress(float _progress);
+    std::vector<QString> resolutions_;
 };
 
 } // namespace voreen
 
-#endif
+#endif // VRN_SNAPSHOTPLUGIN_H

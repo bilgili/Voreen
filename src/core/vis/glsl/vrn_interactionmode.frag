@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,7 +41,7 @@ uniform float overlayOpacity_;
  * The main method.
  ***/
 void main() {
-	
+
     vec2 fragCoord = gl_FragCoord.xy;
 
     fragCoord.x /= float(interactionCoarseness_);
@@ -53,8 +53,8 @@ void main() {
         fragCoord.x -= 0.5;
         fragCoord.y -= 0.5;
     }
-    
+
     gl_FragColor = textureLookup2D(shadeTex_, fragCoord.xy);
     gl_FragDepth = textureLookup2D(depthTex_, fragCoord.xy).z;
-	
+
 }

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<ProcessorNetwork version="2">
+    <MetaData>
+        <RptAggregationItems />
+    </MetaData>
+    <Settings reuseTCTargets="false" />
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="0">
+        <MetaData>
+            <RptProcessorItem x="-97" y="-193" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.supportCameraInsideVolume" value="true" />
+        <Property id="set.jitterEntryPoints" value="false" />
+        <Outport type="image.entrypoints">
+            <Processor id="10" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="10" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="CubeProxyGeometry" id="1">
+        <MetaData>
+            <RptProcessorItem x="-467" y="-185" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.UseClipping" value="true" />
+        <Property id="switch.virtualClipplane" value="false" />
+        <Property id="set.virtualClipplane" x="0.2" y="0.4" z="1" w="1" />
+        <Property id="set.LeftClipPlane" value="41" />
+        <Property id="set.RightClipPlane" value="0" />
+        <Property id="set.BottomClipPlane" value="0" />
+        <Property id="set.TopClipPlane" value="0" />
+        <Property id="set.FrontClipPlane" value="0" />
+        <Property id="set.BackClipPlane" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="0" port="coprocessor.proxygeometry" />
+            <Processor id="7" port="coprocessor.proxygeometry" />
+            <Processor id="5" port="coprocessor.proxygeometry" />
+            <Processor id="6" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.Canvas" name="CanvasRenderer" id="2">
+        <MetaData>
+            <RptProcessorItem x="-186" y="262" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.useCaching" value="true" />
+    </Processor>
+    <Processor type="GeometryRenderer.GeometryProcessor" name="Geometry Processor" id="3">
+        <MetaData>
+            <RptProcessorItem x="-201" y="33" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Outport type="image.outport">
+            <Processor id="4" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="ImageProcessor.Background" name="Background" id="4">
+        <MetaData>
+            <RptProcessorItem x="-190" y="153" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.backgroundModeAsString" value="Monochrome" />
+        <Property id="set.backgroundFirstColor" r="0.647059" g="0.647059" b="0.647059" a="1.000000" />
+        <Property id="set.backgroundSecondColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="set.backgroundAngle" value="180" />
+        <Property id="set.backgroundfilenameAsString" value="" />
+        <Property id="set.backgroundtile" value="1.000000" />
+        <Outport type="image.output">
+            <Processor id="2" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.BoundingBox" name="Bounding Box" id="5">
+        <MetaData>
+            <RptProcessorItem x="-355" y="-25" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.BoundingBoxWidth" value="1.000000" />
+        <Property id="set.BoundingBoxStippleFactor" value="1" />
+        <Property id="set.BoundingBoxStipplePattern" value="65535" />
+        <Property id="set.BoundingboxColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="BoutndingBoxTiles" x="10" y="10" z="10" />
+        <Outport type="coprocessor.boundingbox">
+            <Processor id="3" port="coprocessor.geometryrenderers" order="0" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.GeomLightWidget" name="Light - Widget" id="6">
+        <MetaData>
+            <RptProcessorItem x="-361" y="46" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.showLightWidget" value="true" />
+        <Outport type="coprocessor.light">
+            <Processor id="3" port="coprocessor.geometryrenderers" order="1" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.ClippingPlaneWidget" name="ClippingPlaneWidget" id="7">
+        <MetaData>
+            <RptProcessorItem x="-394" y="133" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.ClipSliceColor" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
+        <Property id="switch.ClipXLock" value="false" />
+        <Property id="switch.ClipYLock" value="false" />
+        <Property id="switch.ClipZLock" value="false" />
+        <Outport type="coprocessor.clipping">
+            <Processor id="3" port="coprocessor.geometryrenderers" order="2" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSelection.VolumeSelector" name="VolumeSelector" id="8">
+        <MetaData>
+            <RptProcessorItem x="-231" y="-273" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.currentModality" value="" />
+        <Property id="set.currentTimestep" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="0" port="volumehandle.volumehandle" />
+            <Processor id="1" port="volumehandle.volumehandle" />
+            <Processor id="10" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="9">
+        <MetaData>
+            <RptProcessorItem x="-204" y="-369" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Outport type="volumeset.volumeset">
+            <Processor id="8" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="10">
+        <MetaData>
+            <RptProcessorItem x="-174" y="-77" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.71546" y="1.32" z="1.01741" w="1" />
+        <Property id="raycasting.quality" value="normal" />
+        <Property id="set.TransferFunction" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="0" g="0" b="0" a="0" />
+                </key>
+                <key intensity="0.194444" split="0">
+                    <col4 r="66" g="204" b="48" a="1" />
+                </key>
+                <key intensity="0.361111" split="0">
+                    <col4 r="69" g="143" b="255" a="57" />
+                </key>
+                <key intensity="0.503086" split="0">
+                    <col4 r="255" g="250" b="89" a="97" />
+                </key>
+                <key intensity="0.651235" split="0">
+                    <col4 r="255" g="55" b="58" a="145" />
+                </key>
+                <key intensity="0.765432" split="0">
+                    <col4 r="255" g="133" b="243" a="184" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.164706" upper="1.000000" />
+        </Property>
+        <Property id="set.masking" value="none" />
+        <Property id="set.gradient" value="Forward Differences" />
+        <Property id="set.classification" value="Transfer Function" />
+        <Property id="set.shading" value="Phong (Full)" />
+        <Property id="set.compositing" value="DVR" />
+        <Property id="set.compositing1" value="DVR" />
+        <Property id="set.compositing2" value="DVR" />
+        <Property id="set.lightPosition" x="2.71546" y="1.32" z="1.01741" w="1" />
+        <Property id="set.lightAmbient" r="0.400000" g="0.400000" b="0.400000" a="1.000000" />
+        <Property id="set.lightDiffuse" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="set.lightSpecular" r="0.600000" g="0.600000" b="0.600000" a="1.000000" />
+        <Outport type="image.output">
+            <Processor id="3" port="image.inport" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+</ProcessorNetwork>

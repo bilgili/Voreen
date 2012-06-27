@@ -1,80 +1,37 @@
 ////////////////////////////////////////////////////////////////////////////////
-// $RCSfile: ZipFileMapping.h,v $
-// $Revision: 1.4 $ $Name: 1.4 $
-// $Date: 2006/01/28 20:18:12 $ $Author: Tadeusz Dracz $
-////////////////////////////////////////////////////////////////////////////////
 // This source file is part of the ZipArchive library source distribution and
-// is Copyrighted 2000 - 2006 by Tadeusz Dracz (http://www.artpol-software.com/)
-// 
+// is Copyrighted 2000 - 2009 by Artpol Software - Tadeusz Dracz
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 // 
-// For the licensing details see the file License.txt
+// For the licensing details refer to the License.txt file.
 //
-// Check the site http://www.artpol-software.com for the updated version of the library.
+// Web Site: http://www.artpol-software.com
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+* \file ZipFileMapping.h
+*	Includes the ZipArchiveLib::CZipFileMapping class.
+*
+*/
 
-#if !defined(AFX_AUTOHANDLE_H__D68326EA_D7FA_4792_AB1F_68D09533E399__INCLUDED_)
-#define AFX_AUTOHANDLE_H__D68326EA_D7FA_4792_AB1F_68D09533E399__INCLUDED_
+
+#if !defined(ZIPARCHIVE_ZIPFILEMAPPING_DOT_H)
+#define ZIPARCHIVE_ZIPFILEMAPPING_DOT_H
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif
 
-#include "ZipFile.h"
-namespace ziparchv
-{
-	
+#include "_platform.h"
 
-	struct CZipFileMapping
-	{
-		CZipFileMapping()
-		{
-			m_hFileMap = NULL;
-			m_pFileMap = NULL;
-		}
-		bool CreateMapping(CZipFile* pFile) 
-		{
-			if (!pFile)
-				return false;
-			m_hFileMap = CreateFileMapping((*pFile), NULL, PAGE_READWRITE,
-				0, 0, _T("ZipArchive Mapping File"));
-			if (!m_hFileMap)
-				return false;
-			// Get pointer to memory representing file
-			m_pFileMap = MapViewOfFile(m_hFileMap, FILE_MAP_WRITE, 0, 0, 0);
-			return (m_pFileMap != NULL);
-		}
-		void RemoveMapping()
-		{
-			if (m_pFileMap)
-			{
-				UnmapViewOfFile(m_pFileMap);
-				m_pFileMap = NULL;
-			}
-			if (m_hFileMap)
-			{
-				CloseHandle(m_hFileMap);
-				m_hFileMap = NULL;
-			}
-			
-		}
-		~CZipFileMapping()
-		{
-			RemoveMapping();
-		}
-		char* GetMappedMemory()
-		{
-			return reinterpret_cast<char*> (m_pFileMap);
-		}
-	protected:
-		HANDLE m_hFileMap;
-		LPVOID m_pFileMap;
+#ifdef _ZIP_SYSTEM_WIN
+	#include "ZipFileMapping_win.h"
+#else
+	#include "ZipFileMapping_lnx.h"
+#endif
 
-	};
-}
-
-#endif // !defined(AFX_AUTOHANDLE_H__D68326EA_D7FA_4792_AB1F_68D09533E399__INCLUDED_)
+#endif // !defined(ZIPARCHIVE_ZIPFILEMAPPING_DOT_H)

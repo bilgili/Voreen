@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -46,10 +46,10 @@ void main() {
     vec4 intensityPET = texture3D(volumePET_, gl_TexCoord[0].xyz);
 
     vec4 mat = applyTFCT(intensityCT.a);
-    
+
     // FIXME: hack until transfer function is accessible
     if (intensityPET.a > 0.57)
-		mat.r += intensityPET.a;
-		
+        mat.r += intensityPET.a;
+
     gl_FragColor = mat;
 }

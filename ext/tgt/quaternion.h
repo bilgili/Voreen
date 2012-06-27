@@ -43,6 +43,8 @@ namespace tgt {
 
 template<class T>
 struct Quaternion {
+    typedef T ElemType;
+
     union {
         struct {
             T x;
@@ -479,7 +481,7 @@ Quaternion<T> generateQuaternionFromTo(const Vector3<T> src, const Vector3<T> de
             axis = cross(Vector3<T>(0, 1, 0), src);
         }
         axis = normalize(axis);
-        q = Quaternion<T>::createQuat(M_PI, axis);
+        q = Quaternion<T>::createQuat(PIf, axis);
     }
     else {
         T inverse = 1 / root;

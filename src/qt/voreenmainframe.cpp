@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,20 +33,20 @@
 #include "voreen/core/io/datvolumewriter.h"
 
 #include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/processors/render/slicerenderer.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/exception.h"
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/trackballnavigation.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
 
 #include "voreen/qt/widgets/widgetgenerator.h"
 #include "voreen/qt/widgets/widgetplugin.h"
 #include "voreen/qt/widgets/informationplugin.h"
 #include "voreen/qt/widgets/plugindialog.h"
-#include "voreen/qt/cmdlineparser.h"
+#include "voreen/core/cmdparser/commandlineparser.h"
 
 #include "tgt/init.h"
+
+#include <QToolBar>
 
 using namespace voreen;
 
@@ -95,7 +95,12 @@ void VoreenMainframe::processMessage(Message* msg, const Identifier& dest/*=Mess
 
 void VoreenMainframe::init(QStringList args) {
 
-    cmdLineParser_ = new CmdLineParser(args);
+    cmdLineParser_ = new CommandlineParser();
+	std::vector<std::string> arguments;
+
+	for(int i=0; i<args.size(); ++i)
+		arguments.push_back(args[i].toStdString());
+	cmdLineParser_->setCommandLine(arguments);
 
     MsgDistr.setAllowRepaints(false); // disallow all repaints until fully initialized -
                                       // prevents some bad GFX driver crashes on Linux
@@ -116,16 +121,18 @@ void VoreenMainframe::init(QStringList args) {
     initializeWidgets();
 
     // Load datasets specified as program arguments
-    if (!cmdLineParser_->getFileNames().isEmpty())
-        fileOpen(cmdLineParser_->getFileNames(), false);
+	// TODO?
+    //if (!cmdLineParser_->getFileNames().isEmpty())
+        //fileOpen(cmdLineParser_->getFileNames(), false);
 
     canvas3D_->startTimer(10);
     canvas3D_->setUpdatesEnabled(true); // everything is initialized, now allow repaints
 
     postMessage(new ColorMsg("set.backgroundColor", tgt::vec4(1.f, 1.f, 1.f, 1.f)));
 
-    if (cmdLineParser_->getMaximized())
-        setWindowState(windowState() | Qt::WindowMaximized);
+	//TODO?
+    //if (cmdLineParser_->getMaximized())
+        //setWindowState(windowState() | Qt::WindowMaximized);
 
     MsgDistr.setAllowRepaints(true); // all initialized, allow repaints via messages
 
@@ -229,29 +236,7 @@ void VoreenMainframe::fileOpen(const QStringList& fileNames, bool /*add*/) {
     std::vector<std::string> vFileNames(fileNames.size());
     for (int i = 0; i < fileNames.size(); ++i)
           vFileNames[i] = fileNames.at(i).toStdString();
-/*
-    VolumeContainer* newVolumeContainer = volumeSerializer_->load(vFileNames);
-    if (!newVolumeContainer) {
-        QApplication::restoreOverrideCursor();
-        canvas3D_->setUpdatesEnabled(true);
-        return;
-    }
 
-    newVolumeContainer->setModality(Modality::MODALITY_UNKNOWN);
-
-    Volume* firstVolume = newVolumeContainer->getVolume(0);
-    if (!add)
-        volumeContainer_->clear();
-    volumeContainer_->merge(newVolumeContainer);
-    delete newVolumeContainer;
-    postMessage(new VolumeContainerPtrMsg(Processor::setVolumeContainer_, volumeContainer_));
-    postMessage(new IntMsg(Processor::setCurrentDataset_, 0));
-
-    if (firstVolume) {
-        //FIXME: This shows the filename of the last loaded Dataset
-        showDatasetInfo(firstVolume, fileNames[0]);
-    }
-*/
     postMessage( new Message(ProxyGeometry::resetClipPlanes_) );
 
     // reset camera

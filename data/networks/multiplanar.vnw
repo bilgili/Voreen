@@ -8,41 +8,45 @@
         <MetaData>
             <RptProcessorItem x="-32" y="343" />
         </MetaData>
-        <Property id="set.Coarseness" type="IntProp" autochange="true" value="1" />
-        <Property id="switch.coarseness" type="BoolProp" value="false" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.useCaching" value="true" />
     </Processor>
-    <Processor type="PostProcessor.Background" name="Background" id="1">
+    <Processor type="ImageProcessor.Background" name="Background" id="1">
         <MetaData>
             <RptProcessorItem x="-31" y="250" />
         </MetaData>
-        <Property id="set.backgroundModeAsString" type="EnumProp" value="Monochrome" />
-        <Property id="set.backgroundFirstColor" type="ColorProp" r="0.454902" g="0.454902" b="0.454902" a="1.000000" />
-        <Property id="set.backgroundSecondColor" type="ColorProp" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-        <Property id="set.backgroundAngle" type="IntProp" value="180" />
-        <Property id="set.backgroundfilenameAsString" type="FileDialogProp" value="" caption="" directory="" filefilter="" />
-        <Property id="set.backgroundtile" type="FloatProp" value="1.000000" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.backgroundModeAsString" value="Monochrome" />
+        <Property id="set.backgroundFirstColor" r="0.454902" g="0.454902" b="0.454902" a="1.000000" />
+        <Property id="set.backgroundSecondColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="set.backgroundAngle" value="180" />
+        <Property id="set.backgroundfilenameAsString" value="" />
+        <Property id="set.backgroundtile" value="1.000000" />
         <Outport type="image.output">
             <Processor id="0" port="image.input" />
         </Outport>
     </Processor>
-    <Processor type="VolumeSetSource.VolumeSelector" name="VolumeSelector" id="2">
+    <Processor type="VolumeSelection.VolumeSelector" name="VolumeSelector" id="2">
         <MetaData>
             <RptProcessorItem x="-134" y="-518" />
         </MetaData>
-        <Property id="set.currentTimestep" type="IntProp" value="0" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.currentModality" value="" />
+        <Property id="set.currentTimestep" value="0" />
         <Outport type="volumehandle.volumehandle">
-            <Processor id="4" port="volumehandle.volumehandle" />
-            <Processor id="5" port="volumehandle.volumehandle" />
-            <Processor id="6" port="volumehandle.volumehandle" />
-            <Processor id="7" port="volumehandle.volumehandle" />
-            <Processor id="8" port="volumehandle.volumehandle" />
             <Processor id="9" port="volumehandle.volumehandle" />
+            <Processor id="8" port="volumehandle.volumehandle" />
+            <Processor id="7" port="volumehandle.volumehandle" />
+            <Processor id="6" port="volumehandle.volumehandle" />
+            <Processor id="5" port="volumehandle.volumehandle" />
+            <Processor id="4" port="volumehandle.volumehandle" />
         </Outport>
     </Processor>
     <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="3">
         <MetaData>
             <RptProcessorItem x="-138" y="-614" />
         </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
         <Outport type="volumeset.volumeset">
             <Processor id="2" port="volumeset.volumeset" />
         </Outport>
@@ -51,9 +55,8 @@
         <MetaData>
             <RptProcessorItem x="-470" y="-361" />
         </MetaData>
-        <Property id="set.slicePosX" type="FloatProp" value="1.000000" />
-        <Property id="set.slicePosY" type="FloatProp" value="1.000000" />
-        <Property id="set.slicePosZ" type="FloatProp" value="1.000000" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.slicePos" x="1" y="1" z="1" />
         <Outport type="coprocessor.proxygeometry">
             <Processor id="5" port="coprocessor.proxygeometry" />
         </Outport>
@@ -62,14 +65,9 @@
         <MetaData>
             <RptProcessorItem x="-31" y="-360" />
         </MetaData>
-        <Property id="set.supportCameraInsideVolume" type="BoolProp" value="true" />
-        <Property id="set.jitterEntryParams" type="BoolProp" value="true" />
-        <Property id="set.scaleX" type="FloatProp" value="1.000000" />
-        <Property id="set.scaleY" type="FloatProp" value="1.000000" />
-        <Property id="set.scaleZ" type="FloatProp" value="1.000000" />
-        <Property id="set.translationX" type="FloatProp" value="0.000000" />
-        <Property id="set.translationY" type="FloatProp" value="0.000000" />
-        <Property id="set.translationZ" type="FloatProp" value="0.000000" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.supportCameraInsideVolume" value="true" />
+        <Property id="set.jitterEntryPoints" value="false" />
         <Outport type="image.entrypoints">
             <Processor id="6" port="image.entrypoints" />
         </Outport>
@@ -78,14 +76,22 @@
         <MetaData>
             <RptProcessorItem x="-117" y="-82" />
         </MetaData>
-        <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
-        <Property id="set.TransferFunction" type="TransFuncProp">
-            <Marker source="0.000000" dest="1.000000" r="0" g="0" b="0" a="255" />
-            <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="raycasting.quality" value="normal" />
+        <Property id="set.TransferFunction" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="0" g="0" b="0" a="255" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.000000" upper="1.000000" />
         </Property>
-        <Property id="set.gradient" type="EnumProp" value="Forward Differences" />
-        <Property id="set.classification" type="EnumProp" value="Transfer Function" />
-        <Property id="set.shading" type="EnumProp" value="Phong (Full)" />
+        <Property id="set.gradient" value="Forward Differences" />
+        <Property id="set.classification" value="Transfer Function" />
+        <Property id="set.shading" value="Phong (Full)" />
         <Outport type="image.output">
             <Processor id="10" port="image.inputs" order="1" />
         </Outport>
@@ -94,14 +100,9 @@
         <MetaData>
             <RptProcessorItem x="73" y="-274" />
         </MetaData>
-        <Property id="set.supportCameraInsideVolume" type="BoolProp" value="false" />
-        <Property id="set.jitterEntryParams" type="BoolProp" value="false" />
-        <Property id="set.scaleX" type="FloatProp" value="1.000000" />
-        <Property id="set.scaleY" type="FloatProp" value="1.000000" />
-        <Property id="set.scaleZ" type="FloatProp" value="1.000000" />
-        <Property id="set.translationX" type="FloatProp" value="0.000000" />
-        <Property id="set.translationY" type="FloatProp" value="0.000000" />
-        <Property id="set.translationZ" type="FloatProp" value="0.000000" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.supportCameraInsideVolume" value="false" />
+        <Property id="set.jitterEntryPoints" value="false" />
         <Outport type="image.entrypoints">
             <Processor id="9" port="image.entrypoints" />
         </Outport>
@@ -113,54 +114,71 @@
         <MetaData>
             <RptProcessorItem x="-386" y="-278" />
         </MetaData>
-        <Property id="set.UseClipping" type="BoolProp" value="true" />
-        <Property id="switch.virtualClipplane" type="BoolProp" value="false" />
-        <Property id="set.virtualClipplane" type="FloatVec4Prop" x="0.200000" y="0.400000" z="1.000000" w="1.000000" />
-        <Property id="set.LeftClipPlane" type="IntProp" value="0" />
-        <Property id="set.RightClipPlane" type="IntProp" value="0" />
-        <Property id="set.BottomClipPlane" type="IntProp" value="0" />
-        <Property id="set.TopClipPlane" type="IntProp" value="0" />
-        <Property id="set.FrontClipPlane" type="IntProp" value="0" />
-        <Property id="set.BackClipPlane" type="IntProp" value="0" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.UseClipping" value="true" />
+        <Property id="switch.virtualClipplane" value="false" />
+        <Property id="set.virtualClipplane" x="0.2" y="0.4" z="1" w="1" />
+        <Property id="set.LeftClipPlane" value="0" />
+        <Property id="set.RightClipPlane" value="0" />
+        <Property id="set.BottomClipPlane" value="0" />
+        <Property id="set.TopClipPlane" value="0" />
+        <Property id="set.FrontClipPlane" value="0" />
+        <Property id="set.BackClipPlane" value="0" />
         <Outport type="coprocessor.proxygeometry">
-            <Processor id="7" port="coprocessor.proxygeometry" />
-            <Processor id="12" port="coprocessor.proxygeometry" />
-            <Processor id="13" port="coprocessor.proxygeometry" />
             <Processor id="14" port="coprocessor.proxygeometry" />
+            <Processor id="13" port="coprocessor.proxygeometry" />
+            <Processor id="12" port="coprocessor.proxygeometry" />
+            <Processor id="7" port="coprocessor.proxygeometry" />
         </Outport>
     </Processor>
     <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="9">
         <MetaData>
             <RptProcessorItem x="37" y="-89" />
         </MetaData>
-        <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
-        <Property id="set.TransferFunction" type="TransFuncProp">
-            <Marker source="0.000000" dest="0.000000" r="0" g="0" b="0" a="0" />
-            <Marker source="0.780220" dest="0.000000" r="231" g="44" b="23" a="0" splitdest="1.000000" splitr="231" splitg="44" splitb="23" splita="255" />
-            <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="raycasting.quality" value="normal" />
+        <Property id="set.TransferFunction" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="0" g="0" b="0" a="0" />
+                </key>
+                <key intensity="0.780220" split="1">
+                    <col4 r="231" g="44" b="23" a="0" />
+                    <col4 r="231" g="44" b="23" a="255" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.000000" upper="1.000000" />
         </Property>
-        <Property id="set.masking" type="EnumProp" value="Thresholding" />
-        <Property id="set.gradient" type="EnumProp" value="Forward Differences" />
-        <Property id="set.classification" type="EnumProp" value="Transfer Function" />
-        <Property id="set.shading" type="EnumProp" value="Phong (Full)" />
-        <Property id="set.compositing" type="EnumProp" value="DVR" />
-        <Property id="" type="EnumProp" value="DVR" />
-        <Property id="" type="EnumProp" value="DVR" />
+        <Property id="set.masking" value="none" />
+        <Property id="set.gradient" value="Forward Differences" />
+        <Property id="set.classification" value="Transfer Function" />
+        <Property id="set.shading" value="Phong (Full)" />
+        <Property id="set.compositing" value="DVR" />
+        <Property id="set.compositing1" value="DVR" />
+        <Property id="set.compositing2" value="DVR" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.lightAmbient" r="0.400000" g="0.400000" b="0.400000" a="1.000000" />
+        <Property id="set.lightDiffuse" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="set.lightSpecular" r="0.600000" g="0.600000" b="0.600000" a="1.000000" />
         <Outport type="image.output">
             <Processor id="10" port="image.inputs" order="0" />
         </Outport>
         <Outport type="image.output1" />
         <Outport type="image.output2" />
     </Processor>
-    <Processor type="PostProcessor.Combine" name="Combine PP" id="10">
+    <Processor type="ImageProcessor.Combine" name="Combine" id="10">
         <MetaData>
             <RptProcessorItem x="-31" y="53" />
         </MetaData>
-        <Property id="Combine.set.blendMode" type="EnumProp" value="Depth dependent" />
-        <Property id="Combine.set.firstModifyColor" type="ColorProp" autochange="true" r="1.000000" g="0.000000" b="0.000000" a="1.000000" />
-        <Property id="Combine.set.secondModifyColor" type="ColorProp" autochange="true" r="0.000000" g="1.000000" b="0.000000" a="1.000000" />
-        <Property id="Combine.set.blendFactor" type="FloatProp" autochange="true" value="0.500000" />
-        <Property id="set.backgroundColor" type="ColorProp" autochange="true" r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="Combine.set.blendMode" value="Depth dependent" />
+        <Property id="Combine.set.firstModifyColor" r="1.000000" g="0.000000" b="0.000000" a="1.000000" />
+        <Property id="Combine.set.secondModifyColor" r="0.000000" g="1.000000" b="0.000000" a="1.000000" />
+        <Property id="Combine.set.blendFactor" value="0.500000" />
+        <Property id="set.backgroundColor" r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
         <Outport type="image.output">
             <Processor id="11" port="image.inport" />
         </Outport>
@@ -169,6 +187,7 @@
         <MetaData>
             <RptProcessorItem x="-49" y="150" />
         </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
         <Outport type="image.outport">
             <Processor id="1" port="image.input" />
         </Outport>
@@ -177,14 +196,12 @@
         <MetaData>
             <RptProcessorItem x="-236" y="149" />
         </MetaData>
-        <Property id="set.BoundingBoxWidth" type="FloatProp" value="1.000000" />
-        <Property id="set.BoundingBoxStippleFactor" type="IntProp" value="1" />
-        <Property id="set.BoundingBoxStipplePattern" type="IntProp" value="65535" />
-        <Property id="set.BoundingboxColor" type="ColorProp" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-        <Property id="set.BoundingBoxShowGrid" type="BoolProp" value="true" />
-        <Property id="set.BoundingBoxTilesX" type="IntProp" value="10" />
-        <Property id="set.BoundingBoxTilesY" type="IntProp" value="10" />
-        <Property id="set.BoundingBoxTilesZ" type="IntProp" value="10" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.BoundingBoxWidth" value="1.000000" />
+        <Property id="set.BoundingBoxStippleFactor" value="1" />
+        <Property id="set.BoundingBoxStipplePattern" value="65535" />
+        <Property id="set.BoundingboxColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="BoutndingBoxTiles" x="10" y="10" z="10" />
         <Outport type="coprocessor.boundingbox">
             <Processor id="11" port="coprocessor.geometryrenderers" order="0" />
         </Outport>
@@ -193,10 +210,8 @@
         <MetaData>
             <RptProcessorItem x="-244" y="82" />
         </MetaData>
-        <Property id="set.shadowLightPos.x" type="FloatProp" value="2.300000" />
-        <Property id="set.shadowLightPos.y" type="FloatProp" value="1.500000" />
-        <Property id="set.shadowLightPos.z" type="FloatProp" value="1.500000" />
-        <Property id="set.showLightWidget" type="BoolProp" autochange="true" value="true" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.showLightWidget" value="true" />
         <Outport type="coprocessor.light">
             <Processor id="11" port="coprocessor.geometryrenderers" order="1" />
         </Outport>
@@ -205,10 +220,11 @@
         <MetaData>
             <RptProcessorItem x="-235" y="226" />
         </MetaData>
-        <Property id="set.ClipSliceColor" type="ColorProp" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
-        <Property id="switch.ClipXLock" type="BoolProp" value="false" />
-        <Property id="switch.ClipYLock" type="BoolProp" value="false" />
-        <Property id="switch.ClipZLock" type="BoolProp" value="false" />
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.ClipSliceColor" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
+        <Property id="switch.ClipXLock" value="false" />
+        <Property id="switch.ClipYLock" value="false" />
+        <Property id="switch.ClipZLock" value="false" />
         <Outport type="coprocessor.clipping">
             <Processor id="11" port="coprocessor.geometryrenderers" order="2" />
         </Outport>

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -67,8 +67,8 @@ void MessageReceiver::processMessage(Message* msg, const Identifier& /*dest*/) {
 }
 
 void MessageReceiver::processMessage(Message* msg, const vector<Identifier>& dest) {
-	for (vector<Identifier>::const_iterator iter = dest.begin(); iter != dest.end(); ++iter)
-		processMessage(msg, *iter);
+    for (vector<Identifier>::const_iterator iter = dest.begin(); iter != dest.end(); ++iter)
+        processMessage(msg, *iter);
 }
 
 void MessageReceiver::postMessage(Message* msg, const Identifier& dest) {
@@ -76,7 +76,7 @@ void MessageReceiver::postMessage(Message* msg, const Identifier& dest) {
         throw message_error("voreen::Message already stamped! Was MessageReceiver::postMessage() called twice?");
     else
         msg->stamped_ = true;
-    
+
     processMessage(msg, dest);
     delete msg;
     msg = 0;
@@ -87,7 +87,7 @@ void MessageReceiver::postMessage(Message* msg, const vector<Identifier>& dest) 
         throw message_error("voreen::Message already posted! Was MessageReceiver::postMessage() called twice?");
     else
         msg->stamped_ = true;
-    
+
     processMessage(msg, dest);
     delete msg;
     msg = 0;

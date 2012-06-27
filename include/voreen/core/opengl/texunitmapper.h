@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,6 +29,8 @@
 
 #ifndef VRN_TEXUNITMAPPER_H
 #define VRN_TEXUNITMAPPER_H
+
+#include "voreen/core/vis/exception.h"
 
 #include <set>
 #include <map>
@@ -83,7 +85,7 @@ public:
     /**
      * Returns the OpenGL tex unit mapped to the texUnit number
      * use this function in combination with getFreeTexUnit().
-	 * Maps numeric values (0...n) to the corresponding OpenGL values (GL_TEXTUREn).
+     * Maps numeric values (0...n) to the corresponding OpenGL values (GL_TEXTUREn).
      * @param texUnit texture unit number.
      */
     static GLint getGLTexUnitFromInt(GLint texUnit);
@@ -131,19 +133,6 @@ private:
      * Gets the next free texture unit number.
      */
     GLint getFreeTexUnitInt();
-
-    /**
-     * Exception class for TexUnitMapper.
-     */
-    //FIXME: use VoreenException
-    struct texUnit_Exception : public std::runtime_error {
-        /**
-         * Constructor for a texUnit_Exception.
-         *
-         * @param msg The error message.
-         */
-        texUnit_Exception(const std::string& msg) : std::runtime_error(msg) {}
-    };
 };
 
 } //namespace voreen

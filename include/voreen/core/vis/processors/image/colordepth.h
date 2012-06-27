@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_COLORDEPTHPP_H
 #define VRN_COLORDEPTHPP_H
 
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
@@ -38,34 +38,27 @@ namespace voreen {
  * Performs a color filtering which encodes depth information.
  *
  */
-class ColorDepth : public GenericFragment {
+class ColorDepth : public ImageProcessor {
 public:
-
     /**
      * The Constructor.
      *
      * @param camera The camera from wich we will get information about the current modelview-matrix.
-     * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
+     * @param tc The TextureContainer that will be used to manage TextureUnits for all
+     * render-to-texture work done by the PostProcessing.
      */
     ColorDepth();
-    virtual const Identifier getClassName() const {return "PostProcessor.ColorDepth";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new ColorDepth();}
-
     virtual ~ColorDepth();
 
-	void process(LocalPortMapping* portMapping);
+    virtual const Identifier getClassName() const { return "ImageProcessor.ColorDepth"; }
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const { return new ColorDepth(); }
 
-	/**
-	 * Handles:
-	 * - "set.colordepth.mode"
-	 * - "set.colordepth.factor"
-	 * - "switch.colorDepthPP.activate"
-	 */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual int initializeGL();
+
+    void process(LocalPortMapping* portMapping);
 
 protected:
-
     tgt::Texture* chromaDepthTex_;
     EnumProp* colorMode_;
     std::vector<std::string> colorModes_;

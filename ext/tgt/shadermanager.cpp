@@ -86,31 +86,38 @@ string ShaderObject::replaceIncludes(const string& completeSource) {
     string::size_type curPos = sourceStr.find("#include", 0);
 
     while (curPos != string::npos) {
-        replaceStart = curPos;
-        curPos = sourceStr.find("\"", curPos+1);
-        replaceEnd = sourceStr.find("\"", curPos+1);
-        string fileName(sourceStr, curPos + 1, replaceEnd - curPos - 1);
+        // find last comment before the #include
+        string::size_type comment = sourceStr.rfind("//", curPos);
+        // find last ending before the #include 
+        string::size_type end = sourceStr.rfind("\n", curPos);
+        // repalce if there wasn't any comment or comment is before the last line ending
+        if ((comment == string::npos) || (comment < end)) {
+            replaceStart = curPos;
+            curPos = sourceStr.find("\"", curPos+1);
+            replaceEnd = sourceStr.find("\"", curPos+1);
+            string fileName(sourceStr, curPos + 1, replaceEnd - curPos - 1);
 
-        fileName = ShdrMgr.completePath(fileName);
+            fileName = ShdrMgr.completePath(fileName);
 
-        File* file = FileSys.open(fileName);
-        string content;
-        if (file && file->open()) {
-            content = file->getAsString();
-            file->close();
+            File* file = FileSys.open(fileName);
+            string content;
+            if (file && file->open()) {
+                content = file->getAsString();
+                file->close();
 
-            content = "// BEGIN INCLUDE " + fileName + "\n" + content;
-            if (content[content.size() - 1] != '\n')
-                content += "\n";
-            content += "// END INCLUDE " + fileName + "\n";
+                content = "// BEGIN INCLUDE " + fileName + "\n" + content;
+                if (content[content.size() - 1] != '\n')
+                    content += "\n";
+                content += "// END INCLUDE " + fileName + "\n";
+            }
+            else {
+                LERROR("Unable to open include file " << fileName);
+            }
+            delete file;
+            sourceStr.replace(replaceStart, replaceEnd - replaceStart + 1, content);
+            numReplaced++;
+            curPos = replaceEnd;
         }
-        else {
-            LERROR("Unable to open include file " << fileName);
-        }
-        delete file;
-        sourceStr.replace(replaceStart, replaceEnd - replaceStart + 1, content);
-        numReplaced++;
-        curPos = replaceEnd;
         curPos = sourceStr.find("#include", curPos + 1);
     }
 
@@ -222,7 +229,7 @@ bool ShaderObject::compileShader() {
     GLint check = 0;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &check);
     isCompiled_ = (check == GL_TRUE);
-    return true; //TODO: always true? joerg
+    return isCompiled_;
 }
 
 string ShaderObject::getCompilerLog() {
@@ -291,7 +298,8 @@ bool ShaderObject::rebuildFromFile() {
 const string Shader::loggerCat_("tgt.Shader.Shader");
 
 Shader::Shader()
-    : isLinked_(false)
+    : isLinked_(false),
+    ignoreError_(false)
 {
     id_ = glCreateProgram();
     if (id_ == 0)
@@ -303,7 +311,7 @@ Shader::~Shader() {
         glDetachShader(id_, (*iter)->id_);
         delete (*iter);
     }
-    glDeleteShader(id_);
+    glDeleteProgram(id_);
 }
 
 void Shader::attachObject(ShaderObject* obj) {
@@ -342,7 +350,7 @@ bool Shader::isActivated() {
     return (id_ == static_cast<GLuint>(shader_nr));
 }
 
-void Shader::detachObjectsByType(ShaderType type) {
+void Shader::detachObjectsByType(ShaderObject::ShaderType type) {
     for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
         if ((*iter)->getType() == type)
             detachObject(*iter);
@@ -357,12 +365,12 @@ bool Shader::linkProgram() {
         for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
             glDetachShader(id_, (*iter)->id_);
             glAttachShader(id_, (*iter)->id_);
-			if ((*iter)->getType() == GEOMETRY_SHADER)
+            if ((*iter)->getType() == ShaderObject::GEOMETRY_SHADER)
 				(*iter)->setDirectives(id_);
         }
     } else {
 		for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
-			if ((*iter)->getType() == GEOMETRY_SHADER)
+			if ((*iter)->getType() == ShaderObject::GEOMETRY_SHADER)
                 (*iter)->setDirectives(id_);
 		}
 	}
@@ -405,9 +413,12 @@ bool Shader::rebuild() {
             glDetachShader(id_, (*iter)->id_);
             (*iter)->uploadSource();
 
-            if (!(*iter)->compileShader())
+            if (!(*iter)->compileShader()) {
+                LERROR("Failed to compile shader object.");
+                LERROR("Compiler Log: \n" << (*iter)->getCompilerLog());
                 return false;
-
+            }
+            
             glAttachShader(id_, (*iter)->id_);
         }
     }
@@ -458,7 +469,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
 	ShaderObject* geom = 0;
 
     if (!vert_filename.empty()) {
-        vert = new ShaderObject(vert_filename, VERTEX_SHADER);
+        vert = new ShaderObject(vert_filename, ShaderObject::VERTEX_SHADER);
 
         if (!customHeader.empty()) {
             if (processHeader)
@@ -484,7 +495,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
     }
 
 	if (!geom_filename.empty()) {
-		geom = new ShaderObject(geom_filename, GEOMETRY_SHADER);
+		geom = new ShaderObject(geom_filename, ShaderObject::GEOMETRY_SHADER);
 
         if (!customHeader.empty()) {
             if (processHeader)
@@ -513,7 +524,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
     }
 
     if (!frag_filename.empty()) {
-        frag = new ShaderObject(frag_filename, FRAGMENT_SHADER);
+        frag = new ShaderObject(frag_filename, ShaderObject::FRAGMENT_SHADER);
 
         if (!customHeader.empty()) {
             if (processHeader)
@@ -605,12 +616,16 @@ string Shader::getSource(int i) {
     return "";
 }
 
-GLint Shader::getUniformLocation(const string& name, bool ignoreError) {
+GLint Shader::getUniformLocation(const string& name) {
     GLint l;
     l = glGetUniformLocation(id_, name.c_str());
-    if (l == -1 && !ignoreError)
+    if (l == -1 && !ignoreError_)
         LERROR("Failed to locate uniform Location: " << name);
     return l;
+}
+
+void Shader::setIgnoreUniformLocationError(bool ignoreError) {
+    ignoreError_ = ignoreError;
 }
 
 // Floats
@@ -695,59 +710,6 @@ bool Shader::setUniform(const string& name, GLint* v, int count) {
     return true;
 }
 
-
-/*
- #ifdef __APPLE__
-// Glew (1.4.0) defines 'GLint' as 'long' on Apple, so these wrappers are necessary.
-// On all other platforms 'GLint' is defined as 'int' instead.
-// Glew (1.5.1) defines 'GLint' as 'int' just as normal
-
-bool Shader::setUniform(const string& name, int value) {
-    GLint l = getUniformLocation(name);
-    if (l == -1)
-        return false;
-    glUniform1i(l, static_cast<GLint>(value));
-    return true;
-}
-
-bool Shader::setUniform(const string& name, int v1, int v2) {
-    GLint l = getUniformLocation(name);
-    if (l == -1)
-        return false;
-    glUniform2i(l, static_cast<GLint>(v1), static_cast<GLint>(v2));
-    return true;
-}
-
-bool Shader::setUniform(const string& name, int v1, int v2, int v3) {
-    GLint l = getUniformLocation(name);
-    if (l == -1)
-        return false;
-    glUniform3i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3));
-    return true;
-}
-
-bool Shader::setUniform(const string& name, int v1, int v2, int v3, int v4) {
-    GLint l = getUniformLocation(name);
-    if (l == -1)
-        return false;
-    glUniform4i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3), static_cast<GLint>(v4));
-    return true;
-}
-
-bool Shader::setUniform(const string& name, int* v, int count) {
-    GLint l = getUniformLocation(name);
-    if (l == -1)
-        return false;
-    GLint* vector = new GLint[count];
-    for (int i=0; i < count; i++)
-        vector[i] = static_cast<GLint>(v[i]);
-    glUniform1iv(l, count, vector);
-    delete[] vector;
-    return true;
-}
-
-#endif // __APPLE__
-*/
 
 bool Shader::setUniform(const string& name, bool value) {
     GLint l = getUniformLocation(name);

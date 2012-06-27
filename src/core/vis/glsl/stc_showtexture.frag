@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,10 +35,10 @@ uniform SAMPLER2D_TYPE tex_;
  * The main method.
  ***/
 void main() {
-	vec2 coord = gl_TexCoord[0].xy;
-    
+    vec2 coord = gl_TexCoord[0].xy;
+
     // textureLookup2D expects fragment coordinates, so scale by screen dimensions
-	float alpha = textureLookup2D(tex_, coord*screenDim_).a;
-	
+    float alpha = textureLookup2D(tex_, coord*screenDim_).a;
+
     gl_FragColor = vec4(alpha, alpha, alpha, 1.0);
 }

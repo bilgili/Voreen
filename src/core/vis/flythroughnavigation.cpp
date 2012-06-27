@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -36,10 +36,6 @@
 #include <sstream>
 #include <string>
 
-#include <QFile>
-#include <QTextStream>
-#include <QStringList>
-
 namespace voreen {
 
 using tgt::vec3;
@@ -51,7 +47,7 @@ using tgt::MouseEvent;
 const std::string FlythroughNavigation::loggerCat_ = "voreen.vis.FlythroughNavigation";
 
 FlythroughNavigation::FlythroughNavigation(tgt::GLCanvas* canvas, bool /*defaultBehavior*/)
-    : Navigation(canvas)   
+    : Navigation(canvas)
 {
 
     wheelCounter_   = -1;
@@ -100,14 +96,14 @@ void FlythroughNavigation::keyEvent(tgt::KeyEvent* e) {
             if (e->modifiers() == 0 || e->modifiers() == Event::SHIFT)
                 Navigation::moveCameraLeft(motionOffset);
             else if (e->modifiers() == Event::CTRL)
-                Navigation::rotateViewHorz(angle);  
+                Navigation::rotateViewHorz(angle);
             cameraModified = true;
             break;
         case KeyEvent::K_RIGHT :
             if (e->modifiers() == 0 || e->modifiers() == Event::SHIFT)
                 Navigation::moveCameraRight(motionOffset);
             else if (e->modifiers() == Event::CTRL)
-                Navigation::rotateViewHorz(-angle);  
+                Navigation::rotateViewHorz(-angle);
             cameraModified = true;
             break;
         case KeyEvent::K_PAGEUP :
@@ -122,7 +118,7 @@ void FlythroughNavigation::keyEvent(tgt::KeyEvent* e) {
             break;
         }
     }
-    
+
     if (cameraModified) {
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
         postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
@@ -154,7 +150,7 @@ void FlythroughNavigation::mousePressEvent(tgt::MouseEvent* /*e*/) {
 }
 
 void FlythroughNavigation::mouseReleaseEvent(tgt::MouseEvent* /*e*/) {
-    
+
     /*
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
@@ -172,7 +168,7 @@ void FlythroughNavigation::mouseReleaseEvent(tgt::MouseEvent* /*e*/) {
 }
 
 void FlythroughNavigation::mouseMoveEvent(tgt::MouseEvent* /*e*/) {
-    
+
     /*
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
@@ -197,7 +193,7 @@ void FlythroughNavigation::mouseMoveEvent(tgt::MouseEvent* /*e*/) {
 
 
 void FlythroughNavigation::mouseDoubleClickEvent(tgt::MouseEvent* e) {
-    
+
     // reset camera on right dbl-click
     if (e->button() == tgt::MouseEvent::MOUSE_BUTTON_RIGHT) {
         if (canvas_->getCamera() && initialCameraValid_) {
@@ -211,7 +207,7 @@ void FlythroughNavigation::mouseDoubleClickEvent(tgt::MouseEvent* e) {
 }
 
 void FlythroughNavigation::wheelEvent(tgt::MouseEvent* e) {
-    
+
     /*
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
@@ -233,7 +229,7 @@ void FlythroughNavigation::wheelEvent(tgt::MouseEvent* e) {
             Navigation::rollCameraVert(-angle);
         else
             Navigation::rollCameraVert(angle);
-        cameraModified = true;    
+        cameraModified = true;
     }
     else if (e->modifiers() == Event::CTRL) {
         if (up)
@@ -241,7 +237,7 @@ void FlythroughNavigation::wheelEvent(tgt::MouseEvent* e) {
         else
             Navigation::rotateViewHorz(-angle);
         cameraModified = true;
-    } 
+    }
 
     /* not necessary, the same as rotateViewVert
     else if (e->modifiers() == Event::ALT) {
@@ -251,7 +247,7 @@ void FlythroughNavigation::wheelEvent(tgt::MouseEvent* e) {
             Navigation::rollCameraVert(-angle);
         cameraModified = true;
     } */
- 
+
     if (cameraModified) {
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
         postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
@@ -283,23 +279,23 @@ void FlythroughNavigation::timerEvent(tgt::TimeEvent* /*e*/) {
         Navigation::getCanvas()->update();
         moveCounter_ = -1;
     }
-   
+
 
 }
 
 void FlythroughNavigation::processMessage(Message* msg, const Identifier& dest) {
 
     MessageReceiver::processMessage(msg, dest);
-   
+
     // forward message to painter
     if (Navigation::getCanvas()->getPainter()) {
         VoreenPainter* painter  = reinterpret_cast<VoreenPainter*>(Navigation::getCanvas()->getPainter());
         painter->processMessage(msg, dest);
-    } 
+    }
     else {
         LDEBUG("Unable to forward message to renderer: No renderer");
     }
-	
+
     // forward message to additional receivers
     std::vector<MessageReceiver*>::iterator iter;
     for (std::vector<MessageReceiver*>::iterator iter = additionalReceivers_.begin();
@@ -307,7 +303,7 @@ void FlythroughNavigation::processMessage(Message* msg, const Identifier& dest) 
        ++iter) {
             (*iter)->processMessage(msg);
     }
-    
+
 }
 
 void FlythroughNavigation::addReceiver(MessageReceiver* receiver) {

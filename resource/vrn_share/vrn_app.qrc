@@ -1,22 +1,33 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/vrn_app" >
         <file>icons/about.png</file>
+        <file>image/aboutbox.png</file>
+        <file>icons/camera.png</file>
         <file>icons/close.png</file>
         <file>icons/eraser.png</file>
         <file>icons/exit.png</file>
+        <file>icons/grid.png</file>
         <file>icons/icon-64.png</file>
         <file>icons/info.png</file>
+        <file>icons/network.png</file>
         <file>icons/open.png</file>
-        <file>icons/openNetwork.png</file>
+        <file>icons/open_network.png</file>
+        <file>icons/open_volume.png</file>
         <file>icons/open_add.png</file>
         <file>icons/open_dicom.png</file>
+        <file>icons/processor.png</file>
+        <file>icons/rebuild.png</file>
+        <file>icons/reload.png</file>
+        <file>icons/rotation.png</file>
+        <file>icons/ruler.png</file>
         <file>icons/save.png</file>
+        <file>icons/saveas.png</file>
+        <file>icons/snapshot.png</file>
+        <file>image/splash.png</file>
+        <file>icons/translation.png</file>
+        <file>icons/visualization.png</file>
+        <file>icons/volume.png</file>
         <file>icons/wizard.png</file>
         <file>icons/zoom.png</file>
-        <file>icons/grid.png</file> 
-        <file>icons/translation.png</file> 
-        <file>icons/rotation.png</file> 
-        <file>image/aboutbox.png</file>
-        <file>image/splash.png</file>   
     </qresource>
 </RCC>

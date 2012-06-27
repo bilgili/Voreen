@@ -53,6 +53,7 @@ Trackball::Trackball(GLCanvas* canvas, bool defaultEventHandling, Timer* continu
         setMouseRotate();
         setMouseMove();
         setMouseZoom();
+        setMouseRoll();
         setMouseWheelZoom();
         setMouseWheelRoll();
     }
@@ -121,9 +122,9 @@ void Trackball::endMouseDrag(MouseEvent* e) {
             if (continuousSpinStopwatch_->getRuntime() < 2.*continuousSpinLastOrientationChangeMSecs_) {
                 if (continuousSpinLastOrientationChangeMSecs_ < 1000.f / 25.f) {
                     // Last rotation took less than 40 msecs. As all rotations with more than
-                    // 25 steps per secons (less than 40 msecs) will look smooth, we do not
-                    // want to rotate with a frequency that high. We will scale last
-                    // orientation change to be that large that rotation with 25 Hz will make
+                    // 25 steps per second (less than 40 msecs) will look smooth, we do not
+                    // want to rotate with a frequency that high. We will scale the last
+                    // orientation change to be so large that rotation with 25 Hz will make
                     // the trackball rotate with the according speed.
                     float scale = (1000.f / 25.f) / static_cast<float>(continuousSpinLastOrientationChangeMSecs_);
 //                    lastOrientationChange_.w = cosf( scale * acos( lastOrientationChange_.w ) );
@@ -134,7 +135,7 @@ void Trackball::endMouseDrag(MouseEvent* e) {
                     continuousSpinTimer_->start(continuousSpinLastOrientationChangeMSecs_, 0);
                 }
             }
-            if (1 - lastOrientationChange_.w < 0.000002) { // FIXME: perhaps this is not the very best value...
+            if (1 - lastOrientationChange_.w < 0.000002) {
                 // Rotation is very small. Probably user did not mean to spin the trackball.
                 lastOrientationChange_.x = 0.f;
                 lastOrientationChange_.y = 0.f;
@@ -157,21 +158,21 @@ void Trackball::rotate(Quaternion<float> quat) {
     position = quat::rotate(position, quat);
     position += center_;
 
-    vec3 focus    = getCamera()->getFocus   ();
-    focus    -= center_;
-    // For normal, focus - center == 0, so no need to rotate. But if we combine trackball
+    vec3 focus = getCamera()->getFocus();
+    focus -= center_;
+    // Usually focus - center == 0, so no need to rotate. But if we combine trackball
     // with some other navigations, this might be useful.
-    focus    = quat::rotate(focus, quat);
-    focus    += center_;
+    focus = quat::rotate(focus, quat);
+    focus += center_;
 
     vec3 upVector = getCamera()->getUpVector();
     upVector = quat::rotate(upVector, quat);
 
-    getCamera()->positionCamera( position, focus, upVector );
+    getCamera()->positionCamera(position, focus, upVector);
 
     lastOrientationChange_ = quat;
     if (continuousSpin_ && continuousSpinStopwatch_) {
-        // keep track how long last roation took
+        // keep track how long last rotation took
         continuousSpinLastOrientationChangeMSecs_ = continuousSpinStopwatch_->getRuntime();
         continuousSpinStopwatch_->reset();
         continuousSpinStopwatch_->start();
@@ -299,6 +300,7 @@ void Trackball::setMouseRotate(MouseEvent::MouseButtons button, int mod) {
     mouseRotateButton_ = button;
     mouseRotateMod_ = mod;
 }
+
 void Trackball::setKeyRotate(float acuteness,
                              KeyEvent::KeyCode left,
                              KeyEvent::KeyCode right,
@@ -317,10 +319,12 @@ void Trackball::setKeyRotate(float acuteness,
         keyRotateLeft_ = keyRotateRight_ = keyRotateUp_ = keyRotateDown_ = KeyEvent::K_LAST;
     }
 }
+
 void Trackball::setMouseMove(MouseEvent::MouseButtons button, int mod) {
     mouseMoveButton_ = button;
     mouseMoveMod_ = mod;
 }
+
 void Trackball::setKeyMove(float acuteness,
                            KeyEvent::KeyCode left,
                            KeyEvent::KeyCode right,
@@ -339,6 +343,7 @@ void Trackball::setKeyMove(float acuteness,
         keyMoveLeft_ = keyMoveRight_ = keyMoveUp_ = keyMoveDown_ = KeyEvent::K_LAST;
     }
 }
+
 void Trackball::setMouseZoom(MouseEvent::MouseButtons button,
                              vec2 zoomInDirection,
                              int mod) {
@@ -346,6 +351,7 @@ void Trackball::setMouseZoom(MouseEvent::MouseButtons button,
     mouseZoomInDirection_ = normalize(zoomInDirection);
     mouseZoomMod_ = mod;
 }
+
 void Trackball::setMouseWheelZoom(float acuteness, bool wheelUpZoomIn, int mod) {
     if (acuteness != 0.f) {
         mouseWheelZoom_ = true;
@@ -356,6 +362,7 @@ void Trackball::setMouseWheelZoom(float acuteness, bool wheelUpZoomIn, int mod) 
         mouseWheelZoom_ = false;
     }
 }
+
 void Trackball::setKeyZoom(float acuteness, KeyEvent::KeyCode in, KeyEvent::KeyCode out,
                            int mod, bool pressed) {
     if (acuteness != 0.f) {
@@ -373,6 +380,7 @@ void Trackball::setMouseRoll(MouseEvent::MouseButtons button, float acuteness, i
     mouseRollAcuteness_ = acuteness;
     mouseRollMod_ = mod;
 }
+
 void Trackball::setMouseWheelRoll(float acuteness, bool wheelUpRollLeft, int mod) {
     if (acuteness != 0.f) {
         mouseWheelRoll_ = true;
@@ -383,6 +391,7 @@ void Trackball::setMouseWheelRoll(float acuteness, bool wheelUpRollLeft, int mod
         mouseWheelRoll_ = false;
     }
 }
+
 void Trackball::setKeyRoll(float acuteness, KeyEvent::KeyCode left, KeyEvent::KeyCode right,
                            int mod, bool pressed) {
     if (acuteness != 0.f) {
@@ -414,7 +423,7 @@ void Trackball::mouseReleaseEvent(MouseEvent* e) {
 void Trackball::mouseMoveEvent(MouseEvent* e) {
     if (!tracking_)
         return;
-    
+
     vec2 newMouse = scaleMouse( ivec2(e->x(), e->y()) );
 
     if ( mouseRotateButton_ & e->button() &&
@@ -507,9 +516,11 @@ void Trackball::keyEvent(KeyEvent* e) {
 float Trackball::getRotationAngle(const float& acuteness) const {
     return 1.f / acuteness;
 }
+
 float Trackball::getMovementLength(const float& acuteness) const {
     return getSize() / acuteness;
 }
+
 float Trackball::getZoomFactor(const float& acuteness, const bool& zoomIn) const {
     if (zoomIn) {
         return 1.f + 1.f/acuteness;
@@ -517,6 +528,7 @@ float Trackball::getZoomFactor(const float& acuteness, const bool& zoomIn) const
         return 1.f - 1.f/acuteness;
     }
 }
+
 float Trackball::getRollAngle(const float& acuteness, const bool& left) const {
     if (left) {
         return - 1.f / acuteness;

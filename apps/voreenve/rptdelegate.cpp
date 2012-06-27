@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,7 +47,7 @@
      /* QComboBox *editor = new QComboBox(parent);
       editor->insertItem(0,"zeile 0");
       editor->insertItem(1,"zeile 1");*/
-     // QCheckBox* editor = new QCheckBox("holla",parent);  
+     // QCheckBox* editor = new QCheckBox("holla",parent);
 
      return editor;
  }
@@ -59,17 +59,17 @@
      int value = index.model()->data(index, Qt::DisplayRole).toInt();
      //QComboBox *comboBox = static_cast<QComboBox*>(editor);
      //comboBox->setCurrentIndex(value); //   -setValue(value);
-    
+
 
      // int value = index.model()->data(index, Qt::DisplayRole).toInt();
 
      QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      spinBox->setValue(value);
-    
+
     // bool value = index.model()->data(index, Qt::DisplayRole).toBool();
-    // cBox->setChecked(value);     
-    // QCheckBox *cBox = static_cast<QCheckBox*>(editor); 
-    
+    // cBox->setChecked(value);
+    // QCheckBox *cBox = static_cast<QCheckBox*>(editor);
+
 
  }
 
@@ -79,17 +79,17 @@
      QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      spinBox->interpretText();
      int value = spinBox->value();
-     
+
      model->setData(index, 0, Qt::EditRole);
-     
+
    /*  QCheckBox *checkBox = static_cast<QCheckBox*>(editor);
-     bool value = checkBox->isChecked(); 
-     
+     bool value = checkBox->isChecked();
+
      model->setData(index, value, Qt::EditRole);*/
 
    /*  QComboBox *comboBox = static_cast<QComboBox*>(editor);
-     int value = comboBox->currentIndex(); 
-     
+     int value = comboBox->currentIndex();
+
      model->setData(index, comboBox->itemText(value), Qt::EditRole);*/
 
 
@@ -119,7 +119,7 @@
       editor->insertItem(1,"medium");
       editor->insertItem(2,"high");
 
-     // QCheckBox* editor = new QCheckBox("holla",parent);  
+     // QCheckBox* editor = new QCheckBox("holla",parent);
 
      return editor;
  }
@@ -131,17 +131,17 @@
      int value = index.model()->data(index, Qt::DisplayRole).toInt();
      QComboBox *comboBox = static_cast<QComboBox*>(editor);
      comboBox->setCurrentIndex(value); //   -setValue(value);
-    
+
 
      // int value = index.model()->data(index, Qt::DisplayRole).toInt();
 
      //QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      /*spinBox->setValue(value);*/
-    
+
     // bool value = index.model()->data(index, Qt::DisplayRole).toBool();
-    // cBox->setChecked(value);     
-    // QCheckBox *cBox = static_cast<QCheckBox*>(editor); 
-    
+    // cBox->setChecked(value);
+    // QCheckBox *cBox = static_cast<QCheckBox*>(editor);
+
 
  }
 
@@ -151,17 +151,17 @@
      /*QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      spinBox->interpretText();
      int value = spinBox->value();
-     
+
      model->setData(index, 0, Qt::EditRole);*/
-     
+
    /*  QCheckBox *checkBox = static_cast<QCheckBox*>(editor);
-     bool value = checkBox->isChecked(); 
-     
+     bool value = checkBox->isChecked();
+
      model->setData(index, value, Qt::EditRole);*/
 
      QComboBox *comboBox = static_cast<QComboBox*>(editor);
-     int value = comboBox->currentIndex(); 
-     
+     int value = comboBox->currentIndex();
+
      model->setData(index, comboBox->itemText(value), Qt::EditRole);
 
 
@@ -190,7 +190,7 @@
       /*QComboBox *editor = new QComboBox(parent);
       editor->insertItem(0,"zeile 0");
       editor->insertItem(1,"zeile 1");*/
-     QCheckBox* editor = new QCheckBox("change",parent);  
+     QCheckBox* editor = new QCheckBox("change",parent);
 
      return editor;
  }
@@ -202,17 +202,17 @@
      //int value = index.model()->data(index, Qt::DisplayRole).toInt();
      //QComboBox *comboBox = static_cast<QComboBox*>(editor);
      //comboBox->setCurrentIndex(value); //   -setValue(value);
-    
+
 
      // int value = index.model()->data(index, Qt::DisplayRole).toInt();
 
      //QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      /*spinBox->setValue(value);*/
-     
+
      QCheckBox* cBox = static_cast<QCheckBox*>(editor);
      bool value = index.model()->data(index, Qt::DisplayRole).toBool();
-     cBox->setChecked(value);     
-    
+     cBox->setChecked(value);
+
 
  }
 
@@ -222,17 +222,17 @@
      /*QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
      spinBox->interpretText();
      int value = spinBox->value();
-     
+
      model->setData(index, 0, Qt::EditRole);*/
-     
+
      QCheckBox *checkBox = static_cast<QCheckBox*>(editor);
-     bool value = checkBox->isChecked(); 
-     
+     bool value = checkBox->isChecked();
+
      model->setData(index, value, Qt::EditRole);
 
     /* QComboBox *comboBox = static_cast<QComboBox*>(editor);
-     int value = comboBox->currentIndex(); 
-     
+     int value = comboBox->currentIndex();
+
      model->setData(index, comboBox->itemText(value), Qt::EditRole);*/
 
 

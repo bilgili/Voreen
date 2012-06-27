@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,13 +28,11 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
-#include "voreen/core/vis/processors/portmapping.h"
 #include "voreen/core/volume/volumeset.h"
 
 namespace voreen {
 
 // initialization of static members
-//
 const Identifier VolumeSelectionProcessor::msgSetCurrentModality_("set.currentModality");
 const Identifier VolumeSelectionProcessor::msgSetCurrentTimestep_("set.currentTimestep");
 
@@ -43,47 +41,45 @@ VolumeSelectionProcessor::VolumeSelectionProcessor()
     , curVolumeSet_(0)
     , volumeSeries_(0)
     , volumeHandle_(0)
+    , timestepProp_(msgSetCurrentTimestep_, "Timestep", 0, 0, 100, false)
     , volumeSetInportName_("volumeset.volumeset")
     , volumeOutportName_("volumehandle.volumehandle")
 {
-    modalitiesProp_ = new EnumProp(msgSetCurrentModality_, "Available Modalities", availableModalities_);
-    addProperty(modalitiesProp_);
-
-    timestepProp_ = new IntProp(msgSetCurrentTimestep_, "Timestep", 0, 0, 0, false);
-    addProperty(timestepProp_);
+    modalityProp_ = new StringSelectionProp(msgSetCurrentModality_, "Modality", true);
+    modalityProp_->onChange(
+        CallMemberAction<VolumeSelectionProcessor>(this, &VolumeSelectionProcessor::currentSeriesChanged));
+    addProperty(modalityProp_);
+      
+    timestepProp_.onChange(
+        CallMemberAction<VolumeSelectionProcessor>(this, &VolumeSelectionProcessor::currentTimestepChanged));
+    addProperty(&timestepProp_);
 
     // These properties shall not be serialized as they are set, when a VolumeSet* is
     // associated with a VolumeSetSourceProcessor. This does not happen during
     // loading! The stored indices and values would be applied to an empty property and
     // would cause the application to crash on loading networks!
-    //
-    modalitiesProp_->setSerializable(false);
-    timestepProp_->setSerializable(true);
+    timestepProp_.setSerializable(true);
 
     createInport(volumeSetInportName_);
-	createOutport(volumeOutportName_);
+    createGenericOutport(volumeOutportName_, &volumeHandle_);
     setName("VolumeSelector");
     setTag("VolumeSelectionProcessor");
-    MsgDistr.insert(this);
+    enableVolumeCaching(false);
 }
 
 VolumeSelectionProcessor::~VolumeSelectionProcessor() {
-    if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
-        MsgDistr.remove(this);
-    
-    delete modalitiesProp_;
-    delete timestepProp_;
+    delete modalityProp_;
 }
 
 const Identifier VolumeSelectionProcessor::getClassName() const {
-    return "VolumeSetSource.VolumeSelector";
+    return "VolumeProcessor.VolumeSelector";
 }
 
 const std::string VolumeSelectionProcessor::getProcessorInfo() const {
     return "Selects a single volume from a volume set.";
 }
 
-Processor* VolumeSelectionProcessor::create() {
+Processor* VolumeSelectionProcessor::create() const {
     return new VolumeSelectionProcessor();
 }
 
@@ -92,8 +88,10 @@ void VolumeSelectionProcessor::process(LocalPortMapping* portMapping) {
         return;
 
     VolumeSet** volumesetAddr = portMapping->getGenericData<VolumeSet**>(volumeSetInportName_);
-    if ((volumesetAddr != 0) && (*volumesetAddr != curVolumeSet_))
+    if (volumesetAddr != 0 && *volumesetAddr != curVolumeSet_)
         setVolumeSet(*volumesetAddr);
+    else if (volumesetAddr == 0 && *volumesetAddr != curVolumeSet_)
+        setVolumeSet(0);
 }
 
 void VolumeSelectionProcessor::processMessage(Message* msg, const Identifier& dest) {
@@ -101,28 +99,28 @@ void VolumeSelectionProcessor::processMessage(Message* msg, const Identifier& de
         return;
 
     Processor::processMessage(msg, dest);
-    if (msg->id_ == msgSetCurrentTimestep_) {
+    /*
+    if (msg->id_ == msgSetCurrentTimestep_)
         setCurrentTimestep(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == msgSetCurrentModality_) {
+    else if (msg->id_ == msgSetCurrentModality_)
         setCurrentSeries(msg->getValue<std::string>());
-    }
-    else if (msg->id_ == VolumeSet::msgUpdateVolumeSeries_) {
+    else
+    */
+    if (msg->id_ == VolumeSet::msgUpdateVolumeSeries_) {
         updateAvailableModalities();
         updateAvailableTimesteps();
     }
-    else if (msg->id_ == VolumeSeries::msgUpdateTimesteps_) 
+    else if (msg->id_ == VolumeSeries::msgUpdateTimesteps_)
         updateAvailableTimesteps();
 
-	// if volumesetcontainer is cleared don't use its volumeset
-	else if (msg->id_ == "volumesetcontainer.clear") {
+    // if volumesetcontainer is cleared don't use its volumeset
+    else if (msg->id_ == "volumesetcontainer.clear") {
         VolumeSetContainer* volsetCont = msg->getValue<VolumeSetContainer*>();
-		if (curVolumeSet_ && curVolumeSet_->getParentContainer() == volsetCont) {
-			curVolumeSet_ = 0;
-			volumeSeries_ = 0;
-			volumeHandle_ = 0;
-		}
+        if (curVolumeSet_ && curVolumeSet_->getParentContainer() == volsetCont) {
+            setVolumeSet(0);
+            setVolumeSeries(0);
+            setVolumeHandle(0);
+        }
         invalidate();
     }
 }
@@ -137,52 +135,57 @@ void VolumeSelectionProcessor::setVolumeSet(VolumeSet* const volumeset) {
 
     updateAvailableModalities();
     updateAvailableTimesteps();
+    currentSeriesChanged();
 }
 
 void VolumeSelectionProcessor::setVolumeSeries(VolumeSeries* const volumeSeries) {
-    if( volumeSeries != volumeSeries_ )
+    if (volumeSeries != volumeSeries_)
         volumeSeries_ = volumeSeries;
 }
 
 void VolumeSelectionProcessor::setVolumeHandle(VolumeHandle* const volumeHandle) {
-    if( volumeHandle != volumeHandle_ )
+    if (!volumeHandle_ || !volumeHandle_->isIdentical(volumeHandle))
         volumeHandle_ = volumeHandle;
 }
 
-// private
-//
+void VolumeSelectionProcessor::currentSeriesChanged() {
+    setCurrentSeries(modalityProp_->get());
+    invalidate();
+}
+
+void VolumeSelectionProcessor::currentTimestepChanged() {
+    setCurrentTimestep(timestepProp_.get());
+    invalidate();
+}
+
 void VolumeSelectionProcessor::updateAvailableModalities() {
     availableModalities_.clear();
+
     if (curVolumeSet_ != 0) {
-        availableModalities_ = curVolumeSet_->getSeriesNames();
-        if ((availableModalities_.size() > 0))
-            setCurrentSeries(availableModalities_[0]);
-        else
-            setCurrentSeries("");
+        VolumeSeries::SeriesSet series = curVolumeSet_->getSeries();
+        for (VolumeSeries::SeriesSet::const_iterator it = series.begin(); it != series.end(); it++) {
+            VolumeSeries* volseries = static_cast<VolumeSeries*>(*it);
+            availableModalities_.push_back(volseries->getModality().getName());
+        }
     }
-    else
-        setCurrentSeries("");
-    
-    if (modalitiesProp_ != 0) {
-        modalitiesProp_->setStrings(availableModalities_);
-        modalitiesProp_->forwardChangesToPlugin();
-    }
+    modalityProp_->setChoices(availableModalities_);
+
+    currentSeriesChanged();
 }
 
 void VolumeSelectionProcessor::updateAvailableTimesteps() {
     int numHandles = 1;
     if (volumeSeries_ != 0)
         numHandles = volumeSeries_->getNumVolumeHandles();
+    else
+        return;
 
-    int curTimestep = 0;
-    if (timestepProp_ != 0) {
-        curTimestep = timestepProp_->get();
-        if (curTimestep < (numHandles - 1))
-            curTimestep = 0;
-        timestepProp_->setMinValue(0);
-        timestepProp_->setMaxValue(numHandles - 1);
-        timestepProp_->set(curTimestep);
-    }
+    int curTimestep = timestepProp_.get();
+     if (curTimestep >= numHandles)
+         curTimestep = 0;
+//    timestepProp_.setMinValue(0);
+//     timestepProp_.setMaxValue(numHandles - 1);
+    timestepProp_.set(curTimestep);
 
     if (volumeSeries_ == 0)
         curTimestep = -1;
@@ -192,23 +195,37 @@ void VolumeSelectionProcessor::updateAvailableTimesteps() {
 
 void VolumeSelectionProcessor::setCurrentSeries(const std::string& seriesName) {
     volumeSeries_ = 0;
-    if ( (curVolumeSet_ == 0) || (seriesName.empty() == true) )
-        return;
 
-    volumeSeries_ = curVolumeSet_->findSeries(seriesName);
-    if (volumeSeries_ != 0)
-        setCurrentTimestep(0);
-    else
+    if (curVolumeSet_ == 0) {
         setCurrentTimestep(-1);
-}
-
-void VolumeSelectionProcessor::setCurrentTimestep(const int timestepIndex) {
-    if ( (volumeSeries_ == 0) || (timestepIndex < 0) ) {
-        volumeHandle_ = 0;
         return;
     }
 
-    volumeHandle_ = volumeSeries_->getVolumeHandle(timestepIndex);
+    if (seriesName.empty()) {
+        // When series name is empty we first try to find a series with an empty name, then we
+        // try "unknown", then we take the first one we get.
+        volumeSeries_ = curVolumeSet_->findSeries("");
+
+        if (!volumeSeries_) 
+            volumeSeries_ = curVolumeSet_->findSeries("unknown");
+
+        if (!volumeSeries_) {
+            VolumeSeries::SeriesSet series = curVolumeSet_->getSeries();
+            if (series.begin() != series.end()) 
+                volumeSeries_ = *(series.begin());
+        }
+    }
+    else
+        volumeSeries_ = curVolumeSet_->findSeries(seriesName);
+
+    updateAvailableTimesteps();
 }
 
-} // namespace
+void VolumeSelectionProcessor::setCurrentTimestep(int timestepIndex) {
+    if (volumeSeries_ != 0 && timestepIndex >= 0)
+        setVolumeHandle(volumeSeries_->getVolumeHandle(timestepIndex));
+    else
+        setVolumeHandle(0);
+}
+
+} // namespace voreen

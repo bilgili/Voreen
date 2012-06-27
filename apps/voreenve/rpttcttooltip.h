@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,40 +28,33 @@
  **********************************************************************/
 
 #ifndef VRN_RPTTCTTOOLTIP_H
+#define VRN_RPTTCTTOOLTIP_H
 
 #include <QGraphicsRectItem>
-#include "voreen/core/opengl/texturecontainer.h"
-
 
 namespace voreen {
 
+class TextureContainer;
+
 /**
- * TODO Proper docs
- * Class for Tooltip for Texture Containers
+ * Graphical tooltip for texture containers in network editor
  */
 class RptTCTTooltip : public QGraphicsRectItem {
-
 public:
-    /**
-     * Constructors inherited.
-     */
-    RptTCTTooltip ( QGraphicsItem * parent = 0);
-    RptTCTTooltip ( const QRectF & rect, QGraphicsItem * parent = 0);
-    RptTCTTooltip ( qreal x, qreal y, qreal width, qreal height, QGraphicsItem * parent = 0);
+    RptTCTTooltip(QGraphicsItem* parent = 0);
+    RptTCTTooltip(const QRectF& rect, QGraphicsItem* parent = 0);
+    RptTCTTooltip(qreal x, qreal y, qreal width, qreal height, QGraphicsItem* parent = 0);
     ~RptTCTTooltip();
 
     void initialize(int id, TextureContainer* tc);
-    
+
 protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
-    void initImage();
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
     QImage* image_;
-    TextureContainer* tc_;
-    int id_; // TextureContainerTargetID
 };
 
-} //namespace voreen
+} // namespace voreen
 
 #endif // VRN_RPTGLGRAPHICSITEM_H
 

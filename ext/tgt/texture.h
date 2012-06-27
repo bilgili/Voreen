@@ -59,6 +59,9 @@ public:
         : priority_(-1.f), pixels_(0), id_(0)
     {}
 
+    //FIXME: these ctors are ambiguous due to the default params, you need to specify all
+    //       arguments or the compile won't know which one you mean. joerg
+
     /**
      * Without data and internalformat argument, type_ is calculated by
      * dimensions and a new chunk of data will be allocated on the heap.
@@ -274,9 +277,18 @@ public:
      */
     void downloadTexture();
 
-	/**
-	 * Returns, wether texture is a texture rectangle (GL_TEXTURE_RECTANGLE_ARB)
-	 */
+    /**
+     * Download texture from the GPU to a newly allocated buffer, to which a
+     * pointer is returned.  Binds the texture.
+     *
+     * type_, format_, dimensions, and dataType_ have to be set before
+     * calling this method!
+     */
+    GLubyte* downloadTextureToBuffer() const;
+
+    /**
+     * Returns, wether texture is a texture rectangle (GL_TEXTURE_RECTANGLE_ARB)
+     */
     bool isTextureRectangle();
 
 /*

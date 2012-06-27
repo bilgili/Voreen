@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -36,17 +36,16 @@
 namespace voreen {
 
 /// Composites the result of two Renderer objects with a set of blending methods.
-class Compositer : public GenericFragment {
+class Compositer : public ImageProcessor {
 public:
 
-	Compositer();
-    virtual const Identifier getClassName() const {return "PostProcessor.Compositer";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Compositer();}
+    Compositer();
+    virtual const Identifier getClassName() const {return "ImageProcessor.Compositer";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new Compositer();}
     ~Compositer();
 
-	void process(LocalPortMapping* portMapping);
-    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
+    void process(LocalPortMapping* portMapping);
 
 protected:
 

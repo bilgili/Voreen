@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,11 +38,32 @@
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/vis/lightmaterial.h"
 
+#include <sstream>
+
 using tgt::vec3;
 using tgt::vec4;
 using tgt::Color;
 
 namespace voreen {
+
+HasShader::HasShader()
+    : needRecompileShader_(true)
+{
+}
+
+HasShader::~HasShader() {
+}
+
+void HasShader::compileShader() {
+    if (needRecompileShader_) {
+        compile();
+        needRecompileShader_ = false;
+    }
+}
+
+void HasShader::invalidateShader() {
+    needRecompileShader_ = true;
+}
 
 //---------------------------------------------------------------------------
 
@@ -55,8 +76,8 @@ const std::string Processor::XmlElementName_("Processor");
 Processor::Processor(tgt::Camera* camera, TextureContainer* tc)
     : MessageReceiver()
     , Serializable()
-    , cachable_(false)
-    , cached_(false)
+    , cacheable_(true),
+    useVolumeCaching_(true)
     , isCoprocessor_(false)
     , camera_(camera)
     , tc_(tc)
@@ -75,55 +96,38 @@ Processor::Processor(tgt::Camera* camera, TextureContainer* tc)
     , materialShininess_(LightMaterial::setMaterialShininess_, "Shininess", 60.f, 0.1f, 128.f)
     , initStatus_(VRN_OK)
 {
-    meta_ = MetaSerializer();
+    addProperty(&lightPosition_);
+    lightPosition_.setVisible(false);
 }
 
 Processor::~Processor() {
-    // FIXME: Why automatically remove a processor from MsgDistr at destruction? 
-    // A processor is not necessarly inserted by its constructor!
-    if (tgt::Singleton<voreen::MessageDistributor>::isInited()) {
-        if (MsgDistr.contains(this)) // just to prevent warnings, I doubt the removal is
-            MsgDistr.remove(this);   // necessary at all. joerg
-        //ProcessorPointerMsg* msg = new ProcessorPointerMsg(Processor::delete_ ,this);
-	    //MsgDistr.postMessage(msg, Message::all_);
-    }
-
-    for (size_t i=0; i<inports_.size(); ++i) 
-		delete inports_.at(i);
-	for (size_t i=0; i<outports_.size(); ++i) 
-		delete outports_.at(i);
-	for (size_t i=0; i<coProcessorInports_.size(); ++i) 
-		delete coProcessorInports_.at(i);
-	for (size_t i=0; i<coProcessorOutports_.size(); ++i) 
-		delete coProcessorOutports_.at(i);
-	for (size_t i=0; i<privatePorts_.size(); ++i) 
-		delete privatePorts_.at(i);
-	//for (size_t i=0; i<props_.size(); ++i)
-	//    delete props_.at(i);
+    for (size_t i=0; i<inports_.size(); ++i)
+        delete inports_.at(i);
+    for (size_t i=0; i<outports_.size(); ++i)
+        delete outports_.at(i);
+    for (size_t i=0; i<coProcessorInports_.size(); ++i)
+        delete coProcessorInports_.at(i);
+    for (size_t i=0; i<coProcessorOutports_.size(); ++i)
+        delete coProcessorOutports_.at(i);
+    for (size_t i=0; i<privatePorts_.size(); ++i)
+        delete privatePorts_.at(i);
 }
 
 int Processor::initializeGL() {
     return VRN_OK;
 }
 
-void Processor::init() {
-}
-
-Message* Processor::call(Identifier /*ident*/,LocalPortMapping*) {
-	return 0;
-}
-
-void Processor::deinit() {
+Message* Processor::call(Identifier /*ident*/, LocalPortMapping*) {
+    return 0;
 }
 
 void Processor::addProperty(Property* prop) {
     props_.push_back(prop);
     prop->setOwner(this);
-    prop->setMsgDestination(getTag());
 }
 
 const Properties& Processor::getProperties() const {
-	return props_;
+    return props_;
 }
 
 bool Processor::connect(Port* outport, Port* inport) {
@@ -171,45 +175,45 @@ bool Processor::disconnect(Port* outport, Port* inport) {
             return true;
         }
     }
-    
+
     return false;
 }
 
 Port* Processor::getPort(Identifier ident) {
-	for (size_t i=0; i <inports_.size(); ++i) {
-		if (inports_.at(i)->getType() == ident) 
-			return inports_.at(i);
-	}
+    for (size_t i=0; i <inports_.size(); ++i) {
+        if (inports_.at(i)->getType() == ident)
+            return inports_.at(i);
+    }
 
-	for (size_t i=0; i <outports_.size(); ++i) {
-		if (outports_.at(i)->getType() == ident) 
-			return outports_.at(i);
-	}
+    for (size_t i=0; i <outports_.size(); ++i) {
+        if (outports_.at(i)->getType() == ident)
+            return outports_.at(i);
+    }
 
-	for (size_t i=0; i <coProcessorInports_.size(); ++i) {
-		if (coProcessorInports_.at(i)->getType() == ident) 
-			return coProcessorInports_.at(i);
-	}
+    for (size_t i=0; i <coProcessorInports_.size(); ++i) {
+        if (coProcessorInports_.at(i)->getType() == ident)
+            return coProcessorInports_.at(i);
+    }
 
-	for (size_t i=0; i <coProcessorOutports_.size(); ++i) {
-		if (coProcessorOutports_.at(i)->getType() == ident) 
-			return coProcessorOutports_.at(i);
-	}
+    for (size_t i=0; i <coProcessorOutports_.size(); ++i) {
+        if (coProcessorOutports_.at(i)->getType() == ident)
+            return coProcessorOutports_.at(i);
+    }
 
-	for (size_t i=0; i<privatePorts_.size(); ++i) {
-		if (privatePorts_.at(i)->getType() == ident)
-			return privatePorts_.at(i);
-	}
-	
-	return 0;
+    for (size_t i=0; i<privatePorts_.size(); ++i) {
+        if (privatePorts_.at(i)->getType() == ident)
+            return privatePorts_.at(i);
+    }
+
+    return 0;
 }
 
 void Processor::createInport(Identifier ident, bool allowMultipleConnectios) {
-	inports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
+    inports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
 }
 
 void Processor::createOutport(Identifier ident, bool isPersistent,Identifier inport) {
-	Port* newOutport = new Port(ident,this,true,true,isPersistent);
+    Port* newOutport = new Port(ident,this,true,true,isPersistent);
     outports_.push_back(newOutport);
     if (inport != "dummy.port.unused") {
         if (getPort(inport) != 0)
@@ -218,24 +222,26 @@ void Processor::createOutport(Identifier ident, bool isPersistent,Identifier inp
             LWARNING("Couldn't find the inport in Processor::createOutport(Identifier ident, Identifier ident)");
     }
 }
+
 void Processor::createCoProcessorInport(Identifier ident, bool allowMultipleConnectios) {
-	coProcessorInports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
+    coProcessorInports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
 }
 
 void Processor::createCoProcessorOutport(Identifier ident, FunctionPointer function, bool allowMultipleConnectios) {
-	Port* newPort = new Port(ident,this,true,allowMultipleConnectios,false);
-	newPort->setFunctionPointer(function);
-	coProcessorOutports_.push_back(newPort);
+    Port* newPort = new Port(ident,this,true,allowMultipleConnectios,false);
+    newPort->setFunctionPointer(function);
+    coProcessorOutports_.push_back(newPort);
 }
 
 void Processor::createPrivatePort(Identifier ident) {
-	privatePorts_.push_back(new Port(ident,this,true,false,true));
+    privatePorts_.push_back(new Port(ident,this,true,false,true));
 }
 
 void Processor::processMessage(Message* msg, const Identifier& dest) {
     MessageReceiver::processMessage(msg, dest);
-    if (msg->id_ == setBackgroundColor_)
+    if (msg->id_ == setBackgroundColor_) {
         backgroundColor_.set(msg->getValue<tgt::Color>());
+    }
     else if (msg->id_ == "set.viewport") {
         if (camera_) {
             tgt::ivec2 v = msg->getValue<tgt::ivec2>();
@@ -243,48 +249,38 @@ void Processor::processMessage(Message* msg, const Identifier& dest) {
             setSizeTiled(v.x, v.y);
             if (tc_)
                 tc_->setSize(v);
-            
+
             LINFO("set.viewport to " << v);
         }
     }
     else if (msg->id_ == LightMaterial::setLightPosition_) {
-        tgtAssert( typeid(*msg) == typeid(Vec4Msg), "msg is of wrong type!" );
         lightPosition_.set(msg->getValue<vec4>());
     }
     else if (msg->id_ == LightMaterial::setLightAmbient_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         lightAmbient_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setLightDiffuse_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         lightDiffuse_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setLightSpecular_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         lightSpecular_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setLightAttenuation_) {
-        tgtAssert( typeid(*msg) == typeid(Vec3Msg), "msg is of wrong type!" );
         lightAttenuation_.set(msg->getValue<vec3>());
     }
     else if (msg->id_ == LightMaterial::setMaterialAmbient_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         materialAmbient_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setMaterialDiffuse_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         materialDiffuse_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setMaterialSpecular_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         materialSpecular_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setMaterialEmission_) {
-        tgtAssert( typeid(*msg) == typeid(ColorMsg), "msg is of wrong type!" );
         materialEmission_.set(msg->getValue<Color>());
     }
     else if (msg->id_ == LightMaterial::setMaterialShininess_) {
-        tgtAssert( typeid(*msg) == typeid(FloatMsg), "msg is of wrong type!" );
         materialShininess_.set(msg->getValue<float>());
     }
 }
@@ -346,7 +342,7 @@ std::vector<Port*> Processor::getPrivatePorts() const {
 }
 
 Port* Processor::getInport(Identifier type) {
-    for (size_t i=0; i<inports_.size(); ++i) {
+    for (size_t i=0; i < inports_.size(); ++i) {
         if (inports_.at(i)->getType() == type)
             return inports_.at(i);
     }
@@ -354,7 +350,7 @@ Port* Processor::getInport(Identifier type) {
 }
 
 Port* Processor::getOutport(Identifier type) {
-    for (size_t i=0; i<outports_.size(); ++i) {
+    for (size_t i=0; i < outports_.size(); ++i) {
         if (outports_.at(i)->getType() == type)
             return outports_.at(i);
     }
@@ -366,30 +362,32 @@ void Processor::setSize(const tgt::ivec2 &size) {
 }
 
 void Processor::setSize(const tgt::vec2& size) {
-	if (camera_ && size_ != size) {
-		size_ = size;
+    if (camera_ && size_ != size) {
+        size_ = size;
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
 
         camera_->getFrustum().setRatio(size.x/size.y);
         camera_->updateFrustum();
-		tgt::loadMatrix(camera_->getProjectionMatrix());
+        tgt::loadMatrix(camera_->getProjectionMatrix());
 
-		glMatrixMode(GL_MODELVIEW);
+        glMatrixMode(GL_MODELVIEW);
 
         invalidate();
-	}
+    }
 }
 
-void Processor::setCanvasSize(const tgt::ivec2& size) {
-    canvasSize_ = size;
+tgt::ivec2 Processor::getSize() const {
+    return static_cast<tgt::ivec2>(size_);
+}
+
+tgt::vec2 Processor::getSizeFloat() const {
+    return size_;
 }
 
 void Processor::invalidate() {
-    //It is ABSOLUTELY important to send this message only to "evaluator". If you send it to "all" or a voreenpainter,
-    //the message will arrive too often.
-	MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::unsetCachedForward_, this), "evaluator");
+    MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::processorInvalidated_, this));
 }
 
 void Processor::renderQuad() {
@@ -433,27 +431,20 @@ std::string Processor::generateHeader() {
 // - cameraPosition_ (camera position in world coordinates)
 // - lightPosition_ (light source position in world coordinates)
 void Processor::setGlobalShaderParameters(tgt::Shader* shader) {
-    tgtAssert(shader != 0, "No shader passed!");
-    GLint location;
-    if (tc_) {
-        location = shader->getUniformLocation("screenDim_", true);
-        if (location != -1)
-            shader->setUniform(location, tgt::vec2(tc_->getSize()));
+    shader->setIgnoreUniformLocationError(true);
 
-        location = shader->getUniformLocation("screenDimRCP_", true);
-        if (location != -1)
-            shader->setUniform(location, 1.f / tgt::vec2(tc_->getSize()));
+    if (tc_) {
+        shader->setUniform("screenDim_", tgt::vec2(tc_->getSize()));
+        shader->setUniform("screenDimRCP_", 1.f / tgt::vec2(tc_->getSize()));
     }
 
     // camera position in world coordinates
-    location = shader->getUniformLocation("cameraPosition_", true);
-    if (location != -1)
-        shader->setUniform(location, camera_->getPosition());
+    shader->setUniform("cameraPosition_", camera_->getPosition());
 
     // light source position in world coordinates
-    location = shader->getUniformLocation("lightPosition_", true);
-    if (location != -1)
-        shader->setUniform("lightPosition_", getLightPosition());
+    shader->setUniform("lightPosition_", getLightPosition());
+
+    shader->setIgnoreUniformLocationError(false);
 }
 
 void Processor::setLightingParameters() {
@@ -471,13 +462,10 @@ void Processor::setLightingParameters() {
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialShininess_.get());
 }
 
-void Processor::process(LocalPortMapping* /*portMapping*/)/* throw (std::exception)*/ {
-}
-
 void Processor::setSizeTiled(uint width, uint height) {
     setSize(tgt::ivec2(width, height));
 
-	// gluPerspective replacement taken from
+    // gluPerspective replacement taken from
     // http://nehe.gamedev.net/data/articles/article.asp?article=11
 
     float fovY = 45.f;
@@ -489,18 +477,25 @@ void Processor::setSizeTiled(uint width, uint height) {
     fh = tanf(fovY / 360 * tgt::PIf) * zNear;
     fw = fh * aspect;
 
-	tgt::Frustum frust_ = tgt::Frustum(-fw, fw, - fh, fh, zNear, zFar);
-	camera_->setFrustum(frust_);
-	camera_->updateFrustum();
+    tgt::Frustum frust_ = tgt::Frustum(-fw, fw, - fh, fh, zNear, zFar);
+    camera_->setFrustum(frust_);
+    camera_->updateFrustum();
 
-	glMatrixMode(GL_PROJECTION);
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     tgt::loadMatrix(camera_->getProjectionMatrix());
-	glMatrixMode(GL_MODELVIEW);
+    glMatrixMode(GL_MODELVIEW);
 }
 
 bool Processor::isEndProcessor() const {
     return (outports_.size() == 0 && coProcessorOutports_.size() == 0);
+}
+
+std::string Processor::getState() const {
+    std::string state;
+    for (size_t i = 0; i < props_.size(); ++i)
+        state += props_[i]->toString();
+    return state;
 }
 
 std::string Processor::getXmlElementName() const {
@@ -510,32 +505,38 @@ std::string Processor::getXmlElementName() const {
 const Identifier Processor::getClassName(TiXmlElement* processorElem) {
     if (!processorElem)
         throw XmlElementException("Can't get ClassName of Null-Pointer!");
+
     if (processorElem->Value() != XmlElementName_)
-        throw XmlElementException(std::string("Cant get ClassName of a ") + processorElem->Value() + " - need " + XmlElementName_ + "!");
+        throw XmlElementException("Can't get ClassName of a " + std::string(processorElem->Value())
+                                  + " - need " + XmlElementName_ + "!");
+
     if (!processorElem->Attribute("type"))
-        throw XmlAttributeException(std::string("Needed attribute 'type' missing"));
-    Identifier type(processorElem->Attribute("type"));
-    return type;
+        throw XmlAttributeException("Needed attribute 'type' missing");
+
+
+    return Identifier(processorElem->Attribute("type"));
 }
 
 TiXmlElement* Processor::serializeToXml() const {
-    serializableSanityChecks();
     TiXmlElement* processorElem = new TiXmlElement(XmlElementName_);
+
     // metadata
     TiXmlElement* metaElem = meta_.serializeToXml();
     processorElem->LinkEndChild(metaElem);
+
     // misc settings
     processorElem->SetAttribute("type", getClassName().getName());
-    processorElem->SetAttribute("name", getName()); // TODO maeh!
-    //serialize the properties of the processor
+    processorElem->SetAttribute("name", getName());
+
+    // serialize the properties of the processor
     std::vector<Property*> properties = getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {
-        if ( properties[i]->isSerializable() ) {
+        if (properties[i]->isSerializable() || ignoreIsSerializable()) {
             TiXmlElement* propElem = properties[i]->serializeToXml();
             processorElem->LinkEndChild(propElem);
         }
     }
-    
+
     return processorElem;
 }
 
@@ -566,13 +567,12 @@ TiXmlElement* Processor::serializeToXml(const std::map<Processor*,int> idMap) co
             outportElem->LinkEndChild(connectedProcessorElem);
         }
     }
-        
+
     return processorElem;
 }
 
 void Processor::updateFromXml(TiXmlElement* processorElem) {
     errors_.clear();
-    serializableSanityChecks(processorElem);
     // meta
     TiXmlElement* metaElem = processorElem->FirstChildElement(meta_.getXmlElementName());
     if (metaElem) {
@@ -583,40 +583,37 @@ void Processor::updateFromXml(TiXmlElement* processorElem) {
         errors_.store(XmlElementException("Metadata missing!")); // TODO better exception
     // read properties
     if (processorElem->Attribute("name"))
-        setName(processorElem->Attribute("name")); // TODO maeh!
-    std::vector<Property*> properties = getProperties();
-    TiXmlElement* propertyElem;
-    for (propertyElem = processorElem->FirstChildElement(Property::XmlElementName);
-        propertyElem;
-        propertyElem = propertyElem->NextSiblingElement(Property::XmlElementName))
+        setName(processorElem->Attribute("name"));
+
+    for (TiXmlElement* propertyElem = processorElem->FirstChildElement(Property::XmlElementName_);
+        propertyElem != 0;
+        propertyElem = propertyElem->NextSiblingElement(Property::XmlElementName_))
     {
-        for (size_t j = 0; j < properties.size(); ++j) {
+        for (size_t j = 0; j < props_.size(); ++j) {
             try {
-                if (properties.at(j)->getIdent() == Property::getIdent(propertyElem) ) {
-                    properties.at(j)->updateFromXml(propertyElem);
-                    errors_.store(properties.at(j)->errors());
+                if (props_[j]->getIdent() == Property::getIdent(propertyElem) ) {
+                    props_[j]->updateFromXml(propertyElem);
+                    errors_.store(props_[j]->errors());
                 }
-            }
-            catch (SerializerException& e) {
+            } catch (SerializerException& e) {
                 errors_.store(e);
             }
         }
     }
 }
 
-std::pair<int, Processor::ConnectionMap> Processor::getMapAndupdateFromXml(TiXmlElement* processorElem) {
+std::pair<int, Processor::ConnectionMap> Processor::getMapAndUpdateFromXml(TiXmlElement* processorElem) {
     updateFromXml(processorElem);
-    ConnectionSite out, in;
+    ConnectionSide out, in;
     ConnectionMap lcm;
     int id;
     if (processorElem->QueryIntAttribute("id", &id) != TIXML_SUCCESS) {
-        errors_.store(XmlAttributeException("Required attribute id of Processor missing!"));
-        // TODO Better exception
+        errors_.store(XmlAttributeException("Required attribute 'id' of Processor missing!"));
         id = -1;
     }
     else {
         out.processorId = id;
-        
+
         // read outports
         TiXmlElement* outportElem;
         for (outportElem = processorElem->FirstChildElement("Outport");
@@ -624,8 +621,7 @@ std::pair<int, Processor::ConnectionMap> Processor::getMapAndupdateFromXml(TiXml
             outportElem = outportElem->NextSiblingElement("Outport"))
         {
             if (!outportElem->Attribute("type")) {
-                errors_.store(XmlAttributeException("Required attribute type of Port missing!"));
-                // TODO Better exception
+                errors_.store(XmlAttributeException("Required attribute 'type' of Port missing!"));
             }
             else {
                 out.portId = outportElem->Attribute("type");
@@ -640,13 +636,13 @@ std::pair<int, Processor::ConnectionMap> Processor::getMapAndupdateFromXml(TiXml
                     try {
                         if (connectedprocessorElem->QueryIntAttribute("id", &in.processorId) != TIXML_SUCCESS)
                             throw XmlAttributeException("Required attribute id of Processor missing!");
-                        // TODO Better exception
                         if (!connectedprocessorElem->Attribute("port"))
                             throw XmlAttributeException("Required attribute port of Processor missing!");
-                        // TODO Better exception
+
                         if (connectedprocessorElem->QueryIntAttribute("order", &in.order) != TIXML_SUCCESS)
                             in.order = 0;
                         in.portId = connectedprocessorElem->Attribute("port");
+
                         // store this connection in the map
                         lcm.push_back(std::make_pair(out, in));
                     }
@@ -677,6 +673,10 @@ TiXmlElement* Processor::getFromMeta(std::string elemName) const {
     return meta_.getData(elemName);
 }
 
+std::vector<TiXmlElement*> Processor::getAllFromMeta() const {
+    return meta_.getAllData();
+}
+
 bool Processor::hasInMeta(std::string elemName) const {
     return meta_.hasData(elemName);
 }
@@ -693,36 +693,16 @@ void Processor::setIsCoprocessor(bool b) {
     isCoprocessor_ = b;
 }
 
-bool Processor::getCached() const {
-    return cached_;
+bool Processor::getCacheable() const {
+    return cacheable_;
 }
 
-void Processor::setCached(bool b) {
-	cached_ = b;
-}
-
-bool Processor::getCachable() const {
-    return cachable_;
-}
-
-void Processor::setCachable(bool b) {
-    cachable_ = b;
+void Processor::setCacheable(bool b) {
+    cacheable_ = b;
 }
 
 int Processor::getInitStatus() const {
     return initStatus_;
-}
-
-tgt::ivec2 Processor::getSize() const {
-    return static_cast<tgt::ivec2>(size_);
-}
-
-tgt::vec2 Processor::getSizeFloat() const {
-    return size_;
-}
-
-tgt::mat4 Processor::getProjectionMatrix() const {
-    return camera_->getProjectionMatrix();
 }
 
 std::map<Port*,Port*> Processor::getOutportToInportMap() {

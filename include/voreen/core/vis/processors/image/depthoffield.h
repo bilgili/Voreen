@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -40,18 +40,18 @@
 
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/property.h"
+#include "voreen/core/vis/properties/property.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
 /**
  * Performs a depth of field rendering.
  */
-class DepthOfField : public GenericFragment {
+class DepthOfField : public ImageProcessor {
 public:
 
     /**
@@ -61,9 +61,9 @@ public:
      * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     DepthOfField();
-    virtual const Identifier getClassName() const {return "PostProcessor.DepthOfField";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new DepthOfField();}
+    virtual const Identifier getClassName() const {return "ImageProcessor.DepthOfField";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new DepthOfField();}
 
 
     void setDepthThreshold(float depthThreshold);
@@ -74,7 +74,7 @@ public:
 
 protected:
 
-	FloatProp depthThreshold_;
+    FloatProp depthThreshold_;
 };
 
 

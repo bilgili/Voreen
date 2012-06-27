@@ -1,37 +1,36 @@
 ////////////////////////////////////////////////////////////////////////////////
-// $RCSfile: ZipMemFile.h,v $
-// $Revision: 1.5 $
-// $Date: 2006/01/28 20:18:12 $ $Author: Tadeusz Dracz $
-////////////////////////////////////////////////////////////////////////////////
 // This source file is part of the ZipArchive library source distribution and
-// is Copyrighted 2000 - 2006 by Tadeusz Dracz (http://www.artpol-software.com/)
+// is Copyrighted 2000 - 2009 by Artpol Software - Tadeusz Dracz
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 // 
-// For the licensing details see the file License.txt
+// For the licensing details refer to the License.txt file.
+//
+// Web Site: http://www.artpol-software.com
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
 * \file ZipMemFile.h
-* Interface for the CZipMemFile class.
+* Includes the CZipMemFile class.
 *
 */
-#if !defined(AFX_ZIPMEMFILE_H__EA73AB25_6B51_4C5E_8D78_BAC95812598F__INCLUDED_)
-#define AFX_ZIPMEMFILE_H__EA73AB25_6B51_4C5E_8D78_BAC95812598F__INCLUDED_
+#if !defined(ZIPARCHIVE_ZIPMEMFILE_DOT_H)
+#define ZIPARCHIVE_ZIPMEMFILE_DOT_H
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif
+
 #include "ZipAbstractFile.h"
 #include "ZipString.h"
 #include "ZipExport.h"
 
 /**
-	A memory buffer which behaves like a physical file.
-	Automatically grows when necessary
+	Represents a file in memory.
+	Automatically grows when necessary.
 */
 class ZIP_API CZipMemFile : public CZipAbstractFile
 {
@@ -60,11 +59,11 @@ public:
 	bool IsClosed() const { return m_lpBuf == NULL;}
 	void Flush(){}
 
-	ZIP_ULONGLONG Seek(ZIP_LONGLONG lOff, int nFrom);
-	ZIP_ULONGLONG GetLength() const {return m_nDataSize;}
+	ZIP_FILE_USIZE Seek(ZIP_FILE_SIZE lOff, int nFrom);
+	ZIP_FILE_USIZE GetLength() const {return m_nDataSize;}
 	void Write(const void* lpBuf, UINT nCount);
 	UINT Read(void* lpBuf, UINT nCount);
-	void SetLength(ZIP_ULONGLONG nNewLen);
+	void SetLength(ZIP_FILE_USIZE nNewLen);
 	CZipString GetFilePath() const  {return _T("");} 	
 	CZipMemFile(long nGrowBy = 1024)
 	{
@@ -92,7 +91,7 @@ public:
 		from.Read(m_lpBuf, (UINT)from.m_nDataSize);
 	}
 
-	ZIP_ULONGLONG GetPosition() const {	return m_nPos;}
+	ZIP_FILE_USIZE GetPosition() const {	return m_nPos;}
 	void Attach(BYTE* lpBuf, UINT nBufSize, long nGrowBy = 0)
 	{
 		Close();
@@ -101,7 +100,17 @@ public:
 		m_nBufSize = nBufSize;
 		m_nDataSize = nGrowBy == 0 ? nBufSize : 0;
 		m_bAutoDelete = false;
+		m_nPos = 0;
 	}
+
+	void ReInit(long nGrowBy = 1024)
+	{
+		Close();
+		Init();
+		m_nGrowBy = nGrowBy;
+		m_bAutoDelete = true;
+	}
+
 	BYTE* Detach()
 	{
 		BYTE* b = m_lpBuf;
@@ -118,4 +127,4 @@ public:
 
 };
 
-#endif // !defined(AFX_ZIPMEMFILE_H__EA73AB25_6B51_4C5E_8D78_BAC95812598F__INCLUDED_)
+#endif // !defined(ZIPARCHIVE_ZIPMEMFILE_DOT_H)

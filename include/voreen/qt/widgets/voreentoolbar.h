@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -43,8 +43,8 @@ class VoreenToolBar : public QWidget {
 public:
     VoreenToolBar(QWidget* parent);
 
-	void registerToolWindow(VoreenToolWindow* toolWindow);
-	void addToolButtonAction(QAction* action);
+    void registerToolWindow(VoreenToolWindow* toolWindow);
+    void addToolButtonAction(QAction* action);
 
 protected:
     void paintEvent(QPaintEvent *event);
@@ -54,13 +54,13 @@ protected:
     void mouseMoveEvent(QMouseEvent* event);
 
     void closeEvent(QCloseEvent* event);
-    
-private:
-	// the area for the action buttons
-	QBoxLayout* toolLayout_;
 
-	// the area for the check buttons
-	QBoxLayout* buttonLayout_;
+private:
+    // the area for the action buttons
+    QBoxLayout* toolLayout_;
+
+    // the area for the check buttons
+    QBoxLayout* buttonLayout_;
 
     bool dragging_;
     QPoint dragPosition_;

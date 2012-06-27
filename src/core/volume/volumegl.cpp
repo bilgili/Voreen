@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -91,7 +91,7 @@ namespace voreen {
 
 VolumeGL::LargeVolumeSupport VolumeGL::lvSupport_ = RESIZE_LINEAR;
 int VolumeGL::max3DTexSize_ = 0;
-int VolumeGL::availableGpuMemory_ = 0; 
+int VolumeGL::availableGpuMemory_ = 0;
 const std::string VolumeGL::loggerCat_("Voreen.VolumeGL");
 
 
@@ -99,7 +99,7 @@ const std::string VolumeGL::loggerCat_("Voreen.VolumeGL");
  * constructor and destructor
  */
 
-VolumeGL::VolumeGL(Volume* volume, const TransFunc* tf /*= 0*/, float alphaScale /*= 1.f*/,
+VolumeGL::VolumeGL(Volume* volume, TransFunc* tf /*= 0*/, float alphaScale /*= 1.f*/,
                    tgt::Texture::Filter filter /*= tgt::Texture::LINEAR*/) throw (std::bad_alloc)
   : origVolume_(volume),
     volume_(volume),
@@ -367,18 +367,18 @@ int VolumeGL::getMax3DTexSize() {
 }
 
 void VolumeGL::setAvailableGpuMemory(int availableGpuMemory) {
-	availableGpuMemory_ = availableGpuMemory;
+    availableGpuMemory_ = availableGpuMemory;
 }
 
 int VolumeGL::getAvailableGpuMemory() {
-	return availableGpuMemory_;
+    return availableGpuMemory_;
 }
 
 /*
  * further methods
  */
 
-void VolumeGL::applyTransFunc(const TransFunc* tf, float alphaScale /*= 1.f*/) throw (std::bad_alloc) {
+void VolumeGL::applyTransFunc(TransFunc* tf, float alphaScale /*= 1.f*/) throw (std::bad_alloc) {
     if (tf == 0)
         return;
 
@@ -419,14 +419,14 @@ void VolumeGL::applyTransFunc(const TransFunc* tf, float alphaScale /*= 1.f*/) t
     }
 }
 
-void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/) throw (std::bad_alloc) {
+void VolumeGL::generateTextures(TransFunc* tf, float alphaScale /*= 1.f*/) throw (std::bad_alloc) {
     bool fitsInVideoRam = true;
-    
+
     #ifdef VERY_LARGE_DATASETS
         fitsInVideoRam = false;
     #endif
-    
-    
+
+
     if (fitsInVideoRam) {
 /*
     WARNING THE ALGORITHM BELOW WAS HARD WORK AND IT CAN BE CONSIDERED AS
@@ -440,78 +440,78 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
             check whether the volume must be split
         */
         ivec3 maxTexSize = ivec3( max3DTexSize_ ? max3DTexSize_ : GpuCaps.getMax3DTextureSize() );
-    
+
         if (maxTexSize.x == 0)
             return; // We don't have 3d texture support, maybe one day we could support 2d textures instead
-    
+
         ivec3 volumeDims = volume_->getDimensions();
         vec3 volumeSpacing = volume_->getSpacing();
-    
+
         /*
             this bool vec knows for each dimensions
             whether splitting must be performed in this direction
         */
         bvec3 splitNecessary = lessThan(maxTexSize, volumeDims);
 
-		// Check if the texture would fit into the gpu memory
-		long numVoxels = static_cast<long>(volume_->getNumVoxels());
-		int bytesAllocated = volume_->getBitsAllocated() / 8;
-		int volumeSizeMB = static_cast<int>(ceil((numVoxels*bytesAllocated) / (1024.0 * 1024.0)));
+        // Check if the texture would fit into the gpu memory
+        long numVoxels = static_cast<long>(volume_->getNumVoxels());
+        int bytesAllocated = volume_->getBitsAllocated() / 8;
+        int volumeSizeMB = static_cast<int>(ceil((numVoxels*bytesAllocated) / (1024.0 * 1024.0)));
 
-		// if availableGpuMemory_ is 0 we assume the volume fits into gpu memory
+        // if availableGpuMemory_ is 0 we assume the volume fits into gpu memory
         bool fitsInGpuMemory = (volumeSizeMB < availableGpuMemory_ || availableGpuMemory_ <= 0);
 
-		//Do the dimensions of the texture exceed the max3DTexSize?
-		bool dimensionsFit = !hor(splitNecessary);
-    
+        //Do the dimensions of the texture exceed the max3DTexSize?
+        bool dimensionsFit = !hor(splitNecessary);
+
         // set pixel store with no alignment when reading from main memory
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-		//This means the volume does fit into gpu memory and the dimensions
-		//aren't too big either
-		bool volumeOK = true;
+        //This means the volume does fit into gpu memory and the dimensions
+        //aren't too big either
+        bool volumeOK = true;
 
-		//The ratio we are using to downscale the volume in case it is not ok
-		float ratio;
+        //The ratio we are using to downscale the volume in case it is not ok
+        float ratio;
 
-		if (fitsInGpuMemory && (!dimensionsFit) ) {
-			//Only the dimensions are too big, the memory of the gpu is enough
-			volumeOK = false;
-			ratio = float(maxTexSize.x) / max( vec3(volumeDims) ); 	
-		} 
-		else if ( (!fitsInGpuMemory) && dimensionsFit) {
-			//The dimensions are ok, but the volume is too big for the gpu memory
-			volumeOK = false;
-			//Calculate the ratio for the downscaling. This is a little complicated. The
-			//ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
-			long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
-			long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
-			float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
-			ratio = pow(temp,static_cast<float>(1.0/3.0));
-		} 
-		else if ( (!fitsInGpuMemory) && (!dimensionsFit) ) {
-			//The dimensions are too big AND the volume is too big for the gpu memory
-			volumeOK = false;
-			//Check if the volume would fit into gpu memory if we scaled it down to
-			//max3DTexSize
-			ratio = static_cast<float>(maxTexSize.x) / max( vec3(volumeDims) );
-			tgt::ivec3 newDims = ivec3(ratio * vec3(volumeDims));
-			int newVolumeSizeMB = static_cast<int>(ceil((newDims.x * newDims.y * newDims.z *bytesAllocated) / (1024.0 * 1024.0)));
+        if (fitsInGpuMemory && (!dimensionsFit) ) {
+            //Only the dimensions are too big, the memory of the gpu is enough
+            volumeOK = false;
+            ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
+        }
+        else if ( (!fitsInGpuMemory) && dimensionsFit) {
+            //The dimensions are ok, but the volume is too big for the gpu memory
+            volumeOK = false;
+            //Calculate the ratio for the downscaling. This is a little complicated. The
+            //ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
+            long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
+            long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
+            float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
+            ratio = pow(temp,static_cast<float>(1.0/3.0));
+        }
+        else if ( (!fitsInGpuMemory) && (!dimensionsFit) ) {
+            //The dimensions are too big AND the volume is too big for the gpu memory
+            volumeOK = false;
+            //Check if the volume would fit into gpu memory if we scaled it down to
+            //max3DTexSize
+            ratio = static_cast<float>(maxTexSize.x) / max( vec3(volumeDims) );
+            tgt::ivec3 newDims = ivec3(ratio * vec3(volumeDims));
+            int newVolumeSizeMB = static_cast<int>(ceil((newDims.x * newDims.y * newDims.z *bytesAllocated) / (1024.0 * 1024.0)));
 
-			//If the newVolumeSize is sufficiently small, we're done, otherwise we have to downscale even more.
-			if (newVolumeSizeMB >= availableGpuMemory_) {
-				//Calculate the ratio for the downscaling. This is a little complicated. The
-				//ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
-				long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
-				long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
-				float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
-				ratio = pow(temp,static_cast<float>(1.0/3.0));
-			}
-		}
-    
+            //If the newVolumeSize is sufficiently small, we're done, otherwise we have to downscale even more.
+            if (newVolumeSizeMB >= availableGpuMemory_) {
+                //Calculate the ratio for the downscaling. This is a little complicated. The
+                //ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
+                long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
+                long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
+                float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
+                ratio = pow(temp,static_cast<float>(1.0/3.0));
+            }
+        }
+
         if (!volumeOK) {
             Volume::Filter filter = Volume::LINEAR;
-    
+
             switch (lvSupport_) {
             case RESIZE_NEAREST:
                 filter = Volume::NEAREST;
@@ -530,7 +530,7 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                 // update new dims and spacing values
                 volumeDims = volume_->getDimensions();
                 volumeSpacing = volume_->getSpacing();
-    
+
                 // bricking not necessary -> we have scaled
                 volumeOK = true;
                 break;
@@ -538,28 +538,28 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
             case BRICK: { /*do nothing*/ }
             }
         }
-    
+
         if (!volumeOK) {
             // -> we must split
             LINFO("Starting splitting now...");
-    
+
             ivec3 size(maxTexSize);
-    
+
             // usually we have a left and a right edge, so subtract 2
             ivec3 incr = size - 2;
-    
+
             /*
                 knows whether size has been decreased to delta in a direction
                 AKA this is the last iteration of the loop
             */
             bvec3 last(false);
-    
+
             // knows the size from the current postion until the end of the dataset
             ivec3 delta;
-    
+
             // knows the size of the useful portion, i.e. size without edges, in each direction
             vec3 usefulSize;
-    
+
             for (ivec3 i(0, 0, 0); i.z != volumeDims.z; i.z += incr.z) {
                 delta.z = volumeDims.z - i.z;
                 if (delta.z <= size.z) {
@@ -567,7 +567,7 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                     incr.z = delta.z;
                     size.z = GpuCaps.isNpotSupported() ? delta.z : fitPowerOfTwo(delta.z);
                 }
-    
+
                 /*
                     case: start position
                         -> i == 0 && last == false
@@ -585,11 +585,11 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                 usefulSize.z = i.z
                     ? (last.z ? delta.z - 1.0f : size.z - 2.0f)
                     : (last.z ? delta.z        : size.z - 1.0f);
-    
+
                 // find out left edge
                 vec3 leftEdge;
                 leftEdge.z = i.z ? 1.f : 0.f;
-    
+
                 for (i.y = 0; i.y != volumeDims.y; i.y += incr.y) {
                     delta.y = volumeDims.y - i.y;
                     if (delta.y <= size.y) {
@@ -597,15 +597,15 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                         incr.y = delta.y;
                         size.y = GpuCaps.isNpotSupported() ? delta.y : fitPowerOfTwo(delta.y);
                     }
-    
+
                     // see above for details
                     usefulSize.y = i.y
                         ? (last.y ? delta.y - 1.0f : size.y - 2.0f)
                         : (last.y ? delta.y        : size.y - 1.0f);
-    
+
                     // find out left edge
                     leftEdge.y = i.y ? 1.f : 0.f;
-    
+
                     for (i.x = 0; i.x != volumeDims.x; i.x += incr.x) {
                         delta.x = volumeDims.x - i.x;
                         if (delta.x <= size.x) {
@@ -613,15 +613,15 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                             incr.x = delta.x;
                             size.x = GpuCaps.isNpotSupported() ? delta.x : fitPowerOfTwo(delta.x);
                         }
-    
+
                         // see above for details
                         usefulSize.x = i.x
                             ? (last.x ? delta.x - 1.0f : size.x - 2.0f)
                             : (last.x ? delta.x        : size.x - 1.0f);
-    
+
                         // find out left edge
                         leftEdge.x = i.x ? 1.f : 0.f;
-    
+
                         Volume* subset;
                         try {
                             subset = volume_->createSubset(i, size);
@@ -629,16 +629,16 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                         catch (std::bad_alloc) {
                             throw; // throw it to the caller
                         }
-    
+
                         /*
                             create proper matrix:
                             m = trans(leftEdge/size) * scale(usefulSize/size)
                         */
-    
+
                         // translate one position if we have started on a position != 0
                         vec3 trans = leftEdge/vec3(size);
                         vec3 scale = usefulSize/vec3(size);
-    
+
                         /*
                             calculate urb and llf
                         */
@@ -650,75 +650,75 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                         urb -= cubeSize * 0.5f; // center around orign
                         llf /= maxElem * 0.5f;  // map to [-1, 1]
                         urb /= maxElem * 0.5f;  // map to [-1, 1]
-    
+
                         // swap z of llf and urb since we use a right handed coordinate system
                         std::swap(llf.z, urb.z);
-    
+
                         // build texture matrix
                         mat4 mTex = mat4::createTranslation(trans);
                         mTex *= mat4::createScale(scale);
-    
+
                         // create and upload texture
                         uploadTexture(tf, alphaScale, subset, mTex, llf, urb);
-    
+
                         // destroy the created subset and its associated data
                         delete subset;
                     } // for -> x
-    
+
                     // reset last.x, incr.x and size.x
                     last.x = false;
                     incr.x = maxTexSize.x - 2;
                     size.x = maxTexSize.x;
                 } // for -> y
-    
+
                 // reset last.y, incr.y and size.y
                 last.y = false;
                 incr.y = maxTexSize.y - 2;
                 size.y = maxTexSize.y;
             } // for -> z
-		} // if split neccessary
-    
+        } // if split neccessary
+
     // WARNING END
-        
-		else {
+
+        else {
             // -> we don't have to split
-    
+
         /*
                 check if non-power-of-two textures are not supported
             */
-    
+
             if (!GpuCaps.isNpotSupported() && !isPowerOfTwo(volumeDims)) {
                 /*
                     This is could also be done in the loop above without changes,
                     but the code is clearer like this
                 */
-    
+
                 // this stores the new POT-dataset
                 Volume* potVolume = 0;
-    
+
                 // -> no non-power-of-two-support
                 LINFO("No NPOT-support available, starting to bloat to POT...");
-    
+
                 try {
                     potVolume = volume_->createSubset( ivec3(0, 0, 0), fitPowerOfTwo(volumeDims) );
                 }
                 catch (std::bad_alloc) {
                     throw; // throw it to the caller
                 }
-    
+
                 ivec3 potVolumeDims = potVolume->getDimensions();
-    
+
                 // store transformat_ion for texCoords
                 vec3 scale = vec3(volumeDims)/vec3(potVolumeDims);
-    
+
                 // create and upload texture
                 uploadTexture( tf, alphaScale, potVolume, mat4::createScale(scale), volume_->getLLF(), volume_->getURB() );
-    
+
                 // destroy the newly create potVolume
                 delete potVolume;
             }
             else {
-                // non-power-of-two-support available    
+                // non-power-of-two-support available
                 // create and upload texture
                 uploadTexture( tf, alphaScale, volume_, mat4::identity, volume_->getLLF(), volume_->getURB() );
             }
@@ -727,11 +727,11 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
     else {
         // data set does not fit in video ram
         LWARNING("dataset is too large for video ram!");
-		/*
-		VolumeOctreeNode* von = new VolumeOctreeNode(volume_, ivec3(0,0,0), volume_->getDimensions()-ivec3(1,1,1), 128);
-		// append to internal data structure
-		textures_.push_back(von->getTexture());
-		*/
+        /*
+        VolumeOctreeNode* von = new VolumeOctreeNode(volume_, ivec3(0,0,0), volume_->getDimensions()-ivec3(1,1,1), 128);
+        // append to internal data structure
+        textures_.push_back(von->getTexture());
+        */
     }
 }
 
@@ -739,7 +739,7 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
  * internal helper
  */
 
-void VolumeGL::uploadTexture(const TransFunc* tf, float alphaScale /*= 1.f*/,
+void VolumeGL::uploadTexture(TransFunc* tf, float alphaScale /*= 1.f*/,
                              Volume* v,
                              const mat4& matrix,
                              const vec3& llf,

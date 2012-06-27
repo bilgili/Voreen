@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,15 +29,15 @@
 
 #include "voreen/core/vis/processors/image/nullrenderer.h"
 
-#include "voreen/core/vis/processors/portmapping.h"
-
 namespace voreen {
 
 NullRenderer::NullRenderer()
-    : Processor()
+    : Processor(),
+      imageID_(-1)
 {
     setName("NullRenderer");
-	createInport("image.input");
+    createInport("image.input");
+
 }
 
 NullRenderer::~NullRenderer() {
@@ -47,12 +47,12 @@ const Identifier NullRenderer::getClassName() const {
     return "Miscellaneous.NullCanvas";
 }
 
-Processor* NullRenderer::create() {
+Processor* NullRenderer::create() const {
     return new NullRenderer();
 }
 
 const std::string NullRenderer::getProcessorInfo() const {
-	return "A NullCanvas is the last processor in a network. Its only purpose is to terminate a \
+    return "A NullCanvas is the last processor in a network. Its only purpose is to terminate a \
            network and to keep the id of the rendered image from the texture container. This \
            processor does neither create any output nor does it render to the frame buffer!";
 }
@@ -61,5 +61,12 @@ void NullRenderer::process(LocalPortMapping* portMapping) {
     imageID_ = portMapping->getTarget("image.input");
     tc_->setActiveTarget(tc_->getFinalTarget(), "NullRenderer::process() dest");
 }
+
+bool NullRenderer::isEndProcessor() const {
+    // By definition, the NullRenderer is an EndProcessor, i.e. no processors
+    // have to render before it.
+    return true;
+}
+
 
 } // namespace

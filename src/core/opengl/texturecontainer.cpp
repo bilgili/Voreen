@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -93,7 +93,7 @@ TextureContainer::~TextureContainer() {
 }
 
 TextureContainer* TextureContainer::createTextureContainer(int numRT, bool sharing, TextureContainerType type) {
-	TextureContainer* tc = 0;
+    TextureContainer* tc = 0;
     switch(type) {
     case VRN_TEXTURE_CONTAINER_AUTO:
         if (GpuCaps.areFramebufferObjectsSupported()) {
@@ -101,18 +101,18 @@ TextureContainer* TextureContainer::createTextureContainer(int numRT, bool shari
             LINFO("Using framebuffer objects");
             tc = new TextureContainerFBO(numRT, sharing);
 #else
-			LINFO("Hardware supports frame buffer objects, but Voreen was compiled without fbo support.");
+            LINFO("Hardware supports frame buffer objects, but Voreen was compiled without fbo support.");
 #endif
-		}
-		if (tc == 0) {
+        }
+        if (tc == 0) {
 #ifdef VRN_WITH_RENDER_TO_TEXTURE
             LINFO("Using render to texture");
             tc = new TextureContainerRTT(numRT, sharing);
 #endif
         }
-		if (tc == 0) {
-			LERROR("Unable to create texture container");
-		}
+        if (tc == 0) {
+            LERROR("Unable to create texture container");
+        }
         break;
 
     case VRN_TEXTURE_CONTAINER_FBO:
@@ -120,7 +120,7 @@ TextureContainer* TextureContainer::createTextureContainer(int numRT, bool shari
         LINFO("Using framebuffer objects");
         tc = new TextureContainerFBO(numRT, sharing);
 #else
-		LERROR("Voreen was compiled without support for framebuffer objects.");
+        LERROR("Voreen was compiled without support for framebuffer objects.");
 #endif
         break;
 
@@ -129,10 +129,10 @@ TextureContainer* TextureContainer::createTextureContainer(int numRT, bool shari
         LINFO("Using render to texture");
         tc = new TextureContainerRTT(numRT, sharing);
 #else
-		LERROR("Voreen was compiled without support for render to texture.");
+        LERROR("Voreen was compiled without support for render to texture.");
 #endif
         break;
-	}
+    }
     return tc;
 }
 
@@ -155,7 +155,7 @@ void TextureContainer::initializeTarget(int id, int attr) {
             }
             rt_[id].free_ = false;
         }
-	}
+    }
 }
 
 bool TextureContainer::initializeGL() {
@@ -288,9 +288,9 @@ void TextureContainer::setCapacity(int capacity) {
 void TextureContainer::clearAllTargets(tgt::Color clearColor, float depth) {
     LDEBUG("Clear all targets with color " << clearColor << " and depth " << depth << ".");
     int storeActiveTarget;
-    
+
     storeActiveTarget = getActiveTarget();
-    glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a); 
+    glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
     glClearDepth(depth);
     for (int i=0; i<capacity_; ++i) {
         if (!(rt_[i].attr_&VRN_FRAMEBUFFER_CONSTS_MASK)) {
@@ -332,7 +332,7 @@ std::string TextureContainer::getTypeAsString(int type) const {
         str = "VRN_FRAMEBUFFER";
         break;
     }
-    
+
     switch (type&VRN_DEPTH_CONSTS_MASK) {
     case VRN_DEPTH:
         str += "VRN_DEPTH";
@@ -405,9 +405,9 @@ std::string TextureContainer::getDebugLabel(int id) const {
 #endif
 
 std::string TextureContainerFBO::getFBOError() {
-    GLenum status;                                            
+    GLenum status;
     status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-    switch (status) {                                          
+    switch (status) {
     case GL_FRAMEBUFFER_COMPLETE_EXT: // Everything's OK
         return "";
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
@@ -448,7 +448,7 @@ TextureContainer::TextureContainerType TextureContainerFBO::getTextureContainerT
 bool TextureContainerFBO::initializeGL() {
     if (!TextureContainer::initializeGL())
         return false;
-    
+
     if (!GpuCaps.areFramebufferObjectsSupported()) {
         LERROR("Framebuffer object extension not supported!");
         return false;
@@ -456,14 +456,14 @@ bool TextureContainerFBO::initializeGL() {
 
     if (textureTargetType_ == VRN_TEXTURE_2D && !GpuCaps.isNpotSupported()) {
         if (GpuCaps.areTextureRectanglesSupported()){
-            LINFO("Non-power-of-two textures not supported. Using texture rectangles instead.")
+            LINFO("Non-power-of-two textures not supported. Using texture rectangles instead.");
             textureTargetType_ = VRN_TEXTURE_RECTANGLE;
         } else {
-            LERROR("Neither non-power-of-two textures nor texture rectangles supported!")
+            LERROR("Neither non-power-of-two textures nor texture rectangles supported!");
             return false;
         }
     }
-    
+
     switch (textureTargetType_) {
     case VRN_TEXTURE_2D :
         LINFO("Type of render targets: GL_TEXTURE_2D");
@@ -487,8 +487,8 @@ bool TextureContainerFBO::initializeGL() {
 
 void TextureContainerFBO::initializeTarget(int id, int attr) {
     attr = adaptToGraphicsBoard(attr);
-	TextureContainer::initializeTarget(id, attr);
-	if (isOpenGLInitialized_) {
+    TextureContainer::initializeTarget(id, attr);
+    if (isOpenGLInitialized_) {
         if (attr & VRN_COLOR_CONSTS_MASK) {
             if (!rt_[id].tex_)
                 glGenTextures(1, &rt_[id].tex_);
@@ -561,7 +561,7 @@ void TextureContainerFBO::setActiveTarget(int id, const std::string& debugLabel/
 
     LFBO_ERROR
     LGL_ERROR;
-    
+
 
     if (current_.size() == 1 && current_[0] == id) {
         LDEBUG("rt " << id << " already selected.");
@@ -583,7 +583,7 @@ void TextureContainerFBO::setActiveTarget(int id, const std::string& debugLabel/
                             GL_COLOR_ATTACHMENT0_EXT);
         LFBO_ERROR
         LGL_ERROR;
-        
+
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
         LFBO_ERROR
@@ -591,7 +591,7 @@ void TextureContainerFBO::setActiveTarget(int id, const std::string& debugLabel/
 
     }
     if (attr & VRN_DEPTH_CONSTS_MASK) {
-        if (!isFBOActive_) 
+        if (!isFBOActive_)
             activateFBO();
         if (attr & VRN_DEPTH_TEX_CONSTS_MASK) {
             if ((attr & VRN_DEPTH_STENCIL) == VRN_DEPTH_STENCIL) {
@@ -603,7 +603,7 @@ void TextureContainerFBO::setActiveTarget(int id, const std::string& debugLabel/
             }
             else {
                 LDEBUG("Attach rt " << id <<" as depth texture.");
-                fbo_->AttachTexture(getGLDepthTexTarget(id),	rt_[id].depthTex_,
+                fbo_->AttachTexture(getGLDepthTexTarget(id),    rt_[id].depthTex_,
                                     GL_DEPTH_ATTACHMENT_EXT);
             }
         }
@@ -692,7 +692,7 @@ void TextureContainerFBO::setActiveTargets(const std::vector<int>& targets, cons
             }
             else {
                 LDEBUG("Attach rt " << id <<" as depth texture.");
-                fbo_->AttachTexture(getGLDepthTexTarget(id),	rt_[id].depthTex_,
+                fbo_->AttachTexture(getGLDepthTexTarget(id),    rt_[id].depthTex_,
                                     GL_DEPTH_ATTACHMENT_EXT);
             }
         }
@@ -899,7 +899,7 @@ void TextureContainerFBO::createStencilBuffer(int id) {
         if (!rt_[id].rbStencil_)
             rt_[id].rbStencil_ = new Renderbuffer();
         rt_[id].rbStencil_->Set(GL_STENCIL_INDEX8_EXT, size_.x, size_.y);
-				LGL_ERROR;
+                LGL_ERROR;
         break;
     default:
         LERROR("Reached default branch in CreateStencilComponent.");
@@ -931,12 +931,12 @@ void TextureContainerFBO::unattach(int id) {
 void TextureContainerFBO::unattach(std::vector<int> id) {
     if (id.size() == 0)
         return;
-    
+
     if (id.size() == 1) {
         unattach(id[0]);
         return;
     }
-    
+
     // mrt unattach
     unattach(id[0]);
     //fbo_->UnattachAll();
@@ -973,10 +973,8 @@ int TextureContainerFBO::adaptToGraphicsBoard(int attr) {
     }
     else {
         if ((attr & VRN_DEPTH_CONSTS_MASK) == VRN_DEPTH) {
-#ifndef __APPLE__
             attr &= ~VRN_DEPTH_CONSTS_MASK;
             attr |= VRN_DEPTH16;
-#endif
         }
     }
     if (textureTargetType_ == VRN_TEXTURE_RECTANGLE) {
@@ -994,7 +992,7 @@ int TextureContainerFBO::adaptToGraphicsBoard(int attr) {
 
 const std::string TextureContainerRTT::loggerCat_("voreen.opengl.TextureContainerRTT");
 
-TextureContainerRTT::TextureContainerRTT(int numRT, bool sharing) 
+TextureContainerRTT::TextureContainerRTT(int numRT, bool sharing)
     : TextureContainer(numRT, sharing), curRenderTexture_(0)
 {}
 
@@ -1014,11 +1012,11 @@ bool TextureContainerRTT::initializeGL() {
 
 void TextureContainerRTT::initializeTarget(int id, int attr) {
     attr = adaptToGraphicsBoard(attr);
-	TextureContainer::initializeTarget(id, attr);
+    TextureContainer::initializeTarget(id, attr);
     if (isOpenGLInitialized_) {
         bool colorTex = false;
-		bool depthTex = false;
-		bool share = true;
+        bool depthTex = false;
+        bool share = true;
         bool depth = false;
         bool stencil = false;
         bool mipmap = false;
@@ -1032,22 +1030,22 @@ void TextureContainerRTT::initializeTarget(int id, int attr) {
             case VRN_RGB:
                 rBits = gBits = bBits = 8;
                 aBits = 0;
-			    colorTex = true;
+                colorTex = true;
                 break;
             case VRN_RGBA:
                 rBits = gBits = bBits = 8;
                 aBits = 8;
-			    colorTex = true;
+                colorTex = true;
                 break;
             case VRN_RGB_FLOAT16:
                 rBits = gBits = bBits = 16;
                 aBits = 0;
-			    colorTex = true;
+                colorTex = true;
                 break;
             case VRN_RGBA_FLOAT16:
                 rBits = gBits = bBits = 16;
                 aBits = 16;
-			    colorTex = true;
+                colorTex = true;
                 break;
             default:
                 LERROR("Reached default branch in color mode selection of initializeTarget.");
@@ -1057,33 +1055,33 @@ void TextureContainerRTT::initializeTarget(int id, int attr) {
             switch (attr & VRN_DEPTH_CONSTS_MASK) {
             case VRN_DEPTH:
                 depth = true;
-			    depthTex = true;
+                depthTex = true;
                 break;
             case VRN_DEPTH16:
                 depth = true;
-			    depthTex = true;
+                depthTex = true;
                 break;
             case VRN_DEPTH24:
                 depth = true;
-			    depthTex = true;
+                depthTex = true;
                 break;
             case VRN_DEPTH32:
                 depth = true;
-			    depthTex = true;
+                depthTex = true;
                 break;
-            default: 
+            default:
                 LERROR("Reached default branch in depth mode selection of initializeTarget.");
             }
         }
-		if (colorTex || depthTex) {
-			LDEBUG("Create renderTexture.");
-			LDEBUG("Share: " << share << ", depth: " << depth << ", stencil: " <<
-				stencil << ", mipmap: " << mipmap << ", anisoFilter: " << anisoFilter);
-			LDEBUG("rBits: " << rBits << ", gBits: " << gBits << ", bBits: " << bBits << 
-				", aBits: " << aBits);
-			rt_[id].rt_ = new RenderTexture(size_.x, size_.y, colorTex, depthTex);
-			rt_[id].rt_->Initialize(share, depth, stencil, mipmap, anisoFilter, rBits, gBits, bBits, aBits);
-		}
+        if (colorTex || depthTex) {
+            LDEBUG("Create renderTexture.");
+            LDEBUG("Share: " << share << ", depth: " << depth << ", stencil: " <<
+                stencil << ", mipmap: " << mipmap << ", anisoFilter: " << anisoFilter);
+            LDEBUG("rBits: " << rBits << ", gBits: " << gBits << ", bBits: " << bBits <<
+                ", aBits: " << aBits);
+            rt_[id].rt_ = new RenderTexture(size_.x, size_.y, colorTex, depthTex);
+            rt_[id].rt_->Initialize(share, depth, stencil, mipmap, anisoFilter, rBits, gBits, bBits, aBits);
+        }
     }
 }
 
@@ -1096,7 +1094,7 @@ void TextureContainerRTT::setSize(const tgt::ivec2& size) {
             initializeTarget(i, rt_[i].attr_);
         }
         /*
-		if (capacity_>0) {
+        if (capacity_>0) {
             switch(rt_[0].rt_->GetTextureTarget()) {
             case GL_TEXTURE_RECTANGLE_NV:
                 textureTargetType_ = VRN_TEXTURE_RECTANGLE;
@@ -1129,7 +1127,7 @@ void TextureContainerRTT::setActiveTarget(int id, const std::string& debugLabel,
         LGL_ERROR;
     } else {
         if (id >= 0) {
-            if (curRenderTexture_) 
+            if (curRenderTexture_)
                 curRenderTexture_->EndCapture();
             rt_[id].rt_->BeginCapture();
             curRenderTexture_ = rt_[id].rt_;
@@ -1138,7 +1136,7 @@ void TextureContainerRTT::setActiveTarget(int id, const std::string& debugLabel,
 }
 
 void TextureContainerRTT::setActiveTargets(const std::vector<int>& /*targets*/, const std::string& /*debugLabel*/) {
-	LERROR("Multiple render targets are not available.");
+    LERROR("Multiple render targets are not available.");
 }
 
 GLuint TextureContainerRTT::getGLTexID(int id) {

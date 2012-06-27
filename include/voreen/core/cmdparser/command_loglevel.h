@@ -31,13 +31,13 @@
 #define VRN_COMMAND_LOGLEVEL_H
 
 #include "voreen/core/cmdparser/command.h"
+#include "tgt/logmanager.h"
 
 namespace voreen {
 
 /**
- * This commands controls the "verbose-sity" of the tgt Log using the LogLevel enum.
- *
- * <code>Usage: [<-d|--debuglevel> <debug|warning|info|error|fatal>]</code>
+ * Sets the loglevel to one of the values "debug, warning, info, error or fatal" and
+ * writes this back to the passed pointer
  * \sa Command, CommandlineParser
  */
 class Command_LogLevel : public Command {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,448 +30,123 @@
 #ifndef VRN_TRANSFUNCPLUGIN_H
 #define VRN_TRANSFUNCPLUGIN_H
 
-#include "tgt/event/eventlistener.h"
-#include "voreen/qt/widgets/widgetplugin.h"
+#include "voreen/qt/widgets/qpropertywidget.h"
 
-// Forward declarations
-class list;
-class QCheckBox;
-class QComboBox;
-class QLabel;
-class QPushButton;
-class QSlider;
-class QSpinBox;
-class QStackedLayout;
+#include <QShowEvent>
+
 class QStackedWidget;
 class QTabWidget;
-class QToolButton;
 
 namespace voreen {
 
-class NetworkEvaluator;
 class Processor;
-class TransFunc;
-class TransFuncEditorPlugin;
-class TransFuncIntensityGradientPlugin;
-class TransFuncIntensityPlugin;
-class TransFuncIntensityPetPlugin;
+class TransFuncEditor;
 class TransFuncProp;
-class ThresholdWidget;
-class Volume;
-class VolumeRenderer;
 
 /**
-* This widgets contains a combobox to choose the target raycaster and (possibly multiple)
-* TransFuncEditorPlugin and is able to control them.
-* The plugin will determine how many transfer functions the current processor has and therefore
-* how many TransFuncEditorPlugin's have to be created. If just one is needed, there will be no
-* tabbed display.
-* This is done to minimize the programmers necessity to deal with the TransFuncEditorPlugins himself.
-* \sa TransFuncEditorPlugin
-*/
-class TransFuncPlugin : public WidgetPlugin, 
-    tgt::EventListener {
-    Q_OBJECT
-
+ * Container class for transfer function editors. Actually 3 editors for intensity
+ * transfer functions are possible. They are arrenged in a QTabWidget.
+ */
+class TransFuncPlugin : public QPropertyWidget {
+Q_OBJECT
 public:
     /**
-    * Default constructor 
-    */
-    TransFuncPlugin(QWidget* parent, MessageReceiver* msgReceiver, TransFuncProp* prop = 0, Qt::Orientation widgetOrientation = Qt::Vertical);
-    
-    /**
-     * Currently empty virtual destructor
+     * Constructor
+     *
+     * @param proc editors for the transfer function property in this processor are created
+     * @param parent the parent widget
+     * @param orientation should the editors layouted vertically or horizontally?
      */
-    virtual ~TransFuncPlugin();
+    TransFuncPlugin(Processor* proc, QWidget* parent = 0,
+                    Qt::Orientation orientation = Qt::Horizontal);
 
     /**
-    * In this method all the other widgets will be created and layouted
-    */
-    virtual void createWidgets();
+     * Constructor
+     *
+     * @param prop the transfer function property that belongs to this plugin
+     * @param parent the parent widget
+     * @param orientation should the editors layouted vertically or horizontally?
+     */
+    TransFuncPlugin(TransFuncProp* prop, QWidget* parent = 0,
+                    Qt::Orientation orientation = Qt::Horizontal);
 
     /**
-    * This method creates the necessary connections to the combobox and to the
-    * TransFuncEditorPlugins
-    */
-    virtual void createConnections();
+     * Destructor
+     */
+    ~TransFuncPlugin();
 
     /**
-    * Propagates the boolean value to the TransFuncEditorPlugins
-    * \param show Should the ThresholdWidget be visible?
-    */
-    void setShowThresholdWidget(bool show);
+     * Creates the editors
+     *
+     * @param parent the parent widget
+     * @param orientation should the editors layouted vertically or horizontally?
+     */
+    void createEditors(int index, QWidget* parent, Qt::Orientation orientation);
 
     /**
-    * Propagates the boolean value to the TransFuncEditorPlugins
-    * \param show Should the EditorType combobox be visible?
-    */
-    void setShowEditorTypeWidget(bool show);
-
-    /**
-    * Do you want to show the renderer combobox?
-    * \param show Should the Renderer combobox be visible?
-    */
-    void setShowRendererWidget(bool show);
-
-    /**
-    * Just sets the visibility of this object
-    * \param vis Should this be visible?
-    */
-    void setVisibleState(bool vis);
-
-   /**
-    * Returns the transfer function property
-    * \return The transfer function property
-    * \sa TransFuncProp
-    */
-    TransFuncProp* getTransFuncProp();
-
-	/**
-	* Sets the MessageReceiver. This is neccessary because depending on which renderer is
-	* currently selected in RptGui (or in the combo box), the message must only be sent
-	* to certain renderers. 
-	*/
-	void setMessageReceiver(MessageReceiver* receiver);
-
-    /**
-    * Sets the processor as the only processor in the corresponding vector.
-    * All other processors will be removed and if r is null, the vector will be empty.
-    * \param r The new processor which is to be added.
-    */
-    void setProcessor(Processor* r);
-	
-	void setProcessors(const std::vector<Processor*> &processors);
-	
-	/**
-	* Checks if the given processor is already in the processors_ vector, and if so,
-	* sets it to the active processor. If it's not in the vector, nothing is done.
-	*/
-	void findAndSetProcessor(Processor* r);
-
-	/**
-	* Puts all processors in the evaluator into the processors_ vector and sets the
-	* first one to active.
-	*/
-	void setEvaluator(NetworkEvaluator* eval);
-
-    /**
-	* Returns all processors
-	*/
-    std::vector<VolumeRenderer*> getProcessors();
-
-	/**
-	* Removes a processor from the processors_ vector. This is neccessary because with the new 
-	* render system we cannot be sure that all processors always exist. At the moment the 
-	* destructor of the processor class posts a message that is catched in RptMainWindow,
-	* and this function is called. This is very bad, but we can't inherite from Messagereceiver
-	* here, because the postMessage function is already defined in WidgetPlugin. (s_rade02)
-	*/
-	void removeProcessor(Processor* processor);
-
-    /**
-    * Returns the internally created transfer function intensity plugin of the currently
-    * selected editor.
-    * \return The transfer function intensity plugin
-    */
-    TransFuncIntensityPlugin* getIntensityPlugin() const;
-
-    /**
-    * Returns the internally created transfer function intensity-gradient plugin of the
-    * currently selected editor.
-    * \return The transfer function gradient plugin
-    */
-    TransFuncIntensityGradientPlugin* getIntensityGradientPlugin() const;
-    
-    /** Returns the internally created transfer function intensity-pet plugin of the
-    * currently selected editor.
-    * \return The transfer function intensity-pet plugin
-    */
-    TransFuncIntensityPetPlugin* getIntensityPetPlugin() const;
-
-public slots:
-    /**
-    * Sets the threshold widget of the currently selected TransFuncEditorPlugin to the
-    * new provided one.
-    * \param thresholdWidget The new thresholdWidget will should be used by the current Editor
-    */
-    void setThresholdWidget(ThresholdWidget* thresholdWidget);
-
-    /**
-    * Propagates the changed to the TransFuncEditorPlugins
-    * \param newDataSource The new volume which the editors should use
-    */
-    void dataSourceChanged(Volume* newDataSource);
-
-    /**
-    * Activates the processor stored in processors_ at position i and propagates him
-    * to the TransFuncEditors
-    * \param i The number of the processor
-    */
-    void setProcessor(int i);
-
-    /**
-    * Propagates the signal to the TransFuncEditors
-    */
-    void updateTransferFunction();
-    
-    /**
-    * Propagates the signal to the TransFuncEditors and repaint everything (if
-    * it is visible)
-    * \param lower The lower bounds for the threshold
-    * \param upper The upper bounds for the threshold
-    */
-    void setThresholds(int lower, int upper);
-    
-    /**
-    * Starts or stops the tracking and propagates the signal to the TransFuncEditos
-    * \param on Interaction mode on or off?
-    */
-    void switchInteractionMode(bool on);
-
-    /**
-    * Sets the appropriate editor on all TransFuncEditors
-    * \param index The index of the editor which should be activated
-    */
-    void setEditor(int index);
-
-    /**
-    * Brings the assigned tab up to front an activates the transfer function within
-    * \param index The index of the tab we want to activate
-    */
-    void setTab(int index);
-
-private:
-    // The tab which shows the currently accessible transfer functions
-    QTabWidget* transFuncEditorTab_;
-    // A combobox which shows the currently accessible processors
-    QComboBox* vrendererCombo_;
-
-    // All the accessible transfer functions
-    std::vector<TransFuncEditorPlugin*> transFuncEditor_;
-    // All the accessible processors
-    std::vector<VolumeRenderer*> processors_;
-
-    // The currently selected volume renderer
-    VolumeRenderer* currentVolumeRenderer_;
-
-    Identifier target_;
-    TransFuncProp* prop_;
-    Qt::Orientation widgetOrientation_;
-
-    // Should the processor combobox be painted?
-    bool showRendererWidget_;
-
-    tgt::ivec2 lastMousePos_;
-
-    MessageReceiver* msgReceiver_;
-
-    Identifier msgIdent_;
-
-    bool showTresholdWidget_;
-};
-
-//-----------------------------------------------------------------------------
-
-/**
-* This class is for editing a single transfer function. Normally it will be used in conjunction
-* with a TransFuncPlugin, which creates (possibly multiple) instances of this class.
-* \sa TransFuncPlugin
-* \sa TransFunc
-* \sa TransFuncIntensityPlugin
-* \sa TransFuncIntensityGradientPlugin
-* \sa TransFuncIntensityPetPlugin
-*/
-class TransFuncEditorPlugin : public WidgetPlugin {
-    Q_OBJECT
-
-public:
-    /**
-    * Default constructor. Nothing special will be done here.
-    * \sa QWidget
-    * \sa MessageReceiver
-    * \sa VolumeRenderer
-    * \sa TransFuncProp
-    */
-    TransFuncEditorPlugin(QWidget* parent, MessageReceiver* msgReceiver, VolumeRenderer* processor = 0, TransFuncProp* prop = 0, Qt::Orientation widgetOrientation = Qt::Horizontal);
-    
-    /**
-    * Default destructor. Nothing special will be done here.
-    */
-    virtual ~TransFuncEditorPlugin();
-
-    /**
-    * In this method all the other widgets will be created and layouted
-    */
+     * Creates the widgets for all editors and puts them into a QTabWidget.
+     */
     void createWidgets();
 
     /**
-    * This method creates the connection to the editor chooser
-    */
+     * Creates the connections for all editors and the QTabWidget.
+     * Additionally the first editor is set active by calling editorChanged()
+     */
     void createConnections();
 
     /**
-    * Changes the volume data used by this class.
-    * Informs the intensity plugin, gradient plugin and the pet plugin about the new volume
-    * \param newDataSource The new volume we want to use from now on
-    * \sa Volume
-    */
-    void dataSourceChanged(Volume* newDataset);
+     * This method is called by the transfer function property when the rendered volume changes.
+     * It calls the volumeChanged() method of the current active editor.
+     */
+    void update();
 
     /**
-    * Returns the gradient plugin
-    * \return The gradient plugin used by this instance.
-    * \sa TransFuncIntensityGradientPlugin
-    */
-    TransFuncIntensityGradientPlugin* getIntensityGradientPlugin();
-    
-    /**
-    * Returns the intensity plugin
-    * \return The intensity plugin used by this instance.
-    * \sa TransFuncIntensityPlugin
-    */
-    TransFuncIntensityPlugin* getIntensityPlugin();
-    
-    /**
-    * Returns the pet plugin
-    * \return The pet plugin used by this instance.
-    * \sa TransFuncIntensityPetPlugin
-    */
-    TransFuncIntensityPetPlugin* getIntensityPetPlugin();
-    
-    /**
-    * Returns the transfer function property
-    * \return The transfer function property
-    * \sa TransFuncProp
-    */
-    TransFuncProp* getTransFuncProp();
-    
-    /**
-    * Returns the scale factor, by which the threshold will be streched
-    * \return The scale factor
-    */
-    float getScaleFactor();
-
-    /**
-    * Returns the currently used threshold widget
-    * \return The threshold widget
-    * \sa Thresholdwidget
-    */
-    ThresholdWidget* getThresholdWidget();
-    
-    /**
-    * Returns if the threshold widget used by this instance should be painted
-    * \return Should the threshold widget be painted?
-    */
-    bool getShowThresholdWidget();
-
-    /**
-    * Sets the visibility of the threshold widget
-    * \param show Should the threshold widget be visible?
-    */
-    void setShowThresholdWidget(bool show);
-    
-    /**
-    * Sets the visibility of the editor chooser combobox
-    * \param show Should the editor combobox be painted?
-    */
-    void setShowEditorTypeWidget(bool show);
-    
-    /**
-    * Sets the scale factor, by which the threshold will be streched
-    * \param factor The scale factor
-    */
-    void setScaleFactor(float factor);
-    
-    /**
-    * Sets the message receiver used by this instance.
-    * \param receiver The message receiver
-    * \sa MessageReceiver
-    */
-    void setMessageReceiver(MessageReceiver* receiver);
-    
-    /**
-    * Changes the renderer used by this editor
-    * \param renderer The new renderer
-    * \sa VolumeRenderer
-    */
-    void setCurrentVolumeRenderer(VolumeRenderer* renderer);
-    
-    // FIXME: Elaborate doxygen comment needed by someone with insight into this
-    void setTarget(Identifier TransFuncProp);
+     * Sets disconnected_ to true. This indicates that the widget is already removed from the
+     * property or not.
+     */
+    void disconnect();
 
 public slots:
     /**
-    * Sets the upper and lower boundaries for the transfer function
-    * \param lower The lower boundary
-    * \param upper The upper boundary
-    */
-    void setThresholds(int lower, int upper);
-    
-    /**
-    * Sets the threshold widget sliders to the assigned values
-    * \param lowerValue The lower value
-    * \param upperValue The upper value
-    */
-    void setSliderValues(int lowerValue, int upperValue);
-    
-    /**
-    * Starts or stops the tracking and propagates the signal to the TransFuncEditos
-    * \param on Interaction mode on or off?
-    */
-    void switchInteractionMode(bool on);
-    
-    /**
-    * Sets a new threshold widget for this editor
-    * \param thresholdWidget The new threshold widget
-    * \sa ThresholdWidget
-    */
-    void setThresholdWidget(ThresholdWidget* thresholdWidget);
-    
-    /**
-    * Repaints the current transfer function
-    */
-    void updateTransferFunction();
-    
-    /**
-    * Sets the editor combobox to the assigned value
-    * \param index The number of the editor we want to use
-    */
-    void setEditor(int index);
+     * Slot that is called when the user selects another editor in the tab widget.
+     * It will switch to the new editor when the user agrees with the reset of the
+     * transfer function. Otherwise the old editor remains.
+     *
+     * @param index index of the selected tab
+     */
+    void editorChanged(int index);
 
+    /**
+     * Slot that is called when the user selects another transfer function in the combobox.
+     * It changes the displayed editors to the editors for the selected transfer function.
+     *
+     * @param index index of selected transfer function
+     */
+    void comboBoxChanged(int index);
+
+signals:
+    /**
+     * This signal is emitted whenever the transfer function has changed. It is used to force a
+     * repaint of the volume rendering
+     */
+    void transferFunctionChanged();
+
+protected:
+    void showEvent(QShowEvent* event);
+
+    // The following method stubs are necessary, because transfuncplugin inherits from qpropertywidget
+    void addVisibilityControls() {}
+    void showLODControls() {}
+    void hideLODControls() {}
+    void setLevelOfDetail(bool /*value*/) {}
+    
 private:
-    // The currently used volume renderer
-    VolumeRenderer* currentVolumeRenderer_;
-    
-    // The different editor widgets in a layout
-    QStackedWidget* editors_;
-    // The combobox from which we choose an editor
-    QComboBox* editorType_;
-
-    Qt::Orientation widgetOrientation_;
-
-    // The tranfer function property we use
-    TransFuncProp* prop_;
-
-    // FIXME: Elaborate doxygen comment needed by someone with insight into this
-    Identifier target_;
-    
-    // The gradient plugin we use in this editor
-    TransFuncIntensityGradientPlugin* intensityGradientPlugin_;
-    // The intensity plugin we use in this editor
-    TransFuncIntensityPlugin* intensityPlugin_;
-	// The pet plugin we use in this editor
-    TransFuncIntensityPetPlugin* intensityPetPlugin_;    
-    // The threshold widget we use in this editor
-    ThresholdWidget* thresholdWidget_;
-    // The scale factor, by which the threshold (originally from 0 to 1) will be streched
-    float scaleFactor_;
-    
-    int maxValue_;
-
-    // Should the threshold widget be painted?
-    bool showThresholdWidget_;
-    // Should the editor combobox be painted?
-    bool showEditorTypeWidget_;
+    std::vector<std::vector<TransFuncEditor*> > editors_; ///< vector with all editors. The user can choose between all.
+    std::vector<TransFuncProp*> properties_; ///< vector with all transfer function properties that belong to this plugin
+    std::vector<QTabWidget*> tabWidgets_;    ///< vector with all created QTabWidgets
+    QStackedWidget* stackedWidget_;          ///< stacked widget in which all editors are displayed
+    bool disconnected_;                      ///< indicates whether the widget was already disconnected from the property
+    int oldIndex_;                           ///< index of the last active tab
 };
 
 } // namespace voreen

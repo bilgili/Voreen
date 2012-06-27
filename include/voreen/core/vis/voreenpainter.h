@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,6 +30,7 @@
 #ifndef VRN_VOREENPAINTER_H
 #define VRN_VOREENPAINTER_H
 
+#include "tgt/exception.h"
 #include "tgt/glcanvas.h"
 #include "tgt/vector.h"
 #include "tgt/navigation/trackball.h"
@@ -37,17 +38,23 @@
 
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/message.h"
-#include "voreen/core/vis/property.h"
+#include "voreen/core/vis/properties/property.h"
 
 #ifdef VRN_WITH_DEVIL
     #include <IL/il.h>
 #endif
 
+#ifdef VRN_WITH_FFMPEG
+namespace tgt {
+    class VideoEncoder;
+}
+#endif
+
+#include <vector>
 #include <list>
 
 namespace voreen {
 
-class VoreenPainter;
 class OverlayManager;
 class NetworkEvaluator;
 
@@ -182,6 +189,7 @@ private:
 };
 
 //------------------------------------------------------------------------
+
 /**
 * Specialized painter for voreen. This class takes care of rendering to a given tgt::GLCanvas,
     using its Processors.
@@ -198,7 +206,7 @@ public:
      * @param canvas The canvas that this painter renders on.
      * @param tag The Message-Tag for this painter.
      */
-    VoreenPainter(tgt::GLCanvas* canvas, tgt::Trackball* track, const voreen::Identifier& tag = Message::all_);
+    VoreenPainter(tgt::GLCanvas* canvas, tgt::Trackball* track, const Identifier& tag = Message::all_);
 
     virtual ~VoreenPainter();
 
@@ -232,6 +240,7 @@ public:
     /**
      * Takes care of incoming messages. Accepts the following message-ids: <br>
      *    - repaint, which repaints the canvas. Msg-type: none <br>
+     *    - switchCoarseness, wich resizes all processors. Msg-type: bool <br>
      *    - resize, which resizes this painter. Msg-type: ivec2 <br>
      *    - switch.trackballContinuousSpin, which tells the camera whether or not
      *      its trackball is continously spinning. Msg-type: bool <br>
@@ -244,7 +253,7 @@ public:
      *      Msg-type: VoreenPainterOverlay* <br>
      *    - Identifier::addCanvasOverlay, which adds a an overlay to \a overlays_ . Msg-type: VoreenPainterOverlay*
      *
-     * This method also redistributes incoming messages to \a processor_ and \a overlayMgr_.
+     * This method also redistributes incoming messages to \a overlayMgr_.
      *
      * @param msg The incoming message.
      * @param dest The destination of the message.
@@ -253,23 +262,19 @@ public:
 
     virtual void invalidateRendering();
 
-    /**
-      * Initializes this painter and its processors, if present.
-      */
-    virtual void initialize();
-
-    void setStereoMode(int stereoMode) {stereoMode_ = stereoMode;}
+    void setStereoMode(int stereoMode) { stereoMode_ = stereoMode; }
 
     /**
      * This method gets the focus of the painter's canvas (getCanvas()) , calls the \a processor_ and actually paints something.
      */
     void paint();
 
-	bool setEvaluator(NetworkEvaluator* eval);
-    
-	NetworkEvaluator* getEvaluator() const {
-		return evaluator_;
-	}
+    void setEvaluator(NetworkEvaluator* eval);
+
+
+    NetworkEvaluator* getEvaluator() const {
+        return evaluator_;
+    }
 
     /**
      * Sets the trackball that is used for navigation
@@ -282,14 +287,20 @@ public:
     tgt::Trackball* getTrackball() const;
 
     /**
-     * Renders a snapshot to file. Therefore evaluate from \a evaluator_ is called.
+     * Renders a snapshot to file. The image is read from the texturecontainer wich
+     * is the result of the canvasRenderer in the network.
      *
      * @param size size of snapshot
      * @param fileName name of the snapshot file
      */
+#ifdef VRN_WITH_DEVIL
+    void renderToSnapshot(tgt::ivec2 size, std::string fileName)
+        throw (std::bad_alloc, tgt::FileException);
+#else
     void renderToSnapshot(tgt::ivec2 size, std::string fileName);
+#endif
 
-	static const Identifier removeEventListener_;
+    static const Identifier removeEventListener_;
     static const Identifier addEventListener_;
     static const Identifier addCanvasOverlay_;
     static const Identifier addFrameOverlay_;
@@ -302,8 +313,20 @@ public:
     static const Identifier switchCoarseness_;
     static const Identifier renderingFinished_;
 
+    #ifdef VRN_WITH_FFMPEG
+        static tgt::VideoEncoder* getVideoEncoder();
+    #endif
+
 protected:
-	NetworkEvaluator* evaluator_;
+
+    void renderToEncoder();
+
+#ifdef VRN_WITH_FFMPEG
+    static tgt::VideoEncoder* videoEncoder_;
+#endif
+
+    NetworkEvaluator* evaluator_;
+
     /**
      *  A wrapper for convenience that calls the resize method with a tgt::ivec2 as the parameter.
      */
@@ -315,52 +338,37 @@ protected:
     virtual void sizeChanged(const tgt::ivec2& size);
 
     /**
-     *  This method is necessary to initialize the processor of this VoreenPainter and to
-     *  deinitialize the processor of the old VoreenPainter. This is necessary when using more
-     *  than one canvas.
-     */
-    void switchCanvas();
-
-    void drawMouseCursor();
-
-     // FIXME progress aaLevel not used at the moment
-    /**
      * Renders to a DevIL image.
      *
-     * @param size Size of the "devil"-canvas independent of the real canvas.
-     * @param progress Used to get a callback, for instance for a progress bar.
-     * @param aaLevel Used for anti-aliasing.
+     * @param size desired size of the image
      */
 #ifdef VRN_WITH_DEVIL
-    ILuint renderToILImage(	tgt::ivec2 size,
-                            bool (progress)(float _progress),
-                            int aaLevel);
+    ILuint renderToILImage(const tgt::ivec2& size);
 #endif
 
     /**
      * Internally used by
-     * \a renderToILImage(tgt::ivec2 size, bool (progress)(float _progress), int aaLevel)
+     * \a renderToILImage(tgt::ivec2 size)
      */
 #ifdef VRN_WITH_DEVIL
-    ILuint renderToILImage(bool (progress)(float _progress), int aaLevel);
+    ILuint renderToILImageInternal(const tgt::ivec2& size);
 #endif
 
-    tgt::Trackball* trackball_; ///< The trackball that will be used to navigate.  trackball_->getCamera() should be equal to getCanvas()->getCamera()
+    tgt::Trackball* trackball_; ///< The trackball that will be used to navigate.
+                                ///< trackball_->getCamera() should be equal to getCanvas()->getCamera()
 
     typedef std::list<VoreenPainterOverlay*> Overlays;
     Overlays overlays_; ///< The overlays for this painter
 
-    static tgt::GLCanvas* lastCanvas_; ///< The canvas that was previously used. @see switchCanvas()
-
     OverlayManager* overlayMgr_; ///< The manager that takes care of this painters overlays.
 
-    int stereoMode_; ///< This holds the current view-mode: either monoscopic or stereoscopic view.
+    int stereoMode_; ///< The current view-mode: either monoscopic or stereoscopic view.
 
     tgt::ivec2 size_; ///< The size of this painter.
 
     static const std::string loggerCat_;
 };
 
-} // namespace
+} // namespace voreen
 
 #endif // VRN_VOREENPAINTER_H

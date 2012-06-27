@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -58,7 +58,7 @@ RptAggregationItem::RptAggregationItem(std::vector<RptProcessorItem*> processors
         }
     }
     setToolTip(QString(s.c_str()));
-    
+
     scene->addItem(this);
 
     // correct position
@@ -228,8 +228,8 @@ bool RptAggregationItem::contains(RptGuiItem* item) {
 }
 
 void RptAggregationItem::createContextMenu() {
-    RptGuiItem::createContextMenu();
-    
+/*    RptGuiItem::createContextMenu();
+
     // createActions
     showContentAction_ = new QAction(tr("Show Content (double click)"), this);
     deaggregateAction_ = new QAction(tr("Deaggregate"), this);
@@ -243,7 +243,7 @@ void RptAggregationItem::createContextMenu() {
     // connect actions
     QObject::connect(showContentAction_, SIGNAL(triggered()), this, SLOT(showContentActionSlot()));
     QObject::connect(deaggregateAction_, SIGNAL(triggered()), this, SLOT(deaggregateActionSlot()));
-    QObject::connect(saveAction, SIGNAL(triggered()), this, SLOT(saveActionSlot()));
+    QObject::connect(saveAction, SIGNAL(triggered()), this, SLOT(saveActionSlot()));*/
 }
 
 void RptAggregationItem::showContentActionSlot() {
@@ -264,7 +264,7 @@ void RptAggregationItem::createAndConnectPorts() {
     // get the unconnected ports
     std::vector<RptPortItem*> items = getUnconnectedPortItems();
     for (size_t i=0; i<items.size(); i++) {
-        if (items[i]->isOutport()) 
+        if (items[i]->isOutport())
             outports_.push_back(new RptPortItem(items[i]->getPortType(), items[i]->getPort(), this));
         else
             inports_.push_back(new RptPortItem(items[i]->getPortType(), items[i]->getPort(), this));
@@ -306,7 +306,7 @@ void RptAggregationItem::createAndConnectPorts() {
             }
             if (inport->getConnected().size() > 0)
                 inports_.push_back(inport);
-            else 
+            else
                 delete(inport);
         }
 
@@ -320,7 +320,7 @@ void RptAggregationItem::createAndConnectCoProcessorPorts() {
     // get the unconnected ports
     std::vector<RptPortItem*> items = getUnconnectedCoProcessorPortItems();
     for (size_t i=0; i<items.size(); i++) {
-        if (items[i]->isOutport()) 
+        if (items[i]->isOutport())
             coProcessorOutports_.push_back(new RptPortItem(items[i]->getPortType(), items[i]->getPort(), this));
         else
             coProcessorInports_.push_back(new RptPortItem(items[i]->getPortType(), items[i]->getPort(), this));
@@ -361,7 +361,7 @@ void RptAggregationItem::createAndConnectCoProcessorPorts() {
             }
             if (inport->getConnected().size() > 0)
                 coProcessorInports_.push_back(inport);
-            else 
+            else
                 delete(inport);
         }
     }
@@ -398,10 +398,10 @@ void RptAggregationItem::showContent(bool show) {
             if (scene() && scene() == processors_[i]->scene()) {
                 processors_[i]->removeAllArrows();
                 QPointF tmp = processors_[i]->scenePos();
-                
+
                 processors_[i]->setParent(0);
                 scene()->removeItem(processors_[i]);
-                
+
                 QPointF tmp2 = processors_[i]->scenePos();
                 QPointF correction = tmp - tmp2;
                 processors_[i]->moveBy(correction.x(), correction.y());
@@ -586,7 +586,7 @@ QRectF RptAggregationItem::boundingRect() const {
             rect.translate(processors_[i]->scenePos()-scenePos());
             path.addRect(rect);
         }
-        
+
         QRectF rect = path.boundingRect();
         QRectF newRect(rect.left()-5, rect.top()-textItem_->boundingRect().height()-5, rect.width()+10, rect.height()+textItem_->boundingRect().height()+10);
         textItem_->setPos(newRect.topLeft());

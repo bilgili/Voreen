@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,27 +29,24 @@
 
 #include "voreen/core/vis/processors/image/cacherenderer.h"
 
-#include "voreen/core/vis/processors/networkevaluator.h"
-#include "voreen/core/vis/processors/portmapping.h"
-
 namespace voreen {
 
 CacheRenderer::CacheRenderer()
     : Processor()
 {
-	setName("CacheRenderer");
-	
-	createInport("image.input");
-	createOutport("image.output");
+    setName("CacheRenderer");
+
+    createInport("image.input");
+    createOutport("image.output");
 }
 
 CacheRenderer::~CacheRenderer() {
-    if (raycastPrg_)
+
         ShdrMgr.dispose(raycastPrg_);
 }
 
 const std::string CacheRenderer::getProcessorInfo() const {
-	return "A CacheRenderer is a processor that caches the rendering image on its inport. \
+    return "A CacheRenderer is a processor that caches the rendering image on its inport. \
             It will use the cached image as long as any parameter of a predecessing processor \
             is changed.";
 }
@@ -58,18 +55,18 @@ const Identifier CacheRenderer::getClassName() const {
     return "Miscellaneous.CacheRenderer";
 }
 
-Processor* CacheRenderer::create() {
+Processor* CacheRenderer::create() const {
     return new CacheRenderer();
 }
 
 void CacheRenderer::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
     // render result
-	int source= portMapping->getTarget("image.input");
+    int source= portMapping->getTarget("image.input");
     int dest = portMapping->getTarget("image.output");
 
-    tc_->setActiveTarget(dest,"CacheRenderer::process() image.output");
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    tc_->setActiveTarget(dest,"CacheRenderer::process()");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (source != -1) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
@@ -87,8 +84,7 @@ void CacheRenderer::process(LocalPortMapping* portMapping) {
         glDepthFunc(GL_LESS);
         raycastPrg_->deactivate();
 
-		MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::setCachedBackward_, this), "evaluator");
-	}
+    }
     LGL_ERROR;
 }
 
@@ -106,4 +102,4 @@ int CacheRenderer::initializeGL() {
     return initStatus_;
 }
 
-} // namespace
+} // namespace voreen

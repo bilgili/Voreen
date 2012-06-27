@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -84,13 +84,13 @@ class GeometryTestProcessorA : public Processor
         }
 
         virtual const Identifier getClassName() const { return "GeometryTestProcessor.GeometryTestProcessorA"; }
-		virtual const std::string getProcessorInfo() const {return "Demonstrates how to use the geometry container.";}
-        virtual Processor* create() { return new GeometryTestProcessorA(); }
+        virtual const std::string getProcessorInfo() const {return "Demonstrates how to use the geometry container.";}
+        virtual Processor* create() const { return new GeometryTestProcessorA(); }
         virtual void process(voreen::LocalPortMapping* portMapping)
-		{
+        {
             const int geoID = portMapping->getGeometryNumber(portName_);
             geoContainer_->addGeometry(geoID, geo_, "CubePoints");
-		}
+        }
 
     protected:
         TGTvec3PointListGeometry* geo_;
@@ -108,11 +108,11 @@ class GeometryTestProcessorB : public Processor
 
         virtual ~GeometryTestProcessorB() { }
         virtual const Identifier getClassName() const { return "GeometryTestProcessor.GeometryTestProcessorB"; }
-		virtual const std::string getProcessorInfo() const {return "Demonstrates how to use the geometry container.";}
-        virtual Processor* create() { return new GeometryTestProcessorB(); }
+        virtual const std::string getProcessorInfo() const {return "Demonstrates how to use the geometry container.";}
+        virtual Processor* create() const { return new GeometryTestProcessorB(); }
 
         virtual void process(voreen::LocalPortMapping* portMapping)
-		{
+        {
             int dest = portMapping->getTarget(outportName_);
             const int geoID = portMapping->getGeometryNumber(inportName_);
             if( (dest <= -1) || (geoID <= 0) )
@@ -124,11 +124,11 @@ class GeometryTestProcessorB : public Processor
             if( (geo != 0) && (typeid(*geo) == typeid(TGTvec3PointListGeometry)) )
             {
                 tc_->setActiveTarget(dest);
-                
+
                 tgt::Color clearColor = backgroundColor_.get();
                 glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
                 glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT);
-                
+
                 glDisable(GL_DEPTH_TEST);
                 glDisable(GL_LIGHTING);
                 glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -143,7 +143,7 @@ class GeometryTestProcessorB : public Processor
                 glMatrixMode(GL_MODELVIEW);
                 glPopMatrix();
             }
-		}
+        }
 
     protected:
         Identifier inportName_;

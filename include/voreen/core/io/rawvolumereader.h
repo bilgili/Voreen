@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -64,6 +64,7 @@ public:
      * @param transformation 4x4-matrix for affine transformation of volume
      * @param metaString a string containing arbitrary meta-data
      * @param offset if the loading shouldn't start at the beginning but at an offset
+     * @param unit a string containing the unit of the dataset
      */
     void readHints(tgt::ivec3 dimensions,
                    tgt::vec3 spacing,
@@ -72,8 +73,10 @@ public:
                    const std::string format = "UCHAR",
                    int zeroPoint = 0,
                    tgt::mat4 transformation = tgt::mat4::identity,
-                   Modality modality = Modality::MODALITY_UNKNOWN, float timeStep_ = -1.0f,
+                   Modality modality = Modality::MODALITY_UNKNOWN,
+				   float timeStep_ = -1.0f,
                    std::string metaString = "",
+                   std::string unit = "",
                    int offset = 0);
 
     virtual VolumeSet* read(const std::string& fileName)
@@ -92,6 +95,7 @@ private:
     float timeStep_;
     std::string metaString_;
     int offset_;
+    std::string unit_;
 
     static const std::string loggerCat_;
 };

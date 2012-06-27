@@ -43,8 +43,7 @@ class Camera;
 class Painter {
 public:
     /// Constructor
-    Painter();
-    Painter(GLCanvas* canvas); // FIXME: do we need this consturctor?!
+    Painter(GLCanvas* canvas = 0);
 
     /**
      * The owned GLCanvas should be destroyed manually otherwise endless

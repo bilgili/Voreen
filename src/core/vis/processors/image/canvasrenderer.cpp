@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,10 +28,6 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
@@ -39,11 +35,11 @@ CanvasRenderer::CanvasRenderer()
     : Processor()
     , raycastPrg_(0)
     , useCaching_("set.useCaching", "Use caching?", true)
+    , imageID_(-1)
 {
     setName("CanvasRenderer");
-	createInport("image.input");
+    createInport("image.input");
 
-    useCaching_.setAutoChange(true);
     addProperty(&useCaching_);
 }
 
@@ -53,7 +49,7 @@ CanvasRenderer::~CanvasRenderer() {
 }
 
 const std::string CanvasRenderer::getProcessorInfo() const {
-	return "A CanvasRenderer is the last processor in a network. Its only purpose is to copy \
+    return "A CanvasRenderer is the last processor in a network. Its only purpose is to copy \
             its input to the finaltarget of texture container. Additionally the CanvasRenderer \
             is able to cache the rendering result, if no parameter in any processor in the network \
             has been changed since last rendering.";
@@ -63,38 +59,36 @@ const Identifier CanvasRenderer::getClassName() const {
     return "Miscellaneous.Canvas";
 }
 
-Processor* CanvasRenderer::create() {
+Processor* CanvasRenderer::create() const {
     return new CanvasRenderer();
 }
 
 void CanvasRenderer::process(LocalPortMapping* portMapping) {
-	int source = portMapping->getTarget("image.input");
-	int dest = tc_->getFinalTarget();
+    int source = portMapping->getTarget("image.input");
+    imageID_ = source;
+    int dest = tc_->getFinalTarget();
 
-    tc_->setActiveTarget(dest, "CanvasRenderer::process() dest");
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    tc_->setActiveTarget(dest, "CanvasRenderer::process()");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (source != -1) {
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
 
-		raycastPrg_->activate();
-		setGlobalShaderParameters(raycastPrg_);
-		raycastPrg_->setUniform("shadeTex_", 0);
-		raycastPrg_->setUniform("depthTex_", 1);
+        raycastPrg_->activate();
+        setGlobalShaderParameters(raycastPrg_);
+        raycastPrg_->setUniform("shadeTex_", 0);
+        raycastPrg_->setUniform("depthTex_", 1);
 
-		raycastPrg_->setUniform("interactionCoarseness_", 1);
+        raycastPrg_->setUniform("interactionCoarseness_", 1);
 
-		glDepthFunc(GL_ALWAYS);
-		renderQuad();
-		glDepthFunc(GL_LESS);
-		raycastPrg_->deactivate();
-
-        if (useCaching_.get())
-            MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::setCachedBackward_, this), "evaluator");
-	}
+        glDepthFunc(GL_ALWAYS);
+        renderQuad();
+        glDepthFunc(GL_LESS);
+        raycastPrg_->deactivate();
+    }
 }
 
 int CanvasRenderer::initializeGL() {
@@ -109,6 +103,14 @@ int CanvasRenderer::initializeGL() {
         initStatus_ = VRN_ERROR;
 
     return initStatus_;
+}
+
+bool CanvasRenderer::isEndProcessor() const {
+    return true;
+}
+
+bool CanvasRenderer::usesCaching() const {
+    return useCaching_.get();
 }
 
 } // namespace voreen

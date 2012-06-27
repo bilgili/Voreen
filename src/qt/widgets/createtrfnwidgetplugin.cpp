@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,27 +33,27 @@
 #include <QtPlugin>
 
 CreateTrFnWidgetPlugin::CreateTrFnWidgetPlugin(QObject *parent) : QObject(parent) {
-	initialized = false;
+    initialized = false;
 }
 
 bool CreateTrFnWidgetPlugin::isContainer() const {
-	return false;
+    return false;
 }
 
 bool CreateTrFnWidgetPlugin::isInitialized() const {
-	return initialized;
+    return initialized;
 }
 
 QIcon CreateTrFnWidgetPlugin::icon() const {
-	return QIcon();
+    return QIcon();
 }
 
 QString CreateTrFnWidgetPlugin::codeTemplate() const {
-	return "";
+    return "";
 }
 
 QString CreateTrFnWidgetPlugin::domXml() const {
-	return "<widget class=\"CreateTrFnWidget\" name=\"CreateTrFnWidget\">\n"
+    return "<widget class=\"CreateTrFnWidget\" name=\"CreateTrFnWidget\">\n"
                " <property name=\"geometry\">\n"
                "  <rect>\n"
                "   <x>0</x>\n"
@@ -74,34 +74,34 @@ QString CreateTrFnWidgetPlugin::domXml() const {
 }
 
 QString CreateTrFnWidgetPlugin::group() const {
-	return "Voreen Widgets";
+    return "Voreen Widgets";
 }
 
 QString CreateTrFnWidgetPlugin::includeFile() const {
-	return "voreen/qt/createtrfnwidget.h";
+    return "voreen/qt/createtrfnwidget.h";
 }
 
 QString CreateTrFnWidgetPlugin::name() const {
-	return "CreateTrFnWidget";
+    return "CreateTrFnWidget";
 }
 
 QString CreateTrFnWidgetPlugin::toolTip() const {
-	return "";
+    return "";
 }
 
 QString CreateTrFnWidgetPlugin::whatsThis() const {
-	return "";
+    return "";
 }
 
 QWidget *CreateTrFnWidgetPlugin::createWidget(QWidget *parent) {
-	return new CreateTrFnWidget(parent);
+    return new CreateTrFnWidget(parent);
 }
 
 void CreateTrFnWidgetPlugin::initialize(QDesignerFormEditorInterface* /*core*/) {
-	if(initialized) {
-		return;
-	}
-	initialized = true;
+    if(initialized) {
+        return;
+    }
+    initialized = true;
 }
 
 Q_EXPORT_PLUGIN2(CreateTrFnWidgetPlugin, CreateTrFnWidgetPlugin)

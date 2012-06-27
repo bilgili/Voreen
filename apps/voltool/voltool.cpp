@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,7 +32,6 @@
 #include <conio.h>
 #endif
 
-#include "command.h"
 #include "commands_grad.h"
 #include "commands_convert.h"
 #include "commands_create.h"
@@ -42,6 +41,8 @@
 #include "commands_dao.h"
 #include "commands_registration.h"
 #endif
+
+#include "voreen/core/cmdparser/commandlineparser.h"
 
 #include "tgt/init.h"
 #include "tgt/exception.h"
@@ -76,110 +77,62 @@ int main(int argc, char** argv) {
     clog->addCat("", true, tgt::Debug);
     LogMgr.addLog(clog);
 
-    CommandMap commandMap_;
-    
-    //HOWTO: add new command XY:
-    //1. add class CommandXY implementing Command::execute and a contructor that sets name_, help_,...
-    //2. add CommandXY to map
-    
-    commandMap_.addCommand(new CommandGrad());
-    commandMap_.addCommand(new CommandFilterGrad());
-    
+    CommandlineParser cmdparser("Voltool");
+
+    cmdparser.addCommand(new CommandGrad());
+    cmdparser.addCommand(new CommandFilterGrad());
+
 #ifdef VRN_WITH_DEVIL
-    commandMap_.addCommand(new CommandStackImg());
-    commandMap_.addCommand(new CommandStackRaw());
-    commandMap_.addCommand(new CommandConvert());
+    cmdparser.addCommand(new CommandStackImg());
+    cmdparser.addCommand(new CommandStackRaw());
+    cmdparser.addCommand(new CommandConvert());
 #endif
-    
-    commandMap_.addCommand(new CommandCreate());
-    commandMap_.addCommand(new CommandGenerateMask());
-    
-    commandMap_.addCommand(new CommandCutToPieces());
-    commandMap_.addCommand(new CommandScale());
-    commandMap_.addCommand(new CommandMirrorZ());
-    commandMap_.addCommand(new CommandSubSet());
-    
-    
+
+    cmdparser.addCommand(new CommandCreate());
+    cmdparser.addCommand(new CommandGenerateMask());
+
+    cmdparser.addCommand(new CommandCutToPieces());
+    cmdparser.addCommand(new CommandScale());
+    cmdparser.addCommand(new CommandMirrorZ());
+    cmdparser.addCommand(new CommandSubSet());
+
+
 #ifndef VRN_SNAPSHOT
-    commandMap_.addCommand(new CommandCreateMotion());
+    cmdparser.addCommand(new CommandCreateMotion());
 
-	commandMap_.addCommand(new CommandDao32216());
-    commandMap_.addCommand(new CommandDaoSphere());
-    commandMap_.addCommand(new CommandRegionDaoSphere());
-    commandMap_.addCommand(new CommandVQ());
-    commandMap_.addCommand(new CommandVQTrain());
-    commandMap_.addCommand(new CommandVQPack());
-    commandMap_.addCommand(new CommandVQUnpack());
-    commandMap_.addCommand(new CommandVQMeasure());
-    commandMap_.addCommand(new CommandStaticGlowValue());
-    commandMap_.addCommand(new CommandPlotCB());
-    commandMap_.addCommand(new CommandPlotHG());
-    commandMap_.addCommand(new CommandHistogram());
+    cmdparser.addCommand(new CommandScaleTexCoords());
 
-    //commandMap_.addCommand(new CommandRegistrationUniformScaling());
-    //commandMap_.addCommand(new CommandRegistrationAffine());
+    cmdparser.addCommand(new CommandDao32216());
+    cmdparser.addCommand(new CommandDaoSphere());
+    cmdparser.addCommand(new CommandRegionDaoSphere());
+    cmdparser.addCommand(new CommandVQ());
+    cmdparser.addCommand(new CommandVQTrain());
+    cmdparser.addCommand(new CommandVQPack());
+    cmdparser.addCommand(new CommandVQUnpack());
+    cmdparser.addCommand(new CommandVQMeasure());
+    cmdparser.addCommand(new CommandStaticGlowValue());
+    cmdparser.addCommand(new CommandPlotCB());
+    cmdparser.addCommand(new CommandPlotHG());
+    cmdparser.addCommand(new CommandHistogram());
+
+    //cmdparser.addCommand(new CommandRegistrationUniformScaling());
+    //cmdparser.addCommand(new CommandRegistrationAffine());
 #endif
 
-    //commandMap_.addCommand(new CommandStretchHisto());
+    //cmdparser.addCommand(new CommandStretchHisto());
 
 #ifdef _OPENMP
     LINFO("OpenMP Supported.");
     LINFO("Number of processors: " << omp_get_num_procs());
     LINFO("Number of threads maximal usable: " << omp_get_max_threads());
 #endif
-    
-    //No parameters given:
-    if (argc < 2) {
-        LINFO("Usage: voltool OPERATION [...]");
-        LINFO("Valid operations:");
-        commandMap_.listCommands();
-        LINFO("Use >voltool OPERATION< to get further informtion about commands");
-        return EXIT_SUCCESS;
-    }
-    
-    std::string operation = argv[1];
-    
-    //only operation with no parameters is given, display help:
-    if (argc < 3) {
-        if (commandMap_.available(operation)) {
-            LINFO("Help for " << operation << ":");
-            LINFO(commandMap_.get(operation)->getInfo());
-            LINFO("Syntax: " << commandMap_.get(operation)->getSyntax());
-            LINFO(commandMap_.get(operation)->getHelp());
-        }
-        else {
-            LERROR("No command " << operation);
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
 
-    //execute operation:
-    if (commandMap_.available(operation)) {
-        std::vector<std::string> parameters;
-        for (int i=2; i<argc; i++)
-            parameters.push_back(argv[i]);
+    cmdparser.setCommandLine(argc, argv);
+    cmdparser.execute();
 
-        try {
-            commandMap_.get(operation)->execute(parameters);
-        }
-        catch (SyntaxException &ex) {
-            LERROR(ex.getMessage());
-            LERROR("Syntax: " << commandMap_.get(operation)->getSyntax());
-            return EXIT_FAILURE;
-        }
-        catch (tgt::FileException &ex) {
-            LERROR(ex.what());
-            return EXIT_FAILURE;
-        }
-        catch (std::bad_alloc) {
-            LERROR("Bad alloc!");
-            return EXIT_FAILURE;
-        }
-    }
-    else {
-        LERROR("No command " << operation);
-        return EXIT_FAILURE;
-    }
+    // Display the help if no argument is given
+    if (argc == 1)
+        cmdparser.displayHelp();
+
     return EXIT_SUCCESS;
 }

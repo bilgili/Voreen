@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -79,42 +79,46 @@ public:
 //---------------------------------------------------------------------------
 
 /**
- * @brief Collects exceptions and stores them safely.
+ * Collects errors and stores them safely.
  *
  * A class that has an ErrorCollector can, in case it catches an exception, simply store
- * it in the ErrorCollector and defer handling to a later point or delegate to another class. 
+ * it in the ErrorCollector and defer handling to a later point or delegate to another class.
  */
 class ErrorCollector {
 public:
     /**
-     * Stores one exception.
-     * @param e exception to store
+     * Stores one error.
      */
-    void store(std::exception e);
-    
+    void store(const std::string& s);
+
     /**
-     * Stores multiple exceptions.
-     * @param v vector containing the exceptions to store
+     * Stores one error from an exception.
      */
-    void store(std::vector<std::exception> v);
-    
+    void store(const std::exception& e);
+
     /**
-     * Deletes all stored exceptions.
+     * Stores multiple errors.
+     * @param v vector containing the errors to store
+     */
+    void store(std::vector<std::string> v);
+
+    /**
+     * Deletes all stored errors.
      */
     void clear();
-    
+
     /**
-     * Returns all stored exceptions.
+     * Returns all stored errors.
      */
-    std::vector<std::exception> errors() const;
-    
+    std::vector<std::string> errors() const;
+
     /**
-     * Returns all stored exceptions and <clear>()s the ErrorCollector.
-     */    
-    std::vector<std::exception> pop();
-    
+     * Returns all stored errors and clears the ErrorCollector.
+     */
+    std::vector<std::string> pop();
+
 private:
-    std::vector<std::exception> errors_;
+    std::vector<std::string> errors_;
 };
 
 //---------------------------------------------------------------------------
@@ -128,68 +132,66 @@ private:
 class Serializable {
 public:
     Serializable();
-    
+
     virtual ~Serializable();
-    
+
     /**
      * Returns the Name of the XML element in which the implementer will be serialized
      */
     virtual std::string getXmlElementName() const = 0;
-    
-    /** 
+
+    /**
      * Some instances of serializable classes might not be serializable.
      * Indicate by setting this.
      */
     void setSerializable(const bool serializable = true);
 
-    /** 
+    /**
      * Indicates wheter the object should be serialized to XML or not.
      * The serializer has to take care of regarding or disregarding this hint.
      */
     bool isSerializable() const;
-    
-    /**
-     * Checks if <isSerializable>() and
-     * @param elem is checked for the right XML element name
-     */
-    void serializableSanityChecks(const TiXmlElement* elem = 0) const;
-    
+
     /**
      * Serializes the element to XML. Derived classes should implement their own version.
      */
     virtual TiXmlElement* serializeToXml() const = 0;
-    
+
     /**
      * Updates the property from XML. Derived classes should implement their own version.
      */
     virtual void updateFromXml(TiXmlElement* elem) = 0;
-    
+
     /**
      * Retrieves the stored errors and clears the ErrorCollector
      */
-    std::vector<std::exception> errors();
+    std::vector<std::string> errors();
 
     /**
      * Retrieves the stored errors without clearing the ErrorCollector
      */
-    std::vector<std::exception> getErrors() const;
+    std::vector<std::string> getErrors() const;
 
+    static void setIgnoreIsSerializable(bool ignore);
+    static bool ignoreIsSerializable();
+    
 protected:
     ErrorCollector errors_;
 
 private:
     bool serializable_;
+    static bool ignoreIsSerializable_; ///< serialize all properties, regardless of isSerializable();
 };
 
 //---------------------------------------------------------------------------
 
 /**
- * @brief Encapsulates serializable metadata for anything.
+ * Encapsulates serializable metadata for anything.
  *
  * If you want your clients to be able to store metadata as XML subtrees in
  * your serializable class, you can use a MetaSerializer and delegate this
  * functionality to it.
- * 
+ *
  * Any metadata stored this way can be easily serialized along with
  * your class using the appropriate methods of Serializable.
  */
@@ -200,14 +202,14 @@ public:
     virtual ~MetaSerializer();
 
     MetaSerializer& operator=(const MetaSerializer& m);
-    
+
     virtual std::string getXmlElementName() const { return "MetaData"; }
 
     /**
      * Serializes MetaData to XML.
      */
     virtual TiXmlElement* serializeToXml() const;
-    
+
     /**
      * Updates the Metadata from XML.
      */
@@ -218,26 +220,31 @@ public:
      * Replaces an existing element with the same value (element name)
      */
     void addData(TiXmlElement* data);
-    
+
     /**
      * Removes the child named elemName from metadata_
      */
     void removeData(std::string elemName);
-    
+
     /**
      * Clears the data
      */
     void clearData();
-    
+
     /**
      * returns the child named elemName from metadata_
      */
     TiXmlElement* getData(std::string elemName) const;
-    
+
     /**
      * checks for a child named elemName in metadata_
      */
     bool hasData(std::string elemName) const;
+
+     /**
+     * returns all the children from metadata_
+     */
+    std::vector<TiXmlElement*> getAllData() const;
 
 private:
     TiXmlElement* metadata_;

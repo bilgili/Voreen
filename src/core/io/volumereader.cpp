@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -62,6 +62,21 @@ void VolumeReader::read(Volume* volume, std::fstream& fin) {
     }
     else
         fin.read(reinterpret_cast<char*>(volume->getData()), volume->getNumBytes());
+}
+
+VolumeHandle* VolumeReader::readFromOrigin(const VolumeHandle::Origin& origin) {
+    VolumeSet* set = read(origin.filename);
+    std::vector<VolumeHandle*> handles = set->getAllVolumeHandles();
+
+    if (handles.size() == 1) {
+        // first remove from set, so it won't be deleted when the set is deleted
+        handles[0]->getParentSeries()->removeVolumeHandle(handles[0]);
+        delete set;
+        return handles[0];
+    } else {
+        delete set;
+        throw VoreenException("More VolumeHandles present than expected");
+    }
 }
 
 void VolumeReader::fixOrigins(VolumeSet* vs, const std::string& fn) {

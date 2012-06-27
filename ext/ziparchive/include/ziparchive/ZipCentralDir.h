@@ -1,33 +1,32 @@
 ////////////////////////////////////////////////////////////////////////////////
-// $RCSfile: ZipCentralDir.h,v $
-// $Revision: 1.4 $
-// $Date: 2006/01/28 20:18:12 $ $Author: Tadeusz Dracz $
-////////////////////////////////////////////////////////////////////////////////
 // This source file is part of the ZipArchive library source distribution and
-// is Copyrighted 2000 - 2006 by Tadeusz Dracz (http://www.artpol-software.com/)
+// is Copyrighted 2000 - 2009 by Artpol Software - Tadeusz Dracz
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 // 
-// For the licensing details see the file License.txt
+// For the licensing details refer to the License.txt file.
+//
+// Web Site: http://www.artpol-software.com
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
 * \file ZipCentralDir.h
-*	Interface for the CZipCentralDir class.
+*	Includes the CZipCentralDir class.
 *
 */
 
-#if !defined(AFX_CENTRALDIR_H__859029E8_8927_4717_9D4B_E26E5DA12BAE__INCLUDED_)
-#define AFX_CENTRALDIR_H__859029E8_8927_4717_9D4B_E26E5DA12BAE__INCLUDED_
+#if !defined(ZIPARCHIVE_ZIPCENTRALDIR_DOT_H)
+#define ZIPARCHIVE_ZIPCENTRALDIR_DOT_H
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif
 
 #if (_MSC_VER > 1000) && (defined ZIP_HAS_DLL)
+	#pragma warning (push)
 	#pragma warning( disable : 4251 ) // needs to have dll-interface to be used by clients of class
 #endif
 
@@ -37,21 +36,29 @@
 #include "ZipCollections.h"
 #include "ZipCompatibility.h"
 #include "ZipExport.h"
-#define ZIPARCHIVE_DATADESCRIPTOR_LEN 12
+#include "ZipCallbackProvider.h"
+#include "ZipMutex.h"
+
+
+class CZipArchive;
 
 /**
-	A class representing the central directory record in the archive.
+	Represents the central directory record in an archive.
 */
 class ZIP_API CZipCentralDir  
 {
 public:
+
 	/**
 		Used in fast finding files by the filename.
 		A structure for the internal use only.
-		\see CZipCentralDir::m_findarray
-		\see CZipArchive::GetFindFastElement
-		\see CZipArchive::FindFile
-		\see CZipArchive::EnableFindFast
+
+		\see
+			CZipCentralDir::m_pFindArray
+		\see
+			CZipArchive::FindFile
+		\see
+			CZipArchive::EnableFindFast
 	*/
 	struct ZIP_API CZipFindFast
 	{
@@ -60,505 +67,778 @@ public:
 			m_uIndex = 0;
 			m_pHeader= NULL;
 		}
-		CZipFindFast(CZipFileHeader* pHeader, WORD uIndex):m_pHeader(pHeader), m_uIndex(uIndex){}
+		CZipFindFast(CZipFileHeader* pHeader, ZIP_INDEX_TYPE uIndex):m_pHeader(pHeader), m_uIndex(uIndex){}
+
 		/**
 			A pointer to the structure in CZipCentralDir. We extract a name from it.
 		*/
 		CZipFileHeader* m_pHeader;
 
 		/**
-			The index in the central directory of the \e m_pHeader.
+			The index in the central directory of the #m_pHeader.
 		*/
-		WORD m_uIndex;
+		ZIP_INDEX_TYPE m_uIndex;
 	};
 	
 
 	/**
-		Stores general information about the central directory record.
+		Stores general information about the central directory.
+		Request this information with CZipArchive::GetCentralDirInfo.
 	*/
-	struct ZIP_API Info
+	struct ZIP_API CInfo
 	{
-		DWORD m_uCentrDirPos;	///< the position of the beginning of the central directory (as located by #Locate)
-		DWORD m_uBytesBeforeZip;///< The number of bytes before the actual zip archive in a file. It is non-zero for self-extracting archives.
-		WORD m_uThisDisk;		///< number of the disk with the central directory end record (the number of disks in the disk-spanning archive)
-		WORD m_uDiskWithCD;		///< number of the disk with the start of the central directory
-		WORD m_uDiskEntriesNo;	///< total number of entries in the central dir on this disk
-		WORD m_uEntriesNumber;	///< total number of entries in the central dir
-		DWORD m_uSize;			///< size of the central directory (valid only if #m_bOnDisk is \c true; use #GetSize instead)
-		DWORD m_uOffset;		///< offset of start of central directory with respect to the starting disk number 
-								///< (as written in the central directory record);
-								///< valid only if #m_bOnDisk is \c true
-		bool m_bOnDisk;			///< \c true if the central directory is physically present in the archive
+		
+		/**
+			The position of the End of Central Directory Record.
+			In the Zip64 it points to the Zip64 counterpart.
+		*/
+		ZIP_SIZE_TYPE   m_uEndOffset;
 
-	protected:
-		friend class CZipCentralDir;
+		/**
+			The zero-based number of the volume with the End of Central Directory Record. To determine the total number of segments in the archive,
+			add one to this value.
+		*/
+		ZIP_VOLUME_TYPE m_uLastVolume;
+		ZIP_VOLUME_TYPE m_uVolumeWithCD;		///< The number of the volume with the start of the central directory.
+		ZIP_INDEX_TYPE m_uVolumeEntriesNo;	///< The total number of entries in the central directory on the last volume.
+		ZIP_INDEX_TYPE m_uEntriesNumber;	///< The total number of entries in the central directory.
+
+		/**
+			The size of the central directory. 
+			This value is valid only if #m_bInArchive is \c true; in other cases use the #GetSize method instead.
+		*/
+		ZIP_SIZE_TYPE m_uSize;
+
+		/**
+			The offset of the start of the central directory with respect to the starting volume number.
+			It is the value written in the central directory record.
+			This value is valid only if #m_bInArchive is \c true.
+		*/
+		ZIP_SIZE_TYPE m_uOffset;
+
+
+		/**
+			This value is \c true if the central directory is physically present in the archive; \c false otherwise.
+		*/
+		bool m_bInArchive;
+
+	private:
+		friend class CZipCentralDir;		
+		void Init()
+		{
+			m_iReference = 1;
+#ifdef _ZIP_USE_LOCKING
+			m_mutex.Open();
+#endif
+			m_pCompare = GetCZipStrCompFunc(ZipPlatform::GetSystemCaseSensitivity());
+			m_bCaseSensitive = false;
+			m_bFindFastEnabled = false;
+			m_pszComment.Release();
+			// initialize ( necessary when using 64 bits - we are copying only 4 bytes in Read())	
+			m_bInArchive = false;
+			m_uEndOffset = 0;
+			m_uLastVolume = 0;
+			m_uVolumeWithCD = 0;
+			m_uVolumeEntriesNo = 0;
+			m_uEntriesNumber = 0;
+			m_uSize = 0;  
+			m_uOffset = 0;
+		}
 		bool CheckIfOK_1()
 		{
-			return ((DWORD)m_uCentrDirPos >= m_uOffset + m_uSize);
+			return (m_uEndOffset >= m_uOffset + m_uSize);
 		}
-		void SetBytesBeforeZip(bool bIsSpan)
+		ZIP_SIZE_TYPE CalculateBytesBeforeZip()
 		{
-			m_uBytesBeforeZip = bIsSpan ? 0 : m_uCentrDirPos - m_uSize - m_uOffset;
+			return m_uEndOffset - m_uSize - m_uOffset;
 		}
 		bool CheckIfOK_2()
 		{
 			return (m_uSize || !m_uEntriesNumber) && (m_uEntriesNumber || !m_uSize);
 		}
-		void DiskChange(int iCurrentDisk)
+		
+		/**
+			Returns a value indicating if the current archive properties requires the Zip64 format.
+			
+			\return
+				\c true, if the Zip64 is needed; \c false otherwise.
+		
+			\see
+				<a href="kb">0610051629</a>
+		 */
+		bool NeedsZip64() const
 		{
-			m_uThisDisk = (WORD)iCurrentDisk;
-			if (m_uEntriesNumber)
-			{
-				m_uDiskEntriesNo = 0;	
-			}
-			else
-			{
-				m_uDiskWithCD = m_uThisDisk;
-				m_uOffset = 0;
-			}
+			return m_uLastVolume >= USHRT_MAX || m_uVolumeWithCD >= USHRT_MAX || m_uVolumeEntriesNo >= USHRT_MAX || m_uEntriesNumber >= USHRT_MAX || m_uSize >= UINT_MAX || m_uOffset >= UINT_MAX;
 		}
+
+		CZipAutoBuffer m_pszComment;	///< The global archive comment.		
+
+		/**
+			The case-sensitivity of CZipCentralDir::m_pFindArray sorting.
+		*/
+		bool m_bCaseSensitive;
+
+		/**
+			The value set with the CZipCentralDir::EnableFindFast method.
+		*/
+		bool m_bFindFastEnabled;	
+
+	private:
+		/**
+			The method used in string comparisons. It is set depending on the current case-sensitivity.
+		*/
+		ZIPSTRINGCOMPARE m_pCompare;
+		int m_iReference;
+#ifdef _ZIP_USE_LOCKING
+		ZipArchiveLib::CZipMutex m_mutex;
+#endif
 	};
 
 	CZipCentralDir();
 	virtual ~CZipCentralDir();
 
-	static char m_gszSignature[]; ///< central dir signature
-
-	char m_szSignature[4];	///< end of central dir signature (must be 0x06054b50)
-
-	CZipAutoBuffer m_pszComment;	///< the archive comment
-	CZipAutoBuffer m_pLocalExtraField; ///< a local extra field
-	CZipFileHeader* m_pOpenedFile;	///< points to a currently opened file or NULL if no file is opened
+	static char m_gszSignature[]; ///< The End of Central Directory Record signature.
+	static char m_gszSignature64Locator[]; ///< The Zip64 End of Central Directory Locator signature.
+	CZipFileHeader* m_pOpenedFile;	///< It points to the currently opened file or it is \c NULL, if no file is opened.
 
 	/**
-		Called by CZipArchive::OpenInternal.
+		Initializes the central directory during construction.
+
+		\param pArchive
+			The archive that creates the object.
+
 	*/
-	void Init();
+	void InitOnCreate(CZipArchive* pArchive);
 
 	/**
-		Read the central directory from the archive.
-		\note Throws exceptions.
+		Initializes the object.
+
+		\param pSource
+			If not \c NULL, it specifies the central directory for sharing.
+
+					
 	*/
-	void Read();
+	void Init(CZipCentralDir* pSource = NULL);
 
 	/**
-		Open the file.
+		Reads the central directory from the archive.
+
+		\param bExhaustiveRead
+			\c true, if the exhaustive read should be performed, \c false otherwise.
+
+		
+		\see
+			CZipArchive::SetExhaustiveRead
+	*/
+	void Read(bool bExhaustiveRead);
+
+	/**
+		Opens the file with the given index.
+
 		\param uIndex
-			zero-based index of the file to open
-		\note Throws exceptions.
+			A zero-based index of the file to open.
+
 	*/
-	void OpenFile(WORD uIndex);
+	void OpenFile(ZIP_INDEX_TYPE uIndex);
 
-/**	
-	Test if the given file header index is valid.
-	\param	uIndex
-		a zero-based index 
-	\return	\c true if the file with the given index exists inside the archive; otherwise \c false;
-*/
-	bool IsValidIndex(int uIndex)const;
+	/**	
+		Tests if the given file index is valid.
 
-/**
-	Remove the file header from the central directory.
-	\param	pHeader
-		the header to remove
-	\param iIndex if index is not known set it to -1
-	\param bShift 
-	\note Throws exceptions.
-*/
-	void RemoveFile(CZipFileHeader* pHeader, int iIndex = -1, bool bShift = true);
+		\param	uIndex
+			A zero-based index to test.
+
+		\return
+			\c true, if the file with the given index exists inside the archive; \c false otherwise.
+	*/
+	bool IsValidIndex(ZIP_INDEX_TYPE uIndex)const;
+
+	/**
+		Removes a file header from the central directory.
+
+		\param	pHeader
+			The header to remove.
+
+		\param uIndex
+			The index of the header to remove. Use \c ZIP_FILE_INDEX_UNSPECIFIED, if the index is unknown.
+
+		\param	bShift 
+			If \c true, the data inside the archive is moved over the hole created after removing the file.
+			If \c false, the unused area inside the archive remains.
+
+	*/
+	void RemoveFile(CZipFileHeader* pHeader, ZIP_INDEX_TYPE uIndex = ZIP_FILE_INDEX_UNSPECIFIED, bool bShift = true);
 
 
     /**
-       Remove last file from the central directory.
-       
+       Removes last file from the central directory.       
+
+	   \param	pHeader
+			The header to remove.
+
+		\param uIndex
+			The index of the header to remove. Use \c ZIP_FILE_INDEX_UNSPECIFIED, if the index is unknown.
+	   
      */
-	void RemoveLastFile(CZipFileHeader* pHeader = NULL, int iIndex = -1)
-	{
-		if (iIndex == -1)
-		{
-			iIndex = (int)(m_headers.GetSize() - 1);
-			if (iIndex == -1)
-				return;
-		}
-		if (!pHeader)
-			pHeader = m_headers[iIndex];
-		DWORD uNewSize = pHeader->m_uOffset + GetBytesBefore();
-		// then remove
-		RemoveFile(pHeader, iIndex);
-
-		m_pStorage->Flush();
-		m_pStorage->m_pFile->SetLength(uNewSize);
-		m_info.m_bOnDisk = false; // it is true when AutoFlush is set to true
-	}
-
+	void RemoveLastFile(CZipFileHeader* pHeader = NULL, ZIP_INDEX_TYPE uIndex = ZIP_FILE_INDEX_UNSPECIFIED);
 
 	/**
-		Remove all files
-		\note Throws exceptions.
+		Removes all files.
+
 	*/
 	void RemoveAll();
-/**
-	Cleanup the structure.
-	\param	bEverything
-		- \c true - clear some attributes and remove all the file headers from memory
-		- \c false - do not remove the file headers. It is called in that manner
-		from CZipArchive::CloseFileWithNoUpdate so that the 
-		next file can be tested for the integrity
-	\see CZipArchive::CloseFileWithNoUpdate
-*/
-	void Clear(bool bEverything = true);
-
-/**
-	Add a new file to the central directory.
-	\param	header
-		copy data from it to the new file header	
-	\param iReplaceIndex if different from -1, the index of the file to be replaced
-	\return the pointer to the new header
-	\note Throws exceptions.
-*/
-	CZipFileHeader* AddNewFile(const CZipFileHeader & header, int iReplaceIndex = -1);
 
 	/**
-		return the header filename, converted if needed
+		Closes the central directory.
 	*/
-	CZipString GetProperHeaderFileName(const CZipFileHeader* pHeader) const
-	{
-		if (!m_bConvertAfterOpen)
-		{
-			CZipFileHeader fh = *pHeader;
-			ConvertFileName(true, false, &fh);
-			return fh.GetFileName();
-		}
-		else
-			return pHeader->GetFileName();
-	}
+	void Close();
 
-/**
-	Remove physically the central directory from the archive.
-	Called during adding or deleting files.
-	\note Throws exceptions.
-*/
+	/**
+		Adds a new file to the central directory.
+
+		\param	header
+			Used as a template for the data stored inside the archive.
+
+		\param uReplaceIndex
+			The index of the file to be replaced or \c ZIP_FILE_INDEX_UNSPECIFIED, if the index is unknown.
+
+		\param iLevel
+			The compression level.
+	
+		\param bRichHeaderTemplateCopy
+			\c true, if copy crc and sizes values from \a header;  \c false otherwise.
+
+		\return
+			The new header.
+
+	*/	
+	CZipFileHeader* AddNewFile(const CZipFileHeader & header, ZIP_INDEX_TYPE uReplaceIndex, int iLevel, bool bRichHeaderTemplateCopy = false);
+
+	/**
+		Removes physically the central directory from the archive.
+
+	*/
 	void RemoveFromDisk();
 
-/**
-	Get the central directory size.
-	\param	bWhole
-		if \c true, include the size of the file headers
-	\return	the size of the central directory
-	\see CZipArchive::GetCentralDirSize
-*/
-	DWORD GetSize(bool bWhole = false) const;
-
 	/**
-		Close a file inside archive opened for reading.
-		\param bAfterException \c true if closing after exception
-		\note Throws exceptions.
+		Returns the central directory size.
+		\param	bWhole
+			If \c true, include the size of the file headers.
+			If \c false, the size of the file headers is not included.
+
+		\return
+			The size of the central directory.
+
+		\see
+			CZipArchive::GetCentralDirSize
 	*/
-	void CloseFile(bool bAfterException = false);
+	ZIP_SIZE_TYPE GetSize(bool bWhole = false) const;
 
 	/**
-		Close a file inside archive opened for reading.
-		\note Throws exceptions.
+		Closes a file opened for reading inside the archive.
+		\param skipCheckingDataDescriptor
+			If \c true, the data descriptor that is located after the compressed data in the archive is checked for validity.
+			Set this value to \c false after closing the file after an exception was thrown.
+
+	*/
+	void CloseFile(bool skipCheckingDataDescriptor = false);
+
+	/**
+		Closes a file opened for reading inside the archive.
+
 	*/
 	void CloseNewFile();
 
 	/**
-		Write the central directory to the archive.
-		\note Throws exceptions.
+		Writes the central directory to the archive.
+		
 	*/
-	void Write(CZipActionCallback* pCallback);
+	void Write();
 	
 	/**
-		\see CZipArchive::EnableFindFast
+		Enables Find Fast.
+
+		\see
+			CZipArchive::EnableFindFast
 	*/
 	void EnableFindFast(bool bEnable, bool bCaseSensitive);
 
 	/**
-		\see CZipArchive::FindFile
-		\note \e bSporadically set to \c false rebuilds #m_findarray if necessary
+		Searches for the file.
+
+		\see
+			CZipArchive::FindFile
 	*/
-	int FindFile(LPCTSTR lpszFileName, bool bCaseSensitive, bool bSporadically, bool bFileNameOnly);
+	ZIP_INDEX_TYPE FindFile(LPCTSTR lpszFileName, bool bCaseSensitive, bool bSporadically, bool bFileNameOnly);
 
 
 	/**
-		\see CZipArchive::GetFindFastIndex
+		Returns the Find Fast index.
+
+		\see
+			CZipArchive::GetFindFastIndex
 	*/
-	int GetFindFastIndex(int iFindFastIndex)const
+	ZIP_INDEX_TYPE GetFindFastIndex(ZIP_INDEX_TYPE uFindFastIndex)const
 	{
-		if (!IsValidIndex(iFindFastIndex) || !m_bFindFastEnabled)
-		{
-	// 		ASSERT(FALSE); // 
-			return -1;
-		}
+		if (!IsValidIndex(uFindFastIndex) || !m_pInfo->m_bFindFastEnabled)
+			return ZIP_FILE_INDEX_NOT_FOUND;
 		
-		return m_findarray[iFindFastIndex].m_uIndex;
+		return (*m_pFindArray)[(ZIP_ARRAY_SIZE_TYPE)uFindFastIndex]->m_uIndex;
 	}
+
+
+	/**
+		Returns the information about the file with the given index.
+
+		\see
+			CZipArchive::operator[](ZIP_INDEX_TYPE)
+	*/
+	CZipFileHeader* operator[](ZIP_INDEX_TYPE uIndex)
+	{
+		return (*m_pHeaders)[(ZIP_ARRAY_SIZE_TYPE)uIndex];
+	}
+
+	/**
+		Returns the information about the file with the given index.
+
+		\see
+			CZipArchive::operator[](ZIP_INDEX_TYPE) const
+	*/
+	const CZipFileHeader* operator[](ZIP_INDEX_TYPE uIndex) const
+	{
+		return (*m_pHeaders)[(ZIP_ARRAY_SIZE_TYPE)uIndex];
+	}
+
+	/**
+		Returns the number of files in the archive.
+
+		\return
+			The number of files in the archive.
+			
+	*/
+	ZIP_ARRAY_SIZE_TYPE GetCount() const
+	{
+		return m_pHeaders == NULL ? 0 : m_pHeaders->GetSize();
+	}
+	
+	/**
+		Sets the global comment.
+
+		\see
+			CZipArchive::SetGlobalComment
+	*/
+	void SetComment(LPCTSTR lpszComment, UINT codePage);
+
+	/**
+		Returns the global comment.
+
+		\see
+			CZipArchive::GetGlobalComment
+	*/
+	void GetComment(CZipString& szComment) const;
+
+	
+
+	/**
+		Finds the index of the file with the given name.
+
+		\param	lpszFileName
+			The name of the file to find.
+
+		\return
+			The index in CZipCentralDir::m_pFindArray with the corresponding CZipFindFast structure
+			or \c ZIP_FILE_INDEX_NOT_FOUND, if there is no such file with the given name.
+
+		\see
+			CZipArchive::FindFile
+	*/
+	ZIP_INDEX_TYPE FindFileNameIndex(LPCTSTR lpszFileName) const;
+
+	/**
+		Returns the information about the central directory.
+			
+		\see
+			CZipArchive::GetCentralDirInfo
+	*/
+	void GetInfo(CInfo& info) const {info = *m_pInfo;}
+
+	/**
+		Returns the value indicating whether the Find Fast feature is enabled.
+
+		\return
+			The value of CInfo::m_bFindFastEnabled.
+	*/
+	bool IsFindFastEnabled(){return m_pInfo->m_bFindFastEnabled;}
+	
+	/**
+		Rebuilds the CZipCentralDir::m_pFindArray array.
+	*/
+	void RebuildFindFastArray()
+	{
+		if (m_pInfo->m_bFindFastEnabled)
+			BuildFindFastArray(m_pInfo->m_bCaseSensitive);
+	}
+
+	/**
+		Consistency checks to ignore. It can be one or more of the CZipArchive::ConsistencyCheck values.
+
+		\see 
+			CZipArchive::SetIgnoredConsistencyChecks
+	*/
+	int m_iIgnoredChecks;
+
+	/**
+		Returns the value indicating whether the specified consistency check should be performed.
+
+		\param iLevel
+			The level to check. It can be one or more of the CZipArchive::ConsistencyCheck values.
+
+		\return
+			\c true, if the specified check should be performed; \c false otherwise.
+
+		\see
+			m_iIgnoredChecks
+	*/
+	bool IsConsistencyCheckOn(int iLevel)
+	{
+		// check, if not ignored
+		return (m_iIgnoredChecks & iLevel) == 0;
+	}
+
+	/**
+		Returns the current storage.
+
+		\return 
+			The current storage.
+	*/
+	CZipStorage* GetStorage() {return m_pStorage;}
+#ifdef _ZIP_UNICODE_CUSTOM
+	/**
+		Returns the current string store settings.
+
+		\see
+			CZipArchive::GetStringStoreSettings
+	*/
+	const CZipStringStoreSettings& GetStringStoreSettings() const;
+#endif
+	/**
+		Called when a filename of a file in the archive changes.
+
+		\return
+			\c true, if the change is permitted; \c false otherwise.
+			
+	*/
+	bool OnFileNameChange(CZipFileHeader* pHeader);
+
+	/**
+		Called when data of a file changes in a central directory file header.
+
+		\return
+			\c true, if the change is permitted; \c false otherwise.
+			
+	*/
+	bool OnFileCentralChange();
+
+	/**
+		Sets the current Unicode mode.
+
+		\see
+			CZipArchive::SetUnicodeMode
+	*/
+	void SetUnicodeMode(int iMode) {m_iUnicodeMode = iMode;}
+
+	/**
+		Returns the current Unicode mode.
+
+		\see
+			CZipArchive::GetUnicodeMode
+	*/
+	int GetUnicodeMode() const {return m_iUnicodeMode;}		
+	
+	/**
+		Examines whether any file is modified.
+
+		\return
+			\c true, if there are modified files; \c false otherwise.
+
+		\see
+			CZipArchive::IsModified
+	*/
+	bool IsAnyFileModified() const;
+
+	/**
+		Throws an exception with the given code.
+	*/
+	void ThrowError(int err) const;
+
+	CZipArchive* GetArchive() 
+	{
+		return m_pArchive;
+	}
+
+	ZIP_FILE_USIZE LocateSignature() ;
+protected:
+
+	/**
+		The reference to the main CZipArchive object.
+	*/
+	CZipArchive* m_pArchive;
 
 	/**
 		Points to CZipArchive::m_storage.
 	*/
 	CZipStorage* m_pStorage;
 	
+
+#if _MSC_VER > 1000
+	#pragma warning( push )
+	#pragma warning (disable : 4702) // unreachable code
+#endif
+
+	/**
+		The current Unicode mode.
+	*/
+	int m_iUnicodeMode;
 	
 	/**
-		The size of the buffer used in searching for the central dir.
-		Set before opening the archive.
-		It is usually set with CZipArchive::SetAdvanced
-		(specify this value as the third argument).
-		\see CZipArchive::SetAdvanced
+		The method used in comparison when sorting headers.
 	*/
-	int m_iBufferSize;
-	
-
-
-
-	/**
-		Holds all the files inside archive info.
-		\see CZipFileHeader
-	*/
-	CZipArray<CZipFileHeader*> m_headers;
-	
-	CZipFileHeader* operator[](int iIndex)
-	{
-		return m_headers[iIndex];
-	}
-	const CZipFileHeader* operator[](int iIndex) const
-	{
-		return m_headers[iIndex];
-	}
-
-	
-	/**
-		- If \c true, the conversion of the filenames takes 
-		place after opening the archive (after reading the central directory 
-		from the file), and before writing the central directory back to
-		the archive.
-		- If \c false, the conversion takes place on each call to CZipArchive::GetFileInfo
-
-		Change is value with CZipArchive::SetConvertAfterOpen.
-
-		Set it to \c true when you plan to use CZipArchive::FindFile or get the stored files information. <BR>
-		Set it to \c false when you plan mostly to modify the archive.
-
-		\b Default: \c true
-		\note Set it before opening the archive.
-		\see CZipArchive::SetConvertAfterOpen
-		\see ConvertFileName
-	*/
-	bool m_bConvertAfterOpen;
-
-	
-	/**
-	If \c true, the OEM conversion is performed under Windows platform on the filenames of the files
-	inside an archive (there is the Ansi-to-Oem conversion performed when storing the filename in the archive,
-	and Oem-to-Ansi when reading the filename from the archive).
-	Set it to \c false only if you have a good reason to do so.
-	\see CZipArchive::EnableOemConversion
-	*/
-	bool m_bOemConversion;
-
-
-	
-
-/**
-	Convert the filename of the CZipFileHeader depending on the current system
-	and the system the zip file was created on (change slash to backslash or
-	vice versa, perform ANSI-OEM conversion if necessary).
-	\param	bFromZip
-		if \c true, convert from archive format
-	\param	bAfterOpen
-		if \c true, called after opening the archive or before closing
-	\param	pHeader		
-		the header to have filename converted; if \c NULL convert the currently
-		opened file
-	\see ZipCompatibility::FileNameUpdate
-	\see m_bConvertAfterOpen
-*/
-	void ConvertFileName(bool bFromZip, bool bAfterOpen, CZipFileHeader* pHeader = NULL) const
-	{
-		if (bAfterOpen != m_bConvertAfterOpen)
-			return;
-		if (!pHeader)
-		{
-			pHeader = m_pOpenedFile;
-			ASSERT(pHeader);
-		}
-		ZipCompatibility::FileNameUpdate(*pHeader, bFromZip, m_bOemConversion);
-	}
-
-/**
-	Convert all the filenames to the system form.
-	Called by CZipArchive::FindFile
-	\see CZipArchive::FindFile
-*/
-	void ConvertAll();
-
-/**
-	\param	lpszFileName
-		the name of the file to find, must be exactly the same (apart from case)
-		as it appears in the archive
-	\return	the index in #m_findarray with the appropriate CZipFindFast structure
-	or \c -1 if there is no file with the given name
-	\see CZipArchive::FindFile
-*/
-	int FindFileNameIndex(LPCTSTR lpszFileName) const;
-
-	DWORD GetBytesBefore() const {return m_info.m_uBytesBeforeZip;}
-	/**
-		Get the information about the central directory
-	*/
-	void GetInfo(Info& info) const {info = m_info;}
-	/**
-		\return the value of m_bFindFastEnabled
-	*/
-	bool IsFindFastEnabled(){return m_bFindFastEnabled;}
-	/**
-		Called by CZipArchive::RenameFile
-	*/
-	void RenameFile(WORD uIndex, LPCTSTR lpszNewName);
-protected:
-	/**
-		Sort the files inside the archive headers by the order in the archive.
-	*/
-	void SortHeaders();
 	static int CompareHeaders(const void *pArg1, const void *pArg2)
 	{
 		CZipFileHeader* pw1 = *(CZipFileHeader**)pArg1;
 		CZipFileHeader* pw2 = *(CZipFileHeader**)pArg2;
-		if ((pw1->m_uOffset < pw2->m_uOffset && pw1->m_uDiskStart == pw2->m_uDiskStart)
-			|| (pw1->m_uDiskStart < pw2->m_uDiskStart))
-			return -1;
-		else if ((pw1->m_uOffset > pw2->m_uOffset && pw1->m_uDiskStart == pw2->m_uDiskStart)
-			|| (pw1->m_uDiskStart > pw2->m_uDiskStart))
-			return 1;
-		else
+		if (pw1 == pw2)
+			return 0;
+
+		if (pw1->m_uVolumeStart == pw2->m_uVolumeStart)
 		{
-			ASSERT(FALSE);
-			// two files with the same offsets on the same disk???
+			if (pw1->m_uOffset < pw2->m_uOffset)
+				return -1;
+			else if (pw1->m_uOffset > pw2->m_uOffset)
+				return 1;
+				ASSERT(FALSE);
+
+
+			// two files with the same offsets in the same volume???
 			CZipException::Throw(CZipException::badZipFile);
-			return 0; // just for the compiler comfort
+			return 0; // just for the compiler comfort (and discomfort of another)
 		}
+		else if (pw1->m_uVolumeStart < pw2->m_uVolumeStart)
+			return -1;
+		else // if (pw1->m_uVolumeStart > pw2->m_uVolumeStart)
+			return 1;		
 	}
 
+#if _MSC_VER > 1000
+	#pragma warning( pop )
+#endif
 
-/**
-	Build #m_findarray.
-*/
+	static int CompareFindFastCollate(const void* pArg1, const void* pArg2)
+	{
+		CZipFindFast* pHeader1 = *(CZipFindFast**)pArg1;
+		CZipFindFast* pHeader2 = *(CZipFindFast**)pArg2;		
+		return pHeader1->m_pHeader->GetFileName().Collate(pHeader2->m_pHeader->GetFileName());
+	}
+
+	static int CompareFindFastCollateNoCase(const void* pArg1, const void* pArg2)
+	{
+		CZipFindFast* pHeader1 = *(CZipFindFast**)pArg1;
+		CZipFindFast* pHeader2 = *(CZipFindFast**)pArg2;		
+		return pHeader1->m_pHeader->GetFileName().CollateNoCase(pHeader2->m_pHeader->GetFileName());
+	}
+
+	/**
+		Holds the information about all files inside the archive.
+
+		\see
+			CZipFileHeader
+	*/
+	CZipArray<CZipFileHeader*>* m_pHeaders;
+
+
+	/**
+		Builds the CZipCentralDir::m_pFindArray array.
+	*/
 	void BuildFindFastArray( bool bCaseSensitive );
 
-	/**
-		Used in fast finding files by the filename.
-		\see CZipFindFast
-		\see m_bFindFastEnabled
-		\see CZipArchive::FindFile
-	*/
-	CZipArray<CZipFindFast> m_findarray;
-
-	/**
-		If \c true, the there is an additional array build, to speed up the 
-		finding process
-		CZipArchive::FindFile uses this array to perform a 
-		binary search.
-		\b Default: \c false
-		\see CZipArchive::EnableFindFast
-		\see CZipArchive::FindFile
-		\see CZipCentralDir::m_findarray
-	*/
-	bool m_bFindFastEnabled;
-
-
-
-/**
-	The \e lpszFileName and \e bCaseSensitive arguments 
-	are the same as in the #FindFileNameIndex. The function get CZipFindFast
-	structure pointed by \e uIndex and compares the filename of CZipFileHeader
-	class stored in this structure with \e lpszFileName.
-	\param	lpszFileName
-	\param	uIndex
-		the index from #m_findarray
-	\return 
-	- 0 if the filenames are the same
-	- < 0 if the filename stored in the array is less than \e lpszFileName
-	- > 0 if the filename stored in the array is greater than \e lpszFileName
-*/
-	int CompareElement(LPCTSTR lpszFileName, WORD uIndex) const
+	void ClearFindFastArray()
 	{
-		return (m_findarray[uIndex].m_pHeader->GetFileName().*m_pCompare)(lpszFileName);
+		ZIP_ARRAY_SIZE_TYPE uCount = m_pFindArray->GetSize();
+		for (ZIP_ARRAY_SIZE_TYPE i = 0; i < uCount; i++)
+			delete (*m_pFindArray)[i];
+		m_pFindArray->RemoveAll();
 	}
-/**
-	Insert a new CZipFindFast element to the #m_findarray.
-	Initialize CZipFindFast object with \e pHeader and \e uIndex values.
-*/
-	void InsertFindFastElement(CZipFileHeader* pHeader, WORD uIndex);
-
-	 
-	
-	/**
-	A compare function (Collate or CollateNoCase) set once so as not
-	to check every time which one to use<BR>
-	ZIPSTRINGCOMPARE is defined in CZipString.h as: <BR>
-	<B><CODE> typedef int (CZipString::*ZIPSTRINGCOMPARE)( LPCTSTR ) const; </CODE></B>
-	*/
-	ZIPSTRINGCOMPARE m_pCompare;
 
 	/**
-		The way the m_findarray is sorted
+		The Find Fast array.
+
+		\see
+			CZipFindFast
+		\see
+			CInfo::m_bFindFastEnabled
+		\see
+			CZipArchive::FindFile
 	*/
-	bool m_bCaseSensitive;
+	CZipArray<CZipFindFast*>* m_pFindArray;
+
 
 	/**
-		\see Info
+		The method used in comparison involving the Find Fast feature.
+
+		\param	lpszFileName
+			The name of the file.
+
+		\param	uIndex
+			The index from the CZipCentralDir::m_pFindArray array.
+
+		\return 
+			The return value has the following meaning:
+			- 0 if the filenames are the same
+			- < 0 if the filename stored in the array is less than \a lpszFileName
+			- > 0 if the filename stored in the array is greater than \a lpszFileName
 	*/
-	Info m_info;
+	int CompareElement(LPCTSTR lpszFileName, ZIP_INDEX_TYPE uIndex) const
+	{
+		return ((*m_pFindArray)[(ZIP_ARRAY_SIZE_TYPE)uIndex]->m_pHeader->GetFileName().*(m_pInfo->m_pCompare))(lpszFileName);
+	}
 
 	/**
-		\return the location of the beginning of the central dir end record in the archive
-		\note Throws exceptions.
+		Inserts a new CZipFindFast element to the CZipCentralDir::m_pFindArray array.
+		Initializes the CZipFindFast object with \a pHeader and \a uIndex values.
+
+		\param pHeader
+			The element to insert.
+
+		\param uIndex
+			The original index of \a pHeader in the central directory. 
+			If set to \c ZIP_FILE_INDEX_UNSPECIFIED, it is assumed to be the last element.
+
+		\return
+			The index in the CZipCentralDir::m_pFindArray array.
 	*/
-	DWORD Locate();	
-	/**
-		Read the file headers from the file.
-		\note Throws exceptions.
-	*/
-	void ReadHeaders();
+	ZIP_INDEX_TYPE InsertFindFastElement(CZipFileHeader* pHeader, ZIP_INDEX_TYPE uIndex);
 
 	/**
-		Free the memory allocated for the CZipFileHeader structures.
+		Removes a CZipFindFast element from the CZipCentralDir::m_pFindArray array.
+
+		\param pHeader
+			The element associated with this object will be removed.
+
+		\param bShift
+			If \c true, the affected indexes will be shifted; \c false otherwise.
+	*/
+	ZIP_INDEX_TYPE RemoveFindFastElement(CZipFileHeader* pHeader, bool bShift);
+
+	/**
+		The central directory information.
+
+		\see
+			CInfo
+	*/
+	CInfo* m_pInfo;
+
+	/**
+		Reads file headers from the archive.
+
+		\param bExhaustiveRead
+			\c true, if the exhaustive read should be performed, \c false otherwise.
+
+		
+		\see
+			CZipArchive::SetExhaustiveRead
+	*/
+	void ReadHeaders(bool bExhaustiveRead);
+
+	/**
+		Frees the memory allocated for the CZipFileHeader structures.
 	*/
 	void RemoveHeaders();
-/**
-	Remove data descriptors from the write buffer in the disk spanning volume
-	that turned out to be one-disk only.
-	We do not remove them from password encrypted files.
 
-	\param	bFromBuffer
-		if \c true, remove from the buffer in memory otherwise from the file on a disk
-	\return	\c false if the file mapping to memory was not successful
-	Can happen only when \e bFormBuffer is \c false.
-	\note Throws exceptions.
-*/
+	/**
+		Removes data descriptors from a segmented archive that turned out to be single-segment only.
+		It is not called for encrypted files.
+
+		\param	bFromBuffer
+			If \c true, removes the descriptors from the write buffer in memory otherwise from the file on the disk.
+
+		\return
+			\c false, if the file mapping to memory was not successful
+			(can happen only when \a bFromBuffer is \c false); \c true otherwise.
+		
+	*/
 	bool RemoveDataDescr(bool bFromBuffer);
-/**
-	Write the file headers to the archive.
-	\note Throws exceptions.
-*/
-	void WriteHeaders(CZipActionCallback* pCallback, bool bOneDisk);
-/**
-	Write the central directory end record.
-	\return	the size of the record
-	\note Throws exceptions.
-*/
-	DWORD WriteCentralEnd();
 
-/**
-	Throw an exception with the given code.
-	\param	err
-	\see CZipException::Throw
-*/
-	void ThrowError(int err) const;
-	
-	
+	/**
+		Writes the file headers to the archive.
+	*/
+	void WriteHeaders(bool bOneDisk);
+
+	/**
+		Writes the End of Central Directory Record.
+
+		\return
+			The size of the record.
+
+	*/
+	void WriteCentralEnd();
+
+
+	/**
+		Creates data that can be shared between different archive objects.
+
+		\see 
+			DestroySharedData
+	*/
+	void CreateSharedData();
+
+	/**
+		Destroys data shared between different archive objects, if the usage reference count
+		of the data is zero.
+
+		
+		\see 
+			CreateSharedData
+	*/
+	void DestroySharedData();
+
+#ifdef _ZIP_USE_LOCKING
+	/**
+		Locks the access to the shared data.
+
+		
+		\see
+			UnlockAccess
+		\see 
+			CreateSharedData
+	*/
+	void LockAccess()
+	{
+
+		ASSERT(m_pInfo);
+		m_pInfo->m_mutex.Lock();
+	}
+
+	/**
+		Unlocks the access to the shared data.
+
+		
+		\see
+			LockAccess
+		\see 
+			CreateSharedData
+	*/
+	void UnlockAccess()
+	{
+		if (m_pInfo)
+			m_pInfo->m_mutex.Unlock();
+	}
+#endif
+private:
+	void InitUnicode();
 };
 
+#if (_MSC_VER > 1000) && (defined ZIP_HAS_DLL)
+	#pragma warning (pop)	
+#endif
 
-#endif // !defined(AFX_CENTRALDIR_H__859029E8_8927_4717_9D4B_E26E5DA12BAE__INCLUDED_)
+
+#endif // !defined(ZIPARCHIVE_ZIPCENTRALDIR_DOT_H)

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -58,20 +58,20 @@ class LightMaterialPlugin : public WidgetPlugin {
          */
         enum Features {
             LIGHTING_MODEL      = 1,        ///< Should the lighting model box be shown?
-            LIGHT               = 2,        ///< Should the light box be shown?                                        
-            MATERIAL            = 4,        ///< Should the material box be shown?  
+            LIGHT               = 2,        ///< Should the light box be shown?
+            MATERIAL            = 4,        ///< Should the material box be shown?
             ATTENUATION         = 8,        ///< Should the attenuation box be shown?
-            LIGHT_AMBIENT       = 16,       ///< Show ambient light color? 
+            LIGHT_AMBIENT       = 16,       ///< Show ambient light color?
             LIGHT_DIFFUSE       = 32,       ///< Show diffuse light color?
             LIGHT_SPECULAR      = 64,       ///< Show specular light color?
-            MATERIAL_USE_OPENGL_MATERIAL = 128,    ///< Show checkbox "Use OpenGL material"?   
-            MATERIAL_AMBIENT    = 256,      ///< Show ambient material color? 
+            MATERIAL_USE_OPENGL_MATERIAL = 128,    ///< Show checkbox "Use OpenGL material"?
+            MATERIAL_AMBIENT    = 256,      ///< Show ambient material color?
             MATERIAL_DIFFUSE    = 512,      ///< Show diffuse material color?
             MATERIAL_SPECULAR   = 1024,     ///< Show specular material color and shininess?
             MATERIAL_EMISSION   = 2048,     ///< Show emission material color?
             ALL_FEATURES        = 4095      ///< Show everything
         };
-    
+
         void initGLState();
         /// Enable features by passing a bitstring. \see Features
         void enableFeatures(int features);
@@ -93,7 +93,7 @@ class LightMaterialPlugin : public WidgetPlugin {
         void setAddAmbient(bool checked);
         void setAddSpecular(bool checked);
         void setApplyAttenuation(bool checked);
-        
+
         // light settings
         void updateLightSpecularColor(int value);
         void updateLightAmbientColor(int value);
@@ -107,7 +107,7 @@ class LightMaterialPlugin : public WidgetPlugin {
         void updateConstantAttenuationSpin(double value, bool updateGLState = true);
         void updateLinearAttenuationSpin(double value, bool updateGLState = true);
         void updateQuadraticAttenuationSpin(double value, bool updateGLState = true);
-        
+
         // material settings
         void updateMaterialSpecularColor();
         void updateMaterialAmbientColor();
@@ -120,7 +120,7 @@ class LightMaterialPlugin : public WidgetPlugin {
         void showMaterialEmissionColor();
         void updateShininessSlider(int value);
         void updateShininessSpin(double value);
-        
+
   private:
 
         // lighting model settings
@@ -128,7 +128,7 @@ class LightMaterialPlugin : public WidgetPlugin {
         QCheckBox *checkAddAmbient_;
         QCheckBox *checkAddSpecular_;
         QCheckBox *checkApplyAttenuation_;
-      
+
         bool addAmbient_;
         bool addSpecular_;
         bool applyAttenuation_;
@@ -171,8 +171,8 @@ class LightMaterialPlugin : public WidgetPlugin {
         float currentLinearAttenuation_;
         float currentQuadraticAttenuation_;
         int sliderSteps_;
-        
-        
+
+
         // material settings
         QGroupBox *groupMaterialParams_;
         QPushButton *getMaterialSpecular_;
@@ -193,7 +193,7 @@ class LightMaterialPlugin : public WidgetPlugin {
         tgt::Color currentMaterialDiffuse_;
         tgt::Color currentMaterialEmission_;
         float currentShininess_;
-        
+
 };
 
 } // namespace voreen

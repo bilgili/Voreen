@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,167 +30,128 @@
 #ifndef VRN_RPTPROPERTYLISTWIDGET_H
 #define VRN_RPTPROPERTYLISTWIDGET_H
 
-#include <QtGui>
+#include "rptnetworkserializergui.h"
 
-#include "voreen/core/vis/property.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/voreenpainter.h"
+#include <map>
 
-#include "rptpropertybutton.h"
+#include <QScrollArea>
 
 namespace voreen {
 
-/**
- * this class was ment for displaying the values of properties that belong to one processor
- * - BoolProp - displayed as a combobox with true / false
- * - EnumProp - displayed as a combobox 
- * - FloatProp - displayed as a doublespinbox
- * - IntProp - displayed as a spinbox
- * - (Int|Float)Vec(2|3|4)Prop - displayed as (2|3|4) spinboxes
- * - ColorProp - displayed with a colored label
- */
-class RptPropertyListWidget : public QTableWidget, MessageReceiver {
-    Q_OBJECT
-public:
-    RptPropertyListWidget(QWidget* parent=0);
-    ~RptPropertyListWidget();
-    
-    /**
-     * this method can be called to display the properties of the given processor in a table
-     */
-	void setProcessor(Processor* processor);
-    
-    /**
-     * checks if @param processor is equal to processor that was given by setProcessor, if so then clear table 
-     */
-    void deselectProcessor(Processor* processor);
-    void resizeEvent(QResizeEvent* event);
-    
-    /**
-     * write cell values back into the properties of a given processor
-     */
-    void exportCellValues();
-
-    virtual void processMessage(Message* msg, const Identifier& dest =Message::all_);
-
-	void setPainter(VoreenPainter* painter) { painter_ = painter; }
-
-	VoreenPainter* getPainter() const { return painter_; }
-
-    QSize sizeHint() const { return QSize(400, 400); }   
-  
-protected:
-	VoreenPainter* painter_;
-
-	/**
-	 * When checking if float props have changed, direct comparisons are unreliable, so we check if their difference
-	 * is greater than this epsilon value;
-	 */
-	float epsilon_;
-
-    /**
-     * expects a vector of pointer of properties, i.e. processor->getProperties()
-     * to build the table
-     */
-    void insertProperties(std::vector<Property*> propertyList);
-   
-    /**
-     *  returns a QCombobox displaying the value of a boolproperty
-     */
-    QComboBox* getBoolPropertyWidget(bool startValue);
-   
-    /**
-     *  returns a QSpinbox displaying the value of an intproperty
-     */
-    QSpinBox*  getIntPropertyWidget(int min, int max, int startValue);
-
-    /**
-     * returns a QDoubleSpinbox displaying the value of a floatproperty
-     */
-    QDoubleSpinBox*  getFloatPropertyWidget(float min, float max, float startValue);
-    
-    
-    QComboBox* getEnumPropertyWidget(std::vector<std::string> descr, int startvalue);
-    
-    
-    std::vector<QWidget*> getIVec2PropertyWidget(tgt::ivec2 val,tgt::ivec2 min,tgt::ivec2 max);
-    std::vector<QWidget*> getIVec3PropertyWidget(tgt::ivec3 val,tgt::ivec3 min,tgt::ivec3 max);
-    std::vector<QWidget*> getIVec4PropertyWidget(tgt::ivec4 val,tgt::ivec4 min,tgt::ivec4 max);
-    std::vector<QWidget*> getFVec2PropertyWidget(tgt::vec2 val,tgt::vec2 min,tgt::vec2 max);
-    std::vector<QWidget*> getFVec3PropertyWidget(tgt::vec3 val,tgt::vec3 min,tgt::vec3 max);
-    std::vector<QWidget*> getFVec4PropertyWidget(tgt::vec4 val,tgt::vec4 min,tgt::vec4 max);
-	QDialogButtonBox*	getStringPropertyWidget(StringProp* prop);
-	QDialogButtonBox*	getStringVectorPropertyWidget(StringVectorProp* prop);
-
-    std::vector<Property*> propertyList_;
-
-    std::vector<std::vector<QWidget*> > vectorWidgetList_; 
-    QComboBox* proxyGeometryBox_;
-	Processor* processor_;
-	std::string networkPath_;
-
-protected slots:
-    void widgetChanged(int);
-    void widgetChanged(double);
-	void propertyButtonClicked(Property* prop);
-	void stringPropButtonPushed(StringProp* prop);
-	void stringVectorPropButtonPushed(StringVectorProp* prop);
-};
-
-//---------------------------------------------------------------------------
+class Processor;
+class ProcessorPropertiesWidget;
 
 /**
- * this class displays the values of a color property, called by insertProperties() of RptPropertyListWidget
+ * This class displays a list of ProcessorPropertiesWidgets representing the processors in a network.
+ * setProcessor() creates widgets for all properties of a given processor and displays them.
  */
-class ColorPropertyWidget : public QWidget {
+class RptPropertyListWidget : public QScrollArea {
 Q_OBJECT
-
 public:
-    ColorPropertyWidget(QWidget* parent=0, tgt::Color color = tgt::Color(1));
-    tgt::vec4 getSelectedColor();
 
-protected:
-    QHBoxLayout* layout_;
-    QLabel* colorLbl_;
-    QPushButton* colorBt_;
-    tgt::Color curColor_;
-    RptPropertyListWidget* rptList_;
-
-protected slots:
-    void clickedColorBt();
-};
-
-//---------------------------------------------------------------------------
-
-/**
- * FIXME: this class is for FileDialogProperties, because VoreenVE does not use voreen's widget generator yet.
- * It has to be removed when new property system is created (FW)
- */
-class FileDialogPropertyWidget : public QWidget {
-    Q_OBJECT
-public:
     /**
-     *Creates a new AGButtonWidget - the button send a (dummy) bool msg
+     * Determines the widget's gui mode.
      */
-    FileDialogPropertyWidget(QWidget* parent = 0, FileDialogProp* prop = 0);
+    enum WidgetMode {
+        LIST,   ///< Properties of all network processors are shown in an expandable list.
+        SINGLE  ///< Only the properties of the currently selected processor are shown.
+    };
+
+    /**
+     * Constructor - creates an empty layout
+     *
+     * @param parent parent widget
+     * @param network the RptNetwork whose processors' properties are to be displayed
+     */
+    RptPropertyListWidget(QWidget* parent=0, RptNetwork* network = 0, WidgetMode mode = SINGLE, Property::LODSetting lod = Property::DEVELOPER);
+
+    /**
+     * Destructor - deletes all created widgets
+     */
+    ~RptPropertyListWidget();
+
+    /**
+     * Changes the WidgetMode.
+     */
+    void setWidgetMode(WidgetMode mode);
+
+    /**
+     * Returns the WidgetMode.
+     */
+    WidgetMode widgetMode() const;
+
+    void setLevelOfDetail(Property::LODSetting lod);
+    Property::LODSetting getLevelOfDetail() const { return lod_; }
+
+    void setState(WidgetMode mode, Property::LODSetting lod);
+
+    /**
+     * Generates the property header widgets of all processors contained by the current network.
+     */
+    void createWidgets();     
+
+signals:
+    /**
+     * Signal that is emitted when a property was changed by the user. It is fired
+     * when a repaint of the rendering is necessary.
+     */
+    void repaintSignal();
 
 public slots:
+    void newNetwork(RptNetwork* network);
+    void processorAdded(RptProcessorItem* procItem);
+    void processorDeleted(Processor* processor);
+
     /**
-     * SLOT-method of pushbutton - opens file dialog
+    * This method is called when a processor is selected in the graph widget.
+    * It will create and display a widget that shows all properties of the given
+    * processor.
+    *
+    * @param p processor that is selected
+    */
+    void processorSelected(Processor* p);
+
+    /**
+    * Deletes all created widgets and sets the displayed widget to an empty one.
+    */
+    void clear();
+
+protected:
+    /**
+     * Sets all header widgets invisible. 
      */
-    void clicked();
+    void hideAll();
 
-private:
-    FileDialogProp* myProp_;
-    QPushButton* openFileDialogBtn_;
+    /**
+     * Sets all header widgets visible. Their expansion state is not changed. 
+     */
+    void showAll();
 
-    std::string dialogCaption_;
-    std::string directory_;
-    std::string fileFilter_;
-    QGroupBox* groupBox_; // equals zero if Plugin is not FrameControler
+    /** 
+     * Sets all header widgets to be expandable by the user.
+     */
+    void setAllExpandable();
+
+    /** 
+     * Sets all header widgets to be not expandable by the user.
+     */
+    void setAllUnexpandable();
+
+    void updateState();
+
+    RptNetwork* rptNetwork_;
+
+    QWidget* containerWidget_;
+
+    WidgetMode widgetMode_;
+    Property::LODSetting lod_;
+    
+    /// mapping from processors to the property widgets
+    std::map<Processor*, ProcessorPropertiesWidget*> processorWidgetMap_;
+
+    Processor* lastSelectedProcessor_;
 };
 
-} //namespace voreen
+} // namespace voreen
 
 #endif //VRN_RPTPROPERTYLISTWIDGET_H

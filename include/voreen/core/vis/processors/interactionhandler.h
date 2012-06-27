@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,22 +47,24 @@ namespace voreen{
   */
 class InteractionHandler: public tgt::EventListener {
     
-    public:
-	    InteractionHandler();
-		~InteractionHandler();
+public:
+    InteractionHandler();
+    ~InteractionHandler();
 
-	    // activates the class for the Events which are given by defaultEventTypes
-	    void activate();
-	    // deactivates the class so that he doesn't get any events any more
-	    void deactivate();
+    /// Activates the class for the Events which are given by defaultEventTypes.
+    void activate();
+    /// Deactivates the class so that he doesn't get any events any more.
+    void deactivate();
 
-	    void setDefaultEventTypes(int defaultEventTypes);
-    	int getDefaultEventTypes();
+    /// Sets the default EventTypes to the BitMask \a defaultEventTypes.
+    void setDefaultEventTypes(int defaultEventTypes);
+    /// Returns the BitMask containing the default EventTypes.
+    int getDefaultEventTypes();
 
 
-    private:
-	    // BitMask which indicates to which EventTypes this class listens
-	    int defaultEventTypes_;
+private:
+    /// BitMask which indicates to which EventTypes this class listens
+    int defaultEventTypes_;
 
 };
 

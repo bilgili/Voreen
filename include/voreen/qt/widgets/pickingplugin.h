@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -52,7 +52,7 @@ public:
     virtual ~PickingPlugin() {}
 
     void mouseDoubleClickEvent(tgt::MouseEvent* e);
-    void setTextureContainer(voreen::TextureContainer* tc); 
+    void setTextureContainer(voreen::TextureContainer* tc);
     void setLowerThreshold(float);
     void setUpperThreshold(float);
 
@@ -64,9 +64,9 @@ protected:
 
 public slots:
      void evaluateThreshold();
-    
+
 private:
-    voreen::TextureContainer* tc_;  
+    voreen::TextureContainer* tc_;
     QGroupBox* thresholdBox_;
     QGroupBox* segmentBox_;
 
@@ -82,11 +82,11 @@ private:
     QLabel* segmentAverageValueLbl_;
     QLabel* segmentStandardDerivationLbl_;
     QLabel* segmentStandardDerivationValueLbl_;
-   
+
     QPushButton* thresholdCalcBt_;
 
     tgt::vec2 thresholdValues_;
-        
+
 };
 
     } // namespace voreen

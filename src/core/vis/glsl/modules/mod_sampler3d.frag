@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,7 +31,7 @@
  * This struct contains information about a volume, like
  * its dimensions and spacing. Additionally, the reciprocal
  * values of all parameters are available (suffix RCP) .
- * The values are set automatically by 
+ * The values are set automatically by
  * VolumeRenderer::bindVolumes() if necessary.
  */
 struct VOLUME_PARAMETERS {
@@ -43,29 +43,32 @@ struct VOLUME_PARAMETERS {
     vec3 volumeCubeSizeRCP_;
     vec3 texCoordScaleFactor_;      // scale factor for tex coords, if VRN_TEXTURE_3D_SCALED is used
     vec3 texCoordScaleFactorRCP_;
-	float bitDepthScale_;
+    int bitDepth_;                  // the volume's bit depth
+    float bitDepthScale_;           // scaling factor that must be applied for normalizing the fetched texture value.
+                                    // currently just used for 12 bit volumes, which actually use only 12 out of 16 bits.
+
 };
-	
+
 /*
- * Function for volume texture lookup. In addition to the volume and the texture coordinates 
- * the corresponding VOLUME_PARAMETERS struct has to be passed. 
+ * Function for volume texture lookup. In addition to the volume and the texture coordinates
+ * the corresponding VOLUME_PARAMETERS struct has to be passed.
  * Before returning the fetched value it is normalized to the interval [0,1], in order to deal
  * with 12 bit data sets.
  */
 vec4 textureLookup3D(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 texCoords) {
-	vec4 result;
+    vec4 result;
     #if defined(VRN_TEXTURE_3D)
         result = texture3D(volume, texCoords);
     #elif defined(VRN_TEXTURE_3D_SCALED)
         result = texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
     #endif
-	result *= volumeParameters.bitDepthScale_;
-	return result;
+    result *= volumeParameters.bitDepthScale_;
+    return result;
 }
 
 
 /*
- * Function for volume texture lookup. In addition to the volume and the texture coordinates 
+ * Function for volume texture lookup. In addition to the volume and the texture coordinates
  * the corresponding VOLUME_PARAMETERS struct has to be passed .
  * In contrast to textureLookup3D() this function does not normalize the intensity values,
  * in order to deal with 12 bit data sets.
@@ -75,14 +78,14 @@ vec4 textureLookup3DUnnormalized(sampler3D volume, VOLUME_PARAMETERS volumeParam
         return texture3D(volume, texCoords);
     #elif defined(VRN_TEXTURE_3D_SCALED)
         return texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
-    #endif   
+    #endif
 }
 
 
 /*
  * This function should be called by all raycasters in order to get the intensity from the volume.
  * In cases where volumeParameters indicates, that gradients are stored in the volume, these are
- * also fetched from the volume. Therefore, in addition to the volume and the texture coordinates 
+ * also fetched from the volume. Therefore, in addition to the volume and the texture coordinates
  * the corresponding VOLUME_PARAMETERS struct has to be passed.
  * Before returning the intensity value it is normalized to the interval [0,1], in order to deal
  * with 12 bit data sets.
@@ -92,13 +95,13 @@ vec4 textureLookup3DUnnormalized(sampler3D volume, VOLUME_PARAMETERS volumeParam
  *
  */
 vec4 getVoxel(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sample) {
-	return textureLookup3D(volume, volumeParameters, sample);
+    return textureLookup3D(volume, volumeParameters, sample);
 }
 
 /*
  * This function should be called by all raycasters in order to get the intensity from the volume.
  * In cases where volumeParameters indicates, that gradients are stored in the volume, these are
- * also fetched from the volume. Therefore, in addition to the volume and the texture coordinates 
+ * also fetched from the volume. Therefore, in addition to the volume and the texture coordinates
  * the corresponding VOLUME_PARAMETERS struct has to be passed.
  * In contrast to getVoxel() this function does not normalize the intensity values, in order to deal
  * with 12 bit data sets.
@@ -107,5 +110,5 @@ vec4 getVoxel(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sample)
  *         in the rgb channels.
  */
 vec4 getVoxelUnnormalized(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sample) {
-	return textureLookup3DUnnormalized(volume, volumeParameters, sample);
+    return textureLookup3DUnnormalized(volume, volumeParameters, sample);
 }

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,12 +28,11 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/blur.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
 Blur::Blur()
-    : GenericFragment("pp_blur"),
+    : ImageProcessor("pp_blur"),
       delta_("set.blurDelta", "Delta", 1.0f),
       blurRed_("set.blurRed", "red channel", true),
       blurGreen_("set.blurGreen", "green channel", true),
@@ -51,11 +50,11 @@ Blur::Blur()
 }
 
 const std::string Blur::getProcessorInfo() const {
-	return "Performs a blurring";
+    return "Performs a blurring";
 }
 
 void Blur::process(LocalPortMapping* portMapping) {
-	int source =  portMapping->getTarget("image.inport");
+    int source =  portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 
     tc_->setActiveTarget(dest, "Blur::process");
@@ -79,11 +78,11 @@ void Blur::process(LocalPortMapping* portMapping) {
     program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("delta_", delta_.get());
     program_->setUniform("blurChannels",    blurRed_.get() ? 1.f : 0.f,
-						                    blurGreen_.get() ? 1.f : 0.f,
+                                            blurGreen_.get() ? 1.f : 0.f,
                                             blurBlue_.get() ? 1.f : 0.f,
                                             blurAlpha_.get() ? 1.f : 0.f);
     program_->setUniform("nblurChannels",   blurRed_.get() ? 0.f : 1.f,
-						                    blurGreen_.get() ? 0.f : 1.f,
+                                            blurGreen_.get() ? 0.f : 1.f,
                                             blurBlue_.get() ? 0.f : 1.f,
                                             blurAlpha_.get() ? 0.f : 1.f);
     glDepthFunc(GL_ALWAYS);
@@ -97,30 +96,6 @@ void Blur::process(LocalPortMapping* portMapping) {
 
 void Blur::setDelta(float delta) {
     delta_.set(delta);
-}
-
-void Blur::processMessage(Message* msg, const Identifier& dest){
-	GenericFragment::processMessage(msg, dest);
-    if (msg->id_ == "set.blurDelta") {
-        delta_.set(msg->getValue<float>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.blurRed") {
-        blurRed_.set(msg->getValue<bool>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.blurGreen") {
-        blurGreen_.set(msg->getValue<bool>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.blurBlue") {
-        blurBlue_.set(msg->getValue<bool>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.blurAlpha") {
-        blurAlpha_.set(msg->getValue<bool>());
-        invalidate();
-    }
 }
 
 } // voreen namespace

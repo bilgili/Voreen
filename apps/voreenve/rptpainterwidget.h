@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,23 +30,21 @@
 #ifndef VRN_RPTPAINTERWIDGET_H
 #define VRN_RPTPAINTERWIDGET_H
 
-#include <QtGui>
 #include "tgt/qt/qtcanvas.h"
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/trackballnavigation.h"
-#include "voreen/core/vis/flythroughnavigation.h"
 
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
-
+class QMouseEvent;
+class QWidget;
 
 namespace voreen {
 
-class RptPainterWidget : public tgt::QtCanvas, tgt::EventListener {
+class FlythroughNavigation;
+class NetworkEvaluator;
+class TrackballNavigation;
+class VoreenPainter;
+
+class RptPainterWidget : public tgt::QtCanvas {
     Q_OBJECT
 public:
-
     enum CameraNavigation {
         TRACKBALL_NAVIGATION,
         FLYTHROUGH_NAVIGATION
@@ -55,44 +53,23 @@ public:
     RptPainterWidget(QWidget* parent = 0, CameraNavigation navigation = TRACKBALL_NAVIGATION);
     ~RptPainterWidget();
 
-    void init(TextureContainer* tc, tgt::Camera* camera);
-    TextureContainer* getTextureContainer();
-    bool setEvaluator(NetworkEvaluator* evaluator);
-
-    void closeEvent(QCloseEvent* e);
-    void hideEvent(QHideEvent* e);
+    void init(NetworkEvaluator* eval, tgt::Camera* camera);
+    void initializeGL();
 
     TrackballNavigation* getTrackballNavigation() const;
     FlythroughNavigation* getFlythroughNavigation() const;
-    
+
     void setCurrentNavigation(CameraNavigation navi);
     CameraNavigation getCurrentNavigation() const;
 
-    VoreenPainter* getPainter();
-
-    NetworkEvaluator* eval;
-    
-
-signals:
-    void detachSignal();
-    void attachSignal();
-
 private:
-    TextureContainer* tc_;
-    
     TrackballNavigation* trackNavi_;
     FlythroughNavigation* flythroughNavi_;
     CameraNavigation currentNavigation_;
 
-    VoreenPainter* painter_;
-
-    bool canvasDetached_;
-
-protected:
-    void mouseDoubleClickEvent(QMouseEvent* event);
-
+    NetworkEvaluator* evaluator_;
 };
 
-} //namespace voreen
+} // namespace voreen
 
-#endif //VRN_RPTPAINTERWIDGET_H
+#endif // VRN_RPTPAINTERWIDGET_H

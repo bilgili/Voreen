@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,7 +31,7 @@
 #define VRN_EDGEDETECT_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
@@ -40,7 +40,7 @@ namespace voreen {
  *
  * The detected edge is then colored.
  */
-class EdgeDetect : public GenericFragment {
+class EdgeDetect : public ImageProcessor {
 
 public:
 
@@ -51,13 +51,13 @@ public:
      * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     EdgeDetect();
-    virtual const Identifier getClassName() const { return "PostProcessor.EdgeDetect"; }
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() { return new EdgeDetect(); }
+    virtual const Identifier getClassName() const { return "ImageProcessor.EdgeDetect"; }
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const { return new EdgeDetect(); }
 
     virtual ~EdgeDetect();
 
-	void process(LocalPortMapping*  portMapping);
+    void process(LocalPortMapping*  portMapping);
 
     /**
      *  Takes care of incoming messages.  Accepts the following message-ids:

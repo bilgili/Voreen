@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -46,18 +46,9 @@ public:
 
     virtual ~FirstHitRenderer();
 
-	virtual const Identifier getClassName() const {return "Raycaster.FirstHitRenderer";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new FirstHitRenderer();}
-
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - setTransferFunction, which sets the current transfer-function. Msg-Type: TransferFunc*
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual const Identifier getClassName() const {return "Raycaster.FirstHitRenderer";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new FirstHitRenderer();}
 
     virtual int initializeGL();
 
@@ -74,15 +65,7 @@ public:
      * a screen aligned quad. The render destination is determined by the
      * invoking class.
      */
-	virtual void process(LocalPortMapping*  portMapping);
-
-    virtual void setPropertyDestination(Identifier tag);
-
-    /**
-     * Returns the transfer function used by this raycaster
-     * \return The transfer function used by this raycaster
-     */
-    virtual TransFunc* getTransFunc();
+    virtual void process(LocalPortMapping*  portMapping);
 
 protected:
     virtual std::string generateHeader();
@@ -91,17 +74,15 @@ protected:
 private:
     TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
 
-    bool firstPass_; ///< may need several rendering passes, this stores if this is the first
-
-	EnumProp* compositingMode1_;	///< What compositing mode should be applied for second outport
+    EnumProp* compositingMode1_;    ///< What compositing mode should be applied for second outport
     std::vector<std::string> compositingModes1_;
-	EnumProp* compositingMode2_;	///< What compositing mode should be applied for third outport
+    EnumProp* compositingMode2_;    ///< What compositing mode should be applied for third outport
     std::vector<std::string> compositingModes2_;
 
-	bool destActive_[2];
+    bool destActive_[2];
 };
 
 
-} // namespace
+} // namespace voreen
 
 #endif // VRN_FIRSTHITRENDERER_H

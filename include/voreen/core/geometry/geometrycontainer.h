@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -49,7 +49,7 @@ class GeometryContainer {
          *              method <code>getNextID()</code>. Must be greater 0.
          * @param    geo    Pointer to a Geometry object which is desired to be inserted. Must not be NULL.
          * @param    name   Name for the Geometry pointer. This parameter may be an empty string but it is
-         *                  strongly recommended to use it, e. g. with the same value as the corresponding 
+         *                  strongly recommended to use it, e. g. with the same value as the corresponding
          *                  value used for the GeometryPortMapping.
          * @return    returns false if the name for the object already exists, the pointer is NULL,
          *            or if the ID already exists within the container.
@@ -81,12 +81,12 @@ class GeometryContainer {
          * <b>WITHOUT</b> deleting it and returns the pointer if existing.
          * This method internally looks up the ID for the given name and calls the method
          * "GeometryContainer::removeGeometry(const int id)".
-         * After being removed from the container, the returned pointer will lose its values 
+         * After being removed from the container, the returned pointer will lose its values
          * for the attributes name_ and id_ as they have been set by the container.
          * Therefore the pointer may become added again to the container.
          *
          * @param    name    Name for the Geometry pointer which shall be removed
-         * @return    Geometry pointer which has been removed or NULL if no pointer 
+         * @return    Geometry pointer which has been removed or NULL if no pointer
          *            exists for the given name.
          */
         Geometry* removeGeometry(const Identifier& name);
@@ -98,7 +98,7 @@ class GeometryContainer {
          * Therefore the pointer may become added again to the container.
          *
          * @param    id    ID for the Geometry pointer which shall be removed
-         * @return    Geometry pointer which has been removed or NULL if no pointer 
+         * @return    Geometry pointer which has been removed or NULL if no pointer
          *            exists for the given ID.
          */
         Geometry* removeGeometry(const int id);
@@ -174,22 +174,22 @@ class GeometryContainer {
          * @return    true if Name is contained or false elsewise.
          */
         bool containsGeometry(const Identifier& name) const;
-        
+
         /** Checks whether a Geometry pointer is associated with the given
          * ID within the container.
          * @param    id    ID for the pointer to check wheter contained or not.
          * @return    true if ID is contained or false elsewise.
          */
         bool containsGeometry(const int id) const;
-    
+
         /** Return the next available ID which may become associated with an
          * Geometry pointer.
-         * @return	next available ID for a Geometry pointer
+         * @return    next available ID for a Geometry pointer
          */
         int getNextID() const;
 
-        /** Removes <b>ALL</b> Geometry pointers from the container by removing their 
-         * associated names and IDs but <b>DOES NOT</b> call <code>delete</code> on 
+        /** Removes <b>ALL</b> Geometry pointers from the container by removing their
+         * associated names and IDs but <b>DOES NOT</b> call <code>delete</code> on
          * the pointers! It performs a total reset to initial state incl. the ID counter:
          * after a call to clear(), the next call to getNextID() will then return 1
          * again, because all the previously associated IDs are invalid afterwards!
@@ -210,7 +210,7 @@ class GeometryContainer {
         /** Performs one-time initialization for Geometry objects. That means, the given name
          * for the pointer storing the geometry and the generated ID will become associated
          * to the Geometry object and therefore stored in the object.
-         * Once initialized, the object cannot be added to the container again, unless 
+         * Once initialized, the object cannot be added to the container again, unless
          * resetGeometry() is called.
          * This method is designed to be used only in method addGeometry().
          */

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,27 +33,27 @@
 #include <QtPlugin>
 
 QtCanvasPlugin::QtCanvasPlugin(QObject *parent) : QObject(parent) {
-	initialized = false;
+    initialized = false;
 }
 
 bool QtCanvasPlugin::isContainer() const {
-	return false;
+    return false;
 }
 
 bool QtCanvasPlugin::isInitialized() const {
-	return initialized;
+    return initialized;
 }
 
 QIcon QtCanvasPlugin::icon() const {
-	return QIcon();
+    return QIcon();
 }
 
 QString QtCanvasPlugin::codeTemplate() const {
-	return "";
+    return "";
 }
 
 QString QtCanvasPlugin::domXml() const {
-	return "<widget class=\"QtGLCanvas\" name=\"QtGLCanvas\">\n"
+    return "<widget class=\"QtGLCanvas\" name=\"QtGLCanvas\">\n"
                " <property name=\"geometry\">\n"
                "  <rect>\n"
                "   <x>0</x>\n"
@@ -62,38 +62,38 @@ QString QtCanvasPlugin::domXml() const {
                "   <height>512</height>\n"
                "  </rect>\n"
                " </property>\n"
-			   "</widget>\n";
+               "</widget>\n";
 }
 
 QString QtCanvasPlugin::group() const {
-	return "Voreen Widgets";
+    return "Voreen Widgets";
 }
 
 QString QtCanvasPlugin::includeFile() const {
-	return "tgt/qt/qtcanvas.h";
+    return "tgt/qt/qtcanvas.h";
 }
 
 QString QtCanvasPlugin::name() const {
-	return "QTCanvas";
+    return "QTCanvas";
 }
 
 QString QtCanvasPlugin::toolTip() const {
-	return "";
+    return "";
 }
 
 QString QtCanvasPlugin::whatsThis() const {
-	return "";
+    return "";
 }
 
 QWidget *QtCanvasPlugin::createWidget(QWidget *parent) {
-	return new QtGLCanvas(parent);
+    return new QtGLCanvas(parent);
 }
 
 void QtCanvasPlugin::initialize(QDesignerFormEditorInterface* /*core*/) {
-	if(initialized) {
-		return;
-	}
-	initialized = true;
+    if(initialized) {
+        return;
+    }
+    initialized = true;
 }
 
 Q_EXPORT_PLUGIN2(QtCanvasPlugin, QtCanvasPlugin)

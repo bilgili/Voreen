@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -43,7 +43,7 @@ public:
     /*
      * constructors and destructor
      */
-    
+
     /**
      * @param dimensions dimesions of the new dataset
      * @param bitsStored stored bits of the new dataset
@@ -126,7 +126,6 @@ public:
      * @param z the z-coordinate of the voxel
      * @param channel the channel of the voxel
      */
-
     virtual float getVoxelFloat(size_t x, size_t y, size_t z, size_t channel = 0) const = 0;
 
     /**
@@ -151,7 +150,6 @@ public:
      * @param z the z-coordinate of the voxel
      * @param channel the channel of the voxel
      */
-
     virtual void setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel = 0) = 0;
 
     /**

@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<ProcessorNetwork version="2">
+    <MetaData>
+        <RptAggregationItems />
+    </MetaData>
+    <Settings reuseTCTargets="false" />
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="CubeProxyGeometry" id="0">
+        <MetaData>
+            <RptProcessorItem x="-453" y="-296" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.UseClipping" label="Use clipping" class="BoolProperty" value="true" />
+        <Property id="switch.virtualClipplane" label="Use virtual clipping plane" class="BoolProperty" value="false" />
+        <Property id="set.virtualClipplane" label="Plane equation" class="Vec4Property" x="0.2" y="0.4" z="1" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.LeftClipPlane" label="Left clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.RightClipPlane" label="Right clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.BottomClipPlane" label="Bottom clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.TopClipPlane" label="Top clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.FrontClipPlane" label="Front clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.BackClipPlane" label="Back clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="4" port="coprocessor.proxygeometry" />
+            <Processor id="5" port="coprocessor.proxygeometry" />
+            <Processor id="8" port="coprocessor.proxygeometry" />
+            <Processor id="10" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.Canvas" name="Canvas" id="1">
+        <MetaData>
+            <RptProcessorItem x="-125" y="267" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.useCaching" label="Use caching?" class="BoolProperty" value="true" />
+    </Processor>
+    <Processor type="GeometryRenderer.GeometryProcessor" name="GeometryProcessor" id="2">
+        <MetaData>
+            <RptProcessorItem x="-140" y="41" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Outport type="image.outport">
+            <Processor id="3" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="ImageProcessor.Background" name="Background" id="3">
+        <MetaData>
+            <RptProcessorItem x="-128" y="152" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.backgroundModeAsString" label="Layout" class="EnumProperty" value="Monochrome">
+            <allowedValue value="0" label="Monochrome" />
+            <allowedValue value="1" label="Gradient" />
+            <allowedValue value="2" label="Radial" />
+            <allowedValue value="3" label="Cloud" />
+            <allowedValue value="4" label="Texture" />
+        </Property>
+        <Property id="set.backgroundFirstColor" label="first color" class="ColorProperty" r="0.000000" g="0.000000" b="0.000000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.backgroundSecondColor" label="second color" class="ColorProperty" r="0.800000" g="0.800000" b="0.800000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.backgroundAngle" label="angle" class="IntProperty" minValue="0" maxValue="359" value="180" />
+        <Property id="set.backgroundfilenameAsString" label="Texture" class="FileDialogProperty" value="" caption="" directory="" filefilter="" />
+        <Property id="set.backgroundtile" label="Repeat Background" class="FloatProperty" minValue="0.000000" maxValue="100.000000" value="1.000000" />
+        <Outport type="image.output">
+            <Processor id="1" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.GeomLightWidget" name="GeomLightWidget" id="4">
+        <MetaData>
+            <RptProcessorItem x="-333" y="40" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.showLightWidget" label="Show Light Widget?" class="BoolProperty" value="true" />
+        <Outport type="coprocessor.light">
+            <Processor id="2" port="coprocessor.geometryrenderers" order="0" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.BoundingBox" name="BoundingBox" id="5">
+        <MetaData>
+            <RptProcessorItem x="-314" y="-48" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.BoundingBoxWidth" label="Line Width" class="FloatProperty" minValue="1.000000" maxValue="10.000000" value="1.000000" />
+        <Property id="set.BoundingBoxStippleFactor" label="Stipple Factor" class="IntProperty" minValue="0" maxValue="255" value="1" />
+        <Property id="set.BoundingBoxStipplePattern" label="Stipple Pattern" class="IntProperty" minValue="1" maxValue="65535" value="65535" />
+        <Property id="set.BoundingboxColor" label="Color" class="ColorProperty" r="0.800000" g="0.800000" b="0.800000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="BoutndingBoxTiles" label="GridElements" class="Vec3Property" x="10" y="10" z="10">
+            <minValue x="2" y="2" z="2" />
+            <maxValue x="255" y="255" z="255" />
+        </Property>
+        <Outport type="coprocessor.boundingbox">
+            <Processor id="2" port="coprocessor.geometryrenderers" order="1" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSelection.VolumeSelector" name="VolumeSelector" id="6">
+        <MetaData>
+            <RptProcessorItem x="-181" y="-397" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.currentModality" label="Modality" class="StringSelectionProperty" value="" />
+        <Property id="set.currentTimestep" label="Timestep" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="0" port="volumehandle.volumehandle" />
+            <Processor id="10" port="volumehandle.volumehandle" />
+            <Processor id="15" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="7">
+        <MetaData>
+            <RptProcessorItem x="-176" y="-507" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Outport type="volumeset.volumeset">
+            <Processor id="6" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.ClippingPlaneWidget" name="ClippingPlaneWidget" id="8">
+        <MetaData>
+            <RptProcessorItem x="-345" y="130" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.ClipSliceColor" label="Color for Clipping Slices" class="ColorProperty" r="0.180000" g="0.680000" b="1.000000" a="0.300000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="switch.ClipXLock" label="Lock X-Clipping planes" class="BoolProperty" value="false" />
+        <Property id="switch.ClipYLock" label="Lock Y-Clipping planes" class="BoolProperty" value="false" />
+        <Property id="switch.ClipZLock" label="Lock Z-Clipping planes" class="BoolProperty" value="false" />
+        <Outport type="coprocessor.clipping">
+            <Processor id="2" port="coprocessor.geometryrenderers" order="2" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.CoarsenessRenderer" name="CoarsenessRenderer" id="9">
+        <MetaData>
+            <RptProcessorItem x="-142" y="-72" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.Coarseness" label="Interaction Coarseness" class="IntProperty" minValue="1" maxValue="20" value="4" />
+        <Outport type="image.outport">
+            <Processor id="2" port="image.inport" />
+        </Outport>
+    </Processor>
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="10">
+        <MetaData>
+            <RptProcessorItem x="-120" y="-288" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="scaleProp" label="Scale" class="Vec3Property" x="1" y="1" z="1">
+            <minValue x="-10" y="-10" z="-10" />
+            <maxValue x="10" y="10" z="10" />
+        </Property>
+        <Property id="translationProp" label="Translation" class="Vec3Property" x="0" y="0" z="0">
+            <minValue x="-5" y="-5" z="-5" />
+            <maxValue x="5" y="5" z="5" />
+        </Property>
+        <Property id="set.supportCameraInsideVolume" label="Support camera inside the volume" class="BoolProperty" value="true" />
+        <Property id="set.jitterEntryPoints" label="Jitter entry params" class="BoolProperty" value="false" />
+        <Outport type="image.entrypoints">
+            <Processor id="15" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="15" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSelection.VolumeSelector" name="VolumeSelector" id="11">
+        <MetaData>
+            <RptProcessorItem x="161" y="-419" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.currentModality" label="Modality" class="StringSelectionProperty" value="" />
+        <Property id="set.currentTimestep" label="Timestep" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="12" port="volumehandle.volumehandle" />
+            <Processor id="13" port="volumehandle.volumehandle" />
+            <Processor id="16" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="12">
+        <MetaData>
+            <RptProcessorItem x="51" y="-292" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.UseClipping" label="Use clipping" class="BoolProperty" value="true" />
+        <Property id="switch.virtualClipplane" label="Use virtual clipping plane" class="BoolProperty" value="false" />
+        <Property id="set.virtualClipplane" label="Plane equation" class="Vec4Property" x="0.2" y="0.4" z="1" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.LeftClipPlane" label="Left clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.RightClipPlane" label="Right clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.BottomClipPlane" label="Bottom clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.TopClipPlane" label="Top clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.FrontClipPlane" label="Front clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Property id="set.BackClipPlane" label="Back clipping plane" class="IntProperty" minValue="0" maxValue="100" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="13" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="13">
+        <MetaData>
+            <RptProcessorItem x="250" y="-294" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="scaleProp" label="Scale" class="Vec3Property" x="1" y="1" z="1">
+            <minValue x="-10" y="-10" z="-10" />
+            <maxValue x="10" y="10" z="10" />
+        </Property>
+        <Property id="translationProp" label="Translation" class="Vec3Property" x="0" y="0" z="0">
+            <minValue x="-5" y="-5" z="-5" />
+            <maxValue x="5" y="5" z="5" />
+        </Property>
+        <Property id="set.supportCameraInsideVolume" label="Support camera inside the volume" class="BoolProperty" value="true" />
+        <Property id="set.jitterEntryPoints" label="Jitter entry params" class="BoolProperty" value="false" />
+        <Outport type="image.entrypoints">
+            <Processor id="16" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="16" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="14">
+        <MetaData>
+            <RptProcessorItem x="166" y="-506" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Outport type="volumeset.volumeset">
+            <Processor id="11" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="15">
+        <MetaData>
+            <RptProcessorItem x="-165" y="-192" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="0" y="0" z="0" w="0">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="raycasting.quality" label="Raycasting quality" class="OptionProperty" value="normal">
+            <allowedValue value="lowest" label="lowest" />
+            <allowedValue value="lower" label="lower" />
+            <allowedValue value="normal" label="normal" />
+            <allowedValue value="high" label="high" />
+            <allowedValue value="higher" label="higher" />
+            <allowedValue value="highest" label="highest" />
+        </Property>
+        <Property id="set.TransferFunction" label="Transfer function" class="TransFuncProp" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="243" g="0" b="0" a="0" />
+                </key>
+                <key intensity="0.037634" split="0">
+                    <col4 r="237" g="121" b="0" a="0" />
+                </key>
+                <key intensity="0.091398" split="0">
+                    <col4 r="231" g="243" b="0" a="54" />
+                </key>
+                <key intensity="0.096774" split="0">
+                    <col4 r="243" g="219" b="0" a="179" />
+                </key>
+                <key intensity="0.118280" split="0">
+                    <col4 r="243" g="190" b="190" a="219" />
+                </key>
+                <key intensity="0.172043" split="0">
+                    <col4 r="244" g="244" b="244" a="255" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.000000" upper="1.000000" />
+        </Property>
+        <Property id="set.masking" label="Masking" class="EnumProperty" value="none">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Segmentation" />
+        </Property>
+        <Property id="set.gradient" label="Gradient calculation" class="EnumProperty" value="Forward Differences">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Forward Differences" />
+            <allowedValue value="2" label="Central Differences" />
+            <allowedValue value="3" label="Filtered" />
+        </Property>
+        <Property id="set.classification" label="Classification" class="EnumProperty" value="Transfer Function">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Transfer Function" />
+        </Property>
+        <Property id="set.shading" label="Shading" class="EnumProperty" value="Phong (Full)">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Phong (Diffuse)" />
+            <allowedValue value="2" label="Phong (Specular)" />
+            <allowedValue value="3" label="Phong (Diffuse+Ambient)" />
+            <allowedValue value="4" label="Phong (Diffuse+Specular)" />
+            <allowedValue value="5" label="Phong (Full)" />
+            <allowedValue value="6" label="Toon" />
+        </Property>
+        <Property id="set.compositing" label="Compositing" class="EnumProperty" value="MIP">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.compositing1" label="Compositing (OP2)" class="EnumProperty" value="DVR">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.compositing2" label="Compositing (OP3)" class="EnumProperty" value="DVR">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="0" y="0" z="0" w="0">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.lightAmbient" label="Ambient light" class="ColorProperty" r="0.400000" g="0.400000" b="0.400000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.lightDiffuse" label="Diffuse light" class="ColorProperty" r="0.800000" g="0.800000" b="0.800000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.lightSpecular" label="Specular light" class="ColorProperty" r="0.600000" g="0.600000" b="0.600000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Outport type="image.output">
+            <Processor id="17" port="image.inport0" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="16">
+        <MetaData>
+            <RptProcessorItem x="49" y="-173" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="0" y="0" z="0" w="0">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="raycasting.quality" label="Raycasting quality" class="OptionProperty" value="normal">
+            <allowedValue value="lowest" label="lowest" />
+            <allowedValue value="lower" label="lower" />
+            <allowedValue value="normal" label="normal" />
+            <allowedValue value="high" label="high" />
+            <allowedValue value="higher" label="higher" />
+            <allowedValue value="highest" label="highest" />
+        </Property>
+        <Property id="set.TransferFunction" label="Transfer function" class="TransFuncProp" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="0" g="0" b="0" a="0" />
+                </key>
+                <key intensity="0.258065" split="1">
+                    <col4 r="89" g="89" b="89" a="0" />
+                    <col4 r="89" g="89" b="89" a="255" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.000000" upper="1.000000" />
+        </Property>
+        <Property id="set.masking" label="Masking" class="EnumProperty" value="none">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Segmentation" />
+        </Property>
+        <Property id="set.gradient" label="Gradient calculation" class="EnumProperty" value="Forward Differences">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Forward Differences" />
+            <allowedValue value="2" label="Central Differences" />
+            <allowedValue value="3" label="Filtered" />
+        </Property>
+        <Property id="set.classification" label="Classification" class="EnumProperty" value="Transfer Function">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Transfer Function" />
+        </Property>
+        <Property id="set.shading" label="Shading" class="EnumProperty" value="Phong (Full)">
+            <allowedValue value="0" label="none" />
+            <allowedValue value="1" label="Phong (Diffuse)" />
+            <allowedValue value="2" label="Phong (Specular)" />
+            <allowedValue value="3" label="Phong (Diffuse+Ambient)" />
+            <allowedValue value="4" label="Phong (Diffuse+Specular)" />
+            <allowedValue value="5" label="Phong (Full)" />
+            <allowedValue value="6" label="Toon" />
+        </Property>
+        <Property id="set.compositing" label="Compositing" class="EnumProperty" value="DVR">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.compositing1" label="Compositing (OP2)" class="EnumProperty" value="DVR">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.compositing2" label="Compositing (OP3)" class="EnumProperty" value="DVR">
+            <allowedValue value="0" label="DVR" />
+            <allowedValue value="1" label="MIP" />
+            <allowedValue value="2" label="ISO" />
+            <allowedValue value="3" label="FHP" />
+            <allowedValue value="4" label="FHN" />
+        </Property>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="0" y="0" z="0" w="0">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="set.lightAmbient" label="Ambient light" class="ColorProperty" r="0.400000" g="0.400000" b="0.400000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.lightDiffuse" label="Diffuse light" class="ColorProperty" r="0.800000" g="0.800000" b="0.800000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Property id="set.lightSpecular" label="Specular light" class="ColorProperty" r="0.600000" g="0.600000" b="0.600000" a="1.000000">
+            <minValue r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+            <maxValue r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        </Property>
+        <Outport type="image.output">
+            <Processor id="17" port="image.inport1" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+    <Processor type="ImageProcessor.Compositer" name="Compositer" id="17">
+        <MetaData>
+            <RptProcessorItem x="11" y="-103" />
+        </MetaData>
+        <Property id="set.lightPosition" label="Light source position" class="Vec4Property" x="2.3" y="1.5" z="1.5" w="1">
+            <minValue x="-10" y="-10" z="-10" w="-10" />
+            <maxValue x="10" y="10" z="10" w="10" />
+        </Property>
+        <Property id="Compositer.set.blendMode" label="Set blend mode:" class="EnumProperty" value="Alpha Compositing">
+            <allowedValue value="0" label="Depth test" />
+            <allowedValue value="1" label="First has priority" />
+            <allowedValue value="2" label="Second has priority" />
+            <allowedValue value="3" label="Blend" />
+            <allowedValue value="4" label="Alpha Compositing" />
+            <allowedValue value="5" label="Maximum Alpha" />
+        </Property>
+        <Property id="Compositer.set.blendFactor" label="Blend factor" class="FloatProperty" minValue="0.000000" maxValue="1.000000" value="0.000000" />
+        <Outport type="image.outport">
+            <Processor id="9" port="image.inport" />
+        </Outport>
+    </Processor>
+    <VolumeSetContainer>
+        <VolumeSet name="E:\voreen\data\baby.pvm">
+            <VolumeSeries name="unknown" modality="unknown">
+                <VolumeHandle timestep="0.000000">
+                    <Origin filename="E:\voreen\data\baby.pvm" seriesname="unknown" timestep="0.000000" />
+                </VolumeHandle>
+            </VolumeSeries>
+        </VolumeSet>
+        <VolumeSet name="E:\voreen\data\feet_256x128x256.raw">
+            <VolumeSeries name="unknown" modality="unknown">
+                <VolumeHandle timestep="0.000000">
+                    <Origin filename="E:\voreen\data\feet_256x128x256.dat" seriesname="unknown" timestep="0.000000" />
+                </VolumeHandle>
+            </VolumeSeries>
+        </VolumeSet>
+        <VolumeSet name="E:\voreen\data\nucleon.raw">
+            <VolumeSeries name="unknown" modality="unknown">
+                <VolumeHandle timestep="0.000000">
+                    <Origin filename="E:\voreen\data\nucleon.dat" seriesname="unknown" timestep="0.000000" />
+                </VolumeHandle>
+            </VolumeSeries>
+        </VolumeSet>
+    </VolumeSetContainer>
+</ProcessorNetwork>

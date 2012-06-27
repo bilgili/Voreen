@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,26 +27,26 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef PLUGINDIALOG_H
-#define PLUGINDIALOG_H
+#ifndef VRN_PLUGINDIALOG_H
+#define VRN_PLUGINDIALOG_H
 
 #include <QDockWidget>
-#include <QScrollArea>
-#include "widgetplugin.h"
 
-class QVBoxLayout;
+class QAction;
+class QScrollArea;
 
 namespace voreen {
 
+class WidgetPlugin;
+
 ///This class shows widgetplugins in a dialogwindow.
-class PluginDialog : public QDockWidget
-{
+class PluginDialog : public QDockWidget {
     Q_OBJECT
 public:
     PluginDialog(WidgetPlugin* plugin, QWidget* parent = 0, bool hideAtStartup = true);
     QAction* createAction();
     WidgetPlugin* getPlugin() { return plugin_; }
-    
+
 public slots:
     void floating(bool fl);
 
@@ -54,12 +54,12 @@ signals:
     void dialogClose(PluginDialog* dialog);
 
 protected:
-    void closeEvent(QCloseEvent* event); 
-    
+    void closeEvent(QCloseEvent* event);
+
     WidgetPlugin* plugin_;      /// the plugin thats capsulated in this dialog
     QScrollArea* scrollArea_;   /// the scroll area around the plugin
 };
 
 } // namespace voreen
 
-#endif //PLUGINDIALOG_H
+#endif // VRN_PLUGINDIALOG_H

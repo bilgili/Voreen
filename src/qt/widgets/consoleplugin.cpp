@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,35 +30,70 @@
 #include "voreen/qt/widgets/consoleplugin.h"
 #include "voreen/qt/qdebug.h"
 
+#include "tgt/logmanager.h"
+
+
 #include <QVBoxLayout>
 
 namespace voreen {
 
+class ConsoleLogQt : public tgt::Log {
+public:
+    ConsoleLogQt(ConsolePlugin* plugin)
+        : tgt::Log(),
+          plugin_(plugin)
+    {
+        timeStamping_ = false;
+        dateStamping_ = false;
+        showCat_ = true;
+        showLevel_ = true;
+    }
+
+    bool isOpen() { return true; }
+
+protected:
+	void logFiltered(const std::string &cat, tgt::LogLevel level, const std::string &msg, const std::string & /*extendedInfo*/ ="") {
+        std::string output;
+
+        if (dateStamping_)
+            output += "[" + getDateString() + "] ";
+        if (timeStamping_)
+            output += "[" + getTimeString() + "] ";
+        if (showCat_)
+            output += cat + " ";
+        if (showLevel_)
+            output += "(" + getLevelString(level) + ") ";
+        if (output != "")
+            output += '\t';
+
+        output += msg;
+
+        plugin_->log(output);
+    }
+
+    ConsolePlugin* plugin_;
+};
+
 ConsolePlugin::ConsolePlugin(QWidget* parent, MessageReceiver* msgReceiver)
-: WidgetPlugin(parent, msgReceiver)
+  : WidgetPlugin(parent, msgReceiver)
 {
     setObjectName(tr("Console"));
-    icon_ = QIcon(":/icons/console.png");
 
-#if defined(WIN32) && !defined(_DEBUG)
-    // redirect cout und cerr to log file
-    freopen("voreenapp-log.txt", "w", stdout);
-    freopen("voreenapp-errors.txt", "w", stderr);
-#endif
+    consoleText_ = new QTextEdit(this);
+    consoleText_->setReadOnly(true);
+    consoleText_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    QVBoxLayout* vboxLayout = new QVBoxLayout();
+    vboxLayout->addWidget(consoleText_);
+    setLayout(vboxLayout);
+    
+    log_ = new ConsoleLogQt(this);
+    log_->addCat("", true, tgt::Info);
+    LogMgr.addLog(log_);
+}
 
-#ifdef WIN32
-    // redirect cout to consoleText widget
-	QDebugStream* mybuf = new QDebugStream();
-    QTextEdit* consoleText = new QTextEdit(this);
-    consoleText->setTextColor(Qt::darkGray);
-    consoleText->setReadOnly(true);
-    consoleText->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	QVBoxLayout* vboxLayout = new QVBoxLayout();
-	vboxLayout->addWidget(consoleText);
-	setLayout(vboxLayout);
-	mybuf->setConsole(consoleText);
-	std::cout.rdbuf(mybuf);
-#endif
+void ConsolePlugin::log(const std::string& msg) {
+    consoleText_->append(msg.c_str());
+    consoleText_->ensureCursorVisible();
 }
 
 void ConsolePlugin::createWidgets() {

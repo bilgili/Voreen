@@ -39,19 +39,16 @@ namespace tgt {
 /**
  * Type of a shader object, can be vertex, fragment or geometry shader
  */
-//TODO: move into ShaderObject. joerg
-enum ShaderType {
-    VERTEX_SHADER = GL_VERTEX_SHADER,
-    FRAGMENT_SHADER = GL_FRAGMENT_SHADER,
-    GEOMETRY_SHADER = GL_GEOMETRY_SHADER_EXT
-};
-
-//------------------------------------------------------------------------------
-
 class ShaderObject {
 public:
     friend class Shader;
     
+    enum ShaderType {
+        VERTEX_SHADER = GL_VERTEX_SHADER,
+        FRAGMENT_SHADER = GL_FRAGMENT_SHADER,
+        GEOMETRY_SHADER = GL_GEOMETRY_SHADER_EXT
+    };
+
     /**
      * Creates a shader object of the specified type
      */
@@ -186,7 +183,7 @@ public:
      */
     void attachObject(ShaderObject* obj);
     void detachObject(ShaderObject* obj);
-    void detachObjectsByType(ShaderType type);
+    void detachObjectsByType(ShaderObject::ShaderType type);
 
     /**
      * Link all shader objects to one shader.
@@ -228,10 +225,11 @@ public:
 
     /**
      * Returns uniform location, or -1 on failure
-     * @param ignoreError Do not log error message on failure
      */
-    GLint getUniformLocation(const std::string& name, bool ignoreError = false);
+    GLint getUniformLocation(const std::string& name);
     
+    void setIgnoreUniformLocationError(bool ignoreError);
+
     // Floats
     bool setUniform(const std::string& name, GLfloat value);
     bool setUniform(const std::string& name, GLfloat v1, GLfloat v2);
@@ -246,19 +244,6 @@ public:
     bool setUniform(const std::string& name, GLint v1, GLint v2, GLint v3, GLint v4);
     bool setUniform(const std::string& name, GLint* v, int count);
 
-/*
-#ifdef __APPLE__
-	// Glew (1.4.0) defines 'GLint' as 'long' on Apple, so these wrappers are necessary.
-	// On all other platforms 'GLint' is defined as 'int' instead.
-    // Glew (1.5.1) defines 'GLint' as 'int' just as normal
-	bool setUniform(const std::string& name, int value);
-    bool setUniform(const std::string& name, int v1, int v2);
-    bool setUniform(const std::string& name, int v1, int v2, int v3);
-    bool setUniform(const std::string& name, int v1, int v2, int v3, int v4);
-    bool setUniform(const std::string& name, int* v, int count);
-#endif
-*/
-    
     // Booleans
     bool setUniform(const std::string& name, bool value);
     bool setUniform(const std::string& name, bool v1, bool v2);
@@ -282,9 +267,7 @@ public:
 
     // Note: Matrix is transposed by OpenGL
     bool setUniform(const std::string& name, const Matrix2f& value, bool transpose = false);
-
     bool setUniform(const std::string& name, const Matrix3f& value, bool transpose = false);
-
     bool setUniform(const std::string& name, const Matrix4f& value, bool transpose = false);
 
     // No location lookup
@@ -389,6 +372,7 @@ protected:
 
     GLuint id_;
     bool isLinked_;
+    bool ignoreError_;
 
     static const std::string loggerCat_;
 };

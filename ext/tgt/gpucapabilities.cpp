@@ -167,8 +167,8 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     if (osString)
         LINFO("OS version:          " << osVersionString_);
 
-    LINFO("OpenGL Version:      " << glVersionString_)
-    LINFO("OpenGL Renderer:     " << glRendererString_)
+    LINFO("OpenGL Version:      " << glVersionString_);
+    LINFO("OpenGL Renderer:     " << glRendererString_);
     if (glRendererString_.find("Cheetah") != string::npos) {
         LWARNING("It seems that NVIDIA GPU emulation is running on this system.");
         LWARNING("This sometimes leads to strange errors.");

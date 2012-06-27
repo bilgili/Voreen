@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,8 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef _VOREEN_TRACKBALL_NAVIGATION_H_
-#define _VOREEN_TRACKBALL_NAVIGATION_H_
+#ifndef VRN_TRACKBALL_NAVIGATION_H
+#define VRN_TRACKBALL_NAVIGATION_H
 
 #include "tgt/event/eventlistener.h"
 #include "tgt/vector.h"
@@ -44,28 +44,28 @@ namespace voreen {
  * A class that makes it possible to use a trackball-metaphor to rotate a dataset.
  */
 class TrackballNavigation : public tgt::EventListener, public MessageReceiver {
-
 public:
-
     /**
      * The Constructor.
      *
      * @param track the trackball to modifie for navigation
-     * @param minDist the minimal allowed ortogonal distance to the center of the trackball
-     * @param maxDist the maximal allowed ortogonal distance to the center of the trackball
+     * @param minDist the minimum allowed orthogonal distance to the center of the trackball
+     * @param maxDist the maximum allowed orthogonal distance to the center of the trackball
      */
     TrackballNavigation(tgt::Trackball* track, bool defaultBehavior = true, float minDist = 0.f, float maxDist = 100.f);
     virtual ~TrackballNavigation() {}
 
     /**
-     * React to a press-Event.  In this case, remember the current mouse-position, so we can calculate relative movement in mouseMoveEvent.
+     * React to a press-Event. In this case, remember the current mouse-position, so we can
+     * calculate relative movement in mouseMoveEvent.
      *
      * @param e The event to be processed.
      */
     virtual void mousePressEvent(tgt::MouseEvent* e);
 
     /**
-     * React to a release-Event.  In this case, reset \a leftPressed_ if necessary and switch coarseness off.
+     * React to a release-Event. In this case, reset \a leftPressed_ if necessary and switch
+     * coarseness off.
      *
      * @param e The event to be processed.
      */
@@ -79,7 +79,8 @@ public:
     virtual void mouseMoveEvent(tgt::MouseEvent* e);
 
     /**
-     * React to a double-click-Event.  In this case, this actually resets the camera's position and orientation
+     * React to a double-click-Event. In this case, this actually resets the camera's position
+     * and orientation
      *
      * @param e The event to be processed.
      */
@@ -93,10 +94,12 @@ public:
     virtual void wheelEvent(tgt::MouseEvent* e);
 
    /**
-     * React to a time-Event.  In this case, this does a number of things:
-     *      - If necessary auto-spin the trackball
-     *      - If the mouse-wheel was used, switch coarseness off after a certain amount of time
-     *      - If auto-spinning of the trackball is active, don't spin the trackball if the user has waited too long after moving the mouse
+     * React to a time-Event. This does a number of things:
+     *
+     *  - If necessary auto-spin the trackball.
+     *  - If the mouse-wheel was used, switch coarseness off after a certain amount of time.
+     *  - If auto-spinning of the trackball is active, don't spin the trackball if the user has
+     *    waited too long after moving the mouse.
      *
      * @param e The event to be processed.
      */
@@ -119,8 +122,8 @@ public:
     tgt::Trackball* getTrackball();
 
     /**
-     * Adds a MessageReceiver to the set of receivers that are
-     * notified when the trackball's state changes.
+     * Adds a MessageReceiver to the set of receivers that are notified when the trackball's
+     * state changes.
      */
     void addReceiver(MessageReceiver* receiver);
 
@@ -131,7 +134,7 @@ protected:
 
     /// Resets position and orientation of the trackball's camera to the initial parameters the camera had
     /// when passed to the trackball.
-    /// Projetive parameters (frustum) are not touched.
+    /// Projective parameters (frustum) are not touched.
     virtual void resetTrackball();
 
     tgt::Trackball* trackball_;                 ///< The trackball that is modified when navigating
@@ -157,9 +160,8 @@ protected:
     bool trackballEnabled_; ///< Is the trackball enabled?
 
     static const std::string loggerCat_;
-
 };
 
-}
+} // namespace
 
-#endif //_VOREEN_TRACKBALL_NAVIGATION_H_
+#endif //VRN_TRACKBALL_NAVIGATION_H

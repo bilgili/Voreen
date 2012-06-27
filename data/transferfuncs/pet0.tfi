@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
-<TransFuncIntensityKeys>
+<TransFuncIntensity>
     <key intensity="0.000000" split="1">
-      <col4 r="255" g="255" b="255" a="255" />
+        <col4 r="255" g="255" b="255" a="0" />
         <col4 r="0" g="0" b="0" a="255" />
     </key>
     <key intensity="0.100000" split="0">
@@ -33,6 +33,7 @@
     </key>
     <key intensity="1.000000" split="1">
         <col4 r="255" g="255" b="255" a="255" />
-	<col4 r="0" g="0" b="0" a="255" />
+        <col4 r="0" g="0" b="0" a="255" />
     </key>
-</TransFuncIntensityKeys>
+    <threshold lower="0.000000" upper="1.000000" />
+</TransFuncIntensity>

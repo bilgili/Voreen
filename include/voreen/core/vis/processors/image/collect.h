@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,18 +31,18 @@
 #define VRN_COLLECT_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
-class Collect : public GenericFragment {
+class Collect : public ImageProcessor {
 public:
-	Collect(std::string filename);
-    virtual const Identifier getClassName() const {return "PostProcessor.Collect";}
-	virtual const std::string getProcessorInfo() const;
-	virtual void process(LocalPortMapping*  portMapping);
+    Collect(std::string filename);
+    virtual const Identifier getClassName() const {return "ImageProcessor.Collect";}
+    virtual const std::string getProcessorInfo() const;
+    virtual void process(LocalPortMapping*  portMapping);
 protected:
-	void processIterative(LocalPortMapping* portMapping);
+    void processIterative(LocalPortMapping* portMapping);
     virtual void renderTwo(int source0, int source1, int pass) = 0;
 };
 

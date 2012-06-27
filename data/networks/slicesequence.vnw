@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<ProcessorNetwork version="2">
+    <MetaData>
+        <RptAggregationItems />
+    </MetaData>
+    <Settings reuseTCTargets="false" />
+    <Processor type="Miscellaneous.Canvas" name="CanvasRenderer" id="0">
+        <MetaData>
+            <RptProcessorItem x="-34" y="503" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.useCaching" value="true" />
+    </Processor>
+    <Processor type="ImageProcessor.Background" name="Background" id="1">
+        <MetaData>
+            <RptProcessorItem x="-35" y="373" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.backgroundModeAsString" value="Monochrome" />
+        <Property id="set.backgroundFirstColor" r="0.000000" g="0.000000" b="0.000000" a="1.000000" />
+        <Property id="set.backgroundSecondColor" r="0.000000" g="0.000000" b="0.000000" a="1.000000" />
+        <Property id="set.backgroundAngle" value="180" />
+        <Property id="set.backgroundfilenameAsString" value="" />
+        <Property id="set.backgroundtile" value="1.000000" />
+        <Outport type="image.output">
+            <Processor id="0" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSelection.VolumeSelector" name="VolumeSelector" id="2">
+        <MetaData>
+            <RptProcessorItem x="-37" y="142" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.currentModality" value="" />
+        <Property id="set.currentTimestep" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="4" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="3">
+        <MetaData>
+            <RptProcessorItem x="-46" y="15" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Outport type="volumeset.volumeset">
+            <Processor id="2" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="SliceRenderer.SliceSequenceRenderer" name="SliceSequenceRenderer" id="4">
+        <MetaData>
+            <RptProcessorItem x="-74" y="255" />
+        </MetaData>
+        <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
+        <Property id="set.TransferFunction" tfType="TransFuncIntensity">
+            <Keys>
+                <key intensity="0.000000" split="0">
+                    <col4 r="0" g="0" b="0" a="0" />
+                </key>
+                <key intensity="1.000000" split="0">
+                    <col4 r="255" g="255" b="255" a="255" />
+                </key>
+            </Keys>
+            <threshold lower="0.000000" upper="1.000000" />
+        </Property>
+        <Property id="sliceAlignmentProp" value="SAGITTAL" />
+        <Property id="sliceIndex" value="20" />
+        <Property id="numSlicesPerRowProp" value="4" />
+        <Property id="numSlicesPerColProp" value="4" />
+        <Property id="renderSliceBoundariesProp" value="true" />
+        <Outport type="image.outport">
+            <Processor id="1" port="image.input" />
+        </Outport>
+    </Processor>
+</ProcessorNetwork>

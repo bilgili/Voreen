@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,7 +44,7 @@ gl_MaterialParameters matParams = gl_FrontMaterial;
 
 // uniforms needed for shading
 uniform vec3 cameraPosition_;   // in world coordinates
-uniform vec3 lightPosition_;    // in world coordinates    
+uniform vec3 lightPosition_;    // in world coordinates
 
 /**
  * Returns attenuation based on the currently set opengl values.
@@ -53,9 +53,9 @@ uniform vec3 lightPosition_;    // in world coordinates
  * @param d Distance to the light source.
  */
 float getAttenuation(in float d) {
-	return 1.0 / (lightParams.constantAttenuation +
-				  lightParams.linearAttenuation * d +
-				  lightParams.quadraticAttenuation * d * d);
+    return 1.0 / (lightParams.constantAttenuation +
+                  lightParams.linearAttenuation * d +
+                  lightParams.quadraticAttenuation * d * d);
 }
 
 
@@ -68,10 +68,10 @@ float getAttenuation(in float d) {
  * transfer function.
  */
 vec3 getAmbientTerm(in vec3 ka) {
-	#ifdef USE_OPENGL_MATERIAL
-		ka = matParams.ambient.rgb;
-	#endif
-	return ka * lightParams.ambient.rgb;
+    #ifdef USE_OPENGL_MATERIAL
+        ka = matParams.ambient.rgb;
+    #endif
+    return ka * lightParams.ambient.rgb;
 }
 
 
@@ -86,11 +86,11 @@ vec3 getAmbientTerm(in vec3 ka) {
  * @param L The normalized light vector used for lambert shading.
  */
 vec3 getDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
-	float NdotL = max(dot(N, L), 0.0);
-	#ifdef USE_OPENGL_MATERIAL
-		kd = matParams.diffuse.rgb;
-	#endif
-	return kd * lightParams.diffuse.rgb * NdotL;
+    float NdotL = max(dot(N, L), 0.0);
+    #ifdef USE_OPENGL_MATERIAL
+        kd = matParams.diffuse.rgb;
+    #endif
+    return kd * lightParams.diffuse.rgb * NdotL;
 }
 
 
@@ -106,13 +106,13 @@ vec3 getDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
  * @param L The normalized light vector used for lambert shading.
  */
 vec3 getLerpDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
-	float alpha = 0.5;
-	vec3 NV = mix(N, L, alpha);
-	float NVdotL = max(dot(NV, L), 0.0);
-	#ifdef USE_OPENGL_MATERIAL
-		kd = matParams.diffuse.rgb;
-	#endif
-	return kd * lightParams.diffuse.rgb * NVdotL;
+    float alpha = 0.5;
+    vec3 NV = mix(N, L, alpha);
+    float NVdotL = max(dot(NV, L), 0.0);
+    #ifdef USE_OPENGL_MATERIAL
+        kd = matParams.diffuse.rgb;
+    #endif
+    return kd * lightParams.diffuse.rgb * NVdotL;
 }
 
 
@@ -128,13 +128,13 @@ vec3 getLerpDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
  * @param alpha The shininess coefficient used.
  */
 vec3 getSpecularTerm(in vec3 ks, in vec3 N, in vec3 L, in vec3 V, in float alpha) {
-	vec3 H = normalize(V + L);
-	#ifdef USE_OPENGL_MATERIAL
-		ks = matParams.specular.rgb;
-		alpha = matParams.shininess;
-	#endif
+    vec3 H = normalize(V + L);
+    #ifdef USE_OPENGL_MATERIAL
+        ks = matParams.specular.rgb;
+        alpha = matParams.shininess;
+    #endif
     float NdotH = pow(max(dot(N, H), 0.0), alpha);
-	return ks * lightParams.specular.rgb * NdotH;
+    return ks * lightParams.specular.rgb * NdotH;
 }
 
 
@@ -157,13 +157,13 @@ vec3 phongShading(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volume
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
     vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
-	vec3 V = normalize(cameraPosition_ - vpos);
+    vec3 V = normalize(cameraPosition_ - vpos);
 
-	// get light source distance for attenuation and normalize light vector
+    // get light source distance for attenuation and normalize light vector
     float d = length(L);
-	L /= d;
+    L /= d;
 
-	vec3 shadedColor = vec3(0.0);
+    vec3 shadedColor = vec3(0.0);
     shadedColor += getAmbientTerm(ka);
     shadedColor += getDiffuseTerm(kd, N, L);
     shadedColor += getSpecularTerm(ks, N, L, V, matParams.shininess);
@@ -192,15 +192,15 @@ vec3 phongShadingDS(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volu
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
     vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
-	vec3 V = normalize(cameraPosition_ - vpos);
+    vec3 V = normalize(cameraPosition_ - vpos);
 
-	// get light source distance for attenuation and normalize light vector
+    // get light source distance for attenuation and normalize light vector
     float d = length(L);
     L /= d;
 
-	vec3 shadedColor = vec3(0.0);
-	shadedColor += getDiffuseTerm(kd, N, L);
-	shadedColor += getSpecularTerm(ks, N, L, V, 1.0);
+    vec3 shadedColor = vec3(0.0);
+    shadedColor += getDiffuseTerm(kd, N, L);
+    shadedColor += getSpecularTerm(ks, N, L, V, 1.0);
     #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d);
     #endif
@@ -225,14 +225,14 @@ vec3 phongShadingS(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volum
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
     vec3 N = normalize(gradient);
     vec3 L = normalize(lightPosition_ - vpos);
-	vec3 V = normalize(cameraPosition_ - vpos);
+    vec3 V = normalize(cameraPosition_ - vpos);
 
-	// get light source distance for attenuation and normalize light vector
+    // get light source distance for attenuation and normalize light vector
     float d = length(L);
     L /= d;
-        
-	vec3 shadedColor = vec3(0.0);
-	shadedColor += getSpecularTerm(ks, N, L, V, matParams.shininess);
+
+    vec3 shadedColor = vec3(0.0);
+    shadedColor += getSpecularTerm(ks, N, L, V, matParams.shininess);
     #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d);
     #endif
@@ -258,14 +258,14 @@ vec3 phongShadingDA(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volu
     vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
 
-	// get light source distance for attenuation and normalize light vector
+    // get light source distance for attenuation and normalize light vector
     float d = length(L);
     L /= d;
 
-	vec3 shadedColor = vec3(0.0);
+    vec3 shadedColor = vec3(0.0);
     shadedColor += getAmbientTerm(ka);
-	shadedColor += getDiffuseTerm(kd, N, L);
-	#ifdef PHONG_APPLY_ATTENUATION
+    shadedColor += getDiffuseTerm(kd, N, L);
+    #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d);
     #endif
     return shadedColor;
@@ -289,13 +289,13 @@ vec3 phongShadingD(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volum
     vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
 
-	// get light source distance for attenuation and normalize light vector
+    // get light source distance for attenuation and normalize light vector
     float d = length(L);
     L /= d;
 
-	vec3 shadedColor = vec3(0.0);
-	shadedColor += getDiffuseTerm(kd, N, L);
-	#ifdef PHONG_APPLY_ATTENUATION
+    vec3 shadedColor = vec3(0.0);
+    shadedColor += getDiffuseTerm(kd, N, L);
+    #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d);
     #endif
     return shadedColor;
@@ -319,11 +319,11 @@ vec3 toonShading(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeP
     vec3 L = normalize(lightPosition_.xyz-vpos.xyz);
     float NdotL = max(dot(N,L),0.0);
 
-	// diffuse term
-	#ifdef USE_OPENGL_MATERIAL
-		kd = matParams.diffuse.rgb;
-	#endif
-	kd *= lightParams.diffuse.rgb;
+    // diffuse term
+    #ifdef USE_OPENGL_MATERIAL
+        kd = matParams.diffuse.rgb;
+    #endif
+    kd *= lightParams.diffuse.rgb;
 
     for (int i=1; i <= numShades; i++) {
         if (NdotL <= float(i) / float(numShades)) {

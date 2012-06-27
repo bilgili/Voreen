@@ -32,8 +32,8 @@ namespace tgt {
 
 BSpline::BSpline(const std::vector<vec3>& ctrlPoints, int degree, GLuint stepCount) :
     Curve(stepCount, Bounds(), true, true),
-    ctrlPoints_(ctrlPoints),
-    degree_(degree) 
+    degree_(degree),
+    ctrlPoints_(ctrlPoints)
 {
     tgtAssert(degree_ > 0, "Degree of a B-Spline must be greater zero.");
     tgtAssert(static_cast<int>(ctrlPoints_.size()) > degree_, 
@@ -46,8 +46,8 @@ BSpline::BSpline(const std::vector<vec3>& ctrlPoints, int degree, GLuint stepCou
 BSpline::BSpline(const std::vector<vec3>& ctrlPoints, const std::vector<float>& knotValues, 
                  int degree, GLuint stepCount) :
     Curve(stepCount, Bounds(), true, true),
-    ctrlPoints_(ctrlPoints),
-    degree_(degree) 
+    degree_(degree),
+    ctrlPoints_(ctrlPoints)
 {
 
     tgtAssert(degree_ > 0, "Degree of a B-Spline must be greater zero.");
@@ -55,8 +55,8 @@ BSpline::BSpline(const std::vector<vec3>& ctrlPoints, const std::vector<float>& 
         "The number of control points must exceed the spline's degree.");
     tgtAssert(knotValues.size() == ctrlPoints_.size(), 
         "The number of knot values must match the number of control points.");
-    tgtAssert( std::adjacent_find(knotValues.begin(), knotValues.end(), std::greater<float>()) == knotValues.end(),
-        "Knot values must be in non-decreasing order");
+//    tgtAssert( std::adjacent_find(knotValues.begin(), knotValues.end(), std::greater<float>()) == knotValues.end(),
+//        "Knot values must be in non-decreasing order");
 
     knots_ = knotValues;
     generateKnotVector();
@@ -138,7 +138,7 @@ void BSpline::generateKnotVector() {
 
         // end knots (for interpolation of the last control point)
         for (int i=0; i<=degree_; ++i) {
-            knots_.push_back(1.f + 1e-6);
+            knots_.push_back(1.f + 1e-6f);
         }
 
     }

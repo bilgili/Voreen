@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,56 +30,29 @@
 #ifndef VRN_ZIPVOLUMEREADER_H
 #define VRN_ZIPVOLUMEREADER_H
 
-#include <string>
-#include <vector>
-
 #include "voreen/core/io/volumereader.h"
-#include "voreen/core/volume/modality.h"
-
-#include "tgt/vector.h"
 
 namespace voreen {
 
+class VolumeSerializerPopulator;
+
 /**
- * Reads multiple volumes stored in a container <tt>.zip</tt>-file together with a description
- * file.
- *
- * The file <tt>description.txt</tt> in the <tt>.zip</tt>-file reference the volumes to be
- * loaded. For <tt>.raw</tt> datasets the information contained in the corresponding
- * <tt>.dat</tt> files is also stored in the description file.
- *
+ * Reads multiple raw-volumes stored in a container <tt>.zip</tt>-file. Each volume needs a
+ * corresponding dat-file with the additional information.
+ * The zip-file may contain another file called "index.mv" which dictates an order for the volumes.
+ * If no such file exists, the volumes will be loaded alphabetically.
  */
 class ZipVolumeReader : public VolumeReader {
 public:
-    ZipVolumeReader(IOProgress* progress = 0);
+    ZipVolumeReader(VolumeSerializerPopulator* populator_, IOProgress* progress = 0);
 
     virtual VolumeSet* read(const std::string& fileName)
-        throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        throw (tgt::FileException, std::bad_alloc);
+    
+    virtual VolumeHandle* readFromOrigin(const VolumeHandle::Origin& origin);
 
 protected:
-    bool parseDescFile(const std::string& filename);
-
-    struct VolInfo {
-        VolInfo(tgt::ivec3 resolution, tgt::vec3 sliceThickness,
-                std::string format, std::string objectModel)
-            : timeStamp_(0), resolution_(resolution), sliceThickness_(sliceThickness),
-              format_(format), objectModel_(objectModel), modality_(Modality::MODALITY_UNKNOWN),
-              metaString_("") {}
-        
-        std::string filename_;
-        std::vector<std::string> extInfo_;
-        unsigned int timeStamp_;
-        tgt::ivec3 resolution_;
-        tgt::vec3 sliceThickness_;
-        std::string format_;
-        std::string objectModel_;
-        Modality modality_;
-        std::string metaString_;
-    };
-
-    std::vector<VolInfo*> volInfos_;
-
-private:
+    VolumeSerializerPopulator* populator_;
     static const std::string loggerCat_;
 };
 

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -66,7 +66,7 @@ public:
         : targetPath_(targetPath),
           callAE_(callAE),
           selectedSeriesInstanceUID_(selectedSeriesInstanceUID) {}
-    
+
     ///Call QThread::start() to start this thread and download.
     void run();
     ///Call this after thread has finished to find out if download was successful
@@ -90,7 +90,7 @@ public:
 public slots:
     ///Updates the filtering in the list with the given string.
     void updateFilter(const QString & text);
-    
+
 signals:
     ///This signal is emitted upon selection of an item in the list.
     void seriesSelected();
@@ -197,8 +197,8 @@ public slots:
     ///progressdialog and stops timer.
     void downloadFinished();
     std::string getURL();
-    
-    
+
+
 signals:
     ///for use in voreenapp. emitted when open button is pressed.
     void dicomServerFinished();
@@ -221,7 +221,7 @@ private:
     QLineEdit* outputDirectory_;
     QPushButton* changeDirectoryButton_;
     voreen::DicomSecurityOptions security_;
-    
+
     QTimer* t_;
     QProgressDialog* pd_;
     DownloadThread* dt_;
@@ -242,7 +242,7 @@ public:
 public slots:
     ///Download the selected series
     void open();
-    
+
 signals:
     void dicomDirFinished();
 

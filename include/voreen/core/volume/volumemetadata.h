@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -64,6 +64,9 @@ public:
     void setSize(const tgt::ivec2& size);
     const tgt::ivec2& getSize() const;
 
+    void setUnit(const std::string& unit);
+    const std::string& getUnit() const;
+
     //
     // further methods
     //
@@ -77,6 +80,7 @@ protected:
     float imagePositionZ_;
     tgt::mat4 transformation_;
     tgt::ivec2 size_;
+    std::string unit_;
 };
 
 } // namespace voreen

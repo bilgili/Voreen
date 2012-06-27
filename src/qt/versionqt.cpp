@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -49,7 +49,7 @@ const std::string VoreenVersionQt::getQtVersion() {
 
 void VoreenVersionQt::logAll(const std::string& loggerCat) {
     VoreenVersion::logAll(loggerCat);
-   
+
     LINFOC(loggerCat, "Qt version: " << getQtVersion());
 }
 

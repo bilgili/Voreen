@@ -29,7 +29,7 @@
  *          Addison-Wesley, 1983. ISBN 0-201-06672-6.
  */
 
-/* @(#) $Id: trees.c,v 1.4 2006/01/28 16:38:49 Tadeusz Dracz Exp $ */
+/* @(#) $Id$ */
 
 /* #define GEN_TREES_H */
 
@@ -203,12 +203,12 @@ local void send_bits(s, value, length)
      * unused bits in value.
      */
     if (s->bi_valid > (int)Buf_size - length) {
-        s->bi_buf |= (value << s->bi_valid);
+        s->bi_buf |= ((value << s->bi_valid) & 0xFFFF);
         put_short(s, s->bi_buf);
         s->bi_buf = (ush)((ush)value >> (Buf_size - s->bi_valid));
         s->bi_valid += length - Buf_size;
     } else {
-        s->bi_buf |= value << s->bi_valid;
+        s->bi_buf |= (value << s->bi_valid);
         s->bi_valid += length;
     }
 }
@@ -218,12 +218,12 @@ local void send_bits(s, value, length)
 { int len = length;\
   if (s->bi_valid > (int)Buf_size - len) {\
     int val = value;\
-    s->bi_buf |= (val << s->bi_valid);\
-    put_short(s, s->bi_buf);\
+	s->bi_buf |= (((value) << s->bi_valid) & 0xFFFF);\
+	put_short(s, s->bi_buf);\
     s->bi_buf = (ush)((ush)val >> (Buf_size - s->bi_valid));\
     s->bi_valid += len - Buf_size;\
   } else {\
-    s->bi_buf |= (value) << s->bi_valid;\
+    s->bi_buf |= ((value) << s->bi_valid);\
     s->bi_valid += len;\
   }\
 }

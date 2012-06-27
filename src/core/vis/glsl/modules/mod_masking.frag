@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,30 +29,14 @@
 
 /**
  * This module contains all functions which can be used for masking
- * voxels during ray traversal. Currently a voxel can be masked based
- * on its intensity value through thresholding, or alternatively by
+ * voxels during ray traversal. Currently a voxel can be masked by
  * applying a segmentation.
  * The according functions are referenced by RC_NOT_MASKED which is
  * used in the raycaster fragment shaders.
  */
 
-// THRESHOLDING
-
-uniform float lowerThreshold_;
-uniform float upperThreshold_;
-
-/***
- * Returns true if the given intensity lies in the threshold interval.
- */
-bool inThresholdInterval(in float intensity) {
-	return (intensity >= lowerThreshold_ && intensity <= upperThreshold_);
-}
-
-
-// SEGMENTATION
-
 #if defined(USE_SEGMENTATION)
-	uniform float segment_;								// id of the segment to be shown
+    uniform float segment_;                                // id of the segment to be shown
     uniform sampler3D segmentation_;                    // segmentation volume
     uniform VOLUME_PARAMETERS segmentationParameters_;  // texture lookup parameters for segmentation_
 #endif
@@ -62,13 +46,15 @@ bool inThresholdInterval(in float intensity) {
  * otherwise false.
  */
 bool inSegmentation(vec3 sample) {
-	#if defined(USE_SEGMENTATION)
-		float seg = textureLookup3D(segmentation_, segmentationParameters_, sample).a;
-		if (step(abs(seg - segment_/255.0), (1.0 / 255.0) / 2.0) >= 0.0) return true;
-		else return false;
-	#else
-		return true;
-	#endif
+    #if defined(USE_SEGMENTATION)
+        float seg = textureLookup3D(segmentation_, segmentationParameters_, sample).a;
+        if (abs(seg - segment_) < 0.00001)
+            return true;
+        else
+            return false;
+    #else
+        return true;
+    #endif
 }
 
 
@@ -81,9 +67,9 @@ bool inSegmentation(vec3 sample) {
  * else 0.
  */
 float applySegmentation(vec3 sample) {
-	return 0.0;
-	/*
+    return 0.0;
+    /*
     float seg = textureLookup3D(segmentation_, segmentationParameters_, sample).a;
     return step(abs(seg - segment_/255.0), (1.0 / 255.0) / 2.0);
-	*/
+    */
 }

@@ -165,6 +165,8 @@ namespace tgt {
 */
 template<class T>
 struct Vector2 {
+    typedef T ElemType;
+
     enum {
         size = 2
     };
@@ -237,6 +239,8 @@ Vector2<T> Vector2<T>::zero = Vector2<T>(T(0), T(0));
 */
 template<class T>
 struct Vector3 {
+    typedef T ElemType;
+
     enum {
         size = 3
     };
@@ -256,6 +260,12 @@ struct Vector3 {
             T r;
             T g;
             T b;
+        };
+        // workaround to prevent "dereferencing type-punned pointer will break strict-aliasing
+        // rules" warning with gcc and -fstrict-aliasing.
+        struct {
+            T _xy[size-1];
+            T _z;
         };
         T elem[size];
     };
@@ -314,10 +324,10 @@ struct Vector3 {
     sub-vector getters
 */
     const Vector2<T>& xy() const {
-        return *((Vector2<T>*) elem);
+        return *((Vector2<T>*) _xy);
     }
     Vector2<T>& xy() {
-        return *((Vector2<T>*) elem);
+        return *((Vector2<T>*) _xy);
     }
     const Vector2<T>& yz() const {
         return *((Vector2<T>*) (elem + 1));
@@ -343,6 +353,8 @@ Vector3<T> Vector3<T>::zero = Vector3<T>(T(0), T(0), T(0));
 */
 template<class T>
 struct Vector4 {
+    typedef T ElemType;
+
     enum {
         size = 4
     };
@@ -365,6 +377,12 @@ struct Vector4 {
             T g;
             T b;
             T a;
+        };
+        // workaround to prevent "dereferencing type-punned pointer will break strict-aliasing
+        // rules" warning with gcc and -fstrict-aliasing.
+        struct {
+            T _xyz[size-1];
+            T _w;
         };
         T elem[size];
     };
@@ -451,7 +469,7 @@ struct Vector4 {
 */
 
     const Vector2<T>& xy() const {
-        return *((Vector2<T>*) elem);
+        return xyz().xy();
     }
     const Vector2<T>& yz() const {
         return *((Vector2<T>*) (elem + 1));
@@ -460,13 +478,13 @@ struct Vector4 {
         return *((Vector2<T>*) (elem + 2));
     }
     const Vector3<T>& xyz() const {
-        return *((Vector3<T>*) elem);
+        return *((Vector3<T>*) _xyz);
     }
     const Vector3<T>& yzw() const {
         return *((Vector3<T>*) (elem + 1));
     }
     Vector2<T>& xy() {
-        return *((Vector2<T>*) elem);
+        return xyz().xy();
     }
     Vector2<T>& yz() {
         return *((Vector2<T>*) (elem + 1));
@@ -475,7 +493,7 @@ struct Vector4 {
         return *((Vector2<T>*) (elem + 2));
     }
     Vector3<T>& xyz() {
-        return *((Vector3<T>*) elem);
+        return *((Vector3<T>*) _xyz);
     }
     Vector3<T>& yzw() {
         return *((Vector3<T>*) (elem + 1));

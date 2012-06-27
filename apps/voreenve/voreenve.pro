@@ -15,44 +15,42 @@ include(../../commonconf.txt)
 include(../voreenapp.txt)
 
 HEADERS += \
-    rptprocessoritem.h \
-    rptpropertysetitem.h \
-    rptpropertybutton.h \
-    rptmainwindow.h \
-    rptgraphwidget.h \
-    rptprocessorlistwidget.h \
+    rptaggregationitem.h \
     rptaggregationlistwidget.h \
     rptarrow.h \
+    rptgraphwidget.h \
+    rptguiitem.h \
+    rptnetworkserializergui.h \
+    rptpainterwidget.h \
+    rptprocessoritem.h \
+    rptprocessorlistwidget.h \
+    rptpropertylistwidget.h \
+    rptpropertysetitem.h \
     rpttcttooltip.h \
     rpttooltiptimer.h \
-    rptpropertylistwidget.h \
-    rptpainterwidget.h \
-    rptnetworkserializergui.h \
-    rptaggregationitem.h \
-    rptguiitem.h
+    voreenmainwindow.h \
+    workspace.h
 
 contains(DEFINES, VRN_WITH_DCMTK) {
   HEADERS += voreen/qt/dicomdialog.h
-}		
-          
-           
+}
+
 SOURCES += \
-    rptprocessoritem.cpp \
-    rptpropertysetitem.cpp \
-    rptpropertybutton.cpp \
-    rptmainwindow.cpp \
-    rptgraphwidget.cpp \
-    rptprocessorlistwidget.cpp \
+    main.cpp \
+    rptaggregationitem.cpp \
     rptaggregationlistwidget.cpp \
     rptarrow.cpp \
+    rptgraphwidget.cpp \
+    rptguiitem.cpp \
+    rptnetworkserializergui.cpp \
+    rptpainterwidget.cpp \
+    rptprocessoritem.cpp \
+    rptprocessorlistwidget.cpp \
+    rptpropertylistwidget.cpp \
+    rptpropertysetitem.cpp \
     rpttcttooltip.cpp \
     rpttooltiptimer.cpp \
-    rptnetworkserializergui.cpp \
-    rptpropertylistwidget.cpp \						
-    rptpainterwidget.cpp \
-    rptaggregationitem.cpp \
-    rptguiitem.cpp \
-    main.cpp
+    voreenmainwindow.cpp
 
 contains(DEFINES, VRN_WITH_DCMTK) {
   SOURCES +=  ../../src/qt/dicomdialog.cpp
@@ -65,8 +63,12 @@ contains(DEFINES, VRN_WITH_DCMTK) {
 
 win32 {
     # icon description file for windows-exe
-    RC_FILE = icons/winicon.rc
+    RC_FILE = "../../resource/vrn_share/icons/winicon.rc"
+}
 
+macx {
+  # icon for the application bundle
+  ICON = "$${VRN_HOME}/resource/vrn_share/icons/icon.icns"
 }
 
 unix {

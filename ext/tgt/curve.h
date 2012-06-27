@@ -90,7 +90,7 @@ public:
     //! Renders a part of the curve: Starting at startParam and ending at endParam.
     /// if curve is visible. \n
     /// Expected: 0 <= startParam <= endParam <= 1
-    void render(GLfloat startParam, GLfloat endParam);
+    virtual void render(GLfloat startParam, GLfloat endParam);
 
     //! Step count is the number of parts the curve is divided into for rendering. \n
     /// Default value is 100.

@@ -14,7 +14,7 @@ The author's contact address is:
    mailto:stefan@stereofx.org
    http://stereofx.org
 
-*/   
+*/
 
 // (c) by Stefan Roettger
 
@@ -117,7 +117,9 @@ unsigned int readbits(FILE *file, int bits) {
     } else {
         value = DDS_shiftl(DDS_buffer, bits - DDS_bufsize);
         DDS_buffer = 0;
-        fread(&DDS_buffer, 1, 4, file);
+        size_t read = fread(&DDS_buffer, 1, 4, file);
+        if (read == 0)
+            ERRORMSG();
         if (DDS_ISINTEL)
             DDS_swapuint(&DDS_buffer);
         DDS_bufsize += 32 - bits;
@@ -412,11 +414,11 @@ unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigne
     cnt = act = 0;
 
     if (progress)
-		progress->setNumSteps(DDS_BLOCKSIZE - 1);
+        progress->setNumSteps(DDS_BLOCKSIZE - 1);
 
     while ((cnt1 = readbits(DDS_file, DDS_RL)) != 0) {
         if (progress)
-			progress->set(cnt);
+            progress->set(cnt);
 
         bits = DDS_decode(readbits(DDS_file, 3));
 
@@ -823,7 +825,7 @@ unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
         else
             *description = NULL;
     }
-    
+
     if (courtesy != NULL) {
         if (len2 > 1)
             *courtesy = volume + (*width) * (*height) * (*depth) * numc + len1;
@@ -837,7 +839,7 @@ unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
         else
             *parameter = NULL;
     }
-    
+
     if (comment != NULL) {
         if (len4 > 1)
             *comment = volume + (*width) * (*height) * (*depth) * numc + len1 + len2 + len3;

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,14 +30,14 @@
 #ifndef VRN_BLUR_H
 #define VRN_BLUR_H
 
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
 /**
  * Performs a blurring.
  */
-class Blur : public GenericFragment {
+class Blur : public ImageProcessor {
 public:
     /**
      * The Constructor.
@@ -47,9 +47,9 @@ public:
      */
     Blur();
 
-    virtual const Identifier getClassName() const {return "PostProcessor.Blur";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Blur();}
+    virtual const Identifier getClassName() const {return "ImageProcessor.Blur";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new Blur();}
 
     void process(LocalPortMapping* portMapping);
 
@@ -59,15 +59,6 @@ public:
      * @param delta
      */
     void setDelta(float delta);
-
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      -set.blurDelta, which is used to set the parameter delta, Msg-Type: float
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 
 protected:
 

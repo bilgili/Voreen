@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,22 +39,22 @@ namespace voreen {
 class Combine : public Collect {
 public:
 
-	Combine();
-    virtual const Identifier getClassName() const {return "PostProcessor.Combine";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Combine();}
+    Combine();
+    virtual const Identifier getClassName() const {return "ImageProcessor.Combine";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new Combine();}
     ~Combine();
 
     virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
 protected:
 
-	/**
-	 * Renders two sources.
-	 *
-	 * @param source0 First source.
-	 * @param source1 Second source.
-	 */
+    /**
+     * Renders two sources.
+     *
+     * @param source0 First source.
+     * @param source1 Second source.
+     */
     virtual void renderTwo(int source0, int source1, int pass);
 
     virtual void compile();
@@ -62,7 +62,7 @@ protected:
     virtual std::string generateHeader();
 
     EnumProp* blendMode_;
-    ConditionProp* cond_;
+    //ConditionProp* cond_;
     std::vector<std::string> blendModeMethods_;
     std::vector<std::string> blendModeMethodDefines_;
 

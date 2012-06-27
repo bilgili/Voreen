@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -42,11 +42,11 @@ namespace voreen {
 
 class LabelingWidgetQt : public WidgetPlugin, LabelingWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
     LabelingWidgetQt(QWidget* parent=0, MessageReceiver* msgReceiver=0);
-    std::string showInputDialog(const std::string &title, 
+    std::string showInputDialog(const std::string &title,
         const std::string &label,
         const std::string &text);
 

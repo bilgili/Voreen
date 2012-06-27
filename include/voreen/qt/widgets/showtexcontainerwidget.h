@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -45,85 +45,86 @@ namespace voreen {
 /**
  * Show the contents of a TextureContainer.
  *
- * FIXME: Use of texture unit 0 is hard coded.
- * FIXME: only 16 textures can be shown.
+ * TODO: Use of texture unit 0 is hard coded.
  */
 class ShowTexContainerWidget : public QGLWidget {
   Q_OBJECT
 public:
-	ShowTexContainerWidget(const QGLWidget* shareWidget);
-	~ShowTexContainerWidget();
-    
-	void setTextureContainer(TextureContainer *tc);
+    ShowTexContainerWidget(const QGLWidget* shareWidget);
+    ~ShowTexContainerWidget();
+
+    void setTextureContainer(TextureContainer *tc);
 signals:
     void closing(bool);
     void hideSignal();
 
 protected:
-	void mousePressEvent(QMouseEvent* e);
-	void keyPressEvent(QKeyEvent* e);
-	void timerEvent(QTimerEvent* event);
+    void mousePressEvent(QMouseEvent* e);
+    void keyPressEvent(QKeyEvent* e);
+    void timerEvent(QTimerEvent* event);
     void closeEvent(QCloseEvent* event);
+    void showEvent(QShowEvent* e);
     void hideEvent(QHideEvent* e);
 
-    virtual void initializeGL (); 
-	virtual void resizeGL(int width, int height); 
-	virtual void paintGL(); 
-	void paint(unsigned int id);
-	void paintInfos(unsigned int id);
-	
+    virtual void initializeGL ();
+    virtual void resizeGL(int width, int height);
+    virtual void paintGL();
+    void paint(unsigned int id);
+    void paintInfos(unsigned int id);
+
     /**
      * Generates the appropriate header for the used shaders.
      */
     virtual std::string generateHeader();
 
-	tgt::Shader* floatProgram_;
-	tgt::Shader* depthProgram_;
+    tgt::Shader* floatProgram_;
+    tgt::Shader* depthProgram_;
     tgt::Shader* floatRectProgram_;
-	tgt::Shader* depthRectProgram_;
+    tgt::Shader* depthRectProgram_;
 
-	QMenu *contextMenuMEN_;
-	QActionGroup *typeToShowACG_;
-	QAction *colorBufferACT_;
+    QMenu *contextMenuMEN_;
+    QActionGroup *typeToShowACG_;
+    QAction *colorBufferACT_;
     QAction *alphaChannelACT_;
-	QAction *depthBufferACT_;
-	QAction *posXBufferACT_;
-	QAction *negXBufferACT_;
-	QAction *posYBufferACT_;
-	QAction *negYBufferACT_;
-	QAction *posZBufferACT_;
-	QAction *negZBufferACT_;
+    QAction *depthBufferACT_;
+    QAction *posXBufferACT_;
+    QAction *negXBufferACT_;
+    QAction *posYBufferACT_;
+    QAction *negYBufferACT_;
+    QAction *posZBufferACT_;
+    QAction *negZBufferACT_;
 
-	TextureContainer *tc_;
-	bool paintInfos_;
-	int width_;
-	int height_;
-	int selected_;
-	bool fullscreen_;
-	int refreshInterval_;
+    TextureContainer *tc_;
+    bool paintInfos_;
+    int width_;
+    int height_;
+    int selected_;
+    bool fullscreen_;
+    int refreshInterval_;
 
-	int showType_[16];
+    int showType_[16];
+    int timer_;
 };
 
 //---------------------------------------------------------------------------
 
 class ShowTexture : public tgt::QtCanvas {
 public:
-	ShowTexture(QWidget *parent=0, bool shareContext = true);
+    ShowTexture(QWidget *parent=0, bool shareContext = true);
     void setTexture(GLuint tex, tgt::ivec2 size=tgt::ivec2(0,0));
 protected:
-	void timerEvent ( QTimerEvent * event );
+    void timerEvent ( QTimerEvent * event );
 
-	virtual void initializeGL (); 
-	virtual void resizeGL ( int width, int height ); 
-	virtual void paintGL (); 
+    virtual void initializeGL ();
+    virtual void resizeGL ( int width, int height );
+    virtual void paintGL ();
     /**
      * Generates the appropriate header for the used shaders.
      */
     virtual std::string generateHeader();
 
-	tgt::Shader* fragProgram_;
-	GLuint tex_;
+    tgt::Shader* fragProgram_;
+    GLuint tex_;
     tgt::ivec2 size_;
 };
 

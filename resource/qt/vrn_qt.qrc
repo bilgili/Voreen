@@ -2,8 +2,12 @@
     <qresource prefix="/" >
         <file>widgetstyle/voreen.qss</file>
         <file>widgetstyle/closebutton.png</file>
+        <file>widgetstyle/undockbutton.png</file>
         <file>widgetstyle/logo.png</file>
         <file>widgetstyle/menu.png</file>
+        <file>widgetstyle/highlight-dockwidget.png</file>
+        <file>widgetstyle/highlight-menu.png</file>
+        <file>widgetstyle/toolbarhandle.png</file>
         <file>widgetstyle/scrollbar.png</file>
         <file>icons/3d-glasses.png</file>
         <file>icons/3dus.png</file>
@@ -31,6 +35,8 @@
         <file>icons/expand0.png</file>
         <file>icons/expand1.png</file>
         <file>icons/eye.png</file>
+        <file>icons/eye_blackwhite.png</file>
+        <file>icons/eye_crossedout.png</file>
         <file>icons/floppy.png</file>
         <file>icons/glyph-prototype.png</file>
         <file>icons/glyphs.png</file>
@@ -60,16 +66,18 @@
         <file>icons/player_rew.png</file>
         <file>icons/player_stop-grey.png</file>
         <file>icons/player_stop.png</file>
+        <file>icons/ruler.png</file>
         <file>icons/quad.png</file>
         <file>icons/save.png</file>
         <file>icons/rebuildshaders.png</file>
         <file>icons/segmentation.png</file>
+        <file>icons/segmentation-ncat.png</file>
         <file>icons/septal2.png</file>
-        <file>icons/snapshot.png</file>
         <file>icons/trackball-reset.png</file>
         <file>icons/trackball-reset-inverted.png</file>
         <file>icons/transferfunc.png</file>
         <file>icons/vectorfield.png</file>
+        <file>icons/view-refresh.png</file>
         <file>icons/zoom-in.png</file>
         <file>icons/zoom-out.png</file>
         <file>icons/zoom-original.png</file>

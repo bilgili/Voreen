@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,46 +28,36 @@
  **********************************************************************/
 
 #include "rptpainterwidget.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "tgt/navigation/trackball.h"
 
+#include "voreenmainwindow.h"
+
+#include "voreen/core/vis/processors/networkevaluator.h"
+#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/trackballnavigation.h"
+#include "voreen/core/vis/flythroughnavigation.h"
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/application.h"
+
+#include "tgt/navigation/trackball.h"
 #include "tgt/qt/qttimer.h"
+
+#include <QMouseEvent>
+#include <QWidget>
 
 namespace voreen {
 
 RptPainterWidget::RptPainterWidget(QWidget* parent, RptPainterWidget::CameraNavigation navigation)
     : tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, parent, true, 0)
-    , tgt::EventListener()
     , currentNavigation_(navigation)
+    , evaluator_(0)
 {
-    canvasDetached_ = false;
+    setMinimumSize(300, 300);
 }
 
 RptPainterWidget::~RptPainterWidget() {
     delete trackNavi_;
     delete flythroughNavi_;
     delete painter_;
-}
-
-bool RptPainterWidget::setEvaluator(NetworkEvaluator* evaluator) {
-    eval = evaluator;
-    eval->setSize(tgt::ivec2(getWidth(), getHeight()));
-
-    bool result = painter_->setEvaluator(evaluator);
-
-    repaint();
-
-    return result;
-}
-
-void RptPainterWidget::closeEvent(QCloseEvent* e) {
-    e->ignore();
-    //emit attachSignal();
-}
-
-void RptPainterWidget::hideEvent(QHideEvent* e) {
-    e->ignore();
-    //emit attachSignal();
 }
 
 TrackballNavigation* RptPainterWidget::getTrackballNavigation() const {
@@ -79,9 +69,7 @@ FlythroughNavigation* RptPainterWidget::getFlythroughNavigation() const {
 }
 
 void RptPainterWidget::setCurrentNavigation(RptPainterWidget::CameraNavigation navi) {
-
     if (currentNavigation_ != navi) {
-        
         currentNavigation_ = navi;
 
         if (currentNavigation_ == TRACKBALL_NAVIGATION) {
@@ -100,29 +88,25 @@ void RptPainterWidget::setCurrentNavigation(RptPainterWidget::CameraNavigation n
 }
 
 RptPainterWidget::CameraNavigation RptPainterWidget::getCurrentNavigation() const {
-
     return currentNavigation_;
 }
 
-
-VoreenPainter* RptPainterWidget::getPainter() {
-    return painter_;
-}
-
-void RptPainterWidget::init(TextureContainer* tc, tgt::Camera* camera) {
-    tc_ = tc;
-
+void RptPainterWidget::init(NetworkEvaluator* eval, tgt::Camera* camera) {
+    evaluator_ = eval;
     camera_ = camera;
-    setCamera(camera_);
 
+    ShdrMgr.addPath(VoreenApplication::app()->getShaderPath());
+    const int finalTarget = 20;
+    evaluator_->initTextureContainer(finalTarget);
+    
     tgt::EventHandler* timeHandler = new tgt::EventHandler();
     tgt::Trackball* trackball = new tgt::Trackball(this, false, new tgt::QtTimer(timeHandler));
-    trackball->setCenter(tgt::vec3(0.f));
+    trackball->setCenter(tgt::vec3(0.0f));
     trackball->setMouseMove();
 
     trackNavi_ = new TrackballNavigation(trackball, true, 0.05f, 15.f);
     flythroughNavi_ = new FlythroughNavigation(this);
-    
+
     if (currentNavigation_ == TRACKBALL_NAVIGATION) {
         MsgDistr.insert(trackNavi_);
         getEventHandler()->addListenerToBack(trackNavi_);
@@ -132,35 +116,23 @@ void RptPainterWidget::init(TextureContainer* tc, tgt::Camera* camera) {
         getEventHandler()->addListenerToBack(flythroughNavi_);
     }
 
-    painter_ = new VoreenPainter(this, trackball, "mainview");
-    MsgDistr.insert(painter_);
-    
-    eval->setTextureContainer(tc_); 
-
-    getEventHandler()->addListenerToFront(this);
+    // set interval for timeevents (used by the navigation)
     startTimer(10);
 
-    painter_->setEvaluator(eval);
-    setPainter(painter_); // might be dangerous, as this calls NetworkEvaluator::initializeGL()
-    getGLFocus();
-    painter_->paint();
+    VoreenPainter* painterTmp = new VoreenPainter(this, trackball, "mainview");
+    MsgDistr.insert(painterTmp);
+    painterTmp->setEvaluator(evaluator_);
+    painter_ = painterTmp;
+    // also sets the texturecontainer to apropriate size
+    painter_->sizeChanged(size_);
 }
 
-TextureContainer* RptPainterWidget::getTextureContainer(){
-    return tc_;
+void RptPainterWidget::initializeGL() {
+    // initialize OpenGL state
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDisable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
-void RptPainterWidget::mouseDoubleClickEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton) {
-        QMainWindow* mainWindow = qobject_cast<QMainWindow*>(parentWidget());
-        if (mainWindow->isFullScreen())
-            mainWindow->showMaximized();
-        else
-            mainWindow->showFullScreen();
-    } else {
-        tgt::QtCanvas::mouseDoubleClickEvent(event);
-    }
-}
-
-} // namespace
-        
+} // namespace voreen

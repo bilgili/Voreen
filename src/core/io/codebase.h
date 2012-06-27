@@ -14,7 +14,7 @@ The author's contact address is:
    mailto:stefan@stereofx.org
    http://stereofx.org
 
-*/   
+*/
 
 // (c) by Stefan Roettger
 

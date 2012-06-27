@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,6 +37,8 @@
 #include <QDialog>
 #include <QTreeWidgetItem>
 
+#include "voreen/core/volume/observer.h"
+
 #ifdef VRN_WITH_DCMTK
 #include "voreen/core/io/dicomvolumereader.h"
 #include "voreen/qt/dicomdialog.h"
@@ -62,7 +64,7 @@ class VolumeSetContainer;
  *
  * @author Dirk Feldmann, 2008
  */
-class VolumeSetWidget : public QDialog {
+class VolumeSetWidget : public QDialog, public Observer {
     Q_OBJECT
 public:
     /**
@@ -88,19 +90,18 @@ public:
      * @param   leves   levels of the hierarchy which shall be displayed and managed.
      * @param   flags   QWindow flags for the window appearance
      */
-	VolumeSetWidget(VolumeSetContainer* const volumeSetContainer, QWidget* parent = 0, 
-                    int levels = LEVEL_ALL, bool allowClose = false, Qt::WFlags flags = 0);
+    VolumeSetWidget(VolumeSetContainer* const volumeSetContainer, QWidget* parent = 0,
+        int levels = LEVEL_ALL, bool allowClose = false, Qt::WFlags flags = Qt::Tool);
 
     /**
      * Dtor. Does not delete the VolumeSetContainer.
      */
-	~VolumeSetWidget();
+    ~VolumeSetWidget();
 
     /**
-     * Clears the QTreeWidget and updates its content based on the current
-     * content of the VolumeSetContainer.
+     * Sets the VolumeSetContainer.
      */
-    void updateContent(VolumeSetContainer* vsc = 0);
+    void setVolumeSetContainer(VolumeSetContainer* vsc);
 
     /**
      * Sets whether multiple file selection is enabled or disabled.
@@ -142,14 +143,14 @@ public:
      * Adds the content of the files from the given file names to the given VolumeSet as new
      * VolumeSeries objects. A VolumeSeries is created for each file.
      */
-    void addVolumeSeries(const std::vector<std::string>& filenames, 
+    void addVolumeSeries(const std::vector<std::string>& filenames,
                          VolumeSet* parentVolumeSet);
 
     /**
      * Adds the content of the files from the given file names to the given VolumeSeries as new
      * VolumeHandle objects. A VolumeHandle is created for each file.
      */
-    void addVolumeHandles(const std::vector<std::string>& filenames, 
+    void addVolumeHandles(const std::vector<std::string>& filenames,
                           VolumeSeries* parentVolumeSeries);
 
     /**
@@ -178,10 +179,23 @@ public:
      */
     void setUseProgress(bool useProgress) { useProgress_ = useProgress; }
 
+    /**
+     * Updates content and causes a repaint, called via the VolumeSet observer.
+     */    
+    virtual void notify(const Observable* const source = 0);
+                                                           
 public slots:
+    /**
+     * Clears the QTreeWidget and updates its content based on the current
+     * content of the VolumeSetContainer. This method is called by
+     * <code>notify()</code> which has been inherited from class Observer.
+     */
+    void updateContent();
+
     /**
      * The action performed when clicking the button for loading files.
      */
+    //FIXME: say what they do, not when they are called. joerg
     void buttonAddClicked();
 
     void buttonAddDICOMClicked();
@@ -203,11 +217,19 @@ public slots:
 
     void treeItemChanged(QTreeWidgetItem* item, int column);
 
+    /**
+     * Prevent strange behavior if ESC is hit.
+     */
+    virtual void reject() { }
+
+signals:
+    void volumeSetChanged();
+    
 protected:
     /**
-     * Abstract base class for QTreeWidgetItems. This only necessary 
-     * in order to have a common method <code>getType()</code> which 
-     * classifies the data contained by the different 
+     * Abstract base class for QTreeWidgetItems. This only necessary
+     * in order to have a common method <code>getType()</code> which
+     * classifies the data contained by the different
      * TreeWidgetItems / nodes.
      */
     class AbstractVolumeSetTreeItem : public QTreeWidgetItem {
@@ -217,7 +239,7 @@ protected:
     };
 
     /**
-     * Class for the QTreeWidgetItems containing additionally a 
+     * Class for the QTreeWidgetItems containing additionally a
      * pointer to the objects they are associated with.
      * The QTreeWidget may contain nodes which can be either
      * - the root (no data associated, void pointer)
@@ -228,8 +250,8 @@ protected:
     template<class T>
     class VolumeSetTreeItem : public AbstractVolumeSetTreeItem {
     public:
-        VolumeSetTreeItem(const std::string& lable, T itemData) 
-            : AbstractVolumeSetTreeItem(), 
+        VolumeSetTreeItem(const std::string& lable, T itemData)
+            : AbstractVolumeSetTreeItem(),
               itemData_(itemData),
               type_(typeid(itemData))
             {
@@ -259,19 +281,12 @@ protected:
      */
     class VolumeSetTreeWidget : public QTreeWidget {
     public:
-        VolumeSetTreeWidget(QWidget* parent = 0) : QTreeWidget(parent) {
-            setAcceptDrops(true);
-            setColumnCount(1);
-            setHeaderLabel(tr("Content of VolumeSetContainer"));
-            setAnimated(false);
-        }
-
-        virtual ~VolumeSetTreeWidget() {}
+        VolumeSetTreeWidget(QWidget* parent = 0);
 
     protected:
         virtual void dragEnterEvent(QDragEnterEvent* event);
         virtual void dragMoveEvent(QDragMoveEvent* event);
-        virtual bool dropMimeData(QTreeWidgetItem* parent, int index, 
+        virtual bool dropMimeData(QTreeWidgetItem* parent, int index,
                                   const QMimeData* data, Qt::DropAction action);
         virtual void mousePressEvent(QMouseEvent* event);
 
@@ -300,7 +315,7 @@ protected:
     QPushButton* btnLoad_;
     QPushButton* btnLoadDICOM_;
     QPushButton* btnLoadDICOMDir_;
-	QPushButton* btnUnload_;
+    QPushButton* btnUnload_;
     VolumeSetTreeWidget* treeVolumeSets_;
 
     // DICOM dialog
@@ -317,13 +332,12 @@ private:
 
     bool allowClose_;
     bool useProgress_;
-    
+
     void appendVolumeSets(VolumeRootItem* node);
     void appendVolumeSeries(QTreeWidgetItem* node, VolumeSet* const volumeSet);
     void appendVolumeHandles(QTreeWidgetItem* node, VolumeSeries* const volumeSeries);
-	void createWidgets();
     void setModalityComboIndex(const std::string& modalityName);
-}; 
+};
 
 } // namespace
 

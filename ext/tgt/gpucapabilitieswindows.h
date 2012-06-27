@@ -31,6 +31,7 @@
 #define TGT_GPUCAPABILITIESWINDOWS_H
 
 #include "gpucapabilities.h"
+#include "tgt/singleton.h"
 
 #ifdef TGT_WITH_WMI
     #include <wbemidl.h>
@@ -43,8 +44,8 @@ namespace tgt {
  * A singleton that performs Windows specific hardware detection. It provides
  * information about: 
  *  - Graphics driver version and date
- *  - Driver settings
  *  - Size of graphics memory
+ *  - Driver settings
  *
  * The information is collected from several sources like
  * Windows Management Instrumentation (WMI), Windows registry,
@@ -77,23 +78,15 @@ public:
     };
 
     /**
-     * Holds information about graphics driver
-     * settings.
+     * Constructor performs the WMI initialization,
+     * if compiled with WMI support (TGT_WITH_WMI).
      */
-    struct GraphicsDriverSettings {
-        bool verticalSync;      ///< Is vertical synchronization enabled?
-        bool tripleBuffering;   ///< Is triple buffering enabled?
-    };
+    GpuCapabilitiesWindows();
 
     /**
-     * Access the class' singleton by this function.
-     * The singleton is instantiated when this function
-     * is called the first time.
-     *
-     * @warning Instantiating the singleton before OpenGL is
-     *      is initialized can lead to unpredictable results.
+     * The destructor closes the WMI connection, if it is open.
      */
-    static GpuCapabilitiesWindows* getInstance();
+    virtual ~GpuCapabilitiesWindows();
 
     /**
      * Returns information about the graphics driver, 
@@ -121,35 +114,15 @@ public:
      * Windows Management Instrumentation (WMI), hence it is
      * vendor independent.
      *
-     * If voreen was compiled without WMI support (TGT_WITH_WMI),
-     * 0 is returned.
+     * If voreen was compiled without WMI support (TGT_WITH_WMI) or the WMI data retrieval fails,
+     * the information is read from the registry. If both methods fail, -1 is returned.
      */
     int getVideoRamSize();
     
-    /**
-     * Returns information about graphics driver settings. 
-     * At this time this is the state of vertical synchronization
-     * and triple buffering only.
-     *
-     * @note The information is retrieved from the Windows 
-     *      registry for NVIDIA and ATI GPUs only. For other
-     *      vendors, false is returned for both settings.
-     *      Futhermore, the registry keys containing these settings
-     *      are not documented and can be expected to change in the future.
-     *      In short: Do not rely on this function's results too much!
-     */
-    GraphicsDriverSettings getDriverSettings();
-
     virtual void logCapabilities(bool extensionsString = false, bool osString = true);
 
 protected:
-    /**
-     * Protected constructor called by getInstance().
-     * Also performs the WMI security initialization,
-     * if compiled with WMI support (TGT_WITH_WMI).
-     */
-    GpuCapabilitiesWindows();
-
+    
     std::string loggerCat_;
 
 #ifdef TGT_WITH_WMI
@@ -159,10 +132,6 @@ protected:
      *
      * @return true, if WMI initialization succeeded
      *
-     * @note call \sa WMIdeinit() after finished wmi queries and
-     *      before calling \sa WMIinit() again
-     *
-     * @warning function is only defined if TGT_WITH_WMI is set!
      */
     bool WMIinit();
     
@@ -176,18 +145,44 @@ protected:
     bool WMIdeinit();
     
     /**
+     * Returns whether the WMI connection has been setup.
+     */
+    bool isWMIinited() const;
+
+    /**
      * This function is used to query the Windows
      * Management Instrumentation (WMI).
      *
      * @see http://msdn2.microsoft.com/en-us/library/aa394582(VS.85).aspx
      *
-     * @return the query result
+     * @return the query result as a pointer to a VARIANT type, 
+     *         or NULL if the query was unsuccessful. The return value has to be freed
+     *         by the caller by \c VariantClear().
      *
-     * @note You have to call \sa WMIinit() before using this function.
-     *
-     * @warning function is only defined if TGT_WITH_WMI is set!
+     * @note Instead of calling this function directly, use \sa WMIqueryStr and \sa WMIqueryInt,
+     *       which return result values of a specific type.
      */
-    std::string WMIquery(std::string wmiclass, std::string attribute);
+    VARIANT* WMIquery(std::string wmiclass, std::string attribute);
+
+    /**
+     * WMI query returning a string. \sa WMIquery.
+     */
+    std::string WMIqueryStr(std::string wmiclass, std::string attribute);
+
+    /**
+     * WMI query returning an int. \sa WMIquery.
+     */
+    int WMIqueryInt(std::string wmiclass, std::string attribute);
+
+    /**
+     * Converts a STL string to a STL wide-string.
+     */
+    static std::wstring str2wstr(const std::string& s);
+
+    /**
+     * Converts a STL wide-string to a STL string.
+     */
+    static std::string wstr2str(const std::wstring& s);
 
 #endif
     
@@ -212,9 +207,6 @@ protected:
 
 private:
 
-    // Singleton reference
-    static GpuCapabilitiesWindows* instance_;
-
     // Internal helper functions
     bool parseFileVersionString(FileVersion &fileVersion);
     bool createFileVersionFromDigits(FileVersion &fileVersion);
@@ -227,7 +219,6 @@ private:
    // WMI internals. Should not be touched outside the present WMI functions.
    IWbemLocator* pIWbemLocator_;
    IWbemServices* pWbemServices_;
-   bool WMISecurityInitialized_;
 #endif
 
     int videoRamSize_;
@@ -235,5 +226,7 @@ private:
 };
 
 } // namespace tgt
+
+#define GpuCapsWin tgt::Singleton<tgt::GpuCapabilitiesWindows>::getRef()
 
 #endif // TGT_GPUCAPABILITIESWINDOWS_H

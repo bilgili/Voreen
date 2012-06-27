@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,7 +31,7 @@
 #define VRN_VOLUMERENDERER_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/volume/volumeseries.h"
 
 namespace voreen {
 
@@ -43,53 +43,12 @@ class VolumeRenderer : public Processor {
 public:
     VolumeRenderer(tgt::Camera* camera = 0, TextureContainer* tc = 0);
 
-    /**
-     * Handles:
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
+    //TODO: deprecated
+    virtual VolumeHandle* getVolumeHandle() { return currentVolumeHandle_; }
 
-    virtual VolumeHandle* getVolumeHandle();
-    const VolumeHandle* getVolumeHandle() const;
-
-    /** Sets the given VolumeHandle* as the currently active VolumeHandle.
-     * From the VolumeHandle, at least a Volume* can be obtained.
-     * Further hardware specializations may be known, depending on the applications
-     * settings.
-     * Overwrite this method if you need to have additional Tasks to be done
-     * on changes of the volume.
-     * The EntryExitPoints for instance have to adjust transformation matrices on
-     * changes of the current volume.
-     */
-    virtual void setVolumeHandle(VolumeHandle* const handle);
-
-    /// returns view matrix of the camera, or identity matrix if no camera exists
-    tgt::mat4 getModelViewMatrix() const;
-
-    /**
-     * Returns the current transfer function; if multiple transferfunctions exist,
-     * the first one should be returned.
-     * /return The first transfer function
-     */
-    virtual TransFunc* getTransFunc();
-
-    /**
-     * Returns the i-th transfer function of the volumerenderer.
-     * getTransFunc(0) should always be equal to getTransFunc()
-     * \param i The number of the transfer function
-     * \return A pointer to the transfer function or null if i > count(transfer functions)
-     */
-    virtual TransFunc* getTransFunc(int i);
-
-    virtual float getLowerThreshold() const;
-    virtual float getUpperThreshold() const;
-  
-    // identifiers commonly used in volumeprocessors
-    static const Identifier setLowerThreshold_;
-    static const Identifier setUpperThreshold_;
-    static const Identifier setIsoValue_;
+    //TODO: deprecated
     static const Identifier setTransFunc_;
     static const Identifier setTransFunc2_;
-  	static const Identifier setTransFunc3_;
 
 protected:
     /**
@@ -97,6 +56,10 @@ protected:
      * as parameter type for the bindVolumes() function.
      */
     struct VolumeStruct {
+        VolumeStruct();
+        VolumeStruct(const VolumeGL* volume, const Identifier& textureUnitIdent,
+                     const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier);
+
         const VolumeGL* volume_;                        ///< the volume whose texture is to bound
         Identifier textureUnitIdent_;                   ///< specifies the texture unit the volume texture is bound to
         std::string samplerIdentifier_;                 ///< the sampler by which the
@@ -104,12 +67,6 @@ protected:
         std::string volumeParametersIdentifier_;        ///< the identifier of the volume parameter struct
                                                         ///  for this volume in the shader
 
-        VolumeStruct();                          ///< standard constructor
-        VolumeStruct(                            ///< constructor provided for convenience
-            const VolumeGL* volume,
-            Identifier textureUnitIdent,
-            std::string samplerIdentifier,
-            std::string volumeParametersIdentifier);
     };
 
     virtual std::string generateHeader();
@@ -118,9 +75,9 @@ protected:
 
     /**
      * This function binds the volume textures used by the volume renderer and passes the
-     * corrensponding samplers (texture units) to the shader.
-     * \note This function also sets additional meta data like the volume's dimensions and spacing. 
-     *       For this reason, every volume renderer that uses a volume texture must call this function 
+     * corresponding samplers (texture units) to the shader.
+     * \note This function also sets additional meta data like the volume's dimensions and spacing.
+     *       For this reason, every volume renderer that uses a volume texture must call this function
      *       for all volumes accessed during a rendering pass. Do not bypass this function by binding
      *       volume textures directly unless you know exactly what you are doing!
      * @param shader the shader that performs the volume rendering
@@ -128,10 +85,10 @@ protected:
      */
     virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes);
 
-    FloatProp lowerTH_; ///< The property that can be used to change the lower Treshold
-    FloatProp upperTH_; ///< The property that can be used to change the upper Treshold
-
+    //TODO: deprecated
     VolumeHandle* currentVolumeHandle_;
+
+    static const std::string loggerCat_;
 };
 
 } // namespace voreen

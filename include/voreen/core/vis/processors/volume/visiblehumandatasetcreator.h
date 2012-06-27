@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,83 +35,83 @@
 
 namespace voreen {
 
-	class VisibleHumanDatasetCreator : public DatasetCreator {
-	public:
+    class VisibleHumanDatasetCreator : public DatasetCreator {
+    public:
 
-		VisibleHumanDatasetCreator();
+        VisibleHumanDatasetCreator();
 
-		virtual const Identifier getClassName() const {return "Preprocessor.VisibleHumanDatasetCreator";}
-		virtual const std::string getProcessorInfo() const;
-		virtual Processor* create() {return new VisibleHumanDatasetCreator();}
+        virtual const Identifier getClassName() const {return "Preprocessor.VisibleHumanDatasetCreator";}
+        virtual const std::string getProcessorInfo() const;
+                virtual Processor* create() const {return new VisibleHumanDatasetCreator();}
 
-		void createDataset();
+        void createDataset();
 
-		void process(LocalPortMapping* portMapping);
+        void process(LocalPortMapping* portMapping);
 
-		void processMessage(Message* msg, const Identifier& dest=Message::all_);
+        void processMessage(Message* msg, const Identifier& dest=Message::all_);
 
-		void setSlicePath(std::string path) {
-			slicePath_ = path;
-		}
+        void setSlicePath(std::string path) {
+            slicePath_ = path;
+        }
 
-		void setDatasetName(std::string name) {
-			datasetName_ = name;
-		}
+        void setDatasetName(std::string name) {
+            datasetName_ = name;
+        }
 
-		void readHeaderInfos();
+        void readHeaderInfos();
 
-	protected:
-		bool datasetReady_;
+    protected:
+        bool datasetReady_;
 
-		float lastResolution_;
+        float lastResolution_;
 
-		VisibleHumanReader* vishumReader_;
-		
-		std::vector<std::string> sliceNames_;
-		std::vector<std::string> headerNames_;
+        VisibleHumanReader* vishumReader_;
 
-		std::string headerPath_;
-		std::string datFileName_;
+        std::vector<std::string> sliceNames_;
+        std::vector<std::string> headerNames_;
 
-		std::string headerFileName_;
+        std::string headerPath_;
+        std::string datFileName_;
 
-		float sliceThicknessX_;
-		float sliceThicknessY_;
-		float sliceThicknessZ_;
-		std::string format_;
-		std::string objectModel_;
-		int bitsStored_;
-		int headerSize_;
-		bool readInfosFromHeader_;
-		int imageDimensionX_;
-		int imageDimensionY_;
-		int imageMatrixSizeX_;
-		int imageMatrixSizeY_;
-		int cropLeft_;
-		int cropRight_;
-		int cropTop_;
-		int cropBottom_;
+        std::string headerFileName_;
 
-		IntProp* imageMatrixSizeXProp_;
-		IntProp* imageMatrixSizeYProp_;
-		FloatProp* thicknessXProp_;
-		FloatProp* thicknessYProp_;
-		FloatProp* thicknessZProp_;
-		EnumProp* formatProp_;
-		EnumProp* objectModelProp_;
-		IntProp* bitsStoredProp_;
-		IntProp* headerSizeProp_;
-		BoolProp* readInfosFromHeaderProp_;
-		StringProp* datasetNameProp_;
-		StringVectorProp* sliceNamesProp_;
-		StringVectorProp* headerNamesProp_;
-		IntProp* cropBottomProp_;
-		IntProp* cropTopProp_;
-		IntProp* cropLeftProp_;
-		IntProp* cropRightProp_;
+        float sliceThicknessX_;
+        float sliceThicknessY_;
+        float sliceThicknessZ_;
+        std::string format_;
+        std::string objectModel_;
+        int bitsStored_;
+        int headerSize_;
+        bool readInfosFromHeader_;
+        int imageDimensionX_;
+        int imageDimensionY_;
+        int imageMatrixSizeX_;
+        int imageMatrixSizeY_;
+        int cropLeft_;
+        int cropRight_;
+        int cropTop_;
+        int cropBottom_;
+
+        IntProp* imageMatrixSizeXProp_;
+        IntProp* imageMatrixSizeYProp_;
+        FloatProp* thicknessXProp_;
+        FloatProp* thicknessYProp_;
+        FloatProp* thicknessZProp_;
+        EnumProp* formatProp_;
+        EnumProp* objectModelProp_;
+        IntProp* bitsStoredProp_;
+        IntProp* headerSizeProp_;
+        BoolProp* readInfosFromHeaderProp_;
+        FileDialogProp* datasetNameProp_;
+        StringVectorProp* sliceNamesProp_;
+        StringVectorProp* headerNamesProp_;
+        IntProp* cropBottomProp_;
+        IntProp* cropTopProp_;
+        IntProp* cropLeftProp_;
+        IntProp* cropRightProp_;
 
 
-	};
+    };
 }
 
 

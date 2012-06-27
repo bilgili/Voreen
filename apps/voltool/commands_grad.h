@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,21 +28,23 @@
  **********************************************************************/
 
 #ifndef VRN_COMMANDS_GRAD_H
-#define VRN_COMMANDS_GRAD_H 
+#define VRN_COMMANDS_GRAD_H
 
-#include "command.h"
+#include "voreen/core/cmdparser/command.h"
 
-namespace voreen { 
+namespace voreen {
 
 class CommandGrad : public Command {
 public:
     CommandGrad();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
 
 class CommandFilterGrad : public Command {
 public:
     CommandFilterGrad();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
 

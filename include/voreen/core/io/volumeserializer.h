@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,6 +39,8 @@
 #ifndef VRN_VOLUMESET_H
 #include "voreen/core/volume/volumeset.h"
 #endif
+
+#include "voreen/core/volume/volumehandle.h"
 
 namespace voreen {
 
@@ -92,6 +94,8 @@ public:
      */
     VolumeSet* load(const std::string& filename)
         throw (tgt::FileException, std::bad_alloc);
+
+    VolumeHandle* loadFromOrigin(VolumeHandle::Origin origin);
 
     /**
      * Saves a Volume to the given file.

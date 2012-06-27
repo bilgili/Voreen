@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -51,7 +51,7 @@ public:
      * Constructor.
      * @param scene scene the item will be added to; needed to create port
      */
-    RptPropertySetItem(QGraphicsScene* scene=0, QGraphicsItem* parent=0);
+    RptPropertySetItem(QGraphicsScene* scene = 0, QGraphicsItem* parent = 0);
     /**
      * Constructor.
      * @param processor items that will share properties
@@ -72,7 +72,6 @@ public:
      */
     int type() const { return Type; }
 
-    void setName(std::string name);
     /**
      * Returns the propertySet.
      * @param port has no meaning here; relict from superclass
@@ -80,12 +79,12 @@ public:
      */
     Processor* getProcessor(RptPortItem* /*port=0*/) { return propertySet_; }
     Processor* getProcessor() { return propertySet_; }
-    
+
     /**
      * Returns the propertySet.
      */
     PropertySet* getPropertySet() const { return propertySet_; }
-    
+
     RptPropertySetItem& saveMeta();
     RptPropertySetItem& loadMeta();
 
@@ -93,12 +92,12 @@ public:
      * Connects the given item to this property set.
      */
     bool connectGuiItem(RptGuiItem* item);
-    
+
     /**
      * Disconnects the given item from this property set.
      */
     bool disconnectGuiItem(QGraphicsItem* item);
-    
+
     /**
      * Disconnect everything from this property set.
      */
@@ -126,10 +125,10 @@ public:
     virtual void adjustArrows();
 
     QRectF boundingRect() const;
-    QPainterPath propertySetItemPath(QRectF rect) const;
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    QPainterPath propertySetItemPath(QRectF& rect) const;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
-	std::vector<RptGuiItem*> getGuiItems() {return guiItems_;}
+    std::vector<RptGuiItem*> getGuiItems() {return guiItems_;}
 
 private slots:
     void equalizeSlot();
@@ -137,7 +136,7 @@ private slots:
 protected:
     void createContextMenu();
 
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value);
 
 private:
     void updateToolTip();
@@ -147,7 +146,7 @@ private:
     RptPropertyPort* port_;
     std::vector<RptArrow*> arrows_;
     std::vector<RptArrow*> aggregationArrows_;
-	QColor color_;
+    QColor color_;
 
 };
 
@@ -157,10 +156,10 @@ class RptPropertyPort : public QGraphicsItem {
 
 public:
     RptPropertyPort(QGraphicsItem* parent=0);
-    
+
     /**
      * Used to identfy an item in the scene as RptPropertyPort
-     */  
+     */
     enum { Type = UserType + 10 };
 
     /**
@@ -169,15 +168,14 @@ public:
     int type() const { return Type; }
 
     QRectF boundingRect() const;
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
 
     QGraphicsLineItem* line_;
-
 };
 
 } //namespcae voreen

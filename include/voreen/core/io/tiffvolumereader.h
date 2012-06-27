@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,7 +41,7 @@ class IOProgress;
  */
 class TiffVolumeReader : public VolumeReader {
 public:
-    TiffVolumeReader(IOProgress* progress = 0);    
+    TiffVolumeReader(IOProgress* progress = 0);
     ~TiffVolumeReader() {}
 
     virtual VolumeSet* read(const std::string& fileName)

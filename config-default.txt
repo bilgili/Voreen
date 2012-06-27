@@ -9,15 +9,6 @@
 CONFIG += warn_on
 
 #
-# Modules
-#
-# By default most Voreen modules are added, i.e., those which do not
-# depend on non-standard external libraries. See src/modules for a
-# list of all available modules.
-#
-VRN_MODULES += most
-
-#
 # External libraries
 #
 # You may adjust the paths in the section "Paths" at the bottom of this file.
@@ -32,26 +23,14 @@ VRN_MODULES += most
 # Do we have the dcmtk libraries (DICOM support)?
 #DEFINES += VRN_WITH_DCMTK
 
-# Do we have the freetype library?
-#DEFINES += VRN_WITH_FREETYPE
-
-# Do we have the ftgl library?
-#DEFINES += VRN_WITH_FTGL
-
-# Enable reader for Matlab files, required Matlab libs.
-#DEFINES += VRN_WITH_MATLAB
-
-# Use OpenMP?
-#DEFINES += VRN_WITH_OPENMP
+# Do we support fonts via the freetype/ftgl libraries?
+#DEFINES += VRN_WITH_FONTRENDERING
 
 # Python scripting support
 #DEFINES += VRN_WITH_PYTHON
 
 # Do we have the ZipArchive library?
 #DEFINES += VRN_WITH_ZIP
-
-# Do we have the bugtrap library? (Windows only)
-#DEFINES += VRN_WITH_BUGTRAP
 
 #
 # Basic features
@@ -66,35 +45,12 @@ DEFINES += VRN_WITH_FBO_CLASS
 # Activate the PVM file format code from Stefan Roettger?
 DEFINES += VRN_WITH_PVM
 
-# Use Windows Management Instrumentation (WMI) 
+# Use Windows Management Instrumentation (WMI)
 # for hardware detection on Windows?
-#DEFINES += TGT_WITH_WMI
-
-# Do we want support for 3D-tracking?
-#DEFINES += VRN_WITH_TRACKING
+win32: DEFINES += TGT_WITH_WMI
 
 # Allow debug outputs
 #DEFINES += TGT_DEBUG
-
-#
-# Libraries that are only used in some modules.
-# FIXME: these should be moved into their respective module
-#
-
-# Do we have the clibpdf library? (used in glyps module)
-#DEFINES += VRN_WITH_CLIBPDF
-
-# Use the Boost library? (used in sketchtf)
-#DEFINES += VRN_WITH_BOOST
-
-# Use the Box2D physics library? (used in closeups module)
-#DEFINES += VRN_WITH_BOX2D
-
-# Use Qt Widgets for Technical Applications (Qwt)?
-# (Qt toolkit for scientific plotting)
-# (Used in sketchtf module)
-#DEFINES += VRN_WITH_QWT
-
 
 #
 # Additional settings
@@ -103,6 +59,9 @@ DEFINES += VRN_WITH_PVM
 # Activate additional debug code in voreen
 #DEFINES += VRN_DEBUG
 
+# Compile Voreen for distribution (loads shaders from tarball)
+#DEFINES += VRN_DISTRIBUTION_MODE
+
 # Write log output into a file
 DEFINES += VRN_ADD_FILE_LOGGER
 
@@ -110,10 +69,10 @@ DEFINES += VRN_ADD_FILE_LOGGER
 CONFIG += precompile_header
 
 # Add additional include paths
-INCLUDEPATH += 
+INCLUDEPATH +=
 
 # Add additional library search paths
-LIBDIR += 
+LIBDIR +=
 
 # To build a shared library (DLL) instead of a static one uncomment the
 # following two lines.
@@ -137,21 +96,26 @@ DEFINES += VRN_SPLASHSCREEN
 # Settings for Linux
 #
 unix {
-  CONFIG -= release
-  CONFIG += debug
-}  
+#  CONFIG -= release
+#  CONFIG += debug
 
-# For Linux@math use:
-#INCLUDEPATH += /share/voreen/linux/include
-#LIBDIR += /share/voreen/linux/lib
+  # For installation with 'make install' specify the installation prefix
+  # here. When this is set, the applications can't be started from the
+  # build directory, they need to be installed first.
+#  INSTALL_PREFIX = /usr/local
+}
 
 # Disable usage of libwrap, sometimes needed with DCMTK
 #CONFIG += without_libwrap
 
 # Disable optimization (useful for debugging)
-#QMAKE_CXXFLAGS -= -O2
-#QMAKE_CXXFLAGS += -O0
+#QMAKE_CXXFLAGS_RELEASE -= -O2
+#QMAKE_CXXFLAGS_RELEASE += -O0
 
+# Make all warnings into errors
+#QMAKE_CXXFLAGS += -Werror
+
+DEFINES += VRN_SNAPSHOT
 
 #
 # Defaults paths
@@ -162,12 +126,12 @@ VRN_HOME = $$PWD
 
 win32 {
   BOX2D_DIR    = $${VRN_HOME}/ext/box2d
-  BUGTRAP_DIR  = d:/libraries/bugtrap
+  BUGTRAP_DIR  = $${VRN_HOME}/ext/bugtrap
   DCMTK_DIR    = $${VRN_HOME}/ext/dcmtk
   DEVIL_DIR    = $${VRN_HOME}/ext/il
+  FFMPEG_DIR   = $${VRN_HOME}/ext/ffmpeg
   FREETYPE_DIR = $${VRN_HOME}/ext/freetype
   FTGL_DIR     = $${VRN_HOME}/ext/ftgl
-  MATLAB_DIR   = c:/Programme/Matlab/7.2
   PYTHON_DIR   = $${VRN_HOME}/ext/python
   TIFF_DIR     = $${VRN_HOME}/ext/tiff
   TINYXML_DIR  = $${VRN_HOME}/ext/tinyxml
@@ -179,7 +143,9 @@ unix {
   PYTHON_LIBS = -lpython2.5
 }
 
-DEFINES += VRN_SNAPSHOT
+macx {
+  PYTHON_DIR = /usr/include/python2.5
+}
 
 ### Local Variables:
 ### mode:conf-unix

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -112,7 +112,7 @@ public:
     /**
      * Shifts the whole curve by \c shiftVector:
      */
-	virtual void shift(tgt::vec3 shiftVector)=0;
+    virtual void shift(tgt::vec3 shiftVector)=0;
 
 protected:
 
@@ -139,7 +139,7 @@ protected:
 class Curve2D {
 public:
 
-	/// Default constructor.
+    /// Default constructor.
     Curve2D();
 
     /// Destructor. Frees all allocated resources.
@@ -221,7 +221,7 @@ public:
     /// Destructor. Frees all allocated resources.
     virtual ~Curve3DPolynomial() {}
 
-	tgt::vec3 getCurvePoint(float t);
+    tgt::vec3 getCurvePoint(float t);
     tgt::vec3 getTangent(float t);
     float getTangentMagnitude(float t);
     float getSegmentLength(float t1, float t2);
@@ -313,10 +313,10 @@ private:
 class BezierPatch {
 public:
 
-	/// Default constructor.
-	BezierPatch(bool useDisplayList=true);
+    /// Default constructor.
+    BezierPatch(bool useDisplayList=true);
 
-	/// Default destructor. Frees all allocated resources.
+    /// Default destructor. Frees all allocated resources.
     ~BezierPatch();
 
     /// Sets the patch's control points.
@@ -329,13 +329,13 @@ public:
     void setCtrlPoints(tgt::vec3* ctrlPoints, int degreeS, int degreeT);
 
     /// Returns the patch's horizontal dimension (see constructor).
-	int getDegreeS();
+    int getDegreeS();
 
     /// Returns the patch's vertical dimension (see constructor)
-	int getDegreeT();
+    int getDegreeT();
 
-	/// Returns a pointer to the control point array and writes the patch's
-	/// dimensions to ref parameters degreeS and degreeT.
+    /// Returns a pointer to the control point array and writes the patch's
+    /// dimensions to ref parameters degreeS and degreeT.
     tgt::vec3* getCtrlPoints(int &degreeS, int &degreeT);
 
     /// Returns the surface point at parameters s and t.
@@ -357,15 +357,15 @@ public:
     /// and optionally generates texture coordinates for an arbitrary texture unit.
     /// Internally a display list is used to speed up rendering.
     /// @param s_steps number of samplings in s-direction (horizontal)
-	/// @param t_steps number of samplings in t-direction (vertical)
+    /// @param t_steps number of samplings in t-direction (vertical)
     /// @param genTextureCoords determines if texture coordinates are generated
     /// @param texUnit texture unit the texture coordinates are generated for
-	void render(int s_steps = 10, int t_steps = 10,
+    void render(int s_steps = 10, int t_steps = 10,
         bool genTexCoords=false, GLuint texUnit=0);
 
 private:
-	int degreeS_;
-	int degreeT_;
+    int degreeS_;
+    int degreeT_;
     tgt::vec3* ctrlPoints_;
 
     GLuint displayList_;
@@ -495,7 +495,7 @@ public:
                 int ydst = y+y_offset;
                 for (int ch=0; ch<channels_; ch++){
                     setElem(xdst, ydst,
-                    	src.data_[(src.width_*y + x)*src.channels_ + ch], ch);
+                        src.data_[(src.width_*y + x)*src.channels_ + ch], ch);
                 }
             }
        }
@@ -516,8 +516,8 @@ public:
                     src.data_[(src.width_*y+x)*src.channels_+(src.channels_-1)] ){
                         for (int ch=0; ch<channels_; ch++){
                             setElem(xdst, ydst,
-                            	src.data_[(src.width_*y + x)*src.channels_ + ch],
-                            	ch);
+                                src.data_[(src.width_*y + x)*src.channels_ + ch],
+                                ch);
                         }
                 }
             }

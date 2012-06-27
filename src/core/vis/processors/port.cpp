@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,8 +35,8 @@
 
 namespace voreen {
 
-PortData::PortData(Identifier type) 
-	: type_(type)
+PortData::PortData(Identifier type)
+    : type_(type)
 {}
 
 PortDataCoProcessor::PortDataCoProcessor(Processor* processor, FunctionPointer functionPointer)
@@ -45,17 +45,16 @@ PortDataCoProcessor::PortDataCoProcessor(Processor* processor, FunctionPointer f
 {}
 
 Message* PortDataCoProcessor::call(Identifier ident, LocalPortMapping* portMapping) {
-	return (processor_->*getData())(ident, portMapping);
+    return (processor_->*getData())(ident, portMapping);
 }
 
 //------------------------------------------------------------------------------
 
-Port::Port(Identifier type, Processor* processor, bool isOutport, bool allowMultipleConnections,bool isPersistent)
+Port::Port(Identifier type, Processor* processor, bool isOutport, bool allowMultipleConnections, bool isPersistent)
     : type_(type)
     , processor_(processor)
     , isOutport_(isOutport)
     , allowMultipleConnections_(allowMultipleConnections)
-    , cached_(false)
     , isPersistent_(isPersistent)
 {
     if (isOutport_)
@@ -63,15 +62,15 @@ Port::Port(Identifier type, Processor* processor, bool isOutport, bool allowMult
 }
 
 Identifier Port::getType() const {
-	return type_;
+    return type_;
 }
 
 std::vector<Port*>& Port::getConnected() {
-	return connectedPorts_;
+    return connectedPorts_;
 }
 
 void Port::setType(Identifier newType) {
-	type_=newType;
+    type_ = newType;
 }
 
 void Port::addConnection(Port* port) {
@@ -79,7 +78,7 @@ void Port::addConnection(Port* port) {
 }
 
 bool Port::isConnectedTo(Port* port) const {
-    for (size_t i=0; i<connectedPorts_.size(); ++i) {
+    for (size_t i = 0; i < connectedPorts_.size(); ++i) {
         if (connectedPorts_[i] == port)
             return true;
     }
@@ -87,7 +86,7 @@ bool Port::isConnectedTo(Port* port) const {
 }
 
 int Port::getIndexOf(Port* port) const {
-    for (size_t i=0; i<connectedPorts_.size(); ++i) {
+    for (size_t i = 0; i < connectedPorts_.size(); ++i) {
         if (connectedPorts_[i] == port)
             return i;
     }
@@ -96,9 +95,9 @@ int Port::getIndexOf(Port* port) const {
 
 //TODO: Is this correct?
 bool Port::isCompatible(Identifier type) {
-	if (type_.getSubString(0) == type.getSubString(0))
-		return true;
-	else 
+    if (type_.getSubString(0) == type.getSubString(0))
+        return true;
+    else
         return false;
 }
 
@@ -107,7 +106,7 @@ std::string Port::printConnections() {
     std::vector<Port*>& connectedTo = getConnected();
     for (size_t i=0; i<connectedTo.size(); ++i)
         connections << i << ": " << connectedTo[i]->getProcessor()->getClassName().getName() << std::endl;
-    
+
     return connections.str();
 }
 

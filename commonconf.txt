@@ -1,8 +1,24 @@
-####################################################
-# Configurations common for all projects
-####################################################
+##########################################
+# Configurations common for all projects #
+##########################################
+
+# check qmake version
+QMAKE_VERS = $$[QMAKE_VERSION]
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+isEmpty(QMAKE_VERSION_CHECK) {
+   error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
+}
 
 CONFIG += stl thread
+
+# directories for installation on unix
+unix: !isEmpty(INSTALL_PREFIX) {
+  DEFINES += 'VRN_INSTALL_PREFIX="$$INSTALL_PREFIX"'
+  INSTALLPATH_BIN = $$INSTALL_PREFIX/bin
+  INSTALLPATH_LIB = $$INSTALL_PREFIX/lib
+  INSTALLPATH_SHARE = $$INSTALL_PREFIX/share/voreen
+  INSTALLPATH_DOC = $$INSTALL_PREFIX/share/doc/voreen
+}
 
 # we don't use tgt's build system
 DEFINES += TGT_WITHOUT_DEFINES
@@ -12,12 +28,18 @@ DEFINES += TGT_WITHOUT_DEFINES
 # differently.
 DEFINES += TGT_COMPILED_FOR_VOREEN
 
-contains( DEFINES, VRN_WITH_DEVIL ) {
+# tgt defines #
+contains( DEFINES, VRN_WITH_DEVIL) {
   DEFINES += TGT_HAS_DEVIL
 }
 
-contains( DEFINES, VRN_WITH_FREETYPE ) {
+contains( DEFINES, VRN_WITH_FFMPEG) {
+  DEFINES += TGT_HAS_FFMPEG
+}
+
+contains( DEFINES, VRN_WITH_FONTRENDERING) {
   DEFINES += TGT_HAS_FREETYPE
+  DEFINES += TGT_HAS_FTGL
 }
 
 contains( DEFINES, VRN_WITH_ZIP) {
@@ -35,6 +57,9 @@ contains( DEFINES, VRN_WITH_TRACKING) {
 contains( DEFINES, VRN_DEBUG) {
   DEFINES += TGT_DEBUG
 }
+###########
+# end tgt #
+###########
 
 precompile_header : contains(QMAKE_CC, "icc") {
   warning("Disabled precompiled headers because compiler is icc.")
@@ -73,18 +98,23 @@ VRN_MODULE_INC_DIR=$${VRN_HOME}/include/voreen/modules
 contains(VRN_MODULES, all) : include(src/modules/all.pri)
 contains(VRN_MODULES, most) : include(src/modules/most.pri)
 
+# remove duplicates
+VRN_MODULES = $$unique(VRN_MODULES)
+
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
 # file 'foo_common.pri' there.
 for(i, VRN_MODULES) : include(src/modules/$${i}/$${i}_common.pri)
 
 
-####################################################
-# Platform-dependant configuration
-####################################################
+####################################
+# Platform-dependant configuration #
+####################################
 
+####################
+# Windows settings #
+####################
 win32 {
-
   CONFIG -= release debug
   CONFIG += debug_and_release
 
@@ -100,13 +130,16 @@ win32 {
   # use static libraries
   DEFINES += GLEW_STATIC
 
-  INCLUDEPATH += \
-    "$${VRN_HOME}/ext/glew/include"
+  INCLUDEPATH += "$${VRN_HOME}/ext/glew/include"
 
   contains(DEFINES, VRN_WITH_DEVIL) {
     INCLUDEPATH += "$${DEVIL_DIR}/include"
   }
 
+  contains(DEFINES, VRN_WITH_FFMPEG) {
+    INCLUDEPATH += "$${FFMPEG_DIR}"
+  }
+  
   contains(DEFINES, VRN_WITH_MATLAB) {
     INCLUDEPATH += "$${MATLAB_DIR}/extern/include"
   }
@@ -115,18 +148,16 @@ win32 {
     INCLUDEPATH += "$${TIFF_DIR}/include"
   }
 
-  contains(DEFINES, VRN_WITH_FREETYPE) {
+  contains(DEFINES, VRN_WITH_FONTRENDERING) {
     INCLUDEPATH += "$${FREETYPE_DIR}/include/freetype2"
     INCLUDEPATH += "$${FREETYPE_DIR}/include"
-  }
-
-  contains(DEFINES, VRN_WITH_FTGL) {
     INCLUDEPATH += "$${FTGL_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_ZIP) {
     INCLUDEPATH += "$${VRN_HOME}/ext/ziparchive/include"
   }
+
   contains(DEFINES, VRN_WITH_DCMTK) {
     INCLUDEPATH += "$${DCMTK_DIR}/include" \
                    "$${VRN_HOME}/ext/openssl/include"
@@ -136,13 +167,7 @@ win32 {
   }
 
   contains(DEFINES, VRN_WITH_BUGTRAP) {
-    INCLUDEPATH += "$${BUGTRAP_DIR}/Win32/BugTrap"
-  }
-
-  contains(DEFINES, VRN_WITH_BOOST) {
-    INCLUDEPATH += "$${VRN_HOME}/ext/boost/include"
-    # link boost libs dynamically
-    DEFINES += BOOST_ALL_DYN_LINK
+    INCLUDEPATH += "$${BUGTRAP_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_BOX2D) {
@@ -155,7 +180,7 @@ win32 {
   # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning
   # C4290: C++ exception specification ignored except to indicate a function is
   #       not __declspec(nothrow)
-  QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 
+  QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290
 
 
   # Shift warning
@@ -181,7 +206,7 @@ win32 {
   }
 
   QMAKE_LFLAGS += /MACHINE:X86
-  
+
   # Disable optimizations for builds with bugtrap support
   contains (DEFINES, VRN_WITH_BUGTRAP) {
     QMAKE_CXXFLAGS_RELEASE -= /O2
@@ -196,11 +221,20 @@ win32 {
   }
 }
 
+#################
+# Unix settings #
+#################
 unix {
   DEFINES += UNIX
-  
-  LIBDIR += $${VRN_HOME}
+
+  # The RPATH is used to find the Voreen libraries at runtime. It is
+  # set to the library position in to source directory only when we
+  # are not installing, i.e., the INSTALL_PREFIX is not set.
   QMAKE_RPATHDIR += $${LIBDIR}
+  isEmpty(INSTALL_PREFIX): QMAKE_RPATHDIR += $${VRN_HOME}
+  !isEmpty(INSTALL_PREFIX): QMAKE_RPATHDIR += $${INSTALLPATH_LIB}
+
+  LIBDIR += $${VRN_HOME}
 
   for(dir, LIBDIR) {
     LIBS  += "-L$$dir"
@@ -209,14 +243,16 @@ unix {
   isEmpty(OBJECTS_DIR) {
     OBJECTS_DIR = .obj
   }
+  
   MOC_DIR = .moc
+
   contains (DEFINES, VRN_WITH_OPENMP) {
     QMAKE_CFLAGS += -openmp
     QMAKE_CXXFLAGS += -openmp
     QMAKE_LFLAGS += -openmp -L$${VRN_HOME}
   }
 
-  contains (DEFINES, VRN_WITH_FREETYPE) {
+  contains (DEFINES, VRN_WITH_FONTRENDERING) {
     INCLUDEPATH += $${FREETYPE_DIR}
   }
 
@@ -224,30 +260,27 @@ unix {
     INCLUDEPATH += $${PYTHON_DIR}
     LIBS += $${PYTHON_LIBS}
   }
-
-  # workaround for inconsistent symbol visibility flags
-  # set by Xcode for executables and libraries
-  macx {
-    QMAKE_CXXFLAGS += -fvisibility=hidden
-    QMAKE_CXXFLAGS += -fvisibility-inlines-hidden
-  }
   
+#################################
+# additional Macintosh settings #
+#################################
   macx {
     contains (DEFINES, VRN_WITH_RENDER_TO_TEXTURE) {
       DEFINES -= VRN_WITH_RENDER_TO_TEXTURE
       warning("Render-to-Texture not supported on MacOSX")
-    }	
+    }
+
+    # workaround for inconsistent symbol visibility flags
+    # set by Xcode for executables and libraries
+    QMAKE_CXXFLAGS += -fvisibility=hidden
+    QMAKE_CXXFLAGS += -fvisibility-inlines-hidden
   }
 }
 
+################
+# SVN settings #
+################
 contains(DEFINES, VRN_WITH_SVNVERSION) {
-  unix {
-    QMAKE_EXTRA_TARGETS += revtarget
-    revtarget.target     = $${VRN_HOME}/include/voreen/core/svnversion.h
-    revtarget.commands   = $${VRN_HOME}/tools/svnversion.sh $${VRN_HOME} $${revtarget.target}
-    PRE_TARGETDEPS      += $${revtarget.target}
-  }
-
   win32 {
     revtarget.target     = $${VRN_HOME}/include/voreen/core/svnversion.h
     revtarget.commands   = $${VRN_HOME}/tools/svnversion.bat $${VRN_HOME} $${revtarget.target}
@@ -255,6 +288,13 @@ contains(DEFINES, VRN_WITH_SVNVERSION) {
     revtarget.OUTPUT =  $${VRN_HOME}/include/voreen/core/svnversion.h
     PRE_TARGETDEPS      += $${revtarget.target}
     QMAKE_EXTRA_TARGETS += revtarget
+  }
+
+  unix {
+    QMAKE_EXTRA_TARGETS += revtarget
+    revtarget.target     = $${VRN_HOME}/include/voreen/core/svnversion.h
+    revtarget.commands   = $${VRN_HOME}/tools/svnversion.sh $${VRN_HOME} $${revtarget.target}
+    PRE_TARGETDEPS      += $${revtarget.target}
   }
 
   # The following must be placed in the .pro file, after all source and header file have been added

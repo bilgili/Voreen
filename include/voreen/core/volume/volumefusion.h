@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -56,12 +56,12 @@ public:
 
     /// Creates a VolumeFusion with N new VolumeAtomic objects.
     VolumeFusion() throw (std::bad_alloc);
-    
+
     /// Creates a VolumeFusion with N existing VolumeAtomic objects
     VolumeFusion(VolumeAtomic<T>* volumes[N]);
 
     virtual VolumeFusion<T, N>* clone() const throw (std::bad_alloc);
-    
+
     /// The \p data parameter must be a T**.
     virtual VolumeFusion<T, N>* clone(void* data) const throw (std::bad_alloc);
 

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -60,16 +60,15 @@ public:
 
         int num_;
     };
-    
+
     AnimationPlugin(QWidget* parent, tgt::Camera* camera, tgt::QtCanvas* canvas = 0);
 
     virtual ~AnimationPlugin();
-    
+
     virtual void createWidgets();
     virtual void createConnections();
 
 private:
-    
     struct KeyFrame {
         tgt::vec3 position_;
         tgt::vec3 focus_;
@@ -84,22 +83,24 @@ private:
         Paused,
         Recording
     };
-    
+
     virtual void timerEvent(QTimerEvent *event);
+
+    bool isRenderingVideo() const;
 
     void refreshFrameMenu();
     void gotoFrame(int num);
     void setWidgetState();
 
 private slots:
-
     void appendKeyframe();
     void updateKeyframe();
     void startAnimation(bool record = false);
     void stopAnimation();
     void pauseAnimation();
     void clearAnimation();
-    void recordAnimation();
+    void recordAnimationVideo();
+    void recordAnimationFrameSeq();
     void saveAnimation();
     void loadAnimation();
     void animationStep();
@@ -110,22 +111,29 @@ private slots:
     void updateFrameTime(double val);
 
 private:
+    void recordAnimation(bool videoRecord = false);
+
     tgt::Camera* camera_;
     tgt::QtCanvas* canvas_;
 
     std::vector<KeyFrame> currentAnimation_;
     int currentKeyframe_;
-    
+
     tgt::BSpline* camPositionSpline_;
     tgt::BSpline* camFocusSpline_;
     tgt::BSpline* camUpSpline_;
-    
+
     AnimationState animationState_;
     int numAnimationFrames_;
     int currentAnimationFrame_;
 
     float timeOffset_;
     std::string recordPathName_;
+
+    bool renderingVideo_;
+
+    QPushButton* saveAsVideoButton_; // will be disabled in case ffmpeg is not available
+    QPushButton* saveAsFrameSequenceButton_;
 
     QGroupBox* editBox_;
     QGroupBox* playerBox_;
@@ -140,7 +148,6 @@ private:
     QPushButton *startAnimation_;
     QPushButton *stopAnimation_;
     QPushButton *pauseAnimation_;
-    QPushButton *recordAnimation_;
     QPushButton *saveAnimation_;
     QPushButton *loadAnimation_;
     QSpinBox *spinWidth_;
@@ -156,9 +163,6 @@ private:
 
 };
 
+} // namespace
 
-//----------------------------------------------------------------------------
-
-} // namespace voreen
-
-#endif
+#endif // ANIMATIONPLUGIN_H

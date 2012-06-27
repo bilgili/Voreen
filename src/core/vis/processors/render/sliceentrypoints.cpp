@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,11 +37,10 @@ using tgt::mat4;
 
 SliceEntryPoints::SliceEntryPoints()
     : EntryExitPoints()
-    , needToReRender_(true)
 {
     createInport("volumehandle.volumehandle");
-	createCoProcessorInport("coprocessor.proxygeometry");
-	createOutport("image.entrypoints");
+    createCoProcessorInport("coprocessor.proxygeometry");
+    createOutport("image.entrypoints");
 }
 
 
@@ -49,80 +48,72 @@ SliceEntryPoints::~SliceEntryPoints() {
 }
 
 const std::string SliceEntryPoints::getProcessorInfo() const {
-	return "Calculates entry points for multiple slices arranged in 3D.";
+    return "Calculates entry points for multiple slices arranged in 3D.";
 }
 
 std::string SliceEntryPoints::generateHeader() {
     std::string header = EntryExitPoints::generateHeader();
-	return header;
+    return header;
 }
 
 void SliceEntryPoints::processMessage(Message* msg, const Identifier& dest) {
-	EntryExitPoints::processMessage(msg, dest);
+    EntryExitPoints::processMessage(msg, dest);
 }
 
-void SliceEntryPoints::setNeedToReRender(bool needed) {
-    needToReRender_ = needed;
-}
+void SliceEntryPoints::process(LocalPortMapping* portMapping) {
+    LGL_ERROR;
 
-void SliceEntryPoints::process(LocalPortMapping*  portMapping) {
+    EntryExitPoints::process(portMapping);
 
-    if (needToReRender_) {
-        LGL_ERROR;
-        VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-        if (volumeHandle != 0) {
-            if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
-                setVolumeHandle(volumeHandle);
-        } else
-            setVolumeHandle(0);
-    
-        if (currentVolumeHandle_ == 0)
-            return;
+    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
+        portMapping->getVolumeHandle("volumehandle.volumehandle")) == false)
+    {
+        return;
+    }
 
-        int entrySource = portMapping->getTarget("image.entrypoints"); // render directly in final texture
-        PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
+    int entrySource = portMapping->getTarget("image.entrypoints"); // render directly in final texture
+    PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
 
-        // set volume parameters
-        std::vector<VolumeStruct> volumes;
-        volumes.push_back(VolumeStruct(
-            currentVolumeHandle_->getVolumeGL(),
-            "",                             // we do not need the volume itself...
-            "",
-            "volumeParameters_")            // ... but its parameters
-        );
-            
-        tc_->setActiveTarget(entrySource, "entry");
-        
-        // set modelview and projection matrices
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        tgt::loadMatrix(camera_->getProjectionMatrix());
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();       
-        tgt::loadMatrix(camera_->getViewMatrix() * transformationMatrix_);
-        
-        shaderProgram_->activate();
-        setGlobalShaderParameters(shaderProgram_);
-        bindVolumes(shaderProgram_, volumes);
-        glEnable(GL_DEPTH_TEST);
-        LGL_ERROR;
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        LGL_ERROR;
+    // set volume parameters
+    std::vector<VolumeStruct> volumes;
+    volumes.push_back(VolumeStruct(
+        currentVolumeHandle_->getVolumeGL(),
+        "",                             // we do not need the volume itself...
+        "",
+        "volumeParameters_")            // ... but its parameters
+    );
 
-		pg->call("render");
+    tc_->setActiveTarget(entrySource, "entry");
 
-        shaderProgram_->deactivate();
+    // set modelview and projection matrices
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    tgt::loadMatrix(camera_->getProjectionMatrix());
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    tgt::loadMatrix(camera_->getViewMatrix() * transformationMatrix_);
 
-		glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+    shaderProgram_->activate();
+    setGlobalShaderParameters(shaderProgram_);
+    bindVolumes(shaderProgram_, volumes);
+    glEnable(GL_DEPTH_TEST);
+    LGL_ERROR;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    LGL_ERROR;
 
-        // restore modelview and projection matrices
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
+    pg->call("render");
 
-        LGL_ERROR;
-     }
+    shaderProgram_->deactivate();
+
+    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+
+    // restore modelview and projection matrices
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+    LGL_ERROR;
 }
 
 } // namespace voreen

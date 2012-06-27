@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -45,19 +45,19 @@ uniform float lambda_;
  ***/
 float calcDeltaD(in vec2 fragCoord, in int kernelSize) {
     float centerDepth = normDepth(textureLookup2D(depthTex_, fragCoord.xy).z);
-	
-	float regionDiff = 0.0;
-	int halfKernel = int(floor(float(kernelSize)/2.0));
-	for (int x=-halfKernel;x<halfKernel;x++) {
-		for (int y=-halfKernel;y<halfKernel;y++) {
+
+    float regionDiff = 0.0;
+    int halfKernel = int(floor(float(kernelSize)/2.0));
+    for (int x=-halfKernel;x<halfKernel;x++) {
+        for (int y=-halfKernel;y<halfKernel;y++) {
             float curDepth = normDepth(textureLookup2D(depthTex_, vec2(fragCoord.x+float(x), fragCoord.y+float(y)) ).z);
-			if (curDepth < centerDepth) {
-				regionDiff += centerDepth-curDepth;
-			}
-		}
-	}
-	if (centerDepth >= 0.9) regionDiff = 0.0;
-	return (regionDiff/(pow(float(kernelSize),2.0)-1.0));
+            if (curDepth < centerDepth) {
+                regionDiff += centerDepth-curDepth;
+            }
+        }
+    }
+    if (centerDepth >= 0.9) regionDiff = 0.0;
+    return (regionDiff/(pow(float(kernelSize),2.0)-1.0));
 }
 
 /***
@@ -68,8 +68,8 @@ void main() {
     vec4 fragCoord = gl_FragCoord;
     vec4 shadeCol = textureLookup2D(shadeTex_, fragCoord.xy );
 
-	float deltaD = calcDeltaD(fragCoord.xy, 15);
-	// apply depth darkening
-	gl_FragColor = shadeCol*vec4(vec3(1.0-deltaD*lambda_),1.0);
+    float deltaD = calcDeltaD(fragCoord.xy, 15);
+    // apply depth darkening
+    gl_FragColor = shadeCol*vec4(vec3(1.0-deltaD*lambda_),1.0);
     gl_FragDepth = textureLookup2D(depthTex_, fragCoord.xy).z;
 }

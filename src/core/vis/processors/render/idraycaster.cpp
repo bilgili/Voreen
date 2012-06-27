@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,15 +28,14 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/render/idraycaster.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
-const Identifier IDRaycaster::firstHitPointsTexUnit_("firstHitPointsTexUnit");     
+const Identifier IDRaycaster::firstHitPointsTexUnit_("firstHitPointsTexUnit");
 
-IDRaycaster::IDRaycaster(): VolumeRaycaster(),
+IDRaycaster::IDRaycaster()
+  : VolumeRaycaster(),
     coarse_(false),
     penetrationDepth_("set.penetrationDepth", "penetration depth", 0.05f, 0.f, 0.5f)
 {
@@ -48,37 +47,33 @@ IDRaycaster::IDRaycaster(): VolumeRaycaster(),
     tm_.addTexUnit(exitParamsTexUnit_);
     tm_.addTexUnit(exitParamsTexUnit_);
 
-	createInport("volumehandle.segmentation");
+    createInport("volumehandle.volumehandle");
     createInport("image.entrypoints");
     createInport("image.firsthitpoints");
     createInport("image.exitpoints");
-    
+
     createOutport("image.idmap");
 }
 
 IDRaycaster::~IDRaycaster() {
-    MsgDistr.remove(this);
 }
 
 const std::string IDRaycaster::getProcessorInfo() const {
-	return "Writes color coded regions of a segmented dataset to the alpha channel of the rendering target. The three color channels are filled with the first-hit-positions.";
-}
-
-void IDRaycaster::setPropertyDestination(Identifier dest) {
-    VolumeRaycaster::setPropertyDestination(dest);
-    MsgDistr.insert(this);
-    penetrationDepth_.setMsgDestination(dest);
+    return "Writes color coded regions of a segmented dataset to the alpha channel of the "
+        "rendering target. The three color channels are filled with the first-hit-positions.";
 }
 
 void IDRaycaster::processMessage(Message* msg, const Identifier& dest) {
-	VolumeRaycaster::processMessage(msg, dest);
+    VolumeRaycaster::processMessage(msg, dest);
 
     if (msg->id_ == VoreenPainter::switchCoarseness_)
         coarse_ = msg->getValue<bool>();
+    /*
     else if (msg->id_ == "set.penetrationDepth") {
         penetrationDepth_.set( msg->getValue<float>());
         invalidate();
     }
+    */
 }
 
 int IDRaycaster::initializeGL() {
@@ -92,7 +87,7 @@ int IDRaycaster::initializeGL() {
  */
 void IDRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_id.frag", generateHeader(), false);
-	invalidateShader();
+    invalidateShader();
 }
 
 /**
@@ -111,30 +106,27 @@ void IDRaycaster::compile() {
  * a screen aligned quad.
  */
 void IDRaycaster::process(LocalPortMapping* portMapping) {
+    if (!VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
+                                                  portMapping->getVolumeHandle("volumehandle.volumehandle")))
+    {
+        return;
+    }
+
     compileShader();
     LGL_ERROR;
     int entryPoints = portMapping->getTarget("image.entrypoints");
     int firstHitPoints = portMapping->getTarget("image.firsthitpoints");
     int exitPoints = portMapping->getTarget("image.exitpoints");
-	int dest = portMapping->getTarget("image.idmap");
-    
+    int dest = portMapping->getTarget("image.idmap");
+
     tc_->setActiveTarget(dest, "IDRaycaster::render");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.segmentation");
-    if (volumeHandle != 0) {
-       if (!volumeHandle->isIdentical(currentVolumeHandle_))
-           setVolumeHandle(volumeHandle);
-    }
-    else
-       setVolumeHandle(0); 
-
-    if ((currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0))
-		return;
-
     // don't render when coarse
-    if (coarse_)
+    if (coarse_) {
+        glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
         return;
+    }
 
     // bind entry points
     glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
@@ -177,7 +169,7 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
     raycastPrg_->setUniform("firstHitPoints_", tm_.getTexUnit(firstHitPointsTexUnit_));
     raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
     raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
-    
+
     raycastPrg_->setUniform("penetrationDepth_", penetrationDepth_.get());
     renderQuad();
 

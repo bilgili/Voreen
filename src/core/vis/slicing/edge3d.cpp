@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,7 +38,7 @@ using std::set;
 Edge3D* Edge3D::createEdge(EdgeVertex3D* const first, EdgeVertex3D* const second, Polygon3D* const parent) {
     Edge3D* e = new Edge3D(first, second, parent);
 
-    // add this edge to both vertices edge lists for registration. 
+    // add this edge to both vertices edge lists for registration.
     // the insertion fails, if an equal edge is already contained!
     //
     EdgeVertex3D* v1 = e->getFirst();
@@ -56,7 +56,7 @@ Edge3D::Edge3D(const Edge3D& edge) {
     clone(edge);
 }
 
-Edge3D::Edge3D(EdgeVertex3D* const first, EdgeVertex3D* const second, Polygon3D* const parent) 
+Edge3D::Edge3D(EdgeVertex3D* const first, EdgeVertex3D* const second, Polygon3D* const parent)
 : first_(first), second_(second), polyParent_(parent)
 {}
 
@@ -80,7 +80,7 @@ EdgeVertex3D* Edge3D::getSecond() const {
 }
 
 const PolygonFace3D::FaceSet& Edge3D::getPolygons() const {
-    return polygons_; 
+    return polygons_;
 }
 
 tgt::vec3 Edge3D::getEdgeDirection() const {
@@ -108,7 +108,7 @@ void Edge3D::setSecond(EdgeVertex3D* const v) {
 void Edge3D::disconnect(const EdgeVertex3D* const v) {
     if (v == 0)
         return;
-    
+
     // as this edge becomes now invalid, remove it from all faces to which
     // it belongs
     //
@@ -203,7 +203,7 @@ bool Edge3D::isPartOf(const EdgeVertex3D* v) const {
 
     if ( ((*first_ == *v) || (*second_ == *v)) )
         return true;
-   
+
     return false;
 }
 
@@ -234,7 +234,7 @@ Edge3D* Edge3D::split(EdgeVertex3D& v) {
     // as the second one
     //
     Edge3D* e = Edge3D::createEdge(second_, tmp, polyParent_);
-    
+
     // add e to all polygons this edge is part of.
     //
     PolygonFace3D::FaceSet::iterator it = polygons_.begin();
@@ -258,7 +258,7 @@ void Edge3D::clear() {
     // do not delete first_ and second_ as they could sill be connected
     // with other edges and therefore form polygon faces.
     // also do not disconnect this from first_ and second_ as this edge
-    // might be created temporary for comparisons and deleting it 
+    // might be created temporary for comparisons and deleting it
     // would destroy wanted connections!
 
     // remove the reference to this edge from all polygons containing it

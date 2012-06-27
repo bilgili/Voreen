@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -40,17 +40,17 @@
 namespace voreen {
 
 /**
-* Holds an equivalent of a ProcessorNetwork using RptGuiItems
-*/
-class RptNetwork { // could also be a struct
-
+ * Holds an equivalent of a ProcessorNetwork using RptGuiItems
+ */
+class RptNetwork {
 public:
-    RptNetwork() : reuseTCTargets(false), serializeVolumeSetContainer(false) {}
-    //RptNetwork(const ProcessorNetwork& net); // RptSerializer has this functionality
-    //~RptNetwork();
-    //ProcessorNetwork makeProcessorNetwork() const; // RptSerializer has this functionality
-    //TODO: Maybe the Serializer should be a singleton - then I could add this functionality through the Serializer for convenience
+    RptNetwork();
+    ~RptNetwork();
+    static RptNetwork* load(const std::string& filename);
 
+    void addProcessor(RptProcessorItem* processor);
+    bool hasProcessor(RptProcessorItem* processor);
+    
     std::vector<RptProcessorItem*> processorItems;
     std::vector<RptAggregationItem*> aggregationItems;
     std::vector<RptPropertySetItem*> propertySetItems;
@@ -59,58 +59,66 @@ public:
     VolumeSetContainer* volumeSetContainer;
     bool serializeVolumeSetContainer;
 
-    std::vector<std::exception> errors;
+    std::vector<std::string> errors;
+};
+
+/**
+ * Throw when detecting old Format
+ */
+class AncientVersionException : public SerializerException {
+public:
+    AncientVersionException(std::string what = "") : SerializerException(what) {}
 };
 
     /**
-     * Throw when detecting old Format
-     */
-    class AncientVersionException : public SerializerException {
-    public:
-        AncientVersionException(std::string what = "") : SerializerException(what) {}
-    };
-
-/**
 * Provides methods to convert between ProcessorNetwork and RptNetwork. The actual serialization
 * is a task of NetworkSerializer.
 */
-class RptNetworkSerializerGui {
-public:
-	
-	/**
-	* Standard Constructor
-	*/
-	RptNetworkSerializerGui();
-	
-    /**
-    * @brief Takes the RptNetwork an serializes it to XML
-    * 
-    * This is a convenience method. The network is converted and then given to the NetworkSerializer
-    */
-    void serializeToXml(const RptNetwork& rptnet, std::string filename);
+    class RptNetworkSerializerGui {
+    public:
+
+        /**
+        * Standard Constructor
+        */
+        RptNetworkSerializerGui();
+
+        /**
+        * @brief Takes the RptNetwork an serializes it to XML
+        *
+        * This is a convenience method. The network is converted and then given to the NetworkSerializer
+        */
+        void serializeToXml(RptNetwork* rptnet, std::string filename);
 
 
-    // Methods for converting from Base Networks to GUI-Networks and vice versa, which handle saving and loading of Metadata
-    
-    /**
-    * Creates a ProcessorNetwork from an RptNetwork. Gui metadata is stored in the respective objects.
-    */ 
-    ProcessorNetwork makeProcessorNetwork(const RptNetwork& rptnet);
-    
-    /**
-    * Creates a RptNetwork from an ProcessorNetwork. Gui metadata is loaded from the respective objects.
-    */ 
-    RptNetwork makeRptNetwork(const ProcessorNetwork& net);
+        // Methods for converting from Base Networks to GUI-Networks and vice versa, which handle saving and loading of Metadata
 
-    int readVersionFromFile(std::string filename);
+        /**
+        * Creates a ProcessorNetwork from an RptNetwork. Gui metadata is stored in the respective objects.
+        * WARNING! This will empty the RptNetwork and ownership of the contents will transfer to the Processornetwork
+        */
+        static ProcessorNetwork* makeProcessorNetwork(RptNetwork* rptnet);
 
-protected:
+        /**
+        * Creates a RptNetwork from an ProcessorNetwork. Gui metadata is loaded from the respective objects.
+        * WARNING! This will empty the ProcessorNetwork and ownership of the contents will transfer to the RptNetwork
+        */
+        static RptNetwork* makeRptNetwork(ProcessorNetwork* net);
 
-    /**
-    * Finds the Version of the saved network.
-    */
-    int findVersion(TiXmlNode* node);
-};
+        /**
+        * Creates a RptNetwork from another RptNetwork.
+        * This creates a deep clone and the original Network will not be modified
+        */
+        RptNetwork* duplicateRptNetwork(const RptNetwork& net);
+
+        int readVersionFromFile(std::string filename);
+
+    protected:
+
+        /**
+        * Finds the Version of the saved network.
+        */
+        int findVersion(TiXmlNode* node);
+    };
 
 } //namespace voreen
 

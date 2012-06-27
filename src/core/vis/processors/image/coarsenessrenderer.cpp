@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,6 @@
 
 #include "voreen/core/vis/processors/image/coarsenessrenderer.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 #include "tgt/shadermanager.h"
 
@@ -44,8 +43,8 @@ CoarsenessRenderer::CoarsenessRenderer()
     , raycastPrg_(0)
 {
     setName("CoarsenessRenderer");
-	createInport("image.inport");
-	createOutport("image.outport");
+    createInport("image.inport");
+    createOutport("image.outport");
     addProperty(&coarsenessFactor_);
 }
 
@@ -55,14 +54,14 @@ CoarsenessRenderer::~CoarsenessRenderer() {
 }
 
 const std::string CoarsenessRenderer::getProcessorInfo() const {
-	return "Renders in coarseness mode to ensure interactive data set handling";
+    return "Renders in coarseness mode to ensure interactive data set handling";
 }
 
 const Identifier CoarsenessRenderer::getClassName() const {
     return "Miscellaneous.CoarsenessRenderer";
 }
 
-Processor* CoarsenessRenderer::create() {
+Processor* CoarsenessRenderer::create() const {
     return new CoarsenessRenderer();
 }
 
@@ -94,49 +93,43 @@ int CoarsenessRenderer::getCoarsenessFactor() {
 
 void CoarsenessRenderer::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
-	int source = portMapping->getTarget("image.inport");
-	int dest   = portMapping->getTarget("image.outport");
+    int source = portMapping->getTarget("image.inport");
+    int dest   = portMapping->getTarget("image.outport");
 
     tc_->setActiveTarget(dest, "CoarsenessRenderer::image.outport");
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (source != -1) {
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-		if (useCoarseness_)
-			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
+        if (useCoarseness_)
+            glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // clamp to edge
-		glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+        glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		raycastPrg_->activate();
-		setGlobalShaderParameters(raycastPrg_);
-		raycastPrg_->setUniform("shadeTex_", 0);
-		raycastPrg_->setUniform("depthTex_", 1);
+        raycastPrg_->activate();
+        setGlobalShaderParameters(raycastPrg_);
+        raycastPrg_->setUniform("shadeTex_", 0);
+        raycastPrg_->setUniform("depthTex_", 1);
 
         if (useCoarseness_)
-			raycastPrg_->setUniform("interactionCoarseness_", coarsenessFactor_.get());
+            raycastPrg_->setUniform("interactionCoarseness_", coarsenessFactor_.get());
         else
-			raycastPrg_->setUniform("interactionCoarseness_", 1);
+            raycastPrg_->setUniform("interactionCoarseness_", 1);
 
-		glDepthFunc(GL_ALWAYS);
-		renderQuad();
-		glDepthFunc(GL_LESS);
-		raycastPrg_->deactivate();
+        glDepthFunc(GL_ALWAYS);
+        renderQuad();
+        glDepthFunc(GL_LESS);
+        raycastPrg_->deactivate();
 
-		if (useCoarseness_)
-			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if (useCoarseness_)
+            glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	}
+    }
     LGL_ERROR;
-}
-
-void CoarsenessRenderer::processMessage(Message* msg, const Identifier& dest) {
-    Processor::processMessage(msg, dest);
-    if (msg->id_ == setCoarseness_)
-        coarsenessFactor_.set(msg->getValue<int>());
 }
 
 } // namespace voreen

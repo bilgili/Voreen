@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,9 +29,8 @@
 
 #include "voreen/core/vis/clippingplanewidget.h"
 #include "voreen/core/vis/idmanager.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 #include "tgt/assert.h"
 #include "tgt/glmath.h"
@@ -79,7 +78,7 @@ ClippingPlaneWidget::ClippingPlaneWidget()
     clipValueBottom_ = 0.f;
     clipValueTop_ =    1.f;
     clipValueFront_ =  0.f;
-    clipValueBack_ =   1.f;    
+    clipValueBack_ =   1.f;
 
     //init controlElements
     ControlElement element = ControlElement(tgt::vec3(2.f*clipValueLeft_-1.f, 1.f, 1.f), "leftClip control 1",
@@ -152,17 +151,10 @@ ClippingPlaneWidget::ClippingPlaneWidget()
     addProperty(&y_lock_);
     addProperty(&z_lock_);
 
-    groupProp_ = new GroupProp("group.clipping_locks", "Lock Clipping Planes");
-    addProperty(groupProp_);
-
-    x_lock_.setGrouped("group.clipping_locks");
-    y_lock_.setGrouped("group.clipping_locks");
-    z_lock_.setGrouped("group.clipping_locks");
-
     initLightAndMaterial();
 
     createCoProcessorOutport("coprocessor.clipping", &Processor::call);
-	createCoProcessorInport("coprocessor.proxygeometry");
+    createCoProcessorInport("coprocessor.proxygeometry");
     setIsCoprocessor(true);
 }
 
@@ -170,9 +162,7 @@ ClippingPlaneWidget::~ClippingPlaneWidget() {
     if (arrowDisplayList_)
         glDeleteLists(arrowDisplayList_, 1);
     MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
-				    (tgt::EventListener*)this));
-
-    delete groupProp_;
+                    static_cast<tgt::EventListener*>(this)));
 }
 
 const Identifier ClippingPlaneWidget::getClassName() const {
@@ -180,52 +170,40 @@ const Identifier ClippingPlaneWidget::getClassName() const {
 }
 
 const std::string ClippingPlaneWidget::getProcessorInfo() const {
-	return "3D-ControlElements to manipulate the clipping planes.";
+    return "3D-ControlElements to manipulate the clipping planes.";
 }
 
-Processor* ClippingPlaneWidget::create() {
-	ClippingPlaneWidget* cw = new ClippingPlaneWidget();
-		MsgDistr.postMessage(
+Processor* ClippingPlaneWidget::create() const {
+    ClippingPlaneWidget* cw = new ClippingPlaneWidget();
+        MsgDistr.postMessage(
             new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_,
-            (tgt::EventListener*)cw));
-		return cw;
+            static_cast<tgt::EventListener*>(cw)));
+        return cw;
 }
 
 void ClippingPlaneWidget::processMessage(Message* msg, const Identifier& dest) {
     GeometryRenderer::processMessage(msg, dest);
 
-    if (msg->id_ == "set.ClipSliceColor")
-        sliceColor_.set(msg->getValue<tgt::vec4>());
-    else if (msg->id_ == "set.polyOffsetFact")
-        polyOffsetFact_.set(msg->getValue<float>());
-    else if (msg->id_ == "set.polyOffsetUnit")
-        polyOffsetUnit_.set(msg->getValue<float>());
-    else if (msg->id_ == "switch.ClipXLock")
-        x_lock_.set(msg->getValue<bool>());
-    else if (msg->id_ == "switch.ClipYLock")
-        y_lock_.set(msg->getValue<bool>());
-    else if (msg->id_ == "switch.ClipZLock")
-        z_lock_.set(msg->getValue<bool>());
-    else if (msg->id_ == ProxyGeometry::resetClipPlanes_) {
+    if (msg->id_ == ProxyGeometry::resetClipPlanes_) {
         clipValueLeft_ =   0.f;
         clipValueRight_ =  1.f;
         clipValueBottom_ = 0.f;
         clipValueTop_ =    1.f;
         clipValueFront_ =  0.f;
         clipValueBack_ =   1.f;
-        controlElements_[0].clipValue  = tgt::vec3(2.f*clipValueLeft_-1.f,   1.f,  1.f);
-        controlElements_[1].clipValue  = tgt::vec3(2.f*clipValueLeft_-1.f,  -1.f, -1.f);
-        controlElements_[2].clipValue  = tgt::vec3(2.f*clipValueRight_-1.f,  1.f,  1.f);
-        controlElements_[3].clipValue  = tgt::vec3(2.f*clipValueRight_-1.f, -1.f, -1.f);
-        controlElements_[4].clipValue  = tgt::vec3( 1.f, 2.f*clipValueBottom_-1.f,  1.f);
-        controlElements_[5].clipValue  = tgt::vec3(-1.f, 2.f*clipValueBottom_-1.f, -1.f);
-        controlElements_[6].clipValue  = tgt::vec3( 1.f, 2.f*clipValueTop_-1.f,     1.f);
-        controlElements_[7].clipValue  = tgt::vec3(-1.f, 2.f*clipValueTop_-1.f,    -1.f);
-        controlElements_[8].clipValue  = tgt::vec3( 1.f, -1.f, 2.f*clipValueFront_-1.f);
-        controlElements_[9].clipValue  = tgt::vec3(-1.f,  1.f, 2.f*clipValueFront_-1.f);
-        controlElements_[10].clipValue = tgt::vec3( 1.f, -1.f, 2.f*clipValueBack_-1.f);
-        controlElements_[11].clipValue = tgt::vec3(-1.f,  1.f, 2.f*clipValueBack_-1.f);
-        
+        controlElements_[0].clipValue  = tgt::vec3(2.0f * clipValueLeft_ - 1.0f,   1.0f,  1.0f);
+        controlElements_[1].clipValue  = tgt::vec3(2.0f * clipValueLeft_ - 1.0f,  -1.0f, -1.0f);
+        controlElements_[2].clipValue  = tgt::vec3(2.0f * clipValueRight_ - 1.0f,  1.0f,  1.0f);
+        controlElements_[3].clipValue  = tgt::vec3(2.0f * clipValueRight_ - 1.0f, -1.0f, -1.0f);
+        controlElements_[4].clipValue  = tgt::vec3( 1.0f, 2.0f * clipValueBottom_ - 1.0f,  1.0f);
+        controlElements_[5].clipValue  = tgt::vec3(-1.0f, 2.0f * clipValueBottom_ - 1.0f, -1.0f);
+        controlElements_[6].clipValue  = tgt::vec3( 1.0f, 2.0f * clipValueTop_ - 1.0f,     1.0f);
+        controlElements_[7].clipValue  = tgt::vec3(-1.0f, 2.0f * clipValueTop_ - 1.0f,    -1.0f);
+        controlElements_[8].clipValue  = tgt::vec3( 1.0f, -1.0f, 2.0f * clipValueFront_ - 1.0f);
+        controlElements_[9].clipValue  = tgt::vec3(-1.0f,  1.0f, 2.0f * clipValueFront_ - 1.0f);
+        controlElements_[10].clipValue = tgt::vec3( 1.0f, -1.0f, 2.0f * clipValueBack_ - 1.0f);
+        controlElements_[11].clipValue = tgt::vec3(-1.0f,  1.0f, 2.0f * clipValueBack_ - 1.0f);
+
         x_lock_.set(false);
         y_lock_.set(false);
         z_lock_.set(false);
@@ -234,7 +212,7 @@ void ClippingPlaneWidget::processMessage(Message* msg, const Identifier& dest) {
 }
 
 void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
-	PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
+    PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
     Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
     if (sizeMsg) {
         volumeSize_ = sizeMsg->getValue<tgt::vec3>();
@@ -246,7 +224,7 @@ void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
     }
     delete sizeMsg;
 
-	glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     IDManager id1;
     if (volumeSizeValid_) {
@@ -254,8 +232,8 @@ void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
 
         glShadeModel(GL_SMOOTH);
         glEnable(GL_LIGHTING);
-        
-        glDisable(GL_LIGHT0); 
+
+        glDisable(GL_LIGHT0);
         glLightfv(GL_LIGHT3, GL_POSITION, light_pos);
         glLightfv(GL_LIGHT3, GL_AMBIENT,  light_ambient);
         glLightfv(GL_LIGHT3, GL_DIFFUSE,  light_diffuse);
@@ -276,10 +254,10 @@ void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
             //change material after 4 controlElements
             if ((i+4)%4 == 0) {
                 int index = i/4;
-                glMaterialf( GL_FRONT_AND_BACK,	GL_SHININESS,	materials_[index].shininess);
-                glMaterialfv(GL_FRONT_AND_BACK,	GL_AMBIENT,		materials_[index].ambient);
-                glMaterialfv(GL_FRONT_AND_BACK,	GL_DIFFUSE,		materials_[index].diffuse);
-                glMaterialfv(GL_FRONT_AND_BACK,	GL_SPECULAR,	materials_[index].specular);
+                glMaterialf( GL_FRONT_AND_BACK,    GL_SHININESS,    materials_[index].shininess);
+                glMaterialfv(GL_FRONT_AND_BACK,    GL_AMBIENT,        materials_[index].ambient);
+                glMaterialfv(GL_FRONT_AND_BACK,    GL_DIFFUSE,        materials_[index].diffuse);
+                glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    materials_[index].specular);
             }
             glColor3fv(&controlElements_[i].color[0]);
 
@@ -299,10 +277,10 @@ void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
                 oneInLast4Active = false;
                 tgt::vec3 point1 = controlElements_[i-3].clipValue*volumeSize_;
                 tgt::vec3 point2 = controlElements_[i-1].clipValue*volumeSize_;
-                
+
                 tgt::vec3 point3 = controlElements_[i-2].clipValue*volumeSize_;
                 tgt::vec3 point4 = controlElements_[i-0].clipValue*volumeSize_;
-                
+
                 glLineWidth(3.0f);
                 glBegin(GL_LINES);
                     glVertex3fv(&point1[0]);
@@ -314,7 +292,7 @@ void ClippingPlaneWidget::render(LocalPortMapping* portMapping) {
                 glLineWidth(1.0f);
             }
         }
-	}
+    }
     glPopAttrib();
 }
 
@@ -408,7 +386,7 @@ void ClippingPlaneWidget::renderQuad(int number) {
 }
 
 void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
-	isClicked_ = isClicked(e->coord().x, e->coord().y);
+    isClicked_ = isClicked(e->coord().x, e->coord().y);
     if (isClicked_ && e->modifiers() & (tgt::Event::LSHIFT | tgt::Event::RSHIFT)) {
         shift_lock_ = true;
         if (isClicked_ == 1 || isClicked_ == 2 || isClicked_ == 3 || isClicked_ == 4)
@@ -418,7 +396,7 @@ void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
         if (isClicked_ == 9 || isClicked_ == 10 || isClicked_ == 11 || isClicked_ == 12)
             z_lock_.set(!z_lock_.get());
     }
-	if (isClicked_) {
+    if (isClicked_) {
         e->accept();
 
         bool lock;
@@ -428,7 +406,7 @@ void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
             lock = y_lock_.get();
         else
             lock = z_lock_.get();
-        
+
         int index[4];
         index[0] = (isClicked_-1)/2*2;
         index[1] = index[0]+1;
@@ -440,7 +418,7 @@ void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
             controlElements_[index[2]].activated = true;
             controlElements_[index[3]].activated = true;
         }
-        
+
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true), "evaluator");
         invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
@@ -450,10 +428,10 @@ void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
 }
 
 void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
-	if (isClicked_) {
+    if (isClicked_) {
         e->accept();
 
-		GLint viewport[4];
+        GLint viewport[4];
         GLdouble modelview[16];
         GLdouble projection[16];
 
@@ -471,8 +449,9 @@ void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
         }
         viewport[0] = 0;
         viewport[1] = 0;
-        viewport[2] = static_cast<GLint>(canvasSize_.x);
-        viewport[3] = static_cast<GLint>(canvasSize_.y);
+        // use size from texture container, as processor size may be changed by coarseness mode
+        viewport[2] = static_cast<GLint>(tc_->getSize().x);
+        viewport[3] = static_cast<GLint>(tc_->getSize().y);
 
         //adjacent edges
         tgt::vec3 edge1 = volumeSize_*controlElements_[isClicked_-1].adjacentEdge1;
@@ -480,20 +459,20 @@ void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
 
         //convert coordinates of both points in windowcoordinates
         GLdouble edge1ProjectedGL[3];
-        gluProject(edge1.x, edge1.y, edge1.z, modelview, projection, viewport, 
+        gluProject(edge1.x, edge1.y, edge1.z, modelview, projection, viewport,
                    &edge1ProjectedGL[0], &edge1ProjectedGL[1], &edge1ProjectedGL[2]);
         tgt::vec3 edge1Projected = tgt::vec3(static_cast<float>(edge1ProjectedGL[0]),
                                              static_cast<float>(edge1ProjectedGL[1]),
                                              static_cast<float>(edge1ProjectedGL[2]));
         GLdouble edge2ProjectedGL[3];
-        gluProject(edge2.x, edge2.y, edge2.z, modelview, projection, viewport, 
+        gluProject(edge2.x, edge2.y, edge2.z, modelview, projection, viewport,
                    &edge2ProjectedGL[0], &edge2ProjectedGL[1], &edge2ProjectedGL[2]);
         tgt::vec3 edge2Projected = tgt::vec3(static_cast<float>(edge2ProjectedGL[0]),
                                              static_cast<float>(edge2ProjectedGL[1]),
                                              static_cast<float>(edge2ProjectedGL[2]));
         //calculate projection of mouseposition to line between both edges
         tgt::vec2 mousePos = tgt::vec2(static_cast<float>(e->coord().x),
-                                        canvasSize_.y-static_cast<float>(e->coord().y));
+                                       tc_->getSize().y-static_cast<float>(e->coord().y));
         tgt::vec3 direction = edge2Projected-edge1Projected;
         float t = tgt::dot(mousePos-edge1Projected.xy(), direction.xy()) / tgt::lengthSq(direction.xy());
         if (t < 0.f)
@@ -501,7 +480,7 @@ void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
         if (t > 1.f)
             t = 1.f;
         tgt::vec3 pOnLine = edge1Projected+t*direction;
-        
+
         //unproject calculated point
         GLdouble projectedClipPointGL[3];
         gluUnProject(pOnLine.x, pOnLine.y, pOnLine.z, modelview, projection, viewport,
@@ -514,10 +493,13 @@ void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
     }
     else
         e->ignore();
-        
+
 }
 
 void ClippingPlaneWidget::updateClippingValues(GLdouble clipPoint[3]) {
+    clipPoint[0] = clipPoint[0] / (2.f * volumeSize_.x) + 0.5f;
+    clipPoint[1] = clipPoint[1] / (2.f * volumeSize_.y) + 0.5f;
+    clipPoint[2] = clipPoint[2] / (2.f * volumeSize_.z) + 0.5f;
     //calculate values
     switch (isClicked_) {
         case 1:
@@ -536,7 +518,7 @@ void ClippingPlaneWidget::updateClippingValues(GLdouble clipPoint[3]) {
         case 8:
             calculateClippingValues(clipPoint[1], clipValueTop_, clipValueBottom_, y_lock_.get(), true);
             break;
-       
+
         case 9:
         case 10:
             calculateClippingValues(clipPoint[2], clipValueFront_, clipValueBack_, z_lock_.get(), false);
@@ -585,11 +567,11 @@ void ClippingPlaneWidget::updateClippingValues(GLdouble clipPoint[3]) {
     }
 }
 
-void ClippingPlaneWidget::calculateClippingValues(GLdouble newClipValue, float& clip1, float& clip2, 
+void ClippingPlaneWidget::calculateClippingValues(GLdouble newClipValue, float& clip1, float& clip2,
                              bool lock, bool switched)
 {
     float temp = clip1;
-    clip1 = static_cast<float>(newClipValue) / (2.0f*volumeSize_.z) + 0.5f;
+    clip1 = static_cast<float>(newClipValue);
     if (clip1 > 1.0)
         clip1 = 1.0f;
     if (clip1 < 0.0)
@@ -617,9 +599,9 @@ void ClippingPlaneWidget::calculateClippingValues(GLdouble newClipValue, float& 
 }
 
 void ClippingPlaneWidget::mouseReleaseEvent(tgt::MouseEvent* e) {
-	if (isClicked_) {
+    if (isClicked_) {
         e->accept();
-		isClicked_ = 0;
+        isClicked_ = 0;
         //set all controlElements inactive
         for (size_t i = 0; i < controlElements_.size(); ++i)
             controlElements_[i].activated = false;
@@ -633,9 +615,9 @@ void ClippingPlaneWidget::mouseReleaseEvent(tgt::MouseEvent* e) {
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), "evaluator");
         invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-	}
+    }
     else
-    	e->ignore();
+        e->ignore();
 }
 
 void ClippingPlaneWidget::paintArrow(tgt::vec3 translation_first, tgt::vec3 translation_second,
@@ -662,7 +644,7 @@ void ClippingPlaneWidget::paintArrow(tgt::vec3 translation_first, tgt::vec3 tran
 }
 
 int ClippingPlaneWidget::isClicked(int x, int y) {
-	IDManager id1;
+    IDManager id1;
     for (size_t i = 0; i < controlElements_.size(); ++i) {
         bool clicked = id1.isClicked(controlElements_[i].name, x, static_cast<int>(size_.y) - y);
         if (clicked)
@@ -693,52 +675,52 @@ void ClippingPlaneWidget::initLightAndMaterial() {
     //Material red plastic
     Material mat;
     mat.ambient[0]  = 0.3f;
-    mat.ambient[1]	= 0.0f;
-    mat.ambient[2]	= 0.0f;
-    mat.ambient[3]	= 1.0f;
-    mat.diffuse[0]	= 0.5f;
-    mat.diffuse[1]	= 0.0f;
-    mat.diffuse[2]	= 0.0f;
-    mat.diffuse[3]	= 1.0f;
+    mat.ambient[1]    = 0.0f;
+    mat.ambient[2]    = 0.0f;
+    mat.ambient[3]    = 1.0f;
+    mat.diffuse[0]    = 0.5f;
+    mat.diffuse[1]    = 0.0f;
+    mat.diffuse[2]    = 0.0f;
+    mat.diffuse[3]    = 1.0f;
     mat.specular[0] = 0.7f;
     mat.specular[1] = 0.6f;
     mat.specular[2] = 0.6f;
     mat.specular[3] = 1.0f;
-    mat.shininess	= 25.0f;
+    mat.shininess    = 25.0f;
     materials_[0] = mat;
-    
+
     //Material green plastic
     mat = Material();
-    mat.ambient[0]	= 0.0f;
-    mat.ambient[1]	= 0.3f;
-    mat.ambient[2]	= 0.0f;
-    mat.ambient[3]	= 1.0f;
-    mat.diffuse[0]	= 0.1f;
-    mat.diffuse[1]	= 0.5f;
-    mat.diffuse[2]	= 0.1f;
-    mat.diffuse[3]	= 1.0f;
+    mat.ambient[0]    = 0.0f;
+    mat.ambient[1]    = 0.3f;
+    mat.ambient[2]    = 0.0f;
+    mat.ambient[3]    = 1.0f;
+    mat.diffuse[0]    = 0.1f;
+    mat.diffuse[1]    = 0.5f;
+    mat.diffuse[2]    = 0.1f;
+    mat.diffuse[3]    = 1.0f;
     mat.specular[0] = 0.45f;
     mat.specular[1] = 0.55f;
     mat.specular[2] = 0.45f;
     mat.specular[3] = 1.0f;
-    mat.shininess	= 25.0f;
+    mat.shininess    = 25.0f;
     materials_[1] = mat;
 
     //Material blue plastic
     mat = Material();
-    mat.ambient[0]	= 0.0f;
-    mat.ambient[1]	= 0.0f;
-    mat.ambient[2]	= 0.3f;
-    mat.ambient[3]	= 1.0f;
-    mat.diffuse[0]	= 0.0f;
-    mat.diffuse[1]	= 0.3f;
-    mat.diffuse[2]	= 0.509f;
-    mat.diffuse[3]	= 1.0f;
-    mat.specular[0]	= 0.501f;
-    mat.specular[1]	= 0.501f;
-    mat.specular[2]	= 0.501f;
-    mat.specular[3]	= 1.0f;
-    mat.shininess	= 25.0f;
+    mat.ambient[0]    = 0.0f;
+    mat.ambient[1]    = 0.0f;
+    mat.ambient[2]    = 0.3f;
+    mat.ambient[3]    = 1.0f;
+    mat.diffuse[0]    = 0.0f;
+    mat.diffuse[1]    = 0.3f;
+    mat.diffuse[2]    = 0.509f;
+    mat.diffuse[3]    = 1.0f;
+    mat.specular[0]    = 0.501f;
+    mat.specular[1]    = 0.501f;
+    mat.specular[2]    = 0.501f;
+    mat.specular[3]    = 1.0f;
+    mat.shininess    = 25.0f;
     materials_[2] = mat;
 
 }

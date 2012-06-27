@@ -32,6 +32,15 @@ contains(DEFINES, VRN_WITH_DEVIL) {
     DEFINES += TGT_HAS_DEVIL
 }
 
+contains(DEFINES, VRN_WITH_FFMPEG) {
+  DEFINES += TGT_HAS_FFMPEG
+  LIBS += -lavformat -lavcodec -lavutil -lswscale
+
+  SOURCES += ../../ext/tgt/ffmpeg/videoencoder.cpp
+  HEADERS += ../../ext/tgt/ffmpeg/videoencoder.h
+}
+
+
 SOURCES += \
     ../../ext/tgt/assert.cpp \
     ../../ext/tgt/bounds.cpp \
@@ -39,7 +48,7 @@ SOURCES += \
     ../../ext/tgt/curve.cpp \
     ../../ext/tgt/exception.cpp \
     ../../ext/tgt/filesystem.cpp \
-    ../../ext/tgt/freetype.cpp \
+    ../../ext/tgt/font.cpp \
     ../../ext/tgt/frustum.cpp \
     ../../ext/tgt/glcanvas.cpp \
     ../../ext/tgt/gpucapabilities.cpp \
@@ -77,8 +86,8 @@ HEADERS += \
     ../../ext/tgt/curve.h \
     ../../ext/tgt/exception.h \
     ../../ext/tgt/filesystem.h \
+    ../../ext/tgt/font.h \
     ../../ext/tgt/framecounter.h \
-    ../../ext/tgt/freetype.h \
     ../../ext/tgt/frustum.h \
     ../../ext/tgt/glcanvas.h \
     ../../ext/tgt/glmath.h \

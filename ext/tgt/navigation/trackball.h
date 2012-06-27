@@ -233,6 +233,19 @@ class Trackball : public Navigation {
         virtual void keyEvent(KeyEvent* e);
         virtual void timerEvent(TimeEvent* e);
 
+        /**
+         * Set the initial values for the camera. This is required, whenever a
+         * camera / trackball setup has been saved (e.g. to disk as XML-file)
+         * and needs to be reloaded.
+         */
+        void reinitializeCamera(const vec3& position, const vec3& focus, const vec3& upVector) {
+            cameraPosition_ = position;
+            cameraFocus_ = focus;
+            cameraUpVector_ = upVector;
+            if (getCamera() != 0)
+                reset();
+        }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
     protected:

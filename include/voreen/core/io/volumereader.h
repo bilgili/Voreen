@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -58,8 +58,9 @@ public:
      * @param fileName The file name of the data set which should be read
      * @return new VolumeSet, the caller is responsible for freeing the memory
      */
-    virtual VolumeSet* read(const std::string& fileName)
-        throw(tgt::FileException, std::bad_alloc) = 0;
+    virtual VolumeSet* read(const std::string& fileName) throw (tgt::FileException, std::bad_alloc) = 0;
+
+    virtual VolumeHandle* readFromOrigin(const VolumeHandle::Origin& origin);
 
     void fixOrigins(VolumeSet* vs, const std::string& fn);
 
@@ -68,13 +69,13 @@ public:
 protected:
     void read(Volume* volume, std::fstream& fin);
     IOProgress* getProgress() const { return progress_; }
-    
+
     std::vector<std::string> extensions_;
     std::string name_;
     static const std::string loggerCat_;
 
 private:
-    IOProgress* progress_;   
+    IOProgress* progress_;
 };
 
 } // namespace voreen

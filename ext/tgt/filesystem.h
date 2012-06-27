@@ -86,6 +86,41 @@ public:
     /// Check if the state of the file is good for i/o operations.
     virtual bool good() = 0;
 
+    //
+    // Static methods for file system information
+    //
+
+    /**
+     * Returns whether the given directory exists.
+     */
+    static bool dirExists(const std::string& dirpath);
+
+    /**
+     * Returns the canonicalized absolute pathname.
+     */
+    static std::string absolutePath(const std::string& path);
+
+    /**
+     * Returns a path relative to dir.
+     */
+    static std::string relativePath(const std::string& path, const std::string& dir);
+    
+    /**
+     * Return the file name without the path component.
+     */
+    static std::string fileName(const std::string& filepath);
+
+    /**
+     * Return the full directory path without the file name component.
+     */
+    static std::string dirName(const std::string& filepath);
+    
+    /**
+     * Return the file extension (suffix) from the path.
+     * @param lowercase convert result to lower case
+     */
+    static std::string fileExtension(const std::string& path, bool lowercase = false);
+
 protected:
     std::string name_;
     size_t size_;
@@ -288,6 +323,89 @@ public:
 
     /// Creates a TarFileFactory and adds it (just for convenience)
     void addPackage(const std::string& filename, const std::string& rootpath = "./");
+
+    /**
+     * Creates the directory of the give name if it does not already exists.
+     * 
+     * @param   directory   name for the new directory to be created
+     * @return  true if the creation was succesful or false otherwise
+     */
+    static bool createDirectory(const std::string& directory);
+
+    /**
+     * Returns a string containing the current working directory.
+     */
+    static std::string currentDirectory();
+
+    /**
+     * Deletes the file with the given filename.
+     *
+     * @param   filename    name of the file to be deleted
+     * @return  true if the file has been deleted successfully, false otherwise.
+     */
+    static bool deleteFile(const std::string& filename);
+
+    /**
+     * Determines whether a directory of the given name exists or not.
+     *
+     * @param   directory   name of the directory which is suspected to exist
+     * @return  true if the directory exists, false otherwise
+     */
+    static bool directoryExists(const std::string& directory) {
+        return fileExists(directory);
+    }
+
+    /**
+     * Determines whether a file of the given name exists or not.
+     *
+     * @param   filename   name of the file which is suspected to exist
+     * @return  true if the file exists, false otherwise
+     */
+    static bool fileExists(const std::string& filename);
+
+    /**
+     * Returns the substring containing all character on the right-hand side
+     * from the rightmost dot ('.'). Under Windows OS, this is used as 
+     * file extension.
+     *
+     * @param   filename    file of which the extension shall be determined
+     * @return  string containing the file extension. This string might be empty.
+     */
+    static std::string getFileExtension(const std::string& filename);
+
+    /**
+     * Reads the content of the the directory not regarding the directories "." and ".."
+     *
+     * @param   directory   the directory to be read
+     * @param   sort    determines whether the returned vector shall be sorted in
+     *                  alphabetical order
+     * @param   recursiveSearch determines whether to search the directory recursively.
+     * @return  names of all files contained in the given directory. Files from sub-
+     *          directories are inserted like "/subdirectory/file".
+     *          If the directory does not exist, the returned vector is empty.
+     */
+    static std::vector<std::string> readDirectory(const std::string& directory, 
+        const bool sort = true, const bool recursiveSearch = true);
+
+    /**
+     * Removes all trailing occurences of the given character from the given string.
+     * If the last character in the string is not equal to trailer, nothing is removed.
+     * If the last n characters in the string are equal to trailer, all n characters are
+     * removed.
+     *
+     * @param   str The string which shall be cut.
+     * @param   trailer The character which shall be removed
+     * @return  Returns the number of characters which were removed.
+     */
+    static size_t removeTrailingCharacters(std::string& str, const char trailer);
+
+    /**
+     * Replaces all occurences of slashes ('/') by backslashes ('\').
+     *
+     * @param   input   The input string.
+     * @return  Returns a string containing '\' instead of '/'.
+     */
+    static std::string slashesToBackslashes(const std::string& input);
 
 protected:
     std::map<std::string, FileFactory*> virtualFS_;

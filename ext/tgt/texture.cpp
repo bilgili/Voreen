@@ -181,9 +181,8 @@ GLenum Texture::calcType(bool textureRectangle) {
     }
 
 #ifdef GL_TEXTURE_RECTANGLE_ARB
-    if (type_ == GL_TEXTURE_2D && textureRectangle){
+    if (type_ == GL_TEXTURE_2D && textureRectangle)
         type_ = GL_TEXTURE_RECTANGLE_ARB;
-    };
 #endif
 
     return type_;
@@ -209,7 +208,7 @@ void Texture::applyFilter() {
             break;
 
         case ANISOTROPIC:
-            glTexParameterf(type_, GL_TEXTURE_MAX_ANISOTROPY_EXT, GpuCaps.getMaxTextureAnisotropy() );
+            glTexParameterf(type_, GL_TEXTURE_MAX_ANISOTROPY_EXT, GpuCaps.getMaxTextureAnisotropy());
 
         case MIPMAP:
             glTexParameteri(type_,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -276,6 +275,16 @@ void Texture::downloadTexture() {
         alloc();
 
     glGetTexImage(type_, 0, format_, dataType_, pixels_);
+}
+
+GLubyte* Texture::downloadTextureToBuffer() const {
+    bind();
+
+    int arraySize = hmul(dimensions_) * bpp_;
+    GLubyte* pixels = new GLubyte[arraySize];
+
+    glGetTexImage(type_, 0, format_, dataType_, pixels);
+    return pixels;
 }
 
 bool Texture::isTextureRectangle() {

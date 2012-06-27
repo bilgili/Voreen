@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -111,12 +111,13 @@ void TexUnitMapper::registerUnits(const std::vector<Identifier>& idents) {
 GLint TexUnitMapper::getTexUnit(const Identifier& ident) {
     std::map<Identifier, GLint>::iterator found = registeredUnits_->find(ident);
     if (found == registeredUnits_->end()) {
-        throw texUnit_Exception("texture unit '" + ident.getName() + "' seems to be unregistered");
+        throw VoreenException("texture unit '" + ident.getName() + "' seems to be unregistered");
     } else {
-        if (found->second < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
-            return found->second;
+        GLint foundID = found->second;
+        if (foundID < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
+            return foundID;
         else
-            throw texUnit_Exception("not enough texture units available");
+            throw VoreenException("not enough texture units available");
     }
 }
 
@@ -125,13 +126,13 @@ GLint TexUnitMapper::getTexUnit(const Identifier& ident) {
 GLint TexUnitMapper::getGLTexUnit(const Identifier& ident) {
     std::map<Identifier, GLint>::iterator found = registeredUnits_->find(ident);
     if (found == registeredUnits_->end())
-        throw texUnit_Exception("texture unit '" + ident.getName() + "' seems to be unregistered");
+        throw VoreenException("texture unit '" + ident.getName() + "' seems to be unregistered");
     else {
         GLint foundID = found->second;
         if (foundID < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
             return GL_TEXTURE0 + foundID;
         else
-            throw texUnit_Exception("not enough texture units available");
+            throw VoreenException("not enough texture units available");
     }
 }
 GLint TexUnitMapper::getFreeTexUnit() {
@@ -139,7 +140,7 @@ GLint TexUnitMapper::getFreeTexUnit() {
     if (mappedTo < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
         return mappedTo;
     else
-        throw texUnit_Exception("no further free texture units available");
+        throw VoreenException("no further free texture units available");
 }
 
 GLint TexUnitMapper::getGLTexUnitFromInt(GLint texUnit) {

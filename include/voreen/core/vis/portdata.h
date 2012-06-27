@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,53 +32,53 @@
 //
 //namespace voreen {
 //
-//	class Renderer;
+//    class Renderer;
 //
 //class PortData {
 //public:
-//	PortData(Identifier type);
-//	Identifier getType() {return type_;}
-//	void setType(Identifier type) {type_ = type;}
-//	virtual int getTarget();
-//	virtual void setTarget(int target);
-//	//virtual void insertTarget(int target);
-//	virtual void call();
+//    PortData(Identifier type);
+//    Identifier getType() {return type_;}
+//    void setType(Identifier type) {type_ = type;}
+//    virtual int getTarget();
+//    virtual void setTarget(int target);
+//    //virtual void insertTarget(int target);
+//    virtual void call();
 //protected:
-//	Identifier type_;
+//    Identifier type_;
 //};
 //
 //class PortDataTexture : public PortData {
 //public:
-//	PortDataTexture(int target);
-//	int getTarget() {return textureContainerTarget_;}
-//	void setTarget(int target) {textureContainerTarget_ = target;}
-////	void insertTarget(int target) {textureContainerTarget_.push_back(target);}
+//    PortDataTexture(int target);
+//    int getTarget() {return textureContainerTarget_;}
+//    void setTarget(int target) {textureContainerTarget_ = target;}
+////    void insertTarget(int target) {textureContainerTarget_.push_back(target);}
 //protected:
-//	int textureContainerTarget_;
+//    int textureContainerTarget_;
 //};
 //
 //class PortDataVolume : public PortData {
 //public:
-//	PortDataVolume(int target);
-//	int getTarget() {return volumeContainerTarget_;}
-//	void setTarget(int target) {volumeContainerTarget_ = target;}
-////	void insertTarget(int target) {volumeContainerTargets_.push_back(target);}
+//    PortDataVolume(int target);
+//    int getTarget() {return volumeContainerTarget_;}
+//    void setTarget(int target) {volumeContainerTarget_ = target;}
+////    void insertTarget(int target) {volumeContainerTargets_.push_back(target);}
 //protected:
-//	int volumeContainerTarget_;
+//    int volumeContainerTarget_;
 //};
 //
 //class PortDataCoProcessor : public PortData {
 //public:
-//	PortDataCoProcessor(Renderer* renderer, FunctionPointer functionPointer );
-//	FunctionPointer getFunction() {return (function_);}
-//	void setFunction(FunctionPointer fp) {function_ = fp;}
-//	void setRenderer(Renderer* r) {renderer_=r;}
-//	Renderer* getRenderer() {return renderer_;}
-//	void call();
-////	void insertFunctionPointer();
+//    PortDataCoProcessor(Renderer* renderer, FunctionPointer functionPointer );
+//    FunctionPointer getFunction() {return (function_);}
+//    void setFunction(FunctionPointer fp) {function_ = fp;}
+//    void setRenderer(Renderer* r) {renderer_=r;}
+//    Renderer* getRenderer() {return renderer_;}
+//    void call();
+////    void insertFunctionPointer();
 //protected:
-//	FunctionPointer function_;
-//	Renderer* renderer_;
+//    FunctionPointer function_;
+//    Renderer* renderer_;
 //};
 //
 //} //namespace voreen

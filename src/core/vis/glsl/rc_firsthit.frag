@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,32 +30,32 @@
 #include "modules/vrn_shaderincludes.frag"
 
 // declare entry and exit parameters
-uniform SAMPLER2D_TYPE entryPoints_;	        // ray entry points
+uniform SAMPLER2D_TYPE entryPoints_;            // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;       // ray entry points depth
 // declare volume
 uniform sampler3D volume_;                      // volume data set
-uniform VOLUME_PARAMETERS volumeParameters_;	// texture lookup parameters for volume_
+uniform VOLUME_PARAMETERS volumeParameters_;    // texture lookup parameters for volume_
 
 
 /***
  * ...
  ***/
 vec4 getFirstHitColor(in vec3 firstHitPos) {
-	vec4 result = vec4(0.0);
-	vec4 voxel = getVoxel(volume_, volumeParameters_, firstHitPos);
-	// apply masking
-	//FIXME: segmentation should not be possible here (tr)
-	if (RC_NOT_MASKED(samplePos, voxel.a)) {
-		// calculate gradients
-		voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, firstHitPos, volume_, volumeParameters_, 0.0, vec3(0.0), entryPoints_);
+    vec4 result = vec4(0.0);
+    vec4 voxel = getVoxel(volume_, volumeParameters_, firstHitPos);
+    // apply masking
+    //FIXME: segmentation should not be possible here (tr)
+    if (RC_NOT_MASKED(samplePos, voxel.a)) {
+        // calculate gradients
+        voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, firstHitPos, volume_, volumeParameters_, 0.0, vec3(0.0), entryPoints_);
 
-		// apply classification
-		result = RC_APPLY_CLASSIFICATION(voxel);
+        // apply classification
+        result = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
 
-		// apply shading
-		result.rgb = RC_APPLY_SHADING(voxel.xyz, firstHitPos, volumeParameters_, result.rgb, result.rgb, result.rgb);
-	}
-	return result;
+        // apply shading
+        result.rgb = RC_APPLY_SHADING(voxel.xyz, firstHitPos, volumeParameters_, result.rgb, result.rgb, result.rgb);
+    }
+    return result;
 }
 
 /***
@@ -65,7 +65,7 @@ void main() {
 
     vec3 firstHitPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
 
-	// initialize light and material parameters
+    // initialize light and material parameters
     matParams = gl_FrontMaterial;
 
     if (firstHitPos == vec3(0.0))
@@ -74,18 +74,18 @@ void main() {
     else {
         gl_FragColor = getFirstHitColor(firstHitPos);
         // FIXME: somehow the depth values seem to be not correct (tr)
-		//gl_FragDepth = calculateDepthValue(0.5, entryPointsDepth_, entryPointsDepth_);
-		//gl_FragDepth = textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z;
+        //gl_FragDepth = calculateDepthValue(0.5, entryPointsDepth_, entryPointsDepth_);
+        //gl_FragDepth = textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z;
 
-		// obtain coordinates of proxy front face in world coordinates
-		vec4 front = vec4((gl_FragCoord.x*screenDimRCP_.x*2.0)-1.0,
-			    		  (gl_FragCoord.y*screenDimRCP_.y*2.0)-1.0,
-						  (textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z*2.0)-1.0,
-						  1.0);
-		front = gl_ModelViewProjectionMatrixInverse * front;
+        // obtain coordinates of proxy front face in world coordinates
+        vec4 front = vec4((gl_FragCoord.x*screenDimRCP_.x*2.0)-1.0,
+                          (gl_FragCoord.y*screenDimRCP_.y*2.0)-1.0,
+                          (textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z*2.0)-1.0,
+                          1.0);
+        front = gl_ModelViewProjectionMatrixInverse * front;
 
-		front = gl_ModelViewProjectionMatrix * front;
-		gl_FragDepth = ((front.z/front.w)+1.0)/2.0;
+        front = gl_ModelViewProjectionMatrix * front;
+        gl_FragDepth = ((front.z/front.w)+1.0)/2.0;
 
     }
 }

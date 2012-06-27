@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,31 +55,31 @@ void raySetup(in vec3 first, in vec3 last, out vec3 rayDirection, out float tInc
  * 1.0 and true is returned, otherwise false is returned.
  ***/
 bool earlyRayTermination(inout float opacity, in float maxOpacity) {
-	if (opacity >= maxOpacity) {
-		opacity = 1.0;
-		return true;
-	} else {
-		return false;
-	}
+    if (opacity >= maxOpacity) {
+        opacity = 1.0;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /***
  * The beginning of a typical raycasting loop.
  */
 #define RC_BEGIN_LOOP \
-	float tDepth = -1.0;									\
-	bool finished = false;									\
-	for (int loop0=0; !finished && loop0<255; loop0++) {	\
-		for (int loop1=0; !finished && loop1<255; loop1++) {
+    float tDepth = -1.0;                                    \
+    bool finished = false;                                    \
+    for (int loop0=0; !finished && loop0<255; loop0++) {    \
+        for (int loop1=0; !finished && loop1<255; loop1++) {
 
 /***
  * The end of a typical raycasting loop.
  */
-#define RC_END_LOOP(result)									\
-			finished = earlyRayTermination(result.a, 0.9);	\
-			t += tIncr;										\
-			finished = finished || (t > tEnd);				\
-		}													\
-	}														\
-	gl_FragDepth = getDepthValue(tDepth, tEnd,				\
-					entryPointsDepth_, exitPointsDepth_);
+#define RC_END_LOOP(result)                                    \
+            finished = earlyRayTermination(result.a, 0.9);    \
+            t += tIncr;                                        \
+            finished = finished || (t > tEnd);                \
+        }                                                    \
+    }                                                        \
+    gl_FragDepth = getDepthValue(tDepth, tEnd,                \
+                    entryPointsDepth_, exitPointsDepth_);

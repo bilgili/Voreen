@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,8 +47,11 @@ using tgt::normalize;
 using tgt::length;
 using tgt::cross;
 
-vec3 CommandRegistration::transformFromVoxelToWorldCoords(vec3 point, Volume* vol) {
+CommandRegistration::CommandRegistration(const std::string& name, const std::string& shortName, const std::string& info, const std::string& parameterList, const int argumentNum) :
+    Command(name, shortName, info, parameterList, argumentNum)
+{}
 
+vec3 CommandRegistration::transformFromVoxelToWorldCoords(vec3 point, Volume* vol) {
     point += vec3(0.5f, 0.5f, 0.5f);
     vec3 transformed = -(vol->getCubeSize()/2.f) + (point / static_cast<vec3>(vol->getDimensions())) * (vol->getCubeSize());
 
@@ -57,42 +60,46 @@ vec3 CommandRegistration::transformFromVoxelToWorldCoords(vec3 point, Volume* vo
 
 //------------------------------------------------------------------------
 
-CommandRegistrationUniformScaling::CommandRegistrationUniformScaling() {
-    help_ += "The algorithm assumes that the registration can be done by a rigid-body transformation ";
-    help_ += "in combination with a uniform scaling. Therefore, it cannot handle the general case of an affine transformation (see register-affine).\n\n";
-    help_ += "Input: The two Voreen dat volumes to register and three pairs (Pi, Pi') of reference points "; 
-    help_ += "in *voxel* coordinates, where each Pi' in the source volume is to be mapped to its counterpart Pi in the dest volume. ";
-    help_ += "Each of the points has to be passed as a sequence of three integers or floats.\n\n";
-    help_ += "Note: Since the registration matrix is intended to be used by Voreen, ";
-    help_ += "both volumes are assumed to be initially axis-aligned and centered around the origin ";
-    help_ += "with a largest side length of 2.0. Furthermore, the volumes' spacings are considered.";
-    help_ += "The volumes' transformation matrices are ignored.";
-       
-    info_ = "Registers two data sets by calculating an affine transformation with uniform scaling.";
-    name_ = "register";
-    syntax_ = name_ + " DEST_VOL SRC_VOL P0 P0' P1 P1' P2 P2'\n";
+CommandRegistrationUniformScaling::CommandRegistrationUniformScaling() :
+    CommandRegistration("--register", "", "Registers two data sets by calculating an affine transformation with uniform scaling. \n \
+                              The algorithm assumes that the registration can be done by a rigid-body transformation \
+                              in combination with a uniform scaling. Therefore, it cannot handle the general case of an affine transformation (see register-affine).\n\n \
+                              Input: The two Voreen dat volumes to register and three pairs (Pi, Pi') of reference points \
+                              in *voxel* coordinates, where each Pi' in the source volume is to be mapped to its counterpart Pi in the dest volume. \
+                              Each of the points has to be passed as a sequence of three integers or floats.\n\n \
+                              Note: Since the registration matrix is intended to be used by Voreen, \
+                              both volumes are assumed to be initially axis-aligned and centered around the origin \
+                              with a largest side length of 2.0. Furthermore, the volumes' spacings are considered. \
+                              The volumes' transformation matrices are ignored.",
+                              "<DEST_VOL SRC_VOL P0 P0' P1 P1' P2 P2>", 20)
+{
     loggerCat_ += "." + name_;
 }
-    
+
+bool CommandRegistrationUniformScaling::checkParameters(const std::vector<std::string>& parameters) {
+    bool result = (parameters.size() == 20);
+
+    for (int i = 2; i < 20; ++i)
+        result &= is<float>(parameters[i]);
+
+    return result;
+}
 
 bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& parameters) {
-    
-    checkParameters(parameters.size() == 20);
-    
     //std::string operation = parameters[0];
-    
+
     // read source, dest volume and reference points from parameters
     std::string destVolFilename = parameters[0];
     std::string srcVolFilename = parameters[1];
 
-    vec3 p0dest = vec3(asFloat(parameters[2]), asFloat(parameters[3]), asFloat(parameters[4]));
-    vec3 p0src = vec3(asFloat(parameters[5]), asFloat(parameters[6]), asFloat(parameters[7]));
-    
-    vec3 p1dest = vec3(asFloat(parameters[8]), asFloat(parameters[9]), asFloat(parameters[10]));
-    vec3 p1src = vec3(asFloat(parameters[11]), asFloat(parameters[12]), asFloat(parameters[13]));
+    vec3 p0dest = vec3(cast<float>(parameters[2]), cast<float>(parameters[3]), cast<float>(parameters[4]));
+    vec3 p0src = vec3(cast<float>(parameters[5]), cast<float>(parameters[6]), cast<float>(parameters[7]));
 
-    vec3 p2dest = vec3(asFloat(parameters[14]), asFloat(parameters[15]), asFloat(parameters[16]));
-    vec3 p2src = vec3(asFloat(parameters[17]), asFloat(parameters[18]), asFloat(parameters[19]));
+    vec3 p1dest = vec3(cast<float>(parameters[8]), cast<float>(parameters[9]), cast<float>(parameters[10]));
+    vec3 p1src = vec3(cast<float>(parameters[11]), cast<float>(parameters[12]), cast<float>(parameters[13]));
+
+    vec3 p2dest = vec3(cast<float>(parameters[14]), cast<float>(parameters[15]), cast<float>(parameters[16]));
+    vec3 p2src = vec3(cast<float>(parameters[17]), cast<float>(parameters[18]), cast<float>(parameters[19]));
 
     // load volumes
     VolumeSerializerPopulator volLoadPop;
@@ -106,14 +113,14 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
 
     p1dest = transformFromVoxelToWorldCoords(p1dest, destVol);
     p1src = transformFromVoxelToWorldCoords(p1src, srcVol);
-        
+
     p2dest = transformFromVoxelToWorldCoords(p2dest, destVol);
     p2src = transformFromVoxelToWorldCoords(p2src, srcVol);
 
     // calculate scaling factor (note: the scaling is assumed to be isotrope)
     float scale01 = length(p0dest - p1dest) / length(p0src - p1src);
     float scale02 = length(p0dest - p2dest) / length(p0src - p2src);
-    float scale12 = length(p1dest - p2dest) / length(p1src - p2src); 
+    float scale12 = length(p1dest - p2dest) / length(p1src - p2src);
     float avgScale = (scale01 + scale02 + scale12) / 3.f; // values may differ due to inaccuracies of reference points
 
     // uniform scaling matrix
@@ -139,20 +146,20 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
     vec3 cSrc = cross(bSrc, aSrc);
 
     // rotation matrices mapping the tripod in source coordinates to the tripod in dest coordinates
-    mat4 srcRot = mat4( vec4(aSrc.x, aSrc.y, aSrc.z, 0.f), 
-                        vec4(bSrc.x, bSrc.y, bSrc.z, 0.f), 
-                        vec4(cSrc.x, cSrc.y, cSrc.z, 0.f), 
+    mat4 srcRot = mat4( vec4(aSrc.x, aSrc.y, aSrc.z, 0.f),
+                        vec4(bSrc.x, bSrc.y, bSrc.z, 0.f),
+                        vec4(cSrc.x, cSrc.y, cSrc.z, 0.f),
                         vec4(0.f, 0.f, 0.f, 1.f) );
-    mat4 destRot = tgt::transpose( mat4( vec4(aDest.x, aDest.y, aDest.z, 0.f), 
-                                         vec4(bDest.x, bDest.y, bDest.z, 0.f), 
-                                         vec4(cDest.x, cDest.y, cDest.z, 0.f), 
+    mat4 destRot = tgt::transpose( mat4( vec4(aDest.x, aDest.y, aDest.z, 0.f),
+                                         vec4(bDest.x, bDest.y, bDest.z, 0.f),
+                                         vec4(cDest.x, cDest.y, cDest.z, 0.f),
                                          vec4(0.f, 0.f, 0.f, 1.f)) );
-    
+
     // translation matrices
     mat4 srcTranslate = mat4::createTranslation(-p0src);
     mat4 destTranslate = mat4::createTranslation(p0dest);
 
-    /* compose final registration matrix: 
+    /* compose final registration matrix:
        1. translate p0source to origin
        2. rotate source tripod to be axis-aligned
        3. adjust (uniform!) scaling
@@ -160,7 +167,7 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
        5. translate to p0dest
     */
     mat4 M = destTranslate * destRot * srcScale * srcRot * srcTranslate;
-        
+
     std::cout << "\nRegistration matrix M mapping from source to dest volume coordinates: \n";
     std::cout << M << "\n";
 
@@ -193,27 +200,39 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
 
 //------------------------------------------------------------------------
 
-CommandRegistrationAffine::CommandRegistrationAffine() {
-    help_ += "Input: The two Voreen dat volumes to register and at least four pairs (Pi, Pi') of reference points "; 
-    help_ += "in *voxel* coordinates, where each Pi' in the source volume is to be mapped to its counterpart Pi in the dest volume. ";
-    help_ += "Each of the points has to be passed as a sequence of three integers or floats. The affine transformation matrix mapping ";
-    help_ += "from source volume coordinates to dest volume coordinates is calculated by a least-squares regression.\n\n";
-    help_ += "Note: Since the registration matrix is intended to be used by Voreen, ";
-    help_ += "both volumes are assumed to be initially axis-aligned and centered around the origin ";
-    help_ += "with a largest side length of 2.0. Furthermore, the volumes' spacings are considered.";
-    help_ += "The volumes' transformation matrices are ignored.";
-       
-    info_ = "Registers two data sets by calculating a general affine transformation.";
-    name_ = "register-affine";
-    syntax_ = name_ + " DEST_VOL SRC_VOL [Pi Pi']\n";
+CommandRegistrationAffine::CommandRegistrationAffine() :
+    CommandRegistration("--register-affine", "", "Registers two data sets by calculating a general affine transformation. \n \
+                                                 Input: The two Voreen dat volumes to register and at least four pairs (Pi, Pi') of reference points \
+                                                 in *voxel* coordinates, where each Pi' in the source volume is to be mapped to its counterpart Pi in the dest volume. \
+                                                 Each of the points has to be passed as a sequence of three integers or floats. The affine transformation matrix mapping \
+                                                 from source volume coordinates to dest volume coordinates is calculated by a least-squares regression.\n\n \
+                                                 Note: Since the registration matrix is intended to be used by Voreen, \
+                                                 both volumes are assumed to be initially axis-aligned and centered around the origin \
+                                                 with a largest side length of 2.0. Furthermore, the volumes' spacings are considered. \
+                                                 The volumes' transformation matrices are ignored.")
+{
+    parameterList_ = "DEST_VOL SRC_VOL [Pi Pi']\n";
     loggerCat_ += "." + name_;
 }
-    
-bool CommandRegistrationAffine::execute(const std::vector<std::string>& parameters) {
-    
+
+bool CommandRegistrationAffine::checkParameters(const std::vector<std::string>& parameters) {
     // only accept 2 strings + a list of pairs of 3D vectors. At least four pairs of reference points are needed.
-    checkParameters( (parameters.size() >= 26) && (parameters.size()-2) % 6 == 0 );
-    
+    return false;
+
+    bool result = (parameters.size() >= 26) && ((parameters.size()-2) % 6 == 0);
+
+    for (size_t i = 2; i < parameters.size(); ++i)
+        result &= is<float>(parameters[i]);
+
+    return result;
+}
+
+bool CommandRegistrationAffine::execute(const std::vector<std::string>& parameters) {
+    // This doesn't work with the new commandline parser concept, because it requires doesn't support
+    // a fixed number of parameters (ab)
+
+    return false;
+
     // read source, dest volume and reference points from parameters
     std::string destVolFilename = parameters[0];
     std::string srcVolFilename = parameters[1];
@@ -223,8 +242,8 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
     std::vector<vec3> refPointsSrc;
     std::vector<vec3> refPointsDest;
     for (int i=0; i<numReferencePoints; ++i) {
-        refPointsDest.push_back(vec3(asFloat(parameters[2+i*6]), asFloat(parameters[2+i*6+1]), asFloat(parameters[2+i*6+2])));
-        refPointsSrc.push_back(vec3(asFloat(parameters[2+i*6+3]), asFloat(parameters[2+i*6+4]), asFloat(parameters[2+i*6+5])));
+        refPointsDest.push_back(vec3(cast<float>(parameters[2+i*6]), cast<float>(parameters[2+i*6+1]), cast<float>(parameters[2+i*6+2])));
+        refPointsSrc.push_back(vec3(cast<float>(parameters[2+i*6+3]), cast<float>(parameters[2+i*6+4]), cast<float>(parameters[2+i*6+5])));
     }
 
     // load volumes
@@ -248,17 +267,17 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
     // Create matrix X and the corresponding QR-matrix from source reference points
     for (int i=0; i<numReferencePoints; ++i) {
         vec3 srcPoint = refPointsSrc.at(i);
-        // x-component    
+        // x-component
         X[3*i][0] = srcPoint.x;
         X[3*i][1] = srcPoint.y;
         X[3*i][2] = srcPoint.z;
         X[3*i][3] = 1;
-        // y-component    
+        // y-component
         X[3*i+1][4] = srcPoint.x;
         X[3*i+1][5] = srcPoint.y;
         X[3*i+1][6] = srcPoint.z;
         X[3*i+1][7] = 1;
-        // z-component    
+        // z-component
         X[3*i+2][8] = srcPoint.x;
         X[3*i+2][9] = srcPoint.y;
         X[3*i+2][10] = srcPoint.z;
@@ -270,7 +289,7 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
         std::cout << "Transformation matrix could not be calculated. The reference points seem to be invalid.";
         return false;
     }
-    
+
     // create y-vector from dest reference points
     for (int i=0; i<numReferencePoints; ++i) {
         vec3 destPoint = refPointsDest.at(i);
@@ -326,4 +345,4 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
 
 }
 
-}   //namespace voreen
+} // namespace voreen

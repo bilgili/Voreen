@@ -9,5 +9,5 @@ ObjectModel:    I
 GridType:       EQUIDISTANT
 Modality:       unknown
 TimeStep:       0
-
+Unit:           mm
 

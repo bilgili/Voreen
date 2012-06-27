@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,14 +39,14 @@ uniform vec2 size_;
  * The main method.
  ***/
 void main() {
-	if (pass_ == 0) {
-		vec4 fragCoord = gl_FragCoord;
+    if (pass_ == 0) {
+        vec4 fragCoord = gl_FragCoord;
         gl_FragColor = textureLookup2D(mirrorTex_, vec2(gl_TexCoord[0])/(coarseMirror_*size_)*screenDim_).rgba;
         gl_FragDepth = fragCoord.z;
-	}
-	else {
-		vec4 fragCoord = gl_FragCoord;
+    }
+    else {
+        vec4 fragCoord = gl_FragCoord;
         gl_FragColor = textureLookup2D(mirrorTex_, fragCoord.xy/size_*screenDim_).rgba;
-		gl_FragDepth = fragCoord.z;
-	}
+        gl_FragDepth = fragCoord.z;
+    }
 }

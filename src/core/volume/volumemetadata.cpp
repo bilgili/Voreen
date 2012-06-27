@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -87,6 +87,14 @@ const tgt::ivec2& VolumeMetaData::getSize() const {
     return size_;
 }
 
+void VolumeMetaData::setUnit(const std::string& unit) {
+    unit_ = unit;
+}
+
+const std::string& VolumeMetaData::getUnit() const {
+    return unit_;
+}
+
 /*
  * further methods
  */
@@ -95,7 +103,7 @@ std::string VolumeMetaData::getFileNameWithoutPath(const std::string& fullpath) 
     std::string filename = fullpath;
     size_t pos = fullpath.find_last_of('/');
 
-    if (pos >= fullpath.find_last_of('\\'))
+    if ( (pos != std::string::npos) && (pos >= fullpath.find_last_of('\\') || fullpath.find_last_of('\\') == std::string::npos) )
         filename = fullpath.substr(pos + 1);
     else {
         pos = fullpath.find_last_of('\\');

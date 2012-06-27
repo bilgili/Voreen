@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,78 +27,46 @@
  *                                                                    *
  **********************************************************************/
 
-#define MOD_TF_SIMPLE 1
-#include "modules/mod_transfunc.frag"
+// needs to be include or mod_transfunc.frag will cause errors due to
+// methods planePreClassFetch() and triPreClassFetch() used for
+// ambient occlusion raycaster... (quite ugly imho) (df)
+//
+#define MOD_SAMPLER3D 1
+#include "modules/mod_sampler3d.frag"
 #line 3
 
-/*
-    uniforms
-*/
+#define MOD_TF_SIMPLE 1
+#include "modules/mod_transfunc.frag"
+#line 7
 
 uniform sampler3D volumeDataset_;
-uniform sampler2D lookupTable_;
 
-/*
-    conditional uniforms and varyings
-*/
-
-#if defined(USE_LOWER_THRESHOLD) || defined(USE_UPPER_THRESHOLD)
-    uniform  vec2 threshold_;
-#endif // defined(USE_LOWER_THRESHOLD) || defined(USE_UPPER_THRESHOLD)
-
+// conditional uniforms and varyings
 #ifdef USE_PHONG_LIGHTING
     varying vec3 v_;
-
-uniform vec3 datasetDimensions_;
+    uniform vec3 datasetDimensions_;
 #endif // USE_PHONG_LIGHTING
 
 #ifdef USE_SAMPLING_RATE
     uniform float samplingRate_;
 #endif // USE_SAMPLING_RATE
 
-#ifdef USE_PRE_INTEGRATION
-    varying vec3 sb_;
-#endif // USE_PRE_INTEGRATION
-
-/*
-    some additional defines
-*/
-#define LOWER_THRESHOLD threshold_.x
-#define UPPER_THRESHOLD threshold_.y
-
-/*
-    let's go
-*/
 
 void main() {
     // fetch intensity
     vec4 intensity = texture3D(volumeDataset_, gl_TexCoord[0].xyz);
 
-    /*
-        threshold checks
-    */
-#ifdef USE_LOWER_THRESHOLD
-    if (intensity.a < LOWER_THRESHOLD)
-        discard;
-#endif // USE_LOWER_THRESHOLD
-
-#ifdef USE_UPPER_THRESHOLD
-    if (intensity.a >= UPPER_THRESHOLD)
-        discard;
-#endif // USE_UPPER_THRESHOLD
-
-    /*
-        calculate normal
-    */
+/*
+    // calculate normal
+    //
 #ifdef USE_PHONG_LIGHTING
     vec3 n;
-#endif // USE_PHONG_LIGHTING
+//#endif // USE_PHONG_LIGHTING
 
-#ifdef USE_PHONG_LIGHTING
+//#ifdef USE_PHONG_LIGHTING
 #ifdef USE_CALC_GRADIENTS
-    /*
-        calculate gradient on the fly
-    */
+    // calculate gradient on the fly
+    //
     vec3 offset = vec3(1.0, 1.0, 1.0);
     offset /= datasetDimensions_;
 
@@ -122,35 +90,26 @@ void main() {
 
     n = normalize(alpha2 - alpha1);
     intensity.xyz = n;
-    n = normalize(gl_NormalMatrix * normalize(n));
+    n = normalize(gl_NormalMatrix * n);
 #else // USE_CALC_GRADIENTS
     n = normalize(gl_NormalMatrix * normalize(intensity.xyz));
     intensity.xyz -= 0.5;   //is this done by the matrix above? the un-normalized normal is needed for the 2d TF
 #endif // USE_CALC_GRADIENTS
 #endif // USE_PHONG_LIGHTING
+*/
 
-    /*
-        get value via the transfer functions or the pre-integration lookup table
-    */
-#ifdef USE_PRE_INTEGRATION
-    vec2 lookup;
-    lookup.x = intensity.a;
-    lookup.y = texture3D(volumeDataset_, sb_).a;
-    vec4 mat = texture2D(lookupTable_, lookup);
-#else // USE_PRE_INTEGRATION
-    vec4 mat = applyTF(intensity.a);
-#endif // USE_PRE_INTEGRATION
+    // get value via the transfer function
+    vec4 mat = applyTF(transferFunc_, intensity.a);
 
-    /*
-        keep sampling rate in mind
-    */
+    // keep sampling rate in mind
+    //
 #ifdef USE_SAMPLING_RATE
     mat.a *= samplingRate_;
 #endif // USE_SAMPLING_RATE
 
-    /*
-        calculate phong lighting
-    */
+/*
+    // calculate phong lighting
+    //
 #ifdef USE_PHONG_LIGHTING
     vec3 l = normalize(gl_LightSource[0].position.xyz - v_);
     vec3 r = 2.0 * dot(n, l) * (n - l);
@@ -167,14 +126,14 @@ void main() {
         + gl_LightSource[0].linearAttenuation * d
         + gl_LightSource[0].quadraticAttenuation * d*d);
 
-    vec4 fragColor = min( vec4(1.0, 1.0, 1.0, 1.0), /*gl_Material*/ ambi + factor * (spec + diff) ) * gl_Color;
+    //vec4 fragColor = min( vec4(1.0, 1.0, 1.0, 1.0), gl_Material ambi + factor * (spec + diff) ) * gl_Color;
+    vec4 fragColor = min( vec4(1.0, 1.0, 1.0, 1.0), ambi + factor * (spec + diff) ) * gl_Color;
     fragColor.a = mat.a * gl_Color.a;
 #else // USE_PHONG_LIGHTING
-    vec4 fragColor = mat; //* gl_Color;
-#endif // USE_PHONG_LIGHTING
+*/
+    vec4 fragColor = mat;
+//#endif // USE_PHONG_LIGHTING
 
-    /*
-        set output fragment
-    */
     gl_FragColor = fragColor;
 }
+

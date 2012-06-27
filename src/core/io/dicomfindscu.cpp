@@ -410,7 +410,7 @@ main(int argc, char *argv[])
       }
       cmd.endOptionBlock();
 
-      if (cmd.findOption("--timeout")) 
+      if (cmd.findOption("--timeout"))
       {
         OFCmdSignedInt opt_timeout = 0;
         app.checkValue(cmd.getValueAndCheckMin(opt_timeout, 1));
@@ -964,7 +964,7 @@ progressCallback(
         }
         serieslist->push_back(tmp);
     }
-    
+
     /* dump delimiter */
 //    printf("--------\n");
 
@@ -1142,11 +1142,11 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
     OFBool opt_secureConnection = (security.secureConnection_ ? OFTrue : OFFalse);
 
     serieslist = series;
-    
-    
+
+
 #ifdef WITH_OPENSSL
     int         opt_keyFileFormat = SSL_FILETYPE_PEM;
-    OFBool      opt_doAuthenticate = (security.authenticate_ ? OFTrue : OFFalse); 
+    OFBool      opt_doAuthenticate = (security.authenticate_ ? OFTrue : OFFalse);
     const char *opt_privateKeyFile = (security.privateKeyFile_.empty() ? NULL : security.privateKeyFile_.c_str());
     const char *opt_certificateFile = (security.publicKeyFile_.empty() ? NULL : security.publicKeyFile_.c_str());
     const char *opt_passwd = NULL;
@@ -1196,7 +1196,7 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
   keys.push_back("0008,0030="); //StudyTime
   keys.push_back("0008,0060="); //Modality
   keys.push_back("0020,1209="); //Number of Series Related Images
-  
+
   vector<string>::iterator iter = keys.begin();
   while (iter != keys.end()) {
       addOverrideKey((*iter).c_str());
@@ -1210,7 +1210,7 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
 
   const char *opt_peer = peer.c_str();
   OFCmdUnsignedInt opt_port = port;
-  
+
 
   /* make sure data dictionary is loaded */
   if (!dcmDataDict.isDictionaryLoaded()) {
@@ -1238,8 +1238,8 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
 
       for (size_t i=0; i < security.certificateFiles_.size(); i++)
           tLayer->addTrustedCertificateFile(security.certificateFiles_[i].c_str(), opt_keyFileFormat);
-      
-/*      
+
+/*
       if (cmd.findOption("--add-cert-file", 0, OFCommandLine::FOM_First))
       {
         const char *current = NULL;
@@ -1310,7 +1310,7 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
     }
 
 #endif // WITH_OPENSSL
-    
+
     /* initialize asscociation parameters, i.e. create an instance of T_ASC_Parameters*. */
     cond = ASC_createAssociationParameters(&params, opt_maxReceivePDULength);
     if (cond.bad()) {
@@ -1485,7 +1485,7 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
 #ifdef WITH_OPENSSL
     delete tLayer;
 #endif
-    
+
     delete overrideKeys;
     overrideKeys = 0;
     return 0;
@@ -1494,7 +1494,7 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
 int voreen::DicomFindSCU::find(const string &url, vector<DicomSeriesInfo>* series,
                                const DicomSecurityOptions& security)
 {
-    // First extract the URL parts like in this regex: 
+    // First extract the URL parts like in this regex:
     // ^dicom://([a-zA-Z0-9\-.]+)@([a-zA-Z0-9\-\.]+):([0-9]+)/([a-zA-Z0-9\-\.]+)$
 
     const string number = "0123456789";

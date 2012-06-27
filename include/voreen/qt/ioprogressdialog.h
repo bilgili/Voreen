@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -42,18 +42,18 @@ namespace voreen {
  * using a QProgressDialog.
  */
 class IOProgressDialog : public voreen::IOProgress {
-public:   
+public:
     IOProgressDialog(QWidget* parent);
     ~IOProgressDialog();
-    
+
     virtual void update();
     virtual void setNumSteps(int numSteps);
     void show(const std::string& filename = "");
     void hide();
-    
+
 protected:
     QProgressDialog* progressDialog_;
-    QTime* time_;        
+    QTime* time_;
 };
 
 } // namespace

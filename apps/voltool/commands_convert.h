@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,24 +28,26 @@
  **********************************************************************/
 
 #ifndef VRN_COMMANDS_CONVERT_H
-#define VRN_COMMANDS_CONVERT_H 
+#define VRN_COMMANDS_CONVERT_H
 
 #ifdef VRN_WITH_DEVIL
 
-#include "command.h"
+#include "voreen/core/cmdparser/command.h"
 
-namespace voreen { 
+namespace voreen {
 
 class CommandStackImg : public Command {
 public:
     CommandStackImg();
     bool execute(const std::vector<std::string>& parameters);
+    bool checkParameters(const std::vector<std::string>& parameters);
 };
 
 class CommandStackRaw : public Command {
 public:
     CommandStackRaw();
     bool execute(const std::vector<std::string>& parameters);
+    bool checkParameters(const std::vector<std::string>& parameters);
 };
 
 class CommandConvert : public Command {

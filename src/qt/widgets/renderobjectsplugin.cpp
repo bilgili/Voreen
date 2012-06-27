@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,8 +55,8 @@ void RenderObjectsPlugin::createWidgets() {
 }
 
 void RenderObjectsPlugin::createConnections() {
-//	connect(width_, SIGNAL(valueChanged(int)), this, SLOT(setWidth(int)));
-//	connect(height_, SIGNAL(valueChanged(int)), this, SLOT(setHeight(int)));
+//    connect(width_, SIGNAL(valueChanged(int)), this, SLOT(setWidth(int)));
+//    connect(height_, SIGNAL(valueChanged(int)), this, SLOT(setHeight(int)));
 }
 
 void RenderObjectsPlugin::readRenderingPipeline() {

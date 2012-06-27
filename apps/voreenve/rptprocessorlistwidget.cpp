@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,26 +30,39 @@
 #include "rptprocessorlistwidget.h"
 #include "voreen/core/vis/processors/processorfactory.h"
 
+#include <QHeaderView>
+#include <QLineEdit>
+#include <QMouseEvent>
+#include <QVBoxLayout>
+
 namespace voreen {
 
-RptProcessorListWidget::RptProcessorListWidget(QWidget* parent)
+RptProcessorListWidget::RptProcessorListWidget(QWidget* parent) : QWidget(parent) {
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    edit_ = new QLineEdit;
+    tree_ = new RptProcessorListTreeWidget;
+    connect(edit_, SIGNAL(textChanged(const QString&)), tree_, SLOT(filter(const QString&)));
+
+    layout->addWidget(edit_);
+    layout->addWidget(tree_);
+}
+
+// ----------------------------------------------------------------------------
+
+RptProcessorListTreeWidget::RptProcessorListTreeWidget(QWidget* parent)
     : QTreeWidget(parent)
 {
     setHeaderLabel("Processors");
     setColumnCount(1);
+    processorVector_ = ProcessorFactory::getInstance()->getKnownClasses();
     buildItems();
-    insertTopLevelItems(0, items_);
-    expandAll();
-    header()->hide();  
 }
 
-void RptProcessorListWidget::buildItems() {
+void RptProcessorListTreeWidget::buildItems() {
     int position;
     QStringList categories;
-    QString categoryIdentifier(""); 
+    QString categoryIdentifier("");
     QString identifier("");
-
-    processorVector_ = ProcessorFactory::getInstance()->getKnownClasses();
 
     for (unsigned int i=0; i< processorVector_.size(); i++) {
         std::string id = processorVector_.at(i).getSubString(0);
@@ -62,12 +75,35 @@ void RptProcessorListWidget::buildItems() {
 
     for (unsigned int i=0; i< processorVector_.size(); i++) {
         categoryIdentifier = processorVector_.at(i).getSubString(0).c_str();
-        position = categories.indexOf(categoryIdentifier); 
-        items_.at(position)->addChild(new RptProcessorListItem(processorVector_.at(i).getSubString(1)));  
+        position = categories.indexOf(categoryIdentifier);
+        items_.at(position)->addChild(new RptProcessorListItem(processorVector_.at(i).getSubString(1)));
     }
+
+    insertTopLevelItems(0, items_);
+    expandAll();
+    header()->hide();
 }
 
-void RptProcessorListWidget::mousePressEvent(QMouseEvent *event) {
+void RptProcessorListTreeWidget::filter(const QString& text) {
+    // First clear the former searches
+    processorVector_.clear();
+    items_.clear();
+
+    // Get all available processor ids
+    std::vector<Identifier> processors = ProcessorFactory::getInstance()->getKnownClasses();
+
+    // For each available processor id: test, if the text is in the name of the processors
+    for (std::vector<Identifier>::iterator iter = processors.begin(); iter != processors.end(); ++iter) {
+        QString proc = QString::fromStdString((*iter).getSubString(1));
+        if (proc.indexOf(text, 0, Qt::CaseInsensitive) != -1)
+            processorVector_.push_back(*iter);
+    }
+
+    clear();
+    buildItems();
+}
+
+void RptProcessorListTreeWidget::mousePressEvent(QMouseEvent *event) {
     QTreeWidget::mousePressEvent(event);
 
     // if not left button - return
@@ -83,14 +119,14 @@ void RptProcessorListWidget::mousePressEvent(QMouseEvent *event) {
     // if no RptProcessorListItem selected, return
     if (!item)
         return;
-    
+
     Identifier id = item->getId();
     QString idStr(id.getName().c_str());
 
-	QMimeData *mimeData = new QMimeData;
+    QMimeData *mimeData = new QMimeData;
     mimeData->setText(idStr);
-        
-    QDrag *drag = new QDrag(this);
+
+    QDrag *drag = new QDrag(parentWidget());
     drag->setMimeData(mimeData);
     //drag->setPixmap(pixmap);
     //drag->setHotSpot(event->pos()-item->pos());

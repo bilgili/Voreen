@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,27 +33,27 @@
 #include <QtPlugin>
 
 SliderSpinBoxWidgetPlugin::SliderSpinBoxWidgetPlugin(QObject *parent) : QObject(parent) {
-	initialized = false;
+    initialized = false;
 }
 
 bool SliderSpinBoxWidgetPlugin::isContainer() const {
-	return false;
+    return false;
 }
 
 bool SliderSpinBoxWidgetPlugin::isInitialized() const {
-	return initialized;
+    return initialized;
 }
 
 QIcon SliderSpinBoxWidgetPlugin::icon() const {
-	return QIcon();
+    return QIcon();
 }
 
 QString SliderSpinBoxWidgetPlugin::codeTemplate() const {
-	return "";
+    return "";
 }
 
 QString SliderSpinBoxWidgetPlugin::domXml() const {
-	return "<widget class=\"SliderSpinBoxWidget\" name=\"SliderSpinBoxWidget\">\n"
+    return "<widget class=\"SliderSpinBoxWidget\" name=\"SliderSpinBoxWidget\">\n"
                " <property name=\"geometry\">\n"
                "  <rect>\n"
                "   <x>0</x>\n"
@@ -62,14 +62,14 @@ QString SliderSpinBoxWidgetPlugin::domXml() const {
                "   <height>22</height>\n"
                "  </rect>\n"
                " </property>\n"
-			   " <property name=\"sizePolicy\" >\n"
-			   "  <sizepolicy>\n"
-			   "   <hsizetype>7</hsizetype>\n"
-			   "   <vsizetype>0</vsizetype>\n"
-			   "   <horstretch>0</horstretch>\n"
-			   "   <verstretch>0</verstretch>\n"
-			   "  </sizepolicy>\n"
-			   " </property>\n"
+               " <property name=\"sizePolicy\" >\n"
+               "  <sizepolicy>\n"
+               "   <hsizetype>7</hsizetype>\n"
+               "   <vsizetype>0</vsizetype>\n"
+               "   <horstretch>0</horstretch>\n"
+               "   <verstretch>0</verstretch>\n"
+               "  </sizepolicy>\n"
+               " </property>\n"
                " <property name=\"toolTip\" >\n"
                "  <string></string>\n"
                " </property>\n"
@@ -78,34 +78,34 @@ QString SliderSpinBoxWidgetPlugin::domXml() const {
 }
 
 QString SliderSpinBoxWidgetPlugin::group() const {
-	return "Voreen Widgets";
+    return "Voreen Widgets";
 }
 
 QString SliderSpinBoxWidgetPlugin::includeFile() const {
-	return "voreen/qt/sliderspinboxwidget.h";
+    return "voreen/qt/sliderspinboxwidget.h";
 }
 
 QString SliderSpinBoxWidgetPlugin::name() const {
-	return "SliderSpinBoxWidget";
+    return "SliderSpinBoxWidget";
 }
 
 QString SliderSpinBoxWidgetPlugin::toolTip() const {
-	return "";
+    return "";
 }
 
 QString SliderSpinBoxWidgetPlugin::whatsThis() const {
-	return "";
+    return "";
 }
 
 QWidget *SliderSpinBoxWidgetPlugin::createWidget(QWidget *parent) {
-	return new SliderSpinBoxWidget(parent);
+    return new SliderSpinBoxWidget(parent);
 }
 
 void SliderSpinBoxWidgetPlugin::initialize(QDesignerFormEditorInterface* /*core*/) {
-	if(initialized) {
-		return;
-	}
-	initialized = true;
+    if(initialized) {
+        return;
+    }
+    initialized = true;
 }
 
 Q_EXPORT_PLUGIN2(sliderspinboxwidgetplugin, SliderSpinBoxWidgetPlugin)

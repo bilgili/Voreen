@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -40,11 +40,11 @@
 
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/property.h"
+#include "voreen/core/vis/properties/property.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
@@ -56,7 +56,7 @@ namespace voreen {
  *
  * It's probably a slow filter because an if instruction is used internally.
  */
-class Threshold : public GenericFragment {
+class Threshold : public ImageProcessor {
 public:
     /**
      * The Constructor.
@@ -65,9 +65,9 @@ public:
      * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     Threshold();
-    virtual const Identifier getClassName() const {return "PostProcessor.Threshold";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Threshold();}
+    virtual const Identifier getClassName() const {return "ImageProcessor.Threshold";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new Threshold();}
 
     void process(LocalPortMapping* portmapping);
 
@@ -84,16 +84,6 @@ public:
      * @param delta
      */
     void setDelta(float delta);
-
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - set.thresholdPPdelta, which is used to set the parameter delta, Msg-Type: float
-     *      - set.thresholdPPthreshold, which is used to set \a threshold_ , Msg-Type: float
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 
 protected:
     FloatProp threshold_;

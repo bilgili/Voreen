@@ -1,610 +1,754 @@
 ////////////////////////////////////////////////////////////////////////////////
-// $RCSfile: ZipStorage.h,v $
-// $Revision: 1.8 $
-// $Date: 2006/01/28 20:18:12 $ $Author: Tadeusz Dracz $
-////////////////////////////////////////////////////////////////////////////////
 // This source file is part of the ZipArchive library source distribution and
-// is Copyrighted 2000 - 2006 by Tadeusz Dracz (http://www.artpol-software.com/)
+// is Copyrighted 2000 - 2009 by Artpol Software - Tadeusz Dracz
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 // 
-// For the licensing details see the file License.txt
+// For the licensing details refer to the License.txt file.
+//
+// Web Site: http://www.artpol-software.com
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
 * \file ZipStorage.h
-* Interface for the CZipStorage class.	
+* Includes the CZipStorage class.	
 *
 */
 
-#if !defined(AFX_ZIPSTORAGE_H__941824FE_3320_4794_BDE3_BE334ED8984B__INCLUDED_)
-#define AFX_ZIPSTORAGE_H__941824FE_3320_4794_BDE3_BE334ED8984B__INCLUDED_
+#if !defined(ZIPARCHIVE_ZIPSTORAGE_DOT_H)
+#define ZIPARCHIVE_ZIPSTORAGE_DOT_H
 
 #if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
+	#pragma once
+	#if defined ZIP_HAS_DLL
+		#pragma warning (push)
+		#pragma warning( disable : 4251 ) // needs to have dll-interface to be used by clients of class
+	#endif
+#endif
 
 #include "ZipFile.h"	
 #include "ZipAutoBuffer.h"
 #include "ZipString.h"
 #include "ZipMemFile.h"
 #include "ZipExport.h"
-
-
-
-/**
-	A base class for callback objects that are notified when various actions take place.
-	You need to derive your own class and overload \c Callback method to use it.
-	Do not derive from CZipCallback directly but from CZipSpanCallback (as a callback when there is a need 
-	for a disk change in a disk-spanning archive) or from CZipActionCallback for other actions.
-*/
-struct ZIP_API CZipCallback
-{
-	/**
-		Method called as a callback. 
-		Return \c false from inside the method to abort the current operation. If it is a span callback object,
-		a CZipException with CZipException::aborted code will be thrown, otherwise the code will be CZipException::abortedAction or CZipException::abortedSafely.
-		The following actions can be safely aborted (without having the archive corrupted):
-		- counting bytes before deleting files
-		- testing
-		- saving central directory on non-disk-spanning archive 
-		(saved data is removed in case of break	and you can save it again);
-		if the archive is disk-spanning and if saving is aborted, the archive
-		will not be damaged, but saved part of the central directory will be not removed
-		and the new central directory will have to be saved after it
-
-		\note Overrride this method in the derived class. If you define this method inside the class declaration, it should be inlined
-			by the compiler making the action progress faster.
-	*/
-	virtual bool Callback(int iProgress) = 0;
-
-
-	CZipString m_szExternalFile;	///< if the action (adding, extracting or disk-spanning) uses an external file, its filename is stored here	
-};
+#include "ZipCallback.h"
+#include "BitFlag.h"
+#include "ZipSplitNamesHandler.h"
+#include "ZipException.h"
+#include "ZipCollections.h"
 
 /**
-	Derive from this a class to be used as a callback object for the disk change callback.
-	You need to override member function CZipCallback::Callback. The meaning of \e iProgress parameter is the reason for calling:
-		- -1 : a disk needed for reading		<BR>
-	other codes occurs during writing:
-		- >=0 : min. number of bytes needed
-		- -2 : the file with the archive name already exists on the disk
-		- -3 : the disk is probably write - protected
-		- -4 : couldn't create a file
-	
-
-	Return \c false from the callback function to abort operation: the proper exception will be thrown.
-
-	\see CZipCallback::Callback
-	\see CZipArchive::SetSpanCallback
+	Represents the storage layer for an archive.
 */
-struct ZIP_API CZipSpanCallback : public CZipCallback
+class ZIP_API CZipStorage
 {
-	DWORD m_uDiskNeeded;		///< the number of a disk needed (counting from 1)
-};
-
-
-
-/**
-	Derive from this a class to be used as a callback object when adding, extracting, deleting, testing a file
-	or saving central directory.
-	You need to override member function CZipCallback::Callback. The meaning of \e iProgress parameter is the count
-	of data just processed. It is a smallest number of bytes after which the callback method is called and it depends
-	on the value of \e nBufSize in the CZipArchive methods that uses the callback feature. In case of saving the central 
-	directory action it is the count of file headers just written (see CZipArchive::cbSave)
-	\see CZipCallback::Callback
-	\see CZipArchive::SetCallback
-*/
-struct ZIP_API CZipActionCallback : public CZipCallback
-{
-
-	CZipActionCallback()
-	{		
-		m_uTotalToDo = 0;
-		m_uTotalSoFar = 0;
-	}
-	
-	/**
-		The type of the callback. It is set to one of CZipArchive::CallbackType values when the action begins.
-		It's useful if you have more than one callback assigned to the same callback object.
-	*/
-	int m_iType;
-
-	/**
-		Used by the ZipArchive library to init the callback function with the filenames. Resets #m_uTotalToDo and #m_uTotalSoFar variables to 0.
-		#m_iType variable is already set to the proper value. Called at the beginning of the action.
-	*/
-	virtual void Init(LPCTSTR lpszFileInZip = NULL, LPCTSTR lpszExternalFile = NULL) 
-	{
-		m_szFileInZip = lpszFileInZip;
-		m_szExternalFile = lpszExternalFile;
-		m_uTotalToDo = 0;  // not yet known
-		m_uTotalSoFar = 0; // nothing yet done
-	}
-
-	/**
-		Called by the ZipArchive functions that use the callback feature after calculating total data to process.
-		\param uTotalToDo
-			total data to process; set #m_uTotalToDo to this value
-	*/
-	virtual void SetTotal(DWORD uTotalToDo)
-	{
-		m_uTotalToDo = uTotalToDo;
-// 		m_uTotalSoFar = 0; // already done in CZipArchive::CZipClbckStrg::Get
-	}
-
-
-
-	/**
-		Total number of data to process. The value of this variable is set after calling by the library #SetTotal method (it is 0 before).
-		Depending on the action it is set then to:
-		- adding file: the size the external file being added (or if callback is CZipArchive::cbAddTmp, the size of compressed data: CZipFileHeader::m_uComprSize)
-		- extracting file: the size of uncompressed data (CZipFileHeader::m_uUncomprSize)
-		- testing file: the same as above
-		- deleting file: the count of bytes to move - the size of all files to remain above the first file to delete (calculated from offsets CZipFileHeader::m_uOffset
-		- saving central directory: the number of files in the archive
-
-	*/
-	DWORD m_uTotalToDo;				
-	DWORD m_uTotalSoFar;			///< total number of bytes processed so far 
-	CZipString m_szFileInZip;		///< file in zip archive being currently processed
-
-
-	/**
-		\return the number of bytes left to process 
-	*/
-	DWORD LeftToDo() {return m_uTotalToDo - m_uTotalSoFar;}
-
-
-	/**
-		Called after the action finishes (it is not called in case of an exception, but
-		it is called before throwing CZipException::abortedAction or CZipException::abortedSafely)
-	*/
-	virtual void CallbackEnd()
-	{
-		ASSERT(m_uTotalSoFar == m_uTotalToDo);
-	};
-
-	/**
-		Used internally to call Callback and increase #m_uTotalSoFar by \e iProgress
-	*/
-	virtual bool operator()(int iProgress)
-	{
-		m_uTotalSoFar += iProgress;
-		return Callback(iProgress);
-	}
-
-	/**
-		Used only when creating map before deletion (see CZipArchive::cbDeleteCnt) or 
-		saving the central directory record. You'll be notified every nth step (n is \e m_iStep value) with \e iProgress set to 
-		\e m_iStep . Do not set it to low values or you can have a long waiting on archives
-		with huge number of files. 
-
-		\b Default: 256.
-	*/
-	static int m_iStep;
-
-
-	/**
-		Used internally to return #m_iStep value but not 0 (return 1 in this case).
-	*/
-	int GetStep(){return m_iStep ? m_iStep : 1;} // do not allow 0 (crash)
-		
-};
-
-
-/**
-	A low-level class - operates physically on archive (CZipArchive operates logically)
-*/
-class ZIP_API CZipStorage  
-{
+	friend class CZipArchive;
 	friend class CZipCentralDir;
 public:
+	/**
+		Storage state.
+	*/
+	enum State
+	{
+		stateOpened			= 0x0001,					///< The storage file is opened.
+		stateReadOnly		= 0x0002,					///< The storage file is opened as read-only.
+		stateAutoClose		= 0x0004,					///< The storage file will be closed when the storage is closed.
+		stateExisting		= 0x0008,					///< The storage file existed before opening.
+		stateSegmented		= 0x0010,					///< The current archive is segmented.
+		stateSplit			= stateSegmented | 0x0020,	///< The current archive is split.
+		stateBinarySplit	= stateSplit	 | 0x0040,	///< The current archive is binary split.
+		stateSpan			= stateSegmented | 0x0080	///< The current archive is spanned.
+	};	
 	
 	/**
-		The type of the disk spanning archive.
-		\see CZipArchive::GetSpanMode
-	*/
-	enum ZipSpanMode {
-		noSpan,			///< no disk spanning
-		pkzipSpan,		///< \ref PKSpan "disk spanning compatible with PKZIP"
-		tdSpan,			///< \ref TDSpan "TD mode disk spanning archive"
-		/**
-			Detect the type automatically.
-			If the archive is on the removable device assume PKZIP compatible,
-			otherwise TD mode compatible.
-		*/
-		suggestedAuto,	
-		/**
-			If the disk spanning archive is on the removable device 
-			assume it is TD mode compatible
-		*/
-		suggestedTd
-	};
+		The direction of the seeking operation.
 
+		\see
+			CZipStorage::Seek
+	*/
+	enum SeekType
+	{
+		seekFromBeginning, ///< Start seeking from the beginning of a file.
+		seekFromEnd, ///< Start seeking from the end of a file.
+		/**
+			Start seeking from the current position in the archive.
+			This value can cause a volume change when a segmented archive is opened for reading.
+		*/
+		seekCurrent
+	};
 	CZipStorage();
 	virtual ~CZipStorage();
 
-/**
-	Open the archive in memory (new or existing).
-	The parameters are the same as CZipArchive::Open(CZipAbstractFile& , int).
-	\param	af
-	\param	iMode
-	\note Throws exceptions.
+	void Initialize();
+	/**
+		Opens a new or existing archive in memory.
+		The meaning for the parameters is the same as in the CZipArchive::Open(CZipAbstractFile& , int, bool) method.
+	*/
+	void Open(CZipAbstractFile& af, int iMode, bool bAutoClose);
 
-	\see CZipArchive::Open(CZipAbstractFile& , int);
-	
-*/
-	void Open(CZipAbstractFile& af, int iMode);
+	/**
+		Opens or creates an archive.
 
-/**
-	Open or create an archive.
-	The parameters are the same as CZipArchive::Open(LPCTSTR, int, int).
-	\param	szPathName
-	\param	iMode
-	\param	iVolumeSize
-	\note Throws exceptions.
-	
-	\see CZipArchive::Open(LPCTSTR, int, int)
-*/
-	void Open(LPCTSTR szPathName, int iMode, int iVolumeSize);
+		The meaning for the parameters is the same as in the CZipArchive::Open(LPCTSTR, int, ZIP_SIZE_TYPE) method.
+	*/
+	void Open(LPCTSTR lpszPathName, int iMode, ZIP_SIZE_TYPE uVolumeSize);
 
 
 	/**
-		Close the disk-spanning archive and reopens as an existing disk-spanning archive or set mode to #noSpan 
+		Closes a segmented archive in creation and reopens it as an existing segmented archive.
+		No modifications are allowed afterwards.
+		The archive may also turn out to be a not segmented archive.
 	*/
-	void FinalizeSpan();
+	void FinalizeSegm();
 
 	
-/**
-	Called only by CZipCentralDir::Read() when opening an existing archive.
-	\param	uLastDisk
-		the disk number the central directory is on
-	\note Throws exceptions.
+	/**
+		Called only by CZipCentralDir::Read when opening an existing archive.
 
-*/
-	void UpdateSpanMode(WORD uLastDisk);
+		\param	uLastVolume
+			The number of the volume the central directory is on.
+	*/
+	void UpdateSegmMode(ZIP_VOLUME_TYPE uLastVolume);
 
+	/**
+		Ensures than in a segmented archive, there is enough free space on the current volume.
 
+		\param uNeeded
+			The size of the required free space in bytes.
 
-/**
-	Ensures than in a disk spanning archive, there is enough free space in the current volume.
-	\param iNeeded
-		size of the free space in bytes
-	\return the number of free bytes on the current volume
-	\note Throws exceptions.
-*/
-	DWORD AssureFree(DWORD iNeeded);
+		\return
+			The number of free bytes on the current volume.
 
-/**
-	Write chunk of data to the archive.
-	\param	pBuf
-		buffer with data
-	\param	iSize
-		bytes to write
-	\param	bAtOnce
-		if \c true, the whole data must fit in the current volume, 
-		otherwise the disk change is performed
-	\note Throws exceptions.
-*/
+	*/
+	ZIP_SIZE_TYPE AssureFree(ZIP_SIZE_TYPE uNeeded);
+
+	/**
+		Writes a chunk of data to the archive.
+
+		\param	pBuf
+			The buffer with data.
+
+		\param	iSize
+			The number of bytes to write.
+
+		\param	bAtOnce
+			If \c true, the whole chunk must fit in the current volume.
+			If there is not enough free space, a volume change is performed.
+
+	*/
 	void Write(const void *pBuf, DWORD iSize, bool bAtOnce);
 
-/**
-	Read chunk of data from the archive.
-	\param	pBuf
-		buffer to receive data
-	\param	iSize
-		bytes to read
-	\param	bAtOnce
-		if \c true, the specified number of bytes must be read from the same 
-		volume (no disk change allowed)
-	\note Throws exceptions.
-*/
+	/** 
+		Returns the total size currently occupied by the archive.
+
+		\return
+			The length of the current archive file increased by the number of bytes in the write buffer.	
+	*/
+	ZIP_SIZE_TYPE GetOccupiedSpace() const
+	{
+		return ZIP_SIZE_TYPE(m_pFile->GetLength() + m_uBytesInWriteBuffer);
+	}
+
+	/**
+		The same as the CZipArchive::IsClosed method.
+	*/
+	bool IsClosed(bool bArchive) const 
+	{
+		if (bArchive)
+			return !m_state.IsSetAny(stateOpened);
+		else
+			// assume not auto-close files always opened
+			return !m_pFile || m_state.IsSetAny(stateAutoClose) && m_pFile->IsClosed();
+	}
+
+	/**
+		Reads a chunk of data from the archive.
+
+		\param	pBuf
+			The buffer to receive the data.
+
+		\param	iSize
+			The number of bytes to read.
+
+		\param	bAtOnce
+			If \c true, no volume change is allowed during reading. 
+			If the requested number of bytes cannot be read from a single volume, an exception is thrown.
+
+	*/
 	DWORD Read(void* pBuf, DWORD iSize, bool bAtOnce);
 
 	/**
-		Return the position in the file, taking into account the bytes in the write buffer.
-		\note Throws exceptions.
+		Returns the position in the file, taking into account the number of bytes in the write buffer 
+		and the number of bytes before the archive. 		
+
+		\return 
+			The position in the file.
+
+		\note
+			For binary split archives, it returns the position from the beginning of the first part.
 	*/
-	DWORD GetPosition() const {return (DWORD)(m_pFile->GetPosition()) + m_uBytesInWriteBuffer;}
+	ZIP_SIZE_TYPE GetPosition() const
+	{
+		ZIP_SIZE_TYPE uPos = (ZIP_SIZE_TYPE)(m_pFile->GetPosition()) + m_uBytesInWriteBuffer;
+		if (m_uCurrentVolume == 0)
+			uPos -= m_uBytesBeforeZip;
+		else if (IsBinarySplit()) // not for the first volume
+		{
+			ZIP_VOLUME_TYPE uVolume = m_uCurrentVolume;
+			ASSERT(m_pCachedSizes->GetSize() > (ZIP_ARRAY_SIZE_TYPE)(uVolume - 1));
+			do
+			{
+				uVolume--;
+				uPos += (ZIP_SIZE_TYPE)m_pCachedSizes->GetAt((ZIP_ARRAY_SIZE_TYPE)uVolume);
+			}
+			while (uVolume > 0);
+		}
+		return uPos;
+	}
 
 
 	/**
-		Flush the data from the read buffer to the disk.
-		\note Throws exceptions.
+		Flushes the data from the read buffer to the disk.
+
 	*/
 	void Flush();
 
 
 	/**
-		Forces any data remaining in the file buffer to be written to the disk
+		Forces any data remaining in the file buffer to be written to the disk.
 	*/
 	void FlushFile()
 	{
-		if (!m_bInMemory && !IsReadOnly())
+		if (!IsReadOnly())
 			m_pFile->Flush();
 	}
 
-/**
-	A method used to change disks during writing to the disk spanning archive.
-	\param	iNeeded
-		no of bytes needed on the disk
-	\param	lpszFileName
-		the archive filename
-	\note Throws exceptions.
-*/
-	void NextDisk(int iNeeded, LPCTSTR lpszFileName = NULL);
+	void FlushBuffers()
+	{
+		Flush();
+		FlushFile();
+	}
+
+	/**
+		Changes volumes during writing to a segmented archive.
+
+		\param	uNeeded
+			The number of bytes needed in the volume.
+
+	*/
+	void NextVolume(ZIP_SIZE_TYPE uNeeded);
 
 
-/**
-	\return a zero-based number of the current disk
-*/
-	int GetCurrentDisk() const {return m_iCurrentDisk;}
+	/**
+		Returns a zero-based number of the current volume.
+	*/
+	ZIP_VOLUME_TYPE GetCurrentVolume() const {return m_uCurrentVolume;}
 
  
-/**
-	Change the disk during extract operations.
-	\param	iNumber
-		a zero-based disk number requested
-	\return	
-*/
-	void ChangeDisk(int iNumber);
+	/**
+		Changes the volume during extract operations.
 
-/**
-	Detect the span mode.
-	\return	
-		- -1 - existing disk spanning archive opened
-		- 0 - no disk spanning archive
-		- 1 - disk spanning archive in creation
+		\param	uNumber
+			A zero-based number of the requested volume.
+	*/
+	void ChangeVolume(ZIP_VOLUME_TYPE uNumber);
 
-*/
-	int IsSpanMode() const
+	/**
+		Changes the current volume to the next volume during extract operations.
+	*/
+	void ChangeVolume()
 	{
-		return m_iSpanMode == noSpan ? 0 : (m_bNewSpan ? 1 : -1);
+		ChangeVolume((ZIP_VOLUME_TYPE)(m_uCurrentVolume + 1));
 	}
 
 	/**
-		return \c true if the archive cannot be modified.
+		Changes the current volume to the previous volume during extract operations.
 	*/
-	bool IsReadOnly()
+	void ChangeVolumeDec()
 	{
-		return m_bReadOnly || IsSpanMode() < 0;
+		if (m_uCurrentVolume == 0)
+			ThrowError(CZipException::badZipFile);
+		ChangeVolume((ZIP_VOLUME_TYPE)(m_uCurrentVolume - 1));
 	}
-
-	/**
-		If you set \e bSingleDisk to \c true, no disk change will occur while reading an existing archive.
-		The purpose of this method is to allow reading archives that have improperly set disk numbers.
-	*/
-	void SetTreatAsSingleDisk(bool bSingleDisk = true){m_bTreatAsSingleDisk = bSingleDisk;}
-
-/**
 	
-	\param	bAfterException
-		set to \c true after the library has throw an exception.
-		The simplified mode is used then.
-		In this case it'll be possible to reuse the object to operate on another
-		archive, but the current archive file will not be valid anyway.
-	\return the filepath of the archive (used by CZipArchive::Close)
-	\note Throws exceptions.
-*/
-	CZipString Close(bool bAfterException);
-
-
 	/**
-		The size of the write buffer. 
-		Set before opening the archive. 
-		It is usually set with CZipArchive::SetAdvanced
-		(specify this value as the first argument).
-		\see CZipArchive::SetAdvanced
+		Returns the value indicating whether the archive is a split archive (binary or regular).
+
+		\return
+			\c true, if the archive is a split archive; \c false otherwise.
 	*/
-	int m_iWriteBufferSize;
-
+	bool IsSplit() const
+	{
+		return m_state.IsSetAll(stateSplit);
+	}
 
 	/**
-		The physical archive file (on a storage device).
-		Not used when opening archive in memory
-		with Open(CZipMemFile& , int).
+		Returns the value indicating whether the archive is a binary split archive.
+
+		\return
+			\c true, if the archive is a binary split archive; \c false otherwise.
 	*/
-	CZipFile m_internalfile;
+	bool IsBinarySplit() const
+	{
+		return m_state.IsSetAll(stateBinarySplit);
+	}
 
 	/**
-		The buffer representing the archive. 
-		It is a physical file or a memory buffer depending on what
-		method was used to open the archive. In the first case it is 
-		a pointer to #m_internalfile.
-		\see Open(LPCTSTR, int, int);
-		\see Open(CZipMemFile& mf, int)
-		
+		Returns the value indicating whether the archive is a regular split archive (not binary).
+
+		\return
+			\c true, if the archive is a regular split archive; \c false otherwise.
 	*/
-	CZipAbstractFile* m_pFile;	
+	bool IsRegularSplit() const
+	{
+		return m_state.IsSetAll(stateSplit) && !m_state.IsSetAll(stateBinarySplit);
+	}
 
 	/**
-		Takes one of the values of #ZipSpanMode.	
+		Returns the value indicating whether the archive is a spanned archive.
+
+		\return
+			\c true, if the archive is a spanned archive; \c false otherwise.
 	*/
-	int m_iSpanMode;
+	bool IsSpanned() const
+	{
+		return m_state.IsSetAll(stateSpan);
+	}
 
 	/**
-		A callback object which method \c Callback is called when there is a need for a disk change 
-		while operating on a #pkzipSpan archive.
-		\see CZipArchive::SetSpanCallback
+		The same as the CZipArchive::IsReadOnly method.
 	*/
-	CZipSpanCallback* m_pChangeDiskFunc;
+	bool IsReadOnly() const
+	{
+		return m_state.IsSetAny(stateReadOnly) || IsExistingSegmented();
+	}
+	
+	/**
+		Returns the value indicating whether the archive is an existing segmented archive.
+
+		\return
+			\c true, if the archive is an existing segmented archive; \c false otherwise.
+	*/
+	bool IsExistingSegmented() const
+	{
+		return m_state.IsSetAll(stateSegmented | stateExisting);
+	}
 
 	/**
-		The signature of the extended header	
+		Returns the value indicating whether the archive is a new segmented archive.
+
+		\return
+			\c true, if the archive is a new segmented archive; \c false otherwise.
+	*/
+	bool IsNewSegmented() const
+	{
+		return m_state.IsSetAny(stateSegmented) && !IsExisting();
+	}
+
+	/**
+		Returns the value indicating whether the archive is a segmented archive.
+
+		\return
+			\c true, if the archive is a segmented archive; \c false otherwise.
+	*/
+	bool IsSegmented() const
+	{
+		return m_state.IsSetAny(stateSegmented);
+	}
+
+	/**
+		Returns the value indicating whether the archive is an existing archive.
+
+		\return
+			\c true, if the archive is an existing archive; \c false, if the archive is a new archive.
+	*/
+	bool IsExisting() const
+	{
+		return m_state.IsSetAny(stateExisting);
+	}
+
+	/**
+		Sets the split names handler.
+
+		\see
+			CZipArchive::SetSplitNamesHandler(CZipSplitNamesHandler*, bool)
+		\see
+			CZipSplitNamesHandler
+	*/
+	bool SetSplitNamesHandler(CZipSplitNamesHandler* pNames, bool bAutoDelete)
+	{
+		if (m_state != 0)
+		{
+			ZIPTRACE("%s(%i) : The archive is already opened.\n");
+			return false;
+		}
+		ClearSplitNames();
+		m_pSplitNames = pNames;
+		m_bAutoDeleteSplitNames = bAutoDelete;
+		return true;
+	}
+
+	/**
+		Returns the current split names handler.
+
+		\return
+			The current split names handler.
+		\see
+			CZipSplitNamesHandler
+	*/
+	CZipSplitNamesHandler* GetSplitNamesHandler()
+	{
+		return m_pSplitNames;
+	}
+
+	/**
+		Returns the current split names handler (const).
+
+		\return
+			The current split names handler.
+		\see
+			CZipSplitNamesHandler
+	*/
+	const CZipSplitNamesHandler* GetSplitNamesHandler() const
+	{
+		return m_pSplitNames;
+	}
+	
+	/**
+		Performs the seeking operation on the #m_pFile.
+
+		\param lOff
+			The new position in the file.
+
+		\param iSeekType
+			The direction of the seek operation.
+			It can be one of the #SeekType values.
+	*/
+	ULONGLONG Seek(ULONGLONG lOff, SeekType iSeekType = seekFromBeginning);	
+
+	/**
+		Performs the seeking operation in a binary split archive.
+
+		\param lOff
+			The offset to move the file pointer.
+
+		\param bSeekToBegin
+			If \c true, the file pointer is moved to the beginning before seeking.
+			If \c false, the file pointer is moved relatively to the current position.
+	*/
+	void SeekInBinary(ZIP_FILE_SIZE lOff, bool bSeekToBegin = false);	
+
+	/**
+		Returns the number of free bytes on the current volume.	
+
+		\return 
+			The number of free bytes on the current volume.
+	*/
+	ZIP_SIZE_TYPE VolumeLeft() const;
+	
+	/**	
+		Closes the storage.
+
+		\param	bWrite
+			Set to \c false, if the storage should not perform any write operations.
+		\param bGetLastVolumeName
+			Set to \c true, if the storage should return the path.
+
+		\return
+			The file path of the archive or of the last volume in the archive.
+			Only if \a bGetLastVolumeName is set to \c true.
+
+	*/
+	CZipString Close(bool bWrite, bool bGetLastVolumeName);
+
+	/**
+		Represents the physical storage for the archive (or the current archive segment in segmented archives).
+	*/
+	CZipAbstractFile* m_pFile;
+
+	/**
+		The signature of the extended header.
 	*/
 	static char m_gszExtHeaderSignat[];
+
 protected:
 
 	/**
-		Flush without writing. Can be used only on non-disk spanning archives.
+		Returns the file offset after the last data byte in the archive.
+
+		\return 
+			The file offset after the last data byte in the archive.
+	*/
+	ZIP_SIZE_TYPE GetLastDataOffset()
+	{
+		return (ZIP_SIZE_TYPE)m_pFile->GetLength() - m_uBytesBeforeZip;
+	}
+	
+	/**
+		Reverse-finds the location of the given signature starting from the current position in file.
+
+		\param szSignature
+			The signature to locate.
+
+		\param uMaxDepth
+			The maximum number of bytes to search for \a szSignature.
+
+		\return
+			The location of the signature.
+
+	*/
+	ZIP_FILE_USIZE LocateSignature(char* szSignature, ZIP_SIZE_TYPE uMaxDepth);
+		
+
+	/**
+		Flushes without writing. It can be used only on not segmented archives.
 	*/
 	void EmptyWriteBuffer()
 	{
 		m_uBytesInWriteBuffer = 0;
 	}
 
-/**
-	Open a physical file.
-	\param	lpszName
-		the name of the file to open
-	\param	uFlags
-		file open flags
-	\param	bThrow
-		if \c true then throw an exception in case of failure
-	\return	\c true if successful
-*/
-	bool OpenFile(LPCTSTR lpszName, UINT uFlags, bool bThrow = true);
-/**
-	Throw an exception with the given code.
-	\param	err
-	\see CZipException::Throw
-*/
-	void ThrowError(int err);
+	/**
+		Opens a physical file.
 
-/**
-	Return the number of bytes left on the current volume.		
-*/
-	DWORD VolumeLeft() const;
+		\param	lpszName
+			The name of the file to open.
+
+		\param	uFlags
+			The file open flags.
+
+		\param	bThrow
+			If \c true, throw an exception in case of failure.
+
+		\return
+			\c true if successful; \c false otherwise.
+	*/
+	bool OpenFile(LPCTSTR lpszName, UINT uFlags, bool bThrow = true);
 
 	/**
-		Rename last file in TD mode disk spanning archive when done with creating
+		Renames the last segment file in a split archive when finalizing the archive.
+
+		\return
+			The name of the last segment.
 	*/
-	CZipString RenameLastFileInTDSpan();
-/**
-	Write data to the internal buffer.
-	\param	*pBuf
-		the buffer to copy data from
-	\param	uSize
-		bytes to write
-	\note Throws exceptions.
-*/
+	CZipString RenameLastFileInSplitArchive();
+
+	/**
+		Writes data to the internal buffer.
+
+		\param	*pBuf
+			The buffer to copy the data from.
+
+		\param	uSize
+			The number of bytes to write.
+
+	*/
 	void WriteInternalBuffer(const char *pBuf, DWORD uSize);
 
-/**
-	\return	the number of free bytes on the current removable disk
-*/
-	DWORD GetFreeVolumeSpace() const;
+	/**
+		Returns the free space size on the current removable disk.
 
-/**
-	Notify the callback object.
-	Throw an exception if the callback object's method \c Callback returns \c false.
-	\param	iCode
-		a code to be passed to the callback object
-	\param	szTemp
-		a string to be used as a filename (the second argument
-		of CZipException::Throw) when the exception must be thrown
-	\note Throws exceptions.
-	\see CZipArchive::SetSpanCallback
-	\see CZipException::Throw
-*/
-	void CallCallback(int iCode, CZipString szTemp);
-
-
-/**
-	Construct the name of the volume in #tdSpan mode.
-	\param	bLast
-		must be \c true if constructing the last volume name (an extension "zip" is given)
-	\param	lpszZipName
-		the name of the archive
-	\return	
-		the new volume name
-*/
-	CZipString GetTdVolumeName(bool bLast, LPCTSTR lpszZipName = NULL) const;
+		\return
+			The free space in bytes.
+	*/
+	ZIP_SIZE_TYPE GetFreeVolumeSpace() const;
 
 	/**
-		Change the disk in #tdSpan mode
+		Calls the segmented callback object.
+		Throws an exception if the callback method returns \c false.
+
+		\param uNeeded
+			The minimum number of free bytes required on the disk.
+
+		\param	iCode
+			The code to be passed to the callback method.
+
+		\param	szTemp
+			The string to be used as a filename (as an argument
+			in the CZipException::Throw method) when an exception must be thrown.
+
+				\see
+			CZipArchive::SetSegmCallback
 	*/
-	CZipString ChangeTdRead();
+	void CallCallback(ZIP_SIZE_TYPE uNeeded, int iCode, CZipString szTemp);
 
 	/**
-		Change the disk in #pkzipSpan mode
+		Changes a file when processing a split archive.
 	*/
-	CZipString ChangePkzipRead();
-	
+	CZipString ChangeSplitRead();
 
 	/**
-		Used only in \ref TDSpan "TD span mode" . The value it holds depends on the open mode.
-		- Opened existing disk spanning archive - store the number of the last
-		disk ( the one with "zip" extension).
-		- Disk spanning archive in creation - the size of the volume.
-
-		\see CZipArchive::Open
-		\see CZipArchive::GetSpanMode
-
+		Changes a disk when processing a spanned archive.
 	*/
-	int m_iTdSpanData;
-	
-	/**
-		The extension of the last volume.
-	*/
-	CZipString m_szSpanExtension;
+	CZipString ChangeSpannedRead();
 
 	/**
-		\return	the count bytes left free in the write buffer
+		Returns the free space left in the write buffer.
+
+		\return
+			The free space in bytes.
 	*/
-	DWORD GetFreeInBuffer() const {return m_pWriteBuffer.GetSize() - m_uBytesInWriteBuffer;}
+	DWORD GetFreeInBuffer() const {return m_pWriteBuffer.GetSize() - m_uBytesInWriteBuffer;}	
+
+	/**
+		The value it holds, depends on the current mode:		
+		- An opened existing split archive: the number of the last volume ( usually the one with the "zip" extension).
+		- A split archive in creation: the size of the volume.
+
+		This method is used only when processing split archives.
+	*/
+	ZIP_SIZE_TYPE m_uSplitData;
 	
 	/**
-		Number of bytes available in the write buffer.		
+		The number of bytes available in the write buffer.		
 	*/
 	DWORD m_uBytesInWriteBuffer;
 
-/**
-	The value it holds depends on the open mode:
-	\par
-	- #tdSpan : the total size of the current volume
-	- #pkzipSpan: a free space on the current volume
-*/
-	DWORD m_uCurrentVolSize;
-
-
 	/**
-		number of bytes left free in the write buffer		
+		The value it holds depends on the segmentation mode:
+		- A split archive: the total size of the current volume.
+		- A spanned archive: the free space on the current volume.
 	*/
-	DWORD m_uVolumeFreeInBuffer;
+	ZIP_SIZE_TYPE m_uCurrentVolSize;
 
 	/**
-		Write buffer caching data.
+		The write buffer caching data.
 	*/
 	CZipAutoBuffer m_pWriteBuffer;
 
+	/**
+		Stores the number of bytes that have been written physically to the current segment.
+		Used only when processing a segmented archive in creation.
+	*/
+	ZIP_SIZE_TYPE m_uBytesWritten;	
 
 	/**
-		Used only during disk spanning archive creation.
-		Tells how many bytes have been written physically to the current volume.
+		The current volume number in a segmented archive.
+		The value is zero-based.
 	*/
-	DWORD m_iBytesWritten;
-
-	/**
-		\c True, if the current archive is a new disk spanning archive.
-	*/
-	bool m_bNewSpan;
-
-	/**
-		The current disk in a disk spanning archive.
-		Disk no 0 is the first disk.
-	*/
-	int m_iCurrentDisk;
-
-	/**
-		It is set to \e true when an archive is created in memory; \e false otherwise.
-	*/
-	bool m_bInMemory;
-
-	/**
-		It is set to \e true if OpenMode::zipOpenReadOnly was specified when opening the archive
-	*/
-	bool m_bReadOnly;
-
-	/**
-		Is is set by #SetTreatAsSingleDisk
-	*/
-	bool m_bTreatAsSingleDisk;
+	ZIP_VOLUME_TYPE m_uCurrentVolume;
 	
+	/**
+		The number of bytes before the actual zip archive in a file.
+		\see
+			CZipArchive::GetBytesBeforeZip
+	*/
+	ZIP_SIZE_TYPE m_uBytesBeforeZip;
+
+
+	/**
+		The size of the write buffer. 		
+
+		\see
+			CZipArchive::SetAdvanced
+	*/
+	int m_iWriteBufferSize;
+
+	/**
+		The size of the buffer used in searching for the central directory.
+
+		\see
+			CZipArchive::SetAdvanced
+	*/
+	int m_iLocateBufferSize;		
+
+	/**
+		A callback object called when there is a need for a volume change
+		in a spanned archive.
+
+		\see
+			CZipArchive::SetSegmCallback
+	*/
+	CZipSegmCallback* m_pSpanChangeVolumeFunc;
+
+	/**
+		A callback object called when there is a need for a volume change
+		in a split archive.
+
+		\see
+			CZipArchive::SetSegmCallback
+	*/
+	CZipSegmCallback* m_pSplitChangeVolumeFunc;
+	
+private:
+	ZIP_FILE_USIZE LocateSignature(char* szSignature, ZIP_SIZE_TYPE uMaxDepth, int& leftToFind, bool& found, ZIP_FILE_USIZE uFileLength);
+	CZipString GetSplitVolumeName(bool bLast)
+	{
+		if (m_pSplitNames == NULL)
+		{
+			ThrowError(CZipException::genericError);
+		}
+		int flags = bLast ? CZipSplitNamesHandler::flLast : CZipSplitNamesHandler::flNone;
+		if (IsExisting())
+			flags |= CZipSplitNamesHandler::flExisting;
+		return m_pSplitNames->GetVolumeName(m_szArchiveName, (ZIP_VOLUME_TYPE)(m_uCurrentVolume + 1), flags);
+	}
+
+	void ClearSplitNames()
+	{
+		if (m_pSplitNames)
+		{
+			if (m_bAutoDeleteSplitNames)
+				delete m_pSplitNames;
+			m_pSplitNames = NULL;
+			m_bAutoDeleteSplitNames = false;
+		}
+	}
+
+	void ClearCachedSizes()
+	{
+		if (m_pCachedSizes)
+		{
+			delete m_pCachedSizes;
+			m_pCachedSizes = NULL;
+		}
+	}
+
+	void EnsureSplitNames()
+	{
+		if (IsSplit())
+		{
+			if (m_pSplitNames == NULL)
+			{
+				m_bAutoDeleteSplitNames = true;
+				if (m_state.IsSetAll(stateBinarySplit))
+					m_pSplitNames = new CZipBinSplitNamesHandler();
+				else
+					m_pSplitNames = new CZipRegularSplitNamesHandler();
+			}
+			m_pSplitNames->Initialize(m_szArchiveName);
+		}
+	}
+
+	ZIP_FILE_USIZE GetCachedSize(ZIP_VOLUME_TYPE uVolume)
+	{
+		ASSERT(m_pCachedSizes);
+		if (m_pCachedSizes->GetSize() > (ZIP_ARRAY_SIZE_TYPE)uVolume)
+			return m_pCachedSizes->GetAt((ZIP_ARRAY_SIZE_TYPE)uVolume);
+		ThrowError(CZipException::genericError);
+		// for a compiler
+		return 0;
+	}
+
+	void CacheSizes();
+
+	ZipArchiveLib::CBitFlag m_state;
+	CZipSegmCallback* m_pChangeVolumeFunc;
+	CZipString m_szArchiveName;
+	CZipFile m_internalfile;
+	CZipSplitNamesHandler* m_pSplitNames;
+	CZipArray<ZIP_FILE_USIZE>* m_pCachedSizes;
+	bool m_bAutoDeleteSplitNames;
+	static const ZIP_FILE_USIZE SignatureNotFound;
+	void ThrowError(int err) const;
 };
 
-#endif // !defined(AFX_ZIPSTORAGE_H__941824FE_3320_4794_BDE3_BE334ED8984B__INCLUDED_)
+#if (_MSC_VER > 1000) && (defined ZIP_HAS_DLL)
+	#pragma warning (pop)	
+#endif
+
+
+#endif // !defined(ZIPARCHIVE_ZIPSTORAGE_DOT_H)

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,34 +27,31 @@
  *                                                                    *
  **********************************************************************/
 
-//TODO: include the right headers
 #include "voreen/core/vis/processors/image/depthoffield.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 #include "tgt/assert.h"
 #include "tgt/glmath.h"
 #include "tgt/vector.h"
 
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen {
 
 const Identifier DepthOfField::setDepthOfFieldThreshold_("set.depthOfFieldThreshold");
 
 DepthOfField::DepthOfField()
-    : GenericFragment("pp_depthoffield"),
+    : ImageProcessor("pp_depthoffield"),
     depthThreshold_(setDepthOfFieldThreshold_, "Depth Threshold")
 {
     setName("Depth of Field");
-	addProperty(&depthThreshold_);
+    addProperty(&depthThreshold_);
 
     createInport("image.inport");
     createOutport("image.outport");
 }
 
 const std::string DepthOfField::getProcessorInfo() const {
-	return "Performs a depth of field rendering.";
+    return "Performs a depth of field rendering.";
 }
 
 void DepthOfField::setDepthThreshold(float depthThreshold) {
@@ -65,7 +62,7 @@ void DepthOfField::process(LocalPortMapping* portMapping) {
     int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 
-	tc_->setActiveTarget(dest, "DepthOfField::process");
+    tc_->setActiveTarget(dest, "DepthOfField::process");
 
     analyzeDepthBuffer(source);
 

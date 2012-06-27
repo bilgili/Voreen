@@ -4,7 +4,7 @@
 
 /*
  *  Original copyright header:
- * 
+ *
  *  Copyright (C) 1994-2004, OFFIS
  *
  *  This software and supporting documentation were developed by
@@ -421,7 +421,7 @@ acceptSubAssoc(T_ASC_Network * aNet, T_ASC_Association ** assoc)
               (*assoc)->params,
               knownAbstractSyntaxes, DIM_OF(knownAbstractSyntaxes),
               transferSyntaxes, numTransferSyntaxes);
-      
+
           if (cond.good())
           {
               /* the array of Storage SOP Class UIDs comes from dcuid.h */
@@ -775,20 +775,20 @@ substituteOverrideKeys(DcmDataset *dset)
 namespace {
 
 static int
-selectReadable(T_ASC_Association *assoc, 
+selectReadable(T_ASC_Association *assoc,
     T_ASC_Network *net, T_ASC_Association *subAssoc,
     T_DIMSE_BlockingMode blockMode, int timeout)
 {
     T_ASC_Association *assocList[2];
     int assocCount = 0;
-    
+
     if (net != NULL && subAssoc == NULL) {
         if (ASC_associationWaiting(net, 0)) {
             /* association request waiting on network */
             return 2;
         }
-    } 
-    assocList[0] = assoc; 
+    }
+    assocList[0] = assoc;
     assocCount = 1;
     assocList[1] = subAssoc;
     if (subAssoc != NULL) assocCount++;
@@ -819,7 +819,7 @@ selectReadable(T_ASC_Association *assoc,
 OFCondition
 myDIMSE_moveUser(
         /* in */
-        T_ASC_Association *assoc, 
+        T_ASC_Association *assoc,
         T_ASC_PresentationContextID presID,
         T_DIMSE_C_MoveRQ *request,
         DcmDataset *requestIdentifiers,
@@ -844,7 +844,7 @@ myDIMSE_moveUser(
 
     bzero((char*)&req, sizeof(req));
     bzero((char*)&rsp, sizeof(rsp));
-    
+
     req.CommandField = DIMSE_C_MOVE_RQ;
     request->DataSetType = DIMSE_DATASET_PRESENT;
     req.msg.CMoveRQ = *request;
@@ -852,7 +852,7 @@ myDIMSE_moveUser(
     msgId = request->MessageID;
 
     OFCondition cond = DIMSE_sendMessageUsingMemoryData(assoc, presID, &req,
-                                          NULL, requestIdentifiers, 
+                                          NULL, requestIdentifiers,
                                           NULL, NULL);
     if (cond != EC_Normal) {
         return cond;
@@ -862,7 +862,7 @@ myDIMSE_moveUser(
 
     while (cond == EC_Normal && status == STATUS_Pending) {
 
-        /* if user wants, multiplex between net/subAssoc 
+        /* if user wants, multiplex between net/subAssoc
          * and move responses over main assoc.
          */
         switch (selectReadable(assoc, net, subAssoc, DIMSE_NONBLOCKING /*blockMode*/, timeout)) {
@@ -888,7 +888,7 @@ myDIMSE_moveUser(
 
         bzero((char*)&rsp, sizeof(rsp));
 
-        cond = DIMSE_receiveCommand(assoc, blockMode, timeout, &presID, 
+        cond = DIMSE_receiveCommand(assoc, blockMode, timeout, &presID,
                 &rsp, statusDetail);
         if (cond != EC_Normal) {
             return cond;
@@ -899,9 +899,9 @@ myDIMSE_moveUser(
           sprintf(buf1, "DIMSE: Unexpected Response Command Field: 0x%x", (unsigned)rsp.CommandField);
           return makeDcmnetCondition(DIMSEC_UNEXPECTEDRESPONSE, OF_error, buf1);
         }
-    
+
         *response = rsp.msg.CMoveRSP;
-        
+
         if (response->MessageIDBeingRespondedTo != msgId)
         {
           char buf2[256];
@@ -915,12 +915,12 @@ myDIMSE_moveUser(
         switch (status) {
         case STATUS_Pending:
             if (*statusDetail != NULL) {
-                DIMSE_warning(assoc, 
+                DIMSE_warning(assoc,
                     "moveUser: Pending with statusDetail, ignoring detail");
                 delete *statusDetail;
                 *statusDetail = NULL;
             }
-            if (response->DataSetType != DIMSE_DATASET_NULL) 
+            if (response->DataSetType != DIMSE_DATASET_NULL)
             {
                 DIMSE_warning(assoc, "moveUser: Status Pending, but DataSetType!=NULL");
                 if (! ignorePendingDatasets)
@@ -932,7 +932,7 @@ myDIMSE_moveUser(
                     DIMSE_warning(assoc, "  Reading but ignoring response identifier set");
                     DcmDataset *tempset = NULL;
                     cond = DIMSE_receiveDataSetInMemory(assoc, blockMode, timeout, &presID, &tempset, NULL, NULL);
-                    delete tempset;                
+                    delete tempset;
                     if (cond != EC_Normal) {
                         return cond;
                     }
@@ -1086,7 +1086,7 @@ bool voreen::DicomMoveSCU::init(const std::string& ourtitle, int retrievePort,
 {
     if (ourtitle.empty() || retrievePort <= 0 || peer.empty() || port <= 0)
         return false;
-    
+
     ourtitle_ = ourtitle;
     retrievePort_ = retrievePort;
     peer_ = peer;
@@ -1101,7 +1101,7 @@ bool voreen::DicomMoveSCU::init(const std::string& ourtitle, int retrievePort,
 bool voreen::DicomMoveSCU::init(const std::string& url, const DicomSecurityOptions& security,
                                 const std::string& configFile)
 {
-    // First extract the URL parts like in this regex: 
+    // First extract the URL parts like in this regex:
     // ^dicom://([a-zA-Z0-9\-.]+):([0-9]+)@([a-zA-Z0-9\-\.]+):([0-9]+)$
 
     const string number = "0123456789";
@@ -1109,7 +1109,7 @@ bool voreen::DicomMoveSCU::init(const std::string& url, const DicomSecurityOptio
     string ourtitle, peer;
     int retrievePort, port;
     string s(url);
-    
+
     // ^dicom://
     if (s.find("dicom://") != 0) return false;
     s = s.substr(8);
@@ -1139,7 +1139,7 @@ bool voreen::DicomMoveSCU::init(const std::string& url, const DicomSecurityOptio
     pos = s.find_first_not_of(number);
     if (pos != string::npos) return false;
     port = atoi(s.c_str());
-        
+
     return init(ourtitle, retrievePort, peer, port, security, configFile);
 }
 
@@ -1152,7 +1152,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
 
 #ifdef WITH_OPENSSL
     int         opt_keyFileFormat = SSL_FILETYPE_PEM;
-    OFBool      opt_doAuthenticate = (security_.authenticate_ ? OFTrue : OFFalse); 
+    OFBool      opt_doAuthenticate = (security_.authenticate_ ? OFTrue : OFFalse);
     const char *opt_privateKeyFile = (security_.privateKeyFile_.empty() ? NULL : security_.privateKeyFile_.c_str());
     const char *opt_certificateFile = (security_.publicKeyFile_.empty() ? NULL : security_.publicKeyFile_.c_str());
     const char *opt_passwd = NULL;
@@ -1176,10 +1176,10 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
         addOverrideKey((*iter).c_str());
         iter++;
     }
-    opt_queryModel = queryModel;   
+    opt_queryModel = queryModel;
     const char *opt_peerTitle = peerTitle.c_str();
     filelist = files;
-    
+
     const char *opt_peer = peer_.c_str();
     OFCmdUnsignedInt opt_port = port_;
     const char *opt_ourTitle = ourtitle_.c_str();
@@ -1187,7 +1187,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
 
 //    opt_verbose = OFTrue;
     SetDebugLevel((0)); /* stop dcmdata debugging messages */
-    
+
 
 //     if (cmd.findOption("--prefer-uncompr"))  opt_in_networkTransferSyntax = EXS_Unknown;
 //     if (cmd.findOption("--prefer-little"))   opt_in_networkTransferSyntax = EXS_LittleEndianExplicit;
@@ -1240,14 +1240,14 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
         }
     }
 
-    
+
     T_ASC_Parameters *params = NULL;
     DIC_NODENAME localHost;
     DIC_NODENAME peerHost;
     T_ASC_Association *assoc = NULL;
     OFList<OFString> fileNameList;
 
-    
+
 #ifdef HAVE_GUSI_H
     /* needed for Macintosh */
     GUSISetup(GUSIwithSIOUXSockets);
@@ -1259,8 +1259,8 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
     /* we need at least version 1.1 */
     WORD winSockVersionNeeded = MAKEWORD( 1, 1 );
     WSAStartup(winSockVersionNeeded, &winSockData);
-#endif  
-    
+#endif
+
 //     if (debug) {
 //         opt_debug = OFTrue;
 //         DUL_Debug(OFTrue);
@@ -1268,7 +1268,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
 //         SetDebugLevel(3);
 //     }
 
-    
+
 
     /* make sure data dictionary is loaded */
     if (!dcmDataDict.isDictionaryLoaded())
@@ -1310,7 +1310,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
 
       for (size_t i=0; i < security_.certificateFiles_.size(); i++)
           tLayer->addTrustedCertificateFile(security_.certificateFiles_[i].c_str(), opt_keyFileFormat);
-      
+
       if (opt_doAuthenticate)
       {
         if (opt_passwd) tLayer->setPrivateKeyPasswd(opt_passwd);
@@ -1351,7 +1351,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
     }
 
 #endif // WITH_OPENSSL
-    
+
 #ifdef HAVE_GETUID
     /* return to normal uid so that we can't do too much damage in case
      * things go very wrong.   Only does someting if the program is setuid
@@ -1445,7 +1445,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
         OFListIterator(OFString) enditer = fileNameList.end();
         while ((iter != enditer) && (cond == EC_Normal)) // compare with EC_Normal since DUL_PEERREQUESTEDRELEASE is also good()
         {
-            
+
             cond = cmove(assoc, (*iter).c_str());
             ++iter;
         }
@@ -1527,7 +1527,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
 
     delete asccfg;
     asccfg = 0;
-    
+
     return 0;
 }
 
@@ -1538,9 +1538,9 @@ int voreen::DicomMoveSCU::moveSeries(const std::string& seriesInstanceUID, const
     keys.push_back("0010,0020=");
     keys.push_back("0020,000d=");
     keys.push_back("0020,000e=" + seriesInstanceUID);
-    
+
     filePath = targetPath;
-    
+
     return move(keys, QMPatientRoot, peerTitle, files);
 }
 

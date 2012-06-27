@@ -15,6 +15,8 @@ cd ..\qt
 qmake.exe -tp vc "CONFIG+=flat" voreenlib_qt.pro
 cd ..\..\apps\voreenve
 qmake.exe -tp vc "CONFIG+=flat" voreenve.pro
+cd ..\..\apps\vesselvis
+qmake.exe -tp vc "CONFIG+=flat" vesselvis.pro
 
 rem Optional
 rem cd ..\..\apps\voreendev

@@ -862,7 +862,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
   _pDpy = glXGetCurrentDisplay();
   GLXContext context = glXGetCurrentContext();
   int screen = DefaultScreen(_pDpy);
-  XVisualInfo *visInfo;
+  XVisualInfo *visInfo = 0;
 
 //   int iFormat = 0;
 //   int iNumFormats;

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,7 +55,7 @@ public:
     MatVolumeReader();
     ~MatVolumeReader();
 
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     template<class T>
@@ -83,19 +83,16 @@ public:
 
 protected:
 
-    void readMatFile(mxArray* pa, VolumeSet* volSet, char* name, bool generateVolumeGL = true);
+    void readMatFile(mxArray* pa, VolumeSet* volSet, char* name);
 
     /**
      * Reads a MatLab array from memory.
-     *
-     * @param generateVolumeGL If this is true a VolumeGL will be created,
-     *      has no effect in the VRN_NO_OPENGL-Version!
      */
-    void readMatrix(mxArray* pa, VolumeSet* volSet, char* name, bool generateVolumeGL = true);
+    void readMatrix(mxArray* pa, VolumeSet* volSet, char* name);
 
     static const std::string loggerCat_;
 };
 
-} //namespace voreen
+} // namespace voreen
 
 #endif // VRN_MATVOLUMEREADER_H

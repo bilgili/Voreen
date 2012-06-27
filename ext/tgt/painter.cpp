@@ -27,10 +27,6 @@
 
 namespace tgt {
 
-Painter::Painter()
-    : canvas_(NULL)
-{}
-
 Painter::Painter(GLCanvas* canvas)
     : canvas_(canvas)
 {}
@@ -40,17 +36,14 @@ void Painter::setCanvas(GLCanvas* canvas) {
 }
 
 GLCanvas* Painter::getCanvas() const {
-    if (canvas_) // FIXME: should we skip this test for performace reasons?
-        return canvas_;
-    else
-        return NULL;
+    return canvas_;
 }
 
 Camera* Painter::getCamera() const {
-    if (canvas_) // FIXME: should we skip this test for performace reasons?
+    if (canvas_)
         return canvas_->getCamera();
     else
-        return NULL;
+        return 0;
 }
 
 } // namespace tgt

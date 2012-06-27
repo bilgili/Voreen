@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,32 +31,96 @@
 #define SEGMENTATIONPLUGIN_H
 
 #include "widgetplugin.h"
+#include "tgt/event/eventlistener.h"
+#include "voreen/core/vis/processors/render/segmentationraycaster.h"
+#include "voreen/core/vis/processors/volume/regiongrowing.h"
+#include "voreen/core/vis/message.h"
+#include "voreen/core/vis/properties/transferfuncproperty.h"
+#include "voreen/qt/widgets/transfunc/transfunceditorintensity.h"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-
-class QCheckBox;
+class QComboBox;
+class QPushButton;
 class QSpinBox;
+class QDoubleSpinBox;
+class QGroupBox;
+class QComboBox;
 
 namespace voreen {
 
-class SegmentationPlugin : public WidgetPlugin {
+class NetworkEvaluator;
+class SimpleSegmentationProcessor;
+class ThresholdWidget;
+
+class SegmentationPlugin : public WidgetPlugin, MessageReceiver, tgt::EventListener {
     Q_OBJECT
 public:
-    SegmentationPlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
+    SegmentationPlugin(QWidget* parent, NetworkEvaluator* evaluator);
+    ~SegmentationPlugin();
 
-protected:
-    virtual void createWidgets();
-    virtual void createConnections();
+    void createWidgets();
+    void createConnections();
 
+    void processMessage(Message* msg, const Identifier& dest);
+
+    virtual void mousePressEvent(tgt::MouseEvent* e);
+
+    bool usable(const std::vector<Processor*>& processors);
+                                                    
 public slots:
-    void toggleUseSegmentation(bool);
-    void setSegmentation(int);
+    void toggleApplySegmentation(bool);
+    void setCurrentSegment(int);
+    void toggleSegmentVisible(bool);
+    void undoSegment();
+    void clearSegment();
+    void setSeed(bool checked);
+    void setThresholds(int lower, int upper);
+    void saveSegmentation();
+    void clearSegmentation();
 
 private:
-    QCheckBox* segmentationSwitch_;
-    QSpinBox* segmentationSelect_;
+
+    enum TransFuncSyncDirection {
+        PUSH,   // push local transfunc to segmentation raycaster
+        PULL    // pull transfunc from segmentation raycaster
+    };
+
+    // is called when the user has modified the transfer function via the widget's editor
+    void transFuncChanged();
+    // Synchronizes the widget's transfer function with the SegmentationRaycaster's.
+    void synchronizeTransFuncs(TransFuncSyncDirection syncDir);
+    // Propagates the locally saved region growing parameters to the RegionGrowing processor
+    void propagateRegionGrowingParams();
+
+    // Retrieve processors from evaluator
+    SegmentationRaycaster* getSegmentationRaycaster();
+    RegionGrowingProcessor* getRegionGrowingProcessor();
+
+    NetworkEvaluator* evaluator_;
+    TransFuncProp transFuncProp_;
+    TransFuncEditorIntensity* intensityEditor_;
+
+    QCheckBox* checkApplySegmentation_;
+    QSpinBox* spinCurrentSegment_;
+    QCheckBox* checkSegmentVisible_;
+
+    QPushButton* markSeedButton_;
+    QPushButton* undoButton_;
+    QSpinBox* outputSegment_;
+    QCheckBox* checkApplyThresholds_;
+    QDoubleSpinBox* spinStrictness_;
+    QComboBox* comboCostFunction_;
+    QCheckBox* checkAdaptive_;
+    QSpinBox* spinMaxSeedDist_;
+
+    QPushButton* clearSegmentButton_;
+    QPushButton* clearSegmentationButton_;
+    QPushButton* saveSegmentationButton_;
+    QPushButton* loadSegmentationButton_;
+
+    QGroupBox* renderingBox_;
+    QGroupBox* regionGrowingBox_;
+
+    ThresholdWidget* thresholdWidget_;
 };
 
 } // namespace voreen

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,30 +27,32 @@
  *                                                                    *
  **********************************************************************/
 
-#include <QtGui>
 #include "voreen/qt/widgets/plugindialog.h"
+#include "voreen/qt/widgets/widgetplugin.h"
+
+#include <QAction>
 
 
 namespace voreen {
 
-PluginDialog::PluginDialog(WidgetPlugin* plugin, QWidget* parent, bool hideAtStartup /*=true*/)
+PluginDialog::PluginDialog(WidgetPlugin* plugin, QWidget* parent, bool hideAtStartup)
     : QDockWidget(parent)
 {
     plugin_ = plugin;
     plugin_->createWidgets();
     plugin_->createConnections();
-        
+
     setWidget(plugin_);
     adjustSize();
     setFixedSize(sizeHint());
     sizePolicy().setHorizontalPolicy(QSizePolicy::Fixed);
     sizePolicy().setVerticalPolicy(QSizePolicy::Fixed);
-    
+
     setWindowTitle(plugin_->objectName());
     setWindowIcon(plugin_->getIcon());
     if (hideAtStartup)
         hide();
-    
+
     // retrict widget to left or right dock widget area
     setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
@@ -70,7 +72,7 @@ void PluginDialog::floating(bool fl) {
 }
 
 void PluginDialog::closeEvent(QCloseEvent* /*event*/) {
-    emit(dialogClose(this));
+    emit dialogClose(this);
 }
 
 } // namespace voreen

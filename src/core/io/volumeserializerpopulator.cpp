@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,6 +37,7 @@
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/io/tuvvolumereader.h"
 #include "voreen/core/io/interfilevolumereader.h"
+#include "voreen/core/io/multivolumereader.h"
 
 #include "voreen/core/io/volumeserializer.h"
 
@@ -45,11 +46,7 @@
 #endif
 
 #ifdef VRN_WITH_MATLAB
-#ifdef VRN_MODULE_GLYPHS_MESH
-    #include "voreen/modules/glyphs_mesh/matcontourreader.h"
-#else
     #include "voreen/core/io/matvolumereader.h"
-#endif
 #endif
 
 #ifdef VRN_WITH_PVM
@@ -81,17 +78,14 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
     readers_.push_back(new RawVolumeReader(progress_));
     readers_.push_back(new TUVVolumeReader());
     readers_.push_back(new InterfileVolumeReader());
+    readers_.push_back(new MultiVolumeReader(this, progress_));
 
 #ifdef VRN_WITH_DCMTK
     readers_.push_back(new DicomVolumeReader(progress_));
 #endif
 
 #ifdef VRN_WITH_MATLAB
-#ifdef VRN_MODULE_GLYPHS_MESH
-    readers_.push_back(new MatContourReader());
-#else
     readers_.push_back(new MatVolumeReader());
-#endif
 #endif
 
 #ifdef VRN_WITH_PVM
@@ -103,7 +97,7 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
 #endif
 
 #ifdef VRN_WITH_ZIP
-    readers_.push_back(new ZipVolumeReader(progress_));
+    readers_.push_back(new ZipVolumeReader(this, progress_));
 #endif
 
     for (size_t i = 0; i < readers_.size(); ++i)
@@ -130,7 +124,7 @@ VolumeSerializerPopulator::~VolumeSerializerPopulator() {
         delete writers_[i];
 }
 
-VolumeSerializer* VolumeSerializerPopulator::getVolumeSerializer() {
+VolumeSerializer* VolumeSerializerPopulator::getVolumeSerializer() const {
     return vs_;
 }
 

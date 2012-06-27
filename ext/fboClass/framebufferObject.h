@@ -154,7 +154,7 @@ public:
 #ifndef NDEBUG
   bool IsValid( std::ostream& ostr = std::cerr );
 #else
-  bool IsValid( std::ostream& ostr = std::cerr ) { 
+  bool IsValid( std::ostream& /*ostr*/ = std::cerr ) { 
     return true; 
   }
 #endif

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,81 +41,73 @@ const Identifier VolumeSetContainer::msgUpdateVolumeSetContainer_("update.Volume
 const Identifier VolumeSetContainer::msgSetVolumeSetContainer_("set.VolumeSetContainer");
 const std::string VolumeSetContainer::XmlElementName = "VolumeSetContainer";
 
-VolumeSetContainer::VolumeSetContainer() {
+VolumeSetContainer::VolumeSetContainer()
+    : volumesets_(VolumeSet::VolumeSetSet())
+{
 }
 
 VolumeSetContainer::~VolumeSetContainer() {
     // can not use clear() here because of postMessage()
-    for (VolumeSet::VSPSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
+    for (VolumeSet::VolumeSetSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
         delete *it;
 
     volumesets_.clear();
 }
 
 void VolumeSetContainer::clear() {
-	MsgDistr.postMessage(new VolumeSetContainerMsg("volumesetcontainer.clear", this));
-	for (VolumeSet::VSPSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
+    MsgDistr.postMessage(new VolumeSetContainerMsg("volumesetcontainer.clear", this));
+    for (VolumeSet::VolumeSetSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
         delete *it;
 
     volumesets_.clear();
 }
 
-bool VolumeSetContainer::addVolumeSet(VolumeSet*& volset) {
+bool VolumeSetContainer::addVolumeSet(VolumeSet* volset) {
     if (volset == 0)
         return false;
 
-    std::pair<VolumeSet::VSPSet::iterator, bool> pr = volumesets_.insert(volset);
+    std::pair<VolumeSet::VolumeSetSet::iterator, bool> pr = volumesets_.insert(volset);
+    bool already = !pr.second;
 
     // After adding a new VolumeSet, notify all Processors by posting
     // a message so that they can update their properties with available VolumeSets
-    // 
-    if (pr.second) {
+    if (!already) {
         volset->setParentContainer(this);
 
+        //FIXME: remove this when possible
         if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
             MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, this));
 
         notifyObservers();
+        return true;
     }
     else {
-        // The insertion failed because the VolumeSet in volset was already contained in the
-        // VolumeSetContainer.
-        // Therefore replace volset by the one from the container if it is not itself!
-        //
-        VolumeSet* containedVolSet = static_cast<VolumeSet*>(*(pr.first));
-        if (containedVolSet != volset) {
-            delete volset;
-            volset = containedVolSet;
-        }
+        return false;
     }
-    return pr.second;
 }
 
 VolumeSet* VolumeSetContainer::findVolumeSet(VolumeSet* const volsetWanted) {
-    if ( volumesets_.empty() || (volsetWanted == 0) )
-        return 0;
-
-    VolumeSet::VSPSet::iterator it = volumesets_.find(volsetWanted);
-    if (it != volumesets_.end())
-        return *it;
-
-    return 0;
+    VolumeSet::VolumeSetSet::iterator it = volumesets_.find(volsetWanted);
+    return (it != volumesets_.end()) ? *it : 0;
 }
 
 VolumeSet* VolumeSetContainer::findVolumeSet(const std::string& name) {
-    VolumeSet volset(0, name);
-    return findVolumeSet(&volset);
-}
-
-bool VolumeSetContainer::containsVolumeSet(VolumeSet* const volset) {
-   return (findVolumeSet(volset) != 0);
+    for (VolumeSet::VolumeSetSet::const_iterator it = volumesets_.begin();
+         it != volumesets_.end();
+         ++it)
+    {
+        if ((*it)->getName() == name)
+            return *it;
+    }
+    return 0;
 }
 
 VolumeSet* VolumeSetContainer::removeVolumeSet(VolumeSet* const volset) {
     VolumeSet* found = findVolumeSet(volset);
-    if (found != 0) {
+    if (found) {
         volumesets_.erase(volset);
-        found->setParentContainer(0);
+        if (volset->getParentContainer() == this)
+            volset->setParentContainer(0);
 
         // As the content of the VolumeSetContainer has changed, the responsible processors
         // need to update their properties. Therefore this message is sent.
@@ -130,43 +122,30 @@ VolumeSet* VolumeSetContainer::removeVolumeSet(VolumeSet* const volset) {
 }
 
 VolumeSet* VolumeSetContainer::removeVolumeSet(const std::string& name) {
-    VolumeSet volset(0, name);
-    return removeVolumeSet(&volset);
+    return removeVolumeSet(findVolumeSet(name));
 }
 
 bool VolumeSetContainer::deleteVolumeSet(VolumeSet* const volset) {
     VolumeSet* vs = removeVolumeSet(volset);
-    if (vs == 0)
-        return false;
-
     delete vs;
-    return true;
+    return (vs != 0);
 }
 
 bool VolumeSetContainer::deleteVolumeSet(const std::string& name) {
-    VolumeSet volset(0, name);
-    return deleteVolumeSet(&volset);
+    return deleteVolumeSet(findVolumeSet(name));
 }
 
 std::vector<std::string> VolumeSetContainer::getVolumeSetNames() const {
     std::vector<std::string> names;
-    VolumeSet::VSPSet::const_iterator itVS = volumesets_.begin();
-    for (VolumeSet::VSPSet::const_iterator itVS = volumesets_.begin();
-        itVS != volumesets_.end();
-        ++itVS)
-    {
-        VolumeSet* vs = *itVS;
-        if (vs == 0)
-            continue;
-
-        const std::string& name = vs->getName();
-        if (!name.empty())
-            names.push_back(name);
+    VolumeSet::VolumeSetSet::const_iterator itVS = volumesets_.begin();
+    for ( ; itVS != volumesets_.end(); ++itVS) {
+        if (!(*itVS)->getName().empty())
+            names.push_back((*itVS)->getName());
     }
     return names;
 }
 
-const VolumeSet::VSPSet& VolumeSetContainer::getVolumeSets() const {
+const VolumeSet::VolumeSetSet& VolumeSetContainer::getVolumeSets() const {
     return volumesets_;
 }
 
@@ -177,13 +156,10 @@ void VolumeSetContainer::notifyObservers() const {
         MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
 }
 
-// ---------------------------------------------------------------------------
-
 TiXmlElement* VolumeSetContainer::serializeToXml() const {
-    serializableSanityChecks();
     TiXmlElement* containerElem = new TiXmlElement(getXmlElementName());
     // Serialize VolumeSets and add them to the container element
-    for (VolumeSet::VSPSet::const_iterator it = volumesets_.begin();
+    for (VolumeSet::VolumeSetSet::const_iterator it = volumesets_.begin();
         it != volumesets_.end();
         it++)
     {
@@ -195,77 +171,20 @@ TiXmlElement* VolumeSetContainer::serializeToXml() const {
 void VolumeSetContainer::updateFromXml(TiXmlElement* elem) {
     clear();
     errors_.clear();
-    serializableSanityChecks(elem);
-    // get all the filenames of loaded Files
-    std::set<std::string> filenames;
-    TiXmlElement* volumesetElem;
-    for (volumesetElem = elem->FirstChildElement(VolumeSet::XmlElementName);
-        volumesetElem;
-        volumesetElem = volumesetElem->NextSiblingElement(VolumeSet::XmlElementName))
-    {
-        std::set<std::string> volsetfilenames = VolumeSet::getFileNamesFromXml(volumesetElem);
-        filenames.insert(volsetfilenames.begin(), volsetfilenames.end());
-    }
-    
-    // load these files into VolumeSets and get the Handles from them
-    std::vector<VolumeHandle*> originalhandles;
-    // need VolumeSerializerPopulator
-    // FIXME there's got to be a better way than creating my own
-    VolumeSerializerPopulator* populator = new VolumeSerializerPopulator();
-    VolumeSerializer* serializer = populator->getVolumeSerializer();
 
-    std::set<std::string>::iterator it;
-    for (it = filenames.begin(); it != filenames.end(); ++it) {
-        try {
-            std::string filename = *it;
-            VolumeSet* tempvolumeset = serializer->load(filename);
-            std::vector<VolumeHandle*> handles = tempvolumeset->getAllVolumeHandles();
-            // remove all handles from parent series
-            size_t i;
-            for (i=0;i<handles.size();++i) {
-                handles.at(i)->getParentSeries()->removeVolumeHandle(handles.at(i));
-            }
-            // now the temporary volumeset can safely be deleted
-            delete tempvolumeset;
-            originalhandles.insert(originalhandles.end(), handles.begin(), handles.end());
-        }
-        catch (tgt::Exception& e) {
-            errors_.store(e); // TODO I should instead store my own Exception - d_kirs04
-        }
-    }
-    delete populator;
-
-    // Store all Volumes in a Map that maps Origin -> (Volume, VolumeUsed?)
-    std::map<VolumeHandle::Origin, std::pair<Volume*, bool> > volumeMap;
-    size_t j;
-    for (j=0; j<originalhandles.size(); ++j) {
-        VolumeHandle* handle = originalhandles.at(j);
-        volumeMap.insert(std::make_pair(handle->getOrigin(), std::make_pair(handle->getVolume(), false)));
-    }
-    // now deserialize VolumeSets
-    for (volumesetElem = elem->FirstChildElement(VolumeSet::XmlElementName);
+    for (TiXmlElement* volumesetElem = elem->FirstChildElement(VolumeSet::XmlElementName);
         volumesetElem;
         volumesetElem = volumesetElem->NextSiblingElement(VolumeSet::XmlElementName))
     {
         try {
             VolumeSet* volset = new VolumeSet();
-            volset->updateFromXml(volumesetElem, volumeMap);
+            volset->updateFromXml(volumesetElem);
             errors_.store(volset->errors());
             addVolumeSet(volset);
         }
         catch (SerializerException& e) {
             errors_.store(e);
         }
-    }
-    // delete all unused volumes
-    std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >::iterator ite = volumeMap.begin();
-    while (ite != volumeMap.end()) {
-        if (!ite->second.second) { // This Volume is unused
-            delete ite->second.first;
-            volumeMap.erase(ite++); // The iterator is increased before the element is erased so this should work
-        }
-        else
-            ++ite;
     }
 }
 

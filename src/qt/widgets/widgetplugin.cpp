@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,6 +38,10 @@ QIcon WidgetPlugin::getIcon() {
     return icon_;
 }
 
+bool WidgetPlugin::usable(const std::vector<Processor*>& /*processors*/) {
+    return true;    
+}
+    
 void WidgetPlugin::setMessageReceiver(MessageReceiver* receiver) {
     msgReceiver_ = receiver;
 }
@@ -48,7 +52,7 @@ void WidgetPlugin::startTracking() {
 }
 
 void WidgetPlugin::stopTracking() {
-	MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
     repaintCanvases();
 }
 
@@ -59,6 +63,8 @@ void WidgetPlugin::repaintCanvases() {
 void WidgetPlugin::postMessage(Message* msg, const Identifier& dest) {
     if (msgReceiver_)
         msgReceiver_->postMessage(msg, dest);
+    else
+        MsgDistr.postMessage(msg, dest);
 }
 
 } // namespace voreen

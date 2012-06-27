@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,24 +35,24 @@
 
 namespace voreen {
 
-	/**
-	* This class represents a 3D noise volume.
-	*/
-	class NoiseVolume {
-	public:
-		/**
-		* Constructor.
-		*/
-		NoiseVolume(tgt::vec3 dimensions);
+    /**
+    * This class represents a 3D noise volume.
+    */
+    class NoiseVolume {
+    public:
+        /**
+        * Constructor.
+        */
+        NoiseVolume(tgt::vec3 dimensions);
 
-		virtual ~NoiseVolume();
+        virtual ~NoiseVolume();
 
-		VolumeGL* getVolumeGL();
+        VolumeGL* getVolumeGL();
 
-	private:
-		Volume4xUInt8* volume_;
-		VolumeGL* volumeGL_;
-	};
+    private:
+        Volume4xUInt8* volume_;
+        VolumeGL* volumeGL_;
+    };
 
 
 } // namespace

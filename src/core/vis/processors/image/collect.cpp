@@ -1,9 +1,8 @@
-
 /**********************************************************************
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,22 +28,21 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/collect.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
 Collect::Collect(std::string shaderFilename)
-    : GenericFragment(shaderFilename)
+    : ImageProcessor(shaderFilename)
 {
-	createInport("image.inputs",true);
-	createOutport("image.output");
+    createInport("image.inputs",true);
+    createOutport("image.output");
 
-	createPrivatePort("image.temp1");
-	createPrivatePort("image.temp2");
+    createPrivatePort("image.temp1");
+    createPrivatePort("image.temp2");
 }
 
 const std::string Collect::getProcessorInfo() const {
-	return "No information available.";
+    return "No information available.";
 }
 
 void Collect::process(LocalPortMapping*  portMapping) {
@@ -55,31 +53,31 @@ void Collect::process(LocalPortMapping*  portMapping) {
 }
 
 void Collect::processIterative(LocalPortMapping* portMapping) {
-	std::vector<int> sources = portMapping->getAllTargets("image.inputs");
-	if (sources.size() <= 1)
+    std::vector<int> sources = portMapping->getAllTargets("image.inputs");
+    if (sources.size() <= 1)
         return;
-	
-	int tempTarget1 = portMapping->getTarget("image.temp1");
-	int tempTarget2 = portMapping->getTarget("image.temp2");
-	int dest = portMapping->getTarget("image.output");
-	int currentTarget = tempTarget1;
-	int source0, source1;
-	source0 = sources.at(0);
-	for (size_t i=1; i<sources.size(); i++) {
-		source1 = sources.at(i);
-		if ( (i+1) == sources.size())
-			tc_->setActiveTarget(dest);
-		else
-			tc_->setActiveTarget(currentTarget);
-		
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		renderTwo(source0, source1, i);
-		source0 = currentTarget;
-		if (currentTarget==tempTarget1)
-			currentTarget=tempTarget2;
-		else if (currentTarget == tempTarget2)
-			currentTarget=tempTarget1;
-	}
+
+    int tempTarget1 = portMapping->getTarget("image.temp1");
+    int tempTarget2 = portMapping->getTarget("image.temp2");
+    int dest = portMapping->getTarget("image.output");
+    int currentTarget = tempTarget1;
+    int source0, source1;
+    source0 = sources.at(0);
+    for (size_t i=1; i<sources.size(); i++) {
+        source1 = sources.at(i);
+        if ( (i+1) == sources.size())
+            tc_->setActiveTarget(dest);
+        else
+            tc_->setActiveTarget(currentTarget);
+
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        renderTwo(source0, source1, i);
+        source0 = currentTarget;
+        if (currentTarget==tempTarget1)
+            currentTarget=tempTarget2;
+        else if (currentTarget == tempTarget2)
+            currentTarget=tempTarget1;
+    }
 }
 
 } // voreen namespace

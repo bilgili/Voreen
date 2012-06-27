@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,11 +31,15 @@
 
 namespace voreen {
 
-void ErrorCollector::store(std::exception e) {
-    errors_.push_back(e); // Exception gets copied - don't know any better
+void ErrorCollector::store(const std::string& s) {
+    errors_.push_back(s);
 }
 
-void ErrorCollector::store(std::vector<std::exception> v) {
+void ErrorCollector::store(const std::exception& e) {
+    errors_.push_back(e.what());
+}
+
+void ErrorCollector::store(std::vector<std::string> v) {
     errors_.insert(errors_.end(), v.begin(), v.end());
 }
 
@@ -43,23 +47,23 @@ void ErrorCollector::clear() {
     errors_.clear();
 }
 
-std::vector<std::exception> ErrorCollector::errors() const {
-    return errors_; // Exceptions get copied here, too
+std::vector<std::string> ErrorCollector::errors() const {
+    return errors_;
 }
 
-std::vector<std::exception> ErrorCollector::pop() {
-    std::vector<std::exception> errors = errors_;
+std::vector<std::string> ErrorCollector::pop() {
+    std::vector<std::string> errors = errors_;
     errors_.clear();
     return errors;
 }
 
 //---------------------------------------------------------------------------
 
+bool Serializable::ignoreIsSerializable_ = false;
+
 Serializable::Serializable()
-: serializable_(true)
-{
-    errors_ = ErrorCollector();
-}
+    : serializable_(true)
+{}
 
 Serializable::~Serializable() {
 }
@@ -72,19 +76,20 @@ bool Serializable::isSerializable() const {
     return serializable_;
 }
 
-void Serializable::serializableSanityChecks(const TiXmlElement* elem) const {
-    if (!serializable_)
-        throw NotSerializableException("You tried to deserialize an Object, that isn't serializable.");
-    if (elem && elem->Value() != getXmlElementName())
-        throw XmlElementException(std::string("You tried to deserialize a ") + elem->Value() + " as a " + getXmlElementName());
-}
-
-std::vector<std::exception> Serializable::errors() {
+std::vector<std::string> Serializable::errors() {
     return errors_.pop();
 }
 
-std::vector<std::exception> Serializable::getErrors() const {
+std::vector<std::string> Serializable::getErrors() const {
     return errors_.errors();
+}
+
+void Serializable::setIgnoreIsSerializable(bool ignore) {
+    ignoreIsSerializable_ = ignore;
+}
+
+bool Serializable::ignoreIsSerializable() {
+    return ignoreIsSerializable_;
 }
 
 //---------------------------------------------------------------------------
@@ -106,14 +111,12 @@ MetaSerializer& MetaSerializer::operator=(const MetaSerializer& m) {
     metadata_ = m.metadata_->Clone()->ToElement();
     return *this;
 }
-    
+
 TiXmlElement* MetaSerializer::serializeToXml() const {
-    serializableSanityChecks();
     return metadata_->Clone()->ToElement(); // I hope this clones recursively
 }
 
 void MetaSerializer::updateFromXml(TiXmlElement* metaElem) {
-    serializableSanityChecks(metaElem);
     if (metaElem) {
         delete metadata_;
         metadata_ = metaElem->Clone()->ToElement(); // I hope this clones recursively
@@ -156,4 +159,17 @@ bool MetaSerializer::hasData(std::string elemName) const {
     return metadata_->FirstChildElement(elemName) ? true : false;
 }
 
-} //namespace Voreen
+std::vector<TiXmlElement*> MetaSerializer::getAllData() const {
+    std::vector<TiXmlElement*> metaElements;
+    TiXmlElement* metaElem;
+    // iterate all children of metadata_
+    for (metaElem = metadata_->FirstChildElement();
+         metaElem;
+         metaElem = metaElem->NextSiblingElement())
+    {
+        metaElements.push_back(metaElem->Clone()->ToElement());
+    }
+    return metaElements;
+}
+
+} // namespace voreen

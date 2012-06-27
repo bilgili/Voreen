@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,17 +31,103 @@
 
 #include "voreen/core/volume/volumeset.h"
 #include "voreen/core/volume/volumeseries.h"
+#include "voreen/core/io/volumeserializerpopulator.h"
+#include "voreen/core/io/volumeserializer.h"
+
+#include "tgt/filesystem.h"
+
+using std::string;
 
 namespace voreen {
 
 const std::string VolumeHandle::loggerCat_("Voreen.VolumeHandle");
+const std::string VolumeHandle::XmlElementName = "VolumeHandle";
 unsigned int VolumeHandle::nextObjectID_ = 0;
 
-VolumeHandle::VolumeHandle(VolumeSeries* const parentSeries, Volume* const volume, const float time)
-    : volume_(volume), 
+const std::string VolumeHandle::Origin::XmlElementName = "Origin";
+std::string VolumeHandle::Origin::basePath_ = "";
+
+bool VolumeHandle::Origin::operator==(const Origin& rhs) const {
+    return (filename == rhs.filename && seriesname == rhs.seriesname && timestep == rhs.timestep);
+}
+
+bool VolumeHandle::Origin::operator<(const Origin& rhs) const {
+    return (filename < rhs.filename);
+}
+
+TiXmlElement* VolumeHandle::Origin::serializeToXml() const {
+    TiXmlElement* originElem = new TiXmlElement(XmlElementName);
+
+    if (!basePath_.empty()) {
+        string protocol;
+        string path = filename;
+        string inzip;
+
+        // Handle "zip://..."
+        string::size_type pos = filename.find("://");
+        if (pos != string::npos) {
+            protocol = filename.substr(0, pos + 3);
+            path = filename.substr(pos + 3);
+
+            // Extract part after the .zip file
+            //TODO: not robust, doesn't handle uppercase file names
+            string::size_type zippos = path.find(".zip/");
+            if (zippos != string::npos) {
+                inzip = path.substr(zippos + 4);
+                path = path.substr(0, zippos + 4);
+            }
+        }
+
+        originElem->SetAttribute("filename", protocol + tgt::File::relativePath(path, basePath_) + inzip);
+    } else {
+        originElem->SetAttribute("filename", filename);
+    }
+    originElem->SetAttribute("seriesname", seriesname);
+    originElem->SetDoubleAttribute("timestep", timestep);
+    return originElem;
+}
+
+void VolumeHandle::Origin::updateFromXml(TiXmlElement* elem) {
+    errors_.clear();
+
+    if (!(elem->Attribute("filename") &&
+          elem->Attribute("seriesname") &&
+          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
+        throw XmlAttributeException("Origin remains unknown"); // TODO Better Exception
+    
+    filename = elem->Attribute("filename");
+
+    // replace backslashes
+    string::size_type pos = filename.find("\\");
+    while (pos != string::npos) {
+        filename[pos] = '/';
+        pos = filename.find("\\"); 
+    } 
+    
+    if (!basePath_.empty()) {
+        string protocol;
+        string path = filename;
+
+        // Handle "zip://..."
+        pos = filename.find("://");
+        if (pos != string::npos) {
+            protocol = filename.substr(0, pos + 3);
+            path = filename.substr(pos + 3);
+        }        
+
+        // build new path only if this is not an absolute path
+        if (path.find("/") != 0 && path.find("\\") != 0 && path.find(":") != 1)
+            filename = protocol + tgt::File::absolutePath(basePath_ + "/" + path);    
+    }
+    
+    seriesname = elem->Attribute("seriesname");
+}
+
+VolumeHandle::VolumeHandle(Volume* const volume, const float time)
+    : volume_(volume),
       time_(time),
       hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE),
-      parentSeries_(parentSeries), 
+      parentSeries_(0),
       objectID_(++nextObjectID_)
 {
 #ifndef VRN_NO_OPENGL
@@ -55,19 +141,23 @@ VolumeHandle::VolumeHandle(VolumeSeries* const parentSeries, Volume* const volum
 
 VolumeHandle::VolumeHandle(const VolumeHandle& handle) : Serializable() {
     if (handle != *this) {
-        volume_ = handle.getVolume();
-        time_ = handle.getTimestep();
-        parentSeries_ = handle.getParentSeries();
-        hardwareVolumeMask_ = handle.getHardwareVolumeMask();
-        objectID_ = ++nextObjectID_;
+        CopyValuesFromVolumeHandle(&handle);
+    }
+}
+
+void VolumeHandle::CopyValuesFromVolumeHandle(const VolumeHandle* handle) {
+    volume_ = handle->getVolume();
+    time_ = handle->getTimestep();
+    parentSeries_ = 0;
+    hardwareVolumeMask_ = handle->getHardwareVolumeMask();
+    objectID_ = ++nextObjectID_;
 #ifndef VRN_NO_OPENGL
-        volumeGL_ = handle.volumeGL_;
+    volumeGL_ = handle->volumeGL_;
 #endif
 
 #ifdef VRN_MODULE_CUDA
-        volumeCUDA_ = handle.volumeCUDA_;
+    volumeCUDA_ = handle->volumeCUDA_;
 #endif
-    }
 }
 
 VolumeHandle::~VolumeHandle() {
@@ -88,7 +178,7 @@ bool VolumeHandle::isIdentical(const VolumeHandle& handle) const {
 }
 
 bool VolumeHandle::isIdentical(VolumeHandle* const handle) const {
-    if( handle == 0 )
+    if (handle == 0)
         return false;
 
     return (objectID_ == handle->getObjectID());
@@ -126,7 +216,7 @@ bool VolumeHandle::setTimestep(const float timestep) {
             time_ = timestep;
             parentSeries_->timestepChanged(this);
             return true;
-        } 
+        }
         if (parentSeries_ == 0) {
             time_ = timestep;
             return true;
@@ -157,7 +247,7 @@ bool VolumeHandle::hasHardwareVolumes(int volumeMask) const {
 
 void VolumeHandle::generateHardwareVolumes(int volumeMask) {
     std::string filename = (volume_->meta().getFileName().empty() ? "unknown" : volume_->meta().getFileName());
-    
+
 #ifndef VRN_NO_OPENGL
     if (volumeMask & VolumeHandle::HARDWARE_VOLUME_GL) {
         LDEBUG("generate GL hardware volume for " << filename);
@@ -195,42 +285,40 @@ void VolumeHandle::freeHardwareVolumes(int volumeMask) {
 #endif
 }
 
-Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const {
+VolumeHandle* VolumeHandle::getRelatedVolumeHandle(const Modality& modality) const {
     if (parentSeries_ == 0)
         return 0;
 
-    VolumeSet* set = parentSeries_->getParentVolumeSet();
+    VolumeSet* set = parentSeries_->getParentSet();
     if (set != 0) {
         std::vector<VolumeSeries*> series = set->findSeries(modality);
         for (size_t i = 0; i < series.size(); ++i) {
-            if (series[i] != 0 && series[i] != parentSeries_) {
+            if (series[i] != parentSeries_) {
                 VolumeHandle* handle = series[i]->findVolumeHandle(time_);
-                if (handle != 0)
-                    return handle->getVolume();
+                if (handle)
+                    return handle;
             }
         }
     }
     return 0;
 }
 
+Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const {
+    VolumeHandle* handle = getRelatedVolumeHandle(modality);
+    if (handle)
+        return handle->getVolume();
+    else
+        return 0;
+}
+
 #ifndef VRN_NO_OPENGL
 
 VolumeGL* VolumeHandle::getRelatedVolumeGL(const Modality& modality) {
-    if (parentSeries_ == 0)
+    VolumeHandle* handle = getRelatedVolumeHandle(modality);
+    if (handle)
+        return handle->getVolumeGL();
+    else
         return 0;
-
-    VolumeSet* set = parentSeries_->getParentVolumeSet();
-    if (set != 0) {
-        std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for (size_t i = 0; i < series.size(); ++i) {
-            if (series[i] != 0 && series[i] != parentSeries_) {
-                VolumeHandle* handle = series[i]->findVolumeHandle(time_);
-                if (handle != 0)
-                    return handle->getVolumeGL();
-            }
-        }
-    }
-    return 0;
 }
 
 VolumeGL* VolumeHandle::getVolumeGL() {
@@ -253,6 +341,10 @@ VolumeCUDA* VolumeHandle::getVolumeCUDA() {
 
 #endif // VRN_MODULE_CUDA
 
+const VolumeHandle::Origin& VolumeHandle::getOrigin() const {
+    return origin_;
+}
+
 void VolumeHandle::setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep) {
     origin_.filename = filename;
     origin_.seriesname = seriesname;
@@ -263,38 +355,7 @@ void VolumeHandle::setOrigin(const VolumeHandle::Origin& origin) {
     origin_ = origin;
 }
 
-const VolumeHandle::Origin& VolumeHandle::getOrigin() const {
-    return origin_;
-}
-
-const std::string VolumeHandle::Origin::XmlElementName = "Origin";
-
-TiXmlElement* VolumeHandle::Origin::serializeToXml() const {
-    serializableSanityChecks();
-    TiXmlElement* originElem = new TiXmlElement(XmlElementName);
-    
-    originElem->SetAttribute("filename", filename);
-    originElem->SetAttribute("seriesname", seriesname);
-    originElem->SetDoubleAttribute("timestep", timestep);
-    return originElem;
-}
-
-void VolumeHandle::Origin::updateFromXml(TiXmlElement* elem) {
-    errors_.clear();
-    serializableSanityChecks(elem);
-
-    if (!(elem->Attribute("filename") &&
-          elem->Attribute("seriesname") &&
-          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
-        throw XmlAttributeException("Origin remains unknown"); // TODO Better Exception
-    filename = elem->Attribute("filename");
-    seriesname = elem->Attribute("seriesname");
-}
-
-const std::string VolumeHandle::XmlElementName = "VolumeHandle";
-
 TiXmlElement* VolumeHandle::serializeToXml() const {
-    serializableSanityChecks();
     TiXmlElement* handleElem = new TiXmlElement(getXmlElementName());
     // Serialize Data TODO remove filename
     //handleElem->SetAttribute("filename", getFileName());
@@ -306,7 +367,6 @@ TiXmlElement* VolumeHandle::serializeToXml() const {
 
 void VolumeHandle::updateFromXml(TiXmlElement* elem) {
     errors_.clear();
-    serializableSanityChecks(elem);
     // deserialize VolumeHandle TODO remove filename
     float timestep;
     if (!(elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
@@ -314,16 +374,11 @@ void VolumeHandle::updateFromXml(TiXmlElement* elem) {
     setTimestep(timestep);
     // deserialize Origin
     origin_.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
-}
 
-void VolumeHandle::updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap) {
-    updateFromXml(elem);
-    std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >::iterator it = volumeMap.find(origin_);
-    if (it != volumeMap.end()) {
-        setVolume(it->second.first);
-        it->second.second = true; // We used the volume - now the map knows that.
-    }
-    else throw SerializerException("Origin of this handle not found");// TODO better exception
+    VolumeSerializerPopulator populator;
+    VolumeHandle* handle = populator.getVolumeSerializer()->loadFromOrigin(origin_);
+    
+    CopyValuesFromVolumeHandle(handle);
 }
 
 std::string VolumeHandle::getFileNameFromXml(TiXmlElement* elem) {

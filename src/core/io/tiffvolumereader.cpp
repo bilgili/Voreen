@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -83,7 +83,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
     tif = TIFFOpen(fileName.c_str(), "r");
 
     if (tif) {
-		//TIFFReadDirectory(tif));
+        //TIFFReadDirectory(tif));
         uint32 width, height;
 
         TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
@@ -175,7 +175,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
             minValue[i] = 65536;
             maxValue[i] = 0;
         }
-		//(TIFFReadDirectory(tif));
+        //(TIFFReadDirectory(tif));
         uint32 width, height;
         uint16 depth_, bps_;
 
@@ -253,8 +253,8 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
             LINFO("Band " << i << ": min/max value: " << minValue[i] << "/" << maxValue[i]);
             if ( !use8BitDataset && maxValue[i] < 4096) {
                 LINFO("Band " << i << ": Recognized 12 bit dataset.");
-			    targetDataset[i]->setBitsStored(12);
-		    }
+                targetDataset[i]->setBitsStored(12);
+            }
         }
         delete[] minValue;
         delete[] maxValue;
@@ -264,11 +264,11 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
         return 0;
     }
 
-    VolumeSet* volumeSet = new VolumeSet(0, fileName);
-    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
+    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
-    for ( int i = 0; i < band; i++ ) {   
-        VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, targetDataset[i], static_cast<float>(i));
+    for ( int i = 0; i < band; i++ ) {
+        VolumeHandle* volumeHandle = new VolumeHandle(targetDataset[i], static_cast<float>(i));
         volumeHandle->setOrigin(fileName, "unknown", static_cast<float>(i));
         volumeSeries->addVolumeHandle(volumeHandle);
     }

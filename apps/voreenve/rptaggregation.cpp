@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,7 +44,7 @@ RptAggregation::RptAggregation(std::vector<RptRendererWrapperGui*> wrappers, QGr
   //  // position guiItem_
   //  QPoint pos = QPoint(0,0);
   //  for (size_t i=0; i<rendererWrappers_.size(); i++) {
-		//pos += rendererWrappers_[i]->getGuiItem()->pos().toPoint();
+        //pos += rendererWrappers_[i]->getGuiItem()->pos().toPoint();
   //  }
   //  pos /= rendererWrappers_.size();
   //  guiItem_->setPos(pos);
@@ -226,8 +226,8 @@ std::vector<RptRendererWrapperGui*>& RptAggregation::deaggregate() {
     //        }
     //    }
     //}
-    
-    
+
+
 
     // delete aggregation and remove aggregation from aggregations_ in mainwindow
 

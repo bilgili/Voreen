@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,8 +31,8 @@ float getSketchValue(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS vol
     // transform voxel position to the volume's object space
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
     vec3 N = normalize(gradient);
-	vec3 V = normalize(cameraPosition_ - vpos);
+    vec3 V = normalize(cameraPosition_ - vpos);
 
-	float sketchExp = 1.0;
-	return 1.0-pow(max(dot(N, V), 0.0), sketchExp);
+    float sketchExp = 1.0;
+    return 1.0-pow(max(dot(N, V), 0.0), sketchExp);
 }

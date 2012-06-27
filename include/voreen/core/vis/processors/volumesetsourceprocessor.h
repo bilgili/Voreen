@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,19 +37,19 @@
 namespace voreen {
 
 class VolumeSetSourceProcessor : public Processor, public Observer {
-public: 
+public:
     VolumeSetSourceProcessor();
     ~VolumeSetSourceProcessor();
-    	
+
     virtual const Identifier getClassName() const;
     virtual const std::string getProcessorInfo() const;
 
     /**
      * Overwritten for managing connections to VolumeSelectionProcessor: Those processors need
-     * to be informed about the processors they are connected to in RPTGui.
+     * to be informed about the processors they are connected to in VoreenVE.
      */
     virtual bool connect(Port* outport, Port* inport);
-    virtual Processor* create();
+    virtual Processor* create() const;
 
     virtual void process(LocalPortMapping* /*portMapping*/) {}
     virtual void processMessage(Message* msg,const Identifier &dest);
@@ -75,15 +75,22 @@ public:
      * <code>setVolumeSet()</code> on the casted observer.
      */
     virtual void notify(const Observable* const /*source = 0*/) {}
-    
+
 protected:
     VolumeSetContainer* volumesetContainer_;
 
     VolumeSet* volumeset_;
     Identifier outportName_;
 
-    std::vector<std::string> availableVolumesets_;
-    EnumProp* volumesetsProp_;
+    ///typedef std::vector<Option<VolumeSet* const> > VolumeSetOptions;
+    ///VolumeSetOptions availableVolumeSets_;
+    ///OptionProperty<VolumeSet* const>* volumesetsProp_;
+
+    std::vector<std::string> availableVolumeSets_;
+    StringSelectionProp* volumesetsProp_;
+
+protected:
+    void currentVolumeSetChanged();
 
 private:
     void updateAvailableVolumeSets();

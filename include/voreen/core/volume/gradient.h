@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -45,24 +45,23 @@ namespace voreen {
 // TODO: these functions should be encapsulated somewhere
 
 template<class U, class T>
-VolumeAtomic<U>* calcGradients(VolumeAtomic<T> *input, int mapping) {
-    
-    VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
-    
-    tgt::vec3 gradient;
+VolumeAtomic<U>* calcGradients(VolumeAtomic<T>* input) {
 
+    VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
+    int channel = VolumeElement<U>::getNumChannels();
+
+    int bitsU = result->getBitsStored() / result->getNumChannels();
+    int bitsT = input->getBitsStored();
+
+    tgt::vec3 gradient;
     tgt::ivec3 pos;
     tgt::ivec3 dim = input->getDimensions();
-    T v0, v1, v2, v3, v4, v5;
-    
-    int bitsU = result->getBitsStored() / result->getNumChannels();
-
-    //check for 4 channels...write intensity to this channel
-    bool v4c = VolumeElement<U>::getNumChannels() == 4;
 
     for (pos.z = 0; pos.z < input->getDimensions().z; pos.z++) {
         for (pos.y = 0; pos.y < input->getDimensions().y; pos.y++) {
             for (pos.x = 0; pos.x < input->getDimensions().x; pos.x++) {
+                T v0, v1, v2, v3, v4, v5;
+
                 if (pos.x != dim.x-1)
                     v0 = input->voxel(pos + tgt::ivec3(1, 0, 0));
                 else
@@ -75,7 +74,7 @@ VolumeAtomic<U>* calcGradients(VolumeAtomic<T> *input, int mapping) {
                     v2 = input->voxel(pos + tgt::ivec3(0, 0, 1));
                 else
                     v2 = 0;
-                
+
                 if (pos.x != 0)
                     v3 = input->voxel(pos + tgt::ivec3(-1, 0, 0));
                 else
@@ -88,39 +87,45 @@ VolumeAtomic<U>* calcGradients(VolumeAtomic<T> *input, int mapping) {
                     v5 = input->voxel(pos + tgt::ivec3(0, 0, -1));
                 else
                     v5 = 0;
-                
-                gradient = tgt::vec3(static_cast<float>(v3 - v0), static_cast<float>(v4 - v1), static_cast<float>(v5 - v2)) / 2.f;
-                gradient /= input->getSpacing();
 
-                                
-                if (v4c) {
+                gradient = tgt::vec3(static_cast<float>(v3 - v0), static_cast<float>(v4 - v1), static_cast<float>(v5 - v2)) / 2.f;
+                //gradient *= input->getSpacing();
+
+                float scaleFactor = pow(2.f, bitsU-bitsT);
+                gradient = scaleFactor*gradient;
+
+                // template argument U contains 4 channels
+                // -> write intensity to 4th channel
+                if (channel == 4) {
                     if (bitsU == 8) {
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>((gradient.x/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>((gradient.y/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>((gradient.z/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).a = static_cast<uint8_t>(input->getVoxelFloat(pos) * 255.0f);
+                        gradient = tgt::iround(gradient + 127.5f);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>(gradient.x);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>(gradient.y);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>(gradient.z);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).a = static_cast<uint8_t>(input->getVoxelFloat(pos) * 255.f);
                     }
                     else if (bitsU == 16) {
-                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>((gradient.x/mapping * 256.f) + 32768.f);
-                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).g = static_cast<uint16_t>((gradient.y/mapping * 256.f) + 32768.f);
-                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).b = static_cast<uint16_t>((gradient.z/mapping * 256.f) + 32768.f);
-                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).a = static_cast<uint16_t>((input->getVoxelFloat(pos) * 65535.f));
+                        gradient = tgt::iround(gradient + 32767.5f);
+                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>(gradient.x);
+                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).g = static_cast<uint16_t>(gradient.y);
+                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).b = static_cast<uint16_t>(gradient.z);
+                        reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).a = static_cast<uint8_t>(input->getVoxelFloat(pos) * 65535.f);
                     }
                 }
                 else {
                     if (bitsU == 8) {
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>((gradient.x/mapping)+128.f);
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>((gradient.y/mapping)+128.f);
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>((gradient.z/mapping)+128.f);
+                        gradient = tgt::iround(gradient + 127.5f);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>(gradient.x);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>(gradient.y);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>(gradient.z);
                     }
                     else if (bitsU == 16) {
-                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>((gradient.x/mapping * 256.f) + 32768.f);
-                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).g = static_cast<uint16_t>((gradient.y/mapping * 256.f) + 32768.f);
-                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).b = static_cast<uint16_t>((gradient.z/mapping * 256.f) + 32768.f);
+                        gradient = tgt::iround(gradient + 32767.5f);
+                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>(gradient.x);
+                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).g = static_cast<uint16_t>(gradient.y);
+                        reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).b = static_cast<uint16_t>(gradient.z);
                     }
                 }
-               
-
             }
         }
     }
@@ -132,25 +137,36 @@ VolumeAtomic<U>* calcGradients(VolumeAtomic<T> *input, int mapping) {
  * Calculates gradients by central differences.
  *
  * Use col3 or col4 as template argument in order to generate 3x8 or 4x8 bit datasets.
- * Use Vector3<uint16_t> or Vector4<uint16_t> as template argument in order 
+ * Use Vector3<uint16_t> or Vector4<uint16_t> as template argument in order
  * to generate 3x16 or 4x16 bit datasets.
- */ 
+ */
 template<class U>
-VolumeAtomic<U>* calcGradients(voreen::Volume* vol) {
-    
-    if (vol->getBitsStored() == 8) {
-        VolumeUInt8* input = (VolumeUInt8*) vol;
-        return calcGradients<U, uint8_t>(input, 2);
+VolumeAtomic<U>* calcGradients(Volume* vol) {
+    // test whether enough channels are present in U
+    if (VolumeElement<U>::getNumChannels() < 3) {
+        LERRORC("calcGradients", "calcGradients needs at least 3 channels in template parameter U");
+        return 0;
     }
-    else if (vol->getBitsStored() == 16) {
-        VolumeUInt16* input = (VolumeUInt16*) vol;
-        return calcGradients<U, uint16_t>(input, 512);
+
+    int bits = vol->getBitsStored();
+    if (bits == 8) {
+        if (dynamic_cast<VolumeUInt8*>(vol))
+            return calcGradients<U, uint8_t>(static_cast<VolumeUInt8*>(vol));
+        else {
+            LERRORC("calcGradients", "8-bit dataset could not be casted into VolumeUInt8");
+        }
     }
-    else if (vol->getBitsStored() == 12) {
-        VolumeUInt16* input = (VolumeUInt16*) vol;
-        return calcGradients<U, uint16_t>(input, 32);
+    else if ((bits == 12) || (bits == 16)) {
+        if (dynamic_cast<VolumeUInt16*>(vol))
+            return calcGradients<U, uint16_t>(static_cast<VolumeUInt16*>(vol));
+        else {
+            LERRORC("calcGradients", "12-bit or 16-bit dataset could not be casted into VolumeUInt16");
+        }
     }
-    LERRORC("calcGradients", "calcGradients needs a 8-, 12- or 16-bit dataset as input");
+    else {
+        LERRORC("calcGradients", "calcGradients needs a 8-, 12- or 16-bit dataset as input");
+    }
+
     return 0;
 }
 
@@ -159,7 +175,7 @@ VolumeAtomic<U>* calcGradients(voreen::Volume* vol) {
 /**
  * Calculates gradients using linear regression according to Neumann et al.
  *
- \verbatim  
+ \verbatim
     L. Neumann, B. Csébfalvi, A. König, and M. E. Gröller.
     Gradient estimation in volume data using 4D linear regression.
     In Proceedings of Eurographics 2000, pages 351-358, 2000.
@@ -167,25 +183,25 @@ VolumeAtomic<U>* calcGradients(voreen::Volume* vol) {
  *
  * The neighboring voxels are weighted by their reciprocal Euclidean distance.
  *
- * Use Vector3<uint8_t> / Vector4<uint8_t> or Vector3<uint16_t> / Vector4<uint16_t> 
- * as U template argument in order to generate 3x8 / 4x8 or 3x16 / 4x16 bit datasets. 
+ * Use Vector3<uint8_t> / Vector4<uint8_t> or Vector3<uint16_t> / Vector4<uint16_t>
+ * as U template argument in order to generate 3x8 / 4x8 or 3x16 / 4x16 bit datasets.
  * In case of 4-channel volume the alpha channel is filled with the input volume's intensities.
  *
  */
 template<class U, class T>
 VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
-    
+
     VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
-    
+
     // check input volume type
     float maxValueT;
-    if ( typeid(*input) == typeid(VolumeUInt8)  || 
-         typeid(*input) == typeid(VolumeUInt16) || 
+    if ( typeid(*input) == typeid(VolumeUInt8)  ||
+         typeid(*input) == typeid(VolumeUInt16) ||
          typeid(*input) == typeid(VolumeUInt32) )
         maxValueT = static_cast<float>( (1 << input->getBitsStored()) - 1);
     else if ( typeid(*input) == typeid(VolumeFloat) || typeid(*input) == typeid(VolumeDouble))
         maxValueT = 1.f;
-    else { 
+    else {
         LERRORC("calcGradientsLinearRegression", "Unknown or unsupported input volume type");
         tgtAssert(false, "Unknown or unsupported input volume type");
         return result;
@@ -195,25 +211,25 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
     int bitsU;
     int numChannelsU;
     float maxValueU;
-    if ( typeid(*result) == typeid(Volume3xUInt8)  || 
+    if ( typeid(*result) == typeid(Volume3xUInt8)  ||
          typeid(*result) == typeid(Volume3xUInt16) ||
-         typeid(*result) == typeid(Volume4xUInt8)  || 
+         typeid(*result) == typeid(Volume4xUInt8)  ||
          typeid(*result) == typeid(Volume4xUInt16)   ) {
         numChannelsU = result->getNumChannels();
         bitsU = result->getBitsStored() / numChannelsU;
         maxValueU = static_cast<float>( (1 << bitsU) - 1);
     }
-    else { 
+    else {
         LERRORC("calcGradientsLinearRegression", "Unknown or unsupported output volume type");
         tgtAssert(false, "Unknown or unsupported output volume type");
         return result;
     }
-    
+
     // Euclidean weights for voxels with Manhattan distances of 1/2/3
     float w_1 = 1.f;
     float w_2 = 0.5f;
     float w_3 = 1.f/3.f;
-    
+
     float w_A = 1.f / (8.f + 2.f/3.f);
     float w_B = w_A;
     float w_C = w_A;
@@ -239,18 +255,18 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
                     T v020 = input->voxel(pos + ivec3(-1, 1, -1));
                     T v021 = input->voxel(pos + ivec3(-1, 1, 0));
                     T v022 = input->voxel(pos + ivec3(-1, 1, 1));
-                    
+
                     //mid plane
                     T v100 = input->voxel(pos + ivec3(0, -1, -1));
                     T v101 = input->voxel(pos + ivec3(0, -1, 0));
                     T v102 = input->voxel(pos + ivec3(0, -1, 1));
                     T v110 = input->voxel(pos + ivec3(0, 0, -1));
-                    //T v111 = input->voxel(pos + ivec3(0, 0, 0)); 
+                    //T v111 = input->voxel(pos + ivec3(0, 0, 0));
                     T v112 = input->voxel(pos + ivec3(0, 0, 1));
                     T v120 = input->voxel(pos + ivec3(0, 1, -1));
                     T v121 = input->voxel(pos + ivec3(0, 1, 0));
                     T v122 = input->voxel(pos + ivec3(0, 1, 1));
-                    
+
                     //right plane
                     T v200 = input->voxel(pos + ivec3(1, -1, -1));
                     T v201 = input->voxel(pos + ivec3(1, -1, 0));
@@ -263,20 +279,20 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
                     T v222 = input->voxel(pos + ivec3(1, 1, 1));
 
                     gradient.x = static_cast<float>( w_1 * ( v211 - v011 )               +
-                                                     w_2 * ( v201 + v210 + v212 + v221 
-                                                            -v001 - v010 - v012 - v021 ) + 
+                                                     w_2 * ( v201 + v210 + v212 + v221
+                                                            -v001 - v010 - v012 - v021 ) +
                                                      w_3 * ( v200 + v202 + v220 + v222
                                                             -v000 - v002 - v020 - v022 )   );
-                    
+
                     gradient.y = static_cast<float>( w_1 * ( v121 - v101 )               +
-                                                     w_2 * ( v021 + v120 + v122 + v221 
-                                                            -v001 - v100 - v102 - v201 ) + 
+                                                     w_2 * ( v021 + v120 + v122 + v221
+                                                            -v001 - v100 - v102 - v201 ) +
                                                      w_3 * ( v020 + v022 + v220 + v222
                                                             -v000 - v002 - v200 - v202 )   );
 
                     gradient.z = static_cast<float>( w_1 * ( v112 - v110 )               +
-                                                     w_2 * ( v012 + v102 + v122 + v212 
-                                                            -v010 - v100 - v120 - v210 ) + 
+                                                     w_2 * ( v012 + v102 + v122 + v212
+                                                            -v010 - v100 - v120 - v210 ) +
                                                      w_3 * ( v002 + v022 + v202 + v222
                                                             -v000 - v020 - v200 - v220 )   );
 
@@ -287,7 +303,7 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
                     gradient /= input->getSpacing();
                     gradient *= -1.f;
 
-                   
+
                 }
                 else {
                     gradient = vec3(0.f);
@@ -326,10 +342,10 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
             }
         }
     }
-    
+
 
     return result;
-  
+
 }
 
 
@@ -365,7 +381,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     pos.y >= 1 && pos.y < dim.y-1 &&
                     pos.z >= 1 && pos.z < dim.z-1)
                 {
-                   
+
                     //left plane
                     T v000 = input->voxel(pos + ivec3(-1, -1, -1));
                     T v001 = input->voxel(pos + ivec3(-1, -1, 0));
@@ -397,7 +413,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     T v221 = input->voxel(pos + ivec3(1, 1, 0));
                     T v222 = input->voxel(pos + ivec3(1, 1, 1));
 
-                    if (intensityCheck){
+                    if (intensityCheck) {
                         v000 = ((v000 == v111) ? v000 : 0);
                         v001 = ((v001 == v111) ? v001 : 0);
                         v002 = ((v002 == v111) ? v002 : 0);
@@ -432,7 +448,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     //filter x-direction
                     gradient.x += -1 * v000;
                     gradient.x += -3 * v010;
-                    gradient.x += -1 * v020; 
+                    gradient.x += -1 * v020;
                     gradient.x += 1 * v200;
                     gradient.x += 3 * v210;
                     gradient.x += 1 * v220;
@@ -444,7 +460,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     gradient.x += +3 * v221;
                     gradient.x += -1 * v002;
                     gradient.x += -3 * v012;
-                    gradient.x += -1 * v022;							
+                    gradient.x += -1 * v022;
                     gradient.x += +1 * v202;
                     gradient.x += +3 * v212;
                     gradient.x += +1 * v222;
@@ -452,7 +468,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     //filter y-direction
                     gradient.y += -1 * v000;
                     gradient.y += -3 * v100;
-                    gradient.y += -1 * v200; 
+                    gradient.y += -1 * v200;
                     gradient.y += +1 * v020;
                     gradient.y += +3 * v120;
                     gradient.y += +1 * v220;
@@ -472,7 +488,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     //filter z-direction
                     gradient.z += -1 * v000;
                     gradient.z += -3 * v100;
-                    gradient.z += -1 * v200; 
+                    gradient.z += -1 * v200;
                     gradient.z += +1 * v002;
                     gradient.z += +3 * v102;
                     gradient.z += +1 * v202;
@@ -489,7 +505,6 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     gradient.z += +3 * v122;
                     gradient.z += +1 * v222;
 
-
                     gradient /= 22.f;   // sum of all positive weights
                     gradient /= 2.f;    // this mask has a step length of 2 voxels
                     gradient /= input->getSpacing();
@@ -499,10 +514,11 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
 
                 if (v4) {
                     if (bitsU == 8) {
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>((gradient.x/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>((gradient.y/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>((gradient.z/mapping)+128.f);
-                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).a = static_cast<uint8_t>(input->getVoxelFloat(pos) * 255.0f);
+                        gradient = tgt::iround(gradient + 127.5f);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>(gradient.x);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>(gradient.y);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>(gradient.z);
+                        reinterpret_cast<Volume4xUInt8*>(result)->voxel(pos).a = static_cast<uint8_t>(input->getVoxelFloat(pos) * 255.f);
                     }
                     else if (bitsU == 16) {
                         reinterpret_cast<Volume4xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>((gradient.x/mapping * 256.f) + 32768.f);
@@ -519,9 +535,10 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                 }
                 else {
                     if (bitsU == 8) {
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>((gradient.x/mapping)+128.f);
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>((gradient.y/mapping)+128.f);
-                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>((gradient.z/mapping)+128.f);
+                        gradient = tgt::iround(gradient + 127.5f);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).r = static_cast<uint8_t>(gradient.x);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).g = static_cast<uint8_t>(gradient.y);
+                        reinterpret_cast<Volume3xUInt8*>(result)->voxel(pos).b = static_cast<uint8_t>(gradient.z);
                     }
                     else if (bitsU == 16) {
                         reinterpret_cast<Volume3xUInt16*>(result)->voxel(pos).r = static_cast<uint16_t>((gradient.x/mapping * 256.f) + 32768.f);
@@ -543,22 +560,22 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
 
 /**
  * Calculates gradients with Sobel operator.
- */ 
+ */
 template<class U>
-VolumeAtomic<U>* calcGradientsSobel(voreen::Volume* vol, bool intensityCheck) {
+VolumeAtomic<U>* calcGradientsSobel(Volume* vol, bool intensityCheck) {
     if (vol->getBitsStored() == 8) {
-        VolumeUInt8* input = (VolumeUInt8*) vol;
-        return calcGradientsSobel<U, uint8_t>(input, 2, intensityCheck);
-    }
-    else if (vol->getBitsStored() == 16) {
-        VolumeUInt16* input = (VolumeUInt16*) vol;
-        return calcGradientsSobel<U, uint16_t>(input, 512, intensityCheck);
+        VolumeUInt8* input = dynamic_cast<VolumeUInt8*>(vol);
+        return calcGradientsSobel<U, uint8_t>(input, 1, intensityCheck);
     }
     else if (vol->getBitsStored() == 12) {
-        VolumeUInt16* input = (VolumeUInt16*) vol;
+        VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
         return calcGradientsSobel<U, uint16_t>(input, 32, intensityCheck);
     }
-    std::cout << "ERROR: calcGradients needs a 8-, 12- or 16-bit dataset as input" << std::endl;
+    else if (vol->getBitsStored() == 16) {
+        VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
+        return calcGradientsSobel<U, uint16_t>(input, 512, intensityCheck);
+    }
+    LERRORC("calcGradientsSobel", "calcGradientsSobel needs a 8-, 12- or 16-bit dataset as input");
     return 0;
 }
 
@@ -570,13 +587,13 @@ VolumeAtomic<U>* calcGradientsSobel(voreen::Volume* vol, bool intensityCheck) {
  */
 template<class U, class T>
 VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
-    
+
     VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
-    
+
     float maxValueT;
-    if ( typeid(*input) == typeid(Volume3xUInt8)  || 
-         typeid(*input) == typeid(Volume3xUInt16) || 
-         typeid(*input) == typeid(Volume4xUInt8)  || 
+    if ( typeid(*input) == typeid(Volume3xUInt8)  ||
+         typeid(*input) == typeid(Volume3xUInt16) ||
+         typeid(*input) == typeid(Volume4xUInt8)  ||
          typeid(*input) == typeid(Volume4xUInt16)    ) {
          int bitsT = input->getBitsStored() / input->getNumChannels();
         maxValueT = static_cast<float>( (1 << bitsT) - 1);
@@ -585,25 +602,25 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
         typeid(*input) == typeid(Volume4xFloat) || typeid(*input) == typeid(Volume4xDouble) ) {
         maxValueT = 1.f;
     }
-    else { 
+    else {
         LERRORC("calcGradientMagnitudes", "Unknown or unsupported input volume type");
         tgtAssert(false, "Unknown or unsupported input volume type");
         return result;
     }
 
     float maxValueU;
-    if ( typeid(*result) == typeid(VolumeUInt8)  || 
-         typeid(*result) == typeid(VolumeUInt16) || 
+    if ( typeid(*result) == typeid(VolumeUInt8)  ||
+         typeid(*result) == typeid(VolumeUInt16) ||
          typeid(*result) == typeid(VolumeUInt32) )
         maxValueU = static_cast<float>( (1 << result->getBitsStored()) - 1);
     else if ( typeid(*result) == typeid(VolumeFloat) || typeid(*result) == typeid(VolumeDouble))
         maxValueU = 1.f;
-    else { 
+    else {
         LERRORC("calc2ndDerivatives", "Unknown or unsupported output volume type");
         tgtAssert(false, "Unknown or unsupported output volume type");
         return result;
     }
-    
+
 
     ivec3 pos;
     ivec3 dim = input->getDimensions();
@@ -615,7 +632,7 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
                 gradient.x = input->getVoxelFloat(pos, 0);
                 gradient.y = input->getVoxelFloat(pos, 1);
                 gradient.z = input->getVoxelFloat(pos, 2);
-    
+
                 // input value range is [0:maxValue] with (maxValue/2.f) corrensponding to zero
                 gradient = (gradient*2.f)-1.f;
 
@@ -627,11 +644,11 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
             }
         }
     }
-    
+
 
 
     return result;
-  
+
 }
 
 
@@ -643,35 +660,35 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
  */
 template<class U, class T>
 VolumeAtomic<U>* calc2ndDerivatives(VolumeAtomic<T> *input) {
-    
+
     VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
-    
+
     float maxValueT;
-    if ( typeid(*input) == typeid(VolumeUInt8)  || 
-         typeid(*input) == typeid(VolumeUInt16) || 
+    if ( typeid(*input) == typeid(VolumeUInt8)  ||
+         typeid(*input) == typeid(VolumeUInt16) ||
          typeid(*input) == typeid(VolumeUInt32) )
         maxValueT = static_cast<float>( (1 << input->getBitsStored()) - 1);
     else if ( typeid(*input) == typeid(VolumeFloat) || typeid(*input) == typeid(VolumeDouble))
         maxValueT = 1.f;
-    else { 
+    else {
         LERRORC("calc2ndDerivatives", "Unknown or unsupported input volume type");
         tgtAssert(false, "Unknown or unsupported input volume type");
         return result;
     }
 
     float maxValueU;
-    if ( typeid(*result) == typeid(VolumeUInt8)  || 
-         typeid(*result) == typeid(VolumeUInt16) || 
+    if ( typeid(*result) == typeid(VolumeUInt8)  ||
+         typeid(*result) == typeid(VolumeUInt16) ||
          typeid(*result) == typeid(VolumeUInt32) )
         maxValueU = static_cast<float>( (1 << result->getBitsStored()) - 1);
     else if ( typeid(*result) == typeid(VolumeFloat) || typeid(*result) == typeid(VolumeDouble))
         maxValueU = 1.f;
-    else { 
+    else {
         LERRORC("calc2ndDerivatives", "Unknown or unsupported output volume type");
         tgtAssert(false, "Unknown or unsupported output volume type");
         return result;
     }
-    
+
 
     float derivative;
     ivec3 pos;
@@ -694,18 +711,18 @@ VolumeAtomic<U>* calc2ndDerivatives(VolumeAtomic<T> *input) {
                     //T v020 = input->voxel(pos + ivec3(-1, 1, -1));
                     //T v021 = input->voxel(pos + ivec3(-1, 1, 0));
                     //T v022 = input->voxel(pos + ivec3(-1, 1, 1));
-                    
+
                     //mid plane
                     //T v100 = input->voxel(pos + ivec3(0, -1, -1));
                     T v101 = input->voxel(pos + ivec3(0, -1, 0));
                     //T v102 = input->voxel(pos + ivec3(0, -1, 1));
                     T v110 = input->voxel(pos + ivec3(0, 0, -1));
-                    T v111 = input->voxel(pos + ivec3(0, 0, 0)); 
+                    T v111 = input->voxel(pos + ivec3(0, 0, 0));
                     T v112 = input->voxel(pos + ivec3(0, 0, 1));
                     //T v120 = input->voxel(pos + ivec3(0, 1, -1));
                     T v121 = input->voxel(pos + ivec3(0, 1, 0));
                     //T v122 = input->voxel(pos + ivec3(0, 1, 1));
-                    
+
                     //right plane
                     //T v200 = input->voxel(pos + ivec3(1, -1, -1));
                     //T v201 = input->voxel(pos + ivec3(1, -1, 0));
@@ -717,14 +734,14 @@ VolumeAtomic<U>* calc2ndDerivatives(VolumeAtomic<T> *input) {
                     //T v221 = input->voxel(pos + ivec3(1, 1, 0));
                     //T v222 = input->voxel(pos + ivec3(1, 1, 1));
 
-                    // Original Laplace operator 
-                    derivative = static_cast<float>( -6.0*v111                  + 
-                                                      v101 + v110 + v112 + v121  + 
-                                                      v011 + v211     );  
-                   
+                    // Original Laplace operator
+                    derivative = static_cast<float>( -6.0*v111                  +
+                                                      v101 + v110 + v112 + v121  +
+                                                      v011 + v211     );
+
                     // Simple Laplacian of Gaussian
-                    /*derivative = static_cast<double>( -36.0*v111 + 
-                                                      4.0*v101 + 4.0*v110 + 4.0*v112 + 4.0*v121  + 
+                    /*derivative = static_cast<double>( -36.0*v111 +
+                                                      4.0*v101 + 4.0*v110 + 4.0*v112 + 4.0*v121  +
                                                       4.0*v011 + 4.0*v211 +
                                                       v100 + v102 + v120 + v122 +
                                                       v001 + v010 + v012 + v021 +
@@ -741,11 +758,11 @@ VolumeAtomic<U>* calc2ndDerivatives(VolumeAtomic<T> *input) {
             }
         }
     }
-    
+
 
 
     return result;
-  
+
 }
 
 
@@ -753,7 +770,7 @@ VolumeAtomic<U>* calc2ndDerivatives(VolumeAtomic<T> *input) {
  * Calculates gradients with neighborhood of 26.
  * Slower, but should result in better gradients.
  */
-Volume4xUInt8* calcGradients26(voreen::Volume* vol);
+Volume4xUInt8* calcGradients26(Volume* vol);
 
 /**
  * Filters gradients stored in a 32 bit volume data set. A very simple interpolation
@@ -762,7 +779,7 @@ Volume4xUInt8* calcGradients26(voreen::Volume* vol);
  *
  * @param vol 32 bit volume data set with stored gradients.
  */
-Volume4xUInt8* filterGradients(voreen::Volume* vol);
+Volume4xUInt8* filterGradients(Volume* vol);
 
 /**
  * Filters gradients stored in a 32 bit volume data set.
@@ -770,7 +787,7 @@ Volume4xUInt8* filterGradients(voreen::Volume* vol);
  *
  * @param vol 32 bit volume data set with stored gradients.
  */
-Volume4xUInt8* filterGradientsMid(voreen::Volume* vol);
+Volume4xUInt8* filterGradientsMid(Volume* vol);
 
 /**
  * Filters gradients stored in a 32 bit volume data set.

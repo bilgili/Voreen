@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,30 +31,38 @@
 #include "voreen/core/volume/gradient.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
- 
+
+#include "tgt/exception.h"
+
 namespace voreen {
 
-CommandGrad::CommandGrad() {
-    help_ = "simple: neighborhood of 6\n";
-    help_ += "26: neighborhood of 26\n";
-    help_ += "sobel: neighborhood of 26 using sobel mask\n";
-    help_ += "sobelic: sobel using intensity check\n";
-    
-    info_ = "Calculate gradients. Writes 32-bit dataset.";
-    name_ = "grad";
-    syntax_ = name_ + " [simple|26|sobel|sobelic] IN[8|12|16] OUT32";
+CommandGrad::CommandGrad() :
+    Command("--grad", "", "Calculate gradients. Writes 32-bit dataset.\n\
+\t\tsimple: neighborhood of 6\n\
+\t\t26: neighborhood of 26\n\
+\t\tsobel: neighborhood of 26 using sobel mask\n\
+\t\tsobelic: sobel using intensity check",
+"<[simple|26|sobel|sobelic] IN[8|12|16] OUT32>", 3)
+{
     loggerCat_ += "." + name_;
 }
-    
+
+bool CommandGrad::checkParameters(const std::vector<std::string>& parameters) {
+    std::set<std::string> set;
+    set.insert("simple");
+    set.insert("26");
+    set.insert("sobel");
+    set.insert("sobelic");
+    return (parameters.size() == 3) && isValueInSet(parameters[0], &set);
+}
+
 bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
-    
-    checkParameters(parameters.size() == 3);
 
     //load volume dataset
     Volume* sourceDataset_;
-    Volume* targetDataset_;
+    Volume* targetDataset_ = 0;
 
     VolumeSet* volumeSet = serializer->load(parameters[1]);
     sourceDataset_ = volumeSet->getFirstVolume();
@@ -68,10 +76,6 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
         targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, false);
     else if (parameters[0] == "sobelic")
         targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, true);
-    else {
-        delete sourceDataset_;
-        throw SyntaxException("Unknown filter!");
-    }
 
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
@@ -92,28 +96,30 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
 
 //-----------------------------------------------------------------------------
 
-CommandFilterGrad::CommandFilterGrad() {
-    help_ = "";
-    
-    info_ = "Filter gradients.";
-    name_ = "filtergrad";
-    syntax_ = name_ + " [simple|mid|weighted TIMES|weightedic TIMES] IN OUT";
+CommandFilterGrad::CommandFilterGrad() :
+    Command("--filtergrad", "", "Filter gradients", "<[simple|mid|weighted|weightedic] TIMES IN OUT>", 4)
+{
     loggerCat_ += "." + name_;
 }
-    
+
+bool CommandFilterGrad::checkParameters(const std::vector<std::string>& parameters) {
+    std::set<std::string> set;
+    set.insert("simple");
+    set.insert("mid");
+    set.insert("weighted");
+    set.insert("weightedic");
+    return ((parameters.size() == 4) && isValueInSet(parameters[0], &set));
+}
+
 bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
-    
-    int numparams = parameters.size();
-    
-    checkParameters(parameters.size() == 3 || (parameters.size() == 4 && (parameters[0] == "weighted" || parameters[0] == "weightedic")));
-    
+
     //load volume dataset
     Volume* sourceDataset_;
-    Volume* targetDataset_;
+    Volume* targetDataset_ = 0;
 
-    VolumeSet* volumeSet = serializer->load(parameters[numparams-2]);
+    VolumeSet* volumeSet = serializer->load(parameters[2]);
     sourceDataset_ = volumeSet->getFirstVolume();
 
     if (parameters[0] == "simple")
@@ -122,7 +128,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
         targetDataset_ = filterGradientsMid(sourceDataset_);
     else if (parameters[0] == "weighted") {
         int times;
-        times = asInt(parameters[1]);
+        times = cast<int>(parameters[1]);
         for (int i=0; i<times; ++i) {
             targetDataset_ = filterGradientsWeighted(sourceDataset_, false);
             sourceDataset_ = targetDataset_;
@@ -130,7 +136,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     }
     else if (parameters[0] == "weightedic") {
         int times;
-        times = asInt(parameters[1]);
+        times = cast<int>(parameters[1]);
         for (int i=0; i<times; ++i) {
             targetDataset_ = filterGradientsWeighted(sourceDataset_, true);
             sourceDataset_ = targetDataset_;
@@ -138,13 +144,13 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     }
     else {
         delete sourceDataset_;
-        throw SyntaxException("Unknown filter!");
+        throw tgt::Exception("Unknown filter!");
     }
 
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
-        serializer->save(parameters[numparams-1], targetDataset_);
+        serializer->save(parameters[3], targetDataset_);
         delete serializer;
         delete targetDataset_;
     }

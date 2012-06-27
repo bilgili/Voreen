@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -107,7 +107,7 @@ Edge3D* Polygon3D::findEdge(Edge3D* const e) {
     Edge3D::EdgeSet::iterator it = edges_.find(e);
     if (it != edges_.end())
         return *it;
-    
+
     return 0;
 }
 
@@ -118,7 +118,7 @@ bool Polygon3D::removeEdge(Edge3D* const e) {
     return (edges_.erase(e) > 0);
 }
 
-bool Polygon3D::addFace(const tgt::vec3* vertices, const unsigned long numVertices, const unsigned long* indices, 
+bool Polygon3D::addFace(const tgt::vec3* vertices, const unsigned long numVertices, const unsigned long* indices,
                                 const unsigned long numIndices, const unsigned long id, const tgt::vec3& faceNormal)
 {
     // an edge is defined by 2 indices. ensure that there is an even amount of indices
@@ -187,7 +187,7 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const unsigned long numVertic
             delete e;
             e = *(prE.first);
         }
-    
+
         // insert the new edge at the correct position in the face
         //
         face->insertEdge(e);
@@ -211,7 +211,7 @@ bool Polygon3D::containsFace(const unsigned long id) {
 EdgeVertex3D* Polygon3D::findVertex(const tgt::vec3& v) const {
     if (vertices_.size() == 0)
         return 0;
-    
+
     EdgeVertex3D ev(v, 0);
     EdgeVertex3D::VertexSet::const_iterator it = vertices_.find(&ev);
     if (it != vertices_.end())
@@ -255,7 +255,7 @@ Edge3D::EdgeSet Polygon3D::connectAdjacentVertices(EdgeVertex3D* const v) {
                 for (itF2 = ps2.begin(); itF2 != ps2.end(); ++itF2) {
                     // if two edges share a polygon face, create a new edge
                     // between the both points which are not this one
-                    // 
+                    //
                     if ( *(*itF2) == *(*itF1) ) {
                         // create new edge, if it does not alread exist
                         // and add it to the shared face and the output list
@@ -304,7 +304,7 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
         tgt::vec3 i(pe); // intersection point
         float a = dot((p - pe), n);
         i += d * (a / b);
-   
+
         // round up the intersection point in order to prevent problems with
         // exisiting point which are nearly identical
         //
@@ -416,10 +416,10 @@ void Polygon3D::reduceFaces(PolygonFace3D::FaceSet& newFaces, const unsigned lon
                     break;
                 }
             }   // for
-            
+
             // simply add the edge. the edges will be sorted later
             //
-            if (add)    
+            if (add)
                 clippedFace->addEdge(*itE);
         }   // for
 
@@ -473,7 +473,7 @@ void Polygon3D::clear() {
     //
     PolygonFace3D::FaceSet::iterator itF = faces_.begin();
     for (; itF != faces_.end(); ++itF )
-        delete *itF;    
+        delete *itF;
     faces_.clear();
 
     EdgeVertex3D::VertexSet::iterator itV = vertices_.begin();
@@ -573,7 +573,7 @@ float Polygon3D::roundFloat(const float f) const {
     //
     d = (digit > 4) ? (static_cast<double>(l + 1.0)) : (static_cast<double>(l));
     d /= SCALE;
-  
+
     // 7. convert number back to float and return
     //
     return static_cast<float>(d);

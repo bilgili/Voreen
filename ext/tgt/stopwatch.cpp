@@ -35,7 +35,7 @@ uint64_t Stopwatch::getTicks() {
 
     #ifdef WIN32
         return GetTickCount();
-    #else         
+    #else
         struct timeval tp;
         int result = gettimeofday(&tp, 0);
         if (!result)
@@ -45,44 +45,6 @@ uint64_t Stopwatch::getTicks() {
             return 0;
         }
     #endif
-}    
-
-uint64_t Stopwatch::getClockCycles() {
-    uint64_t result;
-
-    #ifdef __GNUC__
-        asm volatile (
-            "rdtsc"         //Read Time-Stamp Counter
-            : "=A" (result) //EDX:EAX -> result
-            :               // no input
-        );
-    #else  //__GNUC__
-        tgtAssert(false, "This function is not yet implemented for your compiler and/or arch!");
-        result = 0; //REMOVED WARNING (we can never come here)
-    #endif //__GNUC__
-
-    //TODO msvc and icc version must look sth like this: NOT TESTED!!!
-    /*
-    _asm {
-        push eax;
-        push edx;
-        rdtsc;
-        mov eax, result;
-        mov edx, result + 4;
-        pop edx;
-        pop eax;
-    };
-    */
-    
-    //Perhaps pushing and popping is unnecessary when edx:eax is standard for 64 bit return values;
-    //but declare function as naked and do not use any return command. NOT TESTED!!!
-    /*
-    _asm {
-        rdtsc;
-    };
-    */
-    
-    return result;
 }
 
 clock_t Stopwatch::getRuntime() {
@@ -113,4 +75,4 @@ void Stopwatch::reset() {
     runTime_   = 0;
 }
 
-}
+} // namespace

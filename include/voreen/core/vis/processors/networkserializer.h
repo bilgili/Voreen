@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -39,15 +39,17 @@
 namespace voreen {
 
 /**
-* Holds all data gathered from a ".vnw" XML network file.
-* 
-* This class replaces the NetworkInformation and Networkinfos
-*/
+ * Holds all data gathered from a ".vnw" XML network file.
+ *
+ * This class replaces the NetworkInformation and Networkinfos
+ */
 class ProcessorNetwork : public Serializable {
-
 public:
     ProcessorNetwork();
+    ProcessorNetwork(const ProcessorNetwork& othernet);
     ~ProcessorNetwork();
+
+    void operator=(const ProcessorNetwork& othernet);
 
     /**
      * Returns the name of the xml element used when serializing the object
@@ -58,7 +60,7 @@ public:
      * Serializes the object to XML.
      */
     virtual TiXmlElement* serializeToXml() const;
-    
+
     /**
      * Updates the object from XML.
      */
@@ -80,98 +82,30 @@ public:
     * Sets TextureContainer for all processors of the network.
     */
     ProcessorNetwork& setTextureContainer(TextureContainer* tc);
-    
+
     /**
     * Sets the Camera for all Processors of the network
     */
     ProcessorNetwork& setCamera(tgt::Camera* camera);
-    
+
+    // TODO: make private and add accessor methods (df)
+    //
     std::vector<Processor*> processors;
     std::vector<PropertySet*> propertySets;
     bool reuseTCTargets;
     int version;
     VolumeSetContainer* volumeSetContainer;
     bool serializeVolumeSetContainer;
-    
+
 private:
+    void initializeFrom(const ProcessorNetwork& othernet);
     MetaSerializer meta_; // Can store metadata
 };
 
 /**
-* This struct saves information about a network loaded by the networkserializer. It contains all the processors
-* in the network, and all the propertysets.
-* 
-* @deprecated Will soon be deleted
-*/
-
-struct NetworkInformation {
-	std::vector<Processor*> processors;
-	std::vector<PropertySet*> propertySets;
-    int version;
-};
-
-/// @deprecated Will soon be deleted
-struct ConnectedProcessor {
-	int processorNumber;
-	Identifier portType;
-};
-
-/**
-* This struct contains the information about one port. It is used to save and load the connections between
-* processors. You can't store pointers in xml, so you have to give ports and processors numbers. Something like
-* "outport 1 of processor 3 is connected to inport 5 of processor 7". 
-* 
-* @deprecated Will soon be deleted
-*/ 
-struct PortConnection {
-	/**
-	* The port number is the position this port has in the in (or) outports vector of its processor.
-	* So if a processor has 3 outports, the first one will have number 0 and so on. 
-	*/
-	int portNumber;
-	/**
-	* The type of this port, image.entrypoints for example.
-	*/ 
-	Identifier type;
-	/**
-	* This map stores the connections this port has to other processors. An entry in this map consists of the
-	* number of the processor and the number of the port that are connected to it. Like "this port is connected
-	* to port 2 of processor 4". First value is the number of the processor, the second one the number for the 
-	* port. 
-	*/
-	std::map<int,int> connectedProcessors;
-	std::map<int,Identifier> connectedProcessorsMap;
-	std::vector<ConnectedProcessor> connectedProcessorsVector;
-};
-
-/**
-* This struct holds the entire connection information for one Processor. Only the output connections
-* are relevant, because all the connect methods in processor automatically create the inport 
-* connections when creating an output connection. 
-* 
-* @deprecated Will soon be deleted
-*/
-struct ConnectionInfoForOneProcessor {
-	/**
-	* You can't store pointers in xml, so you have to give each processor a number. This is the id. 
-	*/ 
-	int id;
-	/**
-	* Vector containing all the output connections of the processor. For every port there is a PortConnection
-	* in the vector. 
-	*/ 
-	std::vector<PortConnection*> outputs;
-	/**
-	* Vector containing all the input connections of the processor. For every port there is a PortConnection
-	* in the vector. 
-	*/ 
-	std::vector<PortConnection*> inputs;
-};
-
-/**
-* This class serializes the data structure of processors to an XML file (currently not working). It can also
-* read an XML file and build the data structure again. (working)
-*/
+ * Serializes the data structure of processors to an XML file (currently not working). It can also
+ * read an XML file and build the data structure again. (working)
+ */
 class NetworkSerializer {
 public:
     /**
@@ -184,12 +118,14 @@ public:
     /**
     * serializes a ProcessorNetwork to xml
     */
-    void serializeToXml(const ProcessorNetwork& network, const std::string& filename);
+    void serializeToXml(const ProcessorNetwork* network, const std::string& filename)
+        throw (SerializerException);
 
     /**
      * Reads a ".vnw" file and returns a ProcessorNetwork holding all Processors, PropertySets and metadata
+     * Ensure to free the obtained pointer using C++ delete afterwards!
      */
-    ProcessorNetwork& readNetworkFromFile(std::string filename, bool loadVolumeSetContainer = false)
+    ProcessorNetwork* readNetworkFromFile(std::string filename, bool loadVolumeSetContainer = false)
         throw (SerializerException);
 
     /**
@@ -202,96 +138,39 @@ public:
      */
     int readVersionFromFile(std::string filename);
 
+    /**
+     * Connects all the given processors which inherit from <code>tgt::EventListener</code>
+     * to the given <code>tgt::EventHandler</code>. The latter is usually one
+     * of the applications <code>tgt::OGLCanvas</code>es
+     *
+     * @param   eventHandler    pointer to the <code>tgt::EventHandler</code>
+     *                          the processors shall be connected to
+     * @param   processors  vector containing processors being potential listeners
+     * @param   addToFront  if set to "true", the listeners are added at the front of
+     *                      the handler, otherwise they are added to the back
+     * @return  number of processors being connected as <code>tgt::EventListener</code>
+     */
+    static size_t connectEventListenersToHandler(tgt::EventHandler* const eventHandler,
+        const std::vector<Processor*>& processors, const bool addToFront = false);
+
+    /**
+     * Removes all the given processors which inherit from <code>tgt::EventListener</code>
+     * from the given <code>tgt::EvenHandler</code>.The latter is usually one
+     * of the applications <code>tgt::OGLCanvas</code>es.
+     *
+     * @param   eventHandler    pointer to the <code>tgt::EventHandler</code>
+     *                          the processors shall be removed from
+     * @param   processors  vector containing processors being potential listeners
+     * @return  number of processors which were removed
+     */
+    static size_t removeEventListenersFromHandler(tgt::EventHandler* const eventHandler,
+        const std::vector<Processor*>& processors);
+
 protected:
     /**
      * Finds the Version of the saved network.
      */
     int findVersion(TiXmlNode* node);
-
-    /**
-     * Uses the information stored in graphConnectionInformation_ to connect the Processor objects in
-     * the right way. This is needed because when reading and creating the processors from the xml file, some processors might
-     * not exist yet. That means that we first have to create all the processors, and after that we can connect them. This is
-     * what this function does.
-     *
-     * @deprecated Will soon be deleted
-     */
-    int connectProcessors();
-    /// @deprecated Will soon be deleted
-    int connectProcessorsVersion1();
-
-    /**
-        * Saves the property vector of one processor to xml. (shamelessely copied and modified from widgetgenerator)
-        */
-    //int saveProperties(std::vector<Property*> props, TiXmlElement* xmlParent);
-
-    /**
-        * Loads the property vector of one processor from xml. (shamelessely copied and modified from widgetgenerator)
-        *
-        * @deprecated Will soon be deleted
-        */
-    int loadProperties(std::vector<Property* > props, TiXmlElement* xmlParent, Processor* processor);
-
-    /**
-        * Serializes one processor to xml.
-        *
-        * @deprecated Will soon be deleted
-        */
-    int serializeProcessor(Processor* processor,TiXmlElement* xmlParent, int id);
-
-    /**
-        * Reads an xml file and creates all processors and propertysets stored in it.
-        * These Processors are however not connected yet. That has to be done with connectProcessors()
-        *
-        * @deprecated Will soon be deleted
-        */
-    int readProcessorsFromXml(TiXmlNode* node);
-    int readProcessorsFromXmlVersion1(TiXmlNode* node);
-
-    /**
-        * Returns the Processor with the given id if it is found in processors_
-        *
-        * @deprecated Will soon be deleted
-        */
-    Processor* findProcessor(int id);
-
-    /**
-        * Stores which processor is connected to which processor. This is neccessary because you can't store pointers
-        * in the xml files, only the ids of the processors. So we have to create all the processors before we can
-        * connect them. That's why we have to store the connection info somewhere until they are created.
-        *
-        * @deprecated Will soon be deleted
-        */
-    std::vector<ConnectionInfoForOneProcessor*> graphConnectionInformation_;
-
-    /**
-        * This vector holds all the processors created from an xml file.
-        *
-        * @deprecated Will soon be deleted
-        */
-    std::vector<Processor*> processors_;
-
-    /**
-        * This vector holds all the propertysets created from an xml file.
-        *
-        * @deprecated Will soon be deleted
-        */
-    std::vector<PropertySet*> propertySets_;
-
-    /**
-        * Used when creating the processor objects from a xml file. It counts the amount of processors created.
-        *
-        * @deprecated Will soon be deleted
-        */
-    int count_;
-
-    /**
-        * This map stores and id for every processor. Every time a processor is read from xml, it is given
-        * an id which is stored here.
-        *
-        * @deprecated Will soon be deleted
-        */
-    std::map<Processor*,int> idMap_;
 };
 
 } //namespace voreen

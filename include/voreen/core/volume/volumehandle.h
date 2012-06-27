@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,37 +55,38 @@ class Modality;
  * Class for handling different types and needs for volumes. Besides this
  * class holds the current timestep of the selected volume in its VolumeSeries.
  * The class is designed for being the only class which has to take care of
- * what kind of hardware volumes (VolumeGL, VolumeCUDA, etc.) are used.
- *
- * @author Dirk Feldmann, July - September 2008
+ * what kind of hardware volumes are used.
  */
 class VolumeHandle : public Serializable {
 public:
+    friend class VolumeSeries; // for setParentSeries()
+
     /**
-     * TODO docs
+     * Stores the source where the Volume was loaded from.
      */
     struct Origin : public Serializable {
-        Origin() {}
+        Origin() : filename(""), seriesname(""), timestep(-1.0) {}
+
         Origin(std::string fn, std::string sn, float ts)
             : filename(fn), seriesname(sn), timestep(ts)
         {}
+
         virtual ~Origin() {}
-        
-        bool operator==(const Origin& rhs) const {
-            return ((filename == rhs.filename) && (seriesname == rhs.seriesname) && (timestep == rhs.timestep));
-        }
-        bool operator<(const Origin& rhs) const {
-            return (filename < rhs.filename);
-        }
-        
+
+        bool operator==(const Origin& rhs) const;
+        bool operator<(const Origin& rhs) const;
+
         virtual std::string getXmlElementName() const { return XmlElementName; }
         virtual TiXmlElement* serializeToXml() const;
         virtual void updateFromXml(TiXmlElement* elem);
 
+        static void setBasePath(const std::string& basePath) { basePath_ = basePath; }
+        
         std::string filename;
         std::string seriesname;
         float timestep;
         static const std::string XmlElementName;
+        static std::string basePath_;
     };
 
     /** Holds the name of the xml element used when serializing the object */
@@ -96,15 +97,15 @@ public:
      * This enum is used to create a mask by OR-ing the values.
      */
     enum HardwareVolumes {
-        HARDWARE_VOLUME_NONE = 0, 
-        HARDWARE_VOLUME_GL = 1, 
+        HARDWARE_VOLUME_NONE = 0,
+        HARDWARE_VOLUME_GL = 1,
         HARDWARE_VOLUME_CUDA = 2,
         HARDWARE_VOLUME_ALL = 0xFFFF
     };
 
     /**
      * Comparator structure for ensuring that the comparison of VolumeHandles used
-     * by the std::set compares the dereferenced pointers and not the pointers 
+     * by the std::set compares the dereferenced pointers and not the pointers
      * themselves!
      */
     struct VolumeHandleComparator {
@@ -123,13 +124,13 @@ public:
      * NOTE: No hardware specific volume data like VolumeGL are created initially. If you want
      * to use hardware specific volume data / textures, call generateHardwareVolumes() or
      * directly use getVolumeGL() which implicitly generates a hardware volume.
-     * 
+     *
      * @param   parentSeries The VolumeSeries containing this VolumeHandle. Should be
      *  non-NULL to prevent unpredictable results.
      * @param   volume  The volume data for this VolumeHandle.
      * @param   time    The timestep fot this VolumeHandle.
      */
-    VolumeHandle(VolumeSeries* const parentSeries, Volume* const volume, const float time);
+    VolumeHandle(Volume* const volume, const float time = 0.f);
 
     /**
      * Copy constructor
@@ -142,11 +143,21 @@ public:
     ~VolumeHandle();
 
     /**
+     * Takes the values from the given handle and writes them into this instance
+     */
+    void CopyValuesFromVolumeHandle(const VolumeHandle* handle);
+
+    /**
      * Comparison of the handles is defined as the comparison
      * of the timesteps held by the handles.
      */
     bool operator<(const VolumeHandle& handle) const;
     bool operator==(const VolumeHandle& handle) const;
+
+    /**
+     * Operator for convenience: a handle can be casted into its timestep.
+     */
+    operator float() const;
 
     /**
      * Compares the internal ID with the one of the given VolumeHandle.
@@ -159,12 +170,6 @@ public:
      */
     bool isIdentical(const VolumeHandle& handle) const;
     bool isIdentical(VolumeHandle* const handle) const;
-
-    /**
-     * Operator for convenience: a handle can be casted into
-     * its timestep held.
-     */
-    operator float() const;
 
     /**
      * Returns the generic (Voreen) Volume.
@@ -197,17 +202,9 @@ public:
     bool setTimestep(const float timestep);
 
     /**
-     * Returns the VolumeSeries* to which this VolumeHandle belongs to.
+     * Returns the VolumeSeries which this VolumeHandle belongs to.
      */
     VolumeSeries* getParentSeries() const;
-
-    /**
-     * Sets the given Series as the new parent Series for this VolumeHandle.
-     * This method is usually only called by class VolumeSeries on inserting
-     * a VolumeHandle from <code>VolumeSeries::addVolumeHandle()</code>
-     * so use with caution in order to prevent unpredictable behavior.
-     */
-    void setParentSeries(VolumeSeries* const series);
 
     /**
      * Returns the mask indicating what hardware volume are currently used
@@ -226,7 +223,7 @@ public:
      * Generate hardware volumes. If the hardware volume already exists, it is rebuild.
      *
      * @param volumeMask OR-junction of HardwareVolumes enum determining what kind of hardware
-     *    volumes to create. 
+     *    volumes to create.
      */
     void generateHardwareVolumes(int volumeMask);
 
@@ -234,25 +231,35 @@ public:
      * Remove hardware volumes and free memory.
      *
      * @param volumeMask OR-junction of HardwareVolumes enum determining which hardware
-     *    volumes to delete. 
+     *    volumes to delete.
      */
     void freeHardwareVolumes(int volumeMask = HARDWARE_VOLUME_ALL);
-    
+
+    /**
+     * Returns the first pointer to a VolumeHandle object of the given
+     * modality and the same timestep as this VolumeHandle from all
+     * VolumeSeries know to its parent VolumeSet or 0 if no
+     * such series, timestep or volume exist.
+     * This is useful for finding other series (former "modalities")
+     * of the same scan at the same timestep.
+     */
+    VolumeHandle* getRelatedVolumeHandle(const Modality& modality) const;
+
     /**
      * Returns the first pointer to a Volume object of the given
      * modality and the same timestep as this VolumeHandle from all
-     * VolumeSeries know to its parent VolumeSet or NULL if no 
+     * VolumeSeries know to its parent VolumeSet or 0 if no
      * such series, timestep or volume exist.
-     * This is required for finding other series (former "modalities")
+     * This is useful for finding other series (former "modalities")
      * of the same scan at the same timestep.
      */
     Volume* getRelatedVolume(const Modality& modality) const;
 
     /**
-     * Returns the objects ID. Whenever the ctor is called, a new ID is created.
+     * Returns the object ID. Whenever the ctor is called, a new ID is created.
      */
     unsigned int getObjectID() const;
-    
+
     void setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep);
     void setOrigin(const Origin& origin);
     const Origin& getOrigin() const;
@@ -267,15 +274,8 @@ public:
      */
     virtual TiXmlElement* serializeToXml() const;
 
-    /**
-     * Updates the object from XML.
-     */
-    void updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap);
     virtual void updateFromXml(TiXmlElement* elem);
-    
-    /**
-     * TODO docs
-     */
+
     static std::string getFileNameFromXml(TiXmlElement* elem);
 
 
@@ -283,9 +283,9 @@ public:
     /**
      * Returns the first pointer to a VolumeGL object of the given
      * modality and the same timestep as this VolumeHandle from all
-     * VolumeSeries know to its parent VolumeSet or NULL if no 
+     * VolumeSeries know to its parent VolumeSet or 0 if no
      * such series, timestep or volume exist.
-     * This is required for finding other series (former "modalities")
+     * This is useful for finding other series (former "modalities")
      * of the same scan at the same timestep.
      */
     VolumeGL* getRelatedVolumeGL(const Modality& modality);
@@ -308,11 +308,19 @@ public:
 #endif
 
 protected:
+    /**
+     * Sets the given Series as the new parent Series for this VolumeHandle.
+     * This method is usually only called by class VolumeSeries on inserting
+     * a VolumeHandle from <code>VolumeSeries::addVolumeHandle()</code>
+     * so use with caution in order to prevent unpredictable behavior.
+     */
+    void setParentSeries(VolumeSeries* const series);
+
     Volume* volume_;
     float time_;
     int hardwareVolumeMask_;
-    VolumeSeries* parentSeries_;    /** VolumeSeries containing this object */
-    unsigned int objectID_;   /** unique ID for each INSTANCE of this class */
+    VolumeSeries* parentSeries_;    ///< VolumeSeries containing this object
+    unsigned int objectID_;         ///< unique ID for each INSTANCE of this class
 
 #ifndef VRN_NO_OPENGL
     VolumeGL* volumeGL_;
@@ -327,6 +335,6 @@ protected:
     static unsigned int nextObjectID_;
 };
 
-} // namespace 
+} // namespace
 
 #endif // VRN_VOLUMEHANDLE_H

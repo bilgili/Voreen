@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,10 +55,9 @@
 
 namespace voreen {
 
-class CmdLineParser;
+class CommandlineParser;
 class TextureContainer;
 class Volume;
-class VolumeContainer;
 class VolumeSerializer;
 class VoreenPainter;
 
@@ -92,7 +91,7 @@ protected:
     void fileOpen(const QStringList& fileNames, bool add = false);
 
     const std::string loggerCat_;
-    CmdLineParser* cmdLineParser_;
+    CommandlineParser* cmdLineParser_;
 
     tgt::Camera* camera_;
     tgt::QtCanvas* canvas3D_;

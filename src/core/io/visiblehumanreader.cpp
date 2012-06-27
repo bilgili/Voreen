@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,85 +34,85 @@
 
 namespace voreen {
 
-	VisibleHumanReader::VisibleHumanReader() {
-		colorDataset_ = true;
-	}
+    VisibleHumanReader::VisibleHumanReader() {
+        colorDataset_ = true;
+    }
 
-	void VisibleHumanReader::createDataset(std::vector<std::string> filenames, std::string outputFile, int byteSkip, bool color) {
-		std::fstream outputStream(outputFile.c_str(), std::ios::out |std::ios::binary);
+    void VisibleHumanReader::createDataset(std::vector<std::string> filenames, std::string outputFile, int byteSkip, bool color) {
+        std::fstream outputStream(outputFile.c_str(), std::ios::out |std::ios::binary);
 
-		if (color == true) {
+        if (color == true) {
 
-			char*** data = new char**[1216];
-			for (int i=0;i<1216; i++) {
-				data[i] = new char*[2048];
-				for (int j=0; j<2048; j++) {
-					data[i][j] = new char[3];
-				}
-			}
+            char*** data = new char**[1216];
+            for (int i=0;i<1216; i++) {
+                data[i] = new char*[2048];
+                for (int j=0; j<2048; j++) {
+                    data[i][j] = new char[3];
+                }
+            }
 
-			for (size_t i=0; i<filenames.size(); i++) {
+            for (size_t i=0; i<filenames.size(); i++) {
 
-				std::fstream inputStream(filenames.at(i).c_str(), std::ios::in |std::ios::binary);
-				std::cout << "reading: " << filenames.at(i) << std::endl;
+                std::fstream inputStream(filenames.at(i).c_str(), std::ios::in |std::ios::binary);
+                std::cout << "reading: " << filenames.at(i) << std::endl;
 
-				char* charArrayBuffer = new char[1];
+                char* charArrayBuffer = new char[1];
 
-				int cutLeft,cutRight,cutTop,cutBottom;
+                int cutLeft,cutRight,cutTop,cutBottom;
 
-				cutLeft = 0;
-				cutRight=0;
-				cutTop=0;
-				cutBottom=0;
+                cutLeft = 0;
+                cutRight=0;
+                cutTop=0;
+                cutBottom=0;
 
-				int sizex = 512;
-				int sizey = 512;
+                int sizex = 512;
+                int sizey = 512;
 
-				for (int k=0;k<3; k++) {
-					for (int i=0; i<sizey;i++) {
-						for (int j=0; j<sizex; j++) {
-							inputStream.read(charArrayBuffer,1);
-							data[i][j][k] = charArrayBuffer[0];
-						}
-					}
-				}
+                for (int k=0;k<3; k++) {
+                    for (int i=0; i<sizey;i++) {
+                        for (int j=0; j<sizex; j++) {
+                            inputStream.read(charArrayBuffer,1);
+                            data[i][j][k] = charArrayBuffer[0];
+                        }
+                    }
+                }
 
-				for (int i=cutTop; i<sizey-cutBottom; i++) {
-					for (int j=cutLeft; j<sizex-cutRight; j++) {
-						for (int k=0; k<3; k++) {
-							charArrayBuffer[0] = data[i][j][k];
-							outputStream.write(charArrayBuffer,1);
-						}
-					}
-				}
+                for (int i=cutTop; i<sizey-cutBottom; i++) {
+                    for (int j=cutLeft; j<sizex-cutRight; j++) {
+                        for (int k=0; k<3; k++) {
+                            charArrayBuffer[0] = data[i][j][k];
+                            outputStream.write(charArrayBuffer,1);
+                        }
+                    }
+                }
 
-				inputStream.close();
+                inputStream.close();
 
-				
-			}
-			outputStream.close();
-			delete data;
-		}
 
-		else {
-			char* charArrayBuffer = new char[2];
-			for (size_t i=0; i<filenames.size(); i++) {
-				std::fstream inputStream(filenames.at(i).c_str(), std::ios::in |std::ios::binary);
-				std::cout << "reading: " << filenames.at(i) << std::endl;
-				if (byteSkip != 0)
-					inputStream.seekg(byteSkip+1,std::ios::beg);
-				long max=512*512;
-				for (long j=0; j<max; j++) {
-					inputStream.read(charArrayBuffer, 2);
-					outputStream.write(charArrayBuffer,2);
-				}
-				
-				inputStream.close();
-			}
-			delete charArrayBuffer;
-			outputStream.close();
-		}
-		
-	}
+            }
+            outputStream.close();
+            delete data;
+        }
+
+        else {
+            char* charArrayBuffer = new char[2];
+            for (size_t i=0; i<filenames.size(); i++) {
+                std::fstream inputStream(filenames.at(i).c_str(), std::ios::in |std::ios::binary);
+                std::cout << "reading: " << filenames.at(i) << std::endl;
+                if (byteSkip != 0)
+                    inputStream.seekg(byteSkip+1,std::ios::beg);
+                long max=512*512;
+                for (long j=0; j<max; j++) {
+                    inputStream.read(charArrayBuffer, 2);
+                    outputStream.write(charArrayBuffer,2);
+                }
+
+                inputStream.close();
+            }
+            delete charArrayBuffer;
+            outputStream.close();
+        }
+
+    }
 
 } //namespace voreen

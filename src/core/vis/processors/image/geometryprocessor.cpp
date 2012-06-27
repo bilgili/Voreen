@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,12 +28,10 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/geometryprocessor.h"
-#include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/idmanager.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 
 #include <typeinfo>
 
@@ -52,11 +50,11 @@ GeometryProcessor::GeometryProcessor()
     : Processor()
     , shaderPrg_(0)
 {
-	setName("Geometry Processor");
+    setName("Geometry Processor");
 
-	createInport("image.inport");
-	createOutport("image.outport");
-	createCoProcessorInport("coprocessor.geometryrenderers", true);
+    createInport("image.inport");
+    createOutport("image.outport");
+    createCoProcessorInport("coprocessor.geometryrenderers", true);
 
 }
 
@@ -83,12 +81,12 @@ const Identifier GeometryProcessor::getClassName() const {
     return "GeometryRenderer.GeometryProcessor";
 }
 
-Processor* GeometryProcessor::create() {
+Processor* GeometryProcessor::create() const {
     return new GeometryProcessor();
 }
 
 const std::string GeometryProcessor::getProcessorInfo() const {
-	return "Manages the GeometryRenderer objects. Holds a vector of GeometryRenderer \
+    return "Manages the GeometryRenderer objects. Holds a vector of GeometryRenderer \
             Objects and renders all of them on <i>render()</i>";
 }
 
@@ -144,14 +142,14 @@ GeometryRenderer::GeometryRenderer()
     : Processor()
 {}
 
-tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) {
-	// taken from NEHE article 13
-	// http://nehe.gamedev.net/data/articles/article.asp?article=13
+tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) const {
+    // taken from NEHE article 13
+    // http://nehe.gamedev.net/data/articles/article.asp?article=13
     GLint viewport[4];
-	GLdouble modelview[16];
-	GLdouble projection[16];
-	GLdouble winX, winY, winZ;
-	GLdouble posXh, posYh, posZh;
+    GLdouble modelview[16];
+    GLdouble projection[16];
+    GLdouble winX, winY, winZ;
+    GLdouble posXh, posYh, posZh;
 
     tgt::mat4 projection_tgt = tgt::getTransposeProjectionMatrix();
     tgt::mat4 modelview_tgt = tgt::getTransposeModelViewMatrix();
@@ -167,17 +165,18 @@ tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) {
     }
     viewport[0] = 0;
     viewport[1] = 0;
-    viewport[2] = canvasSize_.x;
-    viewport[3] = canvasSize_.y;
+    // use size from texture container, as processor size may be changed by coarseness mode
+    viewport[2] = tc_->getSize().x;
+    viewport[3] = tc_->getSize().y;
 
-	winX = static_cast<GLdouble>(x);
-	winY = static_cast<GLdouble>(viewport[3]) - static_cast<GLint>(y);
-	winZ = static_cast<GLdouble>(z);
+    winX = static_cast<GLdouble>(x);
+    winY = static_cast<GLdouble>(viewport[3]) - static_cast<GLint>(y);
+    winZ = static_cast<GLdouble>(z);
 
-	gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posXh, &posYh, &posZh);
+    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posXh, &posYh, &posZh);
 
-	tgt::vec3 returned = tgt::vec3(static_cast<float>(posXh), static_cast<float>(posYh), static_cast<float>(posZh));
-	return returned;
+    tgt::vec3 returned = tgt::vec3(static_cast<float>(posXh), static_cast<float>(posYh), static_cast<float>(posZh));
+    return returned;
 }
 
 void GeometryRenderer::process(LocalPortMapping* /*portMapping*/) {
@@ -185,11 +184,11 @@ void GeometryRenderer::process(LocalPortMapping* /*portMapping*/) {
 }
 
 Message* GeometryRenderer::call(Identifier ident,LocalPortMapping* portMapping) {
-	if (ident =="render") {
-		render(portMapping);
-		return 0;
-	}
-	return 0;
+    if (ident =="render") {
+        render(portMapping);
+        return 0;
+    }
+    return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -202,8 +201,7 @@ GeomLightWidget::GeomLightWidget()
 {
     setName("Light - Widget");
 
-	showLightWidget_.setAutoChange(true);
-	addProperty(&showLightWidget_);
+    addProperty(&showLightWidget_);
 
     // light parameters
     light_pos[0] = 0.0f;
@@ -224,32 +222,32 @@ GeomLightWidget::GeomLightWidget()
     light_specular[3] = 1.0f;
 
     // parameters for yellow plastic
-    ye_ambient[0]	= 0.25f;
-    ye_ambient[1]	= 0.2f;
-    ye_ambient[2]	= 0.07f;
-    ye_ambient[3]	= 1.0f;
-    ye_diffuse[0]	= 0.75f;
-    ye_diffuse[1]	= 0.61f;
-    ye_diffuse[2]	= 0.23f;
-    ye_diffuse[3]	= 1.0f;
-    ye_specular[0]	= 0.63f;
-    ye_specular[1]	= 0.56f;
-    ye_specular[2]	= 0.37f;
-    ye_specular[3]	= 1.0f;
-    ye_shininess	= 51.0f;
+    ye_ambient[0]    = 0.25f;
+    ye_ambient[1]    = 0.2f;
+    ye_ambient[2]    = 0.07f;
+    ye_ambient[3]    = 1.0f;
+    ye_diffuse[0]    = 0.75f;
+    ye_diffuse[1]    = 0.61f;
+    ye_diffuse[2]    = 0.23f;
+    ye_diffuse[3]    = 1.0f;
+    ye_specular[0]    = 0.63f;
+    ye_specular[1]    = 0.56f;
+    ye_specular[2]    = 0.37f;
+    ye_specular[3]    = 1.0f;
+    ye_shininess    = 51.0f;
 
     IDManager id1;
     id1.addNewPickObj("lightCtrlSph");
 
-	createCoProcessorOutport("coprocessor.light", &Processor::call);
-	createCoProcessorInport("coprocessor.proxygeometry");
+    createCoProcessorOutport("coprocessor.light", &Processor::call);
+    createCoProcessorInport("coprocessor.proxygeometry");
 
-	setIsCoprocessor(true);
+    setIsCoprocessor(true);
 }
 
 GeomLightWidget::~GeomLightWidget() {
-	MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
-				    (tgt::EventListener*)this));
+    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
+                    (tgt::EventListener*)this));
 }
 
 const Identifier GeomLightWidget::getClassName() const {
@@ -257,10 +255,10 @@ const Identifier GeomLightWidget::getClassName() const {
 }
 
 const std::string GeomLightWidget::getProcessorInfo() const {
-	return "Draws a yellow sphere that indicates the position of the lightsource.";
+    return "Draws a yellow sphere that indicates the position of the lightsource.";
 }
 
-Processor* GeomLightWidget::create() {
+Processor* GeomLightWidget::create() const {
     GeomLightWidget* glw = new GeomLightWidget();
     MsgDistr.postMessage(
         new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_,
@@ -270,7 +268,7 @@ Processor* GeomLightWidget::create() {
 
 void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
     IDManager id1;
-    if (id1.isClicked("lightCtrlSph", e->x(),tc_->getSize().y - e->y())) {
+    if (id1.isClicked("lightCtrlSph", e->x(), tc_->getSize().y - e->y())) {
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true), VoreenPainter::visibleViews_);
         invalidate();
@@ -280,7 +278,7 @@ void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
         lightPositionAbs_.y = lightPosition_.get().y;
         lightPositionAbs_.z = lightPosition_.get().z;
         startCoord_.x = e->coord().x;
-		startCoord_.y = e->coord().y;
+        startCoord_.y = e->coord().y;
     }
     else
         e->ignore();
@@ -289,16 +287,16 @@ void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
 void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e) {
     if (isClicked_) {
         e->accept();
-		GLint deltaX, deltaY;
+        GLint deltaX, deltaY;
 
-		GLint viewport[4];
+        GLint viewport[4];
         GLdouble modelview[16];
         GLdouble projection[16];
         GLdouble winX, winY, winZ;
-		GLdouble posX, posY, posZ;
+        GLdouble posX, posY, posZ;
 
-		deltaX = e->coord().x - startCoord_.x;
-		deltaY = startCoord_.y - e->coord().y;
+        deltaX = e->coord().x - startCoord_.x;
+        deltaY = startCoord_.y - e->coord().y;
 
         tgt::mat4 projection_tgt = camera_->getProjectionMatrix();
         tgt::mat4 modelview_tgt = camera_->getViewMatrix();
@@ -314,16 +312,17 @@ void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e) {
         }
         viewport[0] = 0;
         viewport[1] = 0;
-        viewport[2] = static_cast<GLint>(canvasSize_.x);
-        viewport[3] = static_cast<GLint>(canvasSize_.y);
+        // use size from texture container, as processor size may be changed by coarseness mode
+        viewport[2] = static_cast<GLint>(tc_->getSize().x);
+        viewport[3] = static_cast<GLint>(tc_->getSize().y);
 
-		posX = lightPositionAbs_.x;
-		posY = lightPositionAbs_.y;
-		posZ = lightPositionAbs_.z;
+        posX = lightPositionAbs_.x;
+        posY = lightPositionAbs_.y;
+        posZ = lightPositionAbs_.z;
 
         gluProject(posX, posY,posZ,modelview,projection, viewport,&winX, &winY, &winZ);
 
-		winX = winX + deltaX;
+        winX = winX + deltaX;
         winY = winY + deltaY;
 
         gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
@@ -351,44 +350,44 @@ void GeomLightWidget::mouseReleaseEvent(tgt::MouseEvent *e) {
 }
 
 void GeomLightWidget::render(LocalPortMapping* /*portMapping*/) {
-	if (showLightWidget_.get()) {
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
+    if (showLightWidget_.get()) {
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-		glShadeModel(GL_SMOOTH);
-		glEnable(GL_LIGHTING);
-		LGL_ERROR;
+        glShadeModel(GL_SMOOTH);
+        glEnable(GL_LIGHTING);
+        LGL_ERROR;
 
-		glLightfv(GL_LIGHT3,GL_POSITION,light_pos);
-		glLightfv(GL_LIGHT3,GL_AMBIENT,light_ambient);
-		glLightfv(GL_LIGHT3,GL_DIFFUSE,light_diffuse);
-		glLightfv(GL_LIGHT3,GL_SPECULAR,light_specular);
-		glDisable(GL_LIGHT0);
-		glEnable(GL_LIGHT3);
-		glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,light_diffuse);
+        glLightfv(GL_LIGHT3,GL_POSITION,light_pos);
+        glLightfv(GL_LIGHT3,GL_AMBIENT,light_ambient);
+        glLightfv(GL_LIGHT3,GL_DIFFUSE,light_diffuse);
+        glLightfv(GL_LIGHT3,GL_SPECULAR,light_specular);
+        glDisable(GL_LIGHT0);
+        glEnable(GL_LIGHT3);
+        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,light_diffuse);
 
-		GLUquadricObj* quadric = gluNewQuadric();
+        GLUquadricObj* quadric = gluNewQuadric();
 
-		//light sphere widget
-		glMaterialf( GL_FRONT_AND_BACK,	GL_SHININESS,	ye_shininess);
-		glMaterialfv(GL_FRONT_AND_BACK,	GL_AMBIENT,		ye_ambient);
-		glMaterialfv(GL_FRONT_AND_BACK,	GL_DIFFUSE,		ye_diffuse);
-		glMaterialfv(GL_FRONT_AND_BACK,	GL_SPECULAR,	ye_specular);
+        //light sphere widget
+        glMaterialf( GL_FRONT_AND_BACK,    GL_SHININESS,    ye_shininess);
+        glMaterialfv(GL_FRONT_AND_BACK,    GL_AMBIENT,        ye_ambient);
+        glMaterialfv(GL_FRONT_AND_BACK,    GL_DIFFUSE,        ye_diffuse);
+        glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    ye_specular);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-		glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+        glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
 
-		IDManager id1;
-		id1.startBufferRendering("lightCtrlSph");
-		gluSphere(quadric,0.03f,20,20);
-		id1.stopBufferRendering();
-		gluSphere(quadric,0.03f,20,20);
+        IDManager id1;
+        id1.startBufferRendering("lightCtrlSph");
+        gluSphere(quadric,0.03f,20,20);
+        id1.stopBufferRendering();
+        gluSphere(quadric,0.03f,20,20);
 
         glPopMatrix();
-		glPopAttrib();
+        glPopAttrib();
 
         gluDeleteQuadric(quadric);
-	}
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -400,9 +399,7 @@ GeomBoundingBox::GeomBoundingBox()
     , stippleFactor_("set.BoundingBoxStippleFactor", "Stipple Factor", 1, 0, 255)
     , stipplePattern_("set.BoundingBoxStipplePattern", "Stipple Pattern", 65535, 1,65535)
     , showGrid_("set.BoundingBoxShowGrid", "Show Grid", false)
-    , tilesX_("set.BoundingBoxTilesX", "Grid Elements X", 10, 2, 255)
-    , tilesY_("set.BoundingBoxTilesY", "Grid Elements Y", 10, 2, 255)
-    , tilesZ_("set.BoundingBoxTilesZ", "Grid Elements Z", 10, 2, 255)
+    , tilesProp_("BoutndingBoxTiles", "GridElements", tgt::ivec3(10), tgt::ivec3(2), tgt::ivec3(255))
 {
     setName("Bounding Box");
 
@@ -411,28 +408,16 @@ GeomBoundingBox::GeomBoundingBox()
     addProperty(&stipplePattern_);
     addProperty(&bboxColor_);
 
-    cond_ = new ConditionProp("GridCond", &showGrid_);
-    addProperty(cond_);
-    addProperty(&showGrid_);
-    tilesX_.setConditioned("GridCond", 1);
-    tilesY_.setConditioned("GridCond", 1);
-    tilesZ_.setConditioned("GridCond", 1);
-    addProperty(&tilesX_);
-    addProperty(&tilesY_);
-    addProperty(&tilesZ_);
+    addProperty(&tilesProp_);
 
-	createCoProcessorOutport("coprocessor.boundingbox",&Processor::call);
-	createCoProcessorInport("coprocessor.proxygeometry");
+    createCoProcessorOutport("coprocessor.boundingbox",&Processor::call);
+    createCoProcessorInport("coprocessor.proxygeometry");
 
-	setIsCoprocessor(true);
-}
-
-GeomBoundingBox::~GeomBoundingBox() {
-    delete cond_;
+    setIsCoprocessor(true);
 }
 
 const std::string GeomBoundingBox::getProcessorInfo() const {
-	return "Draws bounding box around the data set.";
+    return "Draws bounding box around the data set.";
 }
 
 void GeomBoundingBox::setLineWidth(float width) {
@@ -496,90 +481,58 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
     glEnd();
 
     if (showGrid_.get()) {
-        float tileDimX = (geomUrb[0]-geomLlf[0])/tilesX_.get();
-        float tileDimY = (geomUrb[1]-geomLlf[1])/tilesY_.get();
-        float tileDimZ = (geomUrb[2]-geomLlf[2])/tilesZ_.get();
+        tgt::vec3 tileDim((geomUrb[0]-geomLlf[0]), (geomUrb[1]-geomLlf[1]), (geomUrb[2]-geomLlf[2]));
+        const tgt::ivec3& tilePropValue = tilesProp_.get();
+        tileDim.x /= tilePropValue.x;
+        tileDim.y /= tilePropValue.y;
+        tileDim.z /= tilePropValue.z;
+
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glPolygonMode(GL_FRONT, GL_LINE);
         glBegin(GL_QUADS);
-        for (int x=1; x<=tilesX_.get(); x++) {
-            for (int y=1; y<=tilesY_.get(); y++) {
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomLlf[2]);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomLlf[2]);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+y*tileDimY, geomLlf[2]);
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+y*tileDimY, geomLlf[2]);
+        for (int x = 1; x <= tilePropValue.x; x++) {
+            for (int y = 1; y <= tilePropValue.y; y++) {
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1] + (y-1) * tileDim.y, geomLlf[2]);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1] + (y-1) * tileDim.y, geomLlf[2]);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1] + y * tileDim.y, geomLlf[2]);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1] + y * tileDim.y, geomLlf[2]);
 
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+y*tileDimY, geomUrb[2]);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+y*tileDimY, geomUrb[2]);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomUrb[2]);
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomUrb[2]);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1] + y * tileDim.y, geomUrb[2]);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1] + y * tileDim.y, geomUrb[2]);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1] + (y-1) * tileDim.y, geomUrb[2]);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1] + (y-1) * tileDim.y, geomUrb[2]);
             }
         }
-        for (int x=1; x<=tilesX_.get(); x++) {
-            for (int z=1; z<=tilesZ_.get(); z++) {
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1], geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1], geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1], geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1], geomLlf[2]+(z-1)*tileDimZ);
+        for (int x = 1; x <= tilePropValue.x; x++) {
+            for (int z = 1; z <= tilePropValue.z; z++) {
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1], geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1], geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomLlf[1], geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomLlf[1], geomLlf[2] + (z-1) * tileDim.z);
 
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomUrb[1], geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomUrb[1], geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomLlf[0]+x*tileDimX, geomUrb[1], geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomUrb[1], geomLlf[2]+z*tileDimZ);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomUrb[1], geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomUrb[1], geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomLlf[0] + x * tileDim.x, geomUrb[1], geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomLlf[0] + (x-1) * tileDim.x, geomUrb[1], geomLlf[2] + z * tileDim.z);
             }
         }
-        for (int y=1; y<=tilesY_.get(); y++) {
-            for (int z=1; z<=tilesZ_.get(); z++) {
-                glVertex3f(geomLlf[0], geomLlf[1]+(y-1)*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomLlf[0], geomLlf[1]+y*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomLlf[0], geomLlf[1]+y*tileDimY, geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomLlf[0], geomLlf[1]+(y-1)*tileDimY, geomLlf[2]+z*tileDimZ);
+        for (int y = 1; y <= tilePropValue.y; y++) {
+            for (int z = 1; z <= tilePropValue.z; z++) {
+                glVertex3f(geomLlf[0], geomLlf[1] + (y-1) * tileDim.y, geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomLlf[0], geomLlf[1] + y * tileDim.y, geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomLlf[0], geomLlf[1] + y * tileDim.y, geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomLlf[0], geomLlf[1] + (y-1) * tileDim.y, geomLlf[2] + z * tileDim.z);
 
-                glVertex3f(geomUrb[0], geomLlf[1]+(y-1)*tileDimY, geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomUrb[0], geomLlf[1]+y*tileDimY, geomLlf[2]+z*tileDimZ);
-                glVertex3f(geomUrb[0], geomLlf[1]+y*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
-                glVertex3f(geomUrb[0], geomLlf[1]+(y-1)*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
+                glVertex3f(geomUrb[0], geomLlf[1] + (y-1) * tileDim.y, geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomUrb[0], geomLlf[1] + y * tileDim.y, geomLlf[2] + z * tileDim.z);
+                glVertex3f(geomUrb[0], geomLlf[1] + y * tileDim.y, geomLlf[2] + (z-1) * tileDim.z);
+                glVertex3f(geomUrb[0], geomLlf[1] + (y-1) * tileDim.y, geomLlf[2] + (z-1) * tileDim.z);
             }
         }
         glEnd();
     }
     glPopAttrib();
-}
-
-void GeomBoundingBox::processMessage(Message* msg, const Identifier& /*dest*/) {
-    if (msg->id_ == "set.BoundingboxColor") {
-        bboxColor_.set(msg->getValue<tgt::Color>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxWidth") {
-        width_.set(msg->getValue<float>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxStippleFactor") {
-        stippleFactor_.set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxStipplePattern") {
-        stipplePattern_.set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxShowGrid") {
-        showGrid_.set(msg->getValue<bool>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxTilesX") {
-        tilesX_.set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxTilesY") {
-        tilesY_.set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.BoundingBoxTilesZ") {
-        tilesZ_.set(msg->getValue<int>());
-        invalidate();
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -592,14 +545,14 @@ PickingBoundingBox::PickingBoundingBox()
 {
     setName("Picking Bounding Box");
 
-	createCoProcessorOutport("coprocessor.pickingboundingbox",&Processor::call);
+    createCoProcessorOutport("coprocessor.pickingboundingbox",&Processor::call);
 
-	setIsCoprocessor(true);
-	createCoProcessorInport("coprocessor.proxygeometry");
+    setIsCoprocessor(true);
+    createCoProcessorInport("coprocessor.proxygeometry");
 }
 
 const std::string PickingBoundingBox::getProcessorInfo() const {
-	return "No information available.";
+    return "No information available.";
 }
 
 void PickingBoundingBox::render(LocalPortMapping* portMapping) {
@@ -689,14 +642,14 @@ GeomRegistrationMarkers::GeomRegistrationMarkers()
   disableReceiving_(false)
 {
 
-	createCoProcessorOutport("coprocessor.geommarkers",&Processor::call);
+    createCoProcessorOutport("coprocessor.geommarkers",&Processor::call);
 
-	setIsCoprocessor(true);
-	createCoProcessorInport("coprocessor.proxygeometry");
+    setIsCoprocessor(true);
+    createCoProcessorInport("coprocessor.proxygeometry");
 }
 
 const std::string GeomRegistrationMarkers::getProcessorInfo() const {
-	return "No information available.";
+    return "No information available.";
 }
 
 void GeomRegistrationMarkers::setDescription(std::string description){
@@ -728,7 +681,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
                      -dim.z + marker1_.z * dim.z *2);
 
         glColor3f(1.f,0.f,0.f);
-	    gluSphere(quadric,marker1Radius_,20,20);
+        gluSphere(quadric,marker1Radius_,20,20);
     }
 
     if (marker2Selected_) {
@@ -737,7 +690,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
         glTranslatef(-dim.x + marker2_.x *dim.x * 2,-dim.y + marker2_.y * dim.y * 2,
                      -dim.z + marker2_.z * dim.z *2);
         glColor3f(0.f,1.f,0.f);
-	    gluSphere(quadric,marker2Radius_,20,20);
+        gluSphere(quadric,marker2Radius_,20,20);
     }
 
     if (marker3Selected_) {

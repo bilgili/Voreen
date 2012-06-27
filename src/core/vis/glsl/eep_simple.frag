@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,11 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-varying vec4 eep_;
-
-/**
- * Use the entry exit positions interpolated by OpenGL as color value.
- */
-void main() {   
-    gl_FragColor = eep_;
+void main() {
+    gl_FragColor = gl_TexCoord[0];
 }

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -102,7 +102,7 @@ private:
     tgt::Texture* leftTex_;
     tgt::Texture* bottomTex_;
     tgt::Texture* rightTex_;
-    
+
     std::string textureNames_[6];
 };
 
@@ -115,7 +115,7 @@ public:
 
     void setCubePosX(float x);
     void setCubePosY(float y);
-    
+
     void setShowTextures(bool show);
     void loadTextures(Identifier set);
 
@@ -154,7 +154,7 @@ public:
         ALL_FEATURES                = 15 ///< Show everything
     };
 
-    OrientationPlugin(QWidget* parent = 0, MessageReceiver* rec = 0, tgt::QtCanvas* canvas = 0, 
+    OrientationPlugin(QWidget* parent = 0, tgt::QtCanvas* canvas = 0,
                       tgt::Trackball* track = 0, TextureContainer* tc = 0);
     ~OrientationPlugin();
 
@@ -191,7 +191,7 @@ public slots:
     void saveTrackballToDisk(std::string s, bool shutdown = false);
     void restoreTrackball();
     void restoreTrackball(std::string s);
-        
+
     void setRestore(bool b);
     bool getRestore();
 
@@ -209,7 +209,7 @@ public slots:
     virtual void createWidgets();
     virtual void createConnections();
 
-protected:       
+protected:
     /// Returns wether a certain feature is enabled.
     bool isFeatureEnabled(Features feature);
     virtual void timerEvent(QTimerEvent *event);
@@ -242,7 +242,7 @@ private:
     void startupRestore();
     /// enabled or disables timer based on whether rotation is active
     void setTimerState();
-        
+
     bool restore_;
 
     QGroupBox* orientationBox_;

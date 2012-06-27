@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,11 +31,23 @@
 
 namespace voreen {
 
-TransFuncMappingKey::TransFuncMappingKey(float i, const tgt::col4& color) : intensity_(i), 
-    colorL_(color), colorR_(color), split_(false)
+TransFuncMappingKey::TransFuncMappingKey(float i, const tgt::col4& color)
+    : intensity_(i)
+    , colorL_(color)
+    , colorR_(color)
+    , split_(false)
 {}
 
 TransFuncMappingKey::~TransFuncMappingKey() {
+}
+
+bool TransFuncMappingKey::operator==(const TransFuncMappingKey& key) {
+    return (intensity_ == key.intensity_) && (split_ == key.split_) &&
+           (colorR_    == key.colorR_) && (colorL_ == key.colorL_);
+}
+
+bool TransFuncMappingKey::operator!=(const TransFuncMappingKey& key) {
+    return !(*this == key);
 }
 
 void TransFuncMappingKey::setColorL(const tgt::col4& color) {
@@ -71,48 +83,48 @@ tgt::col4& TransFuncMappingKey::getColorR() {
 }
 
 void TransFuncMappingKey::setAlphaR(float a) {
-    colorR_.a = static_cast<uint8_t>(a*255.0);
+    colorR_.a = static_cast<uint8_t>(a*255.f);
     if (!split_)
-        colorL_.a = static_cast<uint8_t>(a*255.0);
+        colorL_.a = static_cast<uint8_t>(a*255.f);
 }
 
 void TransFuncMappingKey::setAlphaL(float a) {
-    colorL_.a = static_cast<uint8_t>(a*255.0);
+    colorL_.a = static_cast<uint8_t>(a*255.f);
     if (!split_)
-        colorR_.a = static_cast<uint8_t>(a*255.0);
+        colorR_.a = static_cast<uint8_t>(a*255.f);
 }
 
 float TransFuncMappingKey::getAlphaR() {
-    return colorR_.a / 255.0f; 
+    return colorR_.a / 255.f;
 }
 
 float TransFuncMappingKey::getAlphaL() {
-    return colorL_.a / 255.0f; 
+    return colorL_.a / 255.f;
 }
 
 bool TransFuncMappingKey::isSplit() {
-    return split_; 
+    return split_;
 }
 
-void TransFuncMappingKey::setSplit(bool split, bool useLeft/*=true*/) {
+void TransFuncMappingKey::setSplit(bool split, bool useLeft) {
     if (split_ == split)
         return;
     if (!split) {
-        //join colors:
+        //join colors
         if (useLeft)
             colorR_ = colorL_;
         else
             colorL_ = colorR_;
     }
-    split_ = split; 
+    split_ = split;
 }
 
 float TransFuncMappingKey::getIntensity() {
-    return intensity_; 
+    return intensity_;
 }
 
 void TransFuncMappingKey::setIntensity(float i) {
-    intensity_ = i; 
+    intensity_ = i;
 }
 
-} // namespace
+} // namespace voreen

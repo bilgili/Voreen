@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,15 +41,15 @@ namespace voreen {
  */
 class CacheRenderer : public Processor {
 public:
-	CacheRenderer();
+    CacheRenderer();
     ~CacheRenderer();
 
-	virtual void process(LocalPortMapping* portMapping);
+    virtual void process(LocalPortMapping* portMapping);
 
-	virtual const Identifier getClassName() const;
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create();
-        
+    virtual const Identifier getClassName() const;
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const;
+
     virtual int initializeGL();
 
 protected:
@@ -59,6 +59,6 @@ protected:
     tgt::Shader* raycastPrg_;
 };
 
-} // namespace
+} // namespace voreen
 
 #endif // VRN_CACHERENDERER_H

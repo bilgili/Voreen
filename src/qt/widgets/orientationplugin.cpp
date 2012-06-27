@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -79,6 +79,9 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
     TexMgr.dispose(leftTex_);
     TexMgr.dispose(topTex_);
     TexMgr.dispose(rightTex_);
+
+    //TODO: This is only used in the VoreenGlyph application. Should have some textures for the
+    //default case, too.
     if (set == "cardiac") {
         textureNames_[Front] = "";
         textureNames_[Back] = "";
@@ -87,14 +90,15 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
         textureNames_[Top] = "inferior2.png";
         textureNames_[Right] = "lateral2.png";
     }
+
     if (textureNames_[Front] != "")
         frontTex_ = TexMgr.load(textureNames_[Front]);
-    else 
+    else
         frontTex_ = 0;
 
     if (textureNames_[Back] != "")
         backTex_ = TexMgr.load(textureNames_[Back]);
-    else 
+    else
         backTex_ = 0;
 
     if (textureNames_[Bottom] != "")
@@ -109,7 +113,7 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
 
     if (textureNames_[Top] != "")
         topTex_ = TexMgr.load(textureNames_[Top]);
-    else 
+    else
         topTex_ = 0;
 
     if (textureNames_[Right] != "")
@@ -137,19 +141,19 @@ void SchematicOverlayObject::setCubeColorBack(tgt::Color color) {
 void SchematicOverlayObject::setCubeColorLeft(tgt::Color color) {
     cubeColorLeftObject_ = color;
 }
-    
+
 void SchematicOverlayObject::setCubeColorRight(tgt::Color color) {
     cubeColorRightObject_ = color;
 }
-    
+
 void SchematicOverlayObject::setCubeColorTop(tgt::Color color) {
     cubeColorTopObject_ = color;
 }
-    
+
 void SchematicOverlayObject::setCubeColorDown(tgt::Color color) {
     cubeColorDownObject_ = color;
 }
-    
+
 void SchematicOverlayObject::setCubeSize(float cubeSizeObject) {
     cubeSizeObject_ = cubeSizeObject;
 }
@@ -157,11 +161,11 @@ void SchematicOverlayObject::setCubeSize(float cubeSizeObject) {
 tgt::Color SchematicOverlayObject::getCubeColorFront() {
     return cubeColorFrontObject_;
 }
-    
+
 tgt::Color SchematicOverlayObject::getCubeColorBack() {
     return cubeColorBackObject_;
 }
-    
+
 tgt::Color SchematicOverlayObject::getCubeColorLeft() {
     return cubeColorLeftObject_;
 }
@@ -169,7 +173,7 @@ tgt::Color SchematicOverlayObject::getCubeColorLeft() {
 tgt::Color SchematicOverlayObject::getCubeColorRight() {
     return cubeColorRightObject_;
 }
-    
+
 tgt::Color SchematicOverlayObject::getCubeColorTop() {
     return cubeColorTopObject_;
 }
@@ -177,7 +181,7 @@ tgt::Color SchematicOverlayObject::getCubeColorTop() {
 tgt::Color SchematicOverlayObject::getCubeColorDown() {
     return cubeColorDownObject_;
 }
-    
+
 float SchematicOverlayObject::getCubeSize() {
     return cubeSizeObject_;
 }
@@ -246,56 +250,56 @@ void SchematicOverlayObject::renderCube() {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_TEXTURE_2D);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    
+
     //top
     if (showTextures_ && topTex_) {
         topTex_->bind();
         glColor4fv(cubeColorTopObject_.elem);
         glBegin(GL_QUADS);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 1.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorTopObject_.elem);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
-	//bottom
+    //bottom
     if (showTextures_ && bottomTex_) {
         bottomTex_->bind();
-	    glColor4fv(cubeColorDownObject_.elem);
+        glColor4fv(cubeColorDownObject_.elem);
         glBegin(GL_QUADS);
         glTexCoord2f(1.f, 1.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorDownObject_.elem);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
-	//front
+    //front
     if (showTextures_ && frontTex_) {
         frontTex_->bind();
         glColor4fv(cubeColorFrontObject_.elem);
@@ -303,20 +307,20 @@ void SchematicOverlayObject::renderCube() {
         glTexCoord2f(1.f, 1.f);
         glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorFrontObject_.elem);
         glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
     //back
@@ -325,70 +329,70 @@ void SchematicOverlayObject::renderCube() {
         glColor4fv(cubeColorBackObject_.elem);
         glBegin(GL_QUADS);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 1.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorBackObject_.elem);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
     //left
     if (showTextures_ && leftTex_) {
         leftTex_->bind();
-	    glColor4fv(cubeColorLeftObject_.elem);
+        glColor4fv(cubeColorLeftObject_.elem);
         glBegin(GL_QUADS);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 1.f);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorLeftObject_.elem);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f(-cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glEnd();
     }
-	//right
+    //right
     if (showTextures_ && rightTex_) {
         rightTex_->bind();
-	    glColor4fv(cubeColorRightObject_.elem);
+        glColor4fv(cubeColorRightObject_.elem);
         glBegin(GL_QUADS);
         glTexCoord2f(1.f, 0.f);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
         glTexCoord2f(1.f, 1.f);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 1.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
         glTexCoord2f(0.f, 0.f);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
     else {
         glBegin(GL_QUADS);
         glColor4fv(cubeColorRightObject_.elem);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
-	    glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_,-cubeSizeObject_);
+        glVertex3f( cubeSizeObject_, cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_, cubeSizeObject_);
+        glVertex3f( cubeSizeObject_,-cubeSizeObject_,-cubeSizeObject_);
         glEnd();
     }
 
@@ -413,7 +417,7 @@ QtCanvasSchematicOverlay::QtCanvasSchematicOverlay(tgt::QtCanvas* canvas)
     myIdMan.addNewPickObj("OrientationWidget.cubeLeftClicked");
     myIdMan.addNewPickObj("OrientationWidget.cubeRightClicked");
 
-	isClicked_ = 0;
+    isClicked_ = 0;
 
     cubeColorFront_ = new ColorProp("set.OrientationWidget.cubeColorFront", QObject::tr("Front color").toStdString(), tgt::Color(0.9f));
     cubeColorBack_ = new ColorProp("set.OrientationWidget.cubeColorBack", QObject::tr("Back color").toStdString(), tgt::Color(0.8f));
@@ -421,13 +425,6 @@ QtCanvasSchematicOverlay::QtCanvasSchematicOverlay(tgt::QtCanvas* canvas)
     cubeColorRight_ = new ColorProp("set.OrientationWidget.cubeColorRight", QObject::tr("Right color").toStdString(), tgt::Color(0.6f));
     cubeColorTop_ = new ColorProp("set.OrientationWidget.cubeColorTop", QObject::tr("Top color").toStdString(), tgt::Color(0.5f));
     cubeColorDown_ = new ColorProp("set.OrientationWidget.cubeColorDown", QObject::tr("Down color").toStdString(), tgt::Color(0.4f));
-
-    cubeColorFront_->setAutoChange(true);
-    cubeColorBack_->setAutoChange(true);
-    cubeColorLeft_->setAutoChange(true);
-    cubeColorRight_->setAutoChange(true);
-    cubeColorTop_->setAutoChange(true);
-    cubeColorDown_->setAutoChange(true);
 
     addProperty(cubeColorFront_);
     addProperty(cubeColorBack_);
@@ -439,10 +436,6 @@ QtCanvasSchematicOverlay::QtCanvasSchematicOverlay(tgt::QtCanvas* canvas)
     cubeSize_ = new FloatProp("set.OrientationWidget.cubeSize", QObject::tr("Cube size").toStdString(), 0.15f);
     cubePosX_ = new FloatProp("set.OrientationWidget.cubePosX", QObject::tr("Cube Pos X").toStdString(),  0.7f, -1.f, 1.f, false);
     cubePosY_ = new FloatProp("set.OrientationWidget.cubePosY", QObject::tr("Cube Pos Y").toStdString(), -0.95f, -1.f, 1.f, false);
-
-    cubeSize_->setAutoChange(true);
-    cubePosX_->setAutoChange(true);
-    cubePosY_->setAutoChange(true);
 
     addProperty(cubeSize_);
     addProperty(cubePosX_);
@@ -471,7 +464,7 @@ void QtCanvasSchematicOverlay::setCubePosY(float y) {
 }
 
 void QtCanvasSchematicOverlay::paint() {
-    
+
     if (!canvas_)
         return;
 
@@ -530,24 +523,23 @@ void QtCanvasSchematicOverlay::loadTextures(Identifier set) {
 
 /*-------------------------------------end orientation overlay--------------------------------------------------*/
 
-OrientationPlugin::OrientationPlugin(QWidget* parent, 
-                                     MessageReceiver* rec, 
+OrientationPlugin::OrientationPlugin(QWidget* parent,
                                      tgt::QtCanvas* canvas,
-                                     tgt::Trackball* track, 
+                                     tgt::Trackball* track,
                                      TextureContainer* tc)
-    : WidgetPlugin(parent, rec)
+    : WidgetPlugin(parent)
     , schematicOverlay_(canvas)
     , track_(track)
     , canvas_(canvas)
     , MIN_CAM_DIST(5)
     , MAX_CAM_DIST(1500)
-    , CAM_DIST_SCALE_FACTOR(100.f)
-    , AXIAL_VIEW(tgt::vec3(0.f,0.f,-1.f))
-    , CORONAL_VIEW(tgt::vec3(0.f,1.f,0.f))
-    , SAGITTAL_VIEW(tgt::vec3(1.f,0.f,0.f))
-    , AXIAL_INV_VIEW(tgt::vec3(0.f,0.f,1.f))
-    , CORONAL_INV_VIEW(tgt::vec3(0.f,-1.f,0.f))
-    , SAGITTAL_INV_VIEW(tgt::vec3(-1.f,0.f,0.f))
+    , CAM_DIST_SCALE_FACTOR(100.0f)
+    , AXIAL_VIEW(tgt::vec3(0.0f, 0.0f, -1.0f))
+    , CORONAL_VIEW(tgt::vec3(0.0f, 1.0f, 0.0f))
+    , SAGITTAL_VIEW(tgt::vec3(1.0f, 0.0f,0.0f))
+    , AXIAL_INV_VIEW(tgt::vec3(0.0f, 0.0f, 1.0f))
+    , CORONAL_INV_VIEW(tgt::vec3(0.0f, -1.0f, 0.0f))
+    , SAGITTAL_INV_VIEW(tgt::vec3(-1.0f, 0.0f, 0.0f))
     , features_(ALL_FEATURES)
     , tc_(tc)
 {
@@ -562,14 +554,14 @@ OrientationPlugin::OrientationPlugin(QWidget* parent,
     restore_ = false;
     startupRestore();
 
-    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::addCanvasOverlay_,
-                                                                         &schematicOverlay_), "mainview");
+    MsgDistr.postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::addCanvasOverlay_,
+                                                           &schematicOverlay_), "mainview");
     schematicOverlay_.setIsActivated(false);
 }
 
 OrientationPlugin::~OrientationPlugin() {
     delete timer_;
-    
+
     /*if (restore_)
         shutdownSave(true);
     else
@@ -577,8 +569,8 @@ OrientationPlugin::~OrientationPlugin() {
 }
 
 void OrientationPlugin::deinit() {
-    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::delCanvasOverlay_,
-                                                                         &schematicOverlay_), "mainview");
+    MsgDistr.postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::delCanvasOverlay_,
+                                                           &schematicOverlay_), "mainview");
     MsgDistr.remove(this);
 }
 
@@ -595,7 +587,7 @@ bool OrientationPlugin::isFeatureEnabled(OrientationPlugin::Features feature) {
 }
 
 void OrientationPlugin::createWidgets() {
-	resize(300,300);
+    resize(300,300);
 
     QVBoxLayout* mainLayout = new QVBoxLayout();
 
@@ -651,7 +643,7 @@ void OrientationPlugin::createWidgets() {
     vboxLayout->addWidget(rotateAroundX_);
     vboxLayout->addWidget(rotateAroundY_);
     vboxLayout->addWidget(rotateAroundZ_);
-    vboxLayout->addWidget(continueSpin_);
+//    vboxLayout->addWidget(continueSpin_);
     motionBox_->setLayout(vboxLayout);
     mainLayout->addWidget(motionBox_);
     if (!isFeatureEnabled(CONTINUOUS_MOTION))
@@ -669,10 +661,11 @@ void OrientationPlugin::createWidgets() {
     buRestoreTrackball_->setToolTip(tr("Load camera settings from a file"));
     buSaveTrackball_->setIcon(QIcon(":/icons/save.png"));
     buSaveTrackball_->setToolTip(tr("Save camera settings to a file"));
-    hboxLayout2->addWidget(cbRestoreOnStartup_ = new QCheckBox(tr("Restore on startup")));
-    if (restore_)
-        cbRestoreOnStartup_->setCheckState(Qt::Checked);
-    cbRestoreOnStartup_->setEnabled(false);
+    cbRestoreOnStartup_ = new QCheckBox(tr("Restore on startup"));
+//     hboxLayout2->addWidget(cbRestoreOnStartup_ = new QCheckBox(tr("Restore on startup")));
+//     if (restore_)
+//         cbRestoreOnStartup_->setCheckState(Qt::Checked);
+//     cbRestoreOnStartup_->setEnabled(false);
     hboxLayout2->addStretch();
 
     trackballBox_->setLayout(hboxLayout2);
@@ -707,16 +700,16 @@ void OrientationPlugin::createConnections() {
 
 void OrientationPlugin::enableOrientationOverlay(bool b) {
     schematicOverlay_.setIsActivated(b);
-    WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+    MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
 void OrientationPlugin::processMessage(Message* msg, const Identifier& dest) {
     MessageReceiver::processMessage(msg, dest);
 
-    if (isVisible() && msg->id_ == VoreenPainter::cameraChanged_ && 
+    if (isVisible() && msg->id_ == VoreenPainter::cameraChanged_ &&
          canvas_ && msg->getValue<tgt::Camera*>() == canvas_->getCamera())
     {
-        checkCameraState();    
+        checkCameraState();
     }
 }
 
@@ -764,11 +757,11 @@ void OrientationPlugin::mouseDoubleClickEvent(tgt::MouseEvent* /*e*/){
 }
 
 void OrientationPlugin::mouseReleaseEvent(tgt::MouseEvent* e) {
-	e->ignore();
+    e->ignore();
 }
 
 int OrientationPlugin::isClicked(int x, int y) {
-    if (!tc_ || !canvas_)
+    if (!canvas_)
         return 0;
 
     IDManager id1;
@@ -786,16 +779,16 @@ int OrientationPlugin::isClicked(int x, int y) {
     if (id1.isClicked("OrientationWidget.cubeRightClicked", x, canvas_->getSize().y - y))
         return 6;
 
-	return 0;
+    return 0;
 }
 
 void OrientationPlugin::toAbove() {
-    quat q = quat(0.f, 0.f, 0.f, 1.f);
+    quat q = quat(0.0f, 0.0f, 0.0f, 1.0f);
     applyOrientation(q);
 }
 
 void OrientationPlugin::toBelow() {
-    quat q = quat(1.f, 0.f, 0.f, 0.f);
+    quat q = quat(1.0f, 0.f, 0.f, 0.f);
     applyOrientation(q);
 }
 
@@ -805,13 +798,13 @@ void OrientationPlugin::toBehind() {
     // to be precise, but that seems to be some kind of edge case that breaks the modelview-matrix which
     // can also not be reached by turning the trackball by mouse.  So, we use a quaternion that is approximately
     // the mathematically correct one; the difference is so small that one cannot see any.
-    quat q = normalize(quat(0.00306279, 0.710406, 0.708503, 0.00167364));
+    quat q = normalize(quat(0.00306279f, 0.710406f, 0.708503f, 0.00167364f));
     applyOrientation(q);
 }
 
 void OrientationPlugin::toFront() {
-    float c = 0.5f * sqrtf(2.f);
-    quat q = quat(c, 0.f, 0.f, c);
+    const float c = 0.5f * sqrtf(2.0f);
+    quat q = quat(c, 0.0f, 0.0f, c);
     applyOrientation(q);
 }
 
@@ -841,19 +834,19 @@ void OrientationPlugin::applyOrientation(const quat& q) {
     //message = "set.cameraApplyOrientationAndDistanceAnimated";
     message = "set.cameraApplyOrientation";
 
-    WidgetPlugin::postMessage(new TemplateMessage<std::vector<float> >(message,
-        keyframe), MsgDistr.getCurrentViewId());
+    MsgDistr.postMessage(new TemplateMessage<std::vector<float> >(message, keyframe),
+        MsgDistr.getCurrentViewId());
 }
 
 void OrientationPlugin::updateDistance() {
     dist_ = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
     slDistance_->blockSignals(true);
-    WidgetPlugin::postMessage(new FloatMsg("set.cameraZoom", dist_), MsgDistr.getCurrentViewId());
+    MsgDistr.postMessage(new FloatMsg("set.cameraZoom", dist_), MsgDistr.getCurrentViewId());
     slDistance_->blockSignals(false);
 }
 
 void OrientationPlugin::orientationChanged(int index) {
-	switch (index) {
+    switch (index) {
     case 1:
         // axial (top to bottom)
         toAbove();
@@ -891,26 +884,26 @@ void OrientationPlugin::distanceSliderChanged(int value) {
 }
 
 void OrientationPlugin::distanceSliderPressed() {
-    WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
+    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
     updateDistance();
 }
 
 
 void OrientationPlugin::distanceSliderReleased() {
-    WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
     if (canvas_)
         canvas_->repaint();
 }
 
 
 void OrientationPlugin::timerEvent(QTimerEvent* /*event*/) {
-     
+
     if (!track_)
         return;
 
     if (rotateX_ || rotateY_ || rotateZ_) {
          continueSpin_->setCheckState(Qt::Unchecked);
-         WidgetPlugin::postMessage(new BoolMsg("switch.trackballContinuousSpin", false));
+         MsgDistr.postMessage(new BoolMsg("switch.trackballContinuousSpin", false));
      }
 
     if (rotateX_)
@@ -923,9 +916,9 @@ void OrientationPlugin::timerEvent(QTimerEvent* /*event*/) {
         track_->rotate(tgt::vec3(0.f, 0.f, 1.f), 0.05f);
 
     if (rotateX_ || rotateY_ || rotateZ_) {
-        WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
-        WidgetPlugin::postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()));
-        WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
+        MsgDistr.postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()));
+        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         if (comboOrientation_->currentIndex() != 0)
             comboOrientation_->setCurrentIndex(0);
     }
@@ -939,20 +932,20 @@ void OrientationPlugin::checkCameraState() {
         slDistance_->blockSignals(false);
 
         // update orientation box
-        const float MAX_DEVIATION = 1e-4;
+        const float MAX_DEVIATION = 1.0e-4f;
         tgt::vec3 look = track_->getCamera()->getLook();
         comboOrientation_->blockSignals(true);
-        if (abs(tgt::dot(AXIAL_VIEW,look)-1.f) < MAX_DEVIATION)
+        if (abs(tgt::dot(AXIAL_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(1);
-        else if (abs(tgt::dot(CORONAL_VIEW,look)-1.f) < MAX_DEVIATION)
+        else if (abs(tgt::dot(CORONAL_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(2);
-        else if (abs(tgt::dot(SAGITTAL_VIEW,look)-1.f) < MAX_DEVIATION)
+        else if (abs(tgt::dot(SAGITTAL_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(3);
-        else if (abs(tgt::dot(AXIAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
+        else if (abs(tgt::dot(AXIAL_INV_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(4);
-        else if (abs(tgt::dot(CORONAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
+        else if (abs(tgt::dot(CORONAL_INV_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(5);
-        else if (abs(tgt::dot(SAGITTAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
+        else if (abs(tgt::dot(SAGITTAL_INV_VIEW, look) - 1.0f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(6);
         else
             comboOrientation_->setCurrentIndex(0);
@@ -979,22 +972,22 @@ bool OrientationPlugin::getRestore() {
 }
 
 void OrientationPlugin::enableContSpin(bool b) {
-    WidgetPlugin::postMessage(new BoolMsg("switch.trackballContinuousSpin", b));
+    MsgDistr.postMessage(new BoolMsg("switch.trackballContinuousSpin", b));
 }
 
 void OrientationPlugin::enableX(bool b) {
     if (!b && !(rotateY_ || rotateZ_)) {
-        WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-        WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateX_ = b;
     setTimerState();
 }
-        
+
 void OrientationPlugin::enableY(bool b) {
     if (!b && !(rotateX_ || rotateZ_)) {
-        WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-        WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateY_ = b;
     setTimerState();
@@ -1002,8 +995,8 @@ void OrientationPlugin::enableY(bool b) {
 
 void OrientationPlugin::enableZ(bool b) {
     if (!b && !(rotateX_ || rotateY_)) {
-        WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-        WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateZ_ = b;
     setTimerState();
@@ -1026,40 +1019,42 @@ void OrientationPlugin::saveTrackballToDisk() {
 
 void OrientationPlugin::saveTrackballToDisk(std::string fn, bool shutdown) {
     TiXmlDocument doc;
-    TiXmlComment * comment;
-    std::string s;
     TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "", "");
     doc.LinkEndChild(decl);
 
-    TiXmlElement * root = new TiXmlElement("root");
+    TiXmlElement* root = new TiXmlElement("root");
     doc.LinkEndChild(root);
 
     tgt::quat tripod = track_->getCamera()->getQuat();
     tgt::vec3 pos    = track_->getCamera()->getPosition();
-
-    comment = new TiXmlComment();
-    s = "Saved Flyby";
-    comment->SetValue(s.c_str());
-    root->LinkEndChild(comment);
+    tgt::vec3 focus = track_->getCamera()->getFocus();
+    tgt::vec3 upVector = track_->getCamera()->getUpVector();
 
     TiXmlElement* sdElem = new TiXmlElement("shutdown");
     root->LinkEndChild(sdElem);
     sdElem->SetAttribute("shut", static_cast<int>(shutdown));
 
-    TiXmlElement* quatElem;
-    quatElem = new TiXmlElement("tripod");
-    root->LinkEndChild(quatElem);
-    quatElem->SetDoubleAttribute("x", tripod.x);
-    quatElem->SetDoubleAttribute("y", tripod.y);
-    quatElem->SetDoubleAttribute("z", tripod.z);
-    quatElem->SetDoubleAttribute("w", tripod.w);
+    TiXmlComment* comment = new TiXmlComment();
+    comment->SetValue("Saved Camera");
+    root->LinkEndChild(comment);
 
-    TiXmlElement* posElem;
-    posElem = new TiXmlElement("position");
+    TiXmlElement* posElem = new TiXmlElement("position");
     root->LinkEndChild(posElem);
     posElem->SetDoubleAttribute("x", pos.x);
     posElem->SetDoubleAttribute("y", pos.y);
     posElem->SetDoubleAttribute("z", pos.z);
+
+    TiXmlElement* focusElem = new TiXmlElement("focus");
+    root->LinkEndChild(focusElem);
+    focusElem->SetDoubleAttribute("x", focus.x);
+    focusElem->SetDoubleAttribute("y", focus.y);
+    focusElem->SetDoubleAttribute("z", focus.z);
+
+    TiXmlElement* upVectorElem = new TiXmlElement("upVector");
+    root->LinkEndChild(upVectorElem);
+    upVectorElem->SetDoubleAttribute("x", upVector.x);
+    upVectorElem->SetDoubleAttribute("y", upVector.y);
+    upVectorElem->SetDoubleAttribute("z", upVector.z);
 
     doc.SaveFile(fn.c_str());
 }
@@ -1070,40 +1065,37 @@ void OrientationPlugin::restoreTrackball(std::string fn) {
         return;
 
     TiXmlHandle hDoc(&doc);
-    TiXmlElement* elem;
     TiXmlHandle hRoot(0);
 
-    elem=hDoc.FirstChildElement().Element();
+    TiXmlElement* elem = hDoc.FirstChildElement().Element();
     // should always have a valid root but handle gracefully if it doesn't
     if (!elem)
         return;
 
     // save this for later
-    hRoot=TiXmlHandle(elem);
-
-    TiXmlElement* tri = hRoot.FirstChild("tripod").Element();
-
-    tgt::quat tripod;
-    tgt::vec3 pos;
-
-    tri->QueryFloatAttribute("x", &(tripod.x));
-    tri->QueryFloatAttribute("y", &(tripod.y));
-    tri->QueryFloatAttribute("z", &(tripod.z));
-    tri->QueryFloatAttribute("w", &(tripod.w));
-
-    TiXmlElement* posElem;
-    posElem = tri->NextSiblingElement();
+    hRoot = TiXmlHandle(elem);
+    tgt::vec3 pos(0.0);
+    TiXmlElement* posElem = hRoot.FirstChild("position").Element();//tri->NextSiblingElement();
     posElem->QueryFloatAttribute("x", &(pos.x));
     posElem->QueryFloatAttribute("y", &(pos.y));
     posElem->QueryFloatAttribute("z", &(pos.z));
 
-    track_->reset();
-    track_->rotate(tripod);
-    track_->getCamera()->setPosition(pos);
+    tgt::vec3 focus(0.0f, 0.0f, -1.0f);
+    TiXmlElement* focusElem = posElem->NextSiblingElement();
+    focusElem->QueryFloatAttribute("x", &(focus.x));
+    focusElem->QueryFloatAttribute("y", &(focus.y));
+    focusElem->QueryFloatAttribute("z", &(focus.z));
 
-    WidgetPlugin::postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()), VoreenPainter::visibleViews_);
+    tgt::vec3 upVector(0.0f, 1.0f, 0.0f);
+    TiXmlElement* upVectorElem = focusElem->NextSiblingElement();
+    upVectorElem->QueryFloatAttribute("x", &(upVector.x));
+    upVectorElem->QueryFloatAttribute("y", &(upVector.y));
+    upVectorElem->QueryFloatAttribute("z", &(upVector.z));
 
-    WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+    track_->reinitializeCamera(pos, focus, upVector);
+
+    MsgDistr.postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()));
+    MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
 void OrientationPlugin::restoreTrackball() {
@@ -1157,7 +1149,7 @@ void OrientationPlugin::setTimerState() {
     } else {
         if (rotateX_ || rotateY_ || rotateZ_)
             timer_->start(25, this);
-    }    
+    }
 }
 
 } // namespace voreen

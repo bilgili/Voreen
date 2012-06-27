@@ -5,9 +5,11 @@
 # common Qt resource files
 qt : RESOURCES = "$${VRN_HOME}/resource/vrn_share/vrn_app.qrc"
 
+qt : PRECOMPILED_HEADER = ../pch_qtapp.h
+
 ####################################################
 # Platform-dependant configuration
-#################################################### 
+####################################################
 
 win32 {
   MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
@@ -16,6 +18,8 @@ win32 {
         "$${VRN_HOME}/ext/glew/lib"
 
   qt : LIBS += "$${VRN_HOME}/$(ConfigurationName)/voreen_qt.lib"
+  qt : LIBS += -lqtmain
+
   LIBS += "$${VRN_HOME}/$(ConfigurationName)/voreen_core.lib" \
           "$${VRN_HOME}/ext/glew/lib/$(ConfigurationName)/glew32s.lib"
 
@@ -26,11 +30,11 @@ win32 {
 
   contains(DEFINES, VRN_WITH_DCMTK) {
     LIBS += "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmimage.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmimgle.lib" \ 
-	    "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmnet.lib" \ 
-	    "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmdata.lib" \
+            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmimgle.lib" \
+            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmnet.lib" \
+            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmdata.lib" \
             "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmjpeg.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg8.lib" \ 
+            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg8.lib" \
             "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg12.lib" \
             "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg16.lib" \
             "$${DCMTK_DIR}/lib/$(ConfigurationName)/ofstd.lib" \
@@ -51,34 +55,41 @@ win32 {
   contains(DEFINES, VRN_WITH_TIFF) {
     LIBS += "$${TIFF_DIR}/lib/libtiff.lib"
   }
+
   contains(DEFINES, VRN_WITH_ZIP) {
     contains(MSC_VER, "_MSC_VER=1400") {
-      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/$(ConfigurationName)/ziparch_vc2005_S.lib"
+      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2005/ZipArchive.lib"
     }
-    else {
-      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/$(ConfigurationName)/ziparchS.lib"
+    contains(MSC_VER, "_MSC_VER=1500") {
+      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2008/$(ConfigurationName)/ZipArchive.lib"
     }
   }
+
   contains(DEFINES, VRN_WITH_PYTHON) {
       LIBS += "$${PYTHON_DIR}/lib/$(ConfigurationName)/python25.lib"
   }
-  contains(DEFINES, VRN_WITH_FREETYPE) {
+
+  contains(DEFINES, VRN_WITH_FONTRENDERING) {
     LIBS += "$${FREETYPE_DIR}/lib/freetype.lib"
-  }
-  contains(DEFINES, VRN_WITH_FTGL) {
-    !contains(DEFINES, VRN_WITH_FREETYPE) {
-      error("VRN_WITH_FTGL need VRN_WITH_FREETYPE. Exiting.")
-    }
-    LIBS += "$${FTGL_DIR}/lib/ftgl_dynamic_MT.lib"
+    LIBS += "$${FTGL_DIR}/lib/ftgl.lib"
     INCLUDEPATH += "$${FTGL_DIR}/include"
   }
+
+  contains(DEFINES, VRN_WITH_FFMPEG) {
+    LIBS += "$${FFMPEG_DIR}/win32/avcodec.lib"
+    LIBS += "$${FFMPEG_DIR}/win32/avdevice.lib"
+    LIBS += "$${FFMPEG_DIR}/win32/avformat.lib"
+    LIBS += "$${FFMPEG_DIR}/win32/avutil.lib"
+    LIBS += "$${FFMPEG_DIR}/win32/swscale.lib"
+  }
+  
   contains(DEFINES, VRN_WITH_DCMTK) {
     LIBS += "$${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkeay.lib"
     LIBS += "$${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkssl.lib"
   }
 
   contains(DEFINES, VRN_WITH_BUGTRAP) {
-    LIBS += "$${BUGTRAP_DIR}/Win32/BugTrap/BugTrap.lib"
+    LIBS += "$${BUGTRAP_DIR}/lib/win32/BugTrap.lib"
   }
 
   contains(DEFINES, VRN_WITH_BOX2D) {
@@ -97,16 +108,6 @@ win32 {
     LIBS += -lWbemUuid
   }
 
-  contains(DEFINES, VRN_WITH_QWT) {
-    INCLUDEPATH += "$${VRN_HOME}/ext/qwt/include"
-    LIBS += "$${VRN_HOME}/ext/qwt/lib/$(ConfigurationName)/qwt5.lib"
-    DEFINES += QWT_DLL
-  }
-
-  contains(DEFINES, VRN_WITH_BOOST) {
-    QMAKE_LIBDIR += "$${VRN_HOME}/ext/boost/lib/debug"
-    QMAKE_LIBDIR += "$${VRN_HOME}/ext/boost/lib/release"
-  }
 }
 
 unix {
@@ -119,12 +120,13 @@ unix {
 
   !macx: LIBS += -lGL -lGLU
   LIBS += -lGLEW
-  qt : LIBS += -lvoreen_qt 
+  qt : LIBS += -lvoreen_qt
   LIBS += -lvoreen_core
 
   contains(DEFINES, VRN_WITH_DEVIL) {
-    LIBS += -lIL 
+    LIBS += -lIL
   }
+
   contains(DEFINES, VRN_WITH_TIFF) {
     LIBS += -ltiff
   }
@@ -134,11 +136,8 @@ unix {
   contains(DEFINES, VRN_WITH_CLIBPDF) {
     LIBS += -lcpdf
   }
-  contains(DEFINES, VRN_WITH_FTGL) {
-    LIBS += -lftgl
-  }
-  contains(DEFINES, VRN_WITH_FREETYPE) {
-    LIBS += -lfreetype
+  contains(DEFINES, VRN_WITH_FONTRENDERING) {
+    LIBS += -lfreetype -lftgl
   }
   contains(DEFINES, VRN_WITH_DCMTK) {
     LIBS += -ldcmimage -ldcmimgle -ldcmnet -ldcmdata \
@@ -146,11 +145,16 @@ unix {
 
     LIBS += -ldcmtls
   }
-}
+  
+  contains(DEFINES, VRN_WITH_FFMPEG) {
+    # It is important that this comes after linking the voreen_* libs.
+    LIBS += -lbz2 -lavformat -lavcodec -lavutil -lswscale
+  }
 
-macx {
-  # icon for the application bundle
-  ICON = "$${VRN_HOME}/resource/vrn_share/icons/icon.icns"
+  !isEmpty(INSTALL_PREFIX) {
+    target.path = $$INSTALLPATH_BIN
+    INSTALLS += target
+  }
 }
 
 ### Local Variables:

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,14 +28,11 @@
  **********************************************************************/
 
 #include "rptguiitem.h"
-#include "rptarrow.h"
-#include "voreen/core/vis/processors/processor.h"
-#include <iostream>
-#include <typeinfo>
-#include <time.h>
 
-#include "rptprocessoritem.h"
-#include "rptaggregationitem.h"
+#include "voreen/core/vis/processors/port.h"
+#include "voreen/core/vis/processors/processor.h"
+
+#include "rptarrow.h"
 #include "rptpropertysetitem.h"
 
 
@@ -44,28 +41,18 @@ namespace voreen {
 RptGuiItem::RptGuiItem(std::string name, QGraphicsItem* parent)
     : QGraphicsItem(parent)
 {
-    textItem_ = new RptTextItem("");
-    textItem_->setPlainText(QString(name.c_str()));
-    textItem_->setParentItem(this);
+    textItem_ = new RptTextItem(name.c_str(), this);
     textItem_->moveBy(3, boundingRect().height()/2 - textItem_->boundingRect().height()/2);
+    QObject::connect(textItem_, SIGNAL(renameFinished()), this, SLOT(renameFinished()));
+    QObject::connect(textItem_, SIGNAL(textChanged()), this, SLOT(nameChanged()));
 
     setFlag(ItemIsMovable);
     setFlag(ItemIsSelectable);
     setAcceptsHoverEvents(true);
     setZValue(1);
-    textItem_->setFlag(QGraphicsItem::ItemIsSelectable, false);
-
-    QObject::connect(textItem_, SIGNAL(sendText(std::string)), this, SLOT(renameSlot(std::string)));
-
-    collisionPriority_ = -1;
 }
 
 RptGuiItem::~RptGuiItem() {
-    contextMenu_.disconnect();
-
-    //the textitem_ and all RptPortItems in the vectors are automatically
-    //deleted by qt because they are children of the RptGuiItem. So we must
-    //not delete them here.
 }
 
 void RptGuiItem::repositionPorts() {
@@ -90,24 +77,8 @@ void RptGuiItem::repositionPorts() {
     }
 }
 
-std::string RptGuiItem::getName() const {
+const std::string RptGuiItem::getName() const {
     return textItem_->toPlainText().toStdString();
-}
-
-void RptGuiItem::setName(std::string name) {
-    prepareGeometryChange();
-    textItem_->setPlainText(QString(name.c_str()));
-    update();
-    repositionPorts();
-}
-
-void RptGuiItem::renameSlot(std::string name) {
-    setName(name);
-    textItem_->setTextInteractionFlags(Qt::NoTextInteraction);
-    textItem_->setFlag(QGraphicsItem::ItemIsSelectable,false);
-    repositionPorts();
-    adjustArrows();
-    scene()->invalidate();
 }
 
 RptPortItem* RptGuiItem::getInport(Identifier type) {
@@ -135,7 +106,7 @@ RptPortItem* RptGuiItem::getOutport(Identifier type) {
             if (coProcessorOutports_[i]->getPortType() == type) {
                 return coProcessorOutports_.at(i);
             }
-        }    
+        }
     }
     else {
         for (size_t i=0; i<outports_.size(); i++) {
@@ -148,27 +119,27 @@ RptPortItem* RptGuiItem::getOutport(Identifier type) {
 }
 
 RptPortItem* RptGuiItem::getPortItem(Identifier ident) {
-	for (size_t i=0; i <inports_.size(); i++) {
-		if (inports_.at(i)->getPortType() == ident) 
-			return inports_.at(i);
-	}
+    for (size_t i=0; i <inports_.size(); i++) {
+        if (inports_.at(i)->getPortType() == ident)
+            return inports_.at(i);
+    }
 
-	for (size_t i=0; i <outports_.size(); i++) {
-		if (outports_.at(i)->getPortType() == ident) 
-			return outports_.at(i);
-	}
+    for (size_t i=0; i <outports_.size(); i++) {
+        if (outports_.at(i)->getPortType() == ident)
+            return outports_.at(i);
+    }
 
-	for (size_t i=0; i <coProcessorInports_.size(); i++) {
-		if (coProcessorInports_.at(i)->getPortType() == ident) 
-			return coProcessorInports_.at(i);
-	}
+    for (size_t i=0; i <coProcessorInports_.size(); i++) {
+        if (coProcessorInports_.at(i)->getPortType() == ident)
+            return coProcessorInports_.at(i);
+    }
 
-	for (size_t i=0; i <coProcessorOutports_.size(); i++) {
-		if (coProcessorOutports_.at(i)->getPortType() == ident) 
-			return coProcessorOutports_.at(i);
-	}
-	
-	return 0;
+    for (size_t i=0; i <coProcessorOutports_.size(); i++) {
+        if (coProcessorOutports_.at(i)->getPortType() == ident)
+            return coProcessorOutports_.at(i);
+    }
+
+    return 0;
 }
 
 
@@ -266,7 +237,7 @@ bool RptGuiItem::testConnect(RptGuiItem* dest) {
         for (size_t i=0; i<outports.size(); i++) {
             if (outports[i]->getPortType().getSubString(0) == inports[j]->getPortType().getSubString(0)) {
                 bool success2 = testConnect(outports[i], inports[j]);
-                if (!success) 
+                if (!success)
                     success = success2;
                 outports.erase(outports.begin() + i);
                 break;
@@ -486,7 +457,7 @@ void RptGuiItem::removeFromScene() {
 }
 
 void RptGuiItem::removeArrows(RptGuiItem* item) {
-    for (size_t i=0; i<outports_.size(); i++) {       
+    for (size_t i=0; i<outports_.size(); i++) {
         for (size_t j=0; j<outports_[i]->getArrowList().size(); j++) {
             if (outports_[i]->getArrowList().at(j)->getDestNode()->parentItem() == item) {
                 scene()->removeItem(outports_[i]->getArrowList().at(j));
@@ -496,7 +467,7 @@ void RptGuiItem::removeArrows(RptGuiItem* item) {
     }
 
     // --- coprocessor ports ---
-    for (size_t i=0; i < coProcessorOutports_.size(); i++) {       
+    for (size_t i=0; i < coProcessorOutports_.size(); i++) {
         for (size_t j=0; j<coProcessorOutports_[i]->getArrowList().size(); j++) {
             if (coProcessorOutports_[i]->getArrowList().at(j)->getDestNode()->parentItem() == item) {
                 scene()->removeItem(coProcessorOutports_[i]->getArrowList().at(j));
@@ -545,32 +516,6 @@ QRectF RptGuiItem::boundingRect() const {
     return newRect;
 }
 
-void RptGuiItem::paint(QPainter* /*painter*/, const QStyleOptionGraphicsItem* /*option*/, QWidget*) {
-    //painter->setPen(Qt::NoPen);
-    //painter->setBrush(Qt::darkGray);
-    //QRectF shadowRect(boundingRect().left()+3,boundingRect().top()+3,boundingRect().width(), boundingRect().height());
-    //painter->drawRect(shadowRect);
-    //
-    //painter->setBrush(Qt::white);
-    //painter->setPen(QPen(Qt::black, 0));
-
-    ///*if (option->state & QStyle::State_Sunken) {
-    //newCursor.setShape(Qt::CursorShape::ClosedHandCursor);
-    //setCursor(newCursor);
-    //}*/
-    //
-    //if (option->state & QStyle::State_MouseOver) {
-    //    painter->setPen(QPen(Qt::red, 0));
-    //    //std::cout << "Hover" << std::endl;  
-    //}
-    //if (option->state & QStyle::State_Selected) {
-    //    painter->setBrush(Qt::yellow);
-    //}
-    //    
-    //painter->drawRect(boundingRect());
-
-}
-
 void RptGuiItem::adjustArrows() {
     // incoming arrows
     for (size_t i=0; i<inports_.size(); i++) {
@@ -598,71 +543,57 @@ void RptGuiItem::adjustArrows() {
 
 }
 
-QVariant RptGuiItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+QVariant RptGuiItem::itemChange(GraphicsItemChange change, const QVariant& value) {
     if (change == ItemPositionChange) {
         adjustArrows();
     }
+    else if (change == ItemSelectedChange) {
+        if (!value.toBool() && (textItem_->textInteractionFlags() & Qt::TextEditorInteraction))
+            // item is deselected and in renaming mode -> finish renaming
+            renameFinished();
+    }
+
     return QGraphicsItem::itemChange(change, value);
 }
 
-void RptGuiItem::createContextMenu() {
-    QAction* deleteAction = new QAction(tr("Delete (Del)"), this);
-    QAction* renameAction = new QAction(tr("Rename"), this);
-
-    // add actions to context menu
-    contextMenu_.addAction(renameAction);
-    contextMenu_.addAction(deleteAction);
-
-    // connect actions
-    QObject::connect(renameAction, SIGNAL(triggered()), this, SLOT(renameActionSlot()));
-    QObject::connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteActionSlot()));
-
-    textItem_->setContextMenu(&contextMenu_);
-}
-
-void RptGuiItem::deleteActionSlot() {
-    emit deleteSignal();
-}
-
-void RptGuiItem::renameActionSlot() {
+void RptGuiItem::enterRenameMode() {
     textItem_->setTextInteractionFlags(Qt::TextEditorInteraction);
-    textItem_->setEnabled(true);
-    textItem_->setFlag(QGraphicsItem::ItemIsSelectable);
-    textItem_->setSelected(true);
     textItem_->setFlag(QGraphicsItem::ItemIsFocusable, true);
     textItem_->setFocus();
 }
 
-void RptGuiItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    QGraphicsItem::mousePressEvent(event);
+void RptGuiItem::renameFinished() {
+    textItem_->setTextInteractionFlags(Qt::NoTextInteraction);
+    textItem_->setFlag(QGraphicsItem::ItemIsFocusable, false);
+    textItem_->setFlag(QGraphicsItem::ItemIsSelectable, false);
+    nameChanged();
 }
 
-void RptGuiItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
-    QGraphicsItem::mouseMoveEvent(event);
+void RptGuiItem::nameChanged() {
+    prepareGeometryChange();
+    repositionPorts();
+    adjustArrows();
+    if (scene())
+        scene()->invalidate();
 }
 
-void RptGuiItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+void RptGuiItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     adjustArrows();
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void RptGuiItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
-    setSelected(true);
-    contextMenu_.exec(event->screenPos());
-}
-
 void RptGuiItem::contentChanged() {
+    //FIXME: this signal is not connected to any slot (cdoer)
     emit changed();
 }
 
 // ----------------------------------------------------------------------------
 
-
 RptPortItem::RptPortItem(Identifier type, Port* port, RptGuiItem* parent)
     : QGraphicsItem(parent)
     , type_(type)
-    , port_(port)        
-{  
+    , port_(port)
+{
     setToolTip(type.getName().c_str());
     setColor();
     setFlag(ItemIsSelectable);
@@ -694,7 +625,7 @@ void RptPortItem::setColor() {
         color_ = Qt::gray;
         sunkenColor_ = Qt::darkGray;
     }
-	color_.setAlpha(100);
+    color_.setAlpha(100);
 }
 
 bool RptPortItem::isOutport() {
@@ -765,12 +696,12 @@ QRectF RptPortItem::boundingRect() const {
     return rect;
 }
 
-void RptPortItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) {    
+void RptPortItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* /*widget*/) {
     painter->setPen(QPen(color_, 2));
-	painter->setBrush(QColor(255,255,255,150));
+    painter->setBrush(QColor(255,255,255,150));
 
     if (option->state & QStyle::State_Sunken) {
-        painter->setBrush(QColor(0,0,0,150));
+        painter->setBrush(sunkenColor_);
     }
     if (option->state & QStyle::State_MouseOver) {
         painter->setBrush(color_);
@@ -779,16 +710,13 @@ void RptPortItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
 
 }
 
-QVariant RptPortItem::itemChange(GraphicsItemChange change, const QVariant &value) {
-    return QGraphicsItem::itemChange(change, value);
-}
-
 void RptPortItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (isOutport()) {
         arrowList_.push_back(new RptArrow(this));
         //TODO: This line produces a warning
-	    scene()->addItem(arrowList_.at(arrowList_.size()-1));
-		arrowList_.at(arrowList_.size()-1)->adjust(event->scenePos());
+        scene()->addItem(arrowList_.at(arrowList_.size()-1));
+        QPointF scenePos = event->scenePos();
+        arrowList_.at(arrowList_.size() - 1)->adjust(scenePos);
     }
 
     QGraphicsItem::mousePressEvent(event);
@@ -796,7 +724,8 @@ void RptPortItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 
 void RptPortItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     if (isOutport()) {
-        arrowList_.at(arrowList_.size()-1)->adjust(event->scenePos());
+        QPointF scenePos = event->scenePos();
+        arrowList_.at(arrowList_.size()-1)->adjust(scenePos);
     }
     QGraphicsItem::mouseMoveEvent(event);
 }
@@ -814,27 +743,28 @@ void RptPortItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
                     getParent()->contentChanged();
                 }
                 else {
-                    delete(arrowList_.at(arrowList_.size()-1));
-	                arrowList_.pop_back();
+                    delete arrowList_.at(arrowList_.size()-1);
+                    arrowList_.pop_back();
                 }
             }
 
             // released over gui item
-            else if (item->type() == RptProcessorItem::Type
-                || item->type() == RptAggregationItem::Type
-                || item->type() == RptTextItem::Type) { // text item
-                    RptGuiItem* guiItem = (item->type() == RptTextItem::Type) ? static_cast<RptGuiItem*>(item->parentItem()) : static_cast<RptGuiItem*>(item);
-                    getParent()->connect(this, guiItem);
-                    getParent()->contentChanged();
+            else if (item->type() == RptProcessorItem::Type   ||
+                     item->type() == RptAggregationItem::Type ||
+                     item->type() == RptTextItem::Type)
+            {
+                RptGuiItem* guiItem = (item->type() == RptTextItem::Type) ? static_cast<RptGuiItem*>(item->parentItem()) : static_cast<RptGuiItem*>(item);
+                getParent()->connect(this, guiItem);
+                getParent()->contentChanged();
             }
             else {
-                delete(arrowList_.at(arrowList_.size()-1));
-	            arrowList_.pop_back();
+                delete arrowList_.at(arrowList_.size()-1);
+                arrowList_.pop_back();
             }
         }
         else {
-            delete(arrowList_.at(arrowList_.size()-1));
-	        arrowList_.pop_back();
+            delete arrowList_.at(arrowList_.size()-1);
+            arrowList_.pop_back();
         }
     }
 
@@ -842,11 +772,11 @@ void RptPortItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 }
 
 bool RptPortItem::doesArrowExist(RptPortItem* destItem) {
-	for (size_t i=0;i<arrowList_.size();i++) {
-		if (arrowList_.at(i)->getDestNode() == destItem)
-			return true;
-	}
-	return false;
+    for (size_t i=0;i<arrowList_.size();i++) {
+        if (arrowList_.at(i)->getDestNode() == destItem)
+            return true;
+    }
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -855,31 +785,37 @@ RptTextItem::RptTextItem(const QString& text, RptGuiItem* parent, QGraphicsScene
     : QGraphicsTextItem(text, parent, scene)
 {
     setFlag(ItemIsSelectable, false);
-	setDefaultTextColor(Qt::white);
+    setDefaultTextColor(Qt::white);
 }
 
-QVariant RptTextItem::itemChange(GraphicsItemChange change, const QVariant &value) {
-    if (change == ItemSelectedChange) {
-        if (isSelected())
-            emit sendText(toPlainText().toStdString());
+RptTextItem::~RptTextItem() {
+}
+
+void RptTextItem::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
+        // restore saved text
+        setPlainText(previousText_);
+        emit renameFinished();
     }
-    return QGraphicsTextItem::itemChange(change, value);
+    else if ((event->key() == Qt::Key_Return) && (event->modifiers() == Qt::NoModifier)) {
+        previousText_ = toPlainText();
+        emit renameFinished();
+    }
+    else {
+        QGraphicsTextItem::keyPressEvent(event);
+        emit textChanged();
+    }
 }
 
-void RptTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
-    setTextInteractionFlags(Qt::TextEditable);
-    QGraphicsTextItem::mouseDoubleClickEvent(event);
+void RptTextItem::setFocus(Qt::FocusReason focusReason) {
+    // save old text
+    previousText_ = toPlainText();
+    QGraphicsTextItem::setFocus(focusReason);
 }
 
-void RptTextItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
-    parentItem()->setSelected(true);
-    if (contextMenu_)
-        contextMenu_->exec(event->screenPos());
+void RptTextItem::setPlainText(const QString& text) {
+    previousText_ = text;
+    QGraphicsTextItem::setPlainText(text);
 }
 
-void RptTextItem::setContextMenu(QMenu* contextMenu) {
-    contextMenu_ = contextMenu;
-}
-
-
-} //namespace voreen
+} // namespace voreen

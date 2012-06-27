@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,13 +28,12 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/edgedetect.h"
-#include "voreen/core/vis/processors/portmapping.h"
 #include "voreen/core/vis/voreenpainter.h"
 
 namespace voreen {
 
 EdgeDetect::EdgeDetect()
-    : GenericFragment("pp_edgedetect"),
+    : ImageProcessor("pp_edgedetect"),
       edgeThreshold_("set.edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f, true),
       showImage_("set.showImage", "Show image", 1, 0, 1, true),
       edgeColor_("set.edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
@@ -47,24 +46,25 @@ EdgeDetect::EdgeDetect()
     backgroundColor_.set(tgt::vec4(0.0f,0.0f,0.0f,1.0f));
 
     addProperty(&edgeColor_);
-	addProperty(&backgroundColor_);
+    addProperty(&backgroundColor_);
     addProperty(&fillColor_);
+    edgeThreshold_.setNumDecimals(3);
     addProperty(&edgeThreshold_);
     addProperty(&showImage_);
     blendModes_.push_back("Replace");
     blendModes_.push_back("Pseudo chromadepth");
     blendModes_.push_back("Blend");
-    blendMode_ = new EnumProp("set.blendMode", "Blend mode:", blendModes_, &needRecompileShader_, 0, false);
-	addProperty(blendMode_);
+    blendMode_ = new EnumProp("set.blendMode", "Blend mode:", blendModes_, 0, true, true);
+    addProperty(blendMode_);
     edgeStyles_.push_back("Contour");
     edgeStyles_.push_back("Silhouette");
     edgeStyles_.push_back("Contour (depth-based thickness)");
-    edgeStyle_ = new EnumProp("set.edgeStyle", "Edge style:", edgeStyles_, &needRecompileShader_, 0, false);
-	addProperty(edgeStyle_);
+    edgeStyle_ = new EnumProp("set.edgeStyle", "Edge style:", edgeStyles_, 0, true, true);
+    addProperty(edgeStyle_);
     addProperty(&labelMode_);
 
-	createInport("image.input");
-	createOutport("image.output");
+    createInport("image.input");
+    createOutport("image.output");
 }
 
 EdgeDetect::~EdgeDetect() {
@@ -73,18 +73,18 @@ EdgeDetect::~EdgeDetect() {
 }
 
 const std::string EdgeDetect::getProcessorInfo() const {
-	return "Performs an edge detection. The detected edge is then drawn in selectable colors, \
+    return "Performs an edge detection. The detected edge is then drawn in selectable colors, \
            styles, modi of blending etc.";
 }
 
 void EdgeDetect::process(LocalPortMapping*  portMapping) {
-	int source;
+    int source;
     int dest;
     if (labelMode_.get()) {
         if (coarsnessOn_)
             return;
-		source = portMapping->getTarget("image.input");
-	    if (source == -1)
+        source = portMapping->getTarget("image.input");
+        if (source == -1)
             return;
         dest = source;
         tc_->setActiveTarget(dest, "EdgeDetect::process");
@@ -93,7 +93,7 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
     }
     else {
         source = portMapping->getTarget("image.input");
-	    if (source == -1)
+        if (source == -1)
             return;
         dest = portMapping->getTarget("image.output");
         tc_->setActiveTarget(dest, "EdgeDetect::process");
@@ -131,7 +131,7 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
         program_->setUniform("showImage_", showImage_.get());
         program_->setUniform("blendMode_", blendMode_->get());
     }
-	program_->setUniform("edgeStyle_", edgeStyle_->get());
+    program_->setUniform("edgeStyle_", edgeStyle_->get());
 
     renderQuad();
 
@@ -146,8 +146,8 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
 }
 
 void EdgeDetect::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
-	GenericFragment::processMessage(msg, dest);
-	if (msg->id_ == VoreenPainter::switchCoarseness_)
+    ImageProcessor::processMessage(msg, dest);
+    if (msg->id_ == VoreenPainter::switchCoarseness_)
         coarsnessOn_ = msg->getValue<bool>();
 }
 

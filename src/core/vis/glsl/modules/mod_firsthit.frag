@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,10 +29,10 @@
 
 // first hit mode
 vec4 color;
-vec4 tfcolor = applyTF(normal.a);
+vec4 tfcolor = applyTF(transferFunc_, normal.a);
 if (tfcolor.a > 0.0) {
 
-	normal.xyz = normalize(normal.xyz);
+    normal.xyz = normalize(normal.xyz);
 
 #if (FIRST_HIT_MODE == FHM_POSITION)
     // position
@@ -40,7 +40,7 @@ if (tfcolor.a > 0.0) {
 
 #elif (FIRST_HIT_MODE == FHM_NORMAL_VECTOR)
     // normal vector
-	// transform to color space
+    // transform to color space
     color = vec4(normal.xyz / 2.0 + 0.5, 1.0);
 
 #elif (FIRST_HIT_MODE == FHM_POSITION_AND_NORMAL)
@@ -48,7 +48,7 @@ if (tfcolor.a > 0.0) {
     color = vec4(sample, 1.0);
     // normal vector
     // transform to color space
-	gl_FragData[1] = vec4(normal.xyz / 2.0 + 0.5, 1.0);
+    gl_FragData[1] = vec4(normal.xyz / 2.0 + 0.5, 1.0);
 
 #elif (FIRST_HIT_MODE == FHM_SKETCH)
     // silhouette sketch
@@ -77,7 +77,7 @@ if (tfcolor.a > 0.0) {
     color = vec4(phongShading(normal, first.rgb, volumeParameters_, tfcolor.rgb, tfcolor.rgb), 1.0);
 #elif (FIRST_HIT_MODE == FHM_EST_SHADE)
     // first hit shade
-    // 
+    //
     // This would require manual inlining on Linux nVidia 8776.
     color = vec4(phongShadingNoKa(normal, first.rgb, volumeParameters_, tfcolor.rgb), 1.0);
 
@@ -86,25 +86,15 @@ if (tfcolor.a > 0.0) {
     color = vec4(normal.rgb, 1.0);
 
 #elif (FIRST_HIT_MODE == FHM_POSITION_UNDEFORMED)
-    
+
     vec2 p = gl_FragCoord.xy;
     vec3 entry = textureLookup2D(entryPointsUndeformed_, p).xyz;
     vec3 exit = textureLookup2D(exitPointsUndeformed_, p).xyz;
-    
-    vec3 real_dir = exit - entry;
-    float part = length(t * direction) / tend;    
-    color = vec4(entry + part * real_dir, 1.0);    
 
-#elif (FIRST_HIT_MODE == FHM_POSITION_AND_NORMAL_RAYTRACING)
-    // position
-    float tNew = t - 2.0*stepIncr;
-    vec3 sampleToSave = first.rgb + tNew * direction;
-    color = vec4(sampleToSave, 1.0);
-    float value = normal.a;
-    // normal vector
-    // transform to color space
-	normal = normal*0.5+0.5;
-	gl_FragData[1] = vec4(normal.xyz, value);
+    vec3 real_dir = exit - entry;
+    float part = length(t * direction) / tend;
+    color = vec4(entry + part * real_dir, 1.0);
+
 #endif
     finished = true;
 

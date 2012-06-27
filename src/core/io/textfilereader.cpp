@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,13 +44,13 @@ const string DEFAULT_SEPARATORS = DEFAULT_WHITESPACE;
 }
 
 TextFileReader::TextFileReader(const string& filename)
-    : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_WHITESPACE),
+    : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_COMMENTCHARS),
       separators_(DEFAULT_SEPARATORS), isMyOwnStream_(true),
       file_(new ifstream(filename.c_str()))
 {}
 
 TextFileReader::TextFileReader(istream* stream)
-    : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_WHITESPACE),
+    : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_COMMENTCHARS),
       separators_(DEFAULT_SEPARATORS), isMyOwnStream_(false),
       file_(stream)
 {}
@@ -70,7 +70,7 @@ bool TextFileReader::getNextLine(string& type, string& args, bool toLowercase) {
 
         size_t type_start = line.find_first_not_of(whitespace_);
         if (!line.empty() && type_start != string::npos && (commentChars_.find(line[type_start]) == string::npos)) {
-			size_t sep_start = line.find_first_of(separators_, type_start);
+            size_t sep_start = line.find_first_of(separators_, type_start);
             size_t type_size = string::npos;
             if (sep_start != string::npos) {
                 type_size = sep_start - type_start;
@@ -83,16 +83,16 @@ bool TextFileReader::getNextLine(string& type, string& args, bool toLowercase) {
                 }
                 else
                     args = "";
-                
+
             }
             type = line.substr(type_start, type_size);
             if (toLowercase)
                 transform(type.begin(), type.end(), type.begin(), (int (*)(int))tolower);
-            
+
             return true;
         }
     } while (!file_->eof());
- 
+
     return false;
 }
 

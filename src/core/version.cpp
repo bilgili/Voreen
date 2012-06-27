@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,7 +47,7 @@ const std::string VoreenVersion::getCompilerVersion() {
         ver << "Microsoft Visual C++ 2005";
     #elif _MSC_VER == 1500
         ver << "Microsoft Visual C++ 2008";
-    #else 
+    #else
         ver << "Unknown Microsoft Visual C++ (_MSC_VER=" << _MSC_VER << ")";
     #endif
 #elif defined(__GNUC__)
@@ -74,7 +74,7 @@ const std::string VoreenVersion::getRevision() {
 #if defined(VRN_WITH_SVNVERSION)
     return VRN_SVN_REVISION;
 #elif defined(VRN_SNAPSHOT)
-    return "snapshot-13";
+    return "snapshot-18";
 #else
     return "";
 #endif

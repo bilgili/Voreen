@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,19 +37,25 @@
 
 #include <IL/il.h>
 #include <IL/ilu.h>
- 
+
 namespace voreen {
 
-CommandStackImg::CommandStackImg() {
-    help_ = "All image formats supported by DevIL can be used.\n";
-    
-    info_ = "Stack images given by sourceFilename(s) to create one volumedataset.";
-    name_ = "stackimg";
-    syntax_ = name_ + " *IN OUT";
+CommandStackImg::CommandStackImg() :
+    Command("--stackimg", "", "Stack images given by sourceFilename(s) to create one volumedataset.")
+{
+    parameterList_ = "*IN OUT";
     loggerCat_ += "." + name_;
 }
-    
+
+bool CommandStackImg::checkParameters(const std::vector<std::string>& /*parameters*/) {
+    return false;
+}
+
 bool CommandStackImg::execute(const std::vector<std::string>& parameters) {
+    return false;
+
+    // This doesn't work with the new commandline parser concept, because it requires doesn't support
+    // a fixed number of parameters (ab)
     Volume* targetDataset_;
     tgt::ivec3 dimensions;
     dimensions.z = parameters.size()-1;
@@ -98,7 +104,7 @@ bool CommandStackImg::execute(const std::vector<std::string>& parameters) {
 
     ILenum Error;
     while ((Error = ilGetError()) != IL_NO_ERROR) {
-        LERROR(Error << iluErrorString(Error))
+        LERROR(Error << iluErrorString(Error));
 //         printf("%d: %s/n", Error, );
     }
     dimensions.x = Width;
@@ -119,7 +125,7 @@ bool CommandStackImg::execute(const std::vector<std::string>& parameters) {
         p += dimensions.x * dimensions.y;
         ilDeleteImages(1, &ImageName);
     }
-    
+
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
@@ -132,31 +138,38 @@ bool CommandStackImg::execute(const std::vector<std::string>& parameters) {
 
 //-----------------------------------------------------------------------------
 
-CommandStackRaw::CommandStackRaw() {
-    help_ =  "Input images with size DX*DY\n";
-    help_ += "HEADERSIZE bytes at the beginning of each file are skipped.\n";
-    help_ += "Formats:\n";
-    help_ += "gs16: 16 bit grayscale\n";
-    help_ += "rgbni: 24 bit rgb, non interleaved\n";
-
-    info_ = "Stack raw-images given by sourceFilename(s)";
-    name_ = "stackraw";
-    syntax_ = name_ + " DX DY HEADERSIZE [gs16|rgbni] *IN OUT";
+CommandStackRaw::CommandStackRaw() :
+    Command("--stackraw", "", "Stack raw-images given by sourceFilename(s) \n \n\
+\t\tInput images with size DX*DY\n\
+\t\tHEADERSIZE bytes at the beginning of each file are skipped.\n\
+\t\tFormats:\n\
+\t\tgs16: 16 bit grayscale\n\
+\t\trgbni: 24 bit rgb, non interleaved")
+{
+    parameterList_ = "DX DY HEADERSIZE [gs16|rgbni] *IN OUT";
     loggerCat_ += "." + name_;
 }
-    
+
+bool CommandStackRaw::checkParameters(const std::vector<std::string>& /*parameters*/) {
+    return false;
+}
+
 bool CommandStackRaw::execute(const std::vector<std::string>& parameters) {
+    return false;
+
+    // This doesn't work with the new commandline parser concept, because it requires doesn't support
+    // a fixed number of parameters (ab)
     Volume* targetDataset_;
-    
+
     tgt::ivec3 dimensions;
-    dimensions.x = asInt(parameters[0]);
-    dimensions.y = asInt(parameters[1]);
+    dimensions.x = cast<int>(parameters[0]);
+    dimensions.y = cast<int>(parameters[1]);
 
     dimensions.z = parameters.size()-5;
-    
+
     int headersize;
-    headersize = asInt(parameters[2]);
-    
+    headersize = cast<int>(parameters[2]);
+
     std::string format = parameters[3];
     LINFO("stacking " << dimensions.z << " images with dimensions: " << dimensions);
     LINFO("skipping header with size " << headersize);
@@ -237,45 +250,40 @@ bool CommandStackRaw::execute(const std::vector<std::string>& parameters) {
         delete[] buffer;
     }
     else
-        throw SyntaxException("Unknown format!");
-        
+        throw tgt::Exception("Unknown format!");
+
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
     serializer->save(parameters.back(), targetDataset_);
-    
-    delete serializer;
+
     delete targetDataset_;
     return true;
 }
 
 //-----------------------------------------------------------------------------
 
-CommandConvert::CommandConvert() {
-    help_ =  "TARGET:\n";
-    help_ += "8: 8 bit DS\n";
-    help_ += "8s: 8 bit DS, with smart convert\n";
-    help_ += "12: 12 bit DS\n";
-    help_ += "12s: 12 bit DS, with smart convert\n";
-    help_ += "16: 16 bit DS\n";
-    help_ += "16s: 16 bit DS, with smart convert\n";
-
-    info_ = "Convert Volume Datasets";
-    name_ = "convert";
-    syntax_ = name_ + " TARGET IN OUT";
+CommandConvert::CommandConvert() :
+    Command("--convert", "", "Convert Volume Datasets \n\
+\t\tTARGET:\n\
+\t\t8: 8 bit DS\n\
+\t\t8s: 8 bit DS, with smart convert\n\
+\t\t12: 12 bit DS\n\
+\t\t12s: 12 bit DS, with smart convert\n\
+\t\t16: 16 bit DS\n\
+\t\t16s: 16 bit DS, with smart convert", "<TARGET IN OUT>", 3)
+{
     loggerCat_ += "." + name_;
 }
-    
+
 bool CommandConvert::execute(const std::vector<std::string>& parameters) {
     Volume* targetDataset_;
-    
-    checkParameters(parameters.size() == 3);
-    
+
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
     VolumeSet* volumeSet = serializer->load(parameters[1]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
-    
+
     if (parameters[0] == "8") {
         targetDataset_ = new VolumeUInt8(sourceDataset_->getDimensions());
         targetDataset_->convert(sourceDataset_, false);
@@ -303,18 +311,16 @@ bool CommandConvert::execute(const std::vector<std::string>& parameters) {
     }
     else {
         delete sourceDataset_;
-        throw SyntaxException("Unknown target!");
+        throw tgt::Exception("Unknown target!");
     }
-    
-    //VolumeSerializerPopulator volLoadPop;
-    //VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+
     serializer->save(parameters.back(), targetDataset_);
-    
-    delete serializer;
+
+    delete volumeSet;
     delete targetDataset_;
     return true;
 }
 
-}   //namespace voreen
+} // namespace voreen
 
 #endif // VRN_WITH_DEVIL

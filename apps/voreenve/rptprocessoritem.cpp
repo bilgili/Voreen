@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,61 +44,55 @@ RptProcessorItem::RptProcessorItem(Identifier type, QGraphicsItem* parent)
     , aggregateAction_(0)
 {
     processor_ = ProcessorFactory::getInstance()->create(type_);
-    if (!processor_)
-        return;
 
     setColor();
     createIO();
-    createContextMenu();
     setAcceptDrops(true);
 }
 
 RptProcessorItem::RptProcessorItem(Processor* processor, QGraphicsItem* parent)
-    : RptGuiItem(processor->getClassName().getSubString(1),parent)
+    : RptGuiItem(processor->getClassName().getSubString(1), parent)
     , type_(processor->getClassName().getSubString(1))
     , aggregateAction_(0)
 {
     processor_ = processor;
-    if (!processor)
-        return;
     setColor();
     createIO();
-    createContextMenu();
     setAcceptDrops(true);
 }
 
 RptProcessorItem::~RptProcessorItem() {
-    disconnectAll();
+    //   disconnectAll();
+    //FIXME: is this needed here?
+    // This leads to crashed if some of the refered objects (ports, other procitems) were
+    // already deleted before. joerg
+    
     delete processor_;
-    processor_ = 0;
 }
 
 bool RptProcessorItem::enableAggregateContextMenuEntry(const bool newState) {
-    const bool prevState = aggregateAction_->isEnabled();
+    bool prevState = aggregateAction_->isEnabled();
     aggregateAction_->setEnabled(newState);
     return prevState;
 }
 
-void RptProcessorItem::setName(std::string name) {
-    getProcessor()->setName(name);
-    RptGuiItem::setName(name);
+void RptProcessorItem::setName(const std::string& name) {
+    processor_->setName(name);
+    textItem_->setPlainText(name.c_str());
+    RptGuiItem::nameChanged();
+}
+
+void RptProcessorItem::nameChanged() {
+    if (processor_->getName() != textItem_->toPlainText().toStdString()) {
+        processor_->setName(textItem_->toPlainText().toStdString());
+        RptGuiItem::nameChanged();
+
+        emit processorNameChanged();
+    }
 }
 
 void RptProcessorItem::setColor() {
-    color_ = QColor(233,218,176);
-}
-
-void RptProcessorItem::createContextMenu() {
-    RptGuiItem::createContextMenu();
-
-    // createActions
-    aggregateAction_ = new QAction(tr("Aggregate"), this);
-
-    // add actions to context menu
-    contextMenu_.addAction(aggregateAction_);
-
-    // connect actions
-    QObject::connect(aggregateAction_, SIGNAL(triggered()), this, SLOT(aggregateActionSlot()));
+    color_ = QColor(233, 218, 176);
 }
 
 void RptProcessorItem::aggregateActionSlot() {
@@ -107,35 +101,32 @@ void RptProcessorItem::aggregateActionSlot() {
 
 void RptProcessorItem::createIO() {
 
-	std::vector<Port*> inports = processor_->getInports();
+    std::vector<Port*> inports = processor_->getInports();
     std::vector<Port*> outports = processor_->getOutports();
 
-	for (size_t i=0;i<inports.size();i++) {
-		inports_.push_back(new RptPortItem(inports.at(i)->getType(), inports.at(i), this));
-	}
-	for (size_t i=0;i<outports.size();i++) {
-		outports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
-	}
+    for (size_t i=0; i<inports.size(); i++)
+        inports_.push_back(new RptPortItem(inports.at(i)->getType(), inports.at(i), this));
+
+    for (size_t i=0; i< outports.size(); i++)
+        outports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
 
     // coProcessorPorts
     inports = processor_->getCoProcessorInports();
     outports = processor_->getCoProcessorOutports();
 
-    for (size_t i=0;i<inports.size();i++) {
-		coProcessorInports_.push_back(new RptPortItem(inports.at(i)->getType(), inports.at(i), this));
-	}
-	for (size_t i=0;i<outports.size();i++) {
-		coProcessorOutports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
-	}
+    for (size_t i=0; i < inports.size(); i++)
+        coProcessorInports_.push_back(new RptPortItem(inports.at(i)->getType(), inports.at(i), this));
+
+    for (size_t i=0; i < outports.size(); i++)
+        coProcessorOutports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
 
     repositionPorts();
 }
 
 QVariant RptProcessorItem::itemChange(GraphicsItemChange change, const QVariant &value) {
     if (change == ItemPositionChange) {
-        if (parentItem() && parentItem()->type() == RptAggregationItem::Type) {
+        if (parentItem() && parentItem()->type() == RptAggregationItem::Type)
             static_cast<RptAggregationItem*>(parentItem())->updateGeometry();
-        }
     }
 
     return RptGuiItem::itemChange(change, value);
@@ -191,128 +182,53 @@ QPainterPath RptProcessorItem::canvasBoundingPath(QRectF rect) const {
 }
 
 void RptProcessorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* ) {
-	QRectF button_rect = drawingRect();
+    QRectF button_rect = drawingRect();
 
-	QColor button_color = QColor(50, 50, 50);
+    QColor button_color = QColor(50, 50, 50);
 
-	// hover effect
-	if (option->state & QStyle::State_MouseOver)
-		button_color = Qt::blue;
-	// frame indicates selected process
-	if (option->state & QStyle::State_Selected)
-		button_color = Qt::red;
-
-
-	QColor m_shadow = QColor(Qt::black);
-/*
-    float roundness = 15.0;
-	//outline
-	painter->setPen(QPen(QBrush(Qt::black), 2.0));
-	QPainterPath outline;
-	//outline.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
-	outline.addRect(0, 0, button_rect.width(), button_rect.height());
-	painter->setOpacity(1.0);
-	painter->drawPath(outline);
-*/
-
-	painter->drawRect(button_rect);
-	/////painter->drawRoundedRect(button_rect, roundness, roundness);
-
-	//gradient
-	QLinearGradient gradient(0, 0, 0, button_rect.height());
-	gradient.setSpread(QGradient::ReflectSpread);
-	gradient.setColorAt(0.0, button_color);
-	gradient.setColorAt(0.4, m_shadow);
-	gradient.setColorAt(0.6, m_shadow);
-	gradient.setColorAt(1.0, button_color);
-
-	QBrush brush(gradient);
-	painter->setBrush(brush); 
-	painter->setPen(QPen(QBrush(button_color), 2.0));
-
-	
-	//main button
-	/*
-	// the clipper clips the glass highlight ellipse
-	QPainterPath painter_path;
-	painter_path.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
-	//painter_path.addRect(0, 0, button_rect.width(), button_rect.height());
-	painter->setClipPath(painter_path);
-	*/
-
-	painter->setOpacity(1.0);
-	//painter->drawRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
-	//painter->drawRect(0, 0, button_rect.width(), button_rect.height());
-	painter->drawRect(button_rect);
-	/////painter->drawRoundedRect(button_rect, roundness, roundness);
-
-	//glass highlight
-	painter->setBrush(QBrush(Qt::white));
-	painter->setPen(QPen(QBrush(Qt::white), 0.01));
-	painter->setOpacity(0.30);
-	//painter->drawRect(0, 0, button_rect.width(), (button_rect.height() / 2));
-	button_rect.setHeight(button_rect.height()/2.0);
-	painter->drawRect(button_rect);
-	/////painter->drawRoundedRect(button_rect, roundness, roundness);
+    // hover effect
+    if (option->state & QStyle::State_MouseOver)
+        button_color = Qt::blue;
+    // frame indicates selected process
+    if (option->state & QStyle::State_Selected)
+        button_color = Qt::red;
 
 
-//	painter->setPen(Qt::red);
-//	painter->drawRoundRect(drawingRect());
-    
-/*    
-	painter->setPen(Qt::NoPen);
-	// draw shadow
-	painter->setBrush(Qt::darkGray);
-    QRectF shadowRect(drawingRect().left()+3,drawingRect().top()+3,drawingRect().width(), drawingRect().height());
-	if (processor_->getIsCoprocessor())
-		painter->drawPath(coprocessorBoundingPath(shadowRect));
-	else if (processor_->getClassName().getSubString(1) == "Canvas")
-        painter->drawPath(canvasBoundingPath(shadowRect));
-	else
-		painter->drawRoundRect(shadowRect);
+    QColor m_shadow = QColor(Qt::black);
+    painter->drawRect(button_rect);
 
-    // draw linear gradient for top highlight and bottom darkening
-	QLinearGradient linGradient(0, 0, 0, drawingRect().height());
-	linGradient.setColorAt(0.0, color_.light(220));
-	linGradient.setColorAt(0.15, color_);
-	linGradient.setColorAt(0.9, color_.dark(200));
-	linGradient.setColorAt(1, Qt::black);
-    painter->setBrush(linGradient);
-	if (processor_->getIsCoprocessor())
-		painter->drawPath(coprocessorBoundingPath(drawingRect()));
-	else if (processor_->getClassName().getSubString(1) == "Canvas")
-        painter->drawPath(canvasBoundingPath(drawingRect()));
-	else
-        painter->drawRoundRect(drawingRect());
+    //gradient
+    QLinearGradient gradient(0, 0, 0, button_rect.height());
+    gradient.setSpread(QGradient::ReflectSpread);
+    gradient.setColorAt(0.0, button_color);
+    gradient.setColorAt(0.4, m_shadow);
+    gradient.setColorAt(0.6, m_shadow);
+    gradient.setColorAt(1.0, button_color);
 
-	painter->setBrush(Qt::NoBrush);
-	// hover effect
-	if (option->state & QStyle::State_MouseOver)
-		painter->setBrush(QColor(255, 255, 255, 70));
-	// frame indicates selected process
-	if (option->state & QStyle::State_Selected)
-		painter->setPen(QPen(Qt::green, 3));
-	// draw frame / hover effect
-	if (processor_->getIsCoprocessor())
-		painter->drawPath(coprocessorBoundingPath(drawingRect()));
-	else if (processor_->getClassName().getSubString(1) == "Canvas")
-        painter->drawPath(canvasBoundingPath(drawingRect()));
-	else
-		painter->drawRoundRect(drawingRect());
-*/
+    QBrush brush(gradient);
+    painter->setBrush(brush);
+    painter->setPen(QPen(QBrush(button_color), 2.0));
+
+    painter->setOpacity(1.0);
+    painter->drawRect(button_rect);
+
+    //glass highlight
+    painter->setBrush(QBrush(Qt::white));
+    painter->setPen(QPen(QBrush(Qt::white), 0.01));
+    painter->setOpacity(0.30);
+    button_rect.setHeight(button_rect.height()/2.0);
+    painter->drawRect(button_rect);
 }
 
 void RptProcessorItem::dropEvent(QDropEvent* event) {
     // Determine, whether the target was a VolumeSetSourceProcessor
     // and the mime data matches the requirements.
-    //
     VolumeSetSourceProcessor* vssp = dynamic_cast<VolumeSetSourceProcessor*>(processor_);
     if (vssp != 0) {
         // Set the dropped data (a pointer to a VolumeSet object) for the processor.
         // The data have been converted from VolumeSet* to qulonglong in order to
         // be passed by a QByteArray. I know it's ugly and dangerous but I see no easier
         // possibilities.... (dirk)
-        //
         QByteArray itemData = event->mimeData()->data("application/x-voreenvolumesetpointer");
         qulonglong data = itemData.toULongLong();
         VolumeSet* volumeset = reinterpret_cast<VolumeSet*>(data);
@@ -335,11 +251,14 @@ RptProcessorItem& RptProcessorItem::saveMeta() {
 
 RptProcessorItem& RptProcessorItem::loadMeta() {
     TiXmlElement* meta = processor_->getFromMeta("RptProcessorItem");
-    float x,y;
-    if (meta->QueryFloatAttribute("x",&x) != TIXML_SUCCESS || meta->QueryFloatAttribute("y",&y) != TIXML_SUCCESS)
+    float x, y;
+    if (meta->QueryFloatAttribute("x", &x) != TIXML_SUCCESS || meta->QueryFloatAttribute("y", &y) != TIXML_SUCCESS)
         throw XmlAttributeException("The Position of a ProcessorItem remains unknown!");
     setPos(x,y);
+
+    setName(processor_->getName());
+
     return *this;
 }
 
-} //namespace voreen
+} // namespace voreen

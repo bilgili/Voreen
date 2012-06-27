@@ -3,7 +3,7 @@
  *
  * The precompiled header must contain code which is *stable* and *static*
  * throughout the project.
- * 
+ *
  */
 
 /* Add C includes here */
@@ -20,15 +20,11 @@
 #include <GL/glew.h>
 
 #ifndef __APPLE__
-	#include <GL/gl.h>
-	#include <GL/glu.h>
+    #include <GL/gl.h>
+    #include <GL/glu.h>
 #else
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glu.h>
-#endif
-
-#ifdef VRN_WITH_DEVIL
-#include <IL/il.h>
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
 #endif
 
 
@@ -38,6 +34,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "tgt/matrix.h"
 #include "tgt/quaternion.h"

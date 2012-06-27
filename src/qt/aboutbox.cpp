@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,12 +44,12 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QString s;
     s = ui.labelLeft->text();
-    s.replace("__VERSION__", "1.5 beta");
+    s.replace("__VERSION__", "1.6");
     s.replace("__APPLICATION__", description + " " + version);
     s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 University of Münster"));
     ui.labelLeft->setText(s);
 
-    
+
     s = ui.labelRight->text();
     if (!VoreenVersion::getRevision().empty())
         s.replace("__SVNVERSION__", "svn version " + QString(VoreenVersion::getRevision().c_str()));
@@ -59,7 +59,6 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QStringList developers;
     developers << QString::fromLatin1("Alexander Bock");
-    developers << QString::fromLatin1("Stefan Diepenbrock");
     developers << QString::fromLatin1("Christian Döring");
     developers << QString::fromLatin1("Dirk Feldmann");
     developers << QString::fromLatin1("Jens Kasten");
@@ -68,7 +67,6 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
     developers << QString::fromLatin1("Florian Lindemann");
     developers << QString::fromLatin1("Markus Madeja");
     developers << QString::fromLatin1("Borislav Petkov");
-    developers << QString::fromLatin1("Jörg-Stefan Praßni");
     developers << QString::fromLatin1("Stephan Rademacher");
     developers << QString::fromLatin1("Rainer Reich");
     developers << QString::fromLatin1("Christoph Rosemann");
@@ -85,14 +83,14 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
             developersString += ", ";
         developersString += developers[i];
     }
-        
+
     s = ui.labelDevelopers->text();
     s.replace("__DEVELOPERS__", developersString);
     ui.labelDevelopers->setText(s);
-    
+
     setWindowTitle(tr("About %1...").arg(application));
 
-    adjustSize();    
+    adjustSize();
 }
 
 } // namespace

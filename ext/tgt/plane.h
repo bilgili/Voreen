@@ -53,6 +53,8 @@ namespace tgt {
 */
 template<class T>
 struct Plane {
+    typedef T ElemType;
+
     /// The normal of the plane.
     Vector3<T> n;
     /// The negative distance from the orign.

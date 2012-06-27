@@ -33,15 +33,13 @@
 
 namespace voreen {
 
-Command_LogLevel::Command_LogLevel(tgt::LogLevel* dbgLevel) {
-    name_ = "--loglevel";
-    shortName_ = "-l";
-    parameterList_ = "<debug|warning|info|error|fatal>";
-    dbgLevel_ = dbgLevel;
-}
+Command_LogLevel::Command_LogLevel(tgt::LogLevel* dbgLevel)
+: Command("--loglevel", "-l", "Sets the verbosity of the tgt::Log", "<debug|warning|info|error|fatal>")
+, dbgLevel_(dbgLevel)
+{}
 
 bool Command_LogLevel::execute(const std::vector<std::string>& parameters) {
-    std::string argument = parameters.at(1);
+    std::string argument = parameters[0];
     if (argument == "debug")
         *dbgLevel_ = tgt::Debug;
     else if (argument == "warning")
@@ -59,19 +57,14 @@ bool Command_LogLevel::execute(const std::vector<std::string>& parameters) {
 }
 
 bool Command_LogLevel::checkParameters(const std::vector<std::string>& parameters) {
-    if (parameters.size() != 2)
-        return false;
+    std::set<std::string> set;
+    set.insert("debug");
+    set.insert("warning");
+    set.insert("info");
+    set.insert("error");
+    set.insert("fatal");
 
-    std::string argument = parameters.at(1);
-
-    bool argumentCorrect =  ((argument == "debug")  || 
-                             (argument == "warning") ||
-                             (argument == "info")    ||
-                             (argument == "error")   ||
-                             (argument == "fatal")
-                             );
-
-    return argumentCorrect;
+    return ((parameters.size() == 1) && isValueInSet(parameters[0], &set));
 }
 
 } // namespace

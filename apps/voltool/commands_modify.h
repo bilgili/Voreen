@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,21 +28,23 @@
  **********************************************************************/
 
 #ifndef VRN_COMMANDS_MODIFY_H
-#define VRN_COMMANDS_MODIFY_H 
+#define VRN_COMMANDS_MODIFY_H
 
-#include "command.h"
+#include "voreen/core/cmdparser/command.h"
 
-namespace voreen { 
+namespace voreen {
 
 class CommandCutToPieces : public Command {
 public:
     CommandCutToPieces();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
 
 class CommandScale : public Command {
 public:
     CommandScale();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
 
@@ -55,8 +57,16 @@ public:
 class CommandSubSet : public Command {
 public:
     CommandSubSet();
+    bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
+
+class CommandScaleTexCoords : public Command {
+public:
+	CommandScaleTexCoords();
+	bool execute(const std::vector<std::string>& parameters);
+};
+
 
 }   //namespace voreen
 

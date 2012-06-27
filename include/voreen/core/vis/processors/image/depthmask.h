@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,7 +31,7 @@
 #define VRN_DEPTHMASK_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
@@ -39,16 +39,16 @@ namespace voreen {
  * Performs unsharp masking the depth buffer
  * as presented by Luft et al. in 2006.
  */
-class DepthMask : public GenericFragment {
+class DepthMask : public ImageProcessor {
 public:
     /**
      * The Constructor.
      *
      */
     DepthMask();
-    virtual const Identifier getClassName() const {return "PostProcessor.DepthMask";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new DepthMask();}
+    virtual const Identifier getClassName() const {return "ImageProcessor.DepthMask";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new DepthMask();}
     void process(LocalPortMapping* portMapping);
 
     /**

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,19 +34,18 @@
 
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/vis/processors/render/proxygeometry.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/postprocessor.h"
-#include "voreen/core/vis/processors/image/genericfragment.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 #include "voreen/core/vis/idmanager.h"
 #include "tgt/stopwatch.h"
 #include "tinyxml/tinyxml.h"
 #include "tgt/event/eventlistener.h"
 
-#ifdef VRN_WITH_FREETYPE
-    #include <ft2build.h>
-    #include FT_FREETYPE_H
+#ifdef VRN_WITH_FONTRENDERING
+#include <FTGL/ftgl.h>
+#include "tgt/font.h"
 #endif
 
 namespace voreen {
@@ -85,15 +84,15 @@ public:
  *
  * also \see IDRaycaster
  */
-class Labeling : public GenericFragment, public tgt::EventListener {
+class Labeling : public ImageProcessor, public tgt::EventListener {
 public:
-	/**
-	 * Default constructor.
-	 * @param camera the \c Camera object of the pipeline
-	 * @param tc the \c TextureContainer object to use. \see TextureContainer
-	 * @param pg the \c ProxyGeometry used by the volume renderer
+    /**
+     * Default constructor.
+     * @param camera the \c Camera object of the pipeline
+     * @param tc the \c TextureContainer object to use. \see TextureContainer
+     * @param pg the \c ProxyGeometry used by the volume renderer
      * @param labelingWidget object for GUI access \see LabelingWidget
-	 */
+     */
     Labeling();
 
     /**
@@ -101,9 +100,9 @@ public:
      */
     ~Labeling();
 
-    virtual const Identifier getClassName() const {return "PostProcessor.Labeling";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Labeling();}
+    virtual const Identifier getClassName() const {return "ImageProcessor.Labeling";}
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new Labeling();}
 
     /**
      * Reacts to the following messages:
@@ -142,17 +141,17 @@ public:
 
     /// The external label layout.
     enum LabelLayouts {
-        SILHOUETTE,		///< labels are placed around the object's convex hull
-        LEFTRIGHT,		///< labels are stacked on the left/right
+        SILHOUETTE,        ///< labels are placed around the object's convex hull
+        LEFTRIGHT,        ///< labels are stacked on the left/right
     };
 
     /// Determines which labels are rendered.
-	enum showModes {
-		SHOW_ALL,				///< show all labels
-		SHOW_NONE,				///< show no label
-		SHOW_EXTERNAL_ONLY,		///< show external labels only
-		SHOW_INTERNAL_ONLY		///< show internal labels only
-	};
+    enum showModes {
+        SHOW_ALL,                ///< show all labels
+        SHOW_NONE,                ///< show no label
+        SHOW_EXTERNAL_ONLY,        ///< show external labels only
+        SHOW_INTERNAL_ONLY        ///< show internal labels only
+    };
 
     static const Identifier setLabelingWidget_;
     static const Identifier setLayout_;
@@ -165,35 +164,35 @@ public:
 
 private:
     // Object for GUI access
-	LabelingWidget* labelingWidget_;
+    LabelingWidget* labelingWidget_;
 
-	// Proxy geometry used by the volume renderers.
-	ProxyGeometry* pg_;
-	// Shader used for labeling.
-	tgt::Shader* labelShader_;
-	// The render target the labeling is rendered to.
+    // Proxy geometry used by the volume renderers.
+    ProxyGeometry* pg_;
+    // Shader used for labeling.
+    tgt::Shader* labelShader_;
+    // The render target the labeling is rendered to.
     static const Identifier labelTexUnit_;
 
     //
     // Gui-Gen Properties
     //
-	EnumProp* showLabels_;					// determines whether/which labels are shown
-    ColorProp labelColorExtern_;			// color of external labels
-    ColorProp haloColorExtern_;     		// halo-color of external labels
-    IntProp fontSizeExtern_;				// font size of internal labels
+    EnumProp* showLabels_;                    // determines whether/which labels are shown
+    ColorProp labelColorExtern_;            // color of external labels
+    ColorProp haloColorExtern_;             // halo-color of external labels
+    IntProp fontSizeExtern_;                // font size of internal labels
     BoolProp lockInternalFontSettings_;     // if true, internal/external font settings are synchronized
-    ColorProp labelColorIntern_;			// color of internal labels
-    ColorProp haloColorIntern_;				// halo-color of internal labels
-    IntProp fontSizeIntern_;				// font size of internal labels
-	BoolProp shape3D_;						// 3d shape fitting of internal labels
-    BoolProp drawHalo_;						// if true, a halo is drawn around labels
+    ColorProp labelColorIntern_;            // color of internal labels
+    ColorProp haloColorIntern_;                // halo-color of internal labels
+    IntProp fontSizeIntern_;                // font size of internal labels
+    BoolProp shape3D_;                        // 3d shape fitting of internal labels
+    BoolProp drawHalo_;                        // if true, a halo is drawn around labels
     EnumProp* layout_;                      // silhouette or left-right-layout
     IntProp minSegmentSize_;                // minimum segment of a segment on screen for being labeled
     IntProp maxIterations_;                 // max count of iterations for improving label layout
     EnumProp* filterKernel_;                // filter kernel to be used for distance map filtering
     IntProp filterDelta_;                   // offset of this kernel
     IntProp distanceMapStep_;               // only each distanceMapStep_ pixel of distance map is considered
-    IntProp glyphAdvance_;					// Additional gap between two glyphs.
+    IntProp glyphAdvance_;                    // Additional gap between two glyphs.
     IntProp polynomialDegree_;              // degree of 2D and 3D polynomials
     IntProp bezierHorzDegree_;              // horizontal degree of bezier patch
     IntProp bezierVertDegree_;              // vertical degree of bezier patch
@@ -214,7 +213,7 @@ private:
         float widthInternWorld;    // width, height of text bounding box
         float heightInternWorld;   // of internal label (world coords)
         GLuint textureExtern;      // texture containing the rendered text for extern labels
-		GLuint textureIntern;	   // texture containing the rendered text for intern labels
+        GLuint textureIntern;       // texture containing the rendered text for intern labels
         int textureExternWidth;    // width of external texture in pixels
         int textureExternHeight;   // height of external texture in pixels
         int textureInternWidth;    // width of internal texture in pixels
@@ -251,8 +250,8 @@ private:
         bool belongsToSegment;
         TiXmlNode* xmlNode;              // node in the XML-DOM representing this segment
         tgt::vec3 anchorPoint3D;
-		labeling::Curve3DPolynomial* curve3D;
-		bool internPreferred;            // determines if internal label position is preferred
+        labeling::Curve3DPolynomial* curve3D;
+        bool internPreferred;            // determines if internal label position is preferred
     };
     std::vector<LabelData*> labelPersistentData_;
 
@@ -266,16 +265,16 @@ private:
         tgt::ivec2 normal;               // normal at intersection of connection line with convex hull
         tgt::ivec2 labelPos;             // bottom-left of label-text bounding box in image pixel coords
         tgt::vec2  labelPosWorld;        //  ""       ""          ""               in worlds coords
-        float rotAngle;					 // an external label quad is rotated by this angle
-		LabelData* labelData;            // persistent label properties
+        float rotAngle;                     // an external label quad is rotated by this angle
+        LabelData* labelData;            // persistent label properties
         int segmentSize;                 // count of visible segment-pixels
         bool intern;                     // is label an internal one?
         bool offLabel;                   // an Off-Label is an unsegmented label which has not been attached to
                                          // to the volume. Off-Labels are placed in the upper-right window corner
         std::vector<tgt::ivec2> controlPoints;
-        labeling::Curve2DPolynomial* curve2D;		// fitting function in image space (is fit to control points)
+        labeling::Curve2DPolynomial* curve2D;        // fitting function in image space (is fit to control points)
         labeling::BezierPatch bezierPatch;          // bezier patch the intern texture is mapped onto
-	};
+    };
     typedef std::vector<Label> LabelVec;
     LabelVec labels_;                   // contains all labels of current frame
 
@@ -286,7 +285,7 @@ private:
         static const int LineLine = 10;         // gap between two connection lines
 
         // Gaps for LeftRight-Layout
-        static const int LR_LabelLabel = 6;   	// gap between two labels in left-right layout
+        static const int LR_LabelLabel = 6;       // gap between two labels in left-right layout
         static const int LR_BboxObject = 20;    // gap between bounding box of object and labels
 
         // Gaps for silhouette-Layout
@@ -329,7 +328,7 @@ private:
     };
     std::vector<FilterKernel> kernels_;
 
-#ifdef VRN_WITH_FREETYPE
+#ifdef VRN_WITH_FONTRENDERING
     FT_Library library_;
     FT_Face face_;
 #endif
@@ -355,7 +354,7 @@ private:
     // Labeling-Methods
     void labelLayout();
     void genTextures();
-    void renderTextToBitmap(std::string text, int fontSize, ColorProp labelColor, ColorProp haloColor,
+    void renderTextToBitmap(std::string text, int fontSize, const ColorProp& labelColor, const ColorProp& haloColor,
                             labeling::Bitmap<GLfloat> &bitmap,
                             bool antialias, int border, int glyphAdvance,
                             bool drawHalo, int haloOffset );
@@ -363,7 +362,7 @@ private:
     void calcLabelPositions();
     void toWorld(Label* pLabel = NULL);
     void renderLabels(int dest);
-	void deleteLabels();
+    void deleteLabels();
 
     // common support methods
     void connPointFromLabelPos(Label const &pLabel, tgt::ivec2 &connPoint, tgt::ivec2 &normal, bool calcNormal=true);
@@ -372,7 +371,7 @@ private:
     void lineIntersection(tgt::ivec2 const P1, tgt::ivec2 const Q1,
                           tgt::ivec2 const P2, tgt::ivec2 const Q2,
                           tgt::ivec2 &intersection, bool &onSegments);
-	void drawHalo(labeling::Bitmap<GLfloat> &bitmap, int width, int height, tgt::Color haloColor, GLfloat alphaTreshold);
+    void drawHalo(labeling::Bitmap<GLfloat> &bitmap, int width, int height, tgt::Color haloColor, GLfloat alphaTreshold);
 
     // support-methods left-right
     void stackLabels(LabelVec &pLabels, int min, int max, int &bottom, int &top);
@@ -394,8 +393,8 @@ private:
     bool findLabelPathOne(const Label &pLabel, float initAngle,  float step, float initMaxStepAngle,
                                         float maxStepAngle, float maxAngle, float length,
                                         std::vector<tgt::ivec2> &result);
-	bool findLabelPathBest(Label &pLabel);
-	bool findBezierPoints(Label &pLabel);
+    bool findLabelPathBest(Label &pLabel);
+    bool findBezierPoints(Label &pLabel);
     bool checkPatchQuality(Label pLabel);
 
     // unsegmented labels
@@ -403,7 +402,7 @@ private:
     void placeOffLabels(LabelVec &offLabels);
     void addUnsegmentedLabelData(std::string text);
     void removeUnsegmentedLabelData(std::string text);
-	void rotateLabel(Label &pLabel, float angle);
+    void rotateLabel(Label &pLabel, float angle);
 
     // image-methods
     void readImage(int source);
@@ -419,15 +418,22 @@ private:
     void writeDistanceMapToFile();
 #endif
 
+    // property methods invoked by onChange()
+    void updateExternColorsEvt();   // invoked by setLabelColor_, setHaloColor_
+    void updateFontSizeEvt();       // invoked by fontSizeExtern_
+    void updateFontSettingsEvt();   // invoked by lockInternalFontSettings_
+    void setShape3DEvt();           // invoked by shape3D_
+    void unlockInternalFontSettingsEvt(); // invoked by labelColorIntern_, haloColorIntern_, fontSizeIntern_
+
     // user interaction
     IDManager idManager_;
     Label* getPickedLabel(int x, int y);
-	bool catchedBySegment(const Label &pLabel, tgt::ivec2 mousePos);
+    bool catchedBySegment(const Label &pLabel, tgt::ivec2 mousePos);
     bool updateSegmentCaption(Label &pLabel, std::string const &newCaption);
     bool drag_;                     // true if user is currently dragging a label
     Label* pickedLabel_;
     tgt::ivec2 pickedPointOffset_;  // vector from picked point to picked label's labelPos
-	tgt::ivec2 lastDragPoint_;		// pixel coords of last dragging event
+    tgt::ivec2 lastDragPoint_;        // pixel coords of last dragging event
     void mousePressEvent(tgt::MouseEvent* e);
     void mouseDoubleClickEvent(tgt::MouseEvent* e);
     void mouseReleaseEvent(tgt::MouseEvent* e);

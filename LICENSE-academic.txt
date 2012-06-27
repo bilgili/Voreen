@@ -1,4 +1,4 @@
-The Voreen software package is Copyright (C) 2005-2008 Visualization and
+The Voreen software package is Copyright (C) 2005-2009 Visualization and
 Computer Graphics Group, University of Muenster, Germany.
 
 You may use, distribute and copy the Voreen software package under the terms

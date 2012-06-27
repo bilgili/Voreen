@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -43,7 +43,7 @@ ThresholdWidget::ThresholdWidget(QWidget* parent ) :
     vboxLayout1 = new QVBoxLayout();
     vboxLayout1->setSpacing(6);
     vboxLayout1->setMargin(0);
-    
+
     vboxLayout1->setObjectName(QString::fromUtf8("vboxLayout1"));
     upperValueLBL = new QLabel(this);
     upperValueLBL->setObjectName(QString::fromUtf8("upperValueLBL"));
@@ -115,16 +115,16 @@ ThresholdWidget::ThresholdWidget(QWidget* parent ) :
     hounsfield->addItem(QApplication::translate("ThresholdWidget", "Bone (400 => 1000)", 0, QApplication::UnicodeUTF8));
 
     QMetaObject::connectSlotsByName(this);
-        
+
     // signals and slots connections
     connect( lowerValueSLB, SIGNAL( valueChanged(int) ), this, SLOT( setLowerValue(int) ) );
     connect( upperValueSLB, SIGNAL( valueChanged(int) ), this, SLOT( setUpperValue(int) ) );
-    
+
     connect( lowerValueSLB, SIGNAL( sliderPressedChanged(bool) ), this, SLOT( slidersPressedChange(bool) ) );
     connect( upperValueSLB, SIGNAL( sliderPressedChanged(bool) ), this, SLOT( slidersPressedChange(bool) ) );
-    
+
     connect( hounsfield, SIGNAL( currentIndexChanged(int) ), this, SLOT( setHounsfieldRange(void) ) );
-    
+
     lowerValue_ = lowerValueSLB->getValue();
     upperValue_ = upperValueSLB->getValue();
     minValue_ = lowerValueSLB->getMinValue();
@@ -158,8 +158,8 @@ void ThresholdWidget::setValues(int lowerValue, int upperValue) {
 }
 
 void ThresholdWidget::setLowerValue(int value) {
-    if (value != lowerValue_) {	
-        lowerValue_ = value;	
+    if (value != lowerValue_) {
+        lowerValue_ = value;
         emit lowerValueChanged(lowerValue_);
         if (value > upperValue_) {
             upperValue_ = value;

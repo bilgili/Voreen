@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -55,10 +55,10 @@ class Processor;
 /// Exception class for Messages
 struct message_error : public std::runtime_error {
 
-	/// @param msg The error message.
+    /// @param msg The error message.
     message_error(const std::string& msg)
-		: std::runtime_error(msg)
-	{}
+        : std::runtime_error(msg)
+    {}
 };
 
 /**
@@ -143,6 +143,8 @@ class Glyphs;
 typedef TemplateMessage<Glyphs*> GlyphPtrMsg;
 typedef TemplateMessage<Processor*> ProcessorPointerMsg;
 typedef TemplateMessage<std::vector<std::string> > StringVectorMsg;
+struct Overlay;
+typedef TemplateMessage<Overlay*> OverlayPtrMsg;
 
 /**
  * All classes which should receive messages must inherit from this class.
@@ -150,14 +152,14 @@ typedef TemplateMessage<std::vector<std::string> > StringVectorMsg;
 class MessageReceiver {
 public:
 
-	/**
-	 * Every MessageReceiver has a Tag. This Tag can be used to address
-	 * different MessageReceiver objects in the MessageDistributer.
-	 *
-	 * @param tag The Identifier of the tag for this MessageReceiver.
-	 * If it is set to Message::all_ (default argument), the MessageDistributer
-	 * will address this class on all events.
-	 */
+    /**
+     * Every MessageReceiver has a Tag. This Tag can be used to address
+     * different MessageReceiver objects in the MessageDistributer.
+     *
+     * @param tag The Identifier of the tag for this MessageReceiver.
+     * If it is set to Message::all_ (default argument), the MessageDistributer
+     * will address this class on all events.
+     */
     MessageReceiver(const Identifier& tag = Message::all_);
 
     virtual ~MessageReceiver();
@@ -198,10 +200,10 @@ public:
      */
     virtual void postMessage(Message* msg, const std::vector<Identifier>& dest);
 
-	/// Gets the tag for this class.
+    /// Gets the tag for this class.
     Identifier getTag();
 
-	/// Sets the tag for this class.
+    /// Sets the tag for this class.
     void setTag(Identifier tag);
 
 protected:

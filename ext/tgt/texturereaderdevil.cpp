@@ -155,6 +155,13 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
             t->setFormat(GL_RGBA);
             break;
 
+        case 12: //HDR
+            if (!ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE)) {
+                delete t;
+                return 0;
+            }
+            t->setFormat(GL_RGB);
+            break;
         default:
             LERROR("Texturmanager: unsupported bpp " << filename);
     }

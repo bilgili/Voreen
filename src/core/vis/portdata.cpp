@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,12 +30,12 @@
 //
 //#include "voreen/core/vis/portdata.h"
 //
-//PortData::PortData(Identifier type) 
+//PortData::PortData(Identifier type)
 //: type_(type)
 //{}
 //
 //int PortData::getTarget() {
-//	return -1;
+//    return -1;
 //}
 //
 //void PortData::setTarget(int target) {
@@ -47,7 +47,7 @@
 //void PortData::call() {
 //}
 //
-//PortDataTexture::PortDataTexture(int target) 
+//PortDataTexture::PortDataTexture(int target)
 //: PortData("portdata.texture"),
 //textureContainerTarget_(target)
 //{
@@ -65,6 +65,6 @@
 //{}
 //
 //void PortDataCoProcessor::call() {
-//	int i=0;
-//	renderer_->*function_;
+//    int i=0;
+//    renderer_->*function_;
 //}

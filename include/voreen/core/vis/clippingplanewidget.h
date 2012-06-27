@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -42,47 +42,41 @@ namespace voreen {
 class ClippingPlaneWidget : public GeometryRenderer, public tgt::EventListener {
 public:
     ClippingPlaneWidget();
-	~ClippingPlaneWidget();
-    
+    virtual ~ClippingPlaneWidget();
+
     /**
     * Process voreen message, accepted identifiers:
-    * - set.ClipSliceColor \c tgt::vec4
-    * - set.polyOffsetFact \c float
-    * - set.polyOffsetUnit \c float
-    * - switch.ClipXLock \c bool
-    * - switch.ClipYLock \c bool
-    * - switch.ClipZLock \c bool
     * - resetClipPlanes
     */
     virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
-	virtual const Identifier getClassName() const;
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create();
+    virtual const Identifier getClassName() const;
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const;
 
     virtual void mousePressEvent(tgt::MouseEvent *e);
     virtual void mouseMoveEvent(tgt::MouseEvent *e);
     virtual void mouseReleaseEvent(tgt::MouseEvent *e);
 
 protected:
-    void render(LocalPortMapping* portMapping);
+    virtual void render(LocalPortMapping* portMapping);
 
 private:
     ///Returns the id of the control element that was clicked, or 0 if none
     int isClicked(int x, int y);
-    
+
     ///Paints an arrow that denotes a control element
     void paintArrow(tgt::vec3 translation_first, tgt::vec3 translation_second,
                      tgt::vec3 rotationAxis, float rotationAngle);
 
     ///Initializes light and material parameter
     void initLightAndMaterial();
-    
+
     ///Renders transparent quads that show the position of the clipping planes
     void renderQuad(int number);
 
     ///Calculates the value of one clippingplane depending on given parameter
-    void calculateClippingValues(GLdouble pos, float& clip1, float& clip2, 
+    void calculateClippingValues(GLdouble pos, float& clip1, float& clip2,
                                  bool lock, bool switched);
 
     ///calculates clipping values by calling \s calculateClippingValues()
@@ -102,7 +96,6 @@ private:
     BoolProp x_lock_;          ///< property for locking left and right clipping plane
     BoolProp y_lock_;          ///< property for locking bottom and top clipping plane
     BoolProp z_lock_;          ///< property for locking front and back clipping plane
-    GroupProp* groupProp_;     ///< property for grouping the widgets of lock properties
 
     struct ControlElement {
         ControlElement(tgt::vec3 clipValue, std::string name, bool activated,
@@ -122,7 +115,7 @@ private:
 
     std::vector<ControlElement> controlElements_; ///< vector with all controlelements
 
-    float clipValueLeft_;   ///< value of left clipping plane 
+    float clipValueLeft_;   ///< value of left clipping plane
     float clipValueRight_;  ///< value of right clipping plane
     float clipValueBottom_; ///< value of bottom clipping plane
     float clipValueTop_;    ///< value of top clipping plane
@@ -130,10 +123,10 @@ private:
     float clipValueBack_;   ///< value of back clipping plane
 
     //Light Parameter
-	GLfloat light_pos[4];      ///< position of the light source
-	GLfloat light_ambient[4];  ///< ambient light parameter
-	GLfloat light_diffuse[4];  ///< diffuse light parameter
-	GLfloat light_specular[4]; ///< specular light parameter
+    GLfloat light_pos[4];      ///< position of the light source
+    GLfloat light_ambient[4];  ///< ambient light parameter
+    GLfloat light_diffuse[4];  ///< diffuse light parameter
+    GLfloat light_specular[4]; ///< specular light parameter
 
     struct Material {
         GLfloat ambient[4];

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,10 +29,7 @@
 
 #include "voreen/core/vis/processors/image/background.h"
 
-
-#include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/vis/processors/processorfactory.h"
-
+#include "tgt/texturemanager.h"
 
 namespace voreen {
 
@@ -46,17 +43,18 @@ const Identifier Background::shadeTexUnit1_ = "shadeTex1";
 const Identifier Background::depthTexUnit1_ = "depthTex1";
 
 Background::Background()
-    : GenericFragment("pp_combine")
+    : ImageProcessor("pp_combine")
     , firstcolor_(setBackgroundFirstColor_, "first color",
-                  tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f))
+                  tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , secondcolor_(setBackgroundSecondColor_, "second color",
-                   tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
-    , angle_(setBackgroundAngle_, "angle", 180, 0, 359, false)
+                   tgt::vec4(0.2f, 0.2f, 0.2f, 1.0f))
+    , angle_(setBackgroundAngle_, "angle", 0, 0, 359, false)
     , tex_(0)
     , textureloaded_(false)
     , filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
-                "", "*.jpg;*.bmp;*.png", &needRecompileShader_)
-    , tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false) 
+                "", "*.jpg;*.bmp;*.png", true, true)
+    , tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false),
+    mode_(MONOCHROME)
 {
     setName("Background");
 
@@ -67,8 +65,9 @@ Background::Background()
     backmode.push_back("Cloud");
     backmode.push_back("Texture");
     modeProp_ = new EnumProp("set.backgroundModeAsString", "Layout", backmode);
-    condProp_ = new ConditionProp("backgroundModeCond", modeProp_);
-    addProperty(condProp_);
+    modeProp_->onChange(CallMemberAction<Background>(this, &Background::setBackgroundModeEvt));
+    //condProp_ = new ConditionProp("backgroundModeCond", modeProp_);
+    //addProperty(condProp_);
     addProperty(modeProp_);
 
     std::vector<Identifier> units;
@@ -78,18 +77,18 @@ Background::Background()
     units.push_back(depthTexUnit1_);
     tm_.registerUnits(units);
 
+    /*
     std::vector<int> conds;
     conds.push_back(1);
     conds.push_back(2);
     conds.push_back(3);
-    //tile_.setConditioned("backgroundModeCond", conds);
-    mode_ = MONOCHROME;
-
+    tile_.setConditioned("backgroundModeCond", conds);
     conds.clear();
     conds.push_back(0);
     conds.push_back(1);
     conds.push_back(2);
-    
+    */
+
     // Note: Conditioning does currently not work properly,
     // and will become obsolete with the new property mechanism
     //firstcolor_.setConditioned("backgroundModeCond", conds);
@@ -99,12 +98,12 @@ Background::Background()
     addProperty(&firstcolor_);
     addProperty(&secondcolor_);
     addProperty(&angle_);
+    filename_.onChange(CallMemberAction<Background>(this, &Background::loadTexture));
     addProperty(&filename_);
     addProperty(&tile_);
-    loadTexture();
 
-	createInport("image.input");
-	createOutport("image.output");
+    createInport("image.input");
+    createOutport("image.output");
     createPrivatePort("image.tmp");
 }
 
@@ -119,24 +118,29 @@ Background::~Background() {
     }
 
     delete modeProp_;
-    delete condProp_;
+    //delete condProp_;
 }
 
 const Identifier Background::getClassName() const {
-    return "PostProcessor.Background";
+    return "ImageProcessor.Background";
 }
 
 const std::string Background::getProcessorInfo() const {
-	return "Creates special backgrounds like monochrome background by using the current background color, "
+    return "Creates special backgrounds like monochrome background by using the current background color, "
         "color gradient, radial gradient, procedural clouds or an image.";
 }
 
-Processor* Background::create() {
+Processor* Background::create() const {
     return new Background();
 }
 
+int Background::initializeGL() {
+    loadTexture();
+    return ImageProcessor::initializeGL();
+}
+
 std::string Background::generateHeader() {
-    std::string header = GenericFragment::generateHeader();
+    std::string header = ImageProcessor::generateHeader();
     header += "#define COMBINE_ALPHA_COMPOSITING\n";
     header += "#line 1\n";
 
@@ -149,19 +153,19 @@ void Background::process(LocalPortMapping* portMapping) {
     int tmpBckgrnd = portMapping->getTarget("image.tmp");
 
     if (source == -1)
-	    tc_->setActiveTarget(dest, "Background::process()"); // render directly into destination
-    else 
+        tc_->setActiveTarget(dest, "Background::process()"); // render directly into destination
+    else
         tc_->setActiveTarget(tmpBckgrnd, "Background::process() tmp for background"); // render first in tmp target
 
     compileShader();
-    
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-	glClearDepth(1.0);
+    glClearDepth(1.0);
 
     glDisable(GL_DEPTH_TEST);
 
@@ -173,39 +177,39 @@ void Background::process(LocalPortMapping* portMapping) {
     glEnable(GL_DEPTH_TEST);
 
     // leave if there's nothing to render above
-	if (source != -1) {
+    if (source != -1) {
         tc_->setActiveTarget(dest, "Background::process()"); // now blend src and tmp into dest
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// use pp_combine.frag to blend the orginal picture over the background
-		// and to keep the depth-values
+        // use pp_combine.frag to blend the orginal picture over the background
+        // and to keep the depth-values
 
-		glActiveTexture(tm_.getGLTexUnit(shadeTexUnit0_));
-		glBindTexture(tc_->getGLTexTarget(tmpBckgrnd), tc_->getGLTexID(tmpBckgrnd));
-		glActiveTexture(tm_.getGLTexUnit(depthTexUnit0_));
-		glBindTexture(tc_->getGLDepthTexTarget(tmpBckgrnd), tc_->getGLDepthTexID(tmpBckgrnd));
-		LGL_ERROR;
-		glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
-		glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-		glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
-		glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-		LGL_ERROR;
+        glActiveTexture(tm_.getGLTexUnit(shadeTexUnit0_));
+        glBindTexture(tc_->getGLTexTarget(tmpBckgrnd), tc_->getGLTexID(tmpBckgrnd));
+        glActiveTexture(tm_.getGLTexUnit(depthTexUnit0_));
+        glBindTexture(tc_->getGLDepthTexTarget(tmpBckgrnd), tc_->getGLDepthTexID(tmpBckgrnd));
+        LGL_ERROR;
+        glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
+        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
+        glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
+        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+        LGL_ERROR;
 
-		// initialize shader
-		program_->activate();
-		setGlobalShaderParameters(program_);
-		program_->setUniform("shadeTex0_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit0_)));
-		program_->setUniform("depthTex0_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit0_)));
-		program_->setUniform("shadeTex1_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit1_)));
-		program_->setUniform("depthTex1_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit1_)));
+        // initialize shader
+        program_->activate();
+        setGlobalShaderParameters(program_);
+        program_->setUniform("shadeTex0_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit0_)));
+        program_->setUniform("depthTex0_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit0_)));
+        program_->setUniform("shadeTex1_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit1_)));
+        program_->setUniform("depthTex1_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit1_)));
 
-		glDepthFunc(GL_ALWAYS);
-		renderQuad();
-		glDepthFunc(GL_LESS);
+        glDepthFunc(GL_ALWAYS);
+        renderQuad();
+        glDepthFunc(GL_LESS);
 
-		program_->deactivate();
-		glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
-	}
+        program_->deactivate();
+        glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+    }
     LGL_ERROR;
 }
 
@@ -213,69 +217,73 @@ void Background::renderBackground() {
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
 
-    if (mode_ == MONOCHROME) {
-        glPushAttrib(GL_COLOR_BUFFER_BIT);
-        glClearColor(firstcolor_.get().r, firstcolor_.get().g,
-                     firstcolor_.get().b, firstcolor_.get().a);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glPopAttrib();
-    }
-    else if (mode_ == RADIAL) {
-        glBegin(GL_QUADS);
-        glColor4fv(&secondcolor_.get().elem[0]);
-        glVertex2f(-1.0f, -1.0f);
-        glVertex2f( 1.0f, -1.0f);
-        glVertex2f( 1.0f,  1.0f);
-        glVertex2f(-1.0f,  1.0f);
-        glEnd();
+    switch(mode_) {
+        case MONOCHROME:
+            glPushAttrib(GL_COLOR_BUFFER_BIT);
+            glClearColor(firstcolor_.get().r, firstcolor_.get().g,
+                         firstcolor_.get().b, firstcolor_.get().a);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glPopAttrib();
+            break;
 
-        glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
-        tex_->bind();
-        LGL_ERROR;
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_TEXTURE_2D);
+        case RADIAL:
+            glBegin(GL_QUADS);
+            glColor4fv(&secondcolor_.get().elem[0]);
+            glVertex2f(-1.0f, -1.0f);
+            glVertex2f( 1.0f, -1.0f);
+            glVertex2f( 1.0f,  1.0f);
+            glVertex2f(-1.0f,  1.0f);
+            glEnd();
 
-        glPushMatrix();
-        glScalef(1.44f, 1.44f, 0.0f);
+            glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+            tex_->bind();
+            LGL_ERROR;
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_TEXTURE_2D);
 
-        glBegin(GL_QUADS);
-        glColor4fv(&firstcolor_.get().elem[0]);
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f( -1.0f, -1.0f);
-        glTexCoord2f(tile_.get(), 0.0f);
-        glVertex2f( 1.0f, -1.0f);
-        glTexCoord2f(tile_.get(), tile_.get());
-        glVertex2f( 1.0f, 1.0f);
-        glTexCoord2f(0.0f, tile_.get());
-        glVertex2f( -1.0f, 1.0f);
-        glEnd();
+            glPushMatrix();
+            glScalef(1.44f, 1.44f, 0.0f);
 
-        glPopMatrix();
+            glBegin(GL_QUADS);
+            glColor4fv(&firstcolor_.get().elem[0]);
+            glTexCoord2f(0.0f, 0.0f);
+            glVertex2f( -1.0f, -1.0f);
+            glTexCoord2f(tile_.get(), 0.0f);
+            glVertex2f( 1.0f, -1.0f);
+            glTexCoord2f(tile_.get(), tile_.get());
+            glVertex2f( 1.0f, 1.0f);
+            glTexCoord2f(0.0f, tile_.get());
+            glVertex2f( -1.0f, 1.0f);
+            glEnd();
 
-        glDisable(GL_TEXTURE_2D);
-        glDisable(GL_BLEND);
-    } 
-    else {
-        glPushMatrix();
-        glLoadIdentity();
-        glRotatef(static_cast<float>(angle_.get()), 0.0f, 0.0f, 1.0f);
+            glPopMatrix();
 
-        // when you rotate the texture, you need to scale it.
-        // otherwise the edges doesn't cover the complete screen
-        // magic number: 0.8284271247461900976033774484194f = sqrt(8)-2;
-        glScalef(1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f,
-                 1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f, 1.0f);
+            glDisable(GL_TEXTURE_2D);
+            glDisable(GL_BLEND);
+            break;
 
-        glBegin(GL_QUADS);
-        glColor4fv(&firstcolor_.get().elem[0]);
-        glVertex2f(-1.0, -1.0);
-        glVertex2f( 1.0, -1.0);
-        glColor4fv(&secondcolor_.get().elem[0]);
-        glVertex2f( 1.0, 1.0);
-        glVertex2f(-1.0, 1.0);
-        glEnd();
-        glPopMatrix();
+        default:
+            glPushMatrix();
+            glLoadIdentity();
+            glRotatef(static_cast<float>(angle_.get()), 0.0f, 0.0f, 1.0f);
+
+            // when you rotate the texture, you need to scale it.
+            // otherwise the edges doesn't cover the complete screen
+            // magic number: 0.8284271247461900976033774484194f = sqrt(8)-2;
+            glScalef(1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f,
+                     1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f, 1.0f);
+
+            glBegin(GL_QUADS);
+            glColor4fv(&firstcolor_.get().elem[0]);
+            glVertex2f(-1.0, -1.0);
+            glVertex2f( 1.0, -1.0);
+            glColor4fv(&secondcolor_.get().elem[0]);
+            glVertex2f( 1.0, 1.0);
+            glVertex2f(-1.0, 1.0);
+            glEnd();
+            glPopMatrix();
+            break;
     }
 
     // clouds and textures over the gradient-screen
@@ -300,9 +308,39 @@ void Background::renderBackground() {
         glEnd();
 
         glDisable(GL_BLEND);
-    
+
         tex_->disable();
     }
+}
+
+void Background::setBackgroundModeEvt() {
+    if (modeProp_ == 0)
+        return;
+
+    const int mode = modeProp_->get();
+    switch(mode) {
+        case 0:
+            mode_ = MONOCHROME;
+            break;
+        case 1:
+            mode_ = GRADIENT;
+            break;
+        case 2:
+            mode_ = RADIAL;
+            break;
+        case 3:
+            mode_ = CLOUD;
+            firstcolor_.set(tgt::vec4(0.0f, 0.0f, 0.8f, 1.0f));
+            secondcolor_.set(tgt::vec4(0.7f, 0.7f, 1.0f, 1.0f));
+            angle_.set(200);
+            break;
+        case 4:
+            mode_ = TEXTURE;
+            break;
+    }
+
+    loadTexture();
+    invalidate();
 }
 
 void Background::loadTexture() {
@@ -311,36 +349,42 @@ void Background::loadTexture() {
         if (textureloaded_) {
             TexMgr.dispose(tex_);
             textureloaded_ = false;
-        } 
-        else {
-            delete tex_;
         }
+        else
+            delete tex_;
 
         LGL_ERROR;
         tex_ = 0;
     }
 
     // create Texture
-    if (mode_ == CLOUD)
+    switch (mode_) {
+    case CLOUD:
         createCloudTexture();
-    else if (mode_ == RADIAL)
+        break;
+
+    case RADIAL:
         createRadialTexture();
-	else if (mode_ == TEXTURE) {
-        if ( !filename_.get().empty() ) {
-            tex_ = TexMgr.load(filename_.get(), tgt::Texture::LINEAR, false, false, true, true, 
-                ( ProcessorFactory::getInstance()->getTextureContainer()->getTextureContainerTextureType()
-                  == TextureContainer::VRN_TEXTURE_RECTANGLE) );
+        break;
+
+    case TEXTURE:
+        if (!filename_.get().empty()) {
+            tex_ = TexMgr.load(filename_.get(), tgt::Texture::LINEAR, false, false, true, true,
+                               (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE));
         }
         if (tex_)
             textureloaded_ = true;
-    }
+        break;
 
+    default:
+        break;
+    }
 }
 
 GLubyte* Background::blur(GLubyte* image, int size) {
     GLubyte* n = new GLubyte[size * size];
 
-	for (int y = 0; y < size; y++) {
+    for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
             int pos = x + y * size;
             n[pos] = image[pos] / 5;
@@ -365,7 +409,7 @@ GLubyte* Background::blur(GLubyte* image, int size) {
             else
                 n[pos] +=image[pos + size] / 5;
         }
-	}
+    }
     delete[] image;
     return n;
 }
@@ -429,8 +473,8 @@ void Background::createCloudTexture() {
     // creates the final cloud data with the 4 textures from above
     GLubyte* tex5 = new GLubyte[imgx * imgy];
 
-	for (int y = 0; y < imgy; y++) {
-		for (int x = 0; x < imgx; x++) {
+    for (int y = 0; y < imgy; y++) {
+        for (int x = 0; x < imgx; x++) {
             int pos = x + imgx * y;
             // mix textures and don't use all values, so that there are free areas in the sky
             float c = (tex4[pos] + tex3[pos] / 2 + tex2[pos] / 4 + tex1[pos] / 8) / 2 - 110.0f;
@@ -439,20 +483,20 @@ void Background::createCloudTexture() {
             // exp-function to calc the final value for a nicer look
             tex5[pos] = (GLubyte)(255 - (pow(0.95f, c) * 255));
         }
-	}
+    }
 
     tex5 = blur(tex5, imgx);
 
     tex_ = new tgt::Texture(tgt::ivec3(imgx, imgy, 1));
 
-	for (int y = 0; y < imgy; y++) {
+    for (int y = 0; y < imgy; y++) {
         for (int x = 0; x < imgx; x++) {
             tex_->getPixelData()[x*4 + imgx*4*y + 0] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 1] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 2] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 3] = tex5[x + imgx * y];
         }
-	}
+    }
 
     delete[] tex1;
     delete[] tex2;
@@ -474,7 +518,7 @@ void Background::createRadialTexture() {
     GLubyte a = 255;
     double r;
 
-	for (int y = 0; y < imgy; y++) {
+    for (int y = 0; y < imgy; y++) {
         for (int x = 0; x < imgx; x++) {
             // calculate radius (Pythagoras)
             r = static_cast<double>((x - imgx / 2) * (x - imgx / 2) + (y - imgy / 2) * (y - imgy / 2));
@@ -489,62 +533,11 @@ void Background::createRadialTexture() {
             // invert and multiply with intensity
             tex_->getPixelData()[x*4 + imgx*4*y + 3] = static_cast<GLubyte>(a * (1 - r));
         }
-	}
+    }
 
     tex_->bind();
     tex_->uploadTexture();
     LGL_ERROR;
-}
-
-void Background::processMessage(Message* msg, const Identifier& dest) {
-    PostProcessor::processMessage(msg, dest);
-
-    if (msg->id_ == setBackgroundColor_) { //FIXME: is this still used? joerg
-        invalidate();
-    }
-    else if (msg->id_ == setBackgroundFirstColor_) {
-        firstcolor_.set(msg->getValue<tgt::Color>());
-        invalidate();
-    }
-    else if (msg->id_ == setBackgroundSecondColor_) {
-        secondcolor_.set(msg->getValue<tgt::Color>());
-        invalidate();
-    }
-    else if (msg->id_ == setBackgroundAngle_) {
-        angle_.set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.backgroundModeAsString") {
-        std::string modeStr = msg->getValue<std::string>();
-
-        if (modeStr == "Monochrome")
-            mode_ = MONOCHROME;
-        else if (modeStr == "Gradient")
-            mode_ = GRADIENT;
-        else if (modeStr == "Radial")
-            mode_ = RADIAL;
-        else if (modeStr == "Cloud") {
-            mode_ = CLOUD;
-            firstcolor_.set(tgt::vec4(0.0f, 0.0f, 0.8f, 1.0f));
-            secondcolor_.set(tgt::vec4(0.7f, 0.7f, 1.0f, 1.0f));
-            angle_.set(200);
-        } else if (modeStr == "Texture")
-            mode_ = TEXTURE;
-
-        loadTexture();
-        invalidate();
-    }
-    else if (msg->id_ == "set.backgroundfilenameAsString") {
-        filename_.set(msg->getValue<std::string>());
-
-        loadTexture();
-
-        invalidate();
-    }
-    else if (msg->id_ == "set.backgroundTile") {
-        tile_.set(msg->getValue<float>());
-        invalidate();
-    }
 }
 
 } //namespace voreen
