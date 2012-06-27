@@ -37,8 +37,7 @@ namespace voreen {
 class AboutBox : public QDialog {
     Q_OBJECT
 public:
-    AboutBox(const QString& application, const QString& description,
-             const QString& version, QWidget* parent = 0);
+    AboutBox(const QString& application, const QString& description, QWidget* parent = 0);
 };
 
 } // namespace

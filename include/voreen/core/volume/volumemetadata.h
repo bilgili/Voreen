@@ -52,45 +52,33 @@ public:
     /// set meta data string
     void setString(const std::string& str);
 
-    void setFileName(const std::string& fileName);
-    const std::string& getFileName() const;
-
     void setImagePositionZ(float pos);
     float getImagePositionZ() const;
 
-    void setTransformation(const tgt::mat4& trans);
-    const tgt::mat4& getTransformation() const;
+    void setBrickSize(size_t bricksize);
+    size_t getBrickSize();
 
-    void setSize(const tgt::ivec2& size);
-    const tgt::ivec2& getSize() const;
-
-	void setParentVolumeDimensions(tgt::ivec3 dimensions);
+    void setParentVolumeDimensions(tgt::ivec3 dimensions);
     tgt::ivec3 getParentVolumeDimensions();
-
-	void setBrickSize(size_t bricksize);
-	size_t getBrickSize();
 
     void setUnit(const std::string& unit);
     const std::string& getUnit() const;
 
 protected:
     std::string string_;
-    std::string fileName_;
     float imagePositionZ_;
-    tgt::mat4 transformation_;
-    tgt::ivec2 size_;
 
-	/**
-	* If this volume is part of a bigger volume (for example if this volume
-	* was created by createSubset, you can store the dimensions of the
-	* bigger volume here). Uses in bricking for example. 
-	*/
-	tgt::ivec3 parentVolumeDimensions_;
+    /**
+     * If the volume is a bricked volume, you can store the size of the bricks here.
+     */
+    size_t brickSize_;
 
-	/**
-	* If the volume is a bricked volume, you can store the size of the bricks here.
-	*/
-	size_t brickSize_;
+    /**
+     * If this volume is part of a bigger volume (for example if this volume
+     * was created by createSubset, you can store the dimensions of the
+     * bigger volume here). Uses in bricking for example.
+     */
+    tgt::ivec3 parentVolumeDimensions_;
 
     std::string unit_;
 

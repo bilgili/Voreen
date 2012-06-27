@@ -31,6 +31,8 @@
 #include "voreen/core/vis/properties/condition.h"
 #include "voreen/core/vis/properties/numericproperty.h"
 
+#include "tgt/logmanager.h"
+
 namespace voreen {
 
 Condition::Condition(const Action& action, const Action& elseaction) {
@@ -81,9 +83,16 @@ void Condition::exec() {
     }
 }
 
-void Condition::validate() const throw (Condition::ValidationFailed) {
-    if (!met())
-        throw ValidationFailed(this);
+bool Condition::validate() const {
+
+    bool valid = met();
+    if (!valid) {
+        std::string msg = "Property validation failed";
+        if (!description().empty())
+            msg += ": " + description();
+        LWARNINGC("voreen.core.Condition", msg);
+    }
+    return met();
 }
 
 // ----------------------------------------------------------------------------
@@ -145,6 +154,16 @@ bool NumericPropertyValidation<int>::met() const throw() {
     else
         return true;
 }
+
+template<class T>
+std::string voreen::NumericPropertyValidation<T>::description() const{
+    std::stringstream stream;
+    stream << observed_->value_ << " out of valid range ["
+           << observed_->minValue_ << "," << observed_->maxValue_ << "]"
+           << "  (" << observed_->getOwner()->getName() << "." << observed_->getId() << ")";
+    return stream.str();
+}
+
 
 // explicit template instantiation to enable distribution of
 // implementation of template class methods over .h and .cpp files

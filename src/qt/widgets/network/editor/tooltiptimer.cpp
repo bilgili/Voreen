@@ -47,8 +47,16 @@ void TooltipTimer::setPoint(QPoint p) {
     p_ = p;
 }
 
+qreal TooltipTimer::radius() {
+    return radius_;
+}
+
+QPointF TooltipTimer::point() {
+    return p_;
+}
+
 bool TooltipTimer::isDistant(const QPoint& p) {
-    if (distance(p)>radius_) {
+    if (distance(p) > radius_) {
         stop();
         return true;
     }

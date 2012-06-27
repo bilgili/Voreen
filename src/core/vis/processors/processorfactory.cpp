@@ -32,28 +32,36 @@
 #include <algorithm> // for sorting vectors
 #include <functional>
 
-#include "voreen/core/vis/clippingplanewidget.h"
+#include "voreen/core/vis/processors/clockprocessor.h"
 #include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
-#include "voreen/core/vis/processors/geometrytestprocessor.h"
+#include "voreen/core/vis/processors/entryexitpoints/depthpeelingentryexitpoints.h"
+#include "voreen/core/vis/processors/geometry/clippingplanewidget.h"
+#include "voreen/core/vis/processors/geometry/coordinatetransformation.h"
 #include "voreen/core/vis/processors/geometry/geometryprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometrysource.h"
 #include "voreen/core/vis/processors/geometry/pointlistrenderer.h"
+#include "voreen/core/vis/processors/geometry/pointsegmentlistrenderer.h"
 #include "voreen/core/vis/processors/image/background.h"
-#include "voreen/core/vis/processors/image/blur.h"
-#include "voreen/core/vis/processors/image/cacherenderer.h"
+#include "voreen/core/vis/processors/image/binaryimageprocessor.h"
+#include "voreen/core/vis/processors/image/unaryimageprocessor.h"
+#include "voreen/core/vis/processors/image/gaussian.h"
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
-#include "voreen/core/vis/processors/image/coarsenessrenderer.h"
 #include "voreen/core/vis/processors/image/colordepth.h"
-#include "voreen/core/vis/processors/image/combine.h"
 #include "voreen/core/vis/processors/image/compositer.h"
 #include "voreen/core/vis/processors/image/crosshair.h"
-#include "voreen/core/vis/processors/image/depthmask.h"
+#include "voreen/core/vis/processors/image/depthdarkening.h"
 #include "voreen/core/vis/processors/image/depthoffield.h"
 #include "voreen/core/vis/processors/image/edgedetect.h"
+#include "voreen/core/vis/processors/image/fade.h"
 #include "voreen/core/vis/processors/image/glow.h"
+#include "voreen/core/vis/processors/image/grayscale.h"
+#include "voreen/core/vis/processors/image/imageoverlay.h"
 #include "voreen/core/vis/processors/image/labeling.h"
-#include "voreen/core/vis/processors/image/nullrenderer.h"
 #include "voreen/core/vis/processors/image/regionmodifier.h"
 #include "voreen/core/vis/processors/image/renderstore.h"
+#include "voreen/core/vis/processors/image/scale.h"
+#include "voreen/core/vis/processors/image/multiscale.h"
+#include "voreen/core/vis/processors/image/quadview.h"
 #include "voreen/core/vis/processors/image/threshold.h"
 #include "voreen/core/vis/processors/proxygeometry/axialsliceproxygeometry.h"
 #include "voreen/core/vis/processors/proxygeometry/cubecutproxygeometry.h"
@@ -62,8 +70,10 @@
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/processors/proxygeometry/sliceproxygeometry.h"
 #include "voreen/core/vis/processors/proxygeometry/slicingproxygeometry.h"
-#include "voreen/core/vis/processors/render/firsthitrenderer.h"
+#include "voreen/core/vis/processors/render/glslraycaster.h"
 #include "voreen/core/vis/processors/render/idraycaster.h"
+#include "voreen/core/vis/processors/render/multivolumeraycaster.h"
+#include "voreen/core/vis/processors/render/orthogonalslicerenderer.h"
 #include "voreen/core/vis/processors/render/segmentationraycaster.h"
 #include "voreen/core/vis/processors/render/simpleraycaster.h"
 #include "voreen/core/vis/processors/render/singleslicerenderer.h"
@@ -72,9 +82,23 @@
 #include "voreen/core/vis/processors/render/slicesequencerenderer.h"
 #include "voreen/core/vis/processors/render/volumeeditor.h"
 #include "voreen/core/vis/processors/volume/regiongrowing.h"
+#include "voreen/core/vis/processors/volume/vectormagnitude.h"
+#include "voreen/core/vis/processors/volume/volumecollectionmodalityfilter.h"
 #include "voreen/core/vis/processors/volume/volumeinversion.h"
-#include "voreen/core/vis/processors/volumeselectionprocessor.h"
-#include "voreen/core/vis/processors/volumesetsourceprocessor.h"
+#include "voreen/core/vis/processors/volume/volumegradient.h"
+#include "voreen/core/vis/processors/volume/volumesave.h"
+#include "voreen/core/vis/processors/volume/volumeselector.h"
+#include "voreen/core/vis/processors/volume/volumesourceprocessor.h"
+#include "voreen/core/vis/processors/volume/volumecollectionsourceprocessor.h"
+
+#ifdef VRN_MODULE_FLOWREEN
+#include "voreen/modules/flowreen/flowmagnitudes3d.h"
+#include "voreen/modules/flowreen/flowslicerenderer2d.h"
+#include "voreen/modules/flowreen/flowslicerenderer3d.h"
+#include "voreen/modules/flowreen/flowstreamlinestexture3d.h"
+#include "voreen/modules/flowreen/pathlinerenderer3d.h"
+#include "voreen/modules/flowreen/streamlinerenderer3d.h"
+#endif
 
 namespace voreen {
 
@@ -85,9 +109,8 @@ ProcessorFactory::ProcessorFactory() {
 }
 
 ProcessorFactory::~ProcessorFactory() {
-    for (std::map <Identifier, Processor*>::iterator it = classList_.begin();
-         it != classList_.end();
-         ++it)
+    for (std::map<std::string, Processor*>::iterator it = classList_.begin();
+        it != classList_.end(); ++it)
     {
         delete it->second;
     }
@@ -100,12 +123,37 @@ ProcessorFactory* ProcessorFactory::getInstance() {
     return instance_;
 }
 
-std::string ProcessorFactory::getProcessorInfo(Identifier name) {
-    std::map<Identifier, Processor*>::iterator it = classList_.find(name);
+std::string ProcessorFactory::getProcessorInfo(const std::string& name) {
+    std::map<std::string, Processor*>::iterator it = classList_.find(name);
     if (it != classList_.end() && it->second != 0)
         return it->second->getProcessorInfo();
 
     return "";
+}
+
+std::string ProcessorFactory::getProcessorCategory(const std::string& name) {
+    std::map<std::string, Processor*>::iterator it = classList_.find(name);
+    if (it != classList_.end() && it->second != 0)
+        return it->second->getCategory();
+
+    return "";
+}
+
+std::string ProcessorFactory::getProcessorModuleName(const std::string& name) {
+    std::map<std::string, Processor*>::iterator it = classList_.find(name);
+    if (it != classList_.end() && it->second != 0)
+        return it->second->getModuleName();
+
+    return "";
+}
+
+    // Returns processor codestate
+Processor::CodeState ProcessorFactory::getProcessorCodeState(const std::string& name) {
+    std::map<std::string, Processor*>::iterator it = classList_.find(name);
+    if (it != classList_.end() && it->second != 0)
+        return it->second->getCodeState();
+
+    return Processor::CODE_STATE_BROKEN;
 }
 
 void ProcessorFactory::destroy() {
@@ -113,32 +161,42 @@ void ProcessorFactory::destroy() {
     instance_ = 0;
 }
 
-Processor* ProcessorFactory::create(Identifier name) {
-    std::map<Identifier, Processor*>::iterator it = classList_.find(name);
+Processor* ProcessorFactory::create(const std::string& name) {
+    std::map<std::string, Processor*>::iterator it = classList_.find(name);
     if (it != classList_.end() && it->second != 0)
         return it->second->create();
 
     return 0;
 }
 
-const std::vector<Identifier>& ProcessorFactory::getKnownClasses() {
-    return knownClasses_;
+const std::string ProcessorFactory::getTypeString(const std::type_info& type) const {
+    for (std::map<std::string, Processor*>::const_iterator it = classList_.begin();
+        it != classList_.end(); ++it)
+    {
+        if (type == typeid(*(it->second)))
+            return it->first;
+    }
+
+    return "";
 }
 
-void ProcessorFactory::registerClass(Processor* newClass) {
-    Identifier id  = newClass->getClassName().getName();
+Serializable* ProcessorFactory::createType(const std::string& typeString) {
+    return create(typeString);
+}
 
-    classList_.insert(std::make_pair(id.getSubString(1), newClass));
-    knownClasses_.push_back(newClass->getClassName());
+void ProcessorFactory::registerClass(Processor* const newClass) {
+    classList_.insert(std::make_pair(newClass->getClassName(), newClass));
 
-    // sort knownClasses_ in alphabetical order
-    std::sort(knownClasses_.begin(), knownClasses_.end(), std::less<voreen::Identifier>());
+    // In the KnownClassesVector, the elements are pairs of string, with
+    // the first part of the pair identifying the category name of the
+    // processor and the second one the class name.
+    //
+    knownClasses_.push_back(
+        std::make_pair(newClass->getCategory(), newClass->getClassName()) );
 }
 
 void ProcessorFactory::initializeClassList() {
-
     registerClass(new AxialSliceProxyGeometry());
-    registerClass(new CubeCutProxyGeometry());
     registerClass(new CubeProxyGeometry());
     registerClass(new MultipleAxialSliceProxyGeometry());
     registerClass(new SliceProxyGeometry());
@@ -146,47 +204,70 @@ void ProcessorFactory::initializeClassList() {
     registerClass(new EntryExitPoints());
     registerClass(new SliceEntryPoints());
 
-    registerClass(new Background());
-    registerClass(new Blur());
+	registerClass(new Background());
+	registerClass(new UnaryImageProcessor());
+	registerClass(new BinaryImageProcessor());
+    registerClass(new Gaussian());
     registerClass(new ColorDepth());
-    registerClass(new Combine());
     registerClass(new Compositer());
-    registerClass(new CrossHair());
-    registerClass(new DepthMask());
-    registerClass(new DepthOfField());
+    registerClass(new DepthDarkening());
     registerClass(new EdgeDetect());
-    registerClass(new FirstHitRenderer());
-    registerClass(new Glow());
+    registerClass(new Fade());
+    registerClass(new GLSLRaycaster());
+    registerClass(new Grayscale());
     registerClass(new IDRaycaster());
+    registerClass(new ImageOverlay());
     registerClass(new Labeling());
-    registerClass(new RegionModifier());
+    registerClass(new SingleScale());
+    registerClass(new MultiScale());
+    registerClass(new QuadView());
     registerClass(new SegmentationRaycaster());
     registerClass(new SimpleRaycaster());
     registerClass(new SingleVolumeRaycaster());
     registerClass(new Threshold());
-    registerClass(new VolumeEditor());
 
+    registerClass(new CoordinateTransformation());
     registerClass(new GeomBoundingBox());
+    registerClass(new SlicePositionRenderer());
     registerClass(new GeomLightWidget());
     registerClass(new GeometryProcessor());
+    registerClass(new GeometrySource());
     registerClass(new PointListRenderer());
+    registerClass(new PointSegmentListRenderer());
 
-    registerClass(new ClippingPlaneWidget());
+	registerClass(new ClippingPlaneWidget());
 
-    registerClass(new CoarsenessRenderer());
     registerClass(new CanvasRenderer());
-    registerClass(new CacheRenderer());
-    registerClass(new NullRenderer());
-    registerClass(new RenderStore());
 
-    registerClass(new VolumeSetSourceProcessor());
-    registerClass(new VolumeSelectionProcessor());
+    registerClass(new ClockProcessor());
+    registerClass(new VolumeCollectionModalityFilter());
+    registerClass(new VolumeSelector());
+    registerClass(new VolumeSourceProcessor());
+    registerClass(new VolumeCollectionSourceProcessor());
 
+    registerClass(new OrthogonalSliceRenderer());
     registerClass(new SingleSliceRenderer());
     registerClass(new SliceSequenceRenderer());
 
-    registerClass(new RegionGrowingProcessor());
+    registerClass(new VectorMagnitude());
     registerClass(new VolumeInversion());
+    registerClass(new VolumeGradient());
+    registerClass(new VolumeSave());
+
+#ifdef VRN_MODULE_FLOWREEN
+    registerClass(new FlowMagnitudes3D());
+    registerClass(new FlowSliceRenderer2D());
+    registerClass(new FlowSliceRenderer3D());
+    registerClass(new FlowStreamlinesTexture3D());
+    registerClass(new PathlineRenderer3D());
+    registerClass(new StreamlineRenderer3D());
+#endif
+
+    // Sort knownClasses_ in alphabetical order. For the vector contains pairs
+    // of strings, the binary predicate has to be a user defined one, because
+    // pairs usually posses no weak strict order.
+    //
+    std::sort(knownClasses_.begin(), knownClasses_.end(), KnownClassesOrder());
 }
 
 } // namespace voreen

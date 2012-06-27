@@ -30,12 +30,26 @@
 #ifndef VOREEN_PYVOREEN_H
 #define VOREEN_PYVOREEN_H
 
+#include "voreen/core/vis/voreenpainter.h"
+
 #ifdef VRN_WITH_PYTHON
 
 namespace voreen {
-    /// Initializes the voreen Python module.
-    void initVoreenPythonModule();
-}
+
+class NetworkEvaluator;
+
+class VoreenPython {
+public:
+    VoreenPython();
+
+    void setEvaluator(NetworkEvaluator* eval);
+    NetworkEvaluator* getEvaluator() const { return eval_; }
+
+protected:
+    NetworkEvaluator* eval_;
+};
+
+} // namespace
 
 #endif // VRN_WITH_PYTHON
 

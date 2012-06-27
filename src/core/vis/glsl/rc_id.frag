@@ -30,11 +30,14 @@
 #include "modules/vrn_shaderincludes.frag"
 
 uniform SAMPLER2D_TYPE firstHitPoints_;                // first hit points
+uniform TEXTURE_PARAMETERS firstHitParameters_;
 
 uniform SAMPLER2D_TYPE entryPoints_;                // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;            // ray entry points depth
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE exitPoints_;                    // ray exit points
 uniform SAMPLER2D_TYPE exitPointsDepth_;            // ray exit points depth
+uniform TEXTURE_PARAMETERS exitParameters_;
 
 uniform sampler3D segmentation_;                    // segmented dataset
 uniform VOLUME_PARAMETERS segmentationParameters_;
@@ -72,12 +75,12 @@ vec4 fillIDBuffer(in vec4 entry, in vec4 firstHitPoint, in vec4 exit) {
 
 void main() {
 
-    vec2 p = gl_FragCoord.xy;
-    vec4 firstHitPos = textureLookup2D(firstHitPoints_, p);
-    vec4 entryPos = textureLookup2D(entryPoints_, p);
-    vec4 exitPos = textureLookup2D(exitPoints_, p);
-    float entryPointDepth = textureLookup2D(entryPointsDepth_, p).z;
-    float exitPointDepth = textureLookup2D(exitPointsDepth_, p).z;
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec4 firstHitPos = textureLookup2Dnormalized(firstHitPoints_, firstHitParameters_, p);
+    vec4 entryPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p);
+    vec4 exitPos = textureLookup2Dnormalized(exitPoints_,exitParameters_,  p);
+    float entryPointDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitPointDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     vec4 result;
     if (firstHitPos.a != 0.0) {

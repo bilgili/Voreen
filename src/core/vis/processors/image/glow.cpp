@@ -31,36 +31,37 @@
 
 namespace voreen {
 
-const Identifier Glow::setGlowColor("set.glowColor");
-const Identifier Glow::setGlowRange("set.glowRange");
+const std::string Glow::setGlowColor("glowColor");
+const std::string Glow::setGlowRange("glowRange");
 
 Glow::Glow()
-    : ImageProcessor("pp_glow"),
-    glowColor_(setGlowColor, "Glow Color", tgt::vec4(1.0f, 1.0f, 0.0f, 1.0f)),
-    glowRange_(setGlowRange, "Glow Range", 30)
+    : ImageProcessor("pp_glow")
+    , glowColor_(setGlowColor, "Glow Color", tgt::vec4(1.0f, 1.0f, 0.0f, 1.0f))
+    , glowRange_(setGlowRange, "Glow Range", 30)
+    , inport_(Port::INPORT, "image.inport")
+    , outport_(Port::OUTPORT, "image.outport", true)
+    , tmpPort_(Port::OUTPORT, "image.tmp", true)
 {
-    setName("Glow Rendering");
-    addProperty(&glowRange_);
-    addProperty(&glowColor_);
+    addProperty(glowRange_);
+    addProperty(glowColor_);
 
-    createInport("image.inport");
-    createOutport("image.outport");
-    createPrivatePort("image.tmp");
+    addPort(inport_);
+    addPort(outport_);
+    addPort(tmpPort_);
 }
 
 const std::string Glow::getProcessorInfo() const {
     return "Performs a glow.";
 }
 
-void Glow::renderInternalPass(int source, int pass) {
+Processor* Glow::create() const {
+    return new Glow();}
+
+void Glow::renderInternalPass(RenderPort* port, int pass) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // bind shading and depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-    LGL_ERROR;
+    port->bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
 
     // get background color
     tgt::vec4 backColor;
@@ -83,26 +84,34 @@ void Glow::renderInternalPass(int source, int pass) {
     LGL_ERROR;
 }
 
-void Glow::process(LocalPortMapping* portMapping) {
-    int source = portMapping->getTarget("image.inport");
-    int dest = portMapping->getTarget("image.outport");
-    int tmp = portMapping->getTarget("image.tmp");
+void Glow::process() {
+    outport_.activateTarget();
 
-    if (source == -1) {
-        tc_->setActiveTarget(dest, "Glow::render (final)");
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        return;
-    }
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //int source = getTarget("image.inport");
+    //int dest = getTarget("image.outport");
+    //int tmp = getTarget("image.tmp");
+
+    //if (source == -1) {
+    //    tc_->setActiveTarget(dest, "Glow::render (final)");
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    return;
+    //}
 
     glDisable(GL_DEPTH_TEST);
     // first rendering pass
-    tc_->setActiveTarget(tmp, "Glow::process (intermediate)");
-    renderInternalPass(source, 1);
+    tmpPort_.activateTarget();
+    renderInternalPass(&inport_, 1);
+    //tc_->setActiveTarget(tmp, "Glow::process (intermediate)");
+    //renderInternalPass(source, 1);
 
     // second rendering pass
-    source = dest;
-    tc_->setActiveTarget(dest, "Glow::render (final)");
-    renderInternalPass(source, 2);
+    outport_.activateTarget();
+    renderInternalPass(&inport_, 2);
+    //source = dest;
+    //tc_->setActiveTarget(dest, "Glow::render (final)");
+    //renderInternalPass(source, 2);
 
     glEnable(GL_DEPTH_TEST);
 }

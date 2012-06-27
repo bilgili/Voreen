@@ -31,25 +31,27 @@
 
 uniform SAMPLER2D_TYPE shadeTex0_;
 uniform SAMPLER2D_TYPE depthTex0_;
+uniform TEXTURE_PARAMETERS textureParameters0_;
 uniform SAMPLER2D_TYPE shadeTex1_;
 uniform SAMPLER2D_TYPE depthTex1_;
+uniform TEXTURE_PARAMETERS textureParameters1_;
 
 uniform int compositingMode_;
 uniform float blendFactor_;
 
 void main() {
+    vec2 fragCoord = gl_FragCoord.xy;
 
     // fetch input textures
-    vec4 shadeCol0 = textureLookup2D(shadeTex0_, gl_FragCoord.xy);
-    float depth0 = textureLookup2D(depthTex0_, gl_FragCoord.xy).z;
-    vec4 shadeCol1 = textureLookup2D(shadeTex1_, gl_FragCoord.xy);
-    float depth1 = textureLookup2D(depthTex1_, gl_FragCoord.xy).z;
+    vec4 shadeCol0 = textureLookup2Dscreen(shadeTex0_, textureParameters0_, fragCoord);
+    float depth0 = textureLookup2Dscreen(depthTex0_, textureParameters0_, fragCoord).z;
+    vec4 shadeCol1 = textureLookup2Dscreen(shadeTex1_, textureParameters1_, fragCoord);
+    float depth1 = textureLookup2Dscreen(depthTex1_, textureParameters1_, fragCoord).z;
 
     vec4 fragColor = vec4(0.0);
     float fragDepth = 1.0;
 
-    if (compositingMode_ == 0) {
-        // depth test
+    #if defined(MODE_DEPTH_TEST)
         if (depth0 < depth1) {
             fragColor = shadeCol0;
             fragDepth = depth0;
@@ -57,35 +59,55 @@ void main() {
             fragColor = shadeCol1;
             fragDepth = depth1;
         }
-    } else if (compositingMode_ == 1) {
-        // first has priority
+    #elif defined(MODE_TAKE_FIRST)
         fragColor = shadeCol0;
         fragDepth = depth0;
-    } else if (compositingMode_ == 2) {
-        // second has priority
+    #elif defined(MODE_TAKE_SECOND)
         fragColor = shadeCol1;
         fragDepth = depth1;
-    } else if (compositingMode_ == 3) {
+    #elif defined(MODE_FIRST_HAS_PRIORITY)
+        if (shadeCol0.a > 0.0) {
+            fragColor = shadeCol0;
+            fragDepth = depth0;
+        } else {
+            fragColor = shadeCol1;
+            fragDepth = depth1;
+        }
+    #elif defined(MODE_SECOND_HAS_PRIORITY)
+        // second has priority
+        if (shadeCol1.a > 0.0) {
+            fragColor = shadeCol1;
+            fragDepth = depth1;
+        } else {
+            fragColor = shadeCol0;
+            fragDepth = depth0;
+        }
+    #elif defined(MODE_BLEND)
         // blend using blendFactor_
         if (blendFactor_ == 0.0) fragDepth = depth0;
         else if (blendFactor_ == 1.0) fragDepth = depth1;
         else fragDepth = min(depth0, depth1);
-        fragColor = blendFactor_*shadeCol0+(1.0-blendFactor_)*shadeCol1;
-    } else if (compositingMode_ == 4) {
-        // alpha compositing
+        fragColor = blendFactor_*shadeCol0 + (1.0-blendFactor_)*shadeCol1;
+    #elif defined(MODE_ALPHA_COMPOSITING)
         if (depth1 < depth0) {
             fragColor.rgb = shadeCol1.rgb * shadeCol1.a + shadeCol0.rgb * shadeCol0.a * (1.0 - shadeCol1.a);
             fragColor.a = shadeCol1.a + shadeCol0.a * (1.0 - shadeCol1.a);
-		} else {
+        } else {
             fragColor.rgb = shadeCol0.rgb * shadeCol0.a + shadeCol1.rgb * shadeCol1.a * (1.0 - shadeCol0.a);
             fragColor.a = shadeCol0.a + shadeCol1.a * (1.0 - shadeCol0.a);
         }
         fragDepth = min(depth0, depth1);
-    } else if (compositingMode_ == 5) {
+    #elif defined(MODE_MAXIMUM_ALPHA)
         fragDepth = min(depth0, depth1);
         fragColor.rgb = shadeCol0.rgb*shadeCol0.a + shadeCol1.rgb*shadeCol1.a;
         fragColor.a = max(shadeCol0.a, shadeCol1.a);
-    }
+    #elif defined(MODE_DIFFERENCE)
+        fragDepth = abs(depth0 - depth1);
+        float diffR = 1 - abs(shadeCol0.r - shadeCol1.r);
+        float diffG = 1 - abs(shadeCol0.g - shadeCol1.g);
+        float diffB = 1 - abs(shadeCol0.b - shadeCol1.b);
+        fragColor.rgba = vec4(diffR, diffG, diffB, max(shadeCol0.a,shadeCol1.a));
+    #endif
 
     gl_FragColor = fragColor;
     gl_FragDepth = fragDepth;

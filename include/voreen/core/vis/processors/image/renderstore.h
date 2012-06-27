@@ -43,26 +43,21 @@ class RenderStore : public RenderProcessor {
 public:
     RenderStore();
     ~RenderStore();
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Utility"; }
+    virtual std::string getClassName() const { return "RenderStore"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
+    virtual bool isUtility() const { return true; }
     virtual Processor* create() const;
 
-    virtual int initializeGL();
-
-
-    /**
-     * Returns the ID of the render target where the copy of the input image is stored.
-     */
-    int getStoredTargetID() const { return privateTargetID_; }
+    virtual void initialize() throw (VoreenException);
 
     /**
      * Returns the content of the stored input image at the pixel position \param pos.
      */
-    tgt::vec4 getStoredTargetPixel(const tgt::ivec2 &pos) const;
-
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
+    tgt::vec4 getStoredTargetPixel(const tgt::ivec2 &pos);
 
     /// This processor is defined as EndProcessor.
     virtual bool isEndProcessor() const;
@@ -70,14 +65,15 @@ public:
 protected:
 
     /// Texture units
-    static const Identifier storeTexUnit_;
-    static const Identifier storeDepthTexUnit_;
-
-    /// Render target holding the stored image.
-    int privateTargetID_;
+    static const std::string storeTexUnit_;
+    static const std::string storeDepthTexUnit_;
 
     /// The shader program used by this \c RenderStore
     tgt::Shader* shaderPrg_;
+
+    RenderPort inport_;
+    RenderPort privatePort_;
+    GenericCoProcessorPort<RenderStore> cpPort_;
 };
 
 } // namespace voreen

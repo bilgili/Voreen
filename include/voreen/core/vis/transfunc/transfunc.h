@@ -30,6 +30,8 @@
 #ifndef VRN_TRANSFUNC_H
 #define VRN_TRANSFUNC_H
 
+#include "voreen/core/io/serialization/serialization.h"
+
 #include "tgt/texture.h"
 #include "tgt/vector.h"
 
@@ -43,7 +45,7 @@ namespace voreen {
 /**
  * Abstract base class for transfer functions.
  */
-class TransFunc {
+class TransFunc : public AbstractSerializable {
 public:
     /**
      * Constructor
@@ -160,9 +162,12 @@ protected:
 
     /**
      * Updates the texture of the transfer function. It is called before the texture is bound
-     * to a textureunit. Must be reimplemented in every subclass.
+     * to a textureunit.
+     *
+     * @note Must be re-implemented in every subclass, but make sure to
+     *       call the superclass' function there at first!
      */
-    virtual void updateTexture() = 0;
+    virtual void updateTexture();
 
     tgt::Texture* tex_; ///< the texture of the transfer function
 

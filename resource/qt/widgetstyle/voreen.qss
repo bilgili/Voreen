@@ -40,6 +40,10 @@ QToolBar {
 	border-color: black;
 }
 
+QLabel#toolBarLabel {
+    color : white;
+}
+
 QToolButton {
 	background: none;
 }

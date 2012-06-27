@@ -31,8 +31,10 @@
 
 uniform SAMPLER2D_TYPE shadeTex0_;
 uniform SAMPLER2D_TYPE depthTex0_;
+uniform TEXTURE_PARAMETERS textureParameters0_;
 uniform SAMPLER2D_TYPE shadeTex1_;
 uniform SAMPLER2D_TYPE depthTex1_;
+uniform TEXTURE_PARAMETERS textureParameters1_;
 
 uniform vec4 backgroundColor_;
 
@@ -48,10 +50,10 @@ uniform float blendFactor_;
 void main() {
 
     vec2 p = gl_FragCoord.xy;
-    vec4 shadeCol0 = textureLookup2D(shadeTex0_, p);
-    float depth0 = textureLookup2D(depthTex0_, p).z;
-    vec4 shadeCol1 = textureLookup2D(shadeTex1_, p);
-    float depth1 = textureLookup2D(depthTex1_, p).z;
+    vec4 shadeCol0 = textureLookup2Dnormalized(shadeTex0_, textureParameters0_, p*screenDimRCP_);
+    float depth0 = textureLookup2Dnormalized(depthTex0_, textureParameters0_, p*screenDimRCP_).z;
+    vec4 shadeCol1 = textureLookup2Dnormalized(shadeTex1_, textureParameters1_, p*screenDimRCP_);
+    float depth1 = textureLookup2Dnormalized(depthTex1_, textureParameters1_, p*screenDimRCP_).z;
 
     vec4 fragColor = vec4(0.0);
     float fragDepth;

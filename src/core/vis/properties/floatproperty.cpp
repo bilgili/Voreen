@@ -28,20 +28,20 @@
  **********************************************************************/
 
 #include "voreen/core/vis/properties/floatproperty.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 namespace voreen {
 
-FloatProp::FloatProp(const std::string& id, const std::string& guiText,
+FloatProperty::FloatProperty(const std::string& id, const std::string& guiText,
                      float value, float minValue, float maxValue, bool instantValueChange,
-                     bool invalidate, bool invalidateShader)
+                     Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<float>(id, guiText, value, minValue, maxValue, 0.05f,
-                               invalidate, invalidateShader)
+                               invalidationLevel)
 {
     setInstantValueChange(instantValueChange);
 }
 
-PropertyWidget* FloatProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* FloatProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

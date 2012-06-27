@@ -105,7 +105,7 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
         break;
 
     default:
-        LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
+        LERROR(static_cast<int>(t->bpp_)<< " bytes per pixel...error!");
         return false;
     }
 
@@ -140,13 +140,19 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
         compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
         break;
 
-    case 12: //HDR
+    case 8: // 16-bit-per-channel RGBA
+        t->format_ = GL_RGBA;
+        t->internalformat_ = GL_RGBA16;
+        break;
+
+    case 12: //HDR-RGB, cut down to one byte per channel (until proper hdr-handling is implemented)
         t->format_ = GL_RGB;
         t->internalformat_ = GL_RGB;
         t->bpp_ = 3;
         break;
+
     default:
-        LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
+        LERROR(static_cast<int>(t->bpp_)<< " bytes per pixel...error!");
         return false;
     }
 
@@ -179,7 +185,7 @@ bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, b
         break;
 
     default:
-        LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
+        LERROR(static_cast<int>(t->bpp_) << " bytes per pixel...error!");
         return false;
     }
 
@@ -220,7 +226,7 @@ bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool com
         compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
         break;
     default:
-        LERROR(t->bpp_<< " bits per pixel...error!");
+        LERROR(t->bpp_<< " bytes per pixel...error!");
         return false;
     }
 

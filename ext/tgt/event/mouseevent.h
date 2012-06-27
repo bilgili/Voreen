@@ -46,29 +46,33 @@ public:
     };
 
     enum MouseAction {
-        MOTION,
-        PRESSED,
-        RELEASED,
-        DOUBLECLICK,
-        WHEEL
+        MOTION      = 1 << 0,
+        PRESSED     = 1 << 1,
+        RELEASED    = 1 << 2,
+        DOUBLECLICK = 1 << 3,
+        WHEEL       = 1 << 4
     };
 
 public:
-    MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button = NO_MOUSE_BUTTON);
+    MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button = NO_MOUSE_BUTTON,
+        tgt::ivec2 viewport = tgt::ivec2(-1));
 
-    ivec2 coord();
-    int x();
-    int y();
-    MouseButtons button();
-    MouseAction action();
-    Event::Modifier modifiers();
+    ivec2 coord() const;
+    int x() const;
+    int y() const;
+    ivec2 viewport() const;
+    MouseButtons button() const;
+    MouseAction action() const;
+    Event::Modifier modifiers() const;
 
-    // HACK for voreen paper... it shouldn't be possible to set Coordinates after creation... or maybe it should?
-    void setCoord(const ivec2& coord) { coord_ = coord; }
+    void setCoord(const ivec2& c) { coord_ = c; }
+    void setViewport(const ivec2& viewp) { viewport_ = viewp; }
+
 	virtual int getEventType();
   
 protected:
     ivec2 coord_;
+    ivec2 viewport_;
     MouseButtons buttonCode_;
     MouseAction action_;
     Event::Modifier mod_;

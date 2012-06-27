@@ -30,7 +30,7 @@
 #ifndef VRN_BENCHMARK_H
 #define VRN_BENCHMARK_H
 
-#include "voreen/core/vis/processors/networkevaluator.h"
+#include "voreen/core/vis/network/networkevaluator.h"
 
 #include <string>
 #include <vector>
@@ -54,8 +54,6 @@ public:
      * @name Name of the processor
      */
     void addProcessorName(const std::string& name);
-
-    void processMessage(Message* msg, const Identifier& dest);
 
 protected:
     std::vector<std::string> processorNames_;

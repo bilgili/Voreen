@@ -9,7 +9,7 @@ isEmpty(QMAKE_VERSION_CHECK) {
    error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }
 
-CONFIG += stl thread
+CONFIG += stl rtti thread
 
 # directories for installation on unix
 unix: !isEmpty(INSTALL_PREFIX) {
@@ -59,8 +59,8 @@ contains( DEFINES, VRN_WITH_FONTRENDERING) {
   DEFINES += TGT_HAS_FTGL
 }
 
-contains( DEFINES, VRN_WITH_ZIP) {
-#  DEFINES += TGT_ZLIB
+contains(DEFINES, VRN_WITH_ZLIB) {
+  DEFINES += TGT_HAS_ZLIB
 }
 
 contains( DEFINES, VRN_WITH_PYTHON) {
@@ -101,8 +101,6 @@ DEPENDPATH += \
   "$${VRN_HOME}/include" \
   "$${VRN_HOME}/ext"
 
-DEFINES += TIXML_USE_STL
-
 # some definitions for modules
 VRN_MODULE_SRC_DIR=$${VRN_HOME}/src/modules
 VRN_MODULE_INC_DIR=$${VRN_HOME}/include/voreen/modules
@@ -114,25 +112,26 @@ contains(VRN_MODULES, most) : include(src/modules/most.pri)
 
 # remove duplicates
 VRN_MODULES = $$unique(VRN_MODULES)
+VRN_MODULES -= all most
 
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
 # file 'foo_common.pri' there.
-for(i, VRN_MODULES) : include(src/modules/$${i}/$${i}_common.pri)
+for(i, VRN_MODULES) : include($${VRN_HOME}/src/modules/$${i}/$${i}_common.pri)
 
 
 ####################################
-# Platform-dependant configuration #
+# Platform-dependent configuration #
 ####################################
 
 ####################
 # Windows settings #
 ####################
 win32 {
-#  win32-msvc {
-#    CONFIG -= release debug
-#    CONFIG += debug_and_release
-#  }
+  #win32-msvc {
+  #  CONFIG -= release debug
+  #  CONFIG += debug_and_release
+  #}
 
   CONFIG -= flat
   DEFINES += _WINDOWS
@@ -170,8 +169,8 @@ win32 {
     INCLUDEPATH += "$${FTGL_DIR}/include"
   }
 
-  contains(DEFINES, VRN_WITH_ZIP) {
-    INCLUDEPATH += "$${VRN_HOME}/ext/ziparchive/include"
+  contains(DEFINES, VRN_WITH_ZLIB) {
+	INCLUDEPATH += "$${VRN_HOME}/ext/zlib/include"
   }
 
   contains(DEFINES, VRN_WITH_DCMTK) {
@@ -197,8 +196,9 @@ win32 {
     # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning
     # C4290: C++ exception specification ignored except to indicate a function is
     #       not __declspec(nothrow)
-    # C4355: 'this' : used in base member initializer list (occurs in processors' constructors)
-    QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 /wd4355
+    # C4068: unknown pragma
+    QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 /wd4068
+    # C4355: 'this' : used in base member initializer list (occurs in processors' constructors) /wd4355 
   
     # Shift warning
     # C4706: assignment within conditional expression
@@ -273,6 +273,12 @@ unix {
     INCLUDEPATH += $${FREETYPE_DIR}
   }
 
+  contains(DEFINES, VRN_WITH_MATLAB) {
+    INCLUDEPATH += "$${MATLAB_DIR}/extern/include"
+    LIBS += "-L$${MATLAB_DIR}/bin/glnxa64" -lmx -leng
+    QMAKE_LFLAGS += -Wl,-rpath,"$${MATLAB_DIR}/bin/glnxa64"
+  }
+
   contains (DEFINES, VRN_WITH_PYTHON) {
     INCLUDEPATH += $${PYTHON_DIR}
     LIBS += $${PYTHON_LIBS}
@@ -286,11 +292,18 @@ unix {
       DEFINES -= VRN_WITH_RENDER_TO_TEXTURE
       warning("Render-to-Texture not supported on MacOSX")
     }
-
+    
     # workaround for inconsistent symbol visibility flags
     # set by Xcode for executables and libraries
     QMAKE_CXXFLAGS += -fvisibility=hidden
     QMAKE_CXXFLAGS += -fvisibility-inlines-hidden
+    
+    INCLUDEPATH += $${GLEW_DIR}
+    LIBS += $${GLEW_LIBS}
+
+    # support for macports
+    INCLUDEPATH += /opt/local/include/
+    LIBS += -L/opt/local/lib
   }
 }
 

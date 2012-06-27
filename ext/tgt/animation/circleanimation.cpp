@@ -33,27 +33,39 @@
 
 namespace tgt {
 
-CircleAnimation::CircleAnimation(float totalAngle, int speed, int fps, tgt::Trackball* trackBall) :
-    AbstractAnimation(fps, totalAngle/360.0f * static_cast<float>(fps * speed)),
-	trackBall_(trackBall) {
-		// compute step angle in radian
-		stepAngle_ = (totalAngle / numFrames_) * (PIf / 180.0f);
+CircleAnimation::CircleAnimation(float totalAngle, int duration, int fps, Camera* const camera)
+    : AbstractAnimation(fps, static_cast<int>((totalAngle / 360.0f) * fps * duration)),
+    stepAngle_(0.0f),
+    currentAngle_(0.0f),
+    rotation_(mat3::identity),
+    initialCamPos_(camera->getPosition()),
+    initialCamUpVector_(camera->getUpVector()),
+    initialCamFocus_(camera->getFocus()),
+    camPos_(initialCamPos_),
+    camFocus_(initialCamFocus_)
+{
+    stepAngle_ = (totalAngle / numFrames_);
+    rotation_ = mat3::createRotation(deg2rad(stepAngle_), initialCamUpVector_);
 }
 
-void CircleAnimation::moveToFrame(int /*frame*/) {
-    trackBall_->rotate(tgt::vec3(0.f, 1.f, 0.f), stepAngle_);
+void CircleAnimation::moveToFrame(int frame) {
+    currentAngle_ = (stepAngle_ * frame);
 }
 
 vec3 CircleAnimation::getUp() {
-	return trackBall_->getCamera()->getUpVector();
+    return initialCamUpVector_;
 }
 
 vec3 CircleAnimation::getCenter() {
-	return trackBall_->getCamera()->getFocus();
+    camFocus_ = (rotation_ * (camFocus_ - initialCamFocus_));
+    camFocus_ += initialCamFocus_;
+    return camFocus_;
 }
 
 vec3 CircleAnimation::getEye() {
-	return trackBall_->getCamera()->getPosition();
+    camPos_ = (rotation_ * (camPos_ - initialCamFocus_));
+    camPos_ += initialCamFocus_;
+    return camPos_;
 }
 
 } // namespace tgt

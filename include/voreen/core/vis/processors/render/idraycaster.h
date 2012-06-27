@@ -30,7 +30,6 @@
 #ifndef VRN_IDRAYCASTER_H
 #define VRN_IDRAYCASTER_H
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 #include "voreen/core/vis/processors/render/volumeraycaster.h"
@@ -55,15 +54,18 @@ public:
      */
     virtual ~IDRaycaster();
 
-    virtual const Identifier getClassName() const {return "Raycaster.IDRaycaster";}
+    virtual std::string getCategory() const { return "Raycasting"; }
+    virtual std::string getClassName() const { return "IDRaycaster"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } 
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new IDRaycaster();}
+    virtual Processor* create() const;
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
     virtual void loadShader();
 
-    virtual void process(LocalPortMapping* portMapping_);
+    virtual void process();
 
 protected:
 
@@ -76,18 +78,23 @@ protected:
     /// The id raycasting shader.
     tgt::Shader* raycastPrg_;
 
+    /// The camera used for raycasting.
+    CameraProperty camera_;
+
     /// This shader is used to blur the first-hit-positions.
     tgt::Shader* blurShader_;
 
-    /// Indicates if pipeline is currently in coarseness-mode.
-    bool coarse_;
-
     /// Indicates how deep a ray penetrates the volume, if no segment is hit.
-    FloatProp penetrationDepth_;
+    FloatProperty penetrationDepth_;
 
-    static const Identifier firstHitPointsTexUnit_;
-    static const Identifier firstHitPointsDepthTexUnit_;
+    static const std::string firstHitPointsTexUnit_;
+    static const std::string firstHitPointsDepthTexUnit_;
 
+    VolumePort volumePort_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+    RenderPort firstHitpointsPort_;
+    RenderPort idMapPort_;
 };
 
 } // namespace voreen

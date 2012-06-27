@@ -106,6 +106,7 @@ void initGL(InitFeature::Features featureset) {
 	GLenum err = glewInit();
     if (err != GLEW_OK) {
         // Problem: glewInit failed, something is seriously wrong.
+        tgtAssert(false, "glewInit failed");
         std::cerr << "glewInit failed, error: " << glewGetErrorString(err) << std::endl;
         exit(EXIT_FAILURE);
     }

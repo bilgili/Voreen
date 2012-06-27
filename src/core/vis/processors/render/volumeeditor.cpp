@@ -29,46 +29,52 @@
 
 #include "voreen/core/vis/processors/render/volumeeditor.h"
 
-#include "voreen/core/vis/lightmaterial.h"
 #include "voreen/core/volume/modality.h"
 #include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/properties/cameraproperty.h"
 
-#include <fboClass/framebufferObject.h>
+#include <fboClass/fboclass_framebufferobject.h>
 
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/io/datvolumewriter.h"
-#include "voreen/core/vis/messagedistributor.h"
+
+using tgt::vec3;
 
 namespace voreen {
 
 VolumeEditor::VolumeEditor()
     : VolumeRaycaster()
-    , brushSize_("set.brushSize", "Brush size", 10, 1, 50)
-    , brushColor_("set.brushColor", "Brush color", tgt::col4(255,0,0,255))
-    , saveDialogProp_("save.SegDataSet", "Save Segmentation Data", "")
-    , transferFunc_(setTransFunc_, "Transfer function")
+    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , brushSize_("brushSize", "Brush size", 10, 1, 50)
+    , brushColor_("brushColor", "Brush color", tgt::col4(255,0,0,255))
+    , saveDialogProp_("saveSegDataSet", "Save segmentation Data", "")
+    , transferFunc_("transferFunction", "Transfer function")
     , fbo_(0)
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
+    , entryPort_(Port::INPORT, "image.entrypoints")
+    , exitPort_(Port::INPORT, "image.exitpoints")
+    , firstHitpointsPort_(Port::OUTPORT, "image.firsthit", true)
+    , outport_(Port::OUTPORT, "image.output", true)
 {
-    setName("VolumeEditor");
 
-    addProperty(&transferFunc_);
+    addProperty(transferFunc_);
 
     addProperty(maskingMode_);
     addProperty(gradientMode_);
     addProperty(classificationMode_);
     addProperty(shadeMode_);
     addProperty(compositingMode_);
-    addProperty(&brushSize_);
-    addProperty(&brushColor_);
-    addProperty(&saveDialogProp_);
+    addProperty(brushSize_);
+    addProperty(brushColor_);
+    addProperty(saveDialogProp_);
 
-    createInport("volumehandle.volumehandle");
-    createInport("image.entrypoints");
-    createInport("image.exitpoints");
-    createPrivatePort("image.firsthit");
-    createOutport("image.output");
+    addPort(volumePort_);
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPrivateRenderPort(&firstHitpointsPort_);
+    addPort(outport_);
 
     mouseDown_ = false;
 }
@@ -82,12 +88,11 @@ Processor* VolumeEditor::create() const {
 }
 
 bool VolumeEditor::saveSegmentationDataSet(std::string filename) {
-
     DatVolumeWriter data;
     VolumeSerializerPopulator* populator = new VolumeSerializerPopulator();
-    VolumeSerializer* serializer = populator->getVolumeSerializer();
+    const VolumeSerializer* serializer = populator->getVolumeSerializer();
     try {
-        serializer->save(filename, currentVolumeHandle_->getVolume());
+        serializer->save(filename, currentVolumeHandle_);
     } catch (tgt::UnsupportedFormatException) {
         return false;
     }
@@ -99,77 +104,67 @@ const std::string VolumeEditor::getProcessorInfo() const {
     return "Allows to perform simple segmentations.";
 }
 
-void VolumeEditor::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRaycaster::processMessage(msg, dest);
+void VolumeEditor::initialize() throw (VoreenException) {
 
-    if (msg->id_ == "save.SegDataSet")
-        saveSegmentationDataSet(msg->getValue<std::string>());
-}
+    VolumeRaycaster::initialize();
 
-int VolumeEditor::initializeGL() {
     // generate fbo for rendering onto the textures
     delete fbo_;
     fbo_ = new FramebufferObject();
 
     loadShader();
-    initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;
 
+    if(!raycastPrg_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
+    initialized_ = true;
     setLightingParameters();
-
-    return initStatus_;
 }
 
 void VolumeEditor::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_volumeeditor.frag",
-                                       generateHeader(), false);
+                                       generateHeader(), false, false);
 }
 
-void VolumeEditor::compile() {
-    raycastPrg_->setHeaders(generateHeader(), false);
+void VolumeEditor::compile(VolumeHandle* volumeHandle) {
+    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
     raycastPrg_->rebuild();
 }
 
-void VolumeEditor::process(LocalPortMapping* portMapping) {
-    bool volumeChanged;
-    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-            portMapping->getVolumeHandle("volumehandle.volumehandle"), &volumeChanged) == false) {
-        return;
-    }
-    if (volumeChanged) {
-        invalidateShader();
-    }
+void VolumeEditor::process() {
+
+    if (volumePort_.isReady())
+        currentVolumeHandle_ = volumePort_.getData();
+    else
+        currentVolumeHandle_ = 0;
 
     // pass volumehandle to transfer function
     transferFunc_.setVolumeHandle(currentVolumeHandle_);
 
-    portMapping_ = portMapping;
+    if (!currentVolumeHandle_)
+        return;
 
-    int entryParams = portMapping->getTarget("image.entrypoints");
-    int exitParams = portMapping->getTarget("image.exitpoints");
-
-    std::vector<int> activeTargets;
-    activeTargets.push_back(portMapping->getTarget("image.output"));
-    activeTargets.push_back(portMapping->getTarget("image.firsthit"));
-    tc_->setActiveTargets(activeTargets);
+    //TODO: tc_
+    //std::vector<int> activeTargets;
+    //activeTargets.push_back(outport_.getTextureID());
+    //activeTargets.push_back(firstHitpointsPort_.getTextureID());
+    //outport_.getTextureContainer()->setActiveTargets(activeTargets);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // compile program
-    compileShader();
+    if(getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile(volumePort_.getData());
     LGL_ERROR;
 
     // bind entry params
-    glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entryParams), tc_->getGLTexID(entryParams));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entryParams), tc_->getGLDepthTexID(entryParams));
+    entryPort_.bindTextures(tm_.getGLTexUnit(entryParamsTexUnit_), tm_.getGLTexUnit(entryParamsDepthTexUnit_));
     LGL_ERROR;
 
     // bind exit params
-    glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitParams), tc_->getGLTexID(exitParams));
-    glActiveTexture(tm_.getGLTexUnit(exitParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(exitParams), tc_->getGLDepthTexID(exitParams));
+    exitPort_.bindTextures(tm_.getGLTexUnit(exitParamsTexUnit_), tm_.getGLTexUnit(exitParamsDepthTexUnit_));
     LGL_ERROR;
 
     // vector containing the volumes to bind; is passed to bindVolumes()
@@ -183,10 +178,12 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
         "volumeParameters_")
     );
 
-    addBrickedVolumeModalities(volumeTextures);
+    addBrickedVolumeModalities(volumePort_.getData(), volumeTextures);
 
-       // segmentation volume
-    VolumeGL* volumeSeg = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
+    // segmentation volume
+    // TODO: fetch segmentation from inport
+    //VolumeGL* volumeSeg = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
+    VolumeGL* volumeSeg = 0;
 
     if (useSegmentation_.get() && (volumeSeg != 0) ) {
         volumeTextures.push_back(VolumeStruct(
@@ -215,7 +212,7 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_);
+    setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
     bindVolumes(raycastPrg_, volumeTextures);
 
@@ -225,10 +222,10 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
     raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
     raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
     raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit(transferTexUnit_));
-    if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
+    if (useSegmentation_.get() && volumeSeg)
         raycastPrg_->setUniform("segment_" , static_cast<GLfloat>(segment_.get()));
 
-    setBrickedVolumeUniforms();
+    setBrickedVolumeUniforms(volumePort_.getData());
     renderQuad();
 
     raycastPrg_->deactivate();
@@ -236,21 +233,26 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 }
 
-std::string VolumeEditor::generateHeader() {
-    std::string headerSource = VolumeRaycaster::generateHeader(getVolumeHandle());
+std::string VolumeEditor::generateHeader(VolumeHandle* volumeHandle) {
+    std::string headerSource = VolumeRaycaster::generateHeader(volumeHandle);
 
     headerSource += transferFunc_.get()->getShaderDefines();
 
-    if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
-        headerSource += "#define USE_SEGMENTATION\n";
+    // TODO: fetch segmentation from inport
+    /*if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
+        headerSource += "#define USE_SEGMENTATION\n"; */
 
     return headerSource;
 }
 
 void VolumeEditor::applyBrush(tgt::ivec2 mousePos) {
-    float* curFirstHit = getTextureContainer()->getTargetAsFloats(portMapping_->getTarget("image.firsthit"), mousePos.x, mousePos.y);
-    tgt::vec4 volCoord = tgt::vec4(curFirstHit);
-    delete[] curFirstHit;
+
+    if (!firstHitpointsPort_.isReady()) {
+        LWARNING("Firsthit port not ready");
+        return;
+    }
+
+    tgt::vec4 volCoord= firstHitpointsPort_.getData()->getColorAtPos(mousePos);
 
     int centerSlice = static_cast<int>(volCoord.z*currentVolumeHandle_->getVolume()->getDimensions().z);
 
@@ -332,25 +334,26 @@ void VolumeEditor::applyBrush(tgt::ivec2 mousePos) {
     fbo_->UnattachAll();
     fbo_->Disable();
     }
-    MsgDistr.postMessage(new Message(VoreenPainter::repaint_));
+    invalidate();
+
 }
 
 void VolumeEditor::mousePressEvent(tgt::MouseEvent* e) {
-    if (!tc_) return;
+    //if (!tc_) return;
     if (e->modifiers() & tgt::MouseEvent::LSHIFT) {
         mouseDown_ = true;
-        tgt::ivec2 mousePos = tgt::ivec2(e->coord().x, getSize().y-e->coord().y);
-        applyBrush(mousePos);
+        //tgt::ivec2 mousePos = tgt::ivec2(e->coord().x, getSize().y-e->coord().y);
+        //applyBrush(mousePos);
         e->accept();
     } else
         e->ignore();
 }
 
 void VolumeEditor::mouseMoveEvent(tgt::MouseEvent* e) {
-    if (!tc_) return;
+    //if (!tc_) return;
     if (mouseDown_ && (e->modifiers() & tgt::MouseEvent::LSHIFT)) {
-        tgt::ivec2 mousePos = tgt::ivec2(e->coord().x, getSize().y-e->coord().y);
-        applyBrush(mousePos);
+        //tgt::ivec2 mousePos = tgt::ivec2(e->coord().x, getSize().y-e->coord().y);
+        //applyBrush(mousePos);
         e->accept();
     } else
         e->ignore();

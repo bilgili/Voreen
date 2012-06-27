@@ -33,38 +33,43 @@ namespace voreen {
 
 using tgt::Color;
 
-const Identifier RegionModifier::shadeTexUnit1_ = "shadeTexUnit1";
-const Identifier RegionModifier::depthTexUnit1_ = "depthTexUnit1";
+const std::string RegionModifier::shadeTexUnit1_ = "shadeTexUnit1";
+const std::string RegionModifier::depthTexUnit1_ = "depthTexUnit1";
 
 RegionModifier::RegionModifier()
-    : ImageProcessor("pp_regionmodifier"),
-      mode_(MODE_BLEND),
-      segmentId_("set.segmentId", "Segment-ID", Color(1.0, 0.0, 0.0, 1.0)),
-      destColor_("set.destColor", "color", Color(0.0, 0.0, 1.0, 1.0))
+    : ImageProcessor("pp_regionmodifier")
+    , mode_(MODE_BLEND)
+    , modeProp_("mode", "Set Mode", Processor::INVALID_PROGRAM)
+    , segmentId_("segmentId", "Segment-ID", Color(1.0, 0.0, 0.0, 1.0))
+    , destColor_("destColor", "color", Color(0.0, 0.0, 1.0, 1.0))
+    , inport_(Port::INPORT, "image.input")
+    , maskPort_(Port::INPORT, "image.mask")
+    , outport_(Port::OUTPORT, "image.outport", true)
 {
     tm_.addTexUnit(shadeTexUnit1_);
     tm_.addTexUnit(depthTexUnit1_);
-    setName("RegionModifier");
     // init Properties
-    std::vector<std::string> modes;
-    modes.push_back("replace");
-    modes.push_back("blend");
-    modeProp_ = new EnumProp("set.RegionModifierMode", "Set Mode", modes, 0, true, true);
-    modeProp_->onChange(CallMemberAction<RegionModifier>(this, &RegionModifier::setRegionModifierModeEvt));
+    modeProp_.addOption("replace", "replace");
+    modeProp_.addOption("blend", "blend");
+    modeProp_.onChange(CallMemberAction<RegionModifier>(this, &RegionModifier::setRegionModifierModeEvt));
     addProperty(modeProp_);
-    addProperty(&segmentId_);
-    addProperty(&destColor_);
+    addProperty(segmentId_);
+    addProperty(destColor_);
     // init Modemap
     modeDefinesMap_[MODE_REPLACE] = "RV_MODE_REPLACE";
     modeDefinesMap_[MODE_BLEND] = "RV_MODE_BLEND";
     // Ports
-    createInport("image.input");
-    createInport("image.mask");
-    createOutport("image.outport");
+    addPort(inport_);
+    addPort(maskPort_);
+    addPort(outport_);
 }
 
 const std::string RegionModifier::getProcessorInfo() const {
     return "Highlights a part of an image using a segmentation image.";
+}
+
+Processor* RegionModifier::create() const {
+    return new RegionModifier();
 }
 
 void RegionModifier::compile() {
@@ -78,30 +83,20 @@ std::string RegionModifier::generateHeader() {
     return header;
 }
 
-void RegionModifier::process(LocalPortMapping* portMapping) {
-    compileShader(); // need this because of conditioned compilation
+void RegionModifier::process() {
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile(); // need this because of conditioned compilation
 
-    int source =  portMapping->getTarget("image.input");
-    int mask =  portMapping->getTarget("image.mask");
-    int dest = portMapping->getTarget("image.outport");
-
-    tc_->setActiveTarget(dest, "RegionModifier::process");
+    outport_.activateTarget();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // bind shading and depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-    LGL_ERROR;
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
 
     // bind shading and (not) depth from mask
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
-    glBindTexture(tc_->getGLTexTarget(mask), tc_->getGLTexID(mask));
-    //glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
-    //glBindTexture(tc_->getGLDepthTexTarget(mask), tc_->getGLDepthTexID(mask));
-    LGL_ERROR;
+    maskPort_.bindColorTexture(tm_.getGLTexUnit(shadeTexUnit1_));
+    //maskPort_.bindDepthTexture(tm_.getGLTexUnit(depthTexUnit1_));
 
     // initialize shader
     program_->activate();
@@ -124,17 +119,11 @@ void RegionModifier::process(LocalPortMapping* portMapping) {
 }
 
 void RegionModifier::setRegionModifierModeEvt() {
-    if (modeProp_ == 0)
-        return;
-    const int mode = modeProp_->get();
-    switch(mode) {
-        case 0:
-            mode_ = MODE_REPLACE;
-            break;
-        case 1:
-            mode_ = MODE_BLEND;
-            break;
-    }
+
+    if (modeProp_.get() == "replace")
+        mode_ = MODE_REPLACE;
+    else if (modeProp_.get() == "blend")
+        mode_ = MODE_BLEND;
 }
 
 } // voreen namespace

@@ -1,31 +1,51 @@
 #ifndef VRN_RENDERTARGET_H
 #define VRN_RENDERTARGET_H
 
-namespace voreen {
+#include "tgt/framebufferobject.h"
 
-class TextureContainer;
+namespace voreen {
 
 class RenderTarget {
 public:
-    struct TargetComparator {
-        bool operator ()(const RenderTarget& rt1, const RenderTarget& rt2) const {
-            return (rt1 > rt2);
-        }
-    };
+    RenderTarget();
+    virtual ~RenderTarget();
 
-public:
-    RenderTarget(TextureContainer* const tc, const int textureID);
-    RenderTarget(const RenderTarget& other);
-    RenderTarget& operator =(const RenderTarget& other);
-    bool operator >(const RenderTarget& other) const;
+    void initialize(GLint internalColorFormat = GL_RGBA16F_ARB, GLint internalDepthFormat = GL_DEPTH_COMPONENT24);
 
-private:
-    void copy(const RenderTarget& other);
+    void activateTarget(const std::string &debugLabel="");
 
-public:
-    TextureContainer* tc_;
-    int textureID_;
-    bool isReAssignable_;
+    void bindColorTexture(GLint texUnit);
+    void bindDepthTexture(GLint texUnit);
+
+    void bindColorTexture();
+    void bindDepthTexture();
+
+    tgt::Texture* getColorTexture() { return colorTex_; }
+    tgt::Texture* getDepthTexture() { return depthTex_; }
+
+    //Get the color at position pos. This method activates the RenderTarget!
+    tgt::vec4 getColorAtPos(tgt::ivec2 pos);
+
+    tgt::ivec2 getSize() const;
+    void resize(tgt::ivec2 newsize);
+
+    //these are just for debugging purposes:
+    std::string getDebugLabel() { return debugLabel_; }
+    void setDebugLabel(const std::string& debugLabel) { debugLabel_ = debugLabel; }
+
+    void increaseNumUpdates() { numUpdates_++; }
+    int getNumUpdates() { return numUpdates_; }
+
+protected:
+    tgt::FramebufferObject* fbo_;
+
+    tgt::Texture* colorTex_;
+    tgt::Texture* depthTex_;
+
+    std::string debugLabel_;
+    int numUpdates_;
+
+    static const std::string loggerCat_;
 };
 
 }   // namespace

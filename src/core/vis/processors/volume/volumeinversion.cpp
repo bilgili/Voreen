@@ -34,32 +34,25 @@
 
 namespace voreen {
 
-const std::string VolumeInversion::inportName_("volumehandle.input");
-const std::string VolumeInversion::outportName_("volumehandle.output");
-
 VolumeInversion::VolumeInversion()
-    : Processor(),
+    : VolumeProcessor(),
     inputVolumeHandle_(0),
-    outputVolumeHandle_(0),
     processedVolumeHandle_(0),
-    enableProcessingProp_("enableProcessing", "enable: ", true),
-    forceUpdate_(true)
-{
-    setName("VolumeInversionPreProcessor");
-    createInport(inportName_);
-    createGenericOutport<VolumeHandle**>(outportName_, &outputVolumeHandle_);
+    enableProcessingProp_("enableProcessing", "enable: "),
+    forceUpdate_(true),
+    inport_(Port::INPORT, "volumehandle.input"),
+    outport_(Port::OUTPORT, "volumehandle.output", 0)
 
+{
+    addPort(inport_);
+    addPort(outport_);
     enableProcessingProp_.onChange(
         CallMemberAction<VolumeInversion>(this, &VolumeInversion::forceUpdate));
-    addProperty(&enableProcessingProp_);
+    addProperty(enableProcessingProp_);
 }
 
 VolumeInversion::~VolumeInversion() {
     delete processedVolumeHandle_;
-}
-
-const Identifier VolumeInversion::getClassName() const {
-    return Identifier("VolumeProcessor.VolumeInversion");
 }
 
 const std::string VolumeInversion::getProcessorInfo() const {
@@ -67,19 +60,17 @@ const std::string VolumeInversion::getProcessorInfo() const {
                        "VolumeProcessor for demonstrating the concept.");
 }
 
-void VolumeInversion::process(LocalPortMapping* portMapping) {
-    bool handleChanged = false;
-    bool res = VolumeHandleValidator::checkVolumeHandle(inputVolumeHandle_,
-        portMapping->getVolumeHandle(inportName_), &handleChanged);
+void VolumeInversion::process() {
+    if(!inport_.getData() || !outport_.isConnected())
+        return;
 
-    // if the processor is disable, "short-circuit" the in- and outport
-    //
+    inputVolumeHandle_ = inport_.getData();
     if (enableProcessingProp_.get() == false) {
-        outputVolumeHandle_ = inputVolumeHandle_;
+        outport_.setData(inputVolumeHandle_);
         return;
     }
 
-    if ((res == true) && ((forceUpdate_ == true) || (handleChanged == true)))
+    if ((inputVolumeHandle_) && ((forceUpdate_ == true) || (inport_.hasChanged())))
         invertVolume();
 }
 
@@ -103,7 +94,7 @@ void VolumeInversion::invertVolume() {
 
     delete processedVolumeHandle_;
     processedVolumeHandle_ = new VolumeHandle(v, 0.0f);
-    outputVolumeHandle_ = processedVolumeHandle_;
+    outport_.setData(processedVolumeHandle_);
 }
 
 }   // namespace

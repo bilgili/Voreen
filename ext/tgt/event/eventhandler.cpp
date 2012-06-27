@@ -36,12 +36,12 @@ EventHandler::EventHandler()
 }
 
 void EventHandler::addListenerToBack(EventListener* e) {
-    tgtAssert(e, "Trying to add null pointer as event listener");
+    tgtAssert(e != 0, "Trying to add null pointer as event listener");
     listeners_.push_back(e);
 }
 
 void EventHandler::addListenerToFront(EventListener* e) {
-    tgtAssert(e, "Trying to add null pointer as event listener");
+    tgtAssert(e != 0, "Trying to add null pointer as event listener");
     listeners_.push_front(e);
 }
 

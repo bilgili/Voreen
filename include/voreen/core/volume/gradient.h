@@ -170,13 +170,11 @@ VolumeAtomic<U>* calcGradients(Volume* vol) {
     return 0;
 }
 
-
-
 /**
  * Calculates gradients using linear regression according to Neumann et al.
  *
  \verbatim
-    L. Neumann, B. Csébfalvi, A. König, and M. E. Gröller.
+    L. Neumann, B. Csï¿½bfalvi, A. Kï¿½nig, and M. E. Grï¿½ller.
     Gradient estimation in volume data using 4D linear regression.
     In Proceedings of Eurographics 2000, pages 351-358, 2000.
  \endverbatim
@@ -343,11 +341,26 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
         }
     }
 
-
     return result;
-
 }
 
+template<class U>
+VolumeAtomic<U>* calcGradientsLinearRegression(Volume* vol) {
+    if (vol->getBitsStored() == 8) {
+        VolumeUInt8* input = dynamic_cast<VolumeUInt8*>(vol);
+        return calcGradientsLinearRegression<U, uint8_t>(input);
+    }
+    else if (vol->getBitsStored() == 12) {
+        VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
+        return calcGradientsLinearRegression<U, uint16_t>(input);
+    }
+    else if (vol->getBitsStored() == 16) {
+        VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
+        return calcGradientsLinearRegression<U, uint16_t>(input);
+    }
+    LERRORC("calcGradientsLinearRegression", "calcGradientsLinearRegression needs a 8-, 12- or 16-bit dataset as input");
+    return 0;
+}
 
 
 /**
@@ -355,7 +368,7 @@ VolumeAtomic<U>* calcGradientsLinearRegression(VolumeAtomic<T> *input) {
  *
  */
 template<class U, class T>
-VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool intensityCheck) {
+VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping) {
     VolumeAtomic<U>* result = new VolumeAtomic<U>(input->getDimensions(), input->getSpacing());
 
     using tgt::vec3;
@@ -371,9 +384,9 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
     //check for 4 channels...write intensity to this channel
     bool v4 = VolumeElement<U>::getNumChannels() == 4;
 
-    for (pos.z = 0; pos.z < input->getDimensions().z; pos.z++) {
-        for (pos.y = 0; pos.y < input->getDimensions().y; pos.y++) {
-            for (pos.x = 0; pos.x < input->getDimensions().x; pos.x++) {
+    for (pos.z = 0; pos.z < dim.z; pos.z++) {
+        for (pos.y = 0; pos.y < dim.y; pos.y++) {
+            for (pos.x = 0; pos.x < dim.x; pos.x++) {
 
                 gradient = vec3(0.f);
 
@@ -397,7 +410,7 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     T v101 = input->voxel(pos + ivec3(0, -1, 0));
                     T v102 = input->voxel(pos + ivec3(0, -1, 1));
                     T v110 = input->voxel(pos + ivec3(0, 0, -1));
-                    T v111 = input->voxel(pos + ivec3(0, 0, 0)); //not needed for calculation
+                    //T v111 = input->voxel(pos + ivec3(0, 0, 0)); //not needed for calculation
                     T v112 = input->voxel(pos + ivec3(0, 0, 1));
                     T v120 = input->voxel(pos + ivec3(0, -1, -1));
                     T v121 = input->voxel(pos + ivec3(0, -1, 0));
@@ -412,38 +425,6 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
                     T v220 = input->voxel(pos + ivec3(1, 1, -1));
                     T v221 = input->voxel(pos + ivec3(1, 1, 0));
                     T v222 = input->voxel(pos + ivec3(1, 1, 1));
-
-                    if (intensityCheck) {
-                        v000 = ((v000 == v111) ? v000 : 0);
-                        v001 = ((v001 == v111) ? v001 : 0);
-                        v002 = ((v002 == v111) ? v002 : 0);
-                        v010 = ((v010 == v111) ? v010 : 0);
-                        v011 = ((v011 == v111) ? v011 : 0);
-                        v012 = ((v012 == v111) ? v012 : 0);
-                        v020 = ((v020 == v111) ? v020 : 0);
-                        v021 = ((v021 == v111) ? v021 : 0);
-                        v022 = ((v022 == v111) ? v022 : 0);
-
-                        v100 = ((v100 == v111) ? v100 : 0);
-                        v101 = ((v101 == v111) ? v101 : 0);
-                        v102 = ((v102 == v111) ? v102 : 0);
-                        v110 = ((v110 == v111) ? v110 : 0);
-                        v112 = ((v112 == v111) ? v112 : 0);
-                        v120 = ((v120 == v111) ? v120 : 0);
-                        v121 = ((v121 == v111) ? v121 : 0);
-                        v122 = ((v122 == v111) ? v122 : 0);
-
-                        v200 = ((v200 == v111) ? v200 : 0);
-                        v201 = ((v201 == v111) ? v201 : 0);
-                        v202 = ((v202 == v111) ? v202 : 0);
-                        v210 = ((v210 == v111) ? v210 : 0);
-                        v211 = ((v211 == v111) ? v211 : 0);
-                        v212 = ((v212 == v111) ? v212 : 0);
-                        v220 = ((v220 == v111) ? v220 : 0);
-                        v221 = ((v221 == v111) ? v221 : 0);
-                        v222 = ((v222 == v111) ? v222 : 0);
-                    }
-
 
                     //filter x-direction
                     gradient.x += -1 * v000;
@@ -562,18 +543,18 @@ VolumeAtomic<U>* calcGradientsSobel(VolumeAtomic<T> *input, int mapping, bool in
  * Calculates gradients with Sobel operator.
  */
 template<class U>
-VolumeAtomic<U>* calcGradientsSobel(Volume* vol, bool intensityCheck) {
+VolumeAtomic<U>* calcGradientsSobel(Volume* vol) {
     if (vol->getBitsStored() == 8) {
         VolumeUInt8* input = dynamic_cast<VolumeUInt8*>(vol);
-        return calcGradientsSobel<U, uint8_t>(input, 1, intensityCheck);
+        return calcGradientsSobel<U, uint8_t>(input, 1);
     }
     else if (vol->getBitsStored() == 12) {
         VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
-        return calcGradientsSobel<U, uint16_t>(input, 32, intensityCheck);
+        return calcGradientsSobel<U, uint16_t>(input, 32);
     }
     else if (vol->getBitsStored() == 16) {
         VolumeUInt16* input = dynamic_cast<VolumeUInt16*>(vol);
-        return calcGradientsSobel<U, uint16_t>(input, 512, intensityCheck);
+        return calcGradientsSobel<U, uint16_t>(input, 512);
     }
     LERRORC("calcGradientsSobel", "calcGradientsSobel needs a 8-, 12- or 16-bit dataset as input");
     return 0;
@@ -616,7 +597,7 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
     else if ( typeid(*result) == typeid(VolumeFloat) || typeid(*result) == typeid(VolumeDouble))
         maxValueU = 1.f;
     else {
-        LERRORC("calc2ndDerivatives", "Unknown or unsupported output volume type");
+        LERRORC("calcGradientMagnitudes", "Unknown or unsupported output volume type");
         tgtAssert(false, "Unknown or unsupported output volume type");
         return result;
     }
@@ -644,13 +625,32 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
             }
         }
     }
-
-
-
     return result;
-
 }
 
+template<class U>
+VolumeAtomic<U>* calcGradientMagnitudes(Volume* input) {
+        if(typeid(*input) == typeid(Volume3xUInt8))
+            return calcGradientMagnitudes<U>(static_cast<Volume3xUInt8*>(input));
+        else if(typeid(*input) == typeid(Volume3xUInt16))
+            return calcGradientMagnitudes<U>(static_cast<Volume3xUInt16*>(input));
+        else if(typeid(*input) == typeid(Volume4xUInt8))
+            return calcGradientMagnitudes<U>(static_cast<Volume4xUInt8*>(input));
+        else if(typeid(*input) == typeid(Volume4xUInt16))
+            return calcGradientMagnitudes<U>(static_cast<Volume4xUInt16*>(input));
+        else if(typeid(*input) == typeid(Volume3xFloat))
+            return calcGradientMagnitudes<U>(static_cast<Volume3xFloat*>(input));
+        else if(typeid(*input) == typeid(Volume3xDouble))
+            return calcGradientMagnitudes<U>(static_cast<Volume3xDouble*>(input));
+        else if(typeid(*input) == typeid(Volume4xFloat))
+            return calcGradientMagnitudes<U>(static_cast<Volume4xFloat*>(input));
+        else if(typeid(*input) == typeid(Volume4xDouble))
+            return calcGradientMagnitudes<U>(static_cast<Volume4xDouble*>(input));
+        else {
+            LERRORC("calcGradientMagnitudes", "Unhandled type!");
+            return 0;
+        }
+}
 
 /**
  * Computes an simple approximation of the second directional derivative along the gradient direction at each voxel.

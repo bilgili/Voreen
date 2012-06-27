@@ -50,7 +50,7 @@ namespace voreen {
 
 const std::string TransFuncEditorIntensityPet::loggerCat_("voreen.qt.transfunceditorintensitypet");
 
-TransFuncEditorIntensityPet::TransFuncEditorIntensityPet(TransFuncProp* prop, QWidget* parent)
+TransFuncEditorIntensityPet::TransFuncEditorIntensityPet(TransFuncProperty* prop, QWidget* parent)
     : TransFuncEditor(prop, parent)
     , completeTextureCanvas_(0)
     , completeTexturePainter_(0)
@@ -62,7 +62,7 @@ TransFuncEditorIntensityPet::TransFuncEditorIntensityPet(TransFuncProp* prop, QW
     , maximumIntensity_(255)
     , oldThreshold_(0.f, 1.f)
 {
-    title_ = QString("Intensity Pet");
+    title_ = QString("Intensity PET");
     currentRange_ = tgt::ivec2(0, maximumIntensity_);
 
     transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(property_->get());
@@ -79,7 +79,7 @@ void TransFuncEditorIntensityPet::createWidgets() {
 
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     resetButton_ = new QToolButton();
-    resetButton_->setIcon(QIcon(":/icons/eraser.png"));
+    resetButton_->setIcon(QIcon(":/icons/clear.png"));
     resetButton_->setToolTip(tr("Reset transfer function"));
     buttonLayout->addWidget(resetButton_);
 
@@ -93,12 +93,12 @@ void TransFuncEditorIntensityPet::createWidgets() {
     saveButton_->setToolTip(tr("Save transfer function"));
     buttonLayout->addWidget(saveButton_);
 
-    if (property_->getManualRepaint()) {
-        repaintButton_ = new QToolButton();
-        repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
-        repaintButton_->setToolTip(tr("Repaint the volume rendering"));
-        buttonLayout->addWidget(repaintButton_);
-    }
+    //if (property_->getManualRepaint()) {
+        //repaintButton_ = new QToolButton();
+        //repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
+        //repaintButton_->setToolTip(tr("Repaint the volume rendering"));
+        //buttonLayout->addWidget(repaintButton_);
+    //}
     buttonLayout->addStretch();
 
     histogramPainter_ = new HistogramPainter(this, tgt::vec2(0.f, 1.f), tgt::vec2(0.f, 1.f), 5);
@@ -164,12 +164,12 @@ void TransFuncEditorIntensityPet::createConnections() {
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
     connect(resetButton_, SIGNAL(clicked()), this, SLOT(resetButtonClicked()));
-    if (property_->getManualRepaint())
-        connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
+    //if (property_->getManualRepaint())
+        //connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
 
     // double slider
     connect(doubleSlider_, SIGNAL(valuesChanged(float, float)), this, SLOT(sliderChanged(float, float)));
-    connect(doubleSlider_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(doubleSlider_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // spinboxes
     connect(lowerThresholdSpin_, SIGNAL(valueChanged(int)), this, SLOT(minBoxChanged(int)));
@@ -429,15 +429,16 @@ void TransFuncEditorIntensityPet::updateTransferFunction() {
     transferFuncIntensity_->textureUpdateNeeded();
     transferFuncGradient_->textureUpdateNeeded();
 
-    if (!property_->getManualRepaint())
-        causeVolumeRenderingRepaint();
+    property_->notifyChange();
+    //if (!property_->getManualRepaint())
+        //causeVolumeRenderingRepaint();
 }
 
 void TransFuncEditorIntensityPet::update() {
     // check whether the volume associated with the TransFuncProperty has changed
-    Volume* newVol = property_->getVolume();
-    if (newVol != volume_) {
-        volume_ = newVol;
+    VolumeHandle* newHandle = property_->getVolumeHandle();
+    if (newHandle != volumeHandle_) {
+        volumeHandle_ = newHandle;
         volumeChanged();
     }
 
@@ -473,8 +474,8 @@ void TransFuncEditorIntensityPet::update() {
 }
 
 void TransFuncEditorIntensityPet::volumeChanged() {
-    if (volume_) {
-        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+    if (volumeHandle_ && volumeHandle_->getVolume()) {
+        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
         if (maxNew != maximumIntensity_) {
             maximumIntensity_ = maxNew;
@@ -506,7 +507,7 @@ void TransFuncEditorIntensityPet::volumeChanged() {
     }
 
     // propagate new volume to histogrampainter
-    histogramPainter_->setHistogram(new HistogramIntensity(volume_, maximumIntensity_+1));
+    histogramPainter_->setHistogram(new HistogramIntensity((volumeHandle_ ? volumeHandle_->getVolume() : 0), maximumIntensity_+1));
     // resize histogram painter
     histogramPainter_->setMinimumSize(200, 150);
 

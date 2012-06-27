@@ -40,7 +40,6 @@
 
 class DcmFileFormat;
 class DicomImage;
-class voreen::Volume;
 
 namespace voreen {
 
@@ -84,7 +83,7 @@ public:
      *
      * @return Volume or 0 if an error occured.
      */
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::FileException, std::bad_alloc);
 
     /**

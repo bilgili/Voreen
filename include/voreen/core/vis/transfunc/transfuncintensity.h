@@ -300,6 +300,22 @@ public:
      */
     tgt::vec2 getThresholds() const;
 
+    /**
+     * Updates the transfer function's state from the passed
+     * transfer function.
+     */
+    void updateFrom(const TransFuncIntensity& tf);
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
 protected:
     /**
      * Loads a transfer function out of an ordinary image file. For this method, DevIL is required.

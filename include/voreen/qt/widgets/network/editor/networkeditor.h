@@ -30,66 +30,151 @@
 #ifndef VRN_NETWORKEDITOR_H
 #define VRN_NETWORKEDITOR_H
 
+#include "voreen/core/vis/network/processornetwork.h"
+
+#include "voreen/qt/widgets/network/editor/openpropertylistbutton.h"
+
+//#include "processorgraphicsitem.h"
+//#include "tooltiptimer.h"
+#include <QGraphicsView>
+#include <QMenu>
 #include <map>
-#include <QtGui>
+#include <vector>
 
-#include "voreen/core/vis/processors/processornetwork.h"
-
-#include "processorgraphicsitem.h"
-#include "tooltiptimer.h"
+class QToolButton;
 
 namespace voreen {
 
+class Workspace;
 class NetworkEvaluator;
+class LinkArrowGraphicsItem;
+class LinkEvaluatorBase;
+class PropertyGraphicsItem;
+class ProcessorGraphicsItem;
+class ITooltip;
+class ArrowGraphicsItem;
+class TooltipTimer;
 
-/**
- * Interface for GraphicsItems with custom Tooltips
- */
-class HasTooltip {
-public:
-    virtual ~HasTooltip() {}
-
-    /**
-     * Returns the custom Tooltip or 0 if none is available
-     */
-    virtual QGraphicsItem* tooltip() const = 0;
+enum NetworkEditorLayer {
+    NetworkEditorLayerDataflow,
+    NetworkEditorLayerLinking
 };
-
-//---------------------------------------------------------------------------
 
 /**
  * Widget responsible for the qgraphicsscene and all the qgraphicsitems.
  * Also handles drag & drop of processor items.
  */
-class NetworkEditor : public QGraphicsView {
-    Q_OBJECT
+class NetworkEditor : public QGraphicsView , public ProcessorNetworkObserver {
+Q_OBJECT
 public:
-    /**
-     * Constructor.
-     */
-    NetworkEditor(QWidget* parent = 0, ProcessorNetwork* processorNet = 0, NetworkEvaluator* evaluator = 0);
+    NetworkEditor(QWidget* parent = 0, Workspace* workspace = 0, NetworkEvaluator* evaluator = 0);
     ~NetworkEditor();
 
-    /** Clears the scene for reusing the GraphWidget.
-     */
-    void clearScene();
-
-    /**
-     * Adds a processor to the scene and moves it to the given position.
-     */
-    void addProcessor(ProcessorGraphicsItem* processor, const QPoint& pos);
+    ProcessorNetwork* getProcessorNetwork();
 
     /**
      * Adds a processor to the scene, using its current position.
      */
     void addProcessor(ProcessorGraphicsItem* processor);
 
+    virtual void processorAdded(const Processor* processor);
+    virtual void processorRemoved(const Processor* processor);
+    //virtual void connectionsChanged();
+    virtual void propertyLinkAdded(const PropertyLink* link);
+    virtual void propertyLinkRemoved(const PropertyLink* link);
+    virtual void networkChanged();
+
+    NetworkEditorLayer currentLayer() const;
+
+public slots:
+    /// Called if the workspace network has been reloaded.
+    void newNetwork();
+    void pressedPropertyGraphicsItem(PropertyGraphicsItem* propertyGraphicsItem);
+
     /**
-     * Adds a Widget that drop events should be accepted from.
+     * Informs the NetworkEvalutor held by this object about changes of any
+     * of the processor connections. This method is intended to be called
+     * by ProcessorGraphicsItem objects whenever connections between their
+     * ports are made.
      */
-    void addAllowedWidget(QWidget* widget) {
-        allowedWidgets_.push_back(widget);
-    }
+    void processorConnectionsChanged();
+
+    void adjustLinkArrowGraphicsItems();
+
+    void setLayerToDataflow();
+    void setLayerToLinking();
+
+private slots:
+    void copyActionSlot();
+    void pasteActionSlot();
+
+    void deleteActionSlot();
+    void renameActionSlot();
+
+    void showTooltip();
+
+    void editPropertyLinkSlot();
+
+    void deletePropertyLinkSlot();
+
+    void createNewLink(PropertyGraphicsItem* sourceItem, PropertyGraphicsItem* destinationItem, LinkEvaluatorBase* linkEvaluator);
+    void editPropertyLink(PropertyGraphicsItem* sourceItem, PropertyGraphicsItem* destinationItem, LinkEvaluatorBase* linkEvaluator);
+
+    /// Links all cameras in the network.
+    void linkCameras();
+
+    /// Removes all links from the network.
+    void removePropertyLinks();
+
+    /// Links the processor's cameras with the cameras of all other processors in the network
+    void linkCamerasOfProcessor(const Processor* processor);
+
+signals:
+    void removePropertyLinksButtonPressed();
+
+    /**
+     * Sent when a processor or a set of processors were selected or deselected.
+     * The parameter is empty, when not processors are selected.
+     */
+    void processorsSelected(const std::vector<Processor*>& processors);
+
+    /**
+     * Sent by context menu
+     */
+    void copySignal();
+    void pasteSignal();
+    void showPropertiesSignal();
+    void update();
+
+protected:
+    void generateGraphicsItems();
+    void generatePropertyLinkItems();
+    void createContextMenus();
+    void createTooltipTimer();
+    void createLayerButtons();
+    void layoutLayerButtons();
+
+    void setLayer(NetworkEditorLayer layer);
+
+    ProcessorGraphicsItem* createProcessorGraphicsItem(Processor* processor, QPoint position = QPoint());
+
+    /**
+     * Adds a processor to the scene and moves it to the given position.
+     */
+    void addProcessor(ProcessorGraphicsItem* processor, const QPoint& pos);
+
+    LinkArrowGraphicsItem* createLinkArrowForPropertyLink(const PropertyLink* link);
+
+    void removeSelectedItems();
+    void removeProcessorItem(ProcessorGraphicsItem* processorItem);
+
+    void removeArrowItem(ArrowGraphicsItem* arrow);
+    void removeArrowItem(LinkArrowGraphicsItem* arrow);
+
+    /**
+     * Clears the scene for reusing the GraphWidget.
+     */
+    void clearScene();
 
     void updateSelectedItems();
 
@@ -100,73 +185,18 @@ public:
     void center();
 
     /**
-     * Returns the scene.
-     */
-    QGraphicsScene* getScene(){ return scene_; }
-
-    /**
      * Returns the number of ProcessorGraphicsItems currently selected
      * in the widget's scene or -1 if the latter one is NULL.
      */
     int countSelectedProcessorItems() const;
+    QList<ProcessorGraphicsItem*> selectedProcessorItems() const;
 
     void hideTooltip();
 
-    NetworkEvaluator* getEvaluator() const { return evaluator_; }
-
-    QSize sizeHint() const { return QSize(400, 600); }
+    QSize sizeHint() const;
 
     void scaleView(float maxFactor);
 
-public slots:
-
-    /**
-     * Sets the current network.
-     */
-    void setNetwork(ProcessorNetwork* network);
-
-signals:
-
-    /**
-     * Sent when a processor or a set of processors were selected or deselected.
-     * The parameter processor is 0 when no processor was selected.
-     */
-    void processorSelected(Processor* processor);
-
-    /**
-     * Emitted when the user has changed a processor's name.
-     * The modified processor is passed as parameter.
-     */
-    void processorNameChanged(Processor* processor);
-
-    /**
-     * Sent by context menu
-     */
-    void copySignal();
-    void pasteSignal();
-    void showPropertiesSignal();
-
-private slots:
-    void copyActionSlot();
-    void pasteActionSlot();
-
-    void deleteActionSlot();
-    void renameActionSlot();
-    
-    void showTooltip();
-
-protected:
-
-    void generateGraphicsItems();
-
-    void removeSelectedItems();
-
-    void removeProcessorItem(Processor* processor);
-
-    void removeArrowItem(ArrowGraphicsItem* arrow);
-
-    void createContextMenus();
-    void paintEvent(QPaintEvent* event);
     void resizeEvent(QResizeEvent* event);
 
     void wheelEvent(QWheelEvent* event);
@@ -179,42 +209,69 @@ protected:
     void mousePressEvent(QMouseEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
     void mouseReleaseEvent(QMouseEvent* event);
-    void mouseDoubleClickEvent(QMouseEvent* event);
 
-    void keyReleaseEvent(QKeyEvent* event);
+    void keyPressEvent(QKeyEvent* event);
 
     void contextMenuEvent(QContextMenuEvent* event);
 
-    void showTooltip(const QPoint& pos, HasTooltip* hastooltip);
+    void showTooltip(const QPoint& pos, ITooltip* ITooltip);
+
+    void showLinkDialog(PropertyGraphicsItem* propertyItem1, PropertyGraphicsItem* propertyItem2);
+
+    void clearClipboard();
+
+    bool processorHasPropertyLinks(ProcessorGraphicsItem* processor);
+
+    void removePropertyLink(const PropertyLink* link);
 
 private:
-    QMenu contextMenu_;
+    Workspace* workspace_;
+    NetworkEvaluator* evaluator_;
+
+    QMenu rightClickMenuNone_;
     QMenu rightClickMenuSingle_;
     QMenu rightClickMenuMultiple_;
+    QMenu rightClickLinkMenu_;
+    QPointF rightClickPosition_;
+
+    QList<LinkArrowGraphicsItem*> linkArrows_;
+
+    LinkArrowGraphicsItem* selectedLink_;
+    PropertyGraphicsItem* selectedPropertyGraphicsItem_;
 
     // Maps from the processors of the current network to their graphic items.
-    std::map<Processor*,ProcessorGraphicsItem*> processorItemMap_;
+    QMap<Processor*,ProcessorGraphicsItem*> processorItemMap_;
 
-    QGraphicsScene* scene_;
+    QList<ProcessorGraphicsItem*> clipboardProcessors_;
+    //QList<ArrowGraphicsItem*> clipboardArrows_;
+    //QList<LinkArrowGraphicsItem*> clipboardLinkArrows_;
+
     // construed as translation vector
     QPointF sceneTranslate_;
     // needed, because Qt::MouseMove returns always Qt::NoButton (setting variable on MousePress)
     bool translateScene_;
+    bool needsScale_;
 
     // center of scene
     QPointF center_;
 
-    std::vector<QWidget*> allowedWidgets_;
-
     // For Tooltips
     QGraphicsItem* activeTooltip_;
     QPoint lastMousePosition_; // (I hope) there is no need to initialize it
-    HasTooltip* lastItemWithTooltip_; // Simmilar hopes here...
+    ITooltip* lastItemWithTooltip_; // Simmilar hopes here...
     TooltipTimer* ttimer_;
 
-    NetworkEvaluator* evaluator_;
-    ProcessorNetwork* processorNetwork_;
-    bool needsScale_;
+    QWidget* layerButtonContainer_;
+    QToolButton* dataflowLayerButton_;
+    QToolButton* linkingLayerButton_;
+    QWidget* autoLinkingContainer_;
+    QToolButton* linkCamerasButton_;
+    QToolButton* linkCamerasAutoButton_;
+    QToolButton* removePropertyLinksButton_;
+
+    NetworkEditorLayer currentLayer_;
+
+    static const std::string loggerCat_;
 };
 
 } // namespace voreen

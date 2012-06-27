@@ -118,6 +118,10 @@ using std::vector;
 
 namespace voreen {
 
+using std::vector;
+using std::pair;
+using std::string;
+
 const std::string DicomVolumeReader::loggerCat_ = "voreen.DicomVolumeReader";
 
 DicomVolumeReader::DicomVolumeReader(IOProgress* progress)
@@ -126,6 +130,8 @@ DicomVolumeReader::DicomVolumeReader(IOProgress* progress)
 {
     extensions_.push_back("dcm");
     extensions_.push_back("dicom");
+
+    protocols_.push_back("dicom");
 
     if (!dcmDataDict.isDictionaryLoaded()) {
         // The data dictionary is needed for loading Dicom files.
@@ -204,21 +210,21 @@ string getItemString(DcmItem* item, const DcmTagKey &tagKey) {
 /*
  * Sorts strings according to the x value of an vec3
  */
-bool slices_cmp_x(pair<string, tgt::vec3> a, pair<string, tgt::vec3> b) { //slow
+bool slices_cmp_x(std::pair<string, tgt::vec3> a, std::pair<string, tgt::vec3> b) { //slow
    return a.second.x < b.second.x;
 }
 
 /*
  * Sorts strings according to the y value of an vec3
  */
-bool slices_cmp_y(pair<string, tgt::vec3> a, pair<string, tgt::vec3> b) { //slow
+bool slices_cmp_y(std::pair<string, tgt::vec3> a, std::pair<string, tgt::vec3> b) { //slow
    return a.second.y < b.second.y;
 }
 
 /*
  * Sorts strings according to the z value of an vec3
  */
-bool slices_cmp_z(pair<string, tgt::vec3> a, pair<string, tgt::vec3> b) { //slow
+bool slices_cmp_z(std::pair<string, tgt::vec3> a, std::pair<string, tgt::vec3> b) { //slow
    return a.second.z < b.second.z;
 }
 
@@ -256,11 +262,11 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     bool found_first = false;
     vector<string>::const_iterator it_files = fileNames.begin();
     if (getProgress())
-        getProgress()->setNumSteps(fileNames.size());
+        getProgress()->setTotalSteps(fileNames.size());
     int i = 0;
     while (it_files != fileNames.end()) {
         if (getProgress())
-            getProgress()->set(i);
+            getProgress()->setProgress(i);
         i++;
 
         DcmFileFormat fileformat;
@@ -394,7 +400,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     float imagePositionZ = -1.f;
     if (slices.size() > 1) {
         tgt::vec3 delta = tgt::abs(slices[1].second - slices[0].second);
-		float maxPosDelta = max(delta.x, max(delta.y, delta.z));
+        float maxPosDelta = std::max(delta.x, std::max(delta.y, delta.z));
         if (maxPosDelta == delta.x) {
             std::sort(slices.begin(), slices.end(), slices_cmp_x);
             LINFO("Slices are arranged in x direction " << (slices[1].second - slices[0].second));
@@ -410,7 +416,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
             LINFO("Slices are arranged in z direction " << (slices[1].second - slices[0].second));
             imagePositionZ = slices[slices.size()-1].second.z;
         }
-		slicespacing = length(slices[slices.size()-1].second - slices[0].second) / (slices.size()-1);
+        slicespacing = length(slices[slices.size()-1].second - slices[0].second) / (slices.size()-1);
     }
 
     dz_ = slices.size();
@@ -437,13 +443,13 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     LINFO("Reading slice data from " << slices.size() << " files...");
 
     size_t posScalar = 0;
-    vector<pair<string, tgt::vec3> >::iterator it_slices = slices.begin();
+    std::vector<std::pair<string, tgt::vec3> >::iterator it_slices = slices.begin();
     if (getProgress())
-        getProgress()->setNumSteps(slices.size());
+        getProgress()->setTotalSteps(slices.size());
     i = 0;
     while (it_slices != slices.end()) {
         if (getProgress())
-            getProgress()->set(i);
+            getProgress()->setProgress(i);
         i++;
 
         int slicesize = loadSlice((*it_slices).first, posScalar);
@@ -462,7 +468,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                                   tgt::ivec3(dx_, dy_, dz_),
                                   tgt::vec3(x_spacing, y_spacing, z_spacing),
                                   bits_);
-        dataset->meta().setFileName(slices[0].first);
+        //dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
     case 12:
@@ -471,41 +477,41 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                                    tgt::ivec3(dx_, dy_, dz_),
                                    tgt::vec3(x_spacing, y_spacing, z_spacing),
                                    bits_);
-        dataset->meta().setFileName(slices[0].first);
+        //dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
     case 32:
 
-		LWARNING("Converting 32 bit DICOM to 8 bit dataset.");
-		//Convert the 32 bit DS to a 8 bit DS:
-		//(This is done because voreen cannot handle 32 bit intensity datasets.)
-		//This code is used to load FMT datasets.
-		try {
-			VolumeUInt8* dataset2 = new VolumeUInt8(tgt::ivec3(dx_, dy_, dz_), tgt::vec3(x_spacing, y_spacing, z_spacing), 8);
-			VolumeUInt32* source = new VolumeUInt32(reinterpret_cast<uint32_t*>(scalars_),
-								   tgt::ivec3(dx_, dy_, dz_),
-								   tgt::vec3(x_spacing, y_spacing, z_spacing),
-								   bits_);
+        LWARNING("Converting 32 bit DICOM to 8 bit dataset.");
+        //Convert the 32 bit DS to a 8 bit DS:
+        //(This is done because voreen cannot handle 32 bit intensity datasets.)
+        //This code is used to load FMT datasets.
+        try {
+            VolumeUInt8* dataset2 = new VolumeUInt8(tgt::ivec3(dx_, dy_, dz_), tgt::vec3(x_spacing, y_spacing, z_spacing), 8);
+            VolumeUInt32* source = new VolumeUInt32(reinterpret_cast<uint32_t*>(scalars_),
+                                   tgt::ivec3(dx_, dy_, dz_),
+                                   tgt::vec3(x_spacing, y_spacing, z_spacing),
+                                   bits_);
 
-			for(int x=0; x<dx_;++x) {
-				for(int y=0; y<dy_;++y) {
-					for(int z=0; z<dz_;++z) {
-						//Only use highbyte:
-						dataset2->voxel(x,y,z) = source->voxel(x,y,z) / 16777215;
-					}
-				}
-			}
+            for(int x=0; x<dx_;++x) {
+                for(int y=0; y<dy_;++y) {
+                    for(int z=0; z<dz_;++z) {
+                        //Only use highbyte:
+                        dataset2->voxel(x,y,z) = source->voxel(x,y,z) / 16777215;
+                    }
+                }
+            }
 
-			delete source;
-			dataset = dataset2;
-		}
-		catch (std::bad_alloc) {
-			LERROR("Bad alloc during 32->8 bit convertsion.");
-			delete[] scalars_;
-			scalars_ = 0;
-			return 0;
-		}
-		dataset->meta().setFileName(slices[0].first);
+            delete source;
+            dataset = dataset2;
+        }
+        catch (std::bad_alloc) {
+            LERROR("Bad alloc during 32->8 bit convertsion.");
+            delete[] scalars_;
+            scalars_ = 0;
+            return 0;
+        }
+        //dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
     default:
@@ -788,13 +794,19 @@ bool pathIsDir(const string &path) {
 } // namespace
 
 
-VolumeSet* DicomVolumeReader::read(const string &fileName)
+VolumeCollection* DicomVolumeReader::read(const string &fileName)
     throw (tgt::FileException, std::bad_alloc)
 {
     dx_ = dy_ = dz_ = 0;
     Volume* volume;
 
-    if (fileName.find("dicom://") == 0) {
+    if (pathIsDir(fileName)) {
+        // Handle reading of entire directories
+        if (fileName.find("dicom://") == 0)
+            volume = readDicomFiles(getFileNamesInDir(fileName.substr(8)), "", true);
+        else
+            volume = readDicomFiles(getFileNamesInDir(fileName), "", true);
+    } else if (fileName.find("dicom://") == 0) {
         // Handle Dicom network connection to PACS
         string connection = fileName.substr(0, fileName.find("/", 8));
         string path = fileName.substr(fileName.find("/", 8));
@@ -818,33 +830,21 @@ VolumeSet* DicomVolumeReader::read(const string &fileName)
         string filter = (pos != string::npos ? fileName.substr(pos + 1) : "");
         LINFO(file << " : " << filter);
         volume = readDicomDir(file, filter);
-    }
-    else if (pathIsDir(fileName)) {
-        // Handle reading of entire directories
-        volume = readDicomFiles(getFileNamesInDir(fileName), "", true);
     } else {
         // Handle single dicom file
         volume = readDicomFile(fileName);
     }
 
     if (volume) {
-        VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-        VolumeSeries* volumeSeries = new VolumeSeries("unknown", modality_);
-        volumeSet->addSeries(volumeSeries);
-		
-		// derive study name from filenamen and assign to volumeset
-		string volumeSetName = fileName;
-		size_t lastPos = volumeSetName.rfind("/");
-		if (lastPos == volumeSetName.length()-1)
-			lastPos = volumeSetName.substr(0, volumeSetName.length()-1).rfind("/");
-		volumeSet->setName(volumeSetName.substr(lastPos+1,volumeSetName.length()-lastPos-2));
 
+        VolumeCollection* volumeCollection = new VolumeCollection();
         VolumeHandle* volumeHandle = new VolumeHandle(volume, 0.0f);
-        volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-        volumeSeries->addVolumeHandle(volumeHandle);
-        return volumeSet;
-    } else {
-        throw tgt::FileException("Got NULL volume");
+        volumeHandle->setOrigin(VolumeOrigin("dicom", fileName));
+        volumeCollection->add(volumeHandle);
+        return volumeCollection;
+    }
+    else {
+        throw tgt::FileException("DicomVolumeReader: Unable to load " + fileName, fileName);
     }
 }
 
@@ -1009,14 +1009,32 @@ tgt::Texture* DicomVolumeReader::readDicomLoopSlice(DcmFileFormat* dfile, unsign
 
     LINFO("preparing pixel data.");
 
-    E_TransferSyntax xfer = dfile->getDataset()->getOriginalXfer();
+    DcmDataset* ds = dfile->getDataset();
+    E_TransferSyntax xfer = ds->getOriginalXfer();
+    //E_TransferSyntax xfer = dfile->getDataset()->getOriginalXfer();
 
-    DicomImage *di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame - 1, opt_frameCount);
-    if (di == NULL)
+    DicomImage *di = 0;
+    try {
+        di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame, opt_frameCount);
+    }
+    catch(...) {
+        di = 0;
+    }
+    //DicomImage *di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame, opt_frameCount);
+    //DicomImage *di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame-1, opt_frameCount);
+    if (di == NULL) {
         LERROR("Out of memory");
+        DcmRLEDecoderRegistration::cleanup();
+        DJDecoderRegistration::cleanup();
+        return 0;
+    }
 
-    if (di->getStatus() != EIS_Normal)
+    if (di->getStatus() != EIS_Normal) {
         LERROR(DicomImage::getString(di->getStatus()));
+        DcmRLEDecoderRegistration::cleanup();
+        DJDecoderRegistration::cleanup();
+        return 0;
+    }
 
     tgt::Texture* tex = generate2DTextureFromDcmImage(di);
 

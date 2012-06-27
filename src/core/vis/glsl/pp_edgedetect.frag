@@ -32,65 +32,38 @@
 
 uniform SAMPLER2D_TYPE shadeTex_;
 uniform SAMPLER2D_TYPE depthTex_;
+uniform TEXTURE_PARAMETERS texParams_;
 
 uniform vec4 edgeColor_;
-uniform vec4 fillColor_;
 uniform vec4 backgroundColor_;
 uniform float edgeThreshold_;
-uniform int showImage_;
+uniform bool showImage_;
 uniform int blendMode_;
 uniform int edgeStyle_;
 
-/***
- * Performs an image based edge detection based on the depth value.
- *
- * @fragCoord - screen coordinates of the current fragment
- ***/
-float edgeDetectionDepth(in vec2 fragCoord) {
-    float sx = (normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-1.0,-1.0))).z)+2.0*(normDepth(textureLookup2D(depthTex_, fragCoord.xy+vec2(-1.0,0.0)).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-1.0,1.0))).z))
-                -(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(1.0,-1.0))).z)+2.0*(normDepth(textureLookup2D(depthTex_, fragCoord.xy+vec2(1.0,0.0)).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(1.0,1.0))).z));
-    float sy = (normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-1.0,-1.0))).z)+2.0*(normDepth(textureLookup2D(depthTex_, fragCoord.xy+vec2(0.0,-1.0)).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(1.0,-1.0))).z))
-                -(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-1.0,1.0))).z)+2.0*(normDepth(textureLookup2D(depthTex_, fragCoord.xy+vec2(0.0,1.0)).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(1.0,1.0))).z));
-
-    return (abs(sx)+abs(sy))/4.0;
-}
 
 /***
  * Performs an image based edge detection based on the depth value.
+ * To determine the edges, a Sobel filter is applied.
  *
  * @fragCoord - screen coordinates of the current fragment
- * @delta     - specifies the distance to the neighboor texels to be fetched
+ * @delta     - specifies the distance to the neighboor texels to be fetched,
+ *              1.0 defines a one pixel distance
  ***/
-float edgeDetectionDepthPersp(in vec2 fragCoord, float delta) {
-    float sx = (normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-delta,-delta))).z)+2.0*(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-delta,0.0))).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-delta,delta))).z))
-                -(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(delta,-delta))).z)+2.0*(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(delta,0.0))).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(delta,delta))).z));
-    float sy = (normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-delta,-delta))).z)+2.0*(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(0.0,-delta))).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(delta,-delta))).z))
-                -(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(-delta,delta))).z)+2.0*(normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(0.0,delta))).z))+normDepth(textureLookup2D(depthTex_, (fragCoord.xy+vec2(delta,delta))).z));
+vec2 edgeDetectionDepth(in vec2 fragCoord, in float delta) {
+    float N = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(0.0,-delta)).z);
+    float NE = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(delta,-delta)).z);
+    float E = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(delta, 0.0)).z);
+    float SE = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(delta, delta)).z);
+    float S = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(0.0, delta)).z);
+    float SW = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(-delta, delta)).z);
+    float W = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(-delta, 0.0)).z);
+    float NW = normDepth(textureLookup2Dscreen(depthTex_, texParams_, fragCoord+vec2(-delta,-delta)).z);
 
-    return length(sx+sy)/sqrt(32.0);
-}
-
-/***
- * Performs an image based edge detection based on the color channel.
- *
- * @fragCoord - screen coordinates of the current fragment
- ***/
-vec3 edgeDetectionColor(in vec2 fragCoord) {
-    vec3 sx = textureLookup2D(shadeTex_, (fragCoord.xy+vec2(-1.0,-1.0))).rgb
-           +2.0*textureLookup2D(shadeTex_, (fragCoord.xy+vec2(-1.0, 0.0))).rgb
-             +textureLookup2D(shadeTex_, (fragCoord.xy+vec2(-1.0, 1.0))).rgb
-             -(textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 1.0,-1.0))).rgb
-           +2.0*textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 1.0, 0.0))).rgb
-             +textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 1.0, 1.0))).rgb);
-    vec3 sy = textureLookup2D(shadeTex_, (fragCoord.xy+vec2(-1.0,-1.0))).rgb
-           +2.0*textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 0.0,-1.0))).rgb
-             +textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 1.0,-1.0))).rgb
-             -(textureLookup2D(shadeTex_, (fragCoord.xy+vec2(-1.0, 1.0))).rgb
-           +2.0*textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 0.0, 1.0))).rgb
-             +textureLookup2D(shadeTex_, (fragCoord.xy+vec2( 1.0, 1.0))).rgb);
-
-    return (abs(sx)+abs(sy))/6.0;
-    //return length(sx+sy)/sqrt(32.0);
+    vec2 gradient;
+    gradient.x = -1.0*NW - 2.0*W - 1.0*SW + 1.0*NE + 2.0*E + 1.0*SE;
+    gradient.y = +1.0*NW + 2.0*N + 1.0*NE - 1.0*SE - 2.0*S - 1.0*SE;
+    return gradient;
 }
 
 /***
@@ -98,28 +71,25 @@ vec3 edgeDetectionColor(in vec2 fragCoord) {
  *
  * @fragCoord - screen coordinates of the current fragment
  ***/
-float renderHalo(in vec2 fragCoord) {
-
+float silhouetteDetectionColor(in vec2 fragCoord) {
     float result = 0.0;
+    vec3 C = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord).rgb;
+    if (C != backgroundColor_.rgb) {
+        vec3 E = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(1.0,0.0)).rgb;
+        vec3 S = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(0.0,-1.0)).rgb;
+        vec3 W = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-1.0,0.0)).rgb;
+        vec3 N = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(0.0,1.0)).rgb;
 
-    vec4 maskColor = vec4(vec3(0.0), 0.0);
-    vec4 center = textureLookup2D(shadeTex_, fragCoord);
-    if (center != maskColor) {
-        vec4 east = textureLookup2D(shadeTex_, (fragCoord+vec2(1.0,0.0)));
-        vec4 south = textureLookup2D(shadeTex_, (fragCoord+vec2(0.0,-1.0)));
-        vec4 west = textureLookup2D(shadeTex_, (fragCoord+vec2(-1.0,0.0)));
-        vec4 north = textureLookup2D(shadeTex_, (fragCoord+vec2(0.0,1.0)));
-
-        if (east == maskColor || south == maskColor ||
-            west == maskColor || north == maskColor) {
+        if (E == backgroundColor_.rgb || S == backgroundColor_.rgb ||
+            W == backgroundColor_.rgb || N == backgroundColor_.rgb) {
             result = 1.0;
         } else {
-            vec4 southeast = textureLookup2D(shadeTex_, (fragCoord+vec2(1.0,-1.0)));
-            vec4 southwest = textureLookup2D(shadeTex_, (fragCoord+vec2(-1.0,-1.0)));
-            vec4 northwest = textureLookup2D(shadeTex_, (fragCoord+vec2(-1.0,1.0)));
-            vec4 northeast = textureLookup2D(shadeTex_, (fragCoord+vec2(1.0,1.0)));
-            if (southeast == maskColor || southwest == maskColor ||
-                northwest == maskColor || northeast == maskColor) {
+            vec3 SE = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2( 1.0,-1.0)).rgb;
+            vec3 SW = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-1.0,-1.0)).rgb;
+            vec3 NW = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-1.0, 1.0)).rgb;
+            vec3 NE = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2( 1.0, 1.0)).rgb;
+            if (SE == backgroundColor_.rgb || SW == backgroundColor_.rgb ||
+                NW == backgroundColor_.rgb || NE == backgroundColor_.rgb) {
                 result = 1.0;
             }
         }
@@ -133,24 +103,23 @@ float renderHalo(in vec2 fragCoord) {
  ***/
 void main() {
     vec2 fragCoord = gl_FragCoord.xy;
-    vec4 shadeCol = textureLookup2D(shadeTex_, fragCoord);
+    vec4 shadeCol = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord);
 
     // read and normalize depth value
-    float depth = textureLookup2D(depthTex_, fragCoord).z;
+    float depth = textureLookup2Dscreen(depthTex_, texParams_, fragCoord).z;
     float depthNorm = normDepth(depth);
 
     vec4 result;
     float edgeThickness;
     if (edgeStyle_ == 0) {
         // contour edges
-        edgeThickness = edgeDetectionDepth(fragCoord);
+        edgeThickness = length(edgeDetectionDepth(fragCoord, 1.0));
     } else if (edgeStyle_ == 1) {
         // silhouette edges
-        //edgeThickness = edgeDetectionColor(fragCoord.xy);
-        edgeThickness = renderHalo(fragCoord.xy);
+        edgeThickness = silhouetteDetectionColor(fragCoord);
     } else if (edgeStyle_ == 2) {
         // contour edges where edge thickness decreases with increasing depth
-        edgeThickness = edgeDetectionDepthPersp(fragCoord.xy, depth);
+        edgeThickness = length(edgeDetectionDepth(fragCoord, (1.0-depthNorm)*2.0));
     }
 
     if (edgeThickness > edgeThreshold_) {
@@ -162,32 +131,14 @@ void main() {
             result = vec4(1.0-depthNorm, 0.0, depthNorm, 1.0)*2.0;
         } else if (blendMode_ == 2) {
             // blend edges
-            result = vec4(shadeCol.rgb*2.0, 1.0);
-            //result = (1.0-clamp(vec4(depthNorm),0.0,1.0))*0.5;
-
-        // for labeling: set alpha-value in source to zero
-        } else if (blendMode_ == 3) {
-            result = vec4(0.0);
+            result = 0.5*edgeColor_ + 0.5*vec4(shadeCol.rgb, 1.0);
         }
     } else {
-        if (showImage_== 0 ) {
+        if (showImage_)
+            result = shadeCol;
+        else {
             result = backgroundColor_;
             depth = 1.0;
-        }
-        else if (showImage_ == 1) {
-            result = shadeCol;
-        }
-        else if (showImage_ == 2) {
-            discard;
-        }
-        else {
-            if (any(notEqual(vec3(shadeCol), vec3(backgroundColor_))) ) {
-                result = fillColor_;
-            }
-            else {
-                result = backgroundColor_;
-                depth = 1.0;
-            }
         }
     }
 

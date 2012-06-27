@@ -35,52 +35,33 @@
 
 namespace voreen {
 
-class VoreenToolWindow : public QWidget {
+class VoreenToolWindowTitle : public QWidget {
+    Q_OBJECT
+public:
+    VoreenToolWindowTitle(QDockWidget* parent, bool dockable=true);
+    virtual QSize sizeHint() const;
+    virtual QSize minimumSizeHint() const;
+protected:
+    virtual void paintEvent(QPaintEvent *event);
+    void mousePressEvent(QMouseEvent* event);
+    void mouseDoubleClickEvent(QMouseEvent* event);
+private:
+    bool dockable_;
+    QPixmap closeButton_;
+    QPixmap undockButton_;
+    QPixmap maximizeButton_;
+};
+
+//----------------------------------------------------------------------------------------------------------------
+
+class VoreenToolWindow : public QDockWidget {
 Q_OBJECT
 public:
-    VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "");
+    VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "", bool dockable=true);
     QAction* action() const { return action_; }
-
-signals:
-    void visibilityChanged(bool visible);
-
-protected:
-    void hideEvent(QHideEvent* event);
-    void showEvent(QShowEvent* event);
 
 private:
     QAction* action_;
-};
-
-//----------------------------------------------------------------------------------------------------------------
-
-class VoreenToolDockWindowTitle : public QWidget {
-	Q_OBJECT
-public:
-	VoreenToolDockWindowTitle(QDockWidget* parent);
-	virtual QSize sizeHint() const;
-	virtual QSize minimumSizeHint() const;
-protected:
-	virtual void paintEvent(QPaintEvent *event);
-	void mousePressEvent(QMouseEvent* event);
-private:
-	QPixmap closeButton_;
-	QPixmap undockButton_;
-};
-
-//----------------------------------------------------------------------------------------------------------------
-
-class VoreenToolDockWindow : public QDockWidget {
-	Q_OBJECT
-public:
-	VoreenToolDockWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "");
-
-signals:
-	void visibilityChanged(bool visible);
-
-protected:
-	void hideEvent(QHideEvent* event);
-	void showEvent(QShowEvent* event);
 };
 
 } // namespace

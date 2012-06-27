@@ -1,4 +1,4 @@
-/**********************************************************************
+#/**********************************************************************
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
@@ -38,7 +38,7 @@
 namespace voreen {
 
 //forward declaration
-class Volume;
+class VolumeHandle;
 
 /**
  * Abstract base class for all transfer function widgets. It provides methods to open a Filedialog
@@ -54,7 +54,7 @@ public:
      * @param prop the transfer function property that belongs to this plugin
      * @param parent the parent widget
      */
-    TransFuncEditor(TransFuncProp* prop, QWidget* parent = 0);
+    TransFuncEditor(TransFuncProperty* prop, QWidget* parent = 0);
 
     /**
      * Destructor
@@ -65,7 +65,7 @@ public:
      * Assigns the passed property to the editor. The
      * former property is replaced.
      */
-    virtual void setTransFuncProp(TransFuncProp* prop);
+    virtual void setTransFuncProp(TransFuncProperty* prop);
 
     /**
      * In this method the plugin will be layouted.
@@ -120,16 +120,16 @@ signals:
 public slots:
 
     /**
-     * Starts or stops the coarseness mode.
+     * Starts or stops the interaction mode.
      *
-     * @param on coarseness mode on or off?
+     * @param on interaction mode on or off?
      */
-    void switchInteractionMode(bool on);
+    void toggleInteractionMode(bool on);
 
 protected:
-    TransFuncProp* property_; ///< the transfer function property that belongs to this plugin
+    TransFuncProperty* property_; ///< the transfer function property that belongs to this plugin
 
-    Volume* volume_; ///< the volume that is associated with the transfer function this widget belongs to
+    VolumeHandle* volumeHandle_; ///< the volume handle that is associated with the transfer function this widget belongs to
 
     QString title_; ///< name of the editor that is displayed in the gui
 };

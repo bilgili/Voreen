@@ -236,13 +236,18 @@ void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name) {
             case mxUINT32_CLASS:
                 dataset = readMatrix<uint32_t>(pa, dim, matDim, w);
                 break;
+            default:
+                dataset = 0;
+                break;
         }
-        VolumeHandle* handle = new VolumeHandle(dataset, static_cast<const float>(w));
-        handle->setOrigin(
-            series->getParentSet()->getName(),
-            name,
-            static_cast<const float>(w));
-        series->addVolumeHandle(handle);
+        if(dataset) {
+            VolumeHandle* handle = new VolumeHandle(dataset, static_cast<const float>(w));
+            handle->setOrigin(
+                    series->getParentSet()->getName(),
+                    name,
+                    static_cast<const float>(w));
+            series->addVolumeHandle(handle);
+        }
     }
 }
 

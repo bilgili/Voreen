@@ -50,7 +50,7 @@ public:
      * @param fileName File name to be written
      * @param volume Volume dataset
      */
-    virtual void write(const std::string& filename, Volume* volume)
+    virtual void write(const std::string& filename, VolumeHandle* volume)
         throw (tgt::IOException);
 
 private:

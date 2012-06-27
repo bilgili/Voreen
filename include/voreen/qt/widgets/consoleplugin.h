@@ -41,7 +41,7 @@ class ConsoleLogQt;
 class ConsolePlugin : public WidgetPlugin {
     Q_OBJECT
 public:
-    ConsolePlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
+    ConsolePlugin(QWidget* parent = 0);
 
     void log(const std::string& msg);
 

@@ -28,19 +28,19 @@
  **********************************************************************/
 
 #include "voreen/core/vis/properties/intproperty.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 namespace voreen {
 
-IntProp::IntProp(const std::string& id, const std::string& guiText, int value, int minValue,
-                 int maxValue, bool instantValueChange, bool invalidate, bool invalidateShader)
+IntProperty::IntProperty(const std::string& id, const std::string& guiText, int value, int minValue,
+                 int maxValue, bool instantValueChange, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<int>(id, guiText, value, minValue, maxValue, 1,
-                            invalidate, invalidateShader)
+                            invalidationLevel)
 {
     setInstantValueChange(instantValueChange);
 }
 
-PropertyWidget* IntProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* IntProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

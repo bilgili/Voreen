@@ -308,8 +308,8 @@ void TransFuncIntensityGradient::updateTexture() {
 
     // read tf data from framebuffer and copy it into tf texture
     GLfloat* pixels = new GLfloat[getWidth()*getHeight()*4];
-    glReadPixels(0, 0, getWidth(), getHeight(), GL_RGBA, GL_FLOAT, pixels); 
-    setPixelData(pixels); 
+    glReadPixels(0, 0, getWidth(), getHeight(), GL_RGBA, GL_FLOAT, pixels);
+    setPixelData(pixels);
 
     textureUpdateNeeded_ = false;
 }
@@ -364,6 +364,14 @@ const std::string TransFuncIntensityGradient::getShaderDefines() const {
 
 const std::string TransFuncIntensityGradient::getSamplerType() const {
     return "sampler2D";
+}
+
+void TransFuncIntensityGradient::serialize(XmlSerializer& s) const {
+    s.serialize("Primitives", primitives_, "Primitive");
+}
+
+void TransFuncIntensityGradient::deserialize(XmlDeserializer& s) {
+    s.deserialize("Primitives", primitives_, "Primitive");
 }
 
 } // namespace voreen

@@ -29,57 +29,37 @@
 
 #include "voreen/core/vis/processors/image/threshold.h"
 
-#include "tgt/assert.h"
-#include "tgt/glmath.h"
-#include "tgt/vector.h"
-
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
-
 namespace voreen {
 
 Threshold::Threshold()
     : ImageProcessor("pp_threshold"),
-    threshold_("set.thresholdPPthreshold", "Threshold", 7.0f, 1.0f, 20.0f),
-    delta_("set.thresholdPPdelta", "Delta", 1.0f)
+    threshold_("threshold", "Threshold", 5.0f, 1.0f, 20.0f),
+    inport_(Port::INPORT, "image.inport"),
+    outport_(Port::OUTPORT, "image.outport")
 {
-    setName("Threshold");
-    addProperty(&threshold_);
-    addProperty(&delta_);
-    createInport("image.input");
-    createOutport("image.output");
+    addProperty(threshold_);
+    addPort(inport_);
+    addPort(outport_);
 }
 
 const std::string Threshold::getProcessorInfo() const {
-    return "Performs a thresholding.The pixel color is used, when the surrounding pixel \
-           exceed a defined threshold is exceeded and black otherwise.It's probably a slow \
-           filter because an if instruction is used internally.";
+    return "Performs a thresholding. The pixel color is used, when the sum of the colors \
+           of the surrounding pixels exceeds a defined threshold, and set to transparent otherwise. \
+           It's probably a slow filter because an if statement is used internally.";
 }
 
-void Threshold::process(LocalPortMapping* portMapping) {
-    int source = portMapping->getTarget("image.input");
-    int dest = portMapping->getTarget("image.output");
-
-    tc_->setActiveTarget(dest, "Threshold::process");
-
+void Threshold::process() {
+    outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // bind shading result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    LGL_ERROR;
-
-    // bind depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-    LGL_ERROR;
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
     program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
     program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("delta_", delta_.get());
+    inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("threshold_", threshold_.get());
 
     renderQuad();
@@ -87,14 +67,6 @@ void Threshold::process(LocalPortMapping* portMapping) {
     program_->deactivate();
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
-}
-
-void Threshold::setThreshold(float threshold) {
-    threshold_.set(threshold);
-}
-
-void Threshold::setDelta(float delta) {
-    delta_.set(delta);
 }
 
 } // voreen namespace

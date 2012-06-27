@@ -29,6 +29,7 @@
 
 #include "voreen/core/io/nrrdvolumewriter.h"
 #include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/volume/volumehandle.h"
 #include "tgt/filesystem.h"
 
 namespace voreen {
@@ -36,14 +37,21 @@ namespace voreen {
 const std::string NrrdVolumeWriter::loggerCat_ = "voreen.io.DatVolumeWriter";
 
 NrrdVolumeWriter::NrrdVolumeWriter() {
-    name_ = "NRRD Reader";
     extensions_.push_back("nrrd");
     extensions_.push_back("nhdr");
 }
 
-void NrrdVolumeWriter::write(const std::string& filename, Volume* volume)
+void NrrdVolumeWriter::write(const std::string& filename, VolumeHandle* volumeHandle)
     throw (tgt::IOException)
 {
+
+    tgtAssert(volumeHandle, "No volume handle");
+    Volume* volume = volumeHandle->getVolume(); 
+    if (!volume) {
+        LWARNING("No volume");
+        return;
+    }
+
     std::string nhdrname = filename;
     std::string rawname = getFileNameWithoutExtension(filename) + ".raw";
     LINFO("saving " << nhdrname << " and " << rawname);

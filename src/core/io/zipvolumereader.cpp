@@ -30,12 +30,13 @@
 #include "voreen/core/io/zipvolumereader.h"
 
 #include "voreen/core/application.h"
+#include "voreen/core/io/datvolumereader.h" // used to determine related .raw file name
 #include "voreen/core/io/ioprogress.h"
 #include "voreen/core/io/multivolumereader.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 
-#include <ziparchive/ZipArchive.h>
+#include "tgt/ziparchive.h"
 #include <fstream>
 
 using std::string;
@@ -48,105 +49,135 @@ ZipVolumeReader::ZipVolumeReader(VolumeSerializerPopulator* populator, IOProgres
   : VolumeReader(progress),
     populator_(populator)
 {
-    name_ = "Zip Reader";
     extensions_.push_back("zip");
+    protocols_.push_back("zip");
 }
 
-VolumeHandle* ZipVolumeReader::readFromOrigin(const VolumeHandle::Origin& origin) {
+VolumeHandle* ZipVolumeReader::read(const VolumeOrigin& origin)
+    throw (tgt::FileException, std::bad_alloc)
+{
     VolumeHandle* result = 0;
 
-    // Remove the prefix "zip://"
-    size_t extensionPos = origin.filename.find(".zip");
-    std::string zipName = origin.filename.substr(0, extensionPos + 4);
-    std::string fileName = origin.filename.substr(extensionPos + 5);
+    // Extract path zip and internal filename
+    size_t extensionPos = origin.getPath().find(".zip");
+    std::string zipName = origin.getPath().substr(0, extensionPos + 4);
+    std::string fileName = origin.getPath().substr(extensionPos + 5);
+    std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
 
-    try {
-        CZipArchive zip;
-        zip.Open(zipName.c_str());
+    tgt::ZipArchive zip(zipName);
 
-        int indexFile = zip.FindFile(fileName.c_str());
-        std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
+    tgt::File* xFile = zip.extractFile(fileName, tgt::ZipArchive::TARGET_DISK, temporaryPath);
+    if (xFile == 0)
+        throw tgt::FileNotFoundException("Specific file within zip file not found", origin.getPath());
+    delete xFile;   // Free resources held by tgt::File
+    xFile = 0;
 
-        if (indexFile != ZIP_FILE_INDEX_NOT_FOUND) {
-            for (int iter = 0; iter < zip.GetCount(); ++iter)
-                zip.ExtractFile(iter, temporaryPath.c_str());
+    // Check whether this file is a .dat file and has related .raw file. If so,
+    // extract that file, too, in order to enable the DatVolumeReader to find it.
+    //
+    std::string additionalFileName = "";
+    if (tgt::FileSystem::fileExtension(fileName, true) == "dat") {
+        additionalFileName = DatVolumeReader::getRelatedRawFileName(temporaryPath + "/" + fileName);
 
-            VolumeSet* volumeSet = populator_->getVolumeSerializer()->load(temporaryPath + "/" + fileName);
-            VolumeHandle::Origin origin = volumeSet->getAllVolumeHandles().at(0)->getOrigin();
-            std::string originWithoutTempDir = origin.filename.substr(temporaryPath.length() + 1);
-            origin.filename = "zip://" + zipName + "/" + originWithoutTempDir;
-            volumeSet->getAllVolumeHandles().at(0)->setOrigin(origin);
-            result = volumeSet->getAllVolumeHandles().at(0);
-
-            for (int iter = 0; iter < zip.GetCount(); ++iter) {
-                std::string path = temporaryPath + "/" + zip.GetFileInfo(iter)->GetFileName();
-                remove(path.c_str());
-            }
-
-        }
-        else
-            throw tgt::FileNotFoundException("Specific file within zip file not found", origin.filename);
+        xFile = zip.extractFile(additionalFileName, tgt::ZipArchive::TARGET_DISK, temporaryPath);
+        if (xFile == 0)
+            throw tgt::FileNotFoundException("Specific file within zip file not found", origin.getPath());
+        delete xFile;
+        xFile = 0;
     }
-    catch (CZipException e) {
-        throw tgt::FileException("ZipVolumeReader::readFromOrigin(" + origin.filename + "): " + e.GetErrorDescription());
+
+    VolumeCollection* volumeCollection =
+        populator_->getVolumeSerializer()->load(temporaryPath + "/" + fileName);
+    if (volumeCollection && !volumeCollection->empty()) {
+        VolumeOrigin origin = volumeCollection->first()->getOrigin();
+        std::string originWithoutTempDir = origin.getPath().substr(temporaryPath.length() + 1);
+        volumeCollection->first()->setOrigin(
+            VolumeOrigin("zip://" + zipName + "/" + originWithoutTempDir));
+        result = volumeCollection->first();
     }
+
+    // Delete extracted file
+    //
+    tgt::FileSystem::deleteFile(temporaryPath + "/" + fileName);
+    if (additionalFileName.empty() == false)
+        tgt::FileSystem::deleteFile(temporaryPath + "/" + additionalFileName);
 
     return result;
 }
 
-VolumeSet* ZipVolumeReader::read(const std::string& fileName)
+VolumeCollection* ZipVolumeReader::read(const std::string& fileName)
     throw (tgt::FileException, std::bad_alloc)
 {
+    tgt::ZipArchive zip(fileName);
 
-    try {
-        CZipArchive zip;
-        zip.Open(fileName.c_str());
+    std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
+    std::string indexFilePath = temporaryPath + "/index.mv";
+    std::vector<std::string> files = zip.getContainedFileNames();
 
-        int indexFile = zip.FindFile("index.mv");
-        std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
-        std::string indexFilePath = temporaryPath + "/index.mv";
-
-        // No index file exists, so we have to create one ourselves
-        if (indexFile == ZIP_FILE_INDEX_NOT_FOUND) {
-            std::ofstream file(indexFilePath.c_str());
-            
-            for (int iter = 0; iter < zip.GetCount(); ++iter) {
-                std::string packedFileName = zip.GetFileInfo(iter)->GetFileName();
-                // Put all filenames in the index.mv which end with dat
-                if (packedFileName.find(".dat") != std::string::npos)
-                    file << packedFileName.c_str() << std::endl;
-            }
-            file.close();
+    // No index file exists, so we have to create one ourselves
+    if (zip.containsFile("index.mv") == false) {
+        std::ofstream file(indexFilePath.c_str());
+        for (size_t i = 0; ((file.good() == true) && (i < files.size())); ++i) {
+            // Put all filenames in the index.mv which end with dat
+            if (tgt::FileSystem::fileExtension(files[i], true) == "dat")
+                file << files[i] << std::endl;
         }
-
-        // Extract all volumes from the archive and save them locally
-        for (int iter = 0; iter < zip.GetCount(); ++iter)
-            zip.ExtractFile(iter, temporaryPath.c_str());
-        
-        // Load the volumes with the help of a temporary multivolumereader
-        VolumeSet* volumeSet = MultiVolumeReader(populator_, getProgress()).read(indexFilePath);
-        volumeSet->setName(tgt::FileSystem::fileName(fileName));
-
-        // Set the correct origins
-        for (size_t iter = 0; iter < volumeSet->getAllVolumeHandles().size(); ++iter) {
-            VolumeHandle::Origin origin = volumeSet->getAllVolumeHandles().at(iter)->getOrigin();
-            std::string originWithoutTempDir = origin.filename.substr(temporaryPath.length() + 1);
-            origin.filename = "zip://" + fileName + "/" + originWithoutTempDir;
-            volumeSet->getAllVolumeHandles().at(iter)->setOrigin(origin);
-        }
-
-        // Delete the extracted (and the possibly created index) files
-        remove(indexFilePath.c_str());
-        for (int iter = 0; iter < zip.GetCount(); ++iter) {
-            std::string path = temporaryPath + "/" + zip.GetFileInfo(iter)->GetFileName();
-            remove(path.c_str());
-        }
-
-        return volumeSet;
+        file.close();
     }
-    catch (CZipException e) {
-        throw tgt::FileException("ZipVolumeReader::read(" + fileName + "): " + e.GetErrorDescription());
+
+    // Extract all volumes from the archive and save them locally
+    zip.extractFilesToDirectory(temporaryPath);
+
+    // Load the volumes with the help of a temporary multivolumereader
+    VolumeCollection* volumeCollection = MultiVolumeReader(populator_, getProgress()).read(indexFilePath);
+
+    // Set the correct origins
+    for (size_t iter = 0; volumeCollection && iter < volumeCollection->size(); ++iter) {
+        VolumeOrigin origin = volumeCollection->at(iter)->getOrigin();
+        std::string originWithoutTempDir = origin.getPath().substr(temporaryPath.length() + 1);
+        volumeCollection->at(iter)->setOrigin(VolumeOrigin("zip://" + fileName + "/" + originWithoutTempDir));
     }
+
+    // Delete the extracted (and the possibly created index) files
+    tgt::FileSystem::deleteFile(indexFilePath);
+    for (size_t i = 0; i < files.size(); ++i)
+        tgt::FileSystem::deleteFile(temporaryPath + "/" + files[i]);
+
+    return volumeCollection;
+}
+
+VolumeOrigin ZipVolumeReader::convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const {
+
+    std::string path = origin.getPath();
+
+    // replace backslashes in path
+    string::size_type pos = path.find("\\");
+    while (pos != string::npos) {
+        path[pos] = '/';
+        pos = path.find("\\");
+    }
+
+    // Extract part after the .zip file
+    // TODO: not robust, doesn't handle uppercase file names
+    string::size_type zippos = path.find(".zip/");
+    std::string inzip;
+    if (zippos != string::npos) {
+        inzip = origin.getPath().substr(zippos + 4);
+        path = origin.getPath().substr(0, zippos + 4);
+    }
+
+    // create origin with relative path
+    return VolumeOrigin(origin.getProtocol(), tgt::FileSystem::relativePath(path, basePath) + inzip);
+}
+
+VolumeOrigin ZipVolumeReader::convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const {
+
+    // build new path only if this is not an absolute path
+    if (origin.getPath().find("/") != 0 && origin.getPath().find("\\") != 0 && origin.getPath().find(":") != 1) {
+        return VolumeOrigin(origin.getProtocol(), tgt::FileSystem::absolutePath(basePath + "/" + origin.getPath()));
+    }
+    else
+        return origin;
 }
 
 } // namespace voreen

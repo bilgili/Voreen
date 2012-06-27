@@ -43,22 +43,22 @@ public:
     CubeCutProxyGeometry();
     virtual ~CubeCutProxyGeometry();
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.CubeCutProxyGeometry"; }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "CubeCutProxyGeometry"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new CubeCutProxyGeometry(); }
-
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
+    virtual Processor* create() const;
 
 protected:
     virtual void render();
     void revalidateCubeGeometry();
     void renderCubeWithCutting();
     void renderCuttedCube();
-    void onSettingsChange() { needsBuild_ = true; }
+    void onSettingsChange();
 
     /// clipping cube
-    BoolProp cutCube_;
-    FloatVec3Prop cubeSize_;
+    BoolProperty cutCube_;
+    FloatVec3Property cubeSize_;
 
     GLuint dl_;
 };

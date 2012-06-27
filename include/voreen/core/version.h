@@ -37,6 +37,7 @@ namespace voreen {
 class VoreenVersion {
 public:
     static const std::string getCompilerVersion();
+    static const std::string getVersion();
     static const std::string getRevision();
     static void logAll(const std::string& loggerCat = "voreen.VoreenVersion");
 };

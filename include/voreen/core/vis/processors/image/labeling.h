@@ -32,7 +32,6 @@
 
 #include "voreen/core/vis/processors/image/labelingmath.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
@@ -49,6 +48,8 @@
 #endif
 
 namespace voreen {
+
+class CameraProperty;
 
 /**
  * Abstraction layer for GUI access. This class has to be implemented by the
@@ -84,14 +85,11 @@ public:
  *
  * also \see IDRaycaster
  */
-class Labeling : public ImageProcessor, public tgt::EventListener {
+class Labeling : public ImageProcessor {
 public:
+
     /**
      * Default constructor.
-     * @param camera the \c Camera object of the pipeline
-     * @param tc the \c TextureContainer object to use. \see TextureContainer
-     * @param pg the \c ProxyGeometry used by the volume renderer
-     * @param labelingWidget object for GUI access \see LabelingWidget
      */
     Labeling();
 
@@ -100,44 +98,16 @@ public:
      */
     ~Labeling();
 
-    virtual const Identifier getClassName() const {return "ImageProcessor.Labeling";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Labeling"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_TESTING; } 
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new Labeling();}
 
-    /**
-     * Reacts to the following messages:
-     * - Identifier::switchCoarseness, Type: \c bool
-     * - Identifier::setLayout, Type: \c int.The labeling layout.\see LabelLayouts
-     * - "set.showLabels", Type: \c string. \see showModes
-     * - Identifier::setLabelColor, Type: \c tgt::Color. The label color.
-     * - Identifier::setHaloColor, Type: \c tgt::Color. The color surrounding
-     *   a label
-     * - Identifier::switchDrawHalo, Type: \c bool. If true, a halo is drawn around
-     *   the labels.
-     * - Identifier::setFont, Type: \c string. Path to the font file to use.
-     * - Identifier::setFontSize, Type: \c int. Font size to use.
-     * - "set.fontSizeIntern", Type: \c int. Font size for internal labels.
-     * - "set.labelColorIntern", Type: \c tgt::Color. Label color for internal labels.
-     * - "set.haloColorIntern", Type: \c tgt::Color. Halo color for internal labels.
-     * - "set.lockInternalFontSettings", Type: \c bool. If true, font settings
-     *   for external and internal labels are synchronized.
-     * - "set.shape3D", Type: \c bool. If true, internal labels are 3D shape fitted.
-     * - Identifier::setSegmentDescriptionFile, Type: \c string. Path to the
-     *   xml-file containing the segment descriptions.
-     * - "set.polynomialDegree", Type: \c int. Degree of the polynomial curves
-     *   use for internal labeling
-     * - "set.bezierHorzDegree", Type: \c int. Horizontal degree of the
-     *   bezier patches used for rendering internal labels.
-     * - "set.bezierVertDegree", Type: \c int. Vertical degree of the
-     *   bezier patches used for rendering internal labels.
-     * - "set.glyphAdvance", Type: \c int. Additional gap between two glyphs.
-     * - Identifier::setLabelingWidget, Type: LabelingWidget*. \see LabelingWidget
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual void process();
 
-    virtual void process(LocalPortMapping* portMapping);
-
-    int initializeGL();
+    void initialize() throw (VoreenException);
 
     /// The external label layout.
     enum LabelLayouts {
@@ -153,14 +123,14 @@ public:
         SHOW_INTERNAL_ONLY        ///< show internal labels only
     };
 
-    static const Identifier setLabelingWidget_;
-    static const Identifier setLayout_;
-    static const Identifier setLabelColor_;
-    static const Identifier setHaloColor_;
-    static const Identifier setFont_;
-    static const Identifier setFontSize_;
-    static const Identifier setSegmentDescriptionFile_;
-    static const Identifier switchDrawHalo_;
+    static const std::string setLabelingWidget_;
+    static const std::string setLayout_;
+    static const std::string setLabelColor_;
+    static const std::string setHaloColor_;
+    static const std::string setFont_;
+    static const std::string setFontSize_;
+    static const std::string setSegmentDescriptionFile_;
+    static const std::string switchDrawHalo_;
 
 private:
     // Object for GUI access
@@ -171,33 +141,34 @@ private:
     // Shader used for labeling.
     tgt::Shader* labelShader_;
     // The render target the labeling is rendered to.
-    static const Identifier labelTexUnit_;
+    static const std::string labelTexUnit_;
 
     //
-    // Gui-Gen Properties
+    // Properties
     //
-    EnumProp* showLabels_;                    // determines whether/which labels are shown
-    ColorProp labelColorExtern_;            // color of external labels
-    ColorProp haloColorExtern_;             // halo-color of external labels
-    IntProp fontSizeExtern_;                // font size of internal labels
-    BoolProp lockInternalFontSettings_;     // if true, internal/external font settings are synchronized
-    ColorProp labelColorIntern_;            // color of internal labels
-    ColorProp haloColorIntern_;                // halo-color of internal labels
-    IntProp fontSizeIntern_;                // font size of internal labels
-    BoolProp shape3D_;                        // 3d shape fitting of internal labels
-    BoolProp drawHalo_;                        // if true, a halo is drawn around labels
-    EnumProp* layout_;                      // silhouette or left-right-layout
-    IntProp minSegmentSize_;                // minimum segment of a segment on screen for being labeled
-    IntProp maxIterations_;                 // max count of iterations for improving label layout
-    EnumProp* filterKernel_;                // filter kernel to be used for distance map filtering
-    IntProp filterDelta_;                   // offset of this kernel
-    IntProp distanceMapStep_;               // only each distanceMapStep_ pixel of distance map is considered
-    IntProp glyphAdvance_;                    // Additional gap between two glyphs.
-    IntProp polynomialDegree_;              // degree of 2D and 3D polynomials
-    IntProp bezierHorzDegree_;              // horizontal degree of bezier patch
-    IntProp bezierVertDegree_;              // vertical degree of bezier patch
+    StringOptionProperty showLabels_;           // determines whether/which labels are shown
+    FileDialogProperty labelFile_;              // Path to xml file containing the segment labels.
+    ColorProperty labelColorExtern_;            // color of external labels
+    ColorProperty haloColorExtern_;             // halo-color of external labels
+    IntProperty fontSizeExtern_;                // font size of internal labels
+    BoolProperty lockInternalFontSettings_;     // if true, internal/external font settings are synchronized
+    ColorProperty labelColorIntern_;            // color of internal labels
+    ColorProperty haloColorIntern_;             // halo-color of internal labels
+    IntProperty fontSizeIntern_;                // font size of internal labels
+    BoolProperty shape3D_;                      // 3d shape fitting of internal labels
+    BoolProperty drawHalo_;                     // if true, a halo is drawn around labels
+    StringOptionProperty layout_;               // silhouette or left-right-layout
+    IntProperty minSegmentSize_;                // minimum segment of a segment on screen for being labeled
+    IntProperty maxIterations_;                 // max count of iterations for improving label layout
+    IntOptionProperty filterKernel_;            // filter kernel to be used for distance map filtering
+    IntProperty filterDelta_;                   // offset of this kernel
+    IntProperty distanceMapStep_;               // only each distanceMapStep_ pixel of distance map is considered
+    IntProperty glyphAdvance_;                  // Additional gap between two glyphs.
+    IntProperty polynomialDegree_;              // degree of 2D and 3D polynomials
+    IntProperty bezierHorzDegree_;              // horizontal degree of bezier patch
+    IntProperty bezierVertDegree_;              // vertical degree of bezier patch
 
-    static const Identifier labelLayoutAsString_;
+    static const std::string labelLayoutAsString_;
     std::string fontPath_;
 
 
@@ -213,7 +184,7 @@ private:
         float widthInternWorld;    // width, height of text bounding box
         float heightInternWorld;   // of internal label (world coords)
         GLuint textureExtern;      // texture containing the rendered text for extern labels
-        GLuint textureIntern;       // texture containing the rendered text for intern labels
+        GLuint textureIntern;      /// texture containing the rendered text for intern labels
         int textureExternWidth;    // width of external texture in pixels
         int textureExternHeight;   // height of external texture in pixels
         int textureInternWidth;    // width of internal texture in pixels
@@ -265,7 +236,7 @@ private:
         tgt::ivec2 normal;               // normal at intersection of connection line with convex hull
         tgt::ivec2 labelPos;             // bottom-left of label-text bounding box in image pixel coords
         tgt::vec2  labelPosWorld;        //  ""       ""          ""               in worlds coords
-        float rotAngle;                     // an external label quad is rotated by this angle
+        float rotAngle;                  // an external label quad is rotated by this angle
         LabelData* labelData;            // persistent label properties
         int segmentSize;                 // count of visible segment-pixels
         bool intern;                     // is label an internal one?
@@ -273,7 +244,7 @@ private:
                                          // to the volume. Off-Labels are placed in the upper-right window corner
         std::vector<tgt::ivec2> controlPoints;
         labeling::Curve2DPolynomial* curve2D;        // fitting function in image space (is fit to control points)
-        labeling::BezierPatch bezierPatch;          // bezier patch the intern texture is mapped onto
+        labeling::BezierPatch bezierPatch;           // bezier patch the intern texture is mapped onto
     };
     typedef std::vector<Label> LabelVec;
     LabelVec labels_;                   // contains all labels of current frame
@@ -321,12 +292,21 @@ private:
 
     // filter kernel used to filter distance map
     struct FilterKernel {
+        FilterKernel(int s, std::string cap) : size(s), caption(cap) {
+            kernel = new int[s*s];
+            coefficientsSum = s*s;
+            for (int i=0; i<(s*s); i++)
+                kernel[i] = 1;
+        }
+        ~FilterKernel() {
+            delete[] kernel;
+        }
         int size;
         int coefficientsSum;
         int* kernel;
         std::string caption;
     };
-    std::vector<FilterKernel> kernels_;
+    std::vector<FilterKernel*> kernels_;
 
 #ifdef VRN_WITH_FONTRENDERING
     FT_Library library_;
@@ -334,34 +314,34 @@ private:
 #endif
 
     bool valid_;        // is current label rendering valid? (used for user interactions)
-    bool coarse_;       // currently in coarse-mode? (if yes, don't render labels)
     bool editMode_;     // indicates that label-layout should not be recalculated
                         // e.g. because a label is edited or moved by the user
+    bool texturesGenerated_; // have the label textures been generated?
     TiXmlDocument xmlDoc_;  // tiny xml handle for xml-file containing segment captions
     static const std::string loggerCat_;
 
-
+    RenderPort idMapPort_;
 
 #ifdef labelDEBUG
     GLuint segmentationTarget_;
     GLuint distanceMapTarget_;
-    BoolProp showSegmentIDs_;
-    BoolProp drawConvexHull_;
-    BoolProp drawDebugMaps_;
+    BoolProperty showSegmentIDs_;
+    BoolProperty drawConvexHull_;
+    BoolProperty drawDebugMaps_;
     std::vector<tgt::vec2> renderPoints_;
 #endif
 
     // Labeling-Methods
     void labelLayout();
     void genTextures();
-    void renderTextToBitmap(std::string text, int fontSize, const ColorProp& labelColor, const ColorProp& haloColor,
+    void renderTextToBitmap(std::string text, int fontSize, const ColorProperty& labelColor, const ColorProperty& haloColor,
                             labeling::Bitmap<GLfloat> &bitmap,
                             bool antialias, int border, int glyphAdvance,
                             bool drawHalo, int haloOffset );
     void findAnchors();
     void calcLabelPositions();
     void toWorld(Label* pLabel = NULL);
-    void renderLabels(int dest);
+    void renderLabels();
     void deleteLabels();
 
     // common support methods
@@ -405,12 +385,13 @@ private:
     void rotateLabel(Label &pLabel, float angle);
 
     // image-methods
-    void readImage(int source);
+    void readImage();
     void calcConvexHull();
 
     // misc
     void loadFont();
-    void readSegmentData(std::string filename);
+    void labelFileChanged();
+    bool readSegmentData(std::string filename);
     void createFilterKernels();
 
 #ifdef labelDEBUG
@@ -426,12 +407,12 @@ private:
     void unlockInternalFontSettingsEvt(); // invoked by labelColorIntern_, haloColorIntern_, fontSizeIntern_
 
     // user interaction
-    IDManager idManager_;
     Label* getPickedLabel(int x, int y);
     bool catchedBySegment(const Label &pLabel, tgt::ivec2 mousePos);
     bool updateSegmentCaption(Label &pLabel, std::string const &newCaption);
-    bool drag_;                     // true if user is currently dragging a label
+    VolumePort volumePort_;
     Label* pickedLabel_;
+    bool drag_;                     // true if user is currently dragging a label
     tgt::ivec2 pickedPointOffset_;  // vector from picked point to picked label's labelPos
     tgt::ivec2 lastDragPoint_;        // pixel coords of last dragging event
     void mousePressEvent(tgt::MouseEvent* e);
@@ -441,8 +422,9 @@ private:
     void wheelEvent(tgt::MouseEvent* e);
     tgt::Stopwatch time;
 
+    RenderPort labelingPort_;
+    CameraProperty camera_;
     VolumeHandle* currentVolumeHandle_;
-    bool cameraChanged_;
 };
 
 } // namespace voreen

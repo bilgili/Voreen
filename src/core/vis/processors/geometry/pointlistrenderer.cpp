@@ -29,12 +29,13 @@
 
 #include "voreen/core/vis/processors/geometry/pointlistrenderer.h"
 
-#include "voreen/core/geometry/geometrycontainer.h"
 #include "voreen/core/geometry/pointlistgeometry.h"
 #include "voreen/core/geometry/pointsegmentlistgeometry.h"
 #include "voreen/core/vis/voreenpainter.h"
 
 #include "voreen/core/vis/transfunc/transfunc.h"
+
+#include "tgt/material.h"
 
 namespace voreen {
 
@@ -47,85 +48,81 @@ const std::string PointListRenderer::loggerCat_("voreen.PointListRenderer");
     constructor
 */
 PointListRenderer::PointListRenderer()
-    : GeometryRenderer(),    
-      geometry_(0),
-      displayList_(0),
-      color_("PointListRenderer.Color", "Primitive Color", tgt::Color(0.75f, 0.25f, 0.f, 1.f)),
-      depthTest_("PointListRenderer.DepthTest", "Depth Test", true),
-      pointSize_("PointListRenderer.PointSize", "Point Size", 3.f, 1.f, 20.f),
-      pointSmooth_("PointListRenderer.PointSmooth", "Point Smooth", false),
-      sphereDiameter_("PointListRenderer.SphereDiameter", "Sphere Diameter", 0.01f, 0.001f, 0.1f)
+    : GeometryRenderer()
+    , displayList_(0)
+    , renderingPrimitiveProp_("renderingPrimitive", "Rendering Primitive")
+    , color_("color", "Primitive Color", tgt::Color(0.75f, 0.25f, 0.f, 1.f))
+    , depthTest_("depthTest", "Depth Test", true)
+    , pointSize_("pointSize", "Point Size", 3.f, 1.f, 20.f)
+    , pointSmooth_("pointSmooth", "Point Smooth", false)
+    , sphereDiameter_("sphereDiameter", "Sphere Diameter", 0.01f, 0.001f, 0.1f)
+    , sphereSlicesStacks_("sphereSlicesStacks", "Sphere Slices/Stacks", 20, 10, 100)
+    , geometryInport_(Port::INPORT, "geometry.input")
 {
-    setName("PointListRenderer");
 
-    renderingPrimitives_.push_back("Points");
-    renderingPrimitives_.push_back("Spheres");
-    renderingPrimitives_.push_back("Illuminated Spheres");
-    renderingPrimitiveProp_ = new EnumProp("PointListRenderer.renderingPrimitive", "Rendering Primitive", renderingPrimitives_, 0);
+    // Rendering primitives
+    renderingPrimitiveProp_.addOption("points", "Points");
+    renderingPrimitiveProp_.addOption("spheres", "Spheres");
+    renderingPrimitiveProp_.addOption("illuminated-spheres", "Illuminated Spheres");
 
-    renderingPrimitiveProp_->onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
+    renderingPrimitiveProp_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
     color_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
     depthTest_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
     pointSize_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
     pointSmooth_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
     sphereDiameter_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
+    sphereSlicesStacks_.onChange(CallMemberAction<PointListRenderer>(this, &PointListRenderer::invalidateDisplayList));
 
     pointSize_.setStepping(0.5f);
     pointSize_.setNumDecimals(1);
     sphereDiameter_.setStepping(0.001f);
-    sphereDiameter_.setNumDecimals(3); 
+    sphereDiameter_.setNumDecimals(3);
 
     addProperty(renderingPrimitiveProp_);
-    addProperty(&color_);
-    addProperty(&depthTest_);
-    addProperty(&pointSize_);
-    addProperty(&pointSmooth_);
-    addProperty(&sphereDiameter_);
+    addProperty(color_);
+    addProperty(depthTest_);
+    addProperty(pointSize_);
+    addProperty(pointSmooth_);
+    addProperty(sphereDiameter_);
+    addProperty(sphereSlicesStacks_);
 
-    createInport("geometry.pointlist");
-    createCoProcessorOutport("coprocessor.geometryprocessor", &Processor::call);
-
+    addPort(geometryInport_);
 }
 
 PointListRenderer::~PointListRenderer() {
-    delete renderingPrimitiveProp_;
 }
 
-void PointListRenderer::process(LocalPortMapping* portMapping){
+const std::string PointListRenderer::getProcessorInfo() const {
+    return "Renders a list of points (PointListGeometryVec3 or PointSegmentListGeometryVec3) \
+            as point primitives, spheres or illuminated spheres.<br>(see GeometrySource)";
+}
 
-    try {
-        int pointListID = portMapping->getGeometryNumber("geometry.pointlist");
-        geometry_ = geoContainer_->getGeometry(pointListID);
-    } 
-    catch (std::exception& ) {
-        geometry_ = 0;
-    }
-    
-    // invalidate display list on geometry change
-    if (!geometry_ || geometry_->hasChanged()) {
+void PointListRenderer::process() {
+    tgtAssert(geometryInport_.isReady(), "inport not ready");
+    // force display list update, if input has changed
+    if (geometryInport_.hasChanged())
+        invalidateDisplayList();
+}
+
+void PointListRenderer::render() {
+
+    tgtAssert(geometryInport_.isReady(), "inport not ready");
+
+    // regenerate display list, if input data has changed
+    if (geometryInport_.hasChanged() || displayList_ == 0) {
+        
         if (glIsList(displayList_))
             glDeleteLists(displayList_, 1);
         displayList_ = 0;
-    }
 
-}
-
-void PointListRenderer::render(LocalPortMapping* /*localPortMapping*/) {
-
-    if (!geometry_)
-        return;
-
-    // (re)-generated display list from geometry, if list is not present
-    if (!glIsList(displayList_)) {
-        
         // cast geometry to PointListGeometry or PointSegmentListGeometry and generate display list
-        PointListGeometry<vec3>* pointList = dynamic_cast< PointListGeometry<vec3>* >(geometry_);
-        PointSegmentListGeometry<vec3>* segmentList = dynamic_cast< PointSegmentListGeometry<vec3>* >(geometry_);
+        PointListGeometry<vec3>* pointList = dynamic_cast< PointListGeometry<vec3>* >(geometryInport_.getData());
+        PointSegmentListGeometry<vec3>* segmentList = dynamic_cast< PointSegmentListGeometry<vec3>* >(geometryInport_.getData());
         if (pointList)
             generateDisplayList(pointList->getData());
         else if (segmentList)
             generateDisplayList(segmentList->getPoints());
-    
+
         // message on invalid geometry
         if (!pointList && !segmentList) {
             LWARNING("Invalid geometry. PointListGeometry<vec3> or PointSegmentListGeometry<vec3> expected.");
@@ -151,7 +148,7 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
         glDisable(GL_DEPTH_TEST);
 
     // enable lighting for illuminated spheres
-    if (renderingPrimitiveProp_->get() == 2) {
+    if (renderingPrimitiveProp_.get() == "illuminated-spheres") {
 
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -172,7 +169,7 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
     }
 
     // render: point primitives
-    if (renderingPrimitiveProp_->get() == 0) {
+    if (renderingPrimitiveProp_.get() == "points") {
         glColor4fv(color_.get().elem);
         glPointSize(pointSize_.get());
         if (pointSmooth_.get())
@@ -184,13 +181,13 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
         glEnd();
     }
     // render: spheres
-    else if (renderingPrimitiveProp_->get() == 1 || renderingPrimitiveProp_->get() == 2) {
+    else if (renderingPrimitiveProp_.get() == "spheres" || renderingPrimitiveProp_.get() == "illuminated-spheres") {
         GLUquadricObj* quadric = gluNewQuadric();
         glColor4fv(color_.get().elem);
         for (size_t i=0; i<pointList.size(); ++i) {
-            glPushMatrix();      
+            glPushMatrix();
             tgt::translate(pointList[i]);
-            gluSphere(quadric, sphereDiameter_.get(), 20, 20);
+            gluSphere(quadric, sphereDiameter_.get(), sphereSlicesStacks_.get(), sphereSlicesStacks_.get());
             glPopMatrix();
         }
         gluDeleteQuadric(quadric);
@@ -203,14 +200,11 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
 
 
 void PointListRenderer::invalidateDisplayList() {
-    
+
     if (glIsList(displayList_))
         glDeleteLists(displayList_, 1);
     displayList_ = 0;
-    
-    // temporary hack for invalidating the geometry source
-    MsgDistr.postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, camera_) );
-}
 
+}
 
 } // namespace voreen

@@ -64,7 +64,7 @@ void TransFuncMappingCanvasRamp::showKeyContextMenu(QMouseEvent* event) {
 
 void TransFuncMappingCanvasRamp::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
-        emit switchInteractionMode(true);
+        emit toggleInteractionMode(true);
     }
 
     event->accept();
@@ -170,7 +170,7 @@ void TransFuncMappingCanvasRamp::mouseReleaseEvent(QMouseEvent* event) {
         dragging_ = false;
         hideCoordinates();
         update();
-        emit switchInteractionMode(false);
+        emit toggleInteractionMode(false);
     }
 }
 

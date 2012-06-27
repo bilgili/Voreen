@@ -31,77 +31,91 @@
 
 namespace voreen {
 
-const Identifier Compositer::shadeTexUnit1_ = "shadeTexUnit1";
-const Identifier Compositer::depthTexUnit1_ = "depthTexUnit1";
+const std::string Compositer::shadeTexUnit1_ = "shadeTexUnit1";
+const std::string Compositer::depthTexUnit1_ = "depthTexUnit1";
 
 Compositer::Compositer()
     : ImageProcessor("pp_compositer")
-    , blendFactor_("Compositer.set.blendFactor", "Blend factor", 0.5f, 0.0f, 1.0f, true)
+    , compositingMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM)
+    , blendFactor_("blendFactor", "Blend factor", 0.5f, 0.0f, 1.0f, true)
+    , inport0_(Port::INPORT, "image.inport0")
+    , inport1_(Port::INPORT, "image.inport1")
+    , outport_(Port::OUTPORT, "image.outport")
 {
-    setName("Compositer");
 
     tm_.addTexUnit(shadeTexUnit1_);
     tm_.addTexUnit(depthTexUnit1_);
 
-    compositingModes_.push_back("Depth test");
-    compositingModes_.push_back("First has priority");
-    compositingModes_.push_back("Second has priority");
-    compositingModes_.push_back("Blend");
-    compositingModes_.push_back("Alpha Compositing");
-    compositingModes_.push_back("Maximum Alpha");
-
-    compositingMode_ = new EnumProp("Compositer.set.blendMode", "Set blend mode:", compositingModes_, 0, true, true);
+    compositingMode_.addOption("depth-test",            "Depth test",           "MODE_DEPTH_TEST");
+    compositingMode_.addOption("alpha-compositing",     "Alpha compositing",    "MODE_ALPHA_COMPOSITING");
+    compositingMode_.addOption("blend",                 "Blend",                "MODE_BLEND");
+    compositingMode_.addOption("take-first",            "Take first",           "MODE_TAKE_FIRST");
+    compositingMode_.addOption("take-second",           "Take second",          "MODE_TAKE_SECOND");
+    compositingMode_.addOption("first-has-priority",    "First has priority",   "MODE_FIRST_HAS_PRIORITY");
+    compositingMode_.addOption("second-has-priority",   "Second has priority",  "MODE_SECOND_HAS_PRIORITY");
+    compositingMode_.addOption("maximum-alpha",         "Maximum alpha",        "MODE_MAXIMUM_ALPHA");
+    compositingMode_.addOption("difference",            "Difference",           "MODE_DIFFERENCE");
     addProperty(compositingMode_);
-    addProperty(&blendFactor_);
 
-    createInport("image.inport0");
-    createInport("image.inport1");
-    createOutport("image.outport");
+    addProperty(blendFactor_);
+
+    addPort(inport0_);
+    addPort(inport1_);
+    addPort(outport_);
 }
 
 Compositer::~Compositer() {
-    delete compositingMode_;
 }
 
 const std::string Compositer::getProcessorInfo() const {
     return "Composites two images with a selectable blending method.";
 }
 
-void Compositer::process(LocalPortMapping* portMapping) {
-    int source0 = portMapping->getTarget("image.inport0");
-    int source1 = portMapping->getTarget("image.inport1");
-    int dest = portMapping->getTarget("image.outport");
+void Compositer::process() {
 
-    tc_->setActiveTarget(dest, "Compositer::outport");
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
 
+    outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // bind shading results
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source0), tc_->getGLTexID(source0));
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
-    glBindTexture(tc_->getGLTexTarget(source1), tc_->getGLTexID(source1));
-    // bind depth results
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source0), tc_->getGLDepthTexID(source0));
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
-    glBindTexture(tc_->getGLDepthTexTarget(source1), tc_->getGLDepthTexID(source1));
+    inport0_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
+    inport1_.bindTextures(tm_.getGLTexUnit(shadeTexUnit1_), tm_.getGLTexUnit(depthTexUnit1_));
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
-    program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
-    program_->setUniform("compositingMode_", compositingMode_->get());
-    program_->setUniform("blendFactor_", blendFactor_.get());
+    if (compositingMode_.get() != "take-second") {
+        program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
+        program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
+        inport0_.setTextureParameters(program_, "textureParameters0_");
+    }
+    if (compositingMode_.get() != "take-first") {
+        program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
+        program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
+        inport1_.setTextureParameters(program_, "textureParameters1_");
+    }
+    if (compositingMode_.get() == "blend")
+        program_->setUniform("blendFactor_", blendFactor_.get());
 
     renderQuad();
 
     program_->deactivate();
+    outport_.deactivateTarget();
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
+}
+
+std::string Compositer::generateHeader() {
+    std::string header = ImageProcessor::generateHeader();
+    header += "#define " + compositingMode_.getValue() + "\n";
+    return header;
+}
+
+void Compositer::compile() {
+    if (program_)
+        program_->setHeaders(generateHeader(), false);
+    ImageProcessor::compile();
 }
 
 } // voreen namespace

@@ -28,27 +28,43 @@
  **********************************************************************/
 
 #include "voreen/core/vis/properties/property.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
-#include "voreen/core/vis/propertywidget.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidget.h"
+#include "voreen/core/vis/properties/link/changeaction.h"
 
 namespace voreen {
 
-const std::string Property::XmlElementName_ = "Property";
-bool Property::serializeTypeInformation_ = false;
-
-Property::Property(const std::string& id, const std::string& guiText)
-    : Serializable()
-    , id_(id)
+Property::Property(const std::string& id, const std::string& guiText, Processor::InvalidationLevel invalidationLevel)
+    : id_(id)
     , guiText_(guiText)
     , owner_(0)
+    , invalidationLevel_(invalidationLevel)
+    , widgetsEnabled_(true)
     , visible_(true)
     , lod_(USER)
-    , metaData_(0)
+    , interactionModeVisited_(false)
 {}
 
 Property::~Property() {
     disconnectWidgets();
-    delete metaData_;
+}
+
+Processor::InvalidationLevel Property::getInvalidationLevel() {
+    return invalidationLevel_;
+}
+
+void Property::setWidgetsEnabled(bool enabled) {
+    widgetsEnabled_ = enabled;
+    for (std::set<PropertyWidget*>::iterator it = widgets_.begin(); it != widgets_.end(); ++it)
+        (*it)->setEnabled(widgetsEnabled_);
+}
+
+bool Property::getWidgetsEnabled() const {
+    return widgetsEnabled_;
+}
+
+void Property::initialize() throw (VoreenException) {
+    // currently nothing to do
 }
 
 void Property::setVisible(bool state) {
@@ -87,7 +103,7 @@ void Property::disconnectWidgets() {
 void Property::updateWidgets() {
     std::set<PropertyWidget*>::iterator it = widgets_.begin();
     for ( ; it != widgets_.end(); ++it)
-        (*it)->update();
+        (*it)->updateFromProperty();
 }
 
 void Property::setWidgetsVisible(bool state) {
@@ -104,86 +120,65 @@ std::string Property::getId() const {
     return id_;
 }
 
-Identifier Property::getIdent() const {
-    return Identifier(id_);
-}
-
 PropertyWidget* Property::createWidget(PropertyWidgetFactory*) {
     return 0;
 }
 
-// XML serialization stuff
-std::string Property::getXmlElementName() const {
-    return XmlElementName_;
-}
-
-const Identifier Property::getIdent(TiXmlElement* propertyElem) {
-    if (!propertyElem)
-        throw XmlElementException("Can't get Ident of Null-Pointer!");
-    if (propertyElem->Value() != XmlElementName_)
-        throw XmlElementException(std::string("Cant get ClassName of a ") + propertyElem->Value()
-                                  + " - need " + XmlElementName_ + "!");
-    return Identifier(propertyElem->Attribute("id"));
-}
-
-TiXmlElement* Property::serializeToXml() const {
-    TiXmlElement* propElem = new TiXmlElement(XmlElementName_);
-
-    propElem->SetAttribute("id", id_);
-
-    if (getSerializeTypeInformation()) {
-        
-        propElem->SetAttribute("label", guiText_);
-    }
-
-    // query property widgets for meta data to serialize
-    std::vector<TiXmlElement*> widgetMetaData;
-    std::set<PropertyWidget*>::const_iterator it = widgets_.begin();
-    for ( ; it != widgets_.end(); ++it) {
-        TiXmlElement* metaDataElem = (*it)->getWidgetMetaData();
-        if (metaDataElem)
-            widgetMetaData.push_back(metaDataElem);
-    }
-    // if there is meta data, add it to the DOM
-    if (!widgetMetaData.empty()) {
-        TiXmlElement* metaDataElem = new TiXmlElement("MetaData");
-        propElem->LinkEndChild(metaDataElem);
-        for (size_t i=0; i<widgetMetaData.size(); ++i)
-            metaDataElem->LinkEndChild(widgetMetaData[i]);
-    }
-
+void Property::serialize(XmlSerializer& s) const {
     if (lod_ != USER)
-        propElem->SetAttribute("lod", lod_);
+        s.serialize("lod", lod_);
 
-    return propElem;
+    for (std::set<PropertyWidget*>::const_iterator it = widgets_.begin(); it != widgets_.end(); ++it)
+    {
+        const_cast<PropertyWidget*>(*it)->updateMetaData();
+        const_cast<PropertyWidget*>(*it)->getWidgetMetaData();
+    }
+
+    metaDataContainer_.serialize(s);
 }
 
-void Property::updateFromXml(TiXmlElement* propElem) {
-    errors_.clear();
-    int result;
-    if (propElem->QueryIntAttribute("lod", &result) == TIXML_SUCCESS)
-        lod_ = static_cast<LODSetting>(result);
-    else
-        lod_ = USER;
+void Property::deserialize(XmlDeserializer& s) {
+    try {
+        int lod;
 
-    // read widget meta data
-    delete metaData_;
-    TiXmlElement* widgetMetaElem = propElem->FirstChildElement("MetaData");
-    if (widgetMetaElem)
-        metaData_ = new TiXmlElement(*widgetMetaElem);
-    else 
-        metaData_ = 0;
+        s.deserialize("lod", lod);
+
+        lod_ = static_cast<LODSetting>(lod);
+    } catch (XmlSerializationNoSuchDataException&) {
+        s.removeLastError();
+        lod_ = USER;
+    }
+
+    metaDataContainer_.deserialize(s);
+}
+
+MetaDataContainer& Property::getMetaDataContainer() const {
+    return metaDataContainer_;
 }
 
 PropertyWidget* Property::createAndAddWidget(PropertyWidgetFactory* f) {
     PropertyWidget* widget = createWidget(f);
     if (!visible_)
         widget->setVisible(visible_);
+    if (!widgetsEnabled_)
+        widget->setEnabled(false);
     addWidget(widget);
     return widget;
 }
 
-std::set<PropertyWidget*> Property::getPropertyWidgets() const {
+void Property::registerLink(PropertyLink* link) {
+    links_.push_back(link);
+}
+
+void Property::removeLink(PropertyLink* link) {
+    for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++)
+        if (*it == link) {
+            links_.erase(it);
+            break;
+        }
+}
+
+const std::set<PropertyWidget*> Property::getPropertyWidgets() const {
     return widgets_;
 }
 
@@ -195,16 +190,41 @@ void Property::setLevelOfDetail(LODSetting lod) {
     lod_ = lod;
 }
 
-bool Property::getSerializeTypeInformation() {
-    return serializeTypeInformation_;
+void Property::invalidateOwner() {
+    invalidateOwner(invalidationLevel_);
 }
 
-void Property::setSerializeTypeInformation(bool enable) {
-    serializeTypeInformation_ = enable;
+void Property::invalidateOwner(Processor::InvalidationLevel invalidationLevel) {
+    if (getOwner())
+        getOwner()->invalidate(invalidationLevel);
 }
 
-const TiXmlElement* Property::getMetaData() const {
-    return metaData_;
+void Property::toggleInteractionMode(bool interactionmode, void* source) {
+
+    // propagate to owner
+    if (getOwner() && (invalidationLevel_ != Processor::VALID)) {
+        getOwner()->toggleInteractionMode(interactionmode, source);
+    }
+
+    // propagate over links
+    if (!interactionModeVisited_) {
+        interactionModeVisited_ = true;
+        for (size_t i=0; i<getLinks().size(); ++i) {
+            Property* destProperty = getLinks()[i]->getDestinationProperty();
+            tgtAssert(destProperty, "Link without destination property");
+            destProperty->toggleInteractionMode(interactionmode, source);
+        }
+        interactionModeVisited_ = false;
+    }
+
+}
+
+void Property::invalidate() {
+    invalidateOwner();
+}
+
+const std::vector<PropertyLink*>& Property::getLinks() const {
+    return links_;
 }
 
 } // namespace voreen

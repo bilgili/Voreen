@@ -32,6 +32,8 @@
 
 #include "tgt/vector.h"
 
+#include "voreen/core/volume/volumehandle.h"
+
 #include <QWidget>
 #include <QMenu>
 #include <QThread>
@@ -48,6 +50,7 @@ class HistogramPainter;
 class TransFuncMappingKey;
 class TransFuncIntensity;
 class Volume;
+class VolumeHandle;
 
 /**
  * Background thread for calculating a histogram.
@@ -57,7 +60,9 @@ class HistogramThread : public QThread {
 public:
     HistogramThread(Volume* volume, int count, QObject* parent = 0)
         : QThread(parent), volume_(volume), count_(count)
-        {}
+        {
+            tgtAssert(volume, "No volume");
+        }
 
     void run();
 
@@ -82,7 +87,7 @@ private:
  * down left mouse button. Furthermore keys can be splitted, merged and deleted. The color of a key
  * can also be changed.
  */
-class TransFuncMappingCanvas : public QWidget {
+class TransFuncMappingCanvas : public QWidget, public VolumeHandleObserver {
     Q_OBJECT
 public:
     /**
@@ -163,10 +168,21 @@ public:
      * shown in this widget changes. It calculates the new histogram and propagates it
      * to the histogram painter.
      *
-     * @param volume volume that is asociated with this transfer function
-     * @param count number of buckets in the histogram
+     * @param volumeHandle volume that is associated with this transfer function
      */
-    void volumeChanged(Volume* volume, int count);
+    void volumeChanged(VolumeHandle* volumeHandle);
+
+    /**
+     * Implementation of the VolumeHandleObserver interface.
+     * Causes calculations to be performed on new handle.
+     */
+    virtual void volumeChange(const VolumeHandle* source);
+
+    /**
+     * Implementation of the VolumeHandleObserver interface.
+     * Clears the currently assigned volume handle.
+     */
+    virtual void volumeHandleDelete(const VolumeHandle* source);
 
     /**
      * Sets the lower and upper threshold to the given values.
@@ -252,7 +268,7 @@ signals:
      *
      * @param on should coarseness mode switched on or off?
      */
-    void switchInteractionMode(bool on);
+    void toggleInteractionMode(bool on);
 
 public slots:
     /**
@@ -459,6 +475,8 @@ protected:
     QAction* resetAction_;      ///< action for reset transfer function context menu entry
 
     HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
+
+    VolumeHandle* volumeHandle_; ///< the currently assigned volume handle
 };
 
 } // namespace voreen

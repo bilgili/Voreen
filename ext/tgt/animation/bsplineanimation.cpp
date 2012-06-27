@@ -1,10 +1,3 @@
-/*
- * bsplineanimation.cpp
- *
- *  Created on: 11.07.2009
- *      Author: jan
- */
-
 #include "bsplineanimation.h"
 
 #include "tgt/spline.h"
@@ -15,8 +8,9 @@ namespace tgt {
 
 using std::ceil;
 
-BSplineAnimation::BSplineAnimation(vector<KeyFrame> keyFrames, int fps) :
-    AbstractAnimation(fps, 0) {
+BSplineAnimation::BSplineAnimation(vector<KeyFrame> keyFrames, int fps)
+    : AbstractAnimation(fps, 0)
+{
     std::vector<vec3> positionVector;
     std::vector<vec3> focusVector;
     std::vector<vec3> upVector;
@@ -38,7 +32,7 @@ BSplineAnimation::BSplineAnimation(vector<KeyFrame> keyFrames, int fps) :
         positionVector.push_back((*iter).position_);
         focusVector.push_back((*iter).focus_);
         upVector.push_back((*iter).up_);
-        totalTime += ((*iter).timeToNextFrame_);
+        totalTime += static_cast<float>((*iter).timeToNextFrame_);
         if (firstTwice/*skip first*/&& !lastTwice/*skip last*/)
             knotValues.push_back(totalTime);
         if (!lastTwice && iter == keyFrames.end() - 1) {
@@ -47,43 +41,44 @@ BSplineAnimation::BSplineAnimation(vector<KeyFrame> keyFrames, int fps) :
         }
     }
 
-    this->camPositionSpline_ = new BSpline(positionVector, knotValues);
-    this->camFocusSpline_ = new BSpline(focusVector, knotValues);
-    this->camUpSpline_ = new BSpline(upVector, knotValues);
+    camPositionSpline_ = new BSpline(positionVector, knotValues);
+    camFocusSpline_ = new BSpline(focusVector, knotValues);
+    camUpSpline_ = new BSpline(upVector, knotValues);
 
-    AbstractAnimation::fps_ = fps;
-    AbstractAnimation::numFrames_ = ceil(float(fps) * totalTime);
+    fps_ = fps;
+    numFrames_ = static_cast<int>(ceil(float(fps) * totalTime));
 }
 
 BSplineAnimation::BSplineAnimation(vector<vec3> positionVector,
         vector<vec3> focusVector, vector<vec3> upVector,
-        vector<float> knotValues, int fps, int totalFps) :
-    AbstractAnimation(fps, totalFps) {
-    this->camPositionSpline_ = new BSpline(positionVector, knotValues);
-    this->camFocusSpline_ = new BSpline(focusVector, knotValues);
-    this->camUpSpline_ = new BSpline(upVector, knotValues);
+        vector<float> knotValues, int fps, int totalFps)
+    : AbstractAnimation(fps, totalFps)
+{
+    camPositionSpline_ = new BSpline(positionVector, knotValues);
+    camFocusSpline_ = new BSpline(focusVector, knotValues);
+    camUpSpline_ = new BSpline(upVector, knotValues);
 }
 
 BSplineAnimation::~BSplineAnimation() {
-    delete this->camPositionSpline_;
-    delete this->camFocusSpline_;
-    delete this->camUpSpline_;
+    delete camPositionSpline_;
+    delete camFocusSpline_;
+    delete camUpSpline_;
 }
 
 void BSplineAnimation::moveToFrame(int frame) {
-    this->curIndex_ = float(frame) / float(AbstractAnimation::numFrames_);
+    curIndex_ = float(frame) / float(numFrames_);
 }
 
 vec3 BSplineAnimation::getUp() {
-    return this->camUpSpline_->getPoint(this->curIndex_);
+    return camUpSpline_->getPoint(curIndex_);
 }
 
 vec3 BSplineAnimation::getCenter() {
-    return this->camFocusSpline_->getPoint(this->curIndex_);
+    return camFocusSpline_->getPoint(curIndex_);
 }
 
 vec3 BSplineAnimation::getEye() {
-    return this->camPositionSpline_->getPoint(this->curIndex_);
+    return camPositionSpline_->getPoint(curIndex_);
 }
 
 } //namespace tgt

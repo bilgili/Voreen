@@ -1,15 +1,124 @@
 Voreen Changelog
 ----------------
 
+2009-12-23: Voreen 2.0 (r29, internal r8753)
+--------------------------------------------
+
+   * Since we have introduced several new concepts, we provide new tutorial
+     videos, which you can find on the Voreen website (http://www.voreen.org).
+     If you want to know more about one of the concepts mentioned below, be sure
+     to check out the videos.
+
+   * With the new native support for multiple canvases, the user can add more
+     than one canvas to the network. Thus, development of multi-view
+     applications becomes easy. To integrate multiple views within one canvas
+     multi view processors can be used (e.g., the QuadView processor). To deal
+     with the different sizes of individual views, scaling processors are
+     added automatically.
+
+   * To support linking of multiple views, we have added a linking layer. Now
+     you can switch into linking mode, in order to link properties. Thus, you
+     can link the camera properties of different views, or the transfer
+     functions. To make working with linking easy, we allow auto linking of
+     camera properties to always ensure synced views. When Voreen is built with
+     Python support, the linked property values can be transformed by Python
+     scripts. Note that these scripts can run arbitrary code, so you should only
+     open external workspace files from trusted sources.
+
+   * We have added Flowreen, a module containing several processors providing
+     basic flow visualization techniques. Now you can use LICs, stream lines and
+     other flow visualization techniques in Voreen. Be sure to try the sample
+     workspaces available on the website.
+
+   * The serialization framework has been reengineered. This resulted in a new
+     file format for our .vws workspace files. We have done our best to allow
+     you to convert your old work spaces by using the converter tool provided on
+     the website.
+
+   * Improvements in the network editor: 
+     o Changes in the network are evaluated automatically.
+     o Volume information is shown in the connection tooltips. 
+     o We keep track of the code state of all processors, indicated by the
+       traffic light symbols in the processor list.
+
+   * Changes concerning the processor classes:
+     o Instead of setting an abstract "raycasting quality" for raycasting
+       processors, the sampling rate can now be controlled numerically. It
+       specifies how often each voxel on a ray will be sampled. To get good
+       performance with larger volumes, it might be necessary to reduce the
+       sampling rate.
+     o To allow rapid development of shader programs and be able to keep track
+       of different shader versions, we now allow to add shaders as a property.
+       Take a look at the GLSLRaycaster to see how to work with these new
+       properties.
+     o Added processors: Grayscale, Gaussian, GLSLRaycaster, QuadView
+     o Removed processors: Collect, Merge, Combine, NullCanvas, CacheRenderer
+     o Interaction coarseness is now handled for each processor, removing the
+       need for a CoarsenessRenderer.
+
+   * We have integrated improved volume handling functionality, both under the
+     hood as well as visible in the GUI:
+     o The class VolumeSourceProcessor replaces VolumeSetSource and
+       VolumeSelector, and VolumeSet/Series are replaced by the new
+       VolumeCollection.
+     o Additional data set information is shown in the GUI.
+     o Raw volume files (without headers) can be loaded directly by selecting
+       the file type "Raw Files" in the file open dialog. You are then then
+       asked to specify header skip, data type, dimensions and spacing to use
+       for this file.
+     o Loaded volumes can be exported as dat+raw via the context menu in the
+       volume list. Thus, for instance DICOM files can be converted easily.
+
+   * GUI improvements:
+     o The processor list now contains more information about the processors, such
+       as the module it belongs to or its code state (stable, testing,
+       experimental). Several options for sorting the list have been added.
+     o Workspace can be exported and imported as a ZIP archives containing
+       workspace and volume files.
+     o Integrated the OrientationPlugin into camera property widget.
+     o Numerical properties can now be changed via a slider.
+     o Canvases show "test card" image when not connected to a valid processor.
+     o DICOMDIR files can now be loaded as any other volume file, removed
+       special "Load DICOMDIR" menu entry.
+
+   * Internal changes:
+     o Dynamically allocate the required number of OpenGL render targets,
+       instead of relying on a pre-allocated pool, reducing the memory footprint.
+     o Removed the messaging subsystem, replaced it by the new linking
+       functionality.
+     o Removed PortMapping, ports are now handled directly by the processors.
+     o Replaced EnumProperty with the new OptionProperty.
+     o ShaderManager now correctly resolves line numbers for GLSL shaders that
+       use the include mechanism (supports NVIDIA and ATI error message format).
+     o Replaced external library for supporting ZIP files by own implementation.
+     o Projects to build (core, qt, voreenve, voltool) are now controlled via
+       config.txt.
+
+   * Minor changes and bug fixes:
+     o Prevent keeping both old and new volume in memory at the same time when
+       loading a workspaces.
+     o Enabled loading of unnormalized float volume data sets.
+     o + and - no longer zoom when renaming processors.
+     o Added flush to console plugin (now showing output during operations).
+     o Fixed problem with isosurface rendering.
+
+   * Platform-dependent changes:
+     o Mac: Add direct support for GLEW installed via MacPorts.
+     o Linux: Build as a shared library by default.
+     o Activated parallel compilation for Visual Studio 2005.
+
+
 2009-12-09: Snapshot r28 (voreen-8367)
 --------------------------------------
+
    * Bug fixes:
      o Workaround for a driver bug in some ATI drivers that would introduce
-	   graphics artifacts when "support camera inside the volume" is active
+       graphics artifacts when "support camera inside the volume" is active
        for an EntryExitPoints processors. Thanks to Fedor Chelnokov for pointing
-	   this out!
+       this out!
      o Loading of all DICOM files in a directory was broken for Qt >= 4.5.
      o Support loading of non-normalized float and double volume data.
+
 
 2009-11-20: Snapshot r25 (voreen-8050)
 --------------------------------------
@@ -45,8 +154,8 @@ Voreen Changelog
      o Do manual inlining of some shader code to prevent fallback to (very slow)
        software rendering mode for ATI cards on Mac.
      o Disable non-power-of-two (NPOT) textures for ATI Radeon 9* and X* on Mac,
-	   as they are not correctly supported there (would trigger fallback to
-	   software mode, with extremely slow rendering).
+       as they are not correctly supported there (would trigger fallback to
+       software mode, with extremely slow rendering).
      o Add backspace as an additional key for deleting objects in the network
        editor, to support MacBook keyboards.
      o Last opened workspace is correctly restored on application startup.

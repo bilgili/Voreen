@@ -37,46 +37,41 @@
 
 namespace voreen {
 
-const Identifier DepthOfField::setDepthOfFieldThreshold_("set.depthOfFieldThreshold");
+const std::string DepthOfField::setDepthOfFieldThreshold_("depthOfFieldThreshold");
 
 DepthOfField::DepthOfField()
-    : ImageProcessorDepth("pp_depthoffield"),
-    depthThreshold_(setDepthOfFieldThreshold_, "Depth Threshold")
+    : ImageProcessorDepth("pp_depthoffield")
+    , depthThreshold_(setDepthOfFieldThreshold_, "Depth Threshold")
+    , inport_(Port::INPORT, "image.inport")
+    , outport_(Port::OUTPORT, "image.outport", true)
 {
-    setName("Depth of Field");
-    addProperty(&depthThreshold_);
+    addProperty(depthThreshold_);
 
-    createInport("image.inport");
-    createOutport("image.outport");
+    addPort(inport_);
+    addPort(outport_);
 }
 
 const std::string DepthOfField::getProcessorInfo() const {
     return "Performs a depth of field rendering.";
 }
 
+Processor* DepthOfField::create() const {
+    return new DepthOfField();
+}
+
 void DepthOfField::setDepthThreshold(float depthThreshold) {
     depthThreshold_.set(depthThreshold);
 }
 
-void DepthOfField::process(LocalPortMapping* portMapping) {
-    int source = portMapping->getTarget("image.inport");
-    int dest = portMapping->getTarget("image.outport");
+void DepthOfField::process() {
+    outport_.activateTarget();
 
-    tc_->setActiveTarget(dest, "DepthOfField::process");
-
-    analyzeDepthBuffer(source);
+    analyzeDepthBuffer(&inport_);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // bind shading result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    LGL_ERROR;
-
-    // bind depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-    LGL_ERROR;
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
 
     // initialize shader
     program_->activate();

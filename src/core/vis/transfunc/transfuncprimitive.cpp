@@ -118,6 +118,18 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     glTranslatef(-v.x, -v.y, -0.2f);
 }
 
+void TransFuncPrimitive::serialize(XmlSerializer& s) const {
+    s.serialize("fuzzy", fuzziness_);
+
+    s.serialize("color", color_);
+}
+
+void TransFuncPrimitive::deserialize(XmlDeserializer& s) {
+    s.deserialize("fuzzy", fuzziness_);
+
+    s.deserialize("color", color_);
+}
+
 void TransFuncPrimitive::saveToXml(TiXmlElement* root) {
     root->SetDoubleAttribute("fuzzy", fuzziness_);
 
@@ -280,6 +292,20 @@ bool TransFuncQuad::selectControlPoint(tgt::vec2 pos) {
     return false;
 }
 
+void TransFuncQuad::serialize(XmlSerializer& s) const {
+    TransFuncPrimitive::serialize(s);
+
+    for (int i = 0; i < 4; ++i)
+        s.serialize("coords", coords_[i]);
+}
+
+void TransFuncQuad::deserialize(XmlDeserializer& s) {
+    TransFuncPrimitive::deserialize(s);
+
+    for (int i = 0; i < 4; ++i)
+        s.deserialize("coords", coords_[i]);
+}
+
 void TransFuncQuad::saveToXml(TiXmlElement* root) {
     TiXmlElement* elem = new TiXmlElement("quad");
 
@@ -425,7 +451,7 @@ void TransFuncBanana::paintInner() {
     tc = (t1 + t2) / 2.f;
     t3 = fuzziness_ * t1 + (1.f - fuzziness_) * tc;
     t4 = fuzziness_ * t2 + (1.f - fuzziness_) * tc;
-    
+
     // fill the space between the two bezier curves:
     glBegin(GL_TRIANGLE_STRIP);
     glColor4ubv(color_.elem);
@@ -483,7 +509,7 @@ void TransFuncBanana::paintInEditor() {
             glColor4ub(255, 255, 255, 255);
         else
             glColor4ub(128, 128, 128, 255);
-        
+
         for (int i = 0; i < steps_; ++i) {
             t = i / static_cast<float>(steps_ - 1);
             v = (((1 - t) * (1 - t)) * coords_[0]) + ((2 * (1 - t) * t) * t1) + ((t * t) * coords_[3]);
@@ -531,6 +557,20 @@ bool TransFuncBanana::selectControlPoint(tgt::vec2 pos) {
         return true;
     }
     return false;
+}
+
+void TransFuncBanana::serialize(XmlSerializer& s) const {
+    TransFuncPrimitive::serialize(s);
+
+    for (int i = 0; i < 4; ++i)
+        s.serialize("coords", coords_[i]);
+}
+
+void TransFuncBanana::deserialize(XmlDeserializer& s) {
+    TransFuncPrimitive::deserialize(s);
+
+    for (int i = 0; i < 4; ++i)
+        s.deserialize("coords", coords_[i]);
 }
 
 void TransFuncBanana::saveToXml(TiXmlElement* root) {

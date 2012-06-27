@@ -36,6 +36,7 @@ class TextureReaderDevil : public TextureReader {
     static const std::string loggerCat_;
 public:
     TextureReaderDevil();
+	virtual ~TextureReaderDevil();
     virtual Texture* loadTexture(const std::string& filename, Texture::Filter filter, bool compress = false,
                                  bool keepPixels = false, bool createOGLTex = true, bool textureRectangle = false);
 };

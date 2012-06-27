@@ -29,6 +29,7 @@
 
 #include "voreen/core/io/datvolumewriter.h"
 #include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/volume/volumehandle.h"
 
 #include "tgt/filesystem.h"
 #include "tgt/matrix.h"
@@ -38,13 +39,19 @@ namespace voreen {
 const std::string DatVolumeWriter::loggerCat_("voreen.io.DatVolumeWriter");
 
 DatVolumeWriter::DatVolumeWriter() {
-    name_ = "Dat Writer";
     extensions_.push_back("dat");
 }
 
-void DatVolumeWriter::write(const std::string& filename, Volume* volume)
+void DatVolumeWriter::write(const std::string& filename, VolumeHandle* volumeHandle)
     throw (tgt::IOException)
 {
+
+    tgtAssert(volumeHandle, "No volume handle");
+    Volume* volume = volumeHandle->getVolume(); 
+    if (!volume) {
+        LWARNING("No volume");
+        return;
+    }
 
     std::string datname = filename;
     std::string rawname = getFileNameWithoutExtension(filename) + ".raw";
@@ -56,21 +63,35 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
     if (datout.bad() || rawout.bad())
         throw tgt::IOException();
 
+    char* data = 0;
+    size_t numbytes = 0;
+    datout << getDatFileString(volumeHandle, rawname, &data, numbytes);
+    datout.close();
+
+    // write raw file
+    rawout.write(data, numbytes);
+    rawout.close();
+}
+
+std::string DatVolumeWriter::getDatFileString(VolumeHandle* const volumeHandle, const std::string& rawFileName,
+                                              char** volData, size_t& numBytes)
+{
+    std::ostringstream datout;
+    tgtAssert(volumeHandle, "No volume handle");
+    Volume* volume = volumeHandle->getVolume(); 
+    if ((!volume) || (!volData)) {
+        LWARNING("No volume or no storage for casted volume data!");
+        return "";
+    }
+
     // write dat file
     std::string format;
     std::string model = "I";
-    std::string zeroString = "";
-    char* data = 0;
-    size_t numbytes = 0;
 
     if (VolumeUInt8* vol = dynamic_cast<VolumeUInt8*>(volume)) {
         format = "UCHAR";
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
-
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<unsigned char>::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint();
-
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
     }
     else if (VolumeUInt16* vol = dynamic_cast<VolumeUInt16*>(volume)) {
         if (vol->getBitsStored() == 12)
@@ -78,65 +99,51 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
         else
             format = "USHORT";
 
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
-
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<unsigned short>::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint();
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
 
     }
     else if (Volume4xUInt8* vol = dynamic_cast<Volume4xUInt8*>(volume)) {
         format = "UCHAR";
         model = "RGBA";
 
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
-
-        // I don't really know how to interpret the zero point if it's a vector... does that even make sense? FL
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<tgt::col4>::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint().r;
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
 
     }
     else if (Volume3xUInt8* vol = dynamic_cast<Volume3xUInt8*>(volume)) {
         format = "UCHAR";
         model = "RGB";
 
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
-
-        // I don't really know how to interpret the zero point if it's a vector... does that even make sense? FL
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement<tgt::col3>::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint().r;
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
 
     }
     else if (Volume4xUInt16* vol = dynamic_cast<Volume4xUInt16*>(volume)) {
         format = "USHORT";
         model = "RGBA";
 
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
-
-        // I don't really know how to interpret the zero point if it's a vector... does that even make sense? FL
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement< tgt::Vector4<uint16_t> >::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint().r;
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
 
     }
     else if (Volume3xUInt16* vol = dynamic_cast<Volume3xUInt16*>(volume)) {
         format = "USHORT";
         model = "RGB";
 
-        data = reinterpret_cast<char*>(vol->voxel());
-        numbytes = vol->getNumBytes();
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
 
-        // I don't really know how to interpret the zero point if it's a vector... does that even make sense? FL
-        if (vol->isSigned() && vol->getZeroPoint() != VolumeElement< tgt::Vector3<uint16_t> >::getZero())
-            zeroString = "ZeroPoint:\t" + vol->getZeroPoint().r;
+    } else if (Volume3xFloat* vol = dynamic_cast<Volume3xFloat*>(volume)) {
+        format = "FLOAT";
+        model = "RGB";
 
-    }
-    else
+        *volData = reinterpret_cast<char*>(vol->voxel());
+        numBytes = vol->getNumBytes();
+    } else
         LERROR("Format currently not supported");
 
-    datout << "ObjectFileName:\t" << tgt::FileSystem::fileName(rawname) << std::endl;
+    datout << "ObjectFileName:\t" << tgt::FileSystem::fileName(rawFileName) << std::endl;
 
     tgt::ivec3 dimensions = volume->getDimensions();
     datout << "Resolution:\t" << dimensions.x << " " << dimensions.y << " " << dimensions.z << std::endl;
@@ -146,9 +153,10 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
 
     datout << "Format:\t\t" << format << std::endl;
     datout << "ObjectModel:\t" << model << std::endl;
+    datout << "Modality:\t" << volumeHandle->getModality() << std::endl;
 
     // write transformation matrix unless it is the identity matrix
-    tgt::mat4 transformation = volume->meta().getTransformation();
+    tgt::mat4 transformation = volume->getTransformation();
     if (transformation != tgt::mat4::createIdentity())
         datout << "TransformMatrix: row0\t" << transformation[0][0] << " " << transformation[0][1] << " "
                << transformation[0][2] << " " << transformation[0][3] << std::endl
@@ -158,17 +166,12 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
                << transformation[2][2] << " " << transformation[2][3] << std::endl
                << "TransformMatrix: row3\t" << transformation[3][0] << " " << transformation[3][1] << " "
                << transformation[3][2] << " " << transformation[3][3] << std::endl;
-    
+
     std::string metaString = volume->meta().getString();
     if (!metaString.empty())
         datout << "MetaString:\t" << metaString << std::endl;
 
-    datout << zeroString << std::endl;
-    datout.close();
-
-    // write raw file
-    rawout.write(data, numbytes);
-    rawout.close();
+    return datout.str();
 }
 
 } // namespace voreen

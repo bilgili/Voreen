@@ -39,14 +39,11 @@ namespace voreen {
 size_t LargeVolumeManager::maxMemory_ = 256;
 size_t LargeVolumeManager::maxGpuMemory_ = 0;
 
-	LargeVolumeManager::LargeVolumeManager(VolumeHandle*, BrickedVolumeReader*) {
-	}
-	
-	LargeVolumeManager::~LargeVolumeManager() {
-	}
+    LargeVolumeManager::LargeVolumeManager(VolumeHandle*, BrickedVolumeReader*) {
+    }
 
-	void LargeVolumeManager::processMessage(Message*, const Identifier&) {
-	}
+    LargeVolumeManager::~LargeVolumeManager() {
+    }
 
     void LargeVolumeManager::changeBrickResolutionCalculator(std::string) {
     }
@@ -54,7 +51,7 @@ size_t LargeVolumeManager::maxGpuMemory_ = 0;
     void LargeVolumeManager::changeBrickLodSelector(std::string) {
     }
 
-	void LargeVolumeManager::setUpdateBricks(bool) {
+    void LargeVolumeManager::setUpdateBricks(bool) {
     }
 
     void LargeVolumeManager::addBoxBrickingRegion(int, tgt::vec3, tgt::vec3) {
@@ -74,7 +71,7 @@ size_t LargeVolumeManager::estimateMaxGpuMemory() {
      * be on the graphics card exclusively, we have to account for transfer functions,
      * rendertargets etc. That's why we introduce this reserve that the brickingmanager
      * won't touch.
-     */   
+     */
     const size_t gpuMemoryReserve = 100;
 
 #ifdef _MSC_VER
@@ -84,7 +81,7 @@ size_t LargeVolumeManager::estimateMaxGpuMemory() {
 
     if (gpuMemoryReserve > gpuMemorySize)
         return 0;
-    else    
+    else
         return gpuMemorySize - gpuMemoryReserve;
 }
 

@@ -1,200 +1,444 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<Workspace version="1" readonly="true">
-    <Settings />
-    <Camera>
-        <position x="-0.080934" y="1.855066" z="-3.365780" />
-        <focus x="-0.013002" y="0.020321" z="0.011302" />
-        <upVector x="-0.001649" y="0.878679" z="0.477411" />
-    </Camera>
-    <ProcessorNetwork version="2">
-        <MetaData>
-            <RptAggregationItems />
-        </MetaData>
-        <Settings reuseTCTargets="false" />
-        <Processor type="ProxyGeometry.CubeProxyGeometry" name="CubeProxyGeometry" id="0">
-            <MetaData>
-                <RptProcessorItem x="-403" y="-297" />
-            </MetaData>
-            <Property id="set.lightPosition" lod="1" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.UseClipping" lod="1" value="true" />
-            <Property id="switch.virtualClipplane" lod="1" value="false" />
-            <Property id="set.virtualClipplane" lod="1" x="0.2" y="0.4" z="1" w="1" />
-            <Property id="set.LeftClipPlane" lod="1" value="0" />
-            <Property id="set.RightClipPlane" lod="1" value="0" />
-            <Property id="set.BottomClipPlane" lod="1" value="0" />
-            <Property id="set.TopClipPlane" lod="1" value="0" />
-            <Property id="set.FrontClipPlane" lod="1" value="0" />
-            <Property id="set.BackClipPlane" lod="1" value="0" />
-            <Outport type="coprocessor.proxygeometry">
-                <Processor id="10" port="coprocessor.proxygeometry" />
-                <Processor id="8" port="coprocessor.proxygeometry" />
-                <Processor id="5" port="coprocessor.proxygeometry" />
-                <Processor id="4" port="coprocessor.proxygeometry" />
-            </Outport>
-        </Processor>
-        <Processor type="Miscellaneous.Canvas" name="Canvas" id="1">
-            <MetaData>
-                <RptProcessorItem x="-125" y="267" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.useCaching" lod="1" value="true" />
-        </Processor>
-        <Processor type="GeometryRenderer.GeometryProcessor" name="GeometryProcessor" id="2">
-            <MetaData>
-                <RptProcessorItem x="-140" y="41" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Outport type="image.outport">
-                <Processor id="3" port="image.input" />
-            </Outport>
-        </Processor>
-        <Processor type="ImageProcessor.Background" name="Background" id="3">
-            <MetaData>
-                <RptProcessorItem x="-128" y="152" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.backgroundModeAsString" value="Gradient" />
-            <Property id="set.backgroundFirstColor" r="0.000000" g="0.000000" b="0.000000" a="1.000000" />
-            <Property id="set.backgroundSecondColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-            <Property id="set.backgroundAngle" value="180" />
-            <Property id="set.backgroundfilenameAsString" value="" />
-            <Property id="set.backgroundtile" value="1.000000" />
-            <Outport type="image.output">
-                <Processor id="1" port="image.input" />
-            </Outport>
-        </Processor>
-        <Processor type="GeometryRenderer.GeomLightWidget" name="GeomLightWidget" id="4">
-            <MetaData>
-                <RptProcessorItem x="-333" y="40" />
-            </MetaData>
-            <Property id="set.lightPosition" lod="1" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.showLightWidget" lod="1" value="true" />
-            <Outport type="coprocessor.light">
-                <Processor id="2" port="coprocessor.geometryrenderers" order="0" />
-            </Outport>
-        </Processor>
-        <Processor type="GeometryRenderer.BoundingBox" name="BoundingBox" id="5">
-            <MetaData>
-                <RptProcessorItem x="-314" y="-48" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.BoundingBoxWidth" value="1.000000" />
-            <Property id="set.BoundingBoxStippleFactor" value="1" />
-            <Property id="set.BoundingBoxStipplePattern" value="65535" />
-            <Property id="set.BoundingboxColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-            <Property id="BoutndingBoxTiles" x="10" y="10" z="10" />
-            <Outport type="coprocessor.boundingbox">
-                <Processor id="2" port="coprocessor.geometryrenderers" order="1" />
-            </Outport>
-        </Processor>
-        <Processor type="VolumeProcessor.VolumeSelector" name="VolumeSelector" id="6">
-            <MetaData>
-                <RptProcessorItem x="-131" y="-421" />
-            </MetaData>
-            <Property id="set.lightPosition" lod="1" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.currentModality" lod="1" value="" />
-            <Property id="set.currentTimestep" lod="1" value="0" />
-            <Outport type="volumehandle.volumehandle">
-                <Processor id="11" port="volumehandle.volumehandle" />
-                <Processor id="10" port="volumehandle.volumehandle" />
-                <Processor id="0" port="volumehandle.volumehandle" />
-            </Outport>
-        </Processor>
-        <Processor type="VolumeProcessor.VolumeSetSource" name="VolumeSetSource" id="7">
-            <MetaData>
-                <RptProcessorItem x="-124" y="-508" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="update.currentVolumeSet" value="walnut.raw" />
-            <Outport type="volumeset.volumeset">
-                <Processor id="6" port="volumeset.volumeset" />
-            </Outport>
-        </Processor>
-        <Processor type="GeometryRenderer.ClippingPlaneWidget" name="ClippingPlaneWidget" id="8">
-            <MetaData>
-                <RptProcessorItem x="-345" y="130" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.ClipSliceColor" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
-            <Property id="switch.ClipXLock" lod="1" value="false" />
-            <Property id="switch.ClipYLock" lod="1" value="false" />
-            <Property id="switch.ClipZLock" lod="1" value="false" />
-            <Outport type="coprocessor.clipping">
-                <Processor id="2" port="coprocessor.geometryrenderers" order="2" />
-            </Outport>
-        </Processor>
-        <Processor type="Miscellaneous.CoarsenessRenderer" name="CoarsenessRenderer" id="9">
-            <MetaData>
-                <RptProcessorItem x="-142" y="-72" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.Coarseness" value="4" />
-            <Outport type="image.outport">
-                <Processor id="2" port="image.inport" />
-            </Outport>
-        </Processor>
-        <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="10">
-            <MetaData>
-                <RptProcessorItem x="-42" y="-296" />
-            </MetaData>
-            <Property id="set.lightPosition" lod="1" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.supportCameraInsideVolume" lod="1" value="true" />
-            <Property id="set.jitterEntryPoints" lod="1" value="false" />
-            <Outport type="image.entrypoints">
-                <Processor id="11" port="image.entrypoints" />
-            </Outport>
-            <Outport type="image.exitpoints">
-                <Processor id="11" port="image.exitpoints" />
-            </Outport>
-        </Processor>
-        <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="11">
-            <MetaData>
-                <RptProcessorItem x="-109" y="-172" />
-            </MetaData>
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="raycasting.quality" value="high" />
-            <Property id="set.TransferFunction" tfType="TransFuncIntensity">
-                <Keys>
-                    <key intensity="0.095439" split="0">
-                        <col4 r="187" g="153" b="79" a="0" />
-                    </key>
-                    <key intensity="0.106151" split="0">
-                        <col4 r="225" g="186" b="130" a="76" />
-                    </key>
-                    <key intensity="0.115890" split="0">
-                        <col4 r="181" g="147" b="52" a="0" />
-                    </key>
-                    <key intensity="0.299342" split="0">
-                        <col4 r="132" g="91" b="77" a="56" />
-                    </key>
-                </Keys>
-                <threshold lower="0.000000" upper="1.000000" />
-            </Property>
-            <Property id="set.masking" lod="1" value="none" />
-            <Property id="set.gradient" value="Central Differences" />
-            <Property id="set.classification" lod="1" value="Transfer Function" />
-            <Property id="set.shading" value="Phong (Full)" />
-            <Property id="set.compositing" value="DVR" />
-            <Property id="set.compositing1" lod="1" value="DVR" />
-            <Property id="set.compositing2" lod="1" value="DVR" />
-            <Property id="set.lightPosition" x="-1.49725" y="1.11445" z="0.199164" w="1" />
-            <Property id="set.lightAmbient" r="0.400000" g="0.400000" b="0.400000" a="1.000000" />
-            <Property id="set.lightDiffuse" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-            <Property id="set.lightSpecular" r="0.600000" g="0.600000" b="0.600000" a="1.000000" />
-            <Outport type="image.output">
-                <Processor id="9" port="image.inport" />
-            </Outport>
-            <Outport type="image.output1" />
-            <Outport type="image.output2" />
-        </Processor>
-    </ProcessorNetwork>
-    <VolumeSetContainer>
-        <VolumeSet name="walnut.raw">
-            <VolumeSeries name="unknown" modality="unknown">
-                <VolumeHandle timestep="0.000000">
-                    <Origin filename="../walnut.dat" seriesname="unknown" timestep="0.000000" />
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" readonly="true">
+        <VolumeContainer>
+            <VolumeHandles>
+                <VolumeHandle modality="unknown" timestep="0.000000" id="ref10">
+                    <Origin filename="../walnut.dat" />
                 </VolumeHandle>
-            </VolumeSeries>
-        </VolumeSet>
-    </VolumeSetContainer>
-</Workspace>
+            </VolumeHandles>
+        </VolumeContainer>
+        <ProcessorNetwork version="5" reuseTCTargets="false">
+            <Processors>
+                <Processor type="CubeProxyGeometry" name="CubeProxyGeometry" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-429" y="-291" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClipPlane" lod="1" value="114" id="ref28" />
+                        <Property name="bottomClipPlane" lod="1" value="0" id="ref22" />
+                        <Property name="frontClipPlane" lod="1" value="0" id="ref26" />
+                        <Property name="leftClipPlane" lod="1" value="0" id="ref18" />
+                        <Property name="regionPriority" value="1" />
+                        <Property name="rightClipPlane" lod="1" value="128" id="ref20" />
+                        <Property name="topClipPlane" lod="1" value="96" id="ref24" />
+                        <Property name="useClipping" lod="1" value="true" />
+                        <Property name="useDatasetTrafoMatrix" value="true" />
+                    </Properties>
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="122" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="311" y="94" width="400" height="395" />
+                    </MetaData>
+                    <Properties />
+                </Processor>
+                <Processor type="GeometryProcessor" name="GeometryProcessor" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-139" y="-71" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref11">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
+                            </MetaData>
+                            <position x="1.417692" y="1.458681" z="3.275989" />
+                            <focus x="-0.015039" y="-0.236563" z="0.134516" />
+                            <upVector x="-0.227437" y="0.896554" z="-0.380083" />
+                        </Property>
+                        <Property name="camerahandler.active" value="true" />
+                        <Property name="camerahandler.shareEvents" value="false" />
+                    </Properties>
+                </Processor>
+                <Processor type="Background" name="Background" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-114" y="26" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="angle" value="180" />
+                        <Property name="backgroundModeAsString" value="monochrome" />
+                        <Property name="color1">
+                            <value x="0.000000" y="0.000000" z="0.000000" w="1.000000" />
+                        </Property>
+                        <Property name="color2">
+                            <value x="0.800000" y="0.800000" z="0.800000" w="1.000000" />
+                        </Property>
+                        <Property name="repeat" value="1.000000" />
+                        <Property name="texture" value="" />
+                    </Properties>
+                </Processor>
+                <Processor type="GeomLightWidget" name="GeomLightWidget" id="ref9">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-332" y="-72" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="lightPosition" id="ref15">
+                            <value x="2.300000" y="1.500000" z="1.500000" w="1.000000" />
+                        </Property>
+                        <Property name="set.showLightWidget" lod="1" value="true" />
+                    </Properties>
+                </Processor>
+                <Processor type="BoundingBox" name="BoundingBox" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-309" y="-161" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="applyDatasetTrafoMatrix" value="true" />
+                        <Property name="boundingBoxStippleFactor" value="1" />
+                        <Property name="boundingBoxStipplePattern" value="65535" />
+                        <Property name="boundingBoxWidth" value="1.000000" />
+                        <Property name="boundingboxColor">
+                            <value x="0.800000" y="0.800000" z="0.800000" w="1.000000" />
+                        </Property>
+                        <Property name="boundingboxGridShow" value="false" />
+                        <Property name="boundingboxGridSize">
+                            <value x="10" y="10" z="10" />
+                        </Property>
+                    </Properties>
+                </Processor>
+                <Processor type="ClippingPlaneWidget" name="ClippingPlaneWidget" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-344" y="27" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClipPlane" value="0" id="ref27" />
+                        <Property name="bottomClipPlane" value="0" id="ref21" />
+                        <Property name="frontClipPlane" value="0" id="ref25" />
+                        <Property name="leftClipPlane" value="0" id="ref17" />
+                        <Property name="lightPosition">
+                            <value x="2.300000" y="1.500000" z="1.500000" w="1.000000" />
+                        </Property>
+                        <Property name="lineWidth" value="1.000000" />
+                        <Property name="rightClipPlane" value="0" id="ref19" />
+                        <Property name="topClipPlane" value="96" id="ref23" />
+                        <Property name="xColor">
+                            <value x="1.000000" y="0.000000" z="0.000000" w="1.000000" />
+                        </Property>
+                        <Property name="yColor">
+                            <value x="0.000000" y="1.000000" z="0.000000" w="1.000000" />
+                        </Property>
+                        <Property name="zColor">
+                            <value x="0.000000" y="0.000000" z="1.000000" w="1.000000" />
+                        </Property>
+                    </Properties>
+                </Processor>
+                <Processor type="EntryExitPoints" name="EntryExitPoints" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-89" y="-291" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref12">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
+                            </MetaData>
+                            <position x="1.417692" y="1.458681" z="3.275989" />
+                            <focus x="-0.015039" y="-0.236563" z="0.134516" />
+                            <upVector x="-0.227437" y="0.896554" z="-0.380083" />
+                        </Property>
+                        <Property name="camerahandler.active" value="true" />
+                        <Property name="camerahandler.shareEvents" value="false" />
+                        <Property name="filterJitterTexture" value="true" />
+                        <Property name="jitterEntryPoints" lod="1" value="false" />
+                        <Property name="jitterStepLength" value="0.005000" />
+                        <Property name="supportCameraInsideVolume" lod="1" value="true" />
+                    </Properties>
+                </Processor>
+                <Processor type="SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-135" y="-176" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="adaptive.sampling" value="false" />
+                        <Property name="brickLodSelector" value="error-based" />
+                        <Property name="bricking.strategy.mode" value="balanced" />
+                        <Property name="bricking.update.strategy" value="never" />
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref14">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
+                            </MetaData>
+                            <position x="1.417692" y="1.458681" z="3.275989" />
+                            <focus x="-0.015039" y="-0.236563" z="0.134516" />
+                            <upVector x="-0.227437" y="0.896554" z="-0.380083" />
+                        </Property>
+                        <Property name="classification" lod="1" value="transfer-function" />
+                        <Property name="compositing" value="dvr" />
+                        <Property name="compositing1" lod="1" value="dvr" />
+                        <Property name="compositing2" lod="1" value="dvr" />
+                        <Property name="gradient" value="central-differences" />
+                        <Property name="interactionCoarseness" value="4" />
+                        <Property name="interactionQuality" value="1.000000" />
+                        <Property name="interpolation.coarseness" value="false" />
+                        <Property name="interpolationMode" value="intrablock" />
+                        <Property name="isoValue" value="0.500000" />
+                        <Property name="lightAmbient">
+                            <value x="0.400000" y="0.400000" z="0.400000" w="1.000000" />
+                        </Property>
+                        <Property name="lightDiffuse">
+                            <value x="0.800000" y="0.800000" z="0.800000" w="1.000000" />
+                        </Property>
+                        <Property name="lightPosition" id="ref16">
+                            <value x="2.300000" y="1.500000" z="1.500000" w="1.000000" />
+                        </Property>
+                        <Property name="lightSpecular">
+                            <value x="0.600000" y="0.600000" z="0.600000" w="1.000000" />
+                        </Property>
+                        <Property name="masking" lod="1" value="none" />
+                        <Property name="samplingRate" value="7.000000" />
+                        <Property name="setSegment" value="0" />
+                        <Property name="shading" value="phong" />
+                        <Property name="switchSegmentation" value="false" />
+                        <Property name="transferFunction">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0.000000" upper="1.000000">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.095439" split="false">
+                                        <colorL r="187" g="153" b="79" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.106151" split="false">
+                                        <colorL r="225" g="186" b="130" a="76" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.115890" split="false">
+                                        <colorL r="181" g="147" b="52" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.299342" split="false">
+                                        <colorL r="132" g="91" b="77" a="56" />
+                                    </key>
+                                </Keys>
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                </Processor>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-245" y="-399" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeHandle">
+                            <value ref="ref10" />
+                        </Property>
+                    </Properties>
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Background" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="Background" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="EntryExitPoints" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.entrypoints">
+                        <Processor type="SingleVolumeRaycaster" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="EntryExitPoints" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.exitpoints">
+                        <Processor type="SingleVolumeRaycaster" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="SingleVolumeRaycaster" ref="ref4" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="EntryExitPoints" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="SingleVolumeRaycaster" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="volume">
+                        <Processor type="BoundingBox" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="volume">
+                        <Processor type="ClippingPlaneWidget" ref="ref8" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.proxygeometry">
+                        <Processor type="CubeProxyGeometry" ref="ref6" />
+                    </Outport>
+                    <Inport name="coprocessor.proxygeometry">
+                        <Processor type="EntryExitPoints" ref="ref3" />
+                    </Inport>
+                </CoProcessorConnection>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="GeomLightWidget" ref="ref9" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="BoundingBox" ref="ref7" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="ClippingPlaneWidget" ref="ref8" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+            </CoProcessorConnections>
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref11" />
+                    <DestinationProperty ref="ref12" />
+                    <Evaluator type="LinkEvaluatorId" id="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref12" />
+                    <DestinationProperty ref="ref11" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref12" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref12" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref11" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref11" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref15" />
+                    <DestinationProperty ref="ref16" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref15" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref18" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref18" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref19" />
+                    <DestinationProperty ref="ref20" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref20" />
+                    <DestinationProperty ref="ref19" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref21" />
+                    <DestinationProperty ref="ref22" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref22" />
+                    <DestinationProperty ref="ref21" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref23" />
+                    <DestinationProperty ref="ref24" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref24" />
+                    <DestinationProperty ref="ref23" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref25" />
+                    <DestinationProperty ref="ref26" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref26" />
+                    <DestinationProperty ref="ref25" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref27" />
+                    <DestinationProperty ref="ref28" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref28" />
+                    <DestinationProperty ref="ref27" />
+                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                </PropertyLink>
+            </PropertyLinks>
+        </ProcessorNetwork>
+    </Workspace>
+</VoreenData>

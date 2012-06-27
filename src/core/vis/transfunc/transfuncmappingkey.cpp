@@ -38,6 +38,13 @@ TransFuncMappingKey::TransFuncMappingKey(float i, const tgt::col4& color)
     , split_(false)
 {}
 
+TransFuncMappingKey::TransFuncMappingKey()
+    : intensity_(0.f)
+    , colorL_(tgt::vec4(0.f))
+    , colorR_(tgt::vec4(0.f))
+    , split_(false)
+{}
+
 TransFuncMappingKey::~TransFuncMappingKey() {
 }
 
@@ -125,6 +132,28 @@ float TransFuncMappingKey::getIntensity() {
 
 void TransFuncMappingKey::setIntensity(float i) {
     intensity_ = i;
+}
+
+void TransFuncMappingKey::serialize(XmlSerializer& s) const {
+    s.serialize("intensity", intensity_);
+    s.serialize("split", split_);
+
+    s.serialize("colorL", colorL_);
+    if (split_)
+        s.serialize("colorR", colorR_);
+}
+
+void TransFuncMappingKey::deserialize(XmlDeserializer& s) {
+    s.deserialize("intensity", intensity_);
+    s.deserialize("split", split_);
+
+    tgt::col4 color;
+    s.deserialize("colorL", color);
+    setColorL(color);
+    if (split_) {
+        s.deserialize("colorR", color);
+        setColorR(color);
+    }
 }
 
 } // namespace voreen

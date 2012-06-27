@@ -49,7 +49,7 @@ public:
     virtual void onEvent(Event* e);
     
     void setEventTypes(int eventTypes);
-    int getEventTypes();
+    int getEventTypes() const;
 
 private:
 	/*

@@ -30,31 +30,30 @@
 #ifndef VRN_SLICEENTRYPOINTS_H
 #define VRN_SLICEENTRYPOINTS_H
 
-
 #include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 #include "tgt/glmath.h"
 
-
 namespace voreen {
-
 
 /**
  * Calculates entry points for multiple slices arranged in 3D.
  */
 class SliceEntryPoints : public EntryExitPoints {
+
 public:
     SliceEntryPoints();
     virtual ~SliceEntryPoints();
 
-    virtual const Identifier getClassName() const {return "EntryExitPoints.SliceEntryPoints";}
+    virtual std::string getCategory() const { return "EntryExitPoints"; }
+    virtual std::string getClassName() const { return "SliceEntryPoints"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new SliceEntryPoints();}
 
     virtual std::string generateHeader();
 
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
+
 
 };
 

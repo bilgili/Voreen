@@ -31,6 +31,7 @@
 #define VRN_VOLUMESERIALIZERPOPULATOR_H
 
 #include <vector>
+#include <string>
 
 namespace voreen {
 
@@ -47,18 +48,29 @@ class VolumeSerializer;
  */
 class VolumeSerializerPopulator {
 public:
-    VolumeSerializerPopulator(IOProgress* progress = 0);
+    VolumeSerializerPopulator(bool showProgress = true);
     ~VolumeSerializerPopulator();
 
     /// get a pointer of the generated VolumeSerializer
-    VolumeSerializer* getVolumeSerializer() const;
+    const VolumeSerializer* getVolumeSerializer() const;
+
+    /**
+     * Returns all file extensions that are supported by the
+     * available volume readers.
+     */
+    std::vector<std::string> getSupportedReadExtensions() const;
+
+    /**
+     * Returns all file extensions that are supported by the
+     * available volume writers.
+     */
+    std::vector<std::string> getSupportedWriteExtensions() const;
 
 private:
-    IOProgress* progress_;
-
     std::vector<VolumeReader*> readers_;
     std::vector<VolumeWriter*> writers_;
     VolumeSerializer* const vs_;
+    IOProgress* progressDialog_;
 };
 
 } // namespace voreen

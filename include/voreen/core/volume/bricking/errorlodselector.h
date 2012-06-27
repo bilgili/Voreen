@@ -34,12 +34,12 @@ namespace voreen {
 
     /**
     * A structure holding information about how to best improve the LOD of a
-    * brick. This is used by the ErrorLodSelector. 
+    * brick. This is used by the ErrorLodSelector.
     */
     struct ErrorStruct {
 
         /**
-        * The error improvement per byte the improvement requires. This is the 
+        * The error improvement per byte the improvement requires. This is the
         * measure by which it is decided which brick gets improved next.
         */
         float improvementPerByte;
@@ -84,24 +84,24 @@ namespace voreen {
         }
     };
 
-	/**
-	* The level of detail selector assigns a level of detail to the VolumeBricks
+    /**
+    * The level of detail selector assigns a level of detail to the VolumeBricks
     * based on the error of their low resolution bricks compared to their high
-    * resolution versions. 
-	*/
-	class ErrorLodSelector : public BrickLodSelector {
-	
-	public:
+    * resolution versions.
+    */
+    class ErrorLodSelector : public BrickLodSelector {
 
-		ErrorLodSelector(BrickingInformation& brickingInformation);
+    public:
+
+        ErrorLodSelector(BrickingInformation& brickingInformation);
 
         /**
-        * Assigns a level of detail to every VolumeBrick based on the error of its 
-        * low resolution version compared to its high resolution version. 
+        * Assigns a level of detail to every VolumeBrick based on the error of its
+        * low resolution version compared to its high resolution version.
         */
-		virtual void selectLods();
+        virtual void selectLods();
 
-	protected:
+    protected:
 
         /**
         * Creates an ErrorStruct for every VolumeBrick and puts them into the errorSet_.
@@ -117,19 +117,19 @@ namespace voreen {
 
         /**
         * A set holding all the ErrorStructs, sorted by the ErrorStruct with the largest
-        * error reduction per byte. The first element in the set is therefore the brick 
+        * error reduction per byte. The first element in the set is therefore the brick
         * that is improved next.
         */
         std::set<ErrorStruct, std::greater<ErrorStruct> > errorSet_;
-        
+
         /**
         * The size of a voxel in byte.
-        */  
+        */
         int voxelSizeInByte_;
 
         /**
         * The memory availabe for all the bricks' volume data.
-        */ 
+        */
         int availableMemoryInByte_;
 
         /**
@@ -137,11 +137,11 @@ namespace voreen {
         */
         int usedMemoryInByte_;
 
-	private:
+    private:
 
 
 
-	}; //end of class
+    }; //end of class
 
 
 

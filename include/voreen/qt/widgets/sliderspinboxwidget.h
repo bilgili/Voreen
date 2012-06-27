@@ -42,10 +42,10 @@
 namespace voreen {
 
 class SliderSpinBoxWidget : public QWidget {
-    Q_OBJECT
-    Q_PROPERTY( int value READ getValue WRITE setValue )
-    Q_PROPERTY( int minValue READ getMinValue WRITE setMinValue )
-    Q_PROPERTY( int maxValue READ getMaxValue WRITE setMaxValue )
+    Q_OBJECT;
+    Q_PROPERTY( int value READ getValue WRITE setValue );
+    Q_PROPERTY( int minValue READ getMinValue WRITE setMinValue );
+    Q_PROPERTY( int maxValue READ getMaxValue WRITE setMaxValue );
 public:
     SliderSpinBoxWidget(QWidget* parent = 0);
     virtual int getValue()const;
@@ -62,6 +62,7 @@ public slots:
     virtual void setValue( int value );
     virtual void setMaxValue( int value );
     virtual void setMinValue( int value );
+    virtual void setSingleStep(int value);
     virtual void sliderPressed();
     virtual void sliderReleased();
 

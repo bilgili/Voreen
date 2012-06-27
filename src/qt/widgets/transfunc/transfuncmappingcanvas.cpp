@@ -32,6 +32,7 @@
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
 #include "voreen/core/volume/volume.h"
+#include "voreen/core/volume/volumehandle.h"
 #include "voreen/core/volume/histogram.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/core/vis/transfunc/transfuncmappingkey.h"
@@ -343,7 +344,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
 
 void TransFuncMappingCanvas::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton)
-        emit switchInteractionMode(true);
+        emit toggleInteractionMode(true);
 
     event->accept();
 
@@ -529,7 +530,7 @@ void TransFuncMappingCanvas::mouseReleaseEvent(QMouseEvent* event) {
         dragLineAlphaRight_ = -1.f;
         hideCoordinates();
         update();
-        emit switchInteractionMode(false);
+        emit toggleInteractionMode(false);
     }
 }
 
@@ -850,8 +851,11 @@ void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
     QToolTip::showText(mapToGlobal(pos), QString(os.str().c_str()));
 }
 
-void TransFuncMappingCanvas::volumeChanged(Volume* volume, int count) {
+void TransFuncMappingCanvas::volumeChanged(VolumeHandle* volumeHandle) {
+
+    // stop histogram thread and deregister from volume handle as observer
     if (histogramThread_) {
+        stopObservation(volumeHandle_);
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         histogramThread_->wait(); // wait for old thread to finish before deleting
         delete histogramThread_;
@@ -860,20 +864,32 @@ void TransFuncMappingCanvas::volumeChanged(Volume* volume, int count) {
     }
     histogramPainter_->setHistogram(0);
 
-    if (volume) {
+    volumeHandle_ = volumeHandle;
+
+    if (volumeHandle_) {
+
+        volumeHandle_->addObserver(this);
+
         // calculate new histogram in background thread and propagate to HistogramPainter
-        histogramThread_ = new HistogramThread(volume, count, this);
-        connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
-                histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
-        connect(histogramThread_, SIGNAL(finished()),
-                this, SLOT(update()));
+        if (volumeHandle_->getVolume()) {
+
+            int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
+            int maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
+
+            histogramThread_ = new HistogramThread(volumeHandle_->getVolume(), maximumIntensity_ + 1, this);
+            connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
+                    histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
+            connect(histogramThread_, SIGNAL(finished()),
+                    this, SLOT(update()));
+            histogramThread_->start();
+        }
         update();
-        histogramThread_->start();
-    } else {
+
+    }
+    else {
         update();
     }
-    
-    maximumIntensity_ = count - 1;
+
 }
 
 void TransFuncMappingCanvas::setTransFunc(TransFuncIntensity* tf) {
@@ -888,6 +904,20 @@ void TransFuncMappingCanvas::setXAxisText(const std::string& text) {
 
 void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
     yAxisText_ = QString(text.c_str());
+}
+
+void TransFuncMappingCanvas::volumeChange(const VolumeHandle* source) {
+    tgtAssert(source, "No volume handle");
+    // perform calculations on new volume
+    if (volumeHandle_ == source)
+        volumeChanged(const_cast<VolumeHandle*>(source));
+}
+
+void TransFuncMappingCanvas::volumeHandleDelete(const VolumeHandle* source) {
+    tgtAssert(source, "No volume handle");
+    // make sure to stop calculations on the volume
+    if (volumeHandle_ == source)
+        volumeChanged(0);
 }
 
 } // namespace voreen

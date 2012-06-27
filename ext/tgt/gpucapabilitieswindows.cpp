@@ -30,6 +30,7 @@
 #ifdef _MSC_VER
 
 #include "gpucapabilitieswindows.h"
+#include "logmanager.h"
 
 #include <windows.h>
 #include <WinBase.h>
@@ -182,8 +183,8 @@ char* GpuCapabilitiesWindows::findPrimaryDevicesKey() {
             LDEBUG("DeviceName: " << dd.DeviceName);
             LDEBUG("DeviceString: " << dd.DeviceString);
             LDEBUG("StateFlags: " << dd.StateFlags);
-            bool primary = (dd.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE);
-            bool desktop = (dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP);
+            bool primary = (0 != (dd.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE));
+            bool desktop = (0 != (dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP));
             LDEBUG("\tis primary device? " << ((primary == true) ? "true" : "false"));
             LDEBUG("\tis attached to desktop? " << ((desktop == true) ? "true" : "false"));
             LDEBUG("DeviceID: " << dd.DeviceID);
@@ -765,11 +766,8 @@ std::string GpuCapabilitiesWindows::getFileDate(std::string filename) {
     // read file information
     LDEBUG("Reading file information ...");
     LPBY_HANDLE_FILE_INFORMATION fileInformation = static_cast<LPBY_HANDLE_FILE_INFORMATION>(new BY_HANDLE_FILE_INFORMATION);
-    bool success = GetFileInformationByHandle(
-        filehandle,
-        fileInformation 
-    );
-    if ( !success ) {
+    BOOL success = GetFileInformationByHandle(filehandle, fileInformation);
+    if (success == 0) {
         LDEBUG("Failed to read file information of file '" << filename << "'.");
         delete fileInformation;
         return "";

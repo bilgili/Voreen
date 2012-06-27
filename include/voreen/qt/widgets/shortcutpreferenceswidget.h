@@ -31,9 +31,9 @@
 #define VRN_SHORTCUTPREFERENCESWIDGET_H
 
 #include <QWidget>
-#include <map>
 
 class QBoxLayout;
+class QLabel;
 
 namespace voreen {
 
@@ -55,6 +55,7 @@ protected:
 
     NetworkEvaluator* evaluator_;
     QList<EventPropertyWidget*> widgetList_;
+    QLabel* label_;
     QBoxLayout* layout_;
 };
 

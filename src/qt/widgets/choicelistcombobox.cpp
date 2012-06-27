@@ -47,7 +47,7 @@ void ChoiceListComboBox::showPopup() {
 
     if (isEditable())
         addItem("");
-        
+
     for (size_t i=0; i < list_.size(); i++)
         addItem(list_[i].c_str());
 

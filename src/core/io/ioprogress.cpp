@@ -35,13 +35,29 @@ IOProgress::IOProgress()
   : progress_(0)
 {}
 
-void IOProgress::set(int progress) {
+void IOProgress::setProgress(int progress) {
     progress_ = progress;
     update();
 }
 
-int IOProgress::get() const {
+int IOProgress::getProgress() const {
     return progress_;
+}
+
+void IOProgress::setMessage(const std::string& message) {
+    message_ = message;
+}
+
+std::string IOProgress::getMessage() const {
+    return message_;
+}
+
+void IOProgress::setTitle(const std::string& title) {
+    title_ = title;
+}
+
+std::string IOProgress::getTitle() const {
+    return title_;
 }
 
 } // namespace voreen

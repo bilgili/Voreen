@@ -31,30 +31,14 @@
 
 uniform SAMPLER2D_TYPE shadeTex_;
 uniform SAMPLER2D_TYPE depthTex_;
-uniform SAMPLER2D_TYPE overlayTex_;
+uniform TEXTURE_PARAMETERS textureParameters_;
 
-uniform int interactionCoarseness_;
-uniform bool useOverlay_;
-uniform float overlayOpacity_;
-
-/***
- * The main method.
- ***/
 void main() {
 
-    vec2 fragCoord = gl_FragCoord.xy;
+    vec2 fragCoord = gl_FragCoord.xy * screenDimRCP_;
 
-    fragCoord.x /= float(interactionCoarseness_);
-    fragCoord.y /= float(interactionCoarseness_);
-
-    // correction offsets for coarseness mode: prevents fragments from
-    // being projected to a position outside the significant image area
-    if (interactionCoarseness_ > 1) {
-        fragCoord.x -= 0.5;
-        fragCoord.y -= 0.5;
-    }
-
-    gl_FragColor = textureLookup2D(shadeTex_, fragCoord.xy);
-    gl_FragDepth = textureLookup2D(depthTex_, fragCoord.xy).z;
+    gl_FragColor = textureLookup2Dnormalized(shadeTex_, textureParameters_, fragCoord);
+//     gl_FragColor = vec4(fragCoord.x, fragCoord.y,0.0,1.0);
+    gl_FragDepth = textureLookup2Dnormalized(depthTex_, textureParameters_, fragCoord).z;
 
 }

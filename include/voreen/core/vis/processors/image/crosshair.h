@@ -42,44 +42,47 @@ namespace voreen {
 /**
  * This class renders a cross hair cursor.
  */
-class CrossHair : public ImageProcessor, public tgt::EventListener {
+class CrossHair : public ImageProcessor {
 public:
     CrossHair();
     ~CrossHair();
-    virtual const Identifier getClassName() const {return "ImageProcessor.CrossHair";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "CrossHair"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
-    int initializeGL();
+    void initialize() throw (VoreenException);
 
-    void process(LocalPortMapping* portMapping);
-
-    virtual void mousePressEvent(tgt::MouseEvent *e);
-    virtual void mouseMoveEvent(tgt::MouseEvent *e);
-    virtual void mouseReleaseEvent(tgt::MouseEvent *e);
+    void process();
 
 protected:
     float cutDecimalPlaces(float number, int decimalPlaces);
     tgt::Color calcPositionsColor(int pos);
     void createAbsDepthToColorTex();
-    void createRelDepthToColorTex(int source);
+    void createRelDepthToColorTex(RenderPort* source);
 
     virtual std::string generateHeader();
     virtual void compile();
 
+    void eventMethod(tgt::MouseEvent* e);
+
     tgt::Texture* chromaDepthTex_;
     tgt::ivec2 cursorPos_;
     tgt::Shader* crossHairPrg_;
-    ColorProp color_;
-    BoolProp useChromaDepth_;
-    BoolProp removeBackground_;
-    IntProp textureSize_;
-    IntProp cutAfterDecimalPlaces_;
+    ColorProperty color_;
+    BoolProperty useChromaDepth_;
+    BoolProperty removeBackground_;
+    IntProperty textureSize_;
+    IntProperty cutAfterDecimalPlaces_;
     OptionProperty<int>* mappingModeProp_;
-    EventProperty eventProp_;
+    TemplateMouseEventProperty<CrossHair>* eventProp_;
     bool showCrossHair_;
     tgt::Texture* depthToColorTex_;
     float minValue_;
     float maxValue_;
+
+    RenderPort inport_;
+    RenderPort outport_;
 };
 
 } // namespace voreen

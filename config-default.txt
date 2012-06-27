@@ -9,10 +9,34 @@
 CONFIG += warn_on
 
 #
+# Modules
+#
+# By default most Voreen modules are added, i.e., those which do not
+# depend on non-standard external libraries. See src/modules for a
+# list of all available modules.
+#
+VRN_MODULES += most
+
+#
+# Projects to build
+#
+VRN_PROJECTS = core qt voreenve
+
+# Also build the voltool application?
+#VRN_PROJECTS += voltool
+
+#
 # External libraries
 #
 # You may adjust the paths in the section "Paths" at the bottom of this file.
 #
+
+# We activate some libraries by default on Windows, as they are
+# included in the distribution.
+win32 {
+  DEFINES += VRN_WITH_DEVIL VRN_WITH_TIFF VRN_WITH_FONTRENDERING
+  !win32-g++ : DEFINES += VRN_WITH_PYTHON
+}
 
 # Do we have the devil library?
 #DEFINES += VRN_WITH_DEVIL
@@ -32,18 +56,12 @@ CONFIG += warn_on
 # Do we have the ffmpeg library for video output?
 #DEFINES += VRN_WITH_FFMPEG
 
-# Do we have the ZipArchive library?
-#DEFINES += VRN_WITH_ZIP
+# Do we use the zlib library?
+DEFINES += VRN_WITH_ZLIB
 
 #
 # Basic features
 #
-
-# Use frame buffer objects (FBOs)?
-DEFINES += VRN_WITH_FBO_CLASS
-
-# Use the renderToTexture class?
-#DEFINES += VRN_WITH_RENDER_TO_TEXTURE
 
 # Activate the PVM file format code from Stefan Roettger?
 DEFINES += VRN_WITH_PVM
@@ -52,21 +70,22 @@ DEFINES += VRN_WITH_PVM
 # on Windows? (Not supported for MinGW)
 win32: !win32-g++: DEFINES += TGT_WITH_WMI
 
+
 #
 # Additional settings
 #
 
+# Disable this line in case of problems with PCH
+CONFIG += precompile_header
+
 # Activate additional debug code in voreen (also sets TGT_DEBUG)
 #DEFINES += VRN_DEBUG
-
-# Compile Voreen for distribution (loads shaders from tarball)
-#DEFINES += VRN_DISTRIBUTION
 
 # Write log output into a file
 DEFINES += VRN_ADD_FILE_LOGGER
 
-# Disable this line in case of problems with PCH
-CONFIG += precompile_header
+# Compile Voreen for distribution (loads shaders from tarball)
+#DEFINES += VRN_DISTRIBUTION
 
 # Add additional include paths
 INCLUDEPATH +=
@@ -79,18 +98,22 @@ LIBDIR +=
 #CONFIG -= staticlib
 #CONFIG += dll
 
+unix: !macx {
+  # It is the default on Linux
+  CONFIG -= staticlib
+  CONFIG += dll
+}
+
+
 # Extract SVN revision from working copy into svnversion.h
 #DEFINES += VRN_WITH_SVNVERSION
-
-# Use GUI translations if available?
-#DEFINES += VRN_USE_TRANSLATIONS
 
 # Show splash screen
 DEFINES += VRN_SPLASHSCREEN
 
-# Saves a copy of the preprocessed shader into the Voreen path, for
-# debugging of shaders with includes.
-#DEFINES += TGT_SHADER_INCLUDE_DEBUG
+# Do not use stylesheet:
+# DEFINES += VRN_NO_STYLESHEET
+
 
 #
 # Settings for Linux
@@ -125,8 +148,6 @@ DEFINES += VRN_SNAPSHOT
 VRN_HOME = $$PWD
 
 win32 {
-  BOX2D_DIR    = $${VRN_HOME}/ext/box2d
-  BUGTRAP_DIR  = $${VRN_HOME}/ext/bugtrap
   DCMTK_DIR    = $${VRN_HOME}/ext/dcmtk
   DEVIL_DIR    = $${VRN_HOME}/ext/il
   FFMPEG_DIR   = $${VRN_HOME}/ext/ffmpeg
@@ -135,16 +156,21 @@ win32 {
   PYTHON_DIR   = $${VRN_HOME}/ext/python
   TIFF_DIR     = $${VRN_HOME}/ext/tiff
   TINYXML_DIR  = $${VRN_HOME}/ext/tinyxml
+  ZLIB_DIR     = $${VRN_HOME}/ext/zlib
 }
 
 unix {
   FREETYPE_DIR = /usr/include/freetype2
-  PYTHON_DIR = /usr/include/python
-  PYTHON_LIBS = -lpython2.5
+  
+  # these need to be adapted according the the Python version
+  PYTHON_DIR = /usr/include/python2.6
+  PYTHON_LIBS = -lpython2.6
 }
 
 macx {
   PYTHON_DIR = /usr/include/python2.5
+  GLEW_DIR = 
+  GLEW_LIBS = 
 }
 
 ### Local Variables:

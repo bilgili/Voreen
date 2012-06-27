@@ -29,21 +29,21 @@
 
 namespace voreen {
 
-	ErrorLodSelector::ErrorLodSelector(BrickingInformation &brickingInformation) 
-		: BrickLodSelector(brickingInformation) 
-	{
+    ErrorLodSelector::ErrorLodSelector(BrickingInformation &brickingInformation)
+        : BrickLodSelector(brickingInformation)
+    {
 
         voxelSizeInByte_ = brickingInformation_.originalVolumeVoxelSizeInByte;
 
-        availableMemoryInByte_  = brickingInformation_.packedVolumeDimensions.x * 
+        availableMemoryInByte_  = brickingInformation_.packedVolumeDimensions.x *
                                     brickingInformation_.packedVolumeDimensions.y *
                                     brickingInformation_.packedVolumeDimensions.z *
                                     brickingInformation_.originalVolumeBytesAllocated -
-                                    (brickingInformation_.numberOfBricksWithEmptyVolumes* 
+                                    (brickingInformation_.numberOfBricksWithEmptyVolumes*
                                     brickingInformation_.originalVolumeBytesAllocated);
 
         usedMemoryInByte_ = brickingInformation_.totalNumberOfBricksNeeded * voxelSizeInByte_;
-	}
+    }
 
     void ErrorLodSelector::selectLods() {
 
@@ -51,7 +51,7 @@ namespace voreen {
         bool finished = false;
 
         std::set<ErrorStruct, std::greater<ErrorStruct> >::iterator errorIterator;
-        
+
         while (!finished) {
             if (errorSet_.begin() == errorSet_.end() ){
                 finished = true;
@@ -86,7 +86,7 @@ namespace voreen {
             }
 
         }
-	}
+    }
 
     void ErrorLodSelector::initializeErrorSet() {
         errorSet_.clear();
@@ -95,12 +95,12 @@ namespace voreen {
 
         for (size_t i=0; i<brickingInformation_.volumeBricks.size(); i++) {
             Brick* currentBrick = brickingInformation_.volumeBricks.at(i);
-            currentBrick->setCurrentLevelOfDetail(lowestLod);    
+            currentBrick->setCurrentLevelOfDetail(lowestLod);
 
             ErrorStruct errorStruct;
             errorStruct.brick = currentBrick;
             errorStruct.numVoxels = 1;
-            
+
             calculateNextImprovement(errorStruct);
         }
     }
@@ -115,15 +115,15 @@ namespace voreen {
         float bestImprovement = 0.0;
 
         //Calculate which improvement (improvement to which LOD) produces the highest
-        //error reduction per byte. 
+        //error reduction per byte.
         for (int j=currentLod-1; j>=0; j--) {
             tempError = errorStruct.brick->getError(j);
 
             if (tempError < currentError) {
                 int memRequiredForImprovement = static_cast<int> (
-                    ((errorStruct.numVoxels * pow(8.0, currentLod - j) ) - 
+                    ((errorStruct.numVoxels * pow(8.0, currentLod - j) ) -
                     errorStruct.numVoxels)* voxelSizeInByte_);
-                
+
                 float improvementPerByte = (currentError-tempError) / memRequiredForImprovement;
 
                 if (improvementPerByte > bestImprovement) {
@@ -142,9 +142,9 @@ namespace voreen {
 
             errorStruct.improvementPerByte = (currentError - betterError) /
                 errorStruct.memRequiredForImprovement;
-           
+
             errorStruct.nextLod = newLod;
-            
+
             errorSet_.insert(errorStruct);
         }
     }

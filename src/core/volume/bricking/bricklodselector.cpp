@@ -29,10 +29,10 @@
 
 namespace voreen {
 
-	BrickLodSelector::BrickLodSelector(BrickingInformation& brickingInformation)
-		: brickingInformation_(brickingInformation) 
-	{
-	}
+    BrickLodSelector::BrickLodSelector(BrickingInformation& brickingInformation)
+        : brickingInformation_(brickingInformation)
+    {
+    }
 
 } //namespace
 

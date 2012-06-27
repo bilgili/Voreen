@@ -32,99 +32,82 @@
 
 #include <vector>
 
-#include "tgt/camera.h"
 #include "tgt/shadermanager.h"
+#include "tgt/camera.h"
 
 #include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/message.h"
-#include "voreen/core/xml/serializable.h"
+#include "voreen/core/vis/rendertarget.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/volume/volumehandlevalidator.h"
+#include "voreen/core/vis/processors/ports/allports.h"
 #include "voreen/core/vis/properties/allproperties.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen {
 
 /**
- * The base class for all processor classes that render to the TextureContainer 
+ * The base class for all processor classes that render to RenderPorts
  */
 class RenderProcessor : public Processor {
 public:
-    /**
-     * @param camera The tgt::Camera which is used with this class.
-     * @param tc Some processor subclasses must know the TextureContainer.
-     */
-    RenderProcessor(tgt::Camera* camera = 0, TextureContainer* tc = 0);
 
+    RenderProcessor();
     virtual ~RenderProcessor();
 
     /// This method is called when the processor should be processed.
-    virtual void process(LocalPortMapping* portMapping) = 0;
-
-    virtual void setTextureContainer(TextureContainer* tc);
-    virtual TextureContainer* getTextureContainer();
-
-    /// Set the size of this processor.
-    virtual void setSize(const tgt::ivec2& size);
-
-    /// Set the size of this processor.
-    virtual void setSize(const tgt::vec2& size);
-
-    /// Returns the size of the processor canvas.
-    tgt::ivec2 getSize() const;
-
-    /// Returns the size of the processor canvas as a float.
-    /// Non-integer values can be introduced by the CoarsenessRenderer.
-    tgt::vec2 getSizeFloat() const;
+    virtual void process() = 0;
 
     /**
-     * Set the GeometryContainer. The container must be the same as used by the
-     * network evaluator. Therefore it will be set by the latter.
+     * @brief Notifies the Processor of a changed SizeOrigin on port p.
+     *
+     * This default implementation notifies all (render-) inports of this change.
+     *
+     * If p has a NULL sizeOrigin this is only propagated if all outports have a NULL sizeOrigin.
      */
-    virtual void setGeometryContainer(GeometryContainer* geoCont);
-
-    virtual GeometryContainer* getGeometryContainer() const;
-
-	//---------------------------------------------------------
-	//Some deprecated methods:
-    virtual void setCamera(tgt::Camera* camera);
-
-    /// Returns the camera used by this processor.
-    virtual tgt::Camera* getCamera() const;
-
-    /// Returns the light source position in world coordinates
-    virtual tgt::vec3 getLightPosition() const;
+    virtual void sizeOriginChanged(RenderPort* p);
 
     /**
-     * Processes:
-     * - LightMaterial::setLightPosition_, type Vec4Msg
+     * @brief Requests a resize of RenderPort p to newsize.
+     *
+     *  This default implementation resizes all (render-) outports and private ports to newsize
+     *  and requests a resize on all (render-) inports.
+     *
+     *  viewportChanged(newsize) is called on all CameraProperties and the Processor is invalidated.
+     *
+     * @param p The RenderPort to resize. (Not automatically resized to allow interaction coarseness)
+     * @param newsize The requested size.
      */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
+    ///Test if a textureContainerChanged on port p with so would result in a conflict
+    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
 
+    ///Initialize all RenderPorts and calls Processor::initialize()
+    virtual void initialize() throw (VoreenException);
 
-    // identifiers commonly used in processors
-    static const Identifier setBackgroundColor_;
+    /**
+     * Returns the registered private render ports of this processor.
+     *
+     * \sa addPrivateRenderPort
+     */
+    const std::vector<RenderPort*>& getPrivateRenderPorts() const;
 
-	//---------------------------------------------------------
     static const std::string XmlElementName_;
 
 protected:
-
-    GeometryContainer* geoContainer_; ///< container that holds geomtry, e.g. points or pointlists
-
-    TextureContainer* tc_;  ///< manages render targets. That are textures or the framebuffer.
     TexUnitMapper tm_;      ///< manages texture units
-
-    tgt::vec2 size_;        ///< size of the viewport of the processor
 
     static const std::string loggerCat_; ///< category used in logging
 
-	//---------------------------------------------------------
-	//Some deprecated stuff:
-	
+    /// @todo documentation
+    void addPrivateRenderPort(RenderPort* port);
+    void addPrivateRenderPort(RenderPort& port);
+
+    //---------------------------------------------------------
+    //Some deprecated stuff:
+
     /// Renders a screen aligned quad.
     void renderQuad();
+
+    /// Renders a screen aligned quad and assigns texture coordinates to its vertices.
+    void renderQuadWithTexCoords(const RenderPort& port);
 
     /**
      * This generates the header that will be used at the beginning of the shaders. It includes the necessary #defines that
@@ -137,56 +120,19 @@ protected:
     /**
      * Sets some uniforms potentially needed by every shader.
      * @note This function should be called for every shader before every rendering pass!
+     *
      * @param shader the shader to set up
+     * @param camera camera whose position is passed to uniform cameraPosition_
      */
-    //TODO: remove, a general processor has no shaders. joerg
-    virtual void setGlobalShaderParameters(tgt::Shader* shader);
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
 
-    /**
-     * \brief Updates the current OpenGL context according to the
-     *        object's lighting properties (e.g. lightPosition_).
-     *
-     * The following parameters are set for GL_LIGHT0:
-     * - Light source position
-     * - Light ambient / diffuse / specular colors
-     * - Light attenuation factors
-     *
-     * The following material parameters are set (GL_FRONT_AND_BACK):
-     * - Material ambient / diffuse / specular / emissive colors
-     * - Material shininess
-     *
-     */
-    virtual void setLightingParameters();
+    ColorProperty backgroundColor_; ///< the color of the background
+    //---------------------------------------------------------
 
-    // FIXME: does not work anymore, deprecated
-    /// Internally used for making high resolution screenshots.
-    void setSizeTiled(uint width, uint height);
-	
-    tgt::Camera* camera_;   ///< the camera that will be used in rendering
-
-    ColorProp backgroundColor_; ///< the color of the background
-
-    /// The position of the light source used for lighting calculations in world coordinates
-    FloatVec4Prop lightPosition_;
-    /// The light source's ambient color according to the Phong lighting model
-    ColorProp lightAmbient_;
-    /// The light source's diffuse color according to the Phong lighting model
-    ColorProp lightDiffuse_;
-    /// The light source's specular color according to the Phong lighting model
-    ColorProp lightSpecular_;
-    /// The light source's attenuation factors (x = constant, y = linear, z = quadratic)
-    FloatVec3Prop lightAttenuation_;
-    /// The ambient material color according to the Phong lighting model
-    ColorProp materialAmbient_;
-    /// The diffuse material color according to the Phong lighting model
-    ColorProp materialDiffuse_;
-    /// The specular material color according to the Phong lighting model
-    ColorProp materialSpecular_;
-    /// The emission material color according to the Phong lighting model
-    ColorProp materialEmission_;
-    /// The material's specular exponent according to the Phong lighting model
-    FloatProp materialShininess_;
-	//---------------------------------------------------------
+private:
+    /// The private render ports this processor has. Private ports
+    /// are mapped to rendertargets no other processor has access to.
+    std::vector<RenderPort*> privateRenderPorts_;
 };
 
 } // namespace voreen

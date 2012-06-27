@@ -30,7 +30,7 @@
 
 namespace voreen {
 
-    BrickingRegion::BrickingRegion(BrickingInformation& brickingInformation) 
+    BrickingRegion::BrickingRegion(BrickingInformation& brickingInformation)
         : brickingInformation_(brickingInformation) {
 
     }

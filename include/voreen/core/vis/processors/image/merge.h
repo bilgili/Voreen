@@ -38,7 +38,6 @@
 #include "tgt/quadric.h"
 #include "tgt/types.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
@@ -52,15 +51,16 @@ namespace voreen {
 class Merge : public Collect {
 public:
     Merge();
-    virtual const Identifier getClassName() const {return "ImageProcessor.Merge";}
+    virtual std::string getCategory() const { return "ImageProcessor"; }
+    virtual std::string getClassName() const { return "Merge"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new Merge();}
 
 protected:
     virtual void renderTwo(int source0, int source1, int pass);
 
-    static const Identifier shadeTexUnit1_;
-    static const Identifier depthTexUnit1_;
+    static const std::string shadeTexUnit1_;
+    static const std::string depthTexUnit1_;
 };
 
 } // namespace voreen

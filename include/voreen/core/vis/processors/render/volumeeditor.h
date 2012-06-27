@@ -31,13 +31,16 @@
 #define VRN_VOLUMEEDITOR_H
 
 #include "voreen/core/vis/processors/render/volumeraycaster.h"
+#include "fboClass/fboclass_framebufferobject.h"
 
 namespace voreen {
+
+class CameraProperty;
 
 /**
  * Performs a simple single pass raycasting with only some capabilites.
  */
-class VolumeEditor : public VolumeRaycaster, public tgt::EventListener  {
+class VolumeEditor : public VolumeRaycaster {
 public:
     /**
      * Constructor.
@@ -46,20 +49,13 @@ public:
 
     virtual ~VolumeEditor();
 
-    virtual const Identifier getClassName() const {return "Raycaster.VolumeEditor";}
+    virtual std::string getCategory() const { return "Volume Processing"; }
+    virtual std::string getClassName() const { return "VolumeEditor"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - setTransferFunction, which sets the current transfer-function. Msg-Type: TransferFunc*
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
     /**
      * Load the needed shader.
@@ -74,11 +70,7 @@ public:
      * a screen aligned quad. The render destination is determined by the
      * invoking class.
      */
-    virtual void process(LocalPortMapping*  portMapping);
-
-    LocalPortMapping* portMapping_;
-
-    bool mouseDown_;
+    virtual void process();
 
     virtual void mousePressEvent(tgt::MouseEvent* e);
     virtual void mouseMoveEvent(tgt::MouseEvent* e);
@@ -88,21 +80,32 @@ public:
     bool saveSegmentationDataSet(std::string filename);
 
 protected:
-    virtual std::string generateHeader();
-    virtual void compile();
+    virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
+    virtual void compile(VolumeHandle* volumeHandle);
 
 private:
 
-    IntProp brushSize_;
-    ColorProp brushColor_;
-    StringProp saveDialogProp_;
+    VolumeHandle* currentVolumeHandle_;
+
+    CameraProperty camera_;
+    IntProperty brushSize_;
+    ColorProperty brushColor_;
+    StringProperty saveDialogProp_;
     virtual void applyBrush(tgt::ivec2 mousePos);
 
-    TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
+    bool mouseDown_;
+
+    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
 
     bool firstPass_; ///< may need several rendering passes, this stores if this is the first
 
     FramebufferObject* fbo_;
+
+    VolumePort volumePort_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+    RenderPort firstHitpointsPort_;
+    RenderPort outport_;
 };
 
 

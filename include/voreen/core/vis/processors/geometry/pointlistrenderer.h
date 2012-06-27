@@ -31,15 +31,14 @@
 #define VRN_POINTLISTRENDERER_H
 
 #include "voreen/core/vis/processors/geometry/geometryprocessor.h"
-#include "voreen/core/geometry/pointlistgeometry.h"
-#include "tgt/material.h"
-
 #include "voreen/core/vis/properties/propertyvector.h"
 
 namespace voreen {
 
+class Geometry;
+
 /**
- * Renders a PointListGeometry<tgt::vec3> or PointSegmentListGeometry<tgt::vec3> which is passed 
+ * Renders a PointListGeometry<tgt::vec3> or PointSegmentListGeometry<tgt::vec3> which is passed
  * through a geometry inport. The point list can be rendered as points, spheres or illuminated spheres.
  */
 class PointListRenderer : public GeometryRenderer {
@@ -51,22 +50,22 @@ public:
     PointListRenderer();
     virtual ~PointListRenderer();
 
-    virtual const Identifier getClassName() const { return "GeometryRenderer.PointListRenderer"; }
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "PointListRenderer"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual CodeState getCodeState() const { return Processor::CODE_STATE_STABLE; } // 2.0
+    virtual const std::string getProcessorInfo() const;
+
+    virtual void process();
 
     virtual Processor* create() const { return new PointListRenderer(); }
-
-    /**
-     * Does not actually render, but retrieves the geometry
-     * and stores it internally.
-     */
-    virtual void process(LocalPortMapping* portMapping);
 
 protected:
 
     /**
      * Actually renders the internally stored geometry. Uses a display list.
      */
-    virtual void render(LocalPortMapping* localPortMapping);
+    virtual void render();
 
     /**
      * Generates the display list for the passed point list according
@@ -79,19 +78,19 @@ protected:
      */
     void invalidateDisplayList();
 
-    /// Geometry passed through the inport. Is stored by process method.
-    Geometry* geometry_;
     /// display list generated from the geometry.
     GLuint displayList_;
 
     // properties
-    EnumProp* renderingPrimitiveProp_;
-    std::vector<std::string> renderingPrimitives_;
-    ColorProp color_;
-    BoolProp depthTest_;
-    FloatProp pointSize_;
-    BoolProp pointSmooth_;
-    FloatProp sphereDiameter_;
+    StringOptionProperty renderingPrimitiveProp_;
+    ColorProperty color_;
+    BoolProperty depthTest_;
+    FloatProperty pointSize_;
+    BoolProperty pointSmooth_;
+    FloatProperty sphereDiameter_;
+    IntProperty sphereSlicesStacks_;
+
+    GeometryPort geometryInport_;
 
     static const std::string loggerCat_;
 };

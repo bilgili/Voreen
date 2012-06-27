@@ -31,14 +31,13 @@
 
 #include "voreen/core/volume/modality.h"
 #include "voreen/core/volume/volumeatomic.h"
-#include "voreen/core/volume/volumesetcontainer.h"
 #include "voreen/core/io/datvolumewriter.h"
 #include "voreen/core/io/datvolumereader.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
-#include "voreen/core/vis/processors/image/renderstore.h"
 #include "tgt/quadric.h"
 
 #include <fstream>
+#include <stack>
 
 using tgt::vec3;
 using tgt::vec4;
@@ -50,47 +49,39 @@ const std::string RegionGrowingProcessor::loggerCat_("voreen.RegionGrowingProces
 
 RegionGrowingProcessor::RegionGrowingProcessor()
     : VolumeRenderer(),
-      volumeHandle_(0),
       segmentationHandle_(0),
-      coprocessorRenderStore_(0),
       strictness_("strictness", "strictness", 0.8f, 0.f, 65535.f),
       thresholdFilling_("thresholdFilling", "apply threshold on flood fill", false),
       thresholds_("thresholds", "Thresholds", tgt::vec2(0.f, 1.f), tgt::vec2(0.f), tgt::vec2(1.f)),
+      fillCostFunction_("fillCostFunction", "Cost function"),
       adaptive_("adaptive", "use adaptive growing criteria", false),
       maxSeedDistance_("maxSeedDistance", "maximum distance to seed point", 0, 0, 999),
-      lastSegmentation_(0)
+      lastSegmentation_(0),
+      inport_(Port::INPORT, "volumehandle.volume"),
+      outport_(Port::OUTPORT, "volumehandle.segmentation", segmentationHandle_),
+      cpp_(Port::INPORT, "coprocessor.renderstoreFHP")
 {
-    setName("RegionGrowing");
 
-    //
-    // ports
-    //
-    createInport("volumehandle.volume");
-    createCoProcessorInport("coprocessor.renderstoreFHP");
-    createGenericOutport("volumehandle.segmentation", &segmentationHandle_);
+    addPort(inport_);
+    addPort(outport_);
+    addPort(cpp_);
 
-    //
-    // properties
-    //
-    addProperty(&strictness_);
-    addProperty(&thresholdFilling_);
-    addProperty(&thresholds_);
+    addProperty(strictness_);
+    addProperty(thresholdFilling_);
+    addProperty(thresholds_);
 
-    std::vector<std::string> costFunctions;
-    costFunctions.push_back("intensity");
-    costFunctions.push_back("gradient magnitude");
-    costFunctions.push_back("weighted");
-    fillCostFunction_ = new EnumProp("fillCostFunction", "Cost function", costFunctions);
+    fillCostFunction_.addOption("intensity", "intensity");
+    fillCostFunction_.addOption("gradient-magnitude", "gradient magnitude");
+    fillCostFunction_.addOption("weighted", "weighted");
     addProperty(fillCostFunction_);
 
-    addProperty(&adaptive_);
-    addProperty(&maxSeedDistance_);
+    addProperty(adaptive_);
+    addProperty(maxSeedDistance_);
 }
 
 RegionGrowingProcessor::~RegionGrowingProcessor() {
     delete segmentationHandle_;
     delete lastSegmentation_;
-    delete fillCostFunction_;
 }
 
 const std::string RegionGrowingProcessor::getProcessorInfo() const {
@@ -304,10 +295,10 @@ int floodFill(const ivec3& seed_pos, int segment, float lowerThreshold, float up
 
 void RegionGrowingProcessor::mark(const ivec3& seedpos, int segment) {
 
-    if (!volumeHandle_ || !segmentationHandle_)
+    if (!inport_.getData() || !segmentationHandle_)
         return;
 
-    Volume* vol = volumeHandle_->getVolume();
+    Volume* vol = inport_.getData()->getVolume();
     VolumeUInt8* segvol = dynamic_cast<VolumeUInt8*>(segmentationHandle_->getVolume());
 
     if (!vol || !segvol) {
@@ -334,9 +325,9 @@ void RegionGrowingProcessor::mark(const ivec3& seedpos, int segment) {
     // start the flood fill
     //VolumeUInt8* s = dynamic_cast<VolumeUInt8*>(segmentation_->getVolume());
     FloodFillMode mode = FLOODFILL_INTENSITY;
-    if (fillCostFunction_->get() == 1)
+    if (fillCostFunction_.get() == "gradient-magnitude")
         mode = FLOODFILL_GRADMAG;
-    else if (fillCostFunction_->get() == 2)
+    else if (fillCostFunction_.get() == "weighted")
         mode = FLOODFILL_WEIGHTED;
 
     int count = 0;
@@ -350,9 +341,6 @@ void RegionGrowingProcessor::mark(const ivec3& seedpos, int segment) {
                           static_cast<float>(maxSeedDistance_.get()));
 
     LINFO("filled voxels: " << count);
-}
-void RegionGrowingProcessor::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRenderer::processMessage(msg, dest);
 }
 
 void RegionGrowingProcessor::clearSegmentation() {
@@ -394,10 +382,10 @@ void RegionGrowingProcessor::undoLastGrowing() {
     }
 }
 
-void RegionGrowingProcessor::startGrowing(tgt::ivec2 seedPos, int segmentID) {
-    if (coprocessorRenderStore_) {
+void RegionGrowingProcessor::startGrowing(tgt::ivec2 /*seedPos*/, int segmentID) {
+    if (cpp_.isConnected()) {
         if (segmentationHandle_) {
-            tgt::vec4 fhp = coprocessorRenderStore_->getStoredTargetPixel(seedPos);
+            tgt::vec4 fhp(0.f);//TODO: = cpp_.getConnectedProcessor()->getStoredTargetPixel(seedPos);
             Volume* segvol = segmentationHandle_->getVolume();
             ivec3 voxelpos = fhp.xyz() * vec3(segvol->getDimensions());
             mark(voxelpos, segmentID);
@@ -415,7 +403,7 @@ void RegionGrowingProcessor::saveSegmentation(std::string filename) const {
     if (segmentationHandle_) {
         LINFO("saving segmentation volume to " << filename);
         DatVolumeWriter writer;
-        writer.write(filename, segmentationHandle_->getVolume());
+        writer.write(filename, segmentationHandle_);
     }
 }
 
@@ -427,20 +415,23 @@ void RegionGrowingProcessor::loadSegmentation(std::string filename) {
     segmentationHandle_ = 0;
 
     DatVolumeReader reader;
-    VolumeSet* volSet = 0;
+    VolumeCollection* volumeCollection = 0;
     try {
-        volSet = reader.read(filename);
+        volumeCollection = reader.read(filename);
     }
     catch (std::exception& /*e*/) {}
-    
-    if (volSet) {
-        Volume* vol = volSet->getFirstVolume();
-        if (vol) {
-            segmentationHandle_ = new VolumeHandle(vol);
+
+    if (volumeCollection && !volumeCollection->empty()) {
+        VolumeHandle* volHandle = volumeCollection->first();
+        if (volHandle) {
+            segmentationHandle_ = volHandle;
             invalidate();
+            delete volumeCollection;
             return;
         }
     }
+
+    delete volumeCollection;
 
     LERROR("Failed reading segmentation: " << filename);
 
@@ -471,7 +462,7 @@ void RegionGrowingProcessor::saveSegment(int segmentID, std::string filename) {
                 }
             }
             DatVolumeWriter writer;
-            writer.write(filename, tmpvol);
+            writer.write(filename, new VolumeHandle(tmpvol));
             delete tmpvol;
         }
     }
@@ -479,37 +470,16 @@ void RegionGrowingProcessor::saveSegment(int segmentID, std::string filename) {
 
 
 
-void RegionGrowingProcessor::process(LocalPortMapping* portMapping) {
-
-    bool handleChanged;
-    if (VolumeHandleValidator::checkVolumeHandle(volumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volume"), &handleChanged) == false) {
-            return;
-    }
-
+void RegionGrowingProcessor::process() {
     // if segmentation volume not present or volume handle has changed, create
     // segmentation volume with the same dimensions and spacing as the input volume
-    if (!segmentationHandle_ || handleChanged) {
+    if ((!segmentationHandle_ || inport_.hasChanged()) && inport_.getData()) {
         delete segmentationHandle_;
-        VolumeUInt8* segVol = new VolumeUInt8(volumeHandle_->getVolume()->getDimensions(),
-            volumeHandle_->getVolume()->getSpacing());
+        VolumeUInt8* segVol = new VolumeUInt8(inport_.getData()->getVolume()->getDimensions(),
+            inport_.getData()->getVolume()->getSpacing());
         segVol->clear();
         segmentationHandle_ = new VolumeHandle(segVol, 0.f);
     }
-
-    // acquire RenderStore coprocessor
-    coprocessorRenderStore_ = 0;
-    try {
-        PortDataCoProcessor* cp = portMapping->getCoProcessorData("coprocessor.renderstoreFHP");
-        if (cp) {
-            coprocessorRenderStore_ = dynamic_cast<RenderStore*>(cp->getProcessor());
-            if (!coprocessorRenderStore_)
-                LWARNING("Coprocessor of wrong type connected: RenderStore expected");
-        }
-    }
-    catch (std::exception&) {
-    }
-
 }
 
 void RegionGrowingProcessor::volumeModified(VolumeHandle* v) {
@@ -522,27 +492,27 @@ void RegionGrowingProcessor::volumeModified(VolumeHandle* v) {
     invalidate();
 }
 
-FloatVec2Prop& RegionGrowingProcessor::getThresholdProp() {
+FloatVec2Property& RegionGrowingProcessor::getThresholdProp() {
     return thresholds_;
 }
 
-BoolProp& RegionGrowingProcessor::getThresholdFillingProp() {
+BoolProperty& RegionGrowingProcessor::getThresholdFillingProp() {
     return thresholdFilling_;
 }
 
-FloatProp& RegionGrowingProcessor::getStrictnessProp() {
+FloatProperty& RegionGrowingProcessor::getStrictnessProp() {
     return strictness_;
 }
 
-BoolProp& RegionGrowingProcessor::getAdaptiveProp() {
+BoolProperty& RegionGrowingProcessor::getAdaptiveProp() {
     return adaptive_;
 }
 
-IntProp& RegionGrowingProcessor::getMaxSeedDistanceProp() {
+IntProperty& RegionGrowingProcessor::getMaxSeedDistanceProp() {
     return maxSeedDistance_;
 }
 
-EnumProp* RegionGrowingProcessor::getCostFunctionProp(){
+StringOptionProperty& RegionGrowingProcessor::getCostFunctionProp(){
     return fillCostFunction_;
 }
 

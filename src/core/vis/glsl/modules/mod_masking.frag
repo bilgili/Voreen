@@ -56,20 +56,3 @@ bool inSegmentation(vec3 sample) {
         return true;
     #endif
 }
-
-
-
-// THE FOLLOWING FUNCTION IS OBSOLETE
-// it can be removed when rc_simple is removed
-
-/***
- * Returns 1 if the current sample belongs to the current segment
- * else 0.
- */
-float applySegmentation(vec3 sample) {
-    return 0.0;
-    /*
-    float seg = textureLookup3D(segmentation_, segmentationParameters_, sample).a;
-    return step(abs(seg - segment_/255.0), (1.0 / 255.0) / 2.0);
-    */
-}

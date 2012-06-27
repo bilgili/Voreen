@@ -39,8 +39,10 @@ vec4 result2 = vec4(0.0);
 // declare entry and exit parameters
 uniform SAMPLER2D_TYPE entryPoints_;            // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;       // ray entry points depth
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE exitPoints_;                // ray exit points
 uniform SAMPLER2D_TYPE exitPointsDepth_;        // ray exit points depth
+uniform TEXTURE_PARAMETERS exitParameters_;
 // declare volume
 uniform sampler3D volume_;                      // volume data set
 uniform VOLUME_PARAMETERS volumeParameters_;    // texture lookup parameters for volume_
@@ -67,7 +69,7 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec4 voxel = getVoxel(volume_, volumeParameters_, samplePos);
 
         // calculate gradients
-        voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_);
+        voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_, entryParameters_);
 
         #ifdef MOD_APPLY_SEGMENTATION
             // apply segmentation
@@ -94,9 +96,9 @@ void rayTraversal(in vec3 first, in vec3 last) {
  * The main method.
  ***/
 void main() {
-
-    vec3 frontPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
+    vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
 
     // initialize light and material parameters
     matParams = gl_FrontMaterial;

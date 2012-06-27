@@ -32,26 +32,26 @@
 
 namespace voreen {
 
-	/**
-	* This class calculates the brick resolutions so that at all bricks have
-    * either one of two resolutions, and that at least half of the bricks have 
-    * the higher one of those two resolutions. The lower resolution will usually 
+    /**
+    * This class calculates the brick resolutions so that at all bricks have
+    * either one of two resolutions, and that at least half of the bricks have
+    * the higher one of those two resolutions. The lower resolution will usually
     * be 64 voxels to guarantee at least some degree of accuracy for those bricks.
-	*/
-	class StandardBrickResolutionCalculator : public BrickResolutionCalculator {
-	
-	public:
-		StandardBrickResolutionCalculator(BrickingInformation& brickingInformation);
+    */
+    class StandardBrickResolutionCalculator : public BrickResolutionCalculator {
 
-		virtual void calculateBrickResolutions();
+    public:
+        StandardBrickResolutionCalculator(BrickingInformation& brickingInformation);
 
-	protected:
+        virtual void calculateBrickResolutions();
 
-	private:
+    protected:
+
+    private:
 
 
 
-	}; //end of class
+    }; //end of class
 
 
 
@@ -60,4 +60,5 @@ namespace voreen {
 
 
 
-#endif 
+#endif
+

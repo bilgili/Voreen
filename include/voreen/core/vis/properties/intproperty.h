@@ -34,15 +34,13 @@
 
 namespace voreen {
 
-typedef NumericProperty<int> IntProperty;
-
-class IntProp : public NumericProperty<int> {
+class IntProperty : public NumericProperty<int> {
 public:
-    IntProp(const std::string& id, const std::string& guiText, int value = 0,
+    IntProperty(const std::string& id, const std::string& guiText, int value = 0,
         int minValue = 0, int maxValue = 100, bool instantValueChange = false,
-        bool invalidate = true, bool invalidateShader = false);
+        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~IntProp() {}
+    virtual ~IntProperty() {}
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 

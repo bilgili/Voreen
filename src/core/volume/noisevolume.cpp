@@ -28,15 +28,15 @@
  **********************************************************************/
 
 #include "voreen/core/volume/noisevolume.h"
-#include <time.h>
 
 namespace voreen {
 
     NoiseVolume::NoiseVolume(tgt::vec3 dimensions) {
         volumeGL_ = 0;
         volume_ = new Volume4xUInt8(dimensions, tgt::vec3(1.0), 8);
-
-        srand((unsigned)time(0));
+#ifdef VRN_NO_RANDOM
+        srand(0);
+#endif
         for (int x=0;x<dimensions.x;x++) {
             //srand(32);
             for (int y=0;y<dimensions.y;y++) {

@@ -34,13 +34,15 @@
 #endif
 
 #include "voreen/core/application.h"
-
 #include "voreen/core/cmdparser/commandlineparser.h"
-#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/processors/processorwidgetfactory.h"
+
 #include "tgt/init.h"
 #include "tgt/filesystem.h"
-
+#include "tgt/shadermanager.h"
+#include "tgt/timer.h"
 #include "tgt/gpucapabilities.h"
+
 #ifdef WIN32
 #ifdef _MSC_VER
     #include "tgt/gpucapabilitieswindows.h"
@@ -51,7 +53,7 @@
 #endif
 
 #ifdef __APPLE__
-	#include "CoreFoundation/CFBundle.h"
+    #include "CoreFoundation/CFBundle.h"
 #endif
 
 using std::string;
@@ -143,22 +145,22 @@ string findAppBundleResourcesPath() {
     bundle = CFBundleGetMainBundle();
     if(!bundle)
         return "";
- 
+
     CFURLRef resourceURL = CFBundleCopyResourcesDirectoryURL(bundle);
     char* path = new char [200];
     if(!CFURLGetFileSystemRepresentation(resourceURL, true, (UInt8*)path, 200))
         return "";
-    
+
     string pathStr;
     if (path)
         pathStr = string(path);
-    
+
     delete[] path;
- 	return pathStr;
-    
+     return pathStr;
+
 }
 #endif
-    
+
 } // namespace
 
 VoreenApplication* VoreenApplication::app_ = 0;
@@ -170,6 +172,7 @@ VoreenApplication::VoreenApplication(const std::string& name, const std::string&
       name_(name),
       displayName_(displayName),
       cmdParser_(displayName),
+      processorWidgetFactory_(0),
       logLevel_(tgt::Info)
 {
     app_ = this;
@@ -187,7 +190,6 @@ void VoreenApplication::init() {
     // tgt initialization
     //
     tgt::init();
-    tgt::Singleton<voreen::MessageDistributor>::init(new MessageDistributor());
 
     //
     // Command line parser
@@ -205,7 +207,7 @@ void VoreenApplication::init() {
     if (getenv("HOME") != 0)
         documentsPath_ = getenv("HOME");
 #endif
-    
+
     //
     // Logging
     //
@@ -215,7 +217,7 @@ void VoreenApplication::init() {
         logDir = documentsPath_;
         LogMgr.reinit(logDir);
 #endif
-       
+
         tgt::Log* clog = new tgt::ConsoleLog();
         clog->addCat("", true, logLevel_);
         LogMgr.addLog(clog);
@@ -264,11 +266,11 @@ void VoreenApplication::init() {
     }
 
 #ifdef __APPLE__
-	appBundleResourcesPath_ = findAppBundleResourcesPath();
+    appBundleResourcesPath_ = findAppBundleResourcesPath();
     if (appBundleResourcesPath_.empty())
-    	LERROR("Application bundle's resources path could not be detected!");
+        LERROR("Application bundle's resources path could not be detected!");
     else
-    	LINFO("Application bundle's resources path: " << appBundleResourcesPath_);
+        LINFO("Application bundle's resources path: " << appBundleResourcesPath_);
 #endif
 
     // data path
@@ -287,14 +289,14 @@ void VoreenApplication::init() {
         documentationPath_ = findDocumentationPath(basePath_);
 #endif
     }
-    
+
     //
     // Python
     //
 #ifdef VRN_WITH_PYTHON
     if (appType_ & APP_PYTHON) {
         ScriptMgr.addPath("");
-        initVoreenPythonModule();
+        tgt::Singleton<VoreenPython>::init(new VoreenPython());
     }
 #endif
 }
@@ -307,10 +309,27 @@ void VoreenApplication::initGL() {
 #else
     GpuCaps.logCapabilities(false, true);
 #endif
+    ShdrMgr.addPath(getShaderPath());
 }
 
 VoreenApplication* VoreenApplication::app() {
     return app_;
+}
+
+tgt::Timer* VoreenApplication::createTimer(tgt::EventHandler* /*handler*/) const {
+    return 0;
+}
+
+IOProgress* VoreenApplication::createProgressDialog() const {
+    return 0;
+}
+
+void VoreenApplication::setProcessorWidgetFactory(ProcessorWidgetFactory* factory) {
+    processorWidgetFactory_ = factory;
+}
+
+const ProcessorWidgetFactory* VoreenApplication::getProcessorWidgetFactory() const {
+    return processorWidgetFactory_;
 }
 
 std::string VoreenApplication::getBasePath() const {
@@ -338,15 +357,19 @@ std::string VoreenApplication::getFontPath(const std::string& filename) const {
 }
 
 std::string VoreenApplication::getNetworkPath(const std::string& filename) const {
-	return dataPath_ + "/networks" + (filename.empty() ? "" : "/" + filename);
+    return dataPath_ + "/networks" + (filename.empty() ? "" : "/" + filename);
 }
 
 std::string VoreenApplication::getWorkspacePath(const std::string& filename) const {
-	return dataPath_ + "/workspaces" + (filename.empty() ? "" : "/" + filename);
+    return dataPath_ + "/workspaces" + (filename.empty() ? "" : "/" + filename);
 }
 
 std::string VoreenApplication::getScriptPath(const std::string& filename) const {
     return dataPath_ + "/scripts" + (filename.empty() ? "" : "/" + filename);
+}
+
+std::string VoreenApplication::getSnapshotPath(const std::string& filename) const {
+    return dataPath_ + "/snapshots" + (filename.empty() ? "" : "/" + filename);
 }
 
 std::string VoreenApplication::getTransFuncPath(const std::string& filename) const {
@@ -375,9 +398,8 @@ std::string VoreenApplication::getDocumentsPath(const std::string& filename) con
 
 #ifdef __APPLE__
 std::string VoreenApplication::getAppBundleResourcesPath(const std::string& filename) const {
-   return appBundleResourcesPath_ + (filename.empty() ? "" : "/" + filename);		
+   return appBundleResourcesPath_ + (filename.empty() ? "" : "/" + filename);
 }
 #endif
-
 
 } // namespace

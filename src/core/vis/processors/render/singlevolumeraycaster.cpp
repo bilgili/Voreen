@@ -29,167 +29,143 @@
 
 #include "voreen/core/vis/processors/render/singlevolumeraycaster.h"
 
-#include "voreen/core/vis/lightmaterial.h"
+#include "voreen/core/vis/interaction/camerainteractionhandler.h"
+#include "tgt/camera.h"
 
 #include <sstream>
+
+using tgt::vec3;
 
 namespace voreen {
 
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
-    , transferFunc_(setTransFunc_, "Transfer function")
-    , maxProgramExecInstructions_(-1)
+    , transferFunc_("transferFunction", "Transfer function")
+    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
+    , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_PROGRAM)
+    , entryPort_(Port::INPORT, "image.entrypoints")
+    , exitPort_(Port::INPORT, "image.exitpoints")
+    , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM)
+    , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM)
+    , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM)
 {
-    setName("SingleVolumeRaycaster");
 
     // VolumeRaycaster Props
-    addProperty(&segment_);
-    addProperty(&useSegmentation_);
+    addProperty(useSegmentation_);
+    addProperty(segment_);
+    addProperty(isoValue_);
 
-    addProperty(&transferFunc_);
+    addProperty(transferFunc_);
+    addProperty(camera_);
+
     addProperty(maskingMode_);
     addProperty(gradientMode_);
     addProperty(classificationMode_);
     addProperty(shadeMode_);
     addProperty(compositingMode_);
 
-    compositingMode1_ = new EnumProp("set.compositing1", "Compositing (OP2)", compositingModes_, 0, true, true);
+    compositingMode1_.addOption("dvr", "DVR");
+    compositingMode1_.addOption("mip", "MIP");
+    compositingMode1_.addOption("iso", "ISO");
+    compositingMode1_.addOption("fhp", "FHP");
+    compositingMode1_.addOption("fhn", "FHN");
     addProperty(compositingMode1_);
 
-    compositingMode2_ = new EnumProp("set.compositing2", "Compositing (OP3)", compositingModes_, 0, true, true);
+    compositingMode2_.addOption("dvr", "DVR");
+    compositingMode2_.addOption("mip", "MIP");
+    compositingMode2_.addOption("iso", "ISO");
+    compositingMode2_.addOption("fhp", "FHP");
+    compositingMode2_.addOption("fhn", "FHN");
     addProperty(compositingMode2_);
 
-    addProperty(&lightPosition_);
-    addProperty(&lightAmbient_);
-    addProperty(&lightDiffuse_);
-    addProperty(&lightSpecular_);
+    addProperty(lightPosition_);
+    addProperty(lightAmbient_);
+    addProperty(lightDiffuse_);
+    addProperty(lightSpecular_);
 
-    raycastingQualityFactor_->onChange(
-        CallMemberAction<SingleVolumeRaycaster>(this,
-                                                &SingleVolumeRaycaster::raycastingQualityChanged));
-
-    destActive_[0] = false;
-    destActive_[1] = false;
-    destActive_[2] = false;
-
-    createInport("volumehandle.volumehandle");
-    createInport("image.entrypoints");
-    createInport("image.exitpoints");
-    createOutport("image.output");
-    createOutport("image.output1");
-    createOutport("image.output2");
+    addPort(volumeInport_);
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPort(outport_);
+    addPort(outport1_);
+    addPort(outport2_);
 }
 
 SingleVolumeRaycaster::~SingleVolumeRaycaster() {
 }
 
 const std::string SingleVolumeRaycaster::getProcessorInfo() const {
-    return "Performs a simple single pass raycasting with only some capabilites.";
+    return "This is the standard raycaster within Voreen. It allows to generate three output \
+            renderings, whereas only the first one provides depth values. There are several \
+            shading and compositing modes available.";
 }
 
-int SingleVolumeRaycaster::initializeGL() {
+void SingleVolumeRaycaster::initialize() throw (VoreenException) {
+    VolumeRaycaster::initialize();
+
     loadShader();
-    initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;
 
-    if (GLEW_NV_fragment_program2)
-        glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV,
-                          &maxProgramExecInstructions_);
+    if (!raycastPrg_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
+    initialized_ = true;
 
-    return initStatus_;
+    portGroup_.initialize();
+    portGroup_.addPort(outport_);
+    portGroup_.addPort(outport1_);
+    portGroup_.addPort(outport2_);
 }
 
 void SingleVolumeRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_singlevolume.frag",
-                                       generateHeader(), false);
+                                       generateHeader(), false, false);
 }
 
-void SingleVolumeRaycaster::compile() {
-    raycastPrg_->setHeaders(generateHeader(), false);
+void SingleVolumeRaycaster::compile(VolumeHandle* volumeHandle) {
+    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
     raycastPrg_->rebuild();
 }
 
-void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
-    int entryParams = portMapping->getTarget("image.entrypoints");
-    int exitParams = portMapping->getTarget("image.exitpoints");
+bool SingleVolumeRaycaster::isReady() const {
+    //check if all inports are connected:
+    if(!entryPort_.isReady() || !exitPort_.isReady() || !volumeInport_.isReady())
+        return false;
 
-    std::vector<int> activeTargets;
-    try {
-        int dest0 = portMapping->getTarget("image.output");
-        if (!destActive_[0]) {
-            // first outport was not enabled in shader => recompile shader now
-            destActive_[0] = true;
-            invalidateShader();
-        }
-        activeTargets.push_back(dest0);
-    } catch (std::exception& ) {
-        if (destActive_[0]) {
-            // no first outport target, but it was enabled in shader => recompile
-            destActive_[0] = false;
-            invalidateShader();
-        }
-    }
-    try {
-        int dest1 = portMapping->getTarget("image.output1");
-        if (!destActive_[1]) {
-            // second outport was not enabled in shader => recompile shader now
-            destActive_[1] = true;
-            invalidateShader();
-        }
-        activeTargets.push_back(dest1);
-    } catch (std::exception& ) {
-        if (destActive_[1]) {
-            // no second outport target, but it was enabled in shader => recompile
-            destActive_[1] = false;
-            invalidateShader();
-        }
-    }
-    try {
-        int dest2 = portMapping->getTarget("image.output2");
-        if (!destActive_[2]) {
-            // writing first hit normals was not enabled in shader => recompile shader now
-            destActive_[2] = true;
-            invalidateShader();
-        }
-        activeTargets.push_back(dest2);
-    } catch (std::exception& ) {
-        if (destActive_[2]) {
-            // no firstHitPoints target, but writing FHP are enabled in shader => recompile
-            destActive_[2] = false;
-            invalidateShader();
-        }
-    }
+    //check if at least one outport is connected:
+    if (!outport_.isReady() && !outport1_.isReady() && !outport2_.isReady())
+        return false;
 
-    tc_->setActiveTargets(activeTargets, "SingleVolumeRaycaster");
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    return true;
+}
 
-	bool handleChanged;
-    if (!VolumeRaycaster::checkVolumeHandle(currentVolumeHandle_,
-                                            portMapping->getVolumeHandle("volumehandle.volumehandle"), &handleChanged))
-    {
-        return;
-    }
-
-	if (handleChanged)
-		invalidateShader();
-
-    transferFunc_.setVolumeHandle(currentVolumeHandle_);
+void SingleVolumeRaycaster::process() {
     
     // compile program if needed
-    compileShader();
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile(volumeInport_.getData());
     LGL_ERROR;
 
+    // bind transfer function
+    glActiveTexture(tm_.getGLTexUnit(transferTexUnit_));
+    if (transferFunc_.get())
+        transferFunc_.get()->bind();
+
+    portGroup_.activateTargets();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    LGL_ERROR;
+
+    transferFunc_.setVolumeHandle(volumeInport_.getData());
+
     // bind entry params
-    glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entryParams), tc_->getGLTexID(entryParams));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entryParams), tc_->getGLDepthTexID(entryParams));
+    entryPort_.bindTextures(tm_.getGLTexUnit(entryParamsTexUnit_), tm_.getGLTexUnit(entryParamsDepthTexUnit_));
     LGL_ERROR;
 
     // bind exit params
-    glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitParams), tc_->getGLTexID(exitParams));
-    glActiveTexture(tm_.getGLTexUnit(exitParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(exitParams), tc_->getGLDepthTexID(exitParams));
+    exitPort_.bindTextures(tm_.getGLTexUnit(exitParamsTexUnit_), tm_.getGLTexUnit(exitParamsDepthTexUnit_));
     LGL_ERROR;
 
     // vector containing the volumes to bind; is passed to bindVolumes()
@@ -197,18 +173,20 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
 
     // add main volume
     volumeTextures.push_back(VolumeStruct(
-        currentVolumeHandle_->getVolumeGL(),
+        volumeInport_.getData()->getVolumeGL(),
         volTexUnit_,
         "volume_",
         "volumeParameters_")
     );
 
-	addBrickedVolumeModalities(volumeTextures);
+    updateBrickingParameters(volumeInport_.getData());
+    addBrickedVolumeModalities(volumeInport_.getData(), volumeTextures);
 
-   	// segmentation volume
-    VolumeHandle* volumeSeg = currentVolumeHandle_->getRelatedVolumeHandle(Modality::MODALITY_SEGMENTATION);
+       // segmentation volume
+    //VolumeHandle* volumeSeg = volumeInport_.getData()->getRelatedVolumeHandle(Modality::MODALITY_SEGMENTATION);
+    VolumeHandle* volumeSeg = 0;
 
-    bool usingSegmentation = (maskingMode_->get() == 1) && volumeSeg;
+    bool usingSegmentation = (maskingMode_.get() == "Segmentation") && volumeSeg;
     if (usingSegmentation) {
         // Important to set the correct texture unit before getVolumeGL() is called or
         // glTexParameter() might influence the wrong texture.
@@ -224,34 +202,37 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 
-    // bind transfer function
-    glActiveTexture(tm_.getGLTexUnit(transferTexUnit_));
-    if (transferFunc_.get())
-        transferFunc_.get()->bind();
-
     // initialize shader
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_);
+    setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
     bindVolumes(raycastPrg_, volumeTextures);
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", tm_.getTexUnit(entryParamsTexUnit_));
     raycastPrg_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    entryPort_.setTextureParameters(raycastPrg_, "entryParameters_");
     raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
     raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
-    if (classificationMode_->get() == 1)
+    exitPort_.setTextureParameters(raycastPrg_, "exitParameters_");
+
+    if (compositingMode_.get() ==  "iso" ||
+        compositingMode1_.get() == "iso" ||
+        compositingMode2_.get() == "iso")
+        raycastPrg_->setUniform("isoValue_", isoValue_.get());
+
+    if (classificationMode_.get() == "transfer-function")
         raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit(transferTexUnit_));
 
     if (usingSegmentation) {
         GLfloat seg = segment_.get() / 255.f;
-        raycastPrg_->setUniform("segment_" , seg);
+        raycastPrg_->setUniform("segment_", seg);
     }
 
-	setBrickedVolumeUniforms();
-	LGL_ERROR;
+    setBrickedVolumeUniforms(volumeInport_.getData());
+    LGL_ERROR;
 
     glPushAttrib(GL_LIGHTING_BIT);
     setLightingParameters();
@@ -272,64 +253,40 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 }
 
-std::string SingleVolumeRaycaster::generateHeader() {
-    std::string headerSource = VolumeRaycaster::generateHeader(getVolumeHandle());
+std::string SingleVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
+    std::string headerSource = VolumeRaycaster::generateHeader(volumeHandle);
 
     headerSource += transferFunc_.get()->getShaderDefines();
 
     // configure compositing mode for port 2
     headerSource += "#define RC_APPLY_COMPOSITING_1(result, color, samplePos, gradient, t, tDepth) ";
-    switch (compositingMode1_->get()) {
-        case 0: headerSource += "compositeDVR(result, color, t, tDepth);\n";
-            break;
-        case 1: headerSource += "compositeMIP(result, color, t, tDepth);\n";
-            break;
-        case 2: headerSource += "compositeISO(result, color, t, tDepth, 0.0);\n";
-            break;
-        case 3: headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-            break;
-        case 4: headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
-            break;
-    }
+    if (compositingMode1_.get() == "dvr")
+        headerSource += "compositeDVR(result, color, t, tDepth);\n";
+    else if (compositingMode1_.get() == "mip")
+        headerSource += "compositeMIP(result, color, t, tDepth);\n";
+    else if (compositingMode1_.get() == "iso")
+        headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
+    else if (compositingMode1_.get() == "fhp")
+        headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+    else if (compositingMode1_.get() == "fhn")
+        headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     // configure compositing mode for port 3
     headerSource += "#define RC_APPLY_COMPOSITING_2(result, color, samplePos, gradient, t, tDepth) ";
-    switch (compositingMode2_->get()) {
-        case 0: headerSource += "compositeDVR(result, color, t, tDepth);\n";
-            break;
-        case 1: headerSource += "compositeMIP(result, color, t, tDepth);\n";
-            break;
-        case 2: headerSource += "compositeISO(result, color, t, tDepth, 0.5);\n";
-            break;
-        case 3: headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-            break;
-        case 4: headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
-            break;
-    }
+    if (compositingMode2_.get() == "dvr")
+        headerSource += "compositeDVR(result, color, t, tDepth);\n";
+    else if (compositingMode2_.get() == "mip")
+        headerSource += "compositeMIP(result, color, t, tDepth);\n";
+    else if (compositingMode2_.get() == "iso")
+        headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
+    else if (compositingMode2_.get() == "fhp")
+        headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+    else if (compositingMode2_.get() == "fhn")
+        headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
-    // map ports to render targets
-    int active = 0;
-    for (int i=0; i < 3; i++) {
-        std::ostringstream op, num;
-        op << i;
-        num << active;
-        if (destActive_[i]) {
-            headerSource += "#define OP" + op.str() + " " + num.str() + "\n";
-            active++;
-        }
-    }
-
+    portGroup_.reattachTargets();
+    headerSource += portGroup_.generateHeader();
     return headerSource;
-}
-
-void SingleVolumeRaycaster::raycastingQualityChanged() {
-    if (raycastingQualityFactor_->getValue() > 2.f) {
-        if (maxProgramExecInstructions_ >= 0 && maxProgramExecInstructions_ <= 1024*1024) {
-            LWARNING("Raycasting quality '" << raycastingQualityFactor_->getId()
-                     << "' might be too high for this GPU, "
-                     << "rendering artifacts may appear.");
-        }
-    }
 }
 
 } // namespace

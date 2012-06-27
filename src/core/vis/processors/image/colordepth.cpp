@@ -28,72 +28,59 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/colordepth.h"
-#include "voreen/core/application.h"
 
-#include "tgt/texturemanager.h"
 
 namespace voreen {
 
-const Identifier ColorDepth::chromadepthTexUnit_ = "chromadepthTexUnit";
+const std::string ColorDepth::chromadepthTexUnit_ = "chromadepthTexUnit";
 
 ColorDepth::ColorDepth()
-    : ImageProcessorDepth("pp_colordepth"),
-      chromaDepthTex_(0),
-      factor_("set.colordepth.factor", "Factor", 1.0f, 0.0f, 10.0f, false)
+    : ImageProcessorDepth("pp_colordepth")
+    , chromaDepthTex_(0)
+    , colorMode_("mode", "Choose mode", INVALID_PROGRAM)
+    , factor_("factor", "Factor", 1.0f, 0.0f, 10.0f)
+    , inport_(Port::INPORT, "image.inport")
+    , outport_(Port::OUTPORT, "image.outport")
 {
-    setName("Color Depth");
 
     tm_.addTexUnit(chromadepthTexUnit_);
 
-    colorModes_.push_back("Light-dark (replace)");
-    colorModes_.push_back("Light-dark (modulate)");
-    colorModes_.push_back("Chromadepth");
-    colorModes_.push_back("Pseudo chromadepth");
-    colorMode_ = new EnumProp("set.colordepth.mode", "Choose mode:", colorModes_, 1, true, true);
+    colorMode_.addOption("light-dark-replace", "Light-dark (replace)", 0);
+    colorMode_.addOption("light-dark-modulate", "Light-dark (modulate)", 1);
+    colorMode_.addOption("chromadepth", "Chromadepth", 2);
+    colorMode_.addOption("pseudo-chromadepth", "Pseudo chromadepth", 3);
     addProperty(colorMode_);
 
-    addProperty(&factor_);
+    addProperty(factor_);
 
-    createInport("image.inport");
-    createOutport("image.outport");
+    addPort(inport_);
+    addPort(outport_);
 }
 
 ColorDepth::~ColorDepth() {
-    delete colorMode_;
     TexMgr.dispose(chromaDepthTex_);
 }
 
 const std::string ColorDepth::getProcessorInfo() const {
-    return "Performs a color filtering which encodes depth information";
+    return "Performs a color adaptation based on the depth information. There are four modes available. 'Light-dark' computes a gray value depending on the depth value. The current color can be modulated or replaced with this gray value. Additionally, a chromadepth or pseudo chromadepth color coding can be applied [Ropinski et al., Smartgraphics 2006].";
 }
 
-int ColorDepth::initializeGL() {
+void ColorDepth::initialize() throw (VoreenException) {
     chromaDepthTex_ = TexMgr.load(VoreenApplication::app()->getTransFuncPath("chromadepthspectrum.bmp"));
-    return ImageProcessor::initializeGL();
+    ImageProcessor::initialize();
 }
 
-void ColorDepth::process(LocalPortMapping* portMapping) {
-    int source = portMapping->getTarget("image.inport");
-    int dest = portMapping->getTarget("image.outport");
+void ColorDepth::process() {
+    analyzeDepthBuffer(&inport_);
 
-    analyzeDepthBuffer(source);
-
-    tc_->setActiveTarget(dest, "ColorDepth::process");
-
+    outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // bind shading result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    LGL_ERROR;
-
-    // bind depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-    LGL_ERROR;
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
 
     // bind chroma depth texture
     glActiveTexture(tm_.getGLTexUnit(chromadepthTexUnit_));
+    //chromaDepthTex_ is 0 here
     chromaDepthTex_->bind();
     LGL_ERROR;
 
@@ -102,10 +89,11 @@ void ColorDepth::process(LocalPortMapping* portMapping) {
     setGlobalShaderParameters(program_);
     program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
     program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
+    inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("chromadepthTex_", tm_.getTexUnit(chromadepthTexUnit_));
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());
-    program_->setUniform("colorMode_", colorMode_->get());
+    program_->setUniform("colorMode_", colorMode_.getValue());
     program_->setUniform("colorDepthFactor_", factor_.get());
 
     renderQuad();

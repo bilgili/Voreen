@@ -79,7 +79,7 @@ bool CommandGenerateMask::execute(const std::vector<std::string>& parameters) {
 
     if (target) {
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target);
         delete target;
         delete serializer;
@@ -103,7 +103,7 @@ CommandCreate::CommandCreate() :
 \t\tshadowtestvol: \n\
 \t\taorticarch: generates a bezier-shaped aorta with three arches",
 "<[cornell|cube|synth|blobs|blobs2|blobs3|sphere|doublesphere|spherecoord|cloud|aotestbox|shadowtestvol|aorticarch] SIZE OUT8>", 3)
-    
+
 {
     loggerCat_ += "." + name_;
 }
@@ -282,43 +282,43 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         VolumeUInt8* target2 = new VolumeUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
 
         LINFO("Generating blobs dataset with dimensions: " << dimensions);
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x, center.y, dimensions.z * 0.25f);
-		tgt::vec3 blob2 = tgt::vec3(center.x, center.y, dimensions.z * 0.75f);
+        tgt::vec3 blob1 = tgt::vec3(center.x, center.y, dimensions.z * 0.25f);
+        tgt::vec3 blob2 = tgt::vec3(center.x, center.y, dimensions.z * 0.75f);
 
         float radius = 0.22f / (float)dimensions.x * 32.0f;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
-		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
+        tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+        float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
 
-		max -= radius;
-        
+        max -= radius;
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-                    
-					float v = b1+b2;
-					v -= radius;
-                    
-					if(v >= max) 
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
-					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
-					else
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
+                    float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+                    float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+
+                    float v = b1+b2;
+                    v -= radius;
+
+                    if(v >= max)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
+                    else if(v > 0.0)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
+                    else
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
             }
         }
-        
-		VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+
+        VolumeSerializerPopulator volLoadPop;
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -326,43 +326,43 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         VolumeUInt8* target2 = new VolumeUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
 
         LINFO("Generating blobs2 dataset with dimensions: " << dimensions);
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
-		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
+        tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
+        tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
 
         float radius = 0.22f / (float)dimensions.x * 32.0f;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
-		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
+        tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+        float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
 
-		max -= radius;
-        
+        max -= radius;
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-                    
-					float v = b1+b2;
-					v -= radius;
-                    
-					if(v >= max) 
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
-					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
-					else
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
+                    float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+                    float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+
+                    float v = b1+b2;
+                    v -= radius;
+
+                    if(v >= max)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
+                    else if(v > 0.0)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
+                    else
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
             }
         }
-        
-		VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+
+        VolumeSerializerPopulator volLoadPop;
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -370,45 +370,45 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         VolumeUInt8* target2 = new VolumeUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
 
         LINFO("Generating blobs3 dataset with dimensions: " << dimensions);
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
-		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
-		tgt::vec3 blob3 = tgt::vec3(dimensions.x * 0.7f, center.y * 1.0f, dimensions.z * 0.5f);
+        tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
+        tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
+        tgt::vec3 blob3 = tgt::vec3(dimensions.x * 0.7f, center.y * 1.0f, dimensions.z * 0.5f);
 
         float radius = 0.32f / (float)dimensions.x * 32.0f;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
-		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m)) + (1.0f / distance(blob3, m));
+        tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+        float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m)) + (1.0f / distance(blob3, m));
 
-		max -= radius;
-        
+        max -= radius;
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b3 = 1.0f / distance(blob3, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+                    float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+                    float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
+                    float b3 = 1.0f / distance(blob3, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z));
 
-					float v = b1+b2+b3;
-					v -= radius;
-                    
-					if(v >= max) 
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
-					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
-					else
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
+                    float v = b1+b2+b3;
+                    v -= radius;
+
+                    if(v >= max)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
+                    else if(v > 0.0)
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
+                    else
+                        target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
             }
         }
-        
-	    VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+
+        VolumeSerializerPopulator volLoadPop;
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -416,7 +416,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         VolumeUInt8* target2 = new VolumeUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
 
         LINFO("Generating sphere dataset with dimensions: " << dimensions);
@@ -425,13 +425,13 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 //         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
 
         float radius = center.x * 0.8f;
-        
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
                     tgt::vec3 diff = center - tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z);
                     float r = length(diff);
-                    
+
                     if(r <= (float)radius) {
                         target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
                     }
@@ -441,9 +441,9 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
                 }
             }
         }
-        
+
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -452,7 +452,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         VolumeUInt8* target2 = new VolumeUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
         tgt::vec3 center2 = center;
         center2.x *= 1.2;
@@ -464,13 +464,13 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 
         float radius = center.x * 0.8f;
         float radius2 = center.x * 0.4f;
-        
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
                     tgt::vec3 diff = center2 - tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z);
                     float r = length(diff);
-                    
+
                     if(r <= radius2) {
                         target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
                     }
@@ -488,9 +488,9 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
                 }
             }
         }
-        
+
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -499,7 +499,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         delete target;
         target = 0;
         Volume4xUInt8* target2 = new Volume4xUInt8(dimensions);
-        
+
         tgt::vec3 center = dimensions / 2;
 
         LINFO("Generating sphere dataset with dimensions: " << dimensions);
@@ -508,26 +508,26 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 //         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
 
         float radius = center.x * 0.8f;
-        
+
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
                     tgt::vec3 diff = center - tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z);
                     float r = length(diff);
-                    
+
                     if(r <= (float)radius) {
                         //y,x
                         double theta = atan2(voxel_y-center.y, voxel_x-center.x);
                         theta += tgt::PI;
-                        
+
                         float phi = acos((voxel_z-center.z) / r);
-                        
+
                         target2->voxel(voxel_x, voxel_y, voxel_z).r = static_cast<uint8_t>(theta / (tgt::PI * 2.0) * 255.0);
                         target2->voxel(voxel_x, voxel_y, voxel_z).g = static_cast<uint8_t>(phi / tgt::PI * 255.0);
                         target2->voxel(voxel_x, voxel_y, voxel_z).b = static_cast<uint8_t>((float) r / (float) radius * 255.0f);
                         if(target2->voxel(voxel_x, voxel_y, voxel_z).b == 0)
                             target2->voxel(voxel_x, voxel_y, voxel_z).b = 1;
-                        
+
                         target2->voxel(voxel_x, voxel_y, voxel_z).a = static_cast<uint8_t>(255.0f - (((float) r / (float) radius) * 255.0f));
 //                         target2->voxel(voxel_x, voxel_y, voxel_z).a = value;
                     }
@@ -540,9 +540,9 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
                 }
             }
         }
-        
+
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target2);
         delete target2;
     }
@@ -739,7 +739,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
             fillSphere(petTarget, aortaSpline.getPoint((plaqueBegin+plaqueEnd)/2.f) - (plaqueDeviation + plaqueThickness), plaqueThickness - 2.f, plaqueIntensity);
 
             VolumeSerializerPopulator volLoadPop;
-            VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+            const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
             serializer->save(parameters.back() + "-pet.dat", petTarget);
             delete petTarget;
@@ -749,7 +749,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 
     if (target) {
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target);
         delete target;
     }

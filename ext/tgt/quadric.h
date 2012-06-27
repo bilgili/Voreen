@@ -224,7 +224,7 @@ public:
     Sphere( GLdouble radius, GLint slices, GLint stacks,
             bool visible = true, bool _static = true)
 
-      : Quadric(Bounds(vec3(0.f), vec3(0.f)), _static, visible),
+      : Quadric(Bounds(vec3(-(float)radius), vec3((float)radius)), _static, visible),
         radius_(radius),
         slices_(slices),
         stacks_(stacks)

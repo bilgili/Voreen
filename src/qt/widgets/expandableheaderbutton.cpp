@@ -50,7 +50,7 @@ ExpandableHeaderButton::ExpandableHeaderButton(const QString& name, QWidget* par
     expandLabel_->setMinimumWidth(20);
     expandLabel_->setMaximumWidth(20);
     frameLayout->addWidget(expandLabel_);
-    
+
     rendName_ = new QLabel();
     rendName_->setAlignment(Qt::AlignCenter);
     rendName_->setText(name);
@@ -60,7 +60,7 @@ ExpandableHeaderButton::ExpandableHeaderButton(const QString& name, QWidget* par
     lodControlSetHidden_ = new QToolButton;
     lodControlSetHidden_->setToolTip(tr("Hide all properties of this processor in visualization mode"));
     lodControlSetHidden_->setMaximumSize(15,15);
-    lodControlSetHidden_->setIcon(QIcon(":/icons/eye_crossedout.png"));
+    lodControlSetHidden_->setIcon(QIcon(":/voreenve/icons/eye-crossedout.png"));
     connect(lodControlSetHidden_, SIGNAL(clicked(bool)), this, SIGNAL(setLODHidden()));
     lodControlSetHidden_->hide();
     frameLayout->addWidget(lodControlSetHidden_);
@@ -68,7 +68,7 @@ ExpandableHeaderButton::ExpandableHeaderButton(const QString& name, QWidget* par
     lodControlSetVisible_ = new QToolButton;
     lodControlSetVisible_->setToolTip(tr("Show all properties of this processor in visualization mode"));
     lodControlSetVisible_->setMaximumSize(15,15);
-    lodControlSetVisible_->setIcon(QIcon(":/icons/eye.png"));
+    lodControlSetVisible_->setIcon(QIcon(":/voreenve/icons/eye.png"));
     connect(lodControlSetVisible_, SIGNAL(clicked(bool)), this, SIGNAL(setLODVisible()));
     lodControlSetVisible_->hide();
     frameLayout->addWidget(lodControlSetVisible_);
@@ -82,7 +82,7 @@ void ExpandableHeaderButton::mousePressEvent(QMouseEvent* event) {
         setExpanded(!isExpanded());
         emit toggled(isExpanded());
     }
-}   
+}
 
 void ExpandableHeaderButton::showLODControls() {
     lodControlSetHidden_->show();
@@ -105,9 +105,9 @@ bool ExpandableHeaderButton::isExpanded() const {
 
 void ExpandableHeaderButton::updateState() {
     if (expanded_)
-        expandLabel_->setPixmap(QPixmap(":/icons/expand1.png"));
+        expandLabel_->setPixmap(QPixmap(":/icons/expand-minus.png"));
     else
-        expandLabel_->setPixmap(QPixmap(":/icons/expand0.png"));
+        expandLabel_->setPixmap(QPixmap(":/icons/expand-plus.png"));
 
     expandLabel_->setVisible(userExpandable_);
 }

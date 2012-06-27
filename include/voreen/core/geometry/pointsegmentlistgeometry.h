@@ -40,10 +40,14 @@ template<class T>
 class PointSegmentListGeometry : public Geometry {
 
 public:
-    
-    PointSegmentListGeometry() : Geometry() { }
+
+    PointSegmentListGeometry() : 
+      Geometry(),
+      numPoints_(0)
+    { }
+
     virtual ~PointSegmentListGeometry() { }
-    
+
     virtual void draw() {
         glBegin(GL_POINTS);
         for (size_t i=0; i < segmentList_.size(); ++i){
@@ -56,9 +60,9 @@ public:
         glEnd();
     }
 
-    void setData(const std::vector< std::vector<T> >& segmentList) { 
-        
-        segmentList_ = segmentList; 
+    void setData(std::vector< std::vector<T> > segmentList) {
+
+        segmentList_ = segmentList;
         pointList_.clear();
         numPoints_ = 0;
         for (size_t i=0; i<segmentList_.size(); ++i) {
@@ -68,10 +72,17 @@ public:
         setHasChanged(true);
     }
 
+    void addSegment(std::vector<T> segment) { 
+        segmentList_.push_back(segment); 
+        pointList_.clear(); 
+        numPoints_ += static_cast<int>(segment.size());
+        setHasChanged(true);
+    }
+    
     const std::vector< std::vector<T> >& getData() const { return segmentList_; }
 
-    const std::vector<T>& getPoints() { 
-        
+    const std::vector<T>& getPoints() {
+
         // generate point list, if not present
         if (pointList_.empty() && numPoints_ > 0) {
             for (size_t i=0; i<segmentList_.size(); ++i) {
@@ -83,11 +94,11 @@ public:
     }
 
     int getNumSegments() const { return static_cast<int>(segmentList_.size()); }
-    
+
     int getNumPoints() const { return numPoints_; }
 
 protected:
-    
+
     // contains a list of segments, each segment consists of points
     std::vector< std::vector<T> > segmentList_;
 
@@ -98,6 +109,8 @@ protected:
     int numPoints_;
 
 };
+
+typedef PointSegmentListGeometry<tgt::vec3> PointSegmentListGeometryVec3;
 
 } // namespace
 

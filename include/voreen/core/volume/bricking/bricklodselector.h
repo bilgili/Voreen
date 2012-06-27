@@ -45,7 +45,7 @@ public:
     BrickLodSelector(BrickingInformation& brickingInformation);
 
     virtual ~BrickLodSelector() {}
-    
+
     /**
      * Assigns a level of detail to every VolumeBrick in the brickingInformation.volumeBricks
      * vector.

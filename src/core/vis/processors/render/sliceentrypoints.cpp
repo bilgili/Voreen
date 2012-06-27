@@ -29,6 +29,8 @@
 
 #include "voreen/core/vis/processors/render/sliceentrypoints.h"
 
+#include "voreen/core/vis/properties/cameraproperty.h"
+
 namespace voreen {
 
 using tgt::vec3;
@@ -38,9 +40,7 @@ using tgt::mat4;
 SliceEntryPoints::SliceEntryPoints()
     : EntryExitPoints()
 {
-    createInport("volumehandle.volumehandle");
-    createCoProcessorInport("coprocessor.proxygeometry");
-    createOutport("image.entrypoints");
+
 }
 
 
@@ -56,48 +56,47 @@ std::string SliceEntryPoints::generateHeader() {
     return header;
 }
 
-void SliceEntryPoints::process(LocalPortMapping* portMapping) {
+void SliceEntryPoints::process() {
+
+    if (!inport_.isReady())
+        return;
+
     LGL_ERROR;
 
-    EntryExitPoints::process(portMapping);
+    EntryExitPoints::process();
 
-    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle")) == false)
-    {
+    if (!entryPort_.isReady())
         return;
-    }
-
-    int entrySource = portMapping->getTarget("image.entrypoints"); // render directly in final texture
-    PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
 
     // set volume parameters
     std::vector<VolumeStruct> volumes;
     volumes.push_back(VolumeStruct(
-        currentVolumeHandle_->getVolumeGL(),
+        inport_.getData()->getVolumeGL(),
         "",                             // we do not need the volume itself...
         "",
         "volumeParameters_")            // ... but its parameters
     );
 
-    tc_->setActiveTarget(entrySource, "entry");
+    entryPort_.activateTarget();
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_->getViewMatrix());
+    tgt::loadMatrix(camera_.get()->getViewMatrix());
 
     shaderProgram_->activate();
-    setGlobalShaderParameters(shaderProgram_);
+    setGlobalShaderParameters(shaderProgram_, camera_.get());
     bindVolumes(shaderProgram_, volumes);
     glEnable(GL_DEPTH_TEST);
     LGL_ERROR;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     LGL_ERROR;
 
-    pg->call("render");
+    if (cpPort_.getConnectedProcessor())
+        cpPort_.getConnectedProcessor()->render();
 
     shaderProgram_->deactivate();
 

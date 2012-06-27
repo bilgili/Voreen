@@ -30,20 +30,6 @@
 #ifndef VRN_THRESHOLD_H
 #define VRN_THRESHOLD_H
 
-//TODO: Check if all of this is needed
-#include <vector>
-#include <string>
-
-#include "tgt/shadermanager.h"
-#include "tgt/quadric.h"
-#include "tgt/types.h"
-
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
-#include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/properties/property.h"
-#include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
@@ -52,42 +38,30 @@ namespace voreen {
  * Performs a thresholding.
  *
  * The pixel color is used, when the surrounding pixel exceed a defined
- * threshold is exceeded and black otherwise.
+ * threshold and the pixel is set to transparent otherwise.
  *
- * It's probably a slow filter because an if instruction is used internally.
+ * It's probably a slow filter because an if statement is used internally.
  */
 class Threshold : public ImageProcessor {
 public:
     /**
      * The Constructor.
-     *
-     * @param camera The camera from wich we will get information about the current modelview-matrix.
-     * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     Threshold();
-    virtual const Identifier getClassName() const {return "ImageProcessor.Threshold";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Threshold"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_TESTING; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new Threshold();}
 
-    void process(LocalPortMapping* portmapping);
-
-    /**
-     * Sets the threshold to be used.
-     *
-     * @param threshold The threshold.
-     */
-    void setThreshold(float threshold);
-
-    /**
-     * Sets the delta parameter
-     *
-     * @param delta
-     */
-    void setDelta(float delta);
+    void process();
 
 protected:
-    FloatProp threshold_;
-    FloatProp delta_;
+    FloatProperty threshold_; ///< The threshold used to compare the sum of the lengths of the tested colors
+
+    RenderPort inport_;
+    RenderPort outport_;
 };
 
 

@@ -28,83 +28,83 @@
  **********************************************************************/
 
 #include "voreen/core/vis/properties/vectorproperty.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 namespace voreen {
 
-FloatVec2Prop::FloatVec2Prop(const std::string& id, const std::string& guiText,
+FloatVec2Property::FloatVec2Property(const std::string& id, const std::string& guiText,
                              const tgt::vec2& value, const tgt::vec2& minValue,
-                             const tgt::vec2& maxValue, bool invalidate, bool invalidateShader)
+                             const tgt::vec2& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::vec2>(id, guiText, value, minValue, maxValue, tgt::vec2(0.1f),
-        invalidate, invalidateShader)
+        invalidationLevel)
 {}
 
-PropertyWidget* FloatVec2Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* FloatVec2Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
 //---------------------------------------------------------------------------
 
-FloatVec3Prop::FloatVec3Prop(const std::string& id, const std::string& guiText,
+FloatVec3Property::FloatVec3Property(const std::string& id, const std::string& guiText,
                              const tgt::vec3& value, const tgt::vec3& minValue,
-                             const tgt::vec3& maxValue, bool invalidate, bool invalidateShader)
+                             const tgt::vec3& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::vec3>(id, guiText, value, minValue, maxValue, tgt::vec3(0.1f),
-        invalidate, invalidateShader)
+        invalidationLevel)
 {}
 
-PropertyWidget* FloatVec3Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* FloatVec3Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
 //---------------------------------------------------------------------------
 
-FloatVec4Prop::FloatVec4Prop(const std::string& id, const std::string& guiText,
+FloatVec4Property::FloatVec4Property(const std::string& id, const std::string& guiText,
                              const tgt::vec4& value, const tgt::vec4& minValue,
-                             const tgt::vec4& maxValue, bool invalidate, bool invalidateShader)
+                             const tgt::vec4& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::vec4>(id, guiText, value, minValue, maxValue, tgt::vec4(0.1f),
-        invalidate, invalidateShader)
+        invalidationLevel)
 {}
 
-PropertyWidget* FloatVec4Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* FloatVec4Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
 //---------------------------------------------------------------------------
 
-IntVec2Prop::IntVec2Prop(const std::string& id, const std::string& guiText,
+IntVec2Property::IntVec2Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec2& value, const tgt::ivec2& minValue,
-                         const tgt::ivec2& maxValue, bool invalidate, bool invalidateShader)
+                         const tgt::ivec2& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::ivec2>(id, guiText, value, minValue, maxValue, tgt::ivec2(1),
-            invalidate, invalidateShader)
+            invalidationLevel)
 {}
 
-PropertyWidget* IntVec2Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* IntVec2Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
 //---------------------------------------------------------------------------
 
-IntVec3Prop::IntVec3Prop(const std::string& id, const std::string& guiText,
+IntVec3Property::IntVec3Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec3& value, const tgt::ivec3& minValue,
-                         const tgt::ivec3& maxValue, bool invalidate, bool invalidateShader)
+                         const tgt::ivec3& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::ivec3>(id, guiText, value, minValue, maxValue, tgt::ivec3(1),
-        invalidate, invalidateShader)
+        invalidationLevel)
 {}
 
-PropertyWidget* IntVec3Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* IntVec3Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
 //---------------------------------------------------------------------------
 
-IntVec4Prop::IntVec4Prop(const std::string& id, const std::string& guiText,
+IntVec4Property::IntVec4Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec4& value, const tgt::ivec4& minValue,
-                         const tgt::ivec4& maxValue, bool invalidate, bool invalidateShader)
+                         const tgt::ivec4& maxValue, Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<tgt::ivec4>(id, guiText, value, minValue, maxValue, tgt::ivec4(1),
-        invalidate, invalidateShader)
+        invalidationLevel)
 {}
 
-PropertyWidget* IntVec4Prop::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* IntVec4Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

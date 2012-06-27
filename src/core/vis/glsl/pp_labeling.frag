@@ -32,7 +32,7 @@
 #include "modules/mod_sampler2d.frag"
 
 uniform SAMPLER2D_TYPE labelTex_;        // label texture
-uniform vec2 texCoordScale_;            // scale factor for texture coordinates, depending on texture target type
+uniform TEXTURE_PARAMETERS textureParameters_;
 
 /***
  * The main method.
@@ -41,7 +41,7 @@ void main() {
 
     // texture coordinates are normalized but textureLookup2D expects
     // fragment coordinates => scale
-    gl_FragColor = textureLookup2D(labelTex_, gl_TexCoord[0].st*texCoordScale_);
+    gl_FragColor = textureLookup2Dnormalized(labelTex_, textureParameters_, gl_TexCoord[0].st);
 
     gl_FragDepth = 0.0;
 

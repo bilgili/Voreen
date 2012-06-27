@@ -32,6 +32,8 @@
 
 class TiXmlElement;
 
+#include "voreen/core/io/serialization/serialization.h"
+
 #include "tgt/vector.h"
 #include "tgt/tgt_gl.h"
 
@@ -40,7 +42,7 @@ namespace voreen {
 /**
  * Abstract base class for all primitives that are used in 2D transfer functions.
  */
-class TransFuncPrimitive {
+class TransFuncPrimitive : public AbstractSerializable {
 public:
     /**
      * Standard constructor
@@ -169,6 +171,16 @@ public:
     virtual void deselect();
 
     /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
+    /**
      * Saves the primitive in the given Xml element.
      *
      * @param root Xml element the values are saved in
@@ -269,6 +281,16 @@ public:
      * @return true when moved coordinates are lying in the interval [0,1] and false otherwise
      */
     bool move(tgt::vec2 offset);
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     /**
      * Saves the coordinates of the quad in the given Xml element.
@@ -376,6 +398,16 @@ public:
      * @return true when moved coordinates are lying in the interval [0,1] and false otherwise
      */
     bool move(tgt::vec2 offset);
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     /**
      * Saves the coordinates of the 4 vertices in the given Xml element.

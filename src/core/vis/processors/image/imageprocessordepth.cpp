@@ -33,22 +33,22 @@ namespace voreen {
 
 ImageProcessorDepth::ImageProcessorDepth(const std::string& shaderFilename)
     : ImageProcessor(shaderFilename)
-    , minDepth_("set.minDepthPP", "Mindepth", 0.0f)
-    , maxDepth_("set.maxDepthPP", "Maxdepth", 1.0f)
-{
-}
+    , minDepth_("minDepth", "Mindepth", 0.0f)
+    , maxDepth_("maxDepth", "Maxdepth", 1.0f)
+{}
 
 /*
 * Read back depth buffer and determine min and max depth value.
 */
-void ImageProcessorDepth::analyzeDepthBuffer(int source) {
-    float* pixels = tc_->getDepthTargetAsFloats(source);
-    float* depthImg = pixels;
+void ImageProcessorDepth::analyzeDepthBuffer(RenderPort* port) {
+    port->getDepthTexture()->downloadTexture();
+    float* pixels = (float*)port->getDepthTexture()->getPixelData();
+    //float* depthImg = pixels;
     float curDepth = *(pixels);
     minDepth_.set(curDepth);
     maxDepth_.set(curDepth);
-    for (int x = 0; x < tc_->getSize().x; ++x) {
-        for (int y = 0; y < tc_->getSize().y; ++y) {
+    for (int x = 0; x < port->getSize().x; ++x) {
+        for (int y = 0; y < port->getSize().y; ++y) {
             curDepth = *(pixels++);
             if (minDepth_.get() == 0.0f)
                 minDepth_.set(curDepth);
@@ -61,7 +61,7 @@ void ImageProcessorDepth::analyzeDepthBuffer(int source) {
         }
     }
 
-    //#define SAVE_DEPTH_BUFFER
+//#define SAVE_DEPTH_BUFFER
 #ifdef SAVE_DEPTH_BUFFER
     // save image for test purpose
     ILuint img;
@@ -75,7 +75,7 @@ void ImageProcessorDepth::analyzeDepthBuffer(int source) {
     ilSaveImage("depth.bmp");
     ilDeleteImages(1, &img);
 #endif
-    delete[] depthImg;
+    port->getDepthTexture()->destroy();
 }
 
 

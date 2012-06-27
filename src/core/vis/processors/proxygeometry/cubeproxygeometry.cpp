@@ -28,7 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/proxygeometry/cubeproxygeometry.h"
-#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/interaction/camerainteractionhandler.h"
 
 #include "tgt/vector.h"
 #include "tgt/plane.h"
@@ -41,33 +41,30 @@ using tgt::vec3;
 using tgt::vec4;
 
 CubeProxyGeometry::CubeProxyGeometry()
-    : ProxyGeometry(),
-      useClipping_(setUseClipping_, "Use clipping", true),
-      clipLeftX_(setLeftClipPlane_, "Left clipping plane", 0, 0, 100, true),
-      clipRightX_(setRightClipPlane_, "Right clipping plane", 0, 0, 100, true),
-      clipUpY_(setTopClipPlane_, "Top clipping plane", 0, 0, 100, true),
-      clipDownY_(setBottomClipPlane_, "Bottom clipping plane", 0, 0, 100, true),
-      clipFrontZ_(setFrontClipPlane_, "Front clipping plane", 0, 0, 100, true),
-      clipBackZ_(setBackClipPlane_, "Back clipping plane", 0, 0, 100, true),
-      brickSelectionPriority_("set.bricking.region.priority", "Region Priority", 1, 0, 100, true),
-      dl_(0),
-      useVirtualClipplane_("switch.virtualClipplane", "Use virtual clipping plane", false),
-      clipPlane_("set.virtualClipplane", "Plane equation", vec4(1.f/5.f, 2.f/5.f, 1.f, 0.3f),
+    : ProxyGeometry()
+    , useClipping_(setUseClipping_, "Use clipping", true)
+    , clipLeftX_(setLeftClipPlane_, "Left clipping plane", 0, 0, 100000, true)
+    , clipRightX_(setRightClipPlane_, "Right clipping plane", 0, 0, 10000, true)
+    , clipUpY_(setTopClipPlane_, "Top clipping plane", 0, 0, 100000, true)
+    , clipDownY_(setBottomClipPlane_, "Bottom clipping plane", 0, 0, 100000, true)
+    , clipFrontZ_(setFrontClipPlane_, "Front clipping plane", 0, 0, 100000, true)
+    , clipBackZ_(setBackClipPlane_, "Back clipping plane", 0, 0, 100000, true)
+    , brickSelectionPriority_("regionPriority", "Region Priority", 1, 0, 100, true)
+    , dl_(0)
+    , useVirtualClipplane_("enableVirtualClipplane", "Use virtual clipping plane", false)
+    , clipPlane_("virtualClipplane", "Plane equation", vec4(1.f/5.f, 2.f/5.f, 1.f, 0.3f),
                  tgt::vec4(-10.f), tgt::vec4(10.f))
+    , oldHandle_(0)
 {
-    setName("CubeProxyGeometry");
 
+    //These actions are needed to check if the planes went beyond each other:
     clipLeftX_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setLeftClipPlane));
     clipRightX_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setRightClipPlane));
     clipUpY_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setTopClipPlane));
     clipDownY_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setBottomClipPlane));
     clipFrontZ_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setFrontClipPlane));
     clipBackZ_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::setBackClipPlane));
-
-    useClipping_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::markAsChanged));
-    useVirtualClipplane_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::markAsChanged));
-
-    addProperty(&useClipping_);
+    addProperty(useClipping_);
 
     // test of condition system
     clipPlane_.setVisible(false);
@@ -76,34 +73,70 @@ CubeProxyGeometry::CubeProxyGeometry()
     useVirtualClipplane_.onValueEqual(true, spva, spia);
     useVirtualClipplane_.set(false);
 
-    brickSelectionPropValues_.push_back("Select those bricks!");
-    brickSelectionPropValues_.push_back("Yep, select those bricks!");
-    brickSelectionProp_ = new EnumProp("select.bricks","Select bricks",
-            brickSelectionPropValues_,0,true,false);
+    addProperty(clipLeftX_);
+    addProperty(clipRightX_);
+    addProperty(clipDownY_);
+    addProperty(clipUpY_);
+    addProperty(clipFrontZ_);
+    addProperty(clipBackZ_);
+    addProperty(brickSelectionPriority_);
 
-    CallMemberAction<CubeProxyGeometry> defineBoxBrickingRegion(this,
-        &CubeProxyGeometry::defineBoxBrickingRegion);
-    brickSelectionProp_->onChange(defineBoxBrickingRegion);
+    addProperty(applyDatasetTransformationMatrix_);
 
+    //addProperty(useVirtualClipplane_);
+}
 
-    addProperty(&clipLeftX_);
-    addProperty(&clipRightX_);
-    addProperty(&clipDownY_);
-    addProperty(&clipUpY_);
-    addProperty(&clipFrontZ_);
-    addProperty(&clipBackZ_);
-   // addProperty(brickSelectionProp_);
-    addProperty(&brickSelectionPriority_);
+void CubeProxyGeometry::process() {
+    if (inport_.hasChanged()) {
+        volumeSize_ = inport_.getData()->getVolumeGL()->getVolume()->getCubeSize();
+        tgt::ivec3 numSlices = inport_.getData()->getVolumeGL()->getVolume()->getDimensions();
 
-    addProperty(&useDatasetTransformationMatrix_);
+        int oldMaxX = clipRightX_.getMaxValue();
+        int oldMaxY = clipUpY_.getMaxValue();
+        int oldMaxZ = clipBackZ_.getMaxValue();
 
-    //addProperty(&useVirtualClipplane_);
-    //addProperty(&clipPlane_);
+        clipLeftX_.setMaxValue(numSlices.x);
+        clipRightX_.setMaxValue(numSlices.x);
 
-    createInport("volumehandle.volumehandle");
-    createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
+        clipDownY_.setMaxValue(numSlices.y);
+        clipUpY_.setMaxValue(numSlices.y);
 
-    setIsCoprocessor(true);
+        clipFrontZ_.setMaxValue(numSlices.z);
+        clipBackZ_.setMaxValue(numSlices.z);
+
+        if ( (clipLeftX_.get() == 0)
+          && (clipRightX_.get() == 0)
+          && (clipDownY_.get() == 0)
+          && (clipUpY_.get() == 0)
+          && (clipFrontZ_.get() == 0)
+          && (clipBackZ_.get() == 0) ) {
+            //deserialized old (percent normalized) values...reset clipping:
+            clipRightX_.set(numSlices.x);
+            clipUpY_.set(numSlices.y);
+            clipBackZ_.set(numSlices.z);
+        }
+        else {
+            if(oldHandle_ != 0) {
+                clipLeftX_.set(0);
+                clipDownY_.set(0);
+                clipFrontZ_.set(0);
+                clipRightX_.set(numSlices.x);
+                clipUpY_.set(numSlices.y);
+                clipBackZ_.set(numSlices.z);
+            }
+
+            if ( (oldMaxX == clipRightX_.get()) || (clipRightX_.get() > clipRightX_.getMaxValue()) )
+                clipRightX_.set(clipRightX_.getMaxValue());
+            if ( (oldMaxY == clipUpY_.get()) || (clipUpY_.get() > clipUpY_.getMaxValue()) )
+                clipUpY_.set(clipUpY_.getMaxValue());
+            if ( (oldMaxZ == clipBackZ_.get()) || (clipBackZ_.get() > clipBackZ_.getMaxValue()) )
+                clipBackZ_.set(clipBackZ_.getMaxValue());
+
+            oldHandle_ = inport_.getData();
+        }
+        //invalidate();
+    }
+    revalidateCubeGeometry();
 }
 
 const std::string CubeProxyGeometry::getProcessorInfo() const {
@@ -115,56 +148,37 @@ CubeProxyGeometry::~CubeProxyGeometry() {
         glDeleteLists(dl_, 1);
 }
 
-bool CubeProxyGeometry::getUseVirtualClipplane() {
-    return useVirtualClipplane_.get();
-}
-
 /**
  * Renders the OpenGL display list (and creates it, when needed).
  */
 void CubeProxyGeometry::render() {
-    if (volume_) {
-        
-        if (needsBuild_) {
-            revalidateCubeGeometry();
-            needsBuild_ = false;
-        }
-        
-        if (dl_) {
-            
-            // transform proxy geometry by dataset transformation matrix
-            if (useDatasetTransformationMatrix_.get()) {
-                glMatrixMode(GL_MODELVIEW);
-                glPushMatrix();
-                tgt::multMatrix(datasetTransformationMatrix_);
-            }
 
-            glCallList(dl_);
-            
-            // restore matrix stack
-            if (useDatasetTransformationMatrix_.get()) {
-                glPopMatrix();
-            }
+    tgtAssert(inport_.isReady(), "render() called with an not-ready inport");
+    tgtAssert(inport_.getData()->getVolume(), "no volume");
+
+    if (dl_) {
+        
+        // transform bounding box by dataset transformation matrix
+        if (applyDatasetTransformationMatrix_.get()) {
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
+        }
+
+        glCallList(dl_);
+
+        // restore matrix stack
+        if (applyDatasetTransformationMatrix_.get()) {
+            glPopMatrix();
         }
     }
-}
-
-tgt::vec3 CubeProxyGeometry::getClipPlaneLDF() {
-    return tgt::vec3(static_cast<float>(clipLeftX_.get()),
-                     static_cast<float>(clipDownY_.get()),
-                     static_cast<float>(clipFrontZ_.get()) );
-}
-
-tgt::vec3 CubeProxyGeometry::getClipPlaneRUB() {
-    return tgt::vec3(static_cast<float>(clipRightX_.get()),
-                     static_cast<float>(clipUpY_.get()),
-                     static_cast<float>(clipBackZ_.get()) );
 }
 
 void CubeProxyGeometry::revalidateCubeGeometry() {
     // The original size of the volume
     vec3 geomLlf = -(volumeSize_ / 2.f) + volumeCenter_;
     vec3 geomUrb = (volumeSize_  / 2.f) + volumeCenter_;
+    tgt::ivec3 numSlices = inport_.getData()->getVolumeGL()->getVolume()->getDimensions();
 
     float clipLeft = 0;
     float clipRight = 0;
@@ -174,12 +188,14 @@ void CubeProxyGeometry::revalidateCubeGeometry() {
     float clipBack = 0;
 
     if (useClipping_.get()) {
-        clipLeft = clipLeftX_.get() / 100.f;
-        clipRight = clipRightX_.get() / 100.f;
-        clipUp = clipUpY_.get() / 100.f;
-        clipDown = clipDownY_.get() / 100.f;
-        clipFront = clipFrontZ_.get() / 100.f;
-        clipBack = clipBackZ_.get() / 100.f;
+        clipLeft = clipLeftX_.get() / (float) numSlices.x;
+        clipRight = (numSlices.x - clipRightX_.get()) / (float) numSlices.x;
+
+        clipDown = clipDownY_.get() / (float) numSlices.y;
+        clipUp = (numSlices.y - clipUpY_.get()) / (float) numSlices.y;
+
+        clipFront = clipFrontZ_.get() / (float) numSlices.z;
+        clipBack = (numSlices.z - clipBackZ_.get()) / (float) numSlices.z;
 
         // clipping along the xyz axes
         geomLlf[0] += (volumeSize_[0] * clipLeft);
@@ -264,99 +280,6 @@ void CubeProxyGeometry::resetClippingPlanes() {
     clipUpY_.set(0);
 }
 
-void CubeProxyGeometry::processMessage(Message* msg, const Identifier& dest) {
-    ProxyGeometry::processMessage(msg, dest);
-
-    if (msg->id_ == setUseClipping_) {
-        useClipping_.set(msg->getValue<bool>());
-        markAsChanged();
-    }
-    else if (msg->id_ == setLeftClipPlane_) {
-        clipLeftX_.set(msg->getValue<int>());
-        setLeftClipPlane();
-    }
-    else if (msg->id_ == setRightClipPlane_) {
-        clipRightX_.set(msg->getValue<int>());
-        setRightClipPlane();
-    }
-    else if (msg->id_ == setTopClipPlane_) {
-        clipUpY_.set(msg->getValue<int>());
-        setTopClipPlane();
-    }
-    else if (msg->id_ == setBottomClipPlane_) {
-        clipDownY_.set(msg->getValue<int>());
-        setBottomClipPlane();
-    }
-    else if (msg->id_ == setFrontClipPlane_) {
-        clipFrontZ_.set(msg->getValue<int>());
-        setFrontClipPlane();
-    }
-    else if (msg->id_ == setBackClipPlane_) {
-        clipBackZ_.set(msg->getValue<int>());
-        setBackClipPlane();
-    }
-    else if (msg->id_ == "switch.virtualClipplane") {
-        useVirtualClipplane_.set(msg->getValue<bool>());
-        markAsChanged();
-    }
-    else if (msg->id_ == "set.virtualClipplane") {
-        clipPlane_.set(msg->getValue<vec4>());
-        markAsChanged();
-    }
-    else if (msg->id_ == resetClipPlanes_) {
-        resetClippingPlanes();
-        markAsChanged();
-    }
-}
-
-// methods for reaction on property changes
-void CubeProxyGeometry::setLeftClipPlane() {
-    if ((clipLeftX_.get() + clipRightX_.get()) >= 100)
-        clipRightX_.set(100 - clipLeftX_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::setRightClipPlane() {
-    if ((clipLeftX_.get() + clipRightX_.get()) >= 100)
-        clipLeftX_.set(100 - clipRightX_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::setTopClipPlane() {
-    if ((clipUpY_.get() + clipDownY_.get()) >= 100)
-        clipDownY_.set(100 - clipUpY_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::setBottomClipPlane() {
-    if ((clipUpY_.get() + clipDownY_.get()) >= 100)
-        clipUpY_.set(100 - clipDownY_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::setFrontClipPlane() {
-    if ((clipFrontZ_.get() + clipBackZ_.get()) >= 100)
-        clipBackZ_.set(100-clipFrontZ_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::setBackClipPlane() {
-    if ((clipBackZ_.get() + clipFrontZ_.get()) >= 100)
-        clipFrontZ_.set(100-clipBackZ_.get());
-
-    markAsChanged();
-}
-
-void CubeProxyGeometry::markAsChanged() {
-    needsBuild_ = true;
-    invalidate();
-}
-
 void CubeProxyGeometry::defineBoxBrickingRegion() {
     vec3 llfPlane = vec3(static_cast<float>(clipLeftX_.get()),
                      static_cast<float>(clipDownY_.get()),
@@ -385,4 +308,34 @@ void CubeProxyGeometry::defineBoxBrickingRegion() {
 
 }
 
+// methods for reaction on property changes
+void CubeProxyGeometry::setLeftClipPlane() {
+    if ((clipLeftX_.get() > clipRightX_.get()))
+        clipRightX_.set(clipLeftX_.get());
+}
+
+void CubeProxyGeometry::setRightClipPlane() {
+    if ((clipLeftX_.get() > clipRightX_.get()))
+        clipLeftX_.set(clipRightX_.get());
+}
+
+void CubeProxyGeometry::setTopClipPlane() {
+    if ((clipUpY_.get() < clipDownY_.get()))
+        clipDownY_.set(clipUpY_.get());
+}
+
+void CubeProxyGeometry::setBottomClipPlane() {
+    if ((clipUpY_.get() < clipDownY_.get()))
+        clipUpY_.set(clipDownY_.get());
+}
+
+void CubeProxyGeometry::setFrontClipPlane() {
+    if ((clipFrontZ_.get() > clipBackZ_.get()))
+        clipBackZ_.set(clipFrontZ_.get());
+}
+
+void CubeProxyGeometry::setBackClipPlane() {
+    if ((clipBackZ_.get() < clipFrontZ_.get()))
+        clipFrontZ_.set(clipBackZ_.get());
+}
 } // namespace

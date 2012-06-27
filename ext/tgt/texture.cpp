@@ -42,6 +42,7 @@ Texture::Texture(const tgt::ivec3& dimensions, GLint format, GLint internalforma
     , filter_(filter)
     , wrapping_(REPEAT)
     , priority_(-1.f)
+    , pixels_(0)
 {
     init(true, textureRectangle);
 }
@@ -55,6 +56,7 @@ Texture::Texture(const tgt::ivec3& dimensions, GLint format,
     , filter_(filter)
     , wrapping_(REPEAT)
     , priority_(-1.f)
+    , pixels_(0)
 {
     init(true, textureRectangle);
 }
@@ -140,7 +142,8 @@ int Texture::calcBpp() {
         case GL_ALPHA:
         case GL_INTENSITY:
         case GL_LUMINANCE:
-        case GL_DEPTH_COMPONENT:
+		case GL_DEPTH_COMPONENT:
+		case GL_DEPTH_COMPONENT24:
             numComponents = 1;
         break;
 
@@ -158,6 +161,7 @@ int Texture::calcBpp() {
         case 4:
         case GL_RGBA:
         case GL_BGRA:
+		case GL_RGBA16F_ARB:
             numComponents = 4;
         break;
 
@@ -167,6 +171,53 @@ int Texture::calcBpp() {
 
     bpp_ = typeSize * numComponents;
     return bpp_;
+}
+
+int Texture::getSizeOnGPU() {
+	int bpp = 0;
+    switch (internalformat_) {
+        case 1:
+        case GL_COLOR_INDEX:
+        case GL_RED:
+        case GL_GREEN:
+        case GL_BLUE:
+        case GL_ALPHA:
+        case GL_INTENSITY:
+        case GL_LUMINANCE:
+		case GL_DEPTH_COMPONENT:
+            bpp = 1;
+        break;
+
+        case 2:
+        case GL_LUMINANCE_ALPHA:
+		case GL_DEPTH_COMPONENT16:
+            bpp = 2;
+        break;
+
+        case GL_RGB:
+        case GL_BGR:
+		case GL_DEPTH_COMPONENT24:
+            bpp= 3;
+        break;
+
+        case GL_RGBA:
+        case GL_BGRA:
+		case GL_DEPTH_COMPONENT32:
+			bpp = 4;
+			break;
+
+		case GL_RGB16F_ARB:
+             bpp = 6;
+        break;
+
+		case GL_RGBA16F_ARB:
+             bpp = 8;
+        break;
+
+        default:
+		break;
+    }
+	return hmul(dimensions_)*bpp;
 }
 
 GLenum Texture::calcType(bool textureRectangle) {

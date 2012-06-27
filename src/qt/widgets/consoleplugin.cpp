@@ -32,28 +32,45 @@
 
 #include "tgt/logmanager.h"
 
-
+#include <QApplication>
 #include <QVBoxLayout>
 
 namespace voreen {
 
 class ConsoleLogQt : public tgt::Log {
 public:
-    ConsoleLogQt(ConsolePlugin* plugin)
+    ConsoleLogQt(ConsolePlugin* plugin, std::string debugStyle = "", std::string infoStyle = "", 
+        std::string warnStyle = "", std::string errorStyle = "",
+        bool timeStamping = false, bool dateStamping = false, 
+        bool showCat = true, bool showLevel = true)
         : tgt::Log(),
-          plugin_(plugin)
+          plugin_(plugin),
+          debugStyle_(debugStyle),
+          infoStyle_(infoStyle),
+          warnStyle_(warnStyle),
+          errorStyle_(errorStyle)
     {
-        timeStamping_ = false;
-        dateStamping_ = false;
-        showCat_ = true;
-        showLevel_ = true;
+        timeStamping_ = timeStamping;
+        dateStamping_ = dateStamping;
+        showCat_ = showCat;
+        showLevel_ = showLevel;
     }
 
     bool isOpen() { return true; }
 
 protected:
-	void logFiltered(const std::string &cat, tgt::LogLevel level, const std::string &msg, const std::string & /*extendedInfo*/ ="") {
+    void logFiltered(const std::string &cat, tgt::LogLevel level, const std::string &msg, const std::string & /*extendedInfo*/ ="") {
         std::string output;
+
+        std::string style;
+        if (level == tgt::Debug)
+            style = debugStyle_;
+        else if (level == tgt::Info)
+            style = infoStyle_;
+        else if (level == tgt::Warning)
+            style = warnStyle_;
+        else if (level == tgt::Error)
+            style = errorStyle_;
 
         if (dateStamping_)
             output += "[" + getDateString() + "] ";
@@ -62,20 +79,27 @@ protected:
         if (showCat_)
             output += cat + " ";
         if (showLevel_)
-            output += "(" + getLevelString(level) + ") ";
-        if (output != "")
-            output += '\t';
+            output += "(" + getLevelString(level) + ")";
+        //output += "\t";
 
+        output += "&nbsp;&nbsp;";
+
+        output += "<span style=\"" + style + "\">";
         output += msg;
+        output += "</span>";
 
         plugin_->log(output);
     }
 
     ConsolePlugin* plugin_;
+    std::string debugStyle_;
+    std::string infoStyle_;
+    std::string warnStyle_;
+    std::string errorStyle_;
 };
 
-ConsolePlugin::ConsolePlugin(QWidget* parent, MessageReceiver* msgReceiver)
-  : WidgetPlugin(parent, msgReceiver)
+ConsolePlugin::ConsolePlugin(QWidget* parent)
+  : WidgetPlugin(parent)
 {
     setObjectName(tr("Console"));
 
@@ -85,8 +109,8 @@ ConsolePlugin::ConsolePlugin(QWidget* parent, MessageReceiver* msgReceiver)
     QVBoxLayout* vboxLayout = new QVBoxLayout();
     vboxLayout->addWidget(consoleText_);
     setLayout(vboxLayout);
-    
-    log_ = new ConsoleLogQt(this);
+
+    log_ = new ConsoleLogQt(this, "", "", "color: brown; font-weight: bold", "color: red; font-weight: bold");
     log_->addCat("", true, tgt::Info);
     LogMgr.addLog(log_);
 }

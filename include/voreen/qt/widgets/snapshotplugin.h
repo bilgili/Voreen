@@ -40,25 +40,26 @@ class QComboBox;
 
 namespace voreen {
 
-class VoreenPainter;
+class CanvasRenderer;
 
 class SnapshotPlugin : public WidgetPlugin {
     Q_OBJECT
 public:
-    SnapshotPlugin(QWidget* parent, VoreenPainter* painter);
+    SnapshotPlugin(QWidget* parent, CanvasRenderer* canvasRenderer);
     ~SnapshotPlugin();
 
     void createWidgets();
     void createConnections();
 
 public slots:
-    void makeSnapshot();
+    void takeSnapshot();
     void widthSpinChanged(int value);
     void heightSpinChanged(int value);
     void sizeComboChanged(int index);
+    void updateFromProcessor();
 
 private:
-    VoreenPainter* painter_;
+    CanvasRenderer* canvasRenderer_;
     QComboBox* sizeCombo_;
     QToolButton* buMakeSnapshot_;
     QSpinBox* spWidth_;

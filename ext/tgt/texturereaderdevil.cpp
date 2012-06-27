@@ -76,9 +76,12 @@ TextureReaderDevil::TextureReaderDevil() {
     ilEnable(IL_ORIGIN_SET); // Flip images
 }
 
+TextureReaderDevil::~TextureReaderDevil() {
+}
+
 Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::Filter filter,
                                          bool compress, bool keepPixels, bool createOGLTex,
-										 bool textureRectangle)
+                                         bool textureRectangle)
 {
 
 #ifndef GL_TEXTURE_RECTANGLE_ARB
@@ -97,7 +100,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
     ilBindImage(ImageName);
     Texture* t = new Texture();
     t->setName(filename);
-    
+
     File* file = FileSys.open(filename);
 
     // check if file is open
@@ -155,6 +158,14 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
             t->setFormat(GL_RGBA);
             break;
 
+        case 8: //16-bit per channel rgba
+            if (!ilConvertImage(IL_RGBA, IL_UNSIGNED_SHORT)) {
+                delete t;
+                return 0;
+            }
+            t->setFormat(GL_RGBA);
+            break;
+
         case 12: //HDR
             if (!ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE)) {
                 delete t;
@@ -162,6 +173,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
             }
             t->setFormat(GL_RGB);
             break;
+
         default:
             LERROR("Texturmanager: unsupported bpp " << filename);
     }
@@ -176,24 +188,28 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
 
 #ifdef GL_TEXTURE_RECTANGLE_ARB
     if (textureRectangle)
-		t->setType( GL_TEXTURE_RECTANGLE_ARB );
-	else
+        t->setType( GL_TEXTURE_RECTANGLE_ARB );
+    else
 #endif
-		t->setType( GL_TEXTURE_2D );
+        t->setType( GL_TEXTURE_2D );
 
     t->alloc();
     memcpy(t->getPixelData(), ilGetData(), t->getArraySize());
 
-    t->setDataType( GL_UNSIGNED_BYTE );
+    // TODO also include ints and floats as image types
+    if(ilGetInteger(IL_IMAGE_TYPE) == IL_UNSIGNED_SHORT)
+        t->setDataType( GL_UNSIGNED_SHORT );
+    else
+        t->setDataType( GL_UNSIGNED_BYTE );
 
-	bool success;
-	if (textureRectangle)
-		success = createRectangleTexture(t, filter, compress, createOGLTex);
-	else {
+    bool success;
+    if (textureRectangle)
+        success = createRectangleTexture(t, filter, compress, createOGLTex);
+    else {
         if (dims.y == 1)
             success = create1DTexture(t, filter, compress, createOGLTex);
         else
-		    success = create2DTexture(t, filter, compress, createOGLTex);
+            success = create2DTexture(t, filter, compress, createOGLTex);
     }
     if (!success) {
         ilDeleteImages(1, &ImageName);

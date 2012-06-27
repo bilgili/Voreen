@@ -31,6 +31,7 @@
 #define VRN_COLORDEPTHPP_H
 
 #include "voreen/core/vis/processors/image/imageprocessordepth.h"
+#include "voreen/core/application.h"
 
 namespace voreen {
 
@@ -42,30 +43,31 @@ class ColorDepth : public ImageProcessorDepth {
 public:
     /**
      * The Constructor.
-     *
-     * @param camera The camera from wich we will get information about the current modelview-matrix.
-     * @param tc The TextureContainer that will be used to manage TextureUnits for all
-     * render-to-texture work done by the PostProcessing.
      */
     ColorDepth();
     virtual ~ColorDepth();
 
-    virtual const Identifier getClassName() const { return "ImageProcessor.ColorDepth"; }
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "ColorDepth"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new ColorDepth(); }
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
-    void process(LocalPortMapping* portMapping);
+    void process();
 
 protected:
-    tgt::Texture* chromaDepthTex_;
-    EnumProp* colorMode_;
-    std::vector<std::string> colorModes_;
+    tgt::Texture* chromaDepthTex_; ///< The texture used for the chromadepth color coding
+    IntOptionProperty colorMode_; ///< The color mode to choose (Light-dark (replace/modulate), chromadepth, pseudo chromadepth)
 
-    FloatProp factor_;
+    FloatProperty factor_;  ///< Controls the influence of the depth values
 
-    static const Identifier chromadepthTexUnit_;
+    static const std::string chromadepthTexUnit_;
+
+    RenderPort inport_;
+    RenderPort outport_;
 };
 
 

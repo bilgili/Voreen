@@ -142,6 +142,7 @@ public:
     void initPainter();
 
     EventHandler* getEventHandler() const;
+    void setEventHandler(EventHandler* handler);
 
     /// make the canvas call glFlush/swap automatically or not
     void setAutoFlush(bool a) { autoFlush_ = a; };

@@ -95,7 +95,8 @@ uint64_t ProcessBenchmark::getTicks() {
     return ticks;
 }
 
-void ProcessBenchmark::processMessage(Message* msg, const Identifier& /*dest*/) {
+/*
+void ProcessBenchmark::processMessage(Message* msg, const std::string& dest) {
     if (msg->id_ == "processBenchmark.startTiming") {
         if (frameCount_ > 0) {
             LERROR("already timing, stop this first");
@@ -120,6 +121,6 @@ void ProcessBenchmark::processMessage(Message* msg, const Identifier& /*dest*/) 
     else if (msg->id_ == "processBenchmark.addProcessorName") {
         addProcessorName(msg->getValue<std::string>());
     }
-}
+}*/
 
 } // namespace

@@ -36,7 +36,7 @@
 
 namespace voreen {
 
-AboutBox::AboutBox(const QString& application, const QString& description, const QString& version, QWidget* parent)
+AboutBox::AboutBox(const QString& application, const QString& description, QWidget* parent)
     : QDialog(parent)
 {
     Ui::VoreenAboutBox ui;
@@ -44,9 +44,9 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QString s;
     s = ui.labelLeft->text();
-    s.replace("__VERSION__", "1.71");
-    s.replace("__APPLICATION__", description + " " + version);
-    s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 University of Münster"));
+    s.replace("__VERSION__", QString(VoreenVersion::getVersion().c_str()));
+    s.replace("__APPLICATION__", description);
+    s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 The Voreen team"));
     ui.labelLeft->setText(s);
 
 
@@ -59,9 +59,11 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QStringList developers;
     developers << QString::fromLatin1("Alexander Bock");
+    developers << QString::fromLatin1("Benjamin Bolte");
     developers << QString::fromLatin1("Christian Döring");
     developers << QString::fromLatin1("Jan Esser");
     developers << QString::fromLatin1("Dirk Feldmann");
+    developers << QString::fromLatin1("Timo Griese");
     developers << QString::fromLatin1("Jens Kasten");
     developers << QString::fromLatin1("Daniel Kirsch");
     developers << QString::fromLatin1("Roland Leißa");
@@ -70,9 +72,11 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
     developers << QString::fromLatin1("Borislav Petkov");
     developers << QString::fromLatin1("Stephan Rademacher");
     developers << QString::fromLatin1("Rainer Reich");
+    developers << QString::fromLatin1("Mona Riemenschneider");
     developers << QString::fromLatin1("Christoph Rosemann");
     developers << QString::fromLatin1("Jan Roters");
     developers << QString::fromLatin1("Michael Specht");
+    developers << QString::fromLatin1("Fabian Spiegel");
     developers << QString::fromLatin1("Christian Vorholt");
     developers << QString::fromLatin1("Frank Wisniewski");
 
@@ -91,6 +95,12 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     setWindowTitle(tr("About %1...").arg(application));
 
+#if (QT_VERSION >= 0x040400) && !defined(__APPLE__) && !defined(VRN_NO_STYLESHEET)   
+    setStyleSheet("QDialog { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #444444, stop:1 #aaaaaa) }\n"
+                  "QFrame#frame { background-color: #8E8E8E }");
+#endif
+
+    
     adjustSize();
 }
 

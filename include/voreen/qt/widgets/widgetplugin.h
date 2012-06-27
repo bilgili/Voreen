@@ -30,28 +30,27 @@
 #ifndef VRN_WIDGETPLUGIN_H
 #define VRN_WIDGETPLUGIN_H
 
+#include "voreen/core/vis/processors/processor.h"
+
 #include <list>
 
 #include <QWidget>
 #include <QIcon>
-
-#include "voreen/core/vis/message.h"
 
 namespace voreen {
 
 class WidgetPlugin : public QWidget {
     Q_OBJECT
 public:
-    WidgetPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0)
-        : QWidget(parent), msgReceiver_(msgReceiver)
+    WidgetPlugin(QWidget* parent = 0)
+        : QWidget(parent)
     {}
-    
+
     virtual ~WidgetPlugin() {}
 
     QIcon getIcon();
     virtual void createWidgets() = 0;
     virtual void createConnections() = 0;
-    virtual void setMessageReceiver(MessageReceiver* receiver);
 
     virtual bool usable(const std::vector<Processor*>& processors);
 
@@ -61,10 +60,8 @@ public slots:
     virtual void repaintCanvas();
 
 protected:
-    virtual void postMessage(Message* msg, const Identifier& dest = Message::all_);
 
     QIcon icon_;
-    MessageReceiver* msgReceiver_;
 };
 
 } // namespace voreen

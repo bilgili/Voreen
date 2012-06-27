@@ -28,57 +28,45 @@
  **********************************************************************/
 
 #include "voreen/core/vis/properties/transferfuncproperty.h"
-
 #include "voreen/core/vis/properties/condition.h"
+#include "voreen/core/vis/transfunc/transfuncfactory.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
 #include "voreen/core/vis/transfunc/transfuncmappingkey.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 #include "voreen/core/volume/volumehandle.h"
-#include "voreen/core/volume/volumeseries.h"
-#include "voreen/core/volume/volumeset.h"
-#include "voreen/core/volume/volumesetcontainer.h"
 
 namespace voreen {
 
-TransFuncProp::TransFuncProp(const Identifier& ident, const std::string& guiText, bool invalidate, bool invalidateShader, 
-                             TransFuncProp::Editors editors, bool lazyEditorInstantiation)
-    : TemplateProperty<TransFunc*>(ident.getName(), guiText, 0, invalidate, invalidateShader)
+TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string& guiText, Processor::InvalidationLevel invalidationLevel,
+                             TransFuncProperty::Editors editors, bool lazyEditorInstantiation)
+    : TemplateProperty<TransFunc*>(ident, guiText, 0, invalidationLevel)
     , volumeHandle_(0)
     , editors_(editors)
-    , manualRepaint_(false)
     , lazyEditorInstantiation_(lazyEditorInstantiation)
 {
     //start with intensity transfer function
     value_ = new TransFuncIntensity();
 }
 
-TransFuncProp::~TransFuncProp() {
+TransFuncProperty::~TransFuncProperty() {
     delete value_;
 }
 
-void TransFuncProp::enableEditor(TransFuncProp::Editors editor) {
+void TransFuncProperty::enableEditor(TransFuncProperty::Editors editor) {
     editors_ |= editor;
 }
 
-void TransFuncProp::disableEditor(TransFuncProp::Editors editor) {
+void TransFuncProperty::disableEditor(TransFuncProperty::Editors editor) {
     editors_ &= ~editor;
 }
 
-bool TransFuncProp::isEditorEnabled(TransFuncProp::Editors editor) {
+bool TransFuncProperty::isEditorEnabled(TransFuncProperty::Editors editor) {
     return (editors_ & editor);
 }
 
-void TransFuncProp::setManualRepaint(bool manual) {
-    manualRepaint_ = manual;
-}
-
-bool TransFuncProp::getManualRepaint() {
-    return manualRepaint_;
-}
-
-void TransFuncProp::set(TransFunc* tf) {
+void TransFuncProperty::set(TransFunc* tf) {
     //Normally this method is only called when the type of transfer function
     //changes. The plugins are working with a pointer and thus they only call
     //notifyChange() when the transfer function changes.
@@ -128,27 +116,19 @@ void TransFuncProp::set(TransFunc* tf) {
         // -> update to new tf and inform about change
         delete value_;
         value_ = tf;
-        // temporary action for invalidation of shader (needed to update the header of the shader)
-        InvalidateOwnerShaderAction shaderInvalidation(this);
-        shaderInvalidation.exec();
+        invalidateOwner(Processor::INVALID_PROGRAM);
         notifyChange();
     }
 }
 
-void TransFuncProp::setVolumeHandle(VolumeHandle* handle) {
-    if ((!volumeHandle_) || (volumeHandle_ && !volumeHandle_->isIdentical(handle))) {
-        clearObserverds();
+void TransFuncProperty::setVolumeHandle(VolumeHandle* handle) {
+
+    if (volumeHandle_ != handle) {
 
         volumeHandle_ = handle;
 
         if (volumeHandle_) {
-            // Add observer so we get notified when the volume is about to be deleted
-            if (handle->getParentSeries() && handle->getParentSeries()->getParentSet() &&
-                handle->getParentSeries()->getParentSet()->getParentContainer())
-            {
-                addObserved(handle->getParentSeries()->getParentSet()->getParentContainer());
-            }
-        
+
             // Resize texture of tf according to bitdepth of volume
             int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
             int max = static_cast<int>(pow(2.f, bits));
@@ -157,159 +137,61 @@ void TransFuncProp::setVolumeHandle(VolumeHandle* handle) {
             else
                 value_->setTextureDimension(max, max);
         }
-        
+
         updateWidgets();
     }
 }
 
-VolumeHandle* TransFuncProp::getVolumeHandle() const {
+VolumeHandle* TransFuncProperty::getVolumeHandle() const {
     return volumeHandle_;
 }
 
-Volume* TransFuncProp::getVolume() const {
+Volume* TransFuncProperty::getVolume() const {
     if (volumeHandle_)
         return volumeHandle_->getVolume();
     else
         return 0;
 }
 
-void TransFuncProp::notify(const Observable* const /*source*/) {
-    // Gets called when our VolumeSet is deleted
-    if (volumeHandle_) {
-        if (!volumeHandle_->getParentSeries() ||
-            !volumeHandle_->getParentSeries()->getParentSet() ||
-            !volumeHandle_->getParentSeries()->getParentSet()->getParentContainer())
-        {
-            // When it has no parent any more it was just removed from its series and is about
-            // to be deleted, so remove it here, too.
-            setVolumeHandle(0);
-        }
-    }
-}
+void TransFuncProperty::notifyChange() {
+    TransFuncIntensity* tfi = dynamic_cast<TransFuncIntensity*>(value_);
 
-void TransFuncProp::notifyChange() {    
+    if (tfi) {
+        ChangeData changeData;
+        BoxObject oldBO(tfi);
+        BoxObject newBO(tfi);
+        changeData.setOldValue(oldBO);
+        changeData.setNewValue(newBO);
+
+        for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++)
+            (*it)->onChange(changeData);
+    }
+
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)
         conditions_[j]->exec();
 
     //updateWidgets();  // disable for now, as it kills 2D TFs. joerg
+
+    // invalidate owner:
+    invalidateOwner();
 }
 
-void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
+void TransFuncProperty::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
 
-    std::string type = "TransFuncIntensity";
-    // try to read type of transfer function
-    if (propElem->Attribute("tfType") != 0) {
-        type = propElem->Attribute("tfType");
-    }
-    if (type == "TransFuncIntensity") {
-        TransFuncIntensity* newTf = new TransFuncIntensity();
-        TiXmlElement* keys = propElem->FirstChildElement("Keys");
-        if (keys) {
-            newTf->loadKeys(keys);
-            newTf->loadThreshold(propElem);
-        }
-        else {
-            // network file is outdated
-            // but for convenience we try to read tf from previous format
-            newTf->clearKeys();
-            TiXmlElement* markerElem;
-            for (markerElem = propElem->FirstChildElement("Marker");
-                 markerElem;
-                 markerElem = markerElem->NextSiblingElement("Marker"))
-            {
-                //first get the color
-                float value, dest;
-                tgt::col4 color;
-                tgt::ivec4 tmp;
-                if (markerElem->QueryFloatAttribute("source", &value) == TIXML_SUCCESS &&
-                    markerElem->QueryFloatAttribute("dest", &dest) == TIXML_SUCCESS &&
-                    markerElem->QueryIntAttribute("r", &tmp.r) == TIXML_SUCCESS &&
-                    markerElem->QueryIntAttribute("g", &tmp.g) == TIXML_SUCCESS &&
-                    markerElem->QueryIntAttribute("b", &tmp.b) == TIXML_SUCCESS &&
-                    markerElem->QueryIntAttribute("a", &tmp.a) == TIXML_SUCCESS)
-                {
-                    color.r = static_cast<uint8_t>(tmp.r);
-                    color.g = static_cast<uint8_t>(tmp.g);
-                    color.b = static_cast<uint8_t>(tmp.b);
-                    color.a = static_cast<uint8_t>(tmp.a);
-                    TransFuncMappingKey* myKey = new TransFuncMappingKey(value, color);
-                    myKey->setAlphaL(dest);
-                    if (markerElem->QueryFloatAttribute("splitdest", &dest) == TIXML_SUCCESS &&
-                        markerElem->QueryIntAttribute("splitr", &tmp.r) == TIXML_SUCCESS &&
-                        markerElem->QueryIntAttribute("splitg", &tmp.g) == TIXML_SUCCESS &&
-                        markerElem->QueryIntAttribute("splitb", &tmp.b) == TIXML_SUCCESS &&
-                        markerElem->QueryIntAttribute("splita", &tmp.a) == TIXML_SUCCESS)
-                    {
-                        myKey->setSplit(true);
-                        color.r = static_cast<uint8_t>(tmp.r);
-                        color.g = static_cast<uint8_t>(tmp.g);
-                        color.b = static_cast<uint8_t>(tmp.b);
-                        color.a = static_cast<uint8_t>(tmp.a);
-                        myKey->setColorR(color);
-                        myKey->setAlphaR(dest);
-                    }
-                    else
-                        myKey->setSplit(false);
-
-                    newTf->addKey(myKey);
-                }
-                else
-                    errors_.store(XmlElementException("A key for TransFuncIntensity could not be read correctly."));
-            }
-        }
-        // set new transfer function
-        set(newTf);
-    }
-    else if (type == "TransFuncIntensityGradient") {
-        TransFuncIntensityGradient* newTf = new TransFuncIntensityGradient();
-
-        TiXmlElement* elem = propElem->FirstChildElement("Primitives");
-        if (!elem)
-            errors_.store(XmlElementException("Primitive child not found. No primitives loaded."));
-        else
-            newTf->loadPrimitivesFromXml(elem);
-
-        newTf->textureUpdateNeeded();
-        set(newTf);
-    }
+    s.serialize("TransferFunction", value_);
 }
 
-TiXmlElement* TransFuncProp::serializeToXml() const {
-    TiXmlElement* root = Property::serializeToXml();
+void TransFuncProperty::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
 
-    if (getSerializeTypeInformation())
-        root->SetAttribute("class", "TransFuncProp");
-
-    if (typeid(*value_) == typeid(TransFuncIntensity)) {
-        // serialize type
-        root->SetAttribute("tfType", "TransFuncIntensity");
-
-        TransFuncIntensity* tf = static_cast<TransFuncIntensity*>(value_);
-        // serialize keys
-        TiXmlElement* keys = new TiXmlElement("Keys");
-        tf->saveKeys(keys);
-        root->LinkEndChild(keys);
-        // serialize thresholds
-        tf->saveThreshold(root);
-    }
-    else if (typeid(*value_) == typeid(TransFuncIntensityGradient)) {
-        // serialize type
-        root->SetAttribute("tfType", "TransFuncIntensityGradient");
-        TransFuncIntensityGradient* tf = static_cast<TransFuncIntensityGradient*>(value_);
-
-        // serialize primitives
-        TiXmlElement* primitives = new TiXmlElement("Primitives");
-        tf->savePrimitivesToXml(primitives);
-
-        root->LinkEndChild(primitives);
-    }
-
-    return root;
+    TransFunc* tf = 0;
+    s.deserialize("TransferFunction", tf);
+    set(tf);
 }
 
-PropertyWidget* TransFuncProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* TransFuncProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

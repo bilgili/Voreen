@@ -38,15 +38,14 @@ namespace voreen {
 using tgt::vec3;
 using tgt::vec4;
 
-const Identifier ProxyGeometry::setUseClipping_("set.UseClipping");
-const Identifier ProxyGeometry::setLeftClipPlane_("set.LeftClipPlane");
-const Identifier ProxyGeometry::setRightClipPlane_("set.RightClipPlane");
-const Identifier ProxyGeometry::setTopClipPlane_("set.TopClipPlane");
-const Identifier ProxyGeometry::setBottomClipPlane_("set.BottomClipPlane");
-const Identifier ProxyGeometry::setFrontClipPlane_("set.FrontClipPlane");
-const Identifier ProxyGeometry::setBackClipPlane_("set.BackClipPlane");
-const Identifier ProxyGeometry::resetClipPlanes_("reset.clipPlanes");
-const Identifier ProxyGeometry::getVolumeSize_("get.volumeSize");
+const std::string ProxyGeometry::setUseClipping_("useClipping");
+const std::string ProxyGeometry::setLeftClipPlane_("leftClipPlane");
+const std::string ProxyGeometry::setRightClipPlane_("rightClipPlane");
+const std::string ProxyGeometry::setTopClipPlane_("topClipPlane");
+const std::string ProxyGeometry::setBottomClipPlane_("bottomClipPlane");
+const std::string ProxyGeometry::setFrontClipPlane_("frontClipPlane");
+const std::string ProxyGeometry::setBackClipPlane_("backClipPlane");
+const std::string ProxyGeometry::resetClipPlanes_("clipPlanes");
 
 ProxyGeometry::ProxyGeometry()
     : VolumeRenderer()
@@ -54,41 +53,23 @@ ProxyGeometry::ProxyGeometry()
     , volumeSize_(tgt::vec3::zero)
     , volumeCenter_(tgt::vec3::zero)
     , volume_(0)
-    , useDatasetTransformationMatrix_("set.useDatasetTrafoMatrix", "Use data set trafo matrix", false, true)
-    , datasetTransformationMatrix_(tgt::mat4::identity)
-{}
-
-int ProxyGeometry::initializeGL() {
-    return VRN_OK;
+    , applyDatasetTransformationMatrix_("useDatasetTrafoMatrix", "Apply data set trafo matrix", true, Processor::INVALID_PARAMETERS)
+    , inport_(Port::INPORT, "volumehandle.volumehandle")
+    , cpPort_(Port::OUTPORT, "coprocessor.proxygeometry", true)
+{
+    addPort(inport_);
+    addPort(cpPort_);
 }
 
-void ProxyGeometry::process(LocalPortMapping* portMapping) {
-    bool changed = false;
-    const bool res = VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle"), &changed);
-
-    if ((res == true) && (changed == true)) {
-        volume_ = currentVolumeHandle_->getVolumeGL()->getVolume();
+void ProxyGeometry::process() {
+    if (inport_.isReady()) {
+        volume_ = inport_.getData()->getVolume();
         if (volume_) {
             needsBuild_ = true;
             // getCubeSize() returns the size mapped to [-1,1] and we want [-0.5,0.5] here
             volumeSize_ = volume_->getCubeSize();
-            // store dataset transformation matrix (is applied by render()-method)
-            datasetTransformationMatrix_ = volume_->meta().getTransformation();
         }
-    }
-}
-
-Message* ProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/) {
-    if (ident == "render") {
-        render();
-        return 0;
-    }
-    else if (ident == getVolumeSize_) {
-        return new Vec3Msg("", getVolumeSize()/2.f);
-    }
-    else
-        return 0;
+    } 
 }
 
 vec3 ProxyGeometry::getVolumeSize() {

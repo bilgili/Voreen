@@ -31,16 +31,16 @@
 * This file supplies the function to determine the samplings
 * that can be saved by adaptive sampling. Adaptive Sampling
 * means skipping samplings in bricks with lower resolutions.
-* By skipping a certain number of samples (instead of simply 
+* By skipping a certain number of samples (instead of simply
 * increasing the sampling distance) it is guaranteed that
 * one does not "jump" into the next brick and does not skip
-* potentially high resolution samples. For more information 
+* potentially high resolution samples. For more information
 * see the paper by Patrick Ljung ("Adaptive Sampling in
 * Single Pass, GPU-based Raycasting of Multiresolution Volumes")
-*/ 
+*/
 
 //Declare the two variables globally since they are needed
-//at multiple places in each shader using adaptive sampling. 
+//at multiple places in each shader using adaptive sampling.
 
 /**
 * The number of samples that can be skipped.
@@ -49,50 +49,50 @@ int numberOfSkippedSamples;
 
 /**
 * The ray direction multiplied by tIncr (aka step size between
-* two samples). This multiplication is done after normalization 
-* of the the ray direction. 
+* two samples). This multiplication is done after normalization
+* of the the ray direction.
 */
 vec3 directionWithStepSize;
 
 /**
 * Calculates the number of samples that can be skipped in
-* low resolution bricks. 
+* low resolution bricks.
 */
 int getNumberOfSkippedSamples(vec3 sample, vec3 direction) {
 
     //All calculations are done in block coordinates, so convert the
     //sample position.
-	vec3 blockCoordinates = convertToBlockCoordinates(sample); 
-	
-    //Convert the ray direction as well. 
+    vec3 blockCoordinates = convertToBlockCoordinates(sample);
+
+    //Convert the ray direction as well.
     direction = convertToBlockCoordinates(direction);
 
-	vec3 intraBlockCoordinates = fract(blockCoordinates);
+    vec3 intraBlockCoordinates = fract(blockCoordinates);
 
     //For more information about the calculation, see
     //Patrick Ljung's paper.
-	vec3 temp;
-	if (direction.x < 0.0)
-		temp.x = 0.0;
-	else temp.x = 1.0;
+    vec3 temp;
+    if (direction.x < 0.0)
+        temp.x = 0.0;
+    else temp.x = 1.0;
 
-	if (direction.y < 0.0)
-		temp.y = 0.0;
-	else temp.y = 1.0;
+    if (direction.y < 0.0)
+        temp.y = 0.0;
+    else temp.y = 1.0;
 
-	if (direction.z < 0.0)
-		temp.z = 0.0;
-	else temp.z = 1.0;
+    if (direction.z < 0.0)
+        temp.z = 0.0;
+    else temp.z = 1.0;
 
-	float term1 = (temp.x - intraBlockCoordinates.x) / direction.x;
-	float term2 = (temp.y - intraBlockCoordinates.y) / direction.y;
-	float term3 = (temp.z - intraBlockCoordinates.z) / direction.z;
+    float term1 = (temp.x - intraBlockCoordinates.x) / direction.x;
+    float term2 = (temp.y - intraBlockCoordinates.y) / direction.y;
+    float term3 = (temp.z - intraBlockCoordinates.z) / direction.z;
 
-	float steps = min(term1 , term2);
-	steps = min(steps , term3);
-	
-	float numberOfSkippedSamples = min (1.0 + floor(steps), currentScaleFactor);
-	int result = int(numberOfSkippedSamples);
+    float steps = min(term1 , term2);
+    steps = min(steps , term3);
 
-	return result;
+    float numberOfSkippedSamples = min (1.0 + floor(steps), currentScaleFactor);
+    int result = int(numberOfSkippedSamples);
+
+    return result;
 }

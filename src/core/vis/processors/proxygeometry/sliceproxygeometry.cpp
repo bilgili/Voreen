@@ -27,29 +27,22 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/proxygeometry/sliceproxygeometry.h"
 
 namespace voreen {
 
 using tgt::vec3;
 
-const Identifier SliceProxyGeometry::setSlicePos_("set.slicePos");
+const std::string SliceProxyGeometry::setSlicePos_("slicePos");
 
 SliceProxyGeometry::SliceProxyGeometry()
-  : ProxyGeometry(),
-    dl_(0),
-    slicePos_(setSlicePos_, "Slice", tgt::vec3(1.0f), tgt::vec3(0.0f), tgt::vec3(2.0f))
+  : ProxyGeometry()
+  , dl_(0)
+  , slicePos_(setSlicePos_, "Slice", tgt::vec3(5.0f), tgt::vec3(0.0f), tgt::vec3(10.0f))
 {
-    setName("Slice-ProxyGeometry");
 
     slicePos_.onChange(CallMemberAction<SliceProxyGeometry>(this, &SliceProxyGeometry::changeSlicePos));
-    addProperty(&slicePos_);
-
-    createInport("volumehandle.volumehandle");
-    createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
-
-    setIsCoprocessor(true);
+    addProperty(slicePos_);
 }
 
 const std::string SliceProxyGeometry::getProcessorInfo() const {
@@ -62,11 +55,15 @@ SliceProxyGeometry::~SliceProxyGeometry() {
         glDeleteLists(dl_, 1);
 }
 
+Processor* SliceProxyGeometry::create() const {
+    return new SliceProxyGeometry();
+}
+
 /**
  * Renders the OpenGL list (and creates it, when needed).
  */
 void SliceProxyGeometry::render() {
-    if (volume_) {
+    if (inport_.hasData()) {
         if (needsBuild_) {
             if (!dl_) {
                 dl_ = glGenLists(1);
@@ -82,30 +79,29 @@ void SliceProxyGeometry::revalidateSliceGeometry() {
     vec3 geomLlf = -volumeSize_/2.f;
     vec3 geomUrb = volumeSize_/2.f;
 
-    //vec3 texLlf = vec3(0.f);
-    //vec3 texUrb = vec3(1.f);
-    vec3 texLlf = (geomLlf + 1.f) /2.f;
-    vec3 texUrb = (geomUrb + 1.f) /2.f;
+    vec3 texLlf = vec3(0.f);
+    vec3 texUrb = vec3(1.f);
 
     // recreate display list
     glNewList(dl_, GL_COMPILE);
-    const tgt::vec3& slicePos = slicePos_.get();
+    const tgt::vec3 slicePosGeom = (slicePos_.get() / 10.f) * geomUrb * 2.f;
+    const tgt::vec3 slicePosTex = (slicePos_.get() / 10.f);
 
     glBegin(GL_QUADS);
-        glTexCoord3d(geomLlf[0]+slicePos.x, texLlf[1], texLlf[2]); glVertex3f(geomLlf[0]+slicePos.x, geomLlf[1], geomLlf[2]);
-        glTexCoord3d(geomLlf[0]+slicePos.x, texUrb[1], texLlf[2]); glVertex3f(geomLlf[0]+slicePos.x, geomUrb[1], geomLlf[2]);
-        glTexCoord3d(geomLlf[0]+slicePos.x, texUrb[1], texUrb[2]); glVertex3f(geomLlf[0]+slicePos.x, geomUrb[1], geomUrb[2]);
-        glTexCoord3d(geomLlf[0]+slicePos.x, texLlf[1], texUrb[2]); glVertex3f(geomLlf[0]+slicePos.x, geomLlf[1], geomUrb[2]);
+    glTexCoord3d(texLlf[0]+slicePosTex.x, texLlf[1], texLlf[2]); glVertex3f(geomLlf[0]+slicePosGeom.x, geomLlf[1], geomLlf[2]);
+    glTexCoord3d(texLlf[0]+slicePosTex.x, texUrb[1], texLlf[2]); glVertex3f(geomLlf[0]+slicePosGeom.x, geomUrb[1], geomLlf[2]);
+    glTexCoord3d(texLlf[0]+slicePosTex.x, texUrb[1], texUrb[2]); glVertex3f(geomLlf[0]+slicePosGeom.x, geomUrb[1], geomUrb[2]);
+    glTexCoord3d(texLlf[0]+slicePosTex.x, texLlf[1], texUrb[2]); glVertex3f(geomLlf[0]+slicePosGeom.x, geomLlf[1], geomUrb[2]);
 
-        //glTexCoord3d(texLlf[0], texLlf[1], texLlf[2]); glVertex3f(geomLlf[0], geomLlf[1]+slicePos.y, geomLlf[2]);
-        //glTexCoord3d(texLlf[0], texLlf[1], texUrb[2]); glVertex3f(geomLlf[0], geomLlf[1]+slicePos.y, geomUrb[2]);
-        //glTexCoord3d(texUrb[0], texLlf[1], texUrb[2]); glVertex3f(geomUrb[0], geomLlf[1]+slicePos.y, geomUrb[2]);
-        //glTexCoord3d(texUrb[0], texLlf[1], texLlf[2]); glVertex3f(geomUrb[0], geomLlf[1]+slicePos.y, geomLlf[2]);
+    glTexCoord3d(texLlf[0], texLlf[1]+slicePosTex.y, texLlf[2]); glVertex3f(geomLlf[0], geomLlf[1]+slicePosGeom.y, geomLlf[2]);
+    glTexCoord3d(texLlf[0], texLlf[1]+slicePosTex.y, texUrb[2]); glVertex3f(geomLlf[0], geomLlf[1]+slicePosGeom.y, geomUrb[2]);
+    glTexCoord3d(texUrb[0], texLlf[1]+slicePosTex.y, texUrb[2]); glVertex3f(geomUrb[0], geomLlf[1]+slicePosGeom.y, geomUrb[2]);
+    glTexCoord3d(texUrb[0], texLlf[1]+slicePosTex.y, texLlf[2]); glVertex3f(geomUrb[0], geomLlf[1]+slicePosGeom.y, geomLlf[2]);
 
-        //glTexCoord3d(texLlf[0], texLlf[1], texLlf[2]); glVertex3f(geomLlf[0], geomLlf[1], geomLlf[2]+slicePos.z);
-        //glTexCoord3d(texUrb[0], texLlf[1], texLlf[2]); glVertex3f(geomUrb[0], geomLlf[1], geomLlf[2]+slicePos.z);
-        //glTexCoord3d(texUrb[0], texUrb[1], texLlf[2]); glVertex3f(geomUrb[0], geomUrb[1], geomLlf[2]+slicePos.z);
-        //glTexCoord3d(texLlf[0], texUrb[1], texLlf[2]); glVertex3f(geomLlf[0], geomUrb[1], geomLlf[2]+slicePos.z);
+    glTexCoord3d(texLlf[0], texLlf[1], texLlf[2]+slicePosTex.z); glVertex3f(geomLlf[0], geomLlf[1], geomLlf[2]+slicePosGeom.z);
+    glTexCoord3d(texUrb[0], texLlf[1], texLlf[2]+slicePosTex.z); glVertex3f(geomUrb[0], geomLlf[1], geomLlf[2]+slicePosGeom.z);
+    glTexCoord3d(texUrb[0], texUrb[1], texLlf[2]+slicePosTex.z); glVertex3f(geomUrb[0], geomUrb[1], geomLlf[2]+slicePosGeom.z);
+    glTexCoord3d(texLlf[0], texUrb[1], texLlf[2]+slicePosTex.z); glVertex3f(geomLlf[0], geomUrb[1], geomLlf[2]+slicePosGeom.z);
     glEnd();
 
     glEndList();

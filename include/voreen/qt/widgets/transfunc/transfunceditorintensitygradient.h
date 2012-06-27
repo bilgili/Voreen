@@ -63,7 +63,7 @@ public:
      * @param parent the parent widget
      * @param orientation orientation of the widget, e.g. vertical or horizontal layout for the buttons
      */
-    TransFuncEditorIntensityGradient(TransFuncProp* prop, QWidget* parent = 0, Qt::Orientation orientation = Qt::Horizontal);
+    TransFuncEditorIntensityGradient(TransFuncProperty* prop, QWidget* parent = 0, Qt::Orientation orientation = Qt::Horizontal);
 
     /**
      * Destructor

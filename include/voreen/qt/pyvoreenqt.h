@@ -31,7 +31,16 @@
 #define PYVOREENQT_H
 
 #ifdef VRN_WITH_PYTHON
-    void initVoreenqtPythonModule();
+
+namespace voreen {
+
+class VoreenPythonQt {
+public:
+    VoreenPythonQt();
+};
+
+} // namespace
+
 #endif // VRN_WITH_PYTHON
 
 #endif // PYVOREENQT_H

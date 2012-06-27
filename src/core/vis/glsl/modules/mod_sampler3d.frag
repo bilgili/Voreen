@@ -46,7 +46,6 @@ struct VOLUME_PARAMETERS {
     int bitDepth_;                  // the volume's bit depth
     float bitDepthScale_;           // scaling factor that must be applied for normalizing the fetched texture value.
                                     // currently just used for 12 bit volumes, which actually use only 12 out of 16 bits.
-
 };
 
 /*

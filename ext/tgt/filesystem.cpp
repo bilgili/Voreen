@@ -25,17 +25,16 @@
 #include "tgt/filesystem.h"
 
 #include "tgt/types.h"
+#include "tgt/ziparchive.h"
 
 #include <algorithm>
+#include <string>
 #include <cstring>
+#include <cctype> // std::tolower
 #include <iostream>
 #include <fstream>
 #include <stack>
 #include <sys/stat.h>
-
-#ifdef TGT_HAS_ZLIB
-#include <zlib.h>
-#endif
 
 #ifndef WIN32
 #include <stdio.h>
@@ -91,77 +90,15 @@ union record {
     } header;
 };
 
-
-enum {
-    ZIPHEADERSIZE = 30
-};
-
-// structs for reading zip files:
-union zipheader {
-    char charptr[ZIPHEADERSIZE];
-    struct header {
-        uint32_t signature;  //(0x04034b50)
-        char versionNeeded[2];
-        char generalPurposeFlag[2];
-        char compressionMethod[2];
-        char lastModTime[2];
-        char lastModDate[2];
-        char crc32[4];
-        uint32_t compressedSize;
-        uint32_t uncompressedSize;
-        uint16_t filenameLength[2];
-        uint16_t extraFieldLength[2];
-    } header;
-};
-
-enum {
-    ZIPEOCDRECORD = 22
-};
-
-union zipEOCheader {
-    char charptr[ZIPEOCDRECORD];
-    struct header {
-        uint32_t signature;  //(0x06054b50)
-        char numberOfDisc[2];
-        char numberOfDiscWithStartOfCD[2];
-        uint16_t numberOfEntriesInThisCD;
-        char numberOfEntriesInCD[2];
-        char sizeOfCD[4];
-        uint32_t offsetStartCD;
-        char commmentLength[2];
-    } header;
-};
-
-enum {
-    ZIPCENTRALHEADERSIZE = 46
-};
-
-union zipcentralheader {
-    char charptr[ZIPCENTRALHEADERSIZE];
-    struct header {
-        uint32_t signature;  //(0x02014b50)
-
-        char versionMadeBy[2];
-        char versionNeeded[2];
-        char generalPurposeFlag[2];
-        char compressionMethod[2];
-        char lastModTime[2];
-        char lastModDate[2];
-
-        char crc32[4];
-        char compressedSize[4];
-        char uncompressedSize[4];
-
-        uint16_t filenameLength;
-        uint16_t extraFieldLength;
-        uint16_t fileCommentLength;
-        char discNumberStart[2];
-        char internalFileAttributs[2];
-
-        char externalFileAttributs[4];
-        uint32_t localHeaderOffset;
-    } header;
-};
+size_t findDelim(char* buf, size_t size, char delim) {
+    size_t pos = 0;
+    while (pos < (size - 1)) {
+        if (buf[pos] == delim)
+            return pos;
+        ++pos;
+    }
+    return size+1;
+}
 
 } // anonymous namespace
 
@@ -178,20 +115,6 @@ File::File(const std::string& name)
 
 File::~File()
 {}
-
-namespace {
-
-size_t findDelim(char* buf, size_t size, char delim) {
-    size_t pos = 0;
-    while (pos < (size - 1)) {
-        if (buf[pos] == delim)
-            return pos;
-        ++pos;
-    }
-    return size+1;
-}
-
-} // namespace
 
 size_t File::readLine(char *buf, size_t maxCount, char delim) {
     size_t bytesread = 0;
@@ -223,7 +146,7 @@ std::string File::getLine(char delim) {
     size_t br = readLine(buf, LINE_BUFFERSIZE, delim);
     std::string ret(buf, br);
     while (br == LINE_BUFFERSIZE) {
-        size_t br = readLine(buf, LINE_BUFFERSIZE, delim);
+        br = readLine(buf, LINE_BUFFERSIZE, delim);
         ret.append(buf, br);
     }
     delete[] buf;
@@ -302,7 +225,7 @@ void RegularFile::seek(size_t pos) {
         file_.seekg(pos);
 }
 
-void RegularFile::seek(size_t offset, File::SeekDir seekDir) {
+void RegularFile::seek(std::streamoff offset, File::SeekDir seekDir) {
     if (isOpen()) {
         switch (seekDir)  {
         case File::BEGIN:
@@ -352,12 +275,12 @@ bool RegularFile::good() {
 //-----------------------------------------------------------------------------
 
 MemoryFile::MemoryFile(char* data, size_t size, const std::string& filename, bool deleteData)
-  : File(filename)
+  : File(filename),
+  data_(data),
+  pos_(0),
+  deleteData_(deleteData)
 {
-    data_ = data;
     size_ = size;
-    pos_ = 0;
-    deleteData_ = deleteData;
 }
 
 MemoryFile::~MemoryFile(){
@@ -397,17 +320,17 @@ void MemoryFile::seek(size_t pos) {
         pos_ = size_ - 1;
 }
 
-void MemoryFile::seek(size_t offset, File::SeekDir seekDir) {
+void MemoryFile::seek(std::streamoff offset, File::SeekDir seekDir) {
     switch (seekDir) {
-    case File::BEGIN:
-        seek(offset);
-        break;
-    case File::CURRENT:
-        seek(pos_+offset);
-        break;
-    case File::END:
-        pos_ = size_ - 1;
-        break;
+        case File::BEGIN:
+            seek(offset);
+            break;
+        case File::CURRENT:
+            seek(pos_+offset);
+            break;
+        case File::END:
+            pos_ = size_ - 1;
+            break;
     }
 }
 
@@ -416,7 +339,7 @@ size_t MemoryFile::tell() {
 }
 
 bool MemoryFile::eof() {
-    return (pos_ == size_ - 1);
+    return (pos_ >= size_ - 1);
 }
 
 bool MemoryFile::isOpen() {
@@ -506,7 +429,7 @@ void TarFile::seek(size_t pos) {
         file_->seek(offset_ + pos);
 }
 
-void TarFile::seek(size_t offset, File::SeekDir seekDir) {
+void TarFile::seek(std::streamoff offset, File::SeekDir seekDir) {
     if (file_)
         file_->seek(offset, seekDir);
 }
@@ -655,291 +578,36 @@ std::vector<std::string> TarFileFactory::getFilenames() {
 
 const std::string ZipFileFactory::loggerCat_("tgt.FileSystem.ZipFileFactory");
 
-ZipFileFactory::ZipFileFactory(const std::string& filename, const std::string& rootpath) {
-    filename_ = filename;
-    file_ = FileSys.open(filename.c_str());
-    // Check if file is open
-    if (!file_) {
-        LERROR("Failed to open Zip archive " << filename);
-        return;
-    }
-
-    if (!file_->good()) {
-        LERROR("Error opening Zip archive " << filename);
-        return;
-    }
-
-    LDEBUG("Reading Zip archive...");
-
-    LDEBUG("Reading central directory end header:");
-    file_->seek(-ZIPEOCDRECORD, File::END);
-    zipEOCheader* eocheader = new zipEOCheader;
-    file_->read(eocheader->charptr, ZIPEOCDRECORD);
-
-#ifndef tgtNOZIPCHECKS
-    if (eocheader->header.signature != 0x06054b50) {
-        LERROR("Signature of central directory end header does not match!");
-        return;
-    }
-#endif
-
-    unsigned int startOfCD = eocheader->header.offsetStartCD;
-    LDEBUG("Start offset of CD: " << startOfCD);
-
-    file_->seek(startOfCD, File::BEGIN);
-    unsigned short int entries = eocheader->header.numberOfEntriesInThisCD;
-    
-    LDEBUG("Reading " << entries << "entries in central directory...");
-
-    for (int i=0; i<entries; i++) {
-        zipcentralheader* h = new zipcentralheader;
-        file_->read(h->charptr, ZIPCENTRALHEADERSIZE);
-#ifndef tgtNOZIPCHECKS
-        if (h->header.signature != 0x02014b50) {
-            LERROR("Signature in central directoy header does not match!");
-            return;
-        }
-#endif
-        unsigned short int fnlength = h->header.filenameLength;
-        unsigned short int extralength = h->header.extraFieldLength;
-        unsigned short int commentlength = h->header.fileCommentLength;
-
-        char* fname = new char[fnlength+1];
-        file_->read(fname, fnlength);
-        fname[fnlength] = 0;
-        LDEBUG("Filename: " << fname);
-
-        unsigned short int* compMeth = (unsigned short int*) h->header.compressionMethod;
-        LDEBUG("Compression method: " << *compMeth);
-
-        switch (*compMeth) {
-        case 0:
-            LDEBUG("The file is stored (no compression)");
-            files_[rootpath+fname].offset_ = *(reinterpret_cast<unsigned int*>(h->header.localHeaderOffset));
-            LDEBUG("Added file " << fname << "@" << files_[rootpath+fname].offset_);
-            break;
-        case 1:
-            LWARNING("The file is Shrunk");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 2:
-            LWARNING("The file is Reduced with compression factor 1");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 3:
-            LWARNING("The file is Reduced with compression factor 2");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 4:
-            LWARNING("The file is Reduced with compression factor 3");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 5:
-            LWARNING("The file is Reduced with compression factor 4");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 6:
-            LWARNING("The file is Imploded");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 7:
-            LWARNING("Reserved for Tokenizing compression algorithm");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 8:
-            LDEBUG("The file is Deflated");
-#ifdef TGT_HAS_ZLIB
-            files_[rootpath+fname].offset_ = *(reinterpret_cast<unsigned int*>(h->header.localHeaderOffset));
-            LDEBUG("Added file " << fname << "@" << files_[rootpath+fname].offset_);
-#else
-            LWARNING("tgt was compiled without zlib support, file cannot be read and will not "
-                     "be added to filesystem!");
-#endif
-            break;
-        case 9:
-            LWARNING("Enhanced Deflating using Deflate64(tm)");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        case 10:
-            LWARNING("PKWARE Date Compression Library Imploding");
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-            break;
-        default:
-            LWARNING("Compression method unsupported, file will not be added to filesystem!");
-        }
-
-        file_->seek(extralength+commentlength, File::CURRENT);
-    }
+ZipFileFactory::ZipFileFactory(const std::string& filename, const std::string& /*rootpath*/)
+    : archive_(new ZipArchive(filename))
+{
 }
 
 ZipFileFactory::~ZipFileFactory() {
-    if (file_) {
-        file_->close();
-        delete file_;
-    }
+    delete archive_;
 }
 
 File* ZipFileFactory::open(const std::string& filename) {
-    std::map<std::string, ArchivedFile>::iterator it = files_.find(filename);
-    
-    if (it == files_.end())
+    if ((archive_->archiveExists() == true) && (archive_->open() == true))
+        return archive_->extractFile(filename, ZipArchive::TARGET_MEMORY);
+    else
         return 0;
-
-    file_->seek(it->second.offset_, File::BEGIN);
-
-    zipheader* currecord = new zipheader;
-    file_->read(currecord->charptr, ZIPHEADERSIZE);
-
-#ifndef tgtNOZIPCHECKS
-    LDEBUG("FileHeader:");
-    if (*(reinterpret_cast<unsigned int*>(currecord->header.signature)) != 0x04034b50) {
-        LERROR("Local signature does not match!");
-        delete currecord;
-        return 0;
-    }
-    LDEBUG("Version needed: " << (static_cast<int>(currecord->header.versionNeeded[0])) / 10 << "."
-           << (static_cast<int>(currecord->header.versionNeeded[0])) % 10);
-#endif
-
-    unsigned short int* genPurp = (unsigned short int*) currecord->header.generalPurposeFlag;
-
-    unsigned short int genpf = *genPurp;
-    char gpf[17];
-    for (int i=0; i<16; i++) {
-        gpf[i] = (genpf % 2) + 48;
-        genpf /= 2;
-    }
-    gpf[16] = 0;
-    LDEBUG("General purpose flag: " << gpf);
-    LDEBUG("General purpose flag (as int): " << genpf);
-
-    unsigned short int* compMeth = (unsigned short int*) currecord->header.compressionMethod;
-    LDEBUG("Compression method: " << *compMeth);
-
-    switch (*compMeth) {
-    case 0:
-        LDEBUG("The file is stored (no compression)");
-        break;
-    case 1:
-        LERROR("The file is Shrunk");
-        delete currecord;
-        return 0;
-    case 2:
-        LERROR("The file is Reduced with compression factor 1");
-        delete currecord;
-        return 0;
-    case 3:
-        LERROR("The file is Reduced with compression factor 2");
-        delete currecord;
-        return 0;
-    case 4:
-        LERROR("The file is Reduced with compression factor 3");
-        delete currecord;
-        return 0;
-    case 5:
-        LERROR("The file is Reduced with compression factor 4");
-        delete currecord;
-        return 0;
-    case 6:
-        LERROR("The file is Imploded");
-        delete currecord;
-        return 0;
-    case 7:
-        LERROR("Reserved for Tokenizing compression algorithm");
-        delete currecord;
-        return 0;
-    case 8:
-        LDEBUG("The file is Deflated");
-        break;
-    case 9:
-        LERROR("Enhanced Deflating using Deflate64(tm)");
-        delete currecord;
-        return 0;
-    case 10:
-        LERROR("PKWARE Date Compression Library Imploding");
-        delete currecord;
-        return 0;
-    default:
-        LERROR("Unknown compression method (>10)");
-        delete currecord;
-        return 0;
-    }
-
-    unsigned int csize = currecord->header.compressedSize;
-    LDEBUG("Compressed size: " << csize);
-    LDEBUG("Uncompressed size: " << currecord->header.uncompressedSize);
-    unsigned short int* fnlength = currecord->header.filenameLength;
-    unsigned short int* extralength = currecord->header.extraFieldLength;
-    LDEBUG("Filename length: " << *fnlength);
-    LDEBUG("Extra field length: " << *extralength);
-
-    char* fname = new char[(*fnlength)+1];
-    file_->read(fname, (*fnlength));
-    fname[(*fnlength)] = 0;
-    LDEBUG("Filename: " << fname);
-
-    file_->seek((*extralength), File::CURRENT);
-
-    size_t c = csize;
-
-    File* f = 0;
-
-    if (*compMeth == 8) {
-#ifdef TGT_HAS_ZLIB
-        char* cdata = new char[c+2];
-        file_->read(cdata+2, c);
-        //Zlib's Uncompress method expects the 2 byte head that the Compress method adds
-        //so we put that on first. Luckily it's always the same value.
-
-        cdata[0] = 120;
-        cdata[1] = 156;
-        uLongf uc = *reinterpret_cast<unsigned int*>(currecord->header.uncompressedSize);
-        uc += 12;
-        char* ucdata = new char[uc];
-        //deflate using zlib:
-        switch (uncompress ((Bytef*) ucdata, &uc, (Bytef*) cdata, c + 2)) {
-        case Z_OK:
-            LDEBUG("success");
-            break;
-        case Z_MEM_ERROR:
-            LDEBUG("there was not enough memory");
-            break;
-        case Z_BUF_ERROR:
-            LDEBUG("there was not enough room in the output buffer");
-            break;
-        case Z_DATA_ERROR:
-            LDEBUG("DATA ERROR");
-            break;
-        default:
-            LDEBUG("DEFAULT");
-        }
-        f = new MemoryFile(ucdata, uc, filename, true);
-        delete[] cdata;
-#endif
-    }
-    else {
-//         char* cdata = new char[c];
-//         file_->read(cdata, c);
-//         f = new MemoryFile(cdata, c, filename, true);
-
-        f = new TarFile(filename, filename_, file_->tell(), c);
-    }
-    return f;
 }
 
 std::vector<std::string> ZipFileFactory::getFilenames() {
-    std::vector<std::string> files;
-//FIXME: this does nothing
-    std::map<std::string, ArchivedFile>::iterator theIterator;
-    for (theIterator = files_.begin(); theIterator != files_.end(); theIterator++)
-        files.push_back((*theIterator).first);
-
-    return files;
+    return archive_->getContainedFileNames();
 }
 
 //-----------------------------------------------------------------------------
 
 const std::string FileSystem::loggerCat_("tgt.FileSystem.FileSystem");
+#ifdef WIN32
+const char FileSystem::goodSlash_ = '\\';
+const char FileSystem::badSlash_ = '/';
+#else
+const char FileSystem::goodSlash_ = '/';
+const char FileSystem::badSlash_ = '\\';
+#endif
 
 FileSystem::FileSystem() {
 }
@@ -1020,6 +688,72 @@ void FileSystem::addPackage(const std::string& filename, const std::string& root
 	}
 }
 
+namespace {
+
+const string PATH_SEPARATORS = "/\\";
+
+std::string replaceAllCharacters(const std::string& name, const char oldChar,
+                                 const char newChar)
+{
+    // the simplest algorithm but it should be fast enough
+    //
+    std::string conv(name);
+    for (size_t i = 0; i < conv.size(); ++i) {
+        if (conv[i] == oldChar)
+            conv[i] = newChar;
+    }
+    return conv;
+}
+
+// remove double and trailing path separators
+string cleanupPath(std::string path) {
+    string::size_type p = 0;
+    while (p != string::npos) {
+        // check all combinations of path separators
+        p = path.find("//");
+        if (p == string::npos)
+            p = path.find("\\\\");
+        if (p == string::npos)
+            p = path.find("\\/");
+        if (p == string::npos)
+            p = path.find("/\\");
+
+        if (p != string::npos)
+            path = path.substr(0, p) + path.substr(p + 1);
+    }
+
+    // remove trailing separator
+    if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
+        path = path.substr(0, path.size() - 1);
+
+#ifdef WIN32
+    // convert to native windows separators
+    path = replaceAllCharacters(path, '/', '\\');
+    // convert drive letter to uppercase
+    if (!path.empty() && isalpha(path[0]))
+        std::transform(path.begin(), path.begin()+1, path.begin(), toupper);
+#endif
+
+    return path;
+}
+
+size_t removeTrailingCharacters(std::string& str, const char trailer) {
+    if (str.empty())
+        return 0;
+
+    size_t pos = str.find_last_not_of(trailer);
+    if (pos != std::string::npos) {
+        size_t count = str.size() - (pos + 1);
+        str.resize(pos + 1);
+        return count;
+    }
+
+    return 0;
+}
+
+} // namespace
+
+
 //
 // static methods for the regular filesystem
 //
@@ -1053,64 +787,6 @@ string FileSystem::absolutePath(const string& path) {
     return path;
 }
 
-namespace {
-
-const string PATH_SEPARATORS = "/\\";
-
-// remove double and trailing path separators
-string cleanupPath(std::string path) {
-    string::size_type p = 0;
-    while (p != string::npos) {
-        // check all combinations of path separators
-        p = path.find("//");
-        if (p == string::npos)
-            p = path.find("\\\\");
-        if (p == string::npos)
-            p = path.find("\\/");
-        if (p == string::npos)
-            p = path.find("/\\");
-
-        if (p != string::npos)
-            path = path.substr(0, p) + path.substr(p + 1);
-    }
-
-    // remove trailing separator
-    if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
-        path = path.substr(0, path.size() - 1);
-
-    return path;
-}
-
-size_t removeTrailingCharacters(std::string& str, const char trailer) {
-    if (str.empty())
-        return 0;
-
-    size_t pos = str.find_last_not_of(trailer);
-    if (pos != std::string::npos) {
-        size_t count = str.size() - (pos + 1);
-        str.resize(pos + 1);
-        return count;
-    }
-
-    return 0;
-}
-
-std::string replaceAllCharacters(const std::string& name, const char oldChar,
-                                             const char newChar)
-{
-    // the simplest algorithm but it should be fast enough
-    //
-    std::string conv(name);
-    for (size_t i = 0; i < conv.size(); ++i) {
-        if (conv[i] == oldChar)
-            conv[i] = newChar;
-    }
-    return conv;
-}
-
-
-} // namespace
-
 std::string FileSystem::relativePath(const std::string& path, const std::string& dir) {
     // when there is no dir we just return the path
     if (dir.empty())
@@ -1121,8 +797,10 @@ std::string FileSystem::relativePath(const std::string& path, const std::string&
     string absdir = cleanupPath(absolutePath(dir)) + "/";
 
     // catch differing DOS-style drive names
-    if (abspath.size() < 1 || abspath.size() < 1 || abspath[0] != absdir[0])
-        return cleanupPath(abspath);
+    if (abspath.size() < 1 || abspath.size() < 1 || abspath[0] != absdir[0]) {
+        std::transform(abspath.begin(), abspath.begin()+1, abspath.begin(), static_cast<int (*)(int)>(std::tolower));
+        std::transform(absdir.begin(), absdir.begin()+1, absdir.begin(), static_cast<int (*)(int)>(std::tolower));
+    }
 
     // find common part in path and dir string
     string::size_type pospath = abspath.find_first_of(PATH_SEPARATORS);
@@ -1183,6 +861,14 @@ string FileSystem::fileExtension(const string& path, bool lowercase) {
     return extension;
 }
 
+bool FileSystem::comparePaths(const std::string& path1, const std::string& path2) {
+
+    std::string pathAbs1 = cleanupPath(absolutePath(path1));
+    std::string pathAbs2 = cleanupPath(absolutePath(path2));
+
+    return (pathAbs1 == pathAbs2);
+}
+
 std::string FileSystem::currentDirectory() {
 #ifdef WIN32    
     char* buffer = new char[MAX_PATH + 1];
@@ -1209,45 +895,88 @@ std::string FileSystem::currentDirectory() {
 #endif    
 }
 
+bool FileSystem::changeDirectory(const std::string& directory) {
+    if (directory.empty())
+        return false;
+
+    std::string converted = replaceAllCharacters(directory, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+#ifdef WIN32
+    return (_chdir(converted.c_str()) == 0);
+#else
+    return (chdir(converted.c_str()) == 0);
+#endif
+}
+
 bool FileSystem::createDirectory(const std::string& directory) {
     if (directory.empty())
         return false;
 
+    std::string converted = replaceAllCharacters(directory, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+
 #ifdef WIN32    
-    std::string converted = replaceAllCharacters(directory, '/', '\\');
-    removeTrailingCharacters(converted, '\\');
     return (CreateDirectory(converted.c_str(), 0) != 0);
 #else
-    std::string converted = replaceAllCharacters(directory, '\\', '/');
-    removeTrailingCharacters(converted, '/');
     return (mkdir(converted.c_str(), 0777) == 0);
 #endif    
+}
+
+bool FileSystem::deleteDirectory(const std::string& directory) {
+    if (directory.empty())
+        return false;
+
+    std::string converted = replaceAllCharacters(directory, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+#ifdef WIN32
+    return (_rmdir(converted.c_str()) == 0);
+#else
+    return (rmdir(converted.c_str()) == 0);
+#endif
 }
 
 bool FileSystem::deleteFile(const std::string& filename) {
     if (filename.empty())
         return false;
 
+    std::string converted = replaceAllCharacters(filename, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+
 #ifdef WIN32
-    return (DeleteFile(filename.c_str()) != 0);
+    return (DeleteFile(converted.c_str()) != 0);
 #else
-    std::string converted = replaceAllCharacters(filename, '\\', '/');
-    removeTrailingCharacters(converted, '/');
     return (remove(converted.c_str()) == 0);
 #endif    
+}
+
+bool FileSystem::renameFile(const std::string& filename, const std::string& newName,
+                            bool ignorePath)
+{
+    if (FileSystem::fileExists(filename) == false)
+        return false;
+
+    std::string converted = replaceAllCharacters(filename, badSlash_, goodSlash_);
+    std::string convertedNew = replaceAllCharacters(newName, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+    removeTrailingCharacters(convertedNew, goodSlash_);
+    
+    bool res = false;
+    if (ignorePath == true) {
+        std::string name = (FileSystem::dirName(filename) + std::string(&goodSlash_, 1) 
+            + FileSystem::fileName(newName));
+        res = (rename(converted.c_str(), name.c_str()) == 0);
+    } else {
+        res = (rename(converted.c_str(), convertedNew.c_str()) == 0);
+    }
+    return res;
 }
 
 bool FileSystem::fileExists(const std::string& filename) {
     if (filename.empty())
         return false;
 
-#ifdef _WIN32
-    std::string converted = replaceAllCharacters(filename, '/', '\\');
-    removeTrailingCharacters(converted, '\\');
-#else
-    std::string converted = replaceAllCharacters(filename, '\\', '/');
-    removeTrailingCharacters(converted, '/');
-#endif
+    std::string converted = replaceAllCharacters(filename, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
 
     struct stat st;
     return (stat(converted.c_str(), &st) == 0);
@@ -1277,8 +1006,8 @@ std::vector<std::string> FileSystem::readDirectory(const std::string& directory,
     if (directory.empty())
         return result;
 
-    std::string converted = replaceAllCharacters(directory, '/', '\\');
-    removeTrailingCharacters(converted, '\\');
+    std::string converted = replaceAllCharacters(directory, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
 
     WIN32_FIND_DATA findFileData = {0};
     HANDLE hFind = 0;

@@ -31,8 +31,10 @@
 
 uniform SAMPLER2D_TYPE entryPoints_;                    // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;               // ray entry points depth
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE exitPoints_;                        // ray exit points
 uniform SAMPLER2D_TYPE exitPointsDepth_;                // ray exit points depth
+uniform TEXTURE_PARAMETERS exitParameters_;
 
 uniform sampler3D volume_;                              // volume dataset
 uniform VOLUME_PARAMETERS volumeParameters_;            // texture lookup parameters for volume_
@@ -41,14 +43,14 @@ uniform VOLUME_PARAMETERS volumeParameters_;            // texture lookup parame
  * Performs direct volume rendering and
  * returns the final fragment color.
  ***/
-vec4 directRendering(in vec3 first, in vec3 last) {
+vec4 directRendering(in vec3 first, in vec3 last, vec2 p) {
 
     vec4 result = vec4(0.0);
     float depthT = -1.0;
     bool finished = false;
 
     // calculate ray parameters
-    float stepIncr = 0.005 * raycastingQualityFactorRCP_;
+    float stepIncr = samplingStepSize_;
     float tend;
     float t = 0.0;
     vec3 direction = last.rgb - first.rgb;
@@ -64,19 +66,14 @@ vec4 directRendering(in vec3 first, in vec3 last) {
             vec3 sample = first.rgb + t * direction;
             vec4 voxel = getVoxel(volume_, volumeParameters_, sample);
 
-            float intensity = voxel.a;
-            #if defined(USE_SEGMENTATION)
-                intensity *= applySegmentation(sample);
-            #endif
-
             // no shading is applied
             vec4 color = applyTF(transferFunc_, voxel);
 
             // perform compositing
             if (color.a > 0.0) {
-                // multiply alpha by raycastingQualityFactorRCP_
+                // multiply alpha by samplingStepSizeComposite_
                 // to accomodate for variable slice spacing
-                color.a *= raycastingQualityFactorRCP_;
+                color.a *= samplingStepSizeComposite_;
                 result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
                 result.a = result.a + (1.0 -result.a) * color.a;
             }
@@ -99,8 +96,8 @@ vec4 directRendering(in vec3 first, in vec3 last) {
     // calculate depth value from ray parameter
     gl_FragDepth = 1.0;
     if (depthT >= 0.0)
-        gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z,
-                                                        textureLookup2D(exitPointsDepth_, gl_FragCoord.xy).z);
+        gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z,
+                                                        textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z);
 
 
     return result;
@@ -110,9 +107,9 @@ vec4 directRendering(in vec3 first, in vec3 last) {
  * The main method.
  ***/
 void main() {
-
-    vec3 frontPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
+    vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
 
     //determine whether the ray has to be casted
     if (frontPos == backPos) {
@@ -120,6 +117,6 @@ void main() {
         discard;
     } else {
         //fragCoords are lying inside the boundingbox
-        gl_FragColor = directRendering(frontPos, backPos);
+        gl_FragColor = directRendering(frontPos, backPos, p);
     }
 }

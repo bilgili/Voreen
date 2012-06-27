@@ -37,29 +37,29 @@ namespace voreen {
     /**
     * BrickedVolumes are used when rendering large volumes with bricking.
     * A BrickedVolume is only a container for three other volumes,
-    * the index volume, the packed volume, and the eep volume. This is 
-    * basically a hack in order to use bricking in standard networks. 
+    * the index volume, the packed volume, and the eep volume. This is
+    * basically a hack in order to use bricking in standard networks.
     */
     class BrickedVolume : public Volume {
 
     public:
-	    BrickedVolume(Volume* indexVolume, Volume* packedVolume, Volume* eepVolume);
+        BrickedVolume(Volume* indexVolume, Volume* packedVolume, Volume* eepVolume);
 
-	    ~BrickedVolume();
+        ~BrickedVolume();
 
-	    Volume* getIndexVolume();
+        Volume* getIndexVolume();
 
-	    Volume* getPackedVolume();
+        Volume* getPackedVolume();
 
-	    Volume* getEepVolume();
+        Volume* getEepVolume();
 
-	    void setIndexVolume(Volume* indexVolume);
+        void setIndexVolume(Volume* indexVolume);
 
-	    void setPackedVolume(Volume* packedVolume);
+        void setPackedVolume(Volume* packedVolume);
 
-	    void setEepVolume(Volume* eepVolume);
+        void setEepVolume(Volume* eepVolume);
 
-	    int getBitsStored() const;
+        int getBitsStored() const;
 
         virtual Volume* clone() const throw (std::bad_alloc) {
             return 0;
@@ -72,7 +72,7 @@ namespace voreen {
         virtual int getBitsAllocated() const {
             return packedVolume_->getBitsAllocated();
         }
-        
+
         virtual int getNumChannels() const {
             return packedVolume_->getNumChannels();
         }
@@ -131,9 +131,9 @@ namespace voreen {
 
     protected:
 
-	    Volume* indexVolume_;
-	    Volume* packedVolume_;
-	    Volume* eepVolume_;
+        Volume* indexVolume_;
+        Volume* packedVolume_;
+        Volume* eepVolume_;
 
     private:
 

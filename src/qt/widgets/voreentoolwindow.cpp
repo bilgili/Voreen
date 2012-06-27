@@ -33,106 +33,78 @@
 #include <QApplication>
 #include <QBoxLayout>
 #include <QCloseEvent>
+#include <QFrame>
 #include <QPainter>
 #include <iostream>
 
 namespace voreen {
 
-VoreenToolWindow::VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name)
-	: QWidget(parent, Qt::Tool),
-      action_(action)
+VoreenToolWindowTitle::VoreenToolWindowTitle(QDockWidget *parent, bool dockable)
+    : QWidget(parent),
+    dockable_(dockable)
 {
-	setWindowTitle(action->text());
-	setWindowIcon(action->icon());
-	setObjectName(name);
-
-	QVBoxLayout* layout = new QVBoxLayout;
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->addWidget(child);
-	setLayout(layout);
-
-	// connection action and widget visibility
-	connect(action, SIGNAL(toggled(bool)), this, SLOT(setVisible(bool)));
-	connect(this, SIGNAL(visibilityChanged(bool)), action, SLOT(setChecked(bool)));
+    closeButton_ = QPixmap(":/voreenve/widgetstyle/closebutton.png");
+    maximizeButton_ = QPixmap(":/voreenve/widgetstyle/maximizebutton.png");
+    if (dockable_)
+        undockButton_ = QPixmap(":/voreenve/widgetstyle/undockbutton.png");
 }
 
-void VoreenToolWindow::hideEvent(QHideEvent* event) {
-	QWidget::hideEvent(event);
-	if (!isVisible())
-		emit visibilityChanged(false);
+QSize VoreenToolWindowTitle::sizeHint() const {
+    return QSize(40,20);
 }
 
-void VoreenToolWindow::showEvent(QShowEvent* event) {
-	QWidget::showEvent(event);
-	if (isVisible())
-		emit visibilityChanged(true);
+QSize VoreenToolWindowTitle::minimumSizeHint() const {
+    return sizeHint();
 }
 
-//----------------------------------------------------------------------------------------------------------------
+void VoreenToolWindowTitle::paintEvent(QPaintEvent* /*e*/) {
+    QRect button_rect = rect();
+    QPainter painter(this);
 
-VoreenToolDockWindowTitle::VoreenToolDockWindowTitle(QDockWidget *parent)
-	: QWidget(parent)
-{
-	closeButton_ = QPixmap(":/widgetstyle/closebutton.png");
-	undockButton_ = QPixmap(":/widgetstyle/undockbutton.png");
-}
-
-QSize VoreenToolDockWindowTitle::sizeHint() const {
-	return QSize(40,20);
-}
-
-QSize VoreenToolDockWindowTitle::minimumSizeHint() const {
-	return sizeHint();
-}
-
-void VoreenToolDockWindowTitle::paintEvent(QPaintEvent* /*e*/) {
-	QRect button_rect = rect();
-	QPainter painter(this);
-
-	QColor button_color = QColor(50, 50, 50);
-	QColor m_shadow = QColor(Qt::black);
-	float roundness = 0.0;
+    QColor button_color = QColor(50, 50, 50);
+    QColor m_shadow = QColor(Qt::black);
+    int roundness = 0;
 
     // outline
-	painter.setPen(QPen(QBrush(Qt::black), 2.0));
-	QPainterPath outline;
-	outline.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
-	painter.setOpacity(1.0);
-	painter.drawPath(outline);
+    painter.setPen(QPen(QBrush(Qt::black), 2.0));
+    QPainterPath outline;
+    outline.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
+    painter.setOpacity(1.0);
+    painter.drawPath(outline);
 
-	// gradient
-	QLinearGradient gradient(0, 0, 0, button_rect.height());
-	gradient.setSpread(QGradient::ReflectSpread);
-	gradient.setColorAt(0.0, button_color);
-	gradient.setColorAt(0.4, m_shadow);
-	gradient.setColorAt(0.6, m_shadow);
-	gradient.setColorAt(1.0, button_color);
+    // gradient
+    QLinearGradient gradient(0, 0, 0, button_rect.height());
+    gradient.setSpread(QGradient::ReflectSpread);
+    gradient.setColorAt(0.0, button_color);
+    gradient.setColorAt(0.4, m_shadow);
+    gradient.setColorAt(0.6, m_shadow);
+    gradient.setColorAt(1.0, button_color);
 
-	QBrush brush(gradient);
-	painter.setBrush(brush);
-	painter.setPen(QPen(QBrush(button_color), 2.0));
+    QBrush brush(gradient);
+    painter.setBrush(brush);
+    painter.setPen(QPen(QBrush(button_color), 2.0));
 
-	// main button
-	QPainterPath painter_path;
-	painter_path.addRoundRect(1, 1, button_rect.width() - 2, button_rect.height() - 2, roundness, roundness);
-	painter.setClipPath(painter_path);
+    // main button
+    QPainterPath painter_path;
+    painter_path.addRoundRect(1, 1, button_rect.width() - 2, button_rect.height() - 2, roundness, roundness);
+    painter.setClipPath(painter_path);
 
-	painter.setOpacity(1.0);
-	painter.drawRoundRect(1, 1, button_rect.width() - 2, button_rect.height() - 2, roundness, roundness);
+    painter.setOpacity(1.0);
+    painter.drawRoundRect(1, 1, button_rect.width() - 2, button_rect.height() - 2, roundness, roundness);
 
-	// glass highlight
-	painter.setBrush(QBrush(Qt::white));
-	painter.setPen(QPen(QBrush(Qt::white), 0.01));
-	painter.setOpacity(0.30);
-	painter.drawRect(1, 1, button_rect.width() - 2, (button_rect.height() / 2) - 1);
+    // glass highlight
+    painter.setBrush(QBrush(Qt::white));
+    painter.setPen(QPen(QBrush(Qt::white), 0.01));
+    painter.setOpacity(0.30);
+    painter.drawRect(1, 1, button_rect.width() - 2, (button_rect.height() / 2) - 1);
 
-	// text
-	QDockWidget* dockWidget = qobject_cast<QDockWidget*>(parentWidget());
-	QString text = dockWidget->windowTitle();
-	if (!text.isEmpty()) {
-		painter.setFont(font());
-		painter.setPen(Qt::white);
-		painter.setOpacity(1.0);
+    // text
+    QDockWidget* dockWidget = qobject_cast<QDockWidget*>(parentWidget());
+    QString text = dockWidget->windowTitle();
+    if (!text.isEmpty()) {
+        painter.setFont(font());
+        painter.setPen(Qt::white);
+        painter.setOpacity(1.0);
 
         QRect text_rect = button_rect;
         text_rect.setLeft(8);
@@ -140,66 +112,98 @@ void VoreenToolDockWindowTitle::paintEvent(QPaintEvent* /*e*/) {
         painter.drawText(text_rect, Qt::AlignLeft | Qt::AlignVCenter, text);
     }
 
-	// draw logos
-	QRect logoPos = button_rect;
-	logoPos.setLeft(button_rect.right() - 32);
-	logoPos.setTop(button_rect.top() + 4);
-	painter.drawPixmap(logoPos.topLeft(), undockButton_);
-	logoPos = button_rect;
-	logoPos.setLeft(button_rect.right() - 16);
-	logoPos.setTop(button_rect.top() + 4);
-	painter.drawPixmap(logoPos.topLeft(), closeButton_);
+    // draw logos
+    QRect logoPos = button_rect;
+	if (dockable_) {
+        logoPos.setLeft(button_rect.right() - 32);
+        logoPos.setTop(button_rect.top() + 4);
+        painter.drawPixmap(logoPos.topLeft(), undockButton_);
+        logoPos = button_rect;
+	}
 
+    logoPos.setLeft(button_rect.right() - 16);
+    logoPos.setTop(button_rect.top() + 4);
+    painter.drawPixmap(logoPos.topLeft(), closeButton_);
+
+	QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
+	if ( dw->isFloating() && (dw->maximumSize() != dw->minimumSize()) ) {
+		logoPos.setLeft(button_rect.right() - 48);
+		logoPos.setTop(button_rect.top() + 4);
+		painter.drawPixmap(logoPos.topLeft(), maximizeButton_);
+	}
 }
 
-void VoreenToolDockWindowTitle::mousePressEvent(QMouseEvent *event) {
-	QPoint pos = event->pos();
-	QRect rect = this->rect();
+void VoreenToolWindowTitle::mousePressEvent(QMouseEvent *event) {
+    QPoint pos = event->pos();
+    QRect rect = this->rect();
 
-	QRect buttonRectClose = QRect(rect.right()-16, rect.top()+4, 14, 14);
-	QRect buttonRectUndock = QRect(rect.right()-32, rect.top()+4, 14, 14);
-	if (buttonRectClose.contains(pos)) {
-		event->accept();
-		QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
+    QRect buttonRectClose = QRect(rect.right()-16, rect.top()+4, 14, 14);
+    QRect buttonRectUndock = QRect(rect.right()-32, rect.top()+4, 14, 14);
+    QRect buttonRectMaximize = QRect(rect.right()-48, rect.top()+4, 14, 14);
+    if (buttonRectClose.contains(pos)) {
+        event->accept();
+        QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
 		dw->close();
-	} else if (buttonRectUndock.contains(pos)) {
-		event->accept();
-		QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
-		dw->setFloating(!dw->isFloating());
-	} else
-		event->ignore();
+    } else if (buttonRectUndock.contains(pos) && dockable_) {
+        event->accept();
+        QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
+        dw->setFloating(!dw->isFloating());
+    } else if (buttonRectMaximize.contains(pos)) {
+        QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
+		if(!dw->isFloating() || (dw->maximumSize() == dw->minimumSize())) {
+			event->ignore();
+			return;
+		}
+        event->accept();
+		if(dw->isMaximized())
+			dw->showNormal();
+		else
+			dw->showMaximized();
+    } else
+        event->ignore();
+}
+
+void VoreenToolWindowTitle::mouseDoubleClickEvent(QMouseEvent *event) {
+    // avoid docking via double click if desired
+    if (!dockable_)
+        event->accept();
+    else
+        event->ignore();
 }
 
 //----------------------------------------------------------------------------------------------------------------
 
-VoreenToolDockWindow::VoreenToolDockWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name)
-	: QDockWidget(name, parent)
+VoreenToolWindow::VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name, bool dockable)
+    : QDockWidget(name, parent)
 {
-	setWindowTitle(action->text());
-	setWindowIcon(action->icon());
-	setObjectName(name);
-	setWindowFlags(Qt::FramelessWindowHint);
+    setWindowTitle(action->text());
+    setWindowIcon(action->icon());
+    setObjectName(name);
 
-	setWidget(child);
+    QFrame* frame = new QFrame();
+    frame->setFrameStyle(QFrame::Box);
+    frame->setContentsMargins(1,1,1,1);
+    QVBoxLayout* vBox = new QVBoxLayout();
+    vBox->addWidget(child);
+    frame->setLayout(vBox);
+    setWidget(frame);
 
     // if we have a stylesheet we want the fancy window title, please
     if (!qApp->styleSheet().isEmpty())
-        setTitleBarWidget(new VoreenToolDockWindowTitle(this));
+        setTitleBarWidget(new VoreenToolWindowTitle(this, dockable));
 
-	connect(action, SIGNAL(toggled(bool)), this, SLOT(setVisible(bool)));
-	connect(this, SIGNAL(visibilityChanged(bool)), action, SLOT(setChecked(bool)));
-}
+    adjustSize();
+    if (!dockable) {
+        setAllowedAreas(Qt::NoDockWidgetArea);
+        setFloating(true);
+    }
+    setVisible(false);
 
-void VoreenToolDockWindow::showEvent(QShowEvent* event) {
-	QDockWidget::showEvent(event);
-	if (isVisible())
-		emit visibilityChanged(true);
-}
-
-void VoreenToolDockWindow::hideEvent(QHideEvent* event) {
-	QDockWidget::hideEvent(event);
-	if (!isVisible())
-		emit visibilityChanged(false);
+    // Connect action and widget visibility:
+    // It is important to use triggered() instead of toggled() here, or else the widget will be
+    // hidden when switching to a differen virtual desktop and back.
+    connect(action, SIGNAL(triggered(bool)), this, SLOT(setVisible(bool)));
+    connect(toggleViewAction(), SIGNAL(toggled(bool)), action, SLOT(setChecked(bool)));
 }
 
 } // namespace

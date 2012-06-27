@@ -38,12 +38,17 @@ namespace voreen {
 class Collect : public ImageProcessor {
 public:
     Collect(std::string filename);
-    virtual const Identifier getClassName() const {return "ImageProcessor.Collect";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Collect"; }
     virtual const std::string getProcessorInfo() const;
-    virtual void process(LocalPortMapping*  portMapping);
+    virtual void process();
 protected:
-    void processIterative(LocalPortMapping* portMapping);
+    void processIterative();
     virtual void renderTwo(int source0, int source1, int pass) = 0;
+    RenderPort inport_;
+    RenderPort outport_;
+    RenderPort tmp1Port_;
+    RenderPort tmp2Port_;
 };
 
 

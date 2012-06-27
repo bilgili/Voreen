@@ -46,7 +46,7 @@ namespace voreen {
 
 const std::string NrrdVolumeReader::loggerCat_ = "voreen.io.VolumeReader.nrrd";
 
-VolumeSet* NrrdVolumeReader::read(const std::string &fileName)
+VolumeCollection* NrrdVolumeReader::read(const std::string &fileName)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string objectFilename = "";
@@ -121,7 +121,7 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName)
             }
             LINFO("Value: " << format);
         } else {
-            LERROR("Unknown type: " << type);
+            LWARNING("Unknown type: " << type);
         }
         //... "encoding:" and other value-types should be added
         if (args.fail()) {
@@ -146,9 +146,10 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName)
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = rawReader.read(objectFilename);
-        fixOrigins(volumeSet, fileName);
-        return volumeSet;
+        VolumeCollection* collection = rawReader.read(objectFilename);
+        if (!collection->empty())
+            collection->first()->setOrigin(VolumeOrigin(fileName));
+        return collection;
 
     } else
         return 0;

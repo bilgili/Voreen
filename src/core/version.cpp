@@ -70,17 +70,22 @@ const std::string VoreenVersion::getCompilerVersion() {
     return ver.str();
 }
 
+const std::string VoreenVersion::getVersion() {
+    return "2.0";
+}
+
 const std::string VoreenVersion::getRevision() {
 #if defined(VRN_WITH_SVNVERSION)
     return VRN_SVN_REVISION;
 #elif defined(VRN_SNAPSHOT)
-    return "snapshot-28";
+    return "snapshot-29";
 #else
     return "";
 #endif
 }
 
 void VoreenVersion::logAll(const std::string& loggerCat) {
+    LINFOC(loggerCat, "Version: " << getVersion());
     if (!getRevision().empty())
         LINFOC(loggerCat, "SVN revision: " << getRevision());
 

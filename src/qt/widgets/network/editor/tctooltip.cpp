@@ -29,12 +29,13 @@
 
 #include "voreen/qt/widgets/network/editor/tctooltip.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/vis/rendertarget.h"
 
 #include <QImage>
 #include <QPainter>
 
 #include "tgt/vector.h"
+#include "tgt/logmanager.h"
 
 namespace voreen {
 
@@ -54,15 +55,20 @@ TCTooltip::~TCTooltip() {
     delete image_;
 }
 
-void TCTooltip::initialize(int id, TextureContainer* tc) {
-    tgt::ivec2 size = tc->getSize();
+void TCTooltip::initialize(RenderTarget* rt) {
+    tgt::ivec2 size = rt->getSize();
     image_ = new QImage(size.x, size.y, QImage::Format_ARGB32);
 
-    float* temp = tc->getTargetAsFloats(id);
+    tgt::Texture* tex = rt->getColorTexture();
+    if(!tex)
+        return;
+
+    tex->downloadTexture();
 
     int posi = 0;
     QColor color;
 
+    float* temp = reinterpret_cast<float*>(tex->getPixelData());
     // The pixels are stored row by row from bottom to top an in each row from left to right
     for (int y=0; y < size.y; ++y) {
         for (int x=0; x < size.x; ++x) {
@@ -75,14 +81,13 @@ void TCTooltip::initialize(int id, TextureContainer* tc) {
             // for some unknown reason the float can get values slight above 1.0, so clamp them
             // here to prevent warning from setRgbF
             col = tgt::clamp(col, 0.f, 1.f);
-            
+
             color.setRgbF(col.r, col.g, col.b, col.a);
 
             //(0,0) is top left
             image_->setPixel(x, size.y - 1 - y, color.rgba());
         }
     }
-    delete[] temp;
 
     // fit rect
     float image_aspect = static_cast<float>(size.x) / static_cast<float>(size.y);

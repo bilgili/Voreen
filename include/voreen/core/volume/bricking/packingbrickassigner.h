@@ -36,15 +36,15 @@ namespace voreen {
     /**
     * Assigns VolumeBricks to PackingBricks. VolumeBricks hold the data
     * of the original volume and PackingBricks hold space in the packed volume,
-    * into which the VolumeBricks' data is to be written. So the task of this 
+    * into which the VolumeBricks' data is to be written. So the task of this
     * class is to assign the VolumeBricks their position (or rather the position
     * of the data they are holding) in the packed volume (which is subdivided into
-    * PackingBricks). 
+    * PackingBricks).
     */
-	template<class T>
-	class PackingBrickAssigner {
+    template<class T>
+    class PackingBrickAssigner {
 
-	public:
+    public:
 
         /**
         * @param brickingInformation The BrickingInformation holds all the information neccessary
@@ -52,24 +52,24 @@ namespace voreen {
         * @param indexVolume The information where the VolumeBricks' data can be found in the packed
         * volume is stored in this index volume.
         */
-		PackingBrickAssigner(BrickingInformation& brickingInformation, Volume4xUInt16* indexVolume);
-							
+        PackingBrickAssigner(BrickingInformation& brickingInformation, Volume4xUInt16* indexVolume);
+
         /**
         * Assigns a VolumeBrick to a PackingBrick. The reason for not doing this for all
         * VolumeBricks at once is that some VolumeBricks (those holding parts of the original
-        * volume in which all voxels are the same) should be immediately deleted after they 
-        * have been assigned. And that should happen before all VolumeBricks are created, 
+        * volume in which all voxels are the same) should be immediately deleted after they
+        * have been assigned. And that should happen before all VolumeBricks are created,
         * because having too many VolumeBricks causes memory problems. So if the VolumeBrick
         * has only voxels of the same value, it is assigned to a PackingBrick and its volume data
         * written to the packed volume immeadiately, after which both VolumeBrick and PackingBrick
         * are deleted. The index volume is also updated in that case.
-        * 
+        *
         * @param emptyVolumeBrick   Have all voxels in the VolumeBrick the same value?
-        * @param packedVolume       The packed volume into which the volume data is written. 
+        * @param packedVolume       The packed volume into which the volume data is written.
         */
         void assignVolumeBrickToPackingBrick(VolumeBrick<T>* volumeBrick, bool emptyVolumeBrick = false,
             VolumeAtomic<T>* packedVolume = 0);
-       
+
         /**
         * Creates a backup of all packing bricks that DON'T hold volume bricks with all voxels
         * having the same value. The backup is written to brickingInformation_.packingBrickBackups.
@@ -77,7 +77,7 @@ namespace voreen {
         void createPackingBrickBackups();
 
         /**
-        * Deletes all packing bricks in brickingInformation_.packingBricks and 
+        * Deletes all packing bricks in brickingInformation_.packingBricks and
         * brickingInformation_.bricksWithTheData.
         */
         void deletePackingBricks();
@@ -88,101 +88,101 @@ namespace voreen {
         */
         void createPackingBricksFromBackup();
 
-		
 
-	protected:
+
+    protected:
 
         /**
         * Updates the index volume, saving where the VolumeBricks data can be found in the packed
         * volume. Used by assignEmptyVolumeBrickToPackingBrick()
         */
-		void updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick);
+        void updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick);
 
-		BrickingInformation& brickingInformation_;
-		Volume4xUInt16* indexVolume_;
+        BrickingInformation& brickingInformation_;
+        Volume4xUInt16* indexVolume_;
 
-	private:
+    private:
 
-	}; //class
+    }; //class
 
-    
-	template<class T>
-	PackingBrickAssigner<T>::PackingBrickAssigner(BrickingInformation &brickingInformation,
-		Volume4xUInt16* indexVolume) 
-		: brickingInformation_ (brickingInformation),
-        indexVolume_(indexVolume) 
+
+    template<class T>
+    PackingBrickAssigner<T>::PackingBrickAssigner(BrickingInformation &brickingInformation,
+        Volume4xUInt16* indexVolume)
+        : brickingInformation_ (brickingInformation),
+        indexVolume_(indexVolume)
     {
-	}
+    }
 
 
-	template<class T>
-	void PackingBrickAssigner<T>::updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick) {
-		
+    template<class T>
+    void PackingBrickAssigner<T>::updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick) {
+
         int scaleFactor = static_cast<int>(pow(2.f, (int)volBrick->getCurrentLevelOfDetail() ));
-		tgt::ivec3 indexVolumePosition = volBrick->getPosition() / brickingInformation_.brickSize;
-		tgt::ivec4 indexVolumeValue = tgt::ivec4(packBrick->getPosition(),scaleFactor);
+        tgt::ivec3 indexVolumePosition = volBrick->getPosition() / brickingInformation_.brickSize;
+        tgt::ivec4 indexVolumeValue = tgt::ivec4(packBrick->getPosition(),scaleFactor);
 
-		indexVolume_->voxel(indexVolumePosition ) = indexVolumeValue;
-	}
+        indexVolume_->voxel(indexVolumePosition ) = indexVolumeValue;
+    }
 
-	template<class T>
-	void PackingBrickAssigner<T>::assignVolumeBrickToPackingBrick(VolumeBrick<T> *volumeBrick,
+    template<class T>
+    void PackingBrickAssigner<T>::assignVolumeBrickToPackingBrick(VolumeBrick<T> *volumeBrick,
         bool emptyVolumeBrick, VolumeAtomic<T>* packedVolume) {
-		
-		std::list<Brick*>::iterator iter = brickingInformation_.packingBricks.begin();
-		PackingBrick<T>* brickWithTheData;
 
-		bool success=false;
+        std::list<Brick*>::iterator iter = brickingInformation_.packingBricks.begin();
+        PackingBrick<T>* brickWithTheData;
 
-		while (!success) {
-			//As long as the volume brick wasn't assigned to a packing brick, try the next packing brick.
-			PackingBrick<T>* packBrick = static_cast<PackingBrick<T>*>((*iter));
-			size_t levelOfDetail = volumeBrick->getCurrentLevelOfDetail();
+        bool success=false;
 
-            //Check which dimensions a brick of the current level of detail has. 
-			tgt::ivec3 dims = brickingInformation_.lodToDimensionsMap[levelOfDetail];
+        while (!success) {
+            //As long as the volume brick wasn't assigned to a packing brick, try the next packing brick.
+            PackingBrick<T>* packBrick = static_cast<PackingBrick<T>*>((*iter));
+            size_t levelOfDetail = volumeBrick->getCurrentLevelOfDetail();
+
+            //Check which dimensions a brick of the current level of detail has.
+            tgt::ivec3 dims = brickingInformation_.lodToDimensionsMap[levelOfDetail];
 
             //If the PackingBrick is too big for the VolumeBricks data, the PackingBrick
             //is subdivided into several smaller ones, therefore the returned PackingBrick
             //can be different from the one that called setSourceVolume
-			brickWithTheData = packBrick->setSourceVolume(
+            brickWithTheData = packBrick->setSourceVolume(
                 (T*)volumeBrick->getLodVolume(levelOfDetail), dims);
 
-			if (brickWithTheData != 0) {
-				//This means that the data wasn't too big for the brick 
-				brickingInformation_.packingBricks.remove(brickWithTheData);
-				success=true;
-			} else {
-				//The data was too big for the brick at the iterator position. Check if there are
-				//more bricks in the list and try the next one
-				if (iter == brickingInformation_.packingBricks.end() ) {
+            if (brickWithTheData != 0) {
+                //This means that the data wasn't too big for the brick
+                brickingInformation_.packingBricks.remove(brickWithTheData);
+                success=true;
+            } else {
+                //The data was too big for the brick at the iterator position. Check if there are
+                //more bricks in the list and try the next one
+                if (iter == brickingInformation_.packingBricks.end() ) {
                     //TODO: Throw some kind of exception
-					break;
-				} else {
-					iter++;
-				}
-			}
-		}
+                    break;
+                } else {
+                    iter++;
+                }
+            }
+        }
 
-		if (brickWithTheData != 0) {
+        if (brickWithTheData != 0) {
             if (!emptyVolumeBrick) {
-			    volumeBrick->setPackingBrick(brickWithTheData);
-			    brickingInformation_.packingBricksWithData.push_back( brickWithTheData);
-			    updateIndexVolume(volumeBrick,brickWithTheData);
+                volumeBrick->setPackingBrick(brickWithTheData);
+                brickingInformation_.packingBricksWithData.push_back( brickWithTheData);
+                updateIndexVolume(volumeBrick,brickWithTheData);
             } else {
                 updateIndexVolume(volumeBrick, brickWithTheData);
 
                 //Write the data to the packed volume and then delete both sorts
                 //of bricks, as they are not needed in the level of detail
                 //calculations.
-			    brickWithTheData->setTargetVolume(packedVolume);
-			    brickWithTheData->write();
-                
+                brickWithTheData->setTargetVolume(packedVolume);
+                brickWithTheData->write();
+
                 delete volumeBrick;
-			    delete brickWithTheData;
+                delete brickWithTheData;
             }
-		}
-	}
+        }
+    }
 
     template<class T>
     void PackingBrickAssigner<T>::createPackingBrickBackups() {
@@ -204,7 +204,7 @@ namespace voreen {
     template<class T>
     void PackingBrickAssigner<T>::deletePackingBricks() {
         std::list<Brick*>::iterator listIterator = brickingInformation_.packingBricks.begin();
-        
+
          while (listIterator != brickingInformation_.packingBricks.end() ) {
             delete (*listIterator);
             listIterator++;

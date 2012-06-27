@@ -27,10 +27,9 @@
 #include "videoencoder.h"
 
 #include "tgt/logmanager.h"
+#include "tgt/vector.h"
 
 #include <sstream>
-#include <string>
-#include <vector>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -43,13 +42,20 @@ namespace {
 
 /**
  * seperated by whitespace
- * @see VidepEncoder#getSupportedFormatsByFileEnding()
+ * @see VideoEncoder#getSupportedFormatsByFileEnding()
  */
-const char* supportedFormatsFileEndings = "mpeg mpg wmv avi flv";
+const char* supportedFormatsFileEndings = "mpeg mpg wmv avi flv ogg";
 
 enum PixelOrderManipulation {
     NONE, FLIP_VERT, REVERSE
 };
+
+/**
+ * @see ContainerCodecPair
+ * @see VideoEncoder#getContainerCodecPairNames()
+ */
+const char *containerCodecPairNames[] = { "auto", "mpeg4 in avi", "wmv in wmv",
+        "flv in flv", "huffyuv in avi", "ogg in ogg" };
 
 /**
  * float to uint8_t conversion
@@ -63,9 +69,8 @@ enum PixelOrderManipulation {
  * @param manip (defaults: NONE)
  * @return pixels of type uint8_t
  */
-uint8_t* floatToUint8_tRGB(float* pixels, const int size,
-                           const int lineSize, enum PixelOrderManipulation manip = NONE)
-{
+uint8_t* floatToUint8_tRGB(float* pixels, const int size, const int lineSize,
+        enum PixelOrderManipulation manip = NONE) {
     tgt::vec4* pixels_f = reinterpret_cast<tgt::vec4*> (pixels);
     tgt::col3* pixels_b = new tgt::col3[size];
     int j = 0;
@@ -96,11 +101,6 @@ uint8_t* floatToUint8_tRGB(float* pixels, const int size,
 }
 
 /**
- * default encoder-input-pixel-type
- */
-const enum PixelFormat defaultPixelFormatCodec = PIX_FMT_YUV420P;
-
-/**
  * size of encoder's output-buffer and half of IO-buffer's size
  */
 unsigned int videoOutBufferSize;
@@ -112,6 +112,59 @@ const int defaultGopSize = 10;
 const int defaultMaxBFrame = 1;
 const int minimalFps = 25;
 const int minimalBitrate = 400000;
+
+/*
+ * containerAppendices
+ * @see tgt::ContainerCodecPair
+ * @see VEAVContext#initFormatContext(tgt::ContainerCodecPair)
+ */
+const char* mpegAppendix = "mpeg";
+const char* aviAppendix = "avi";
+const char* flvAppendix = "flv";
+const char* wmvAppendix = "wmv";
+const char* oggAppendix = "ogg";
+
+const char* containerAppendix(ContainerCodecPair preset) {
+    switch (preset) {
+    case MPEG4AVI:
+    case HUFFYUVAVI:
+        return aviAppendix;
+    case WMVWMV:
+        return wmvAppendix;
+    case FLVFLV:
+        return flvAppendix;
+    case OGGTHEORA:
+        return oggAppendix;
+    default:
+        return mpegAppendix;
+    }
+}
+
+CodecID containerCodecId(ContainerCodecPair preset) {
+    switch (preset) {
+    default:
+        return CODEC_ID_MPEG2VIDEO;
+    case FLVFLV:
+        return CODEC_ID_FLV1;
+    case MPEG4AVI:
+        return CODEC_ID_MPEG4;
+    case WMVWMV:
+        return CODEC_ID_WMV2;
+    case HUFFYUVAVI:
+        return CODEC_ID_HUFFYUV;
+    case OGGTHEORA:
+        return CODEC_ID_THEORA;
+    }
+}
+
+PixelFormat codecPixFmt(ContainerCodecPair preset) {
+    switch (preset) {
+    default:
+        return PIX_FMT_YUV420P;
+    case HUFFYUVAVI:
+        return PIX_FMT_YUV422P;
+    }
+}
 
 struct VEAVContext {
 
@@ -135,7 +188,7 @@ struct VEAVContext {
      */
     uint8_t* videoBuffer;
 
-    GLenum pixelFormat, pixelType; // input specification
+    GLenum pixelFormat_, pixelType_; // input specification
 
     /**
      * init picture- & video-buffer
@@ -168,8 +221,8 @@ struct VEAVContext {
     /**
      * init video codec
      */
-    bool initCodec(const int bitRate, const int width, const int height,
-            const int fps) {
+    bool initCodec(ContainerCodecPair preset, const int bitRate,
+            const int width, const int height, const int fps) {
         AVCodecContext* codecContext = videoStream->codec;
         codecContext->codec_id = formatContext_->video_codec_id;
         codecContext->codec_type = CODEC_TYPE_VIDEO;
@@ -182,7 +235,7 @@ struct VEAVContext {
         codecContext->time_base.den = fps;
 
         codecContext->gop_size = defaultGopSize;
-        codecContext->pix_fmt = defaultPixelFormatCodec;
+        codecContext->pix_fmt = codecPixFmt(preset);
 
         if (codecContext->codec_id == CODEC_ID_MPEG2VIDEO) {
             codecContext->max_b_frames = defaultMaxBFrame;
@@ -192,12 +245,11 @@ struct VEAVContext {
             codecContext->mb_decision = FF_MB_DECISION_RD;
         }
 
-        // use fourcc "DX50" instead of "FMP4", as more players support it
-        if (codecContext->codec_id == CODEC_ID_MPEG4){
+        if (codecContext->codec_id == CODEC_ID_MPEG4) {
             const char xvid[] = "DX50";
-            codecContext->codec_tag = (xvid[3]<<24) + (xvid[2]<<16) + (xvid[1]<<8) + xvid[0];
+            codecContext->codec_tag = (xvid[3] << 24) + (xvid[2] << 16)
+                    + (xvid[1] << 8) + xvid[0];
         }
-
 
         codecContext->strict_std_compliance = FF_COMPLIANCE_VERY_STRICT; // we are the good ones
 
@@ -249,18 +301,59 @@ struct VEAVContext {
         return true;
     }
 
-    /**
-     * TODO split to more seperate init methods
-     */
+    std::string initFormatContext(ContainerCodecPair preset,
+            std::string filePath) {
+
+        // init format-context
+        formatContext_ = avformat_alloc_context();
+        formatContext_->audio_codec_id = CODEC_ID_NONE;
+
+        // let ffmpeg guess what stream-format matches to container-format
+        AVOutputFormat* outputFormat;
+
+        if (preset == GUESS) {
+            outputFormat = guess_format(0, filePath.c_str(), 0);
+
+            if (!outputFormat) {
+                LWARNINGC(loggerCat_, "Could not guess output format, using MPEG");
+                outputFormat = guess_format(mpegAppendix, 0, 0);
+                filePath.append(".");
+                filePath.append(mpegAppendix);
+            }
+
+            if (!outputFormat) {
+                LERRORC(loggerCat_, "Could not find suitable output format");
+                return "";
+            }
+            formatContext_->oformat = outputFormat;
+            formatContext_->video_codec_id = outputFormat->video_codec;
+        } else {
+            const char* appendix = containerAppendix(preset);
+            outputFormat = guess_format(appendix, 0, 0);
+            formatContext_->oformat = outputFormat;
+            if (filePath.substr(filePath.size() - strlen(appendix) - 1)
+                    == std::string(appendix)) {
+                filePath.append(".");
+                filePath.append(appendix);
+            }
+            formatContext_->video_codec_id = containerCodecId(preset);
+        }
+        return filePath;
+    }
+
     VEAVContext(std::string filePath, const int fps, const int width,
             const int height, GLenum pixelFormat, GLenum pixelType,
-            const int bitRate) {
+            const int bitRate, ContainerCodecPair preset) {
 
         // loggerCat_
         // std::string-s concat with "+", but iostream-string-s concat with "<<"
         loggerCat_ = "";
         loggerCat_ += "tgt.VideoEncoder.AVContext::";
         loggerCat_ += filePath;
+
+#ifndef TGT_DEBUG
+        //av_log_set_level(AV_LOG_QUIET);
+#endif
 
         if (!checkParams(fps, width, height, pixelFormat, pixelType, bitRate)) {
             return;
@@ -270,31 +363,19 @@ struct VEAVContext {
         swsContext = 0;
         frameCount = 0;
 
-        pixelFormat = pixelFormat;
-        pixelType = pixelType;
+        pixelFormat_ = pixelFormat;
+        pixelType_ = pixelType;
 
         // avcodec init
         av_register_all();
 
-        // let ffmpeg guess what stream-format matches to container-format
-        AVOutputFormat* outputFormat = guess_format(0, filePath.c_str(), 0);
-
-        if (!outputFormat) {
-            LWARNINGC(loggerCat_, "Could not guess output format, using MPEG");
-            outputFormat = guess_format("mpeg", 0, 0);
-            filePath.append(".mpeg");
-        }
-
-        if (!outputFormat) {
-            LERRORC(loggerCat_, "Could not find suitable output format");
+        filePath = initFormatContext(preset, filePath);
+        if (filePath.size() == 0) {
+            LERRORC(loggerCat_,"could not determine formatContext");
             return;
         }
-        // init format-context and video-stream
-        formatContext_ = avformat_alloc_context();
-        formatContext_->oformat = outputFormat;
-        formatContext_->audio_codec_id = CODEC_ID_NONE;
-        formatContext_->video_codec_id = outputFormat->video_codec;
 
+        // init video-stream
         if (formatContext_->video_codec_id != CODEC_ID_NONE) {
             videoStream = av_new_stream(formatContext_, 1);
 
@@ -302,7 +383,8 @@ struct VEAVContext {
                 LERRORC(loggerCat_, "Could not allocate stream");
                 return;
             }
-            if (!(initCodec(bitRate, width, height, fps) && initBuffers())) {
+            if (!(initCodec(preset, bitRate, width, height, fps)
+                    && initBuffers())) {
                 return;
             }
         } else {
@@ -408,7 +490,7 @@ struct VEAVContext {
     }
 };
 
-VEAVContext* encoderContext;
+VEAVContext* encoderContext;// singleton
 
 } /* anonymous namespace */
 
@@ -416,6 +498,8 @@ std::string VideoEncoder::loggerCat_("tgt.VideoEncoder");
 
 VideoEncoder::VideoEncoder() {
     encoderContext = 0;
+    bitrate_ = 2000000;
+    preset_ = GUESS;
 }
 
 VideoEncoder::~VideoEncoder() {
@@ -431,7 +515,7 @@ void VideoEncoder::startVideoEncoding(std::string filePath, const int fps,
     // we must not reuse this context because it still stores state of finished encoding
     // TODO consider reusing everything but videoStream
     encoderContext = new VEAVContext(filePath, fps, width, height, GL_RGB,
-            GL_FLOAT, 2000000/*2Mbps*/);
+            GL_FLOAT, bitrate_, preset_);
 
     if (!encoderContext) {
         LWARNING("Encoding NOT started due to previous error");
@@ -458,6 +542,9 @@ void VideoEncoder::stopVideoEncoding() {
  * TODO assumption of float not applied here cause we could specify pixelComponents' type when starting animation
  */
 void VideoEncoder::nextFrame(GLvoid* pixels) {
+    if (pixels == 0)
+        return;
+
     AVCodecContext* codecContext = encoderContext->videoStream->codec;
 
     float* pixelsFloat = reinterpret_cast<float*> (pixels);
@@ -465,10 +552,15 @@ void VideoEncoder::nextFrame(GLvoid* pixels) {
     // TODO move this conversion into VEAVContext and let it rely it on input specs
     uint8_t* pixels8 = tgt::floatToUint8_tRGB(pixelsFloat, codecContext->width
             * codecContext->height, codecContext->width, FLIP_VERT);
-    delete[] pixelsFloat;
+    //delete[] pixelsFloat;
 
     encoderContext->nextFrame(pixels8);
-    delete[] pixels8;
+    delete [] pixels8;
+}
+
+void VideoEncoder::setup(int preset, int bitrate) {
+    preset_ = (ContainerCodecPair) preset;
+    bitrate_ = bitrate;
 }
 
 /**
@@ -483,6 +575,17 @@ std::vector<std::string> VideoEncoder::getSupportedFormatsByFileEnding() {
         formats.push_back(format);
 
     return formats;
+}
+
+const char** VideoEncoder::getContainerCodecPairNames() {
+    return containerCodecPairNames;
+}
+
+/**
+ * static
+ */
+const char* VideoEncoder::getContainerAppendix() {
+    return containerAppendix(preset_);
 }
 
 } // namespace tgt

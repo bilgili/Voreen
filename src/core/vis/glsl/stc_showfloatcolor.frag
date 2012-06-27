@@ -30,6 +30,7 @@
 #include "modules/mod_sampler2d.frag"
 
 uniform SAMPLER2D_TYPE tex_;
+uniform TEXTURE_PARAMETERS texParameters_;
 
 uniform bool showAlpha_;
 
@@ -39,7 +40,7 @@ uniform bool showAlpha_;
 void main() {
     vec2 coord = gl_TexCoord[0].xy;
     // textureLookup2D expects fragment coordinates, so scale by screen dimensions
-    vec4 fragment = textureLookup2D(tex_, coord*screenDim_);
+    vec4 fragment = textureLookup2Dnormalized(tex_, texParameters_, coord);
 
     if (showAlpha_)
         gl_FragColor = vec4(fragment.a, 0.0, 0.0, 1.0);

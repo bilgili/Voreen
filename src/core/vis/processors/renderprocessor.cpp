@@ -34,147 +34,247 @@
 #include "tgt/shadermanager.h"
 #include "tgt/gpucapabilities.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
-#include "voreen/core/vis/lightmaterial.h"
+#include "voreen/core/vis/network/networkevaluator.h"
 
 #include <sstream>
 
 using tgt::vec3;
 using tgt::vec4;
 using tgt::Color;
+using std::map;
 
 namespace voreen {
-
-const Identifier RenderProcessor::setBackgroundColor_("set.backgroundColor");
 
 const std::string RenderProcessor::loggerCat_("voreen.RenderProcessor");
 
 const std::string RenderProcessor::XmlElementName_("RenderProcessor");
 
-RenderProcessor::RenderProcessor(tgt::Camera* camera, TextureContainer* tc)
+RenderProcessor::RenderProcessor()
     : Processor()
-    , tc_(tc)
-    , size_(0.f)
-    , camera_(camera)
-    , backgroundColor_(setBackgroundColor_, "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f))
-    , lightPosition_(LightMaterial::setLightPosition_, "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
-                     tgt::vec4(-10), tgt::vec4(10))
-    , lightAmbient_(LightMaterial::setLightAmbient_, "Ambient light", tgt::Color(0.4f, 0.4f, 0.4f, 1.f))
-    , lightDiffuse_(LightMaterial::setLightDiffuse_, "Diffuse light", tgt::Color(0.8f, 0.8f, 0.8f, 1.f))
-    , lightSpecular_(LightMaterial::setLightSpecular_, "Specular light", tgt::Color(0.6f, 0.6f, 0.6f, 1.f))
-    , lightAttenuation_(LightMaterial::setLightAttenuation_, "Attenutation", tgt::vec3(1.f, 0.f, 0.f))
-    , materialAmbient_(LightMaterial::setMaterialAmbient_, "Ambient material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialDiffuse_(LightMaterial::setMaterialDiffuse_, "Diffuse material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialSpecular_(LightMaterial::setMaterialSpecular_, "Specular material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialEmission_(LightMaterial::setMaterialEmission_, "Emissive material color", tgt::Color(0.f, 0.f, 0.f, 1.f))
-    , materialShininess_(LightMaterial::setMaterialShininess_, "Shininess", 60.f, 0.1f, 128.f)
-{
-    //addProperty(&lightPosition_);
-    //addProperty(&backgroundColor_);
-    //addProperty(&lightAmbient_);
-    //addProperty(&lightDiffuse_);
-    //addProperty(&lightSpecular_);
-    //addProperty(&lightAttenuation_);
-    //addProperty(&materialAmbient_);
-    //addProperty(&materialDiffuse_);
-    //addProperty(&materialSpecular_);
-    //addProperty(&materialEmission_);
-    //addProperty(&materialShininess_);
-}
+    , backgroundColor_("backgroundColor", "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f))
+{}
 
 RenderProcessor::~RenderProcessor() {
 }
 
-
-void RenderProcessor::processMessage(Message* msg, const Identifier& dest) {
-    MessageReceiver::processMessage(msg, dest);
-
-    if (msg->id_ == setBackgroundColor_) {
-        backgroundColor_.set(msg->getValue<tgt::Color>());
-    }
-    else if (msg->id_ == LightMaterial::setLightPosition_) {
-        lightPosition_.set(msg->getValue<vec4>());
-    }   
-    else if (msg->id_ == "set.viewport") {
-        // needed for benchmark script fps.py
-        if (camera_) {
-            tgt::ivec2 v = msg->getValue<tgt::ivec2>();
-            glViewport(0, 0, v.x, v.y);
-            setSizeTiled(v.x, v.y);
-            if (tc_)
-                tc_->setSize(v);
-
-            LINFO("set.viewport to " << v);
+void RenderProcessor::initialize() throw (VoreenException) {
+    const std::vector<Port*> outports = getOutports();
+    for (size_t i=0; i<outports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp) {
+            rp->initialize();
         }
     }
-    
+    const std::vector<RenderPort*> pports = getPrivateRenderPorts();
+    for (size_t i=0; i<pports.size(); ++i) {
+        pports[i]->initialize();
+    }
+
+    Processor::initialize();
 }
 
-void RenderProcessor::setTextureContainer(TextureContainer* tc) {
-    tc_ = tc;
-}
+void RenderProcessor::sizeOriginChanged(RenderPort* p) {
+    if (!p->getSizeOrigin()) {
+        const std::vector<Port*> outports = getOutports();
+        for (size_t i=0; i<outports.size(); ++i) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+            if (rp) {
+                if (rp->getSizeOrigin())
+                    return;
+            }
+        }
+    }
 
-void RenderProcessor::setCamera(tgt::Camera* camera) {
-    camera_ = camera;
-}
-
-tgt::Camera* RenderProcessor::getCamera() const {
-    return camera_;
-}
-
-TextureContainer* RenderProcessor::getTextureContainer() {
-    return tc_;
-}
-
-void RenderProcessor::setGeometryContainer(GeometryContainer* geoCont) {
-    geoContainer_ = geoCont;
-}
-
-GeometryContainer* RenderProcessor::getGeometryContainer() const {
-    return geoContainer_;
-}
-
-void RenderProcessor::setSize(const tgt::ivec2 &size) {
-    setSize(static_cast<tgt::vec2>(size));
-}
-
-void RenderProcessor::setSize(const tgt::vec2& size) {
-    if (camera_ && (size_ != size)) {
-        size_ = size;
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        camera_->getFrustum().setRatio(size.x/size.y);
-        camera_->updateFrustum();
-        tgt::loadMatrix(camera_->getProjectionMatrix());
-
-        glMatrixMode(GL_MODELVIEW);
-
-        invalidate();
+    const std::vector<Port*> inports = getInports();
+    for (size_t i=0; i<inports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
+        if (rp)
+            rp->sizeOriginChanged(p->getSizeOrigin());
     }
 }
 
-tgt::ivec2 RenderProcessor::getSize() const {
-    return static_cast<tgt::ivec2>(size_);
+bool RenderProcessor::testSizeOrigin(const RenderPort* p, void* so) const {
+    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
+
+    if (so) {
+        const std::vector<Port*> outports = getOutports();
+        for (size_t i=0; i<outports.size(); ++i) {
+            if(p == outports[i])
+                continue;
+            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+            if (rp) {
+                if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so))
+                    return false;
+            }
+        }
+    }
+
+    const std::vector<Port*> inports = getInports();
+    for (size_t i=0; i<inports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
+        if (rp) {
+            if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so) )
+                return false;
+
+            const std::vector<Port*>& connectedOutports = inports[i]->getConnected();
+            for (size_t j=0; j<connectedOutports.size(); ++j) {
+                RenderPort* op = static_cast<RenderPort*>(connectedOutports[j]);
+
+                if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so))
+                    return false;
+            }
+        }
+    }
+
+    return true;
 }
 
-tgt::vec2 RenderProcessor::getSizeFloat() const {
-    return size_;
+void RenderProcessor::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
+    // propagate to predecessing RenderProcessors
+    const std::vector<Port*> inports = getInports();
+    for(size_t i=0; i<inports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
+        if (rp)
+            rp->resize(newsize);
+    }
+
+    //distribute to outports:
+    const std::vector<Port*> outports = getOutports();
+    for(size_t i=0; i<outports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp)
+            rp->resize(newsize);
+    }
+
+    //distribute to private ports:
+    const std::vector<RenderPort*> pports = getPrivateRenderPorts();
+    for (size_t i=0; i<pports.size(); ++i) {
+        RenderPort* rp = pports[i];
+        rp->resize(newsize);
+    }
+
+    // notify camera properties about viewport change
+    if(newsize != tgt::ivec2(0,0)) {
+        const std::vector<Property*> properties = getProperties();
+        for (size_t i=0; i<properties.size(); ++i) {
+            CameraProperty* cameraProp = dynamic_cast<CameraProperty*>(properties[i]);
+            if (cameraProp) {
+                cameraProp->viewportChanged(newsize);
+            }
+        }
+    }
+
+    invalidate();
+}
+
+void RenderProcessor::addPrivateRenderPort(RenderPort* port) {
+    port->setProcessor(this);
+    privateRenderPorts_.push_back(port);
+
+    map<std::string, Port*>::const_iterator it = portMap_.find(port->getName());
+    if (it == portMap_.end())
+        portMap_.insert(std::make_pair(port->getName(), port));
+    else
+        LERROR("Port with name " << port->getName() << " has already been inserted!");
+}
+
+void RenderProcessor::addPrivateRenderPort(RenderPort& port) {
+    addPrivateRenderPort(&port);
 }
 
 void RenderProcessor::renderQuad() {
     glBegin(GL_QUADS);
-        glVertex2f(-1.0, -1.0);
-        glVertex2f( 1.0, -1.0);
-        glVertex2f( 1.0,  1.0);
-        glVertex2f(-1.0,  1.0);
+        glTexCoord2f(0.f, 0.f);
+        glVertex2f(-1.f, -1.f);
+
+        glTexCoord2f(1.f, 0.f);
+        glVertex2f(1.f, -1.f);
+
+        glTexCoord2f(1.f, 1.f);
+        glVertex2f(1.f, 1.f);
+
+        glTexCoord2f(0.f, 1.f);
+        glVertex2f(-1.f, 1.f);
     glEnd();
 }
 
+void RenderProcessor::renderQuadWithTexCoords(const RenderPort& port) {
+
+    if (!port.isReady()) {
+        LWARNING("RenderPort not ready");
+        return;
+    }
+
+    if (port.getColorTexture()->getType() == GL_TEXTURE_2D) {
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.f, 0.f);
+            glVertex2f(-1.f, -1.f);
+
+            glTexCoord2f(1.f, 0.f);
+            glVertex2f(1.f, -1.f);
+
+            glTexCoord2f(1.f, 1.f);
+            glVertex2f(1.f, 1.f);
+
+            glTexCoord2f(0.f, 1.f);
+            glVertex2f(-1.f, 1.f);
+        glEnd();
+    }
+    else if (port.getColorTexture()->getType() == GL_TEXTURE_RECTANGLE_ARB){
+        // use integer texcoords in case of texture rectangles
+        glBegin(GL_QUADS);
+            glTexCoord2i(0, 0);
+            glVertex2f(-1.f, -1.f);
+
+            glTexCoord2i(port.getSize().x, 0);
+            glVertex2f(1.f, -1.f);
+
+            glTexCoord2i(port.getSize().x, port.getSize().y);
+            glVertex2f(1.f, 1.f);
+
+            glTexCoord2i(0, port.getSize().y);
+            glVertex2f(-1.f, 1.f);
+        glEnd();
+    }
+    else {
+        LERROR("Unknown texture type: " << port.getColorTexture()->getType());
+    }
+
+}
+
+// Parameters currently set:
+// - screenDim_
+// - screenDimRCP_
+// - cameraPosition_ (camera position in world coordinates)
+void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera) {
+    shader->setIgnoreUniformLocationError(true);
+
+    //HACK:
+    RenderPort* rp = 0;
+    for (size_t i=0; i<getOutports().size(); ++i) {
+        rp = dynamic_cast<RenderPort*>(getOutports()[i]);
+        if(rp)
+            break;
+    }
+    if (rp) {
+        shader->setUniform("screenDim_", tgt::vec2(rp->getSize()));
+        shader->setUniform("screenDimRCP_", 1.f / tgt::vec2(rp->getSize()));
+    }
+
+    // camera position in world coordinates
+    if (camera)
+        shader->setUniform("cameraPosition_", camera->getPosition());
+
+    shader->setIgnoreUniformLocationError(false);
+}
+
+
 std::string RenderProcessor::generateHeader() {
+
+    if (!isInitialized()) {
+        LWARNING("generateHeader() called on an uninitialized processor");
+    }
+
     std::string header;
 
     // use highest available shading language version up to version 1.30
@@ -187,13 +287,12 @@ std::string RenderProcessor::generateHeader() {
         header += "#version 120\n";
     else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_110)
         header += "#version 110\n";
-    
-    if (tc_) {
-        if (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D)
-            header += "#define VRN_TEXTURE_2D\n";
-        else if (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE)
-            header += "#define VRN_TEXTURE_RECTANGLE\n";
-    }
+
+    //HACK:
+    if (!GpuCaps.isNpotSupported())
+        header += "#define VRN_TEXTURE_RECTANGLE\n";
+    else
+        header += "#define VRN_TEXTURE_2D\n";
 
     if (GLEW_NV_fragment_program2) {
         GLint i = -1;
@@ -220,70 +319,8 @@ std::string RenderProcessor::generateHeader() {
     return header;
 }
 
-// Parameters currently set:
-// - screenDim_
-// - screenDimRCP_
-// - cameraPosition_ (camera position in world coordinates)
-// - lightPosition_ (light source position in world coordinates)
-void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader) {
-    shader->setIgnoreUniformLocationError(true);
-
-    if (tc_) {
-        shader->setUniform("screenDim_", tgt::vec2(tc_->getSize()));
-        shader->setUniform("screenDimRCP_", 1.f / tgt::vec2(tc_->getSize()));
-    }
-
-    // camera position in world coordinates
-    shader->setUniform("cameraPosition_", camera_->getPosition());
-
-    // light source position in world coordinates
-    shader->setUniform("lightPosition_", getLightPosition());
-
-    shader->setIgnoreUniformLocationError(false);
-}
-
-void RenderProcessor::setLightingParameters() {
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient_.get().elem);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse_.get().elem);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular_.get().elem);
-    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, lightAttenuation_.get().x);
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, lightAttenuation_.get().y);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, lightAttenuation_.get().z);
-
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialAmbient_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialDiffuse_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, materialSpecular_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, materialEmission_.get().elem);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialShininess_.get());
-}
-
-void RenderProcessor::setSizeTiled(uint width, uint height) {
-    setSize(tgt::ivec2(width, height));
-
-    // gluPerspective replacement taken from
-    // http://nehe.gamedev.net/data/articles/article.asp?article=11
-
-    float fovY = 45.f;
-    float aspect = static_cast<float>(width) / height;
-    float zNear = 0.1f;
-    float zFar = 50.f;
-
-    float fw, fh;
-    fh = tanf(fovY / 360 * tgt::PIf) * zNear;
-    fw = fh * aspect;
-
-    tgt::Frustum frust_ = tgt::Frustum(-fw, fw, - fh, fh, zNear, zFar);
-    camera_->setFrustum(frust_);
-    camera_->updateFrustum();
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    tgt::loadMatrix(camera_->getProjectionMatrix());
-    glMatrixMode(GL_MODELVIEW);
-}
-
-tgt::vec3 RenderProcessor::getLightPosition() const {
-    return tgt::vec3(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+const std::vector<RenderPort*>& RenderProcessor::getPrivateRenderPorts() const {
+    return privateRenderPorts_;
 }
 
 } // namespace voreen

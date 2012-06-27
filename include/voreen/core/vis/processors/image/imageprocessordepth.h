@@ -47,13 +47,14 @@ public:
      */
     ImageProcessorDepth(const std::string& shaderFilename = "");
 
-    virtual const Identifier getClassName() const { return "ImageProcessor.ImageProcessorDepth"; }
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "ImageProcessorDepth"; }
 
 protected:
-    virtual void analyzeDepthBuffer(int source); ///< Read back depth buffer and determine min and max depth value.
+    virtual void analyzeDepthBuffer(RenderPort* port); ///< Read back depth buffer and determine min and max depth value.
 
-    FloatProp minDepth_; ///< Control the minimum depth value. (from what? (df))
-    FloatProp maxDepth_; ///< Control the maximum depth value.
+    FloatProperty minDepth_; ///< Control the minimum depth value. (from what? (df))
+    FloatProperty maxDepth_; ///< Control the maximum depth value.
 };
 
 } // namespace voreen

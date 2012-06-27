@@ -30,6 +30,9 @@
 #ifndef VRN_PROCESSORFACTORY_H
 #define VRN_PROCESSORFACTORY_H
 
+#include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/vis/processors/processor.h"
+
 #include <vector>
 #include <map>
 #include <string>
@@ -37,19 +40,31 @@
 namespace voreen {
 
 class Processor;
-class Identifier;
 
-class ProcessorFactory {
+class ProcessorFactory : public SerializableFactory {
 public:
+    typedef std::pair<std::string, std::string> StringPair;
+    typedef std::vector<StringPair > KnownClassesVector;
 
-    Processor* create(Identifier name);
+public:
+    ~ProcessorFactory();
 
-    const std::vector<Identifier>& getKnownClasses();
+    Processor* create(const std::string& name);
+    const ProcessorFactory::KnownClassesVector& getKnownClasses() { return knownClasses_; }
 
     static ProcessorFactory* getInstance();
 
-    // Returns processor information
-    std::string getProcessorInfo(Identifier);
+    /// Returns processor information
+    std::string getProcessorInfo(const std::string& name);
+
+    /// Returns processor category
+    std::string getProcessorCategory(const std::string& name);
+
+    /// Returns processor modulename
+    std::string getProcessorModuleName(const std::string& name);
+
+    /// Returns processor codestate
+    Processor::CodeState getProcessorCodeState(const std::string& name);
 
     /**
      * Destroys the instance of this Singleton.
@@ -58,20 +73,36 @@ public:
 
     /**
      * intializes the ClassList by registering processors
-     * adding new processors will happen here
+     * adding new processors will happen here.
      */
     void initializeClassList();
+
+    /**
+     * @see SerializableFactory::getTypeString
+     */
+    virtual const std::string getTypeString(const std::type_info& type) const;
+
+    /**
+     * @see SerializableFactory::createType
+     */
+    virtual Serializable* createType(const std::string& typeString);
+
+private:
+    struct KnownClassesOrder {
+        bool operator()(const StringPair& lhs, const StringPair& rhs) const {
+            return ((lhs.first + "." + lhs.second) < (rhs.first + "." + rhs.second));
+        }
+    };
+
+private:
+    ProcessorFactory();
+    void registerClass(Processor* const newClass);
 
 private:
     static ProcessorFactory* instance_;
 
-    ProcessorFactory();
-    ~ProcessorFactory();
-
-    void registerClass(Processor* newClass);
-
-    std::map<Identifier, Processor*> classList_;
-    std::vector<Identifier> knownClasses_;
+    std::map<std::string, Processor*> classList_;
+    ProcessorFactory::KnownClassesVector knownClasses_;
 };
 
 } // namespace voreen

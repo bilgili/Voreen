@@ -28,22 +28,21 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
-#include "tgt/glmath.h"
 
-#ifndef VRN_SNAPSHOT
-#include "voreen/core/vis/virtualclipping.h"
-#endif
-#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/interaction/camerainteractionhandler.h"
+
+#include "tgt/glmath.h"
+#include "tgt/gpucapabilities.h"
 
 using tgt::vec3;
 using tgt::mat4;
 
 namespace voreen {
 
-const Identifier EntryExitPoints::entryPointsTexUnit_      = "entryPointsTexUnit";
-const Identifier EntryExitPoints::entryPointsDepthTexUnit_ = "entryPointsDepthTexUnit";
-const Identifier EntryExitPoints::exitPointsTexUnit_       = "exitPointsTexUnit";
-const Identifier EntryExitPoints::jitterTexUnit_           = "jitterTexUnit";
+const std::string EntryExitPoints::entryPointsTexUnit_      = "entryPointsTexUnit";
+const std::string EntryExitPoints::entryPointsDepthTexUnit_ = "entryPointsDepthTexUnit";
+const std::string EntryExitPoints::exitPointsTexUnit_       = "exitPointsTexUnit";
+const std::string EntryExitPoints::jitterTexUnit_           = "jitterTexUnit";
 
 const std::string EntryExitPoints::loggerCat_("voreen.EntryExitPoints");
 
@@ -55,34 +54,57 @@ EntryExitPoints::EntryExitPoints()
       shaderProgram_(0),
       shaderProgramJitter_(0),
       shaderProgramClipping_(0),
-      supportCameraInsideVolume_("set.supportCameraInsideVolume",
-                                 "Support camera inside the volume", true),
-      jitterEntryPoints_("set.jitterEntryPoints", "Jitter entry params", false),
-      filterJitterTexture_("set.filterJitterTexture", "Filter jitter texture", true),
-      jitterStepLength_("set.jitterStepLength", "Jitter step length",
+      supportCameraInsideVolume_("supportCameraInsideVolume",
+                                 "Support camera in volume", true),
+      jitterEntryPoints_("jitterEntryPoints", "Jitter entry params", false),
+      filterJitterTexture_("filterJitterTexture", "Filter jitter texture", true),
+      jitterStepLength_("jitterStepLength", "Jitter step length",
                         0.005f, 0.0005f, 0.025f, true),
-      jitterTexture_(0)
+      jitterTexture_(0),
+      camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
+      entryPort_(Port::OUTPORT, "image.entrypoints"),
+      exitPort_(Port::OUTPORT, "image.exitpoints"),
+      inport_(Port::INPORT, "volumehandle.volumehandle"),
+      cpPort_(Port::INPORT, "coprocessor.proxygeometry"),
+      tmpPort_(Port::OUTPORT, "image.tmp", false)
 {
-    setName("EntryExitPoints");
 
-    std::vector<Identifier> units;
+    std::vector<std::string> units;
     units.push_back(entryPointsTexUnit_);
     units.push_back(entryPointsDepthTexUnit_);
     units.push_back(exitPointsTexUnit_);
     units.push_back(jitterTexUnit_);
     tm_.registerUnits(units);
 
-    filterJitterTexture_.onChange(
-        CallMemberAction<EntryExitPoints>(this, &EntryExitPoints::onFilterJitterTextureChange));
+    addProperty(supportCameraInsideVolume_);
 
-    addProperty(&supportCameraInsideVolume_);
-    addProperty(&jitterEntryPoints_);
+    //
+    // jittering
+    //
+    addProperty(jitterEntryPoints_);
+    jitterEntryPoints_.onChange(CallMemberAction<EntryExitPoints>(this, &EntryExitPoints::onJitterEntryPointsChanged));
+    onJitterEntryPointsChanged(); // set initial state
+    jitterStepLength_.setStepping(0.001f);
+    jitterStepLength_.setNumDecimals(3);
+    addProperty(jitterStepLength_);
+    addProperty(filterJitterTexture_);
+    filterJitterTexture_.onChange(CallMemberAction<EntryExitPoints>(this, &EntryExitPoints::onFilterJitterTextureChanged));
 
-    createInport("volumehandle.volumehandle");
-    createCoProcessorInport("coprocessor.proxygeometry");
-    createPrivatePort("image.tmp");
-    createOutport("image.entrypoints");
-    createOutport("image.exitpoints");
+    addProperty(camera_);
+
+    cameraHandler_ = new CameraInteractionHandler(&camera_);
+    addInteractionHandler(cameraHandler_);
+
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPort(inport_);
+    addPort(cpPort_);
+    addPrivateRenderPort(&tmpPort_);
+}
+
+const std::string EntryExitPoints::getProcessorInfo() const {
+    return "This is the standard processor for generating entry- and exit-points within Voreen. \
+            The generated image color-codes the ray parameters for a subsequent VolumeRaycaster.";
 }
 
 EntryExitPoints::~EntryExitPoints() {
@@ -94,217 +116,209 @@ EntryExitPoints::~EntryExitPoints() {
         ShdrMgr.dispose(shaderProgramClipping_);
     if (jitterTexture_)
         TexMgr.dispose(jitterTexture_);
+
+    delete cameraHandler_;
 }
 
-int EntryExitPoints::initializeGL() {
-    shaderProgram_ = ShdrMgr.load("eep_simple", generateHeader(), false);
+void EntryExitPoints::initialize() throw (VoreenException) {
+    VolumeRenderer::initialize();
+
+    shaderProgram_ = ShdrMgr.load("eep_simple", generateHeader(), false, false);
 
     shaderProgramJitter_ = ShdrMgr.loadSeparate("pp_identity.vert", "eep_jitter.frag",
-                                                generateHeader(), false);
+                                                generateHeader(), false, false);
     shaderProgramClipping_ = ShdrMgr.loadSeparate("eep_simple.vert", "eep_clipping.frag",
-                                                  generateHeader() , false);
+                                                  generateHeader() , false, false);
 
-    if (shaderProgram_ && shaderProgramJitter_ && shaderProgramClipping_)
-        return VRN_OK;
-    else
-        return VRN_ERROR;
+    if (!shaderProgram_ || !shaderProgramJitter_ || !shaderProgramClipping_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
+
+    initialized_ = true;
 }
 
-void EntryExitPoints::process(LocalPortMapping* portMapping) {
+bool EntryExitPoints::isReady() const {
+    // We want to render if at least one of the outports is connected
+    return ((entryPort_.isReady() || exitPort_.isReady()) && inport_.isReady() && cpPort_.isReady());
+}
 
-    LGL_ERROR;
-
-    if (!VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-            portMapping->getVolumeHandle("volumehandle.volumehandle")))
-        return;
-
-    int exitSource = portMapping->getTarget("image.exitpoints");
-    int entrySource;
-    
-    // use temporary target if necessary
-    if ( (supportCameraInsideVolume_.get() && jitterEntryPoints_.get()) ||
-         (!supportCameraInsideVolume_.get() && !jitterEntryPoints_.get()) )     
-        entrySource = portMapping->getTarget("image.entrypoints");
-    else 
-        entrySource = portMapping->getTarget("image.tmp");
-
-    // retrieve proxy geometry via coprocessor port
-    PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-
+void EntryExitPoints::process() {
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_->getViewMatrix());
+    tgt::loadMatrix(camera_.get()->getViewMatrix());
 
     // enable culling
     glEnable(GL_CULL_FACE);
 
     // activate shader program
     shaderProgram_->activate();
-    setGlobalShaderParameters(shaderProgram_);
-
+    setGlobalShaderParameters(shaderProgram_, camera_.get());
     LGL_ERROR;
 
     //
     // render back texture
     //
-    tc_->setActiveTarget(exitSource, "exit"); 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glCullFace(GL_FRONT);
-    LGL_ERROR;
-    pg->call("render");
-    LGL_ERROR;
+    if (exitPort_.isReady()) {
+        exitPort_.activateTarget();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glCullFace(GL_FRONT);
+
+        cpPort_.getConnectedProcessor()->render();
+        LGL_ERROR;
+        exitPort_.deactivateTarget();
+    }
 
     //
     // render front texture
     //
-    tc_->setActiveTarget(entrySource, "entry");
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glCullFace(GL_BACK);
-    LGL_ERROR;
-    pg->call("render");
-    LGL_ERROR;
+    // use temporary target if necessary
+    if (entryPort_.isReady()) {
+        if ((supportCameraInsideVolume_.get() && jitterEntryPoints_.get()) ||
+            ((!supportCameraInsideVolume_.get() || !exitPort_.isReady()) && !jitterEntryPoints_.get()))
+            entryPort_.activateTarget();
+        else
+            tmpPort_.activateTarget();
+        LGL_ERROR;
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glCullFace(GL_BACK);
+
+        cpPort_.getConnectedProcessor()->render();
+        LGL_ERROR;
+
+        if ((supportCameraInsideVolume_.get() && jitterEntryPoints_.get()) ||
+            ((!supportCameraInsideVolume_.get() || !exitPort_.isReady()) && !jitterEntryPoints_.get()))
+            entryPort_.deactivateTarget();
+        else
+            tmpPort_.deactivateTarget();
+    }
 
     // deactivate shader program
     shaderProgram_->deactivate();
 
     // fill holes in entry points texture caused by near plane clipping
-    if (supportCameraInsideVolume_.get())
-        complementClippedEntryPoints(portMapping);
+    if (supportCameraInsideVolume_.get() && entryPort_.isReady() && exitPort_.isReady())
+        complementClippedEntryPoints();
 
-    // jittering of entry points
-    if (jitterEntryPoints_.get())
-        jitterEntryPoints(portMapping);
-
-    // restore OpenGL context
+    // restore OpenGL state
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
-    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
-
-    // restore modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+    LGL_ERROR;
 
+    if (entryPort_.isReady()) {
+        // jittering of entry points
+        if (jitterEntryPoints_.get())
+            jitterEntryPoints();
+
+        entryPort_.deactivateTarget();
+    }
+
+    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
 }
 
-void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRenderer::processMessage(msg, dest);
-
-//     if (msg->id_ == VoreenPainter::cameraChanged_ && msg->getValue<tgt::Camera*>() == camera_)
-//         invalidate();
-}
-
-void EntryExitPoints::complementClippedEntryPoints(LocalPortMapping* portMapping) {
-
+void EntryExitPoints::complementClippedEntryPoints() {
     // note: since this a helper function which is only called internally,
     //       we assume that the modelview and projection matrices have already been set correctly
     //       and that a current dataset is available
 
-    tgtAssert(currentVolumeHandle_, "No Volume active");
+    tgtAssert(inport_.getData(), "No Volume active");
     tgtAssert(shaderProgramClipping_, "Clipping shader not available");
 
-    int entrySource;
-    int entryDest;
-    // write to temporary target if jittering is active
-    if (jitterEntryPoints_.get()) {
-        entrySource = portMapping->getTarget("image.entrypoints");
-        entryDest = portMapping->getTarget("image.tmp");
-    }
-    else {
-        entrySource = portMapping->getTarget("image.tmp");
-        entryDest = portMapping->getTarget("image.entrypoints");
-    }
-    int exitSource = portMapping->getTarget("image.exitpoints");
-
-    glActiveTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitSource), tc_->getGLTexID(exitSource));
-    glActiveTexture(tm_.getGLTexUnit(entryPointsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entrySource), tc_->getGLTexID(entrySource));
-    glActiveTexture(tm_.getGLTexUnit(entryPointsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entrySource), tc_->getGLDepthTexID(entrySource));
+    RenderPort& activePort = jitterEntryPoints_.get() ? entryPort_ : tmpPort_;
+    activePort.bindTextures(tm_.getGLTexUnit(entryPointsTexUnit_), tm_.getGLTexUnit(entryPointsDepthTexUnit_));
+    exitPort_.bindColorTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
 
     LGL_ERROR;
 
     shaderProgramClipping_->activate();
-    setGlobalShaderParameters(shaderProgramClipping_);
+    setGlobalShaderParameters(shaderProgramClipping_, camera_.get());
     shaderProgramClipping_->setUniform("entryTex_", tm_.getTexUnit(entryPointsTexUnit_));
+    activePort.setTextureParameters(shaderProgramClipping_, "entryParameters_");
     shaderProgramClipping_->setUniform("exitTex_", tm_.getTexUnit(exitPointsTexUnit_));
+    exitPort_.setTextureParameters(shaderProgramClipping_, "exitParameters_");
     shaderProgramClipping_->setUniform("entryTexDepth_", tm_.getTexUnit(entryPointsDepthTexUnit_));
     LGL_ERROR;
 
     // set volume parameters
     std::vector<VolumeStruct> volumes;
     volumes.push_back(VolumeStruct(
-        currentVolumeHandle_->getVolumeGL(),
-        "",                             // we do not need the volume itself...
-        "",
-        "volumeParameters_")            // ... but its parameters
-    );
+                inport_.getData()->getVolumeGL(),
+                "",                             // we do not need the volume itself...
+                "",
+                "volumeParameters_")            // ... but its parameters
+            );
     bindVolumes(shaderProgramClipping_, volumes);
 
     glCullFace(GL_FRONT);
 
-    tc_->setActiveTarget(entryDest, "entry filled");
+    // write to temporary target if jittering is active
+    if (jitterEntryPoints_.get())
+        tmpPort_.activateTarget("entry filled");
+    else
+        entryPort_.activateTarget("entry filled");
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-    pg->call("render");
+    cpPort_.getConnectedProcessor()->render();
 
     shaderProgramClipping_->deactivate();
 
     glCullFace(GL_BACK);
     LGL_ERROR;
-
 }
 
-void EntryExitPoints::jitterEntryPoints(LocalPortMapping* portMapping) {
-
-    tgtAssert(shaderProgramJitter_, "Jittering shader not available");
-
-    int entrySource = portMapping->getTarget("image.tmp");
-    int exitSource = portMapping->getTarget("image.exitpoints");
-
-    int entryDest = portMapping->getTarget("image.entrypoints");
-
+void EntryExitPoints::jitterEntryPoints() {
     // if canvas resolution has changed, regenerate jitter texture
     if (!jitterTexture_ ||
-        (jitterTexture_->getDimensions().x != tc_->getSize().x) ||
-        (jitterTexture_->getDimensions().y != tc_->getSize().y))
+        (jitterTexture_->getDimensions().x != entryPort_.getSize().x) ||
+        (jitterTexture_->getDimensions().y != entryPort_.getSize().y))
     {
         generateJitterTexture();
     }
 
     shaderProgramJitter_->activate();
-    setGlobalShaderParameters(shaderProgramJitter_);
+    setGlobalShaderParameters(shaderProgramJitter_, camera_.get());
 
     // bind jitter texture
     glActiveTexture(tm_.getGLTexUnit(jitterTexUnit_));
     jitterTexture_->bind();
     jitterTexture_->uploadTexture();
     shaderProgramJitter_->setUniform("jitterTexture_", tm_.getTexUnit(jitterTexUnit_));
+    shaderProgramJitter_->setIgnoreUniformLocationError(true);
+    shaderProgramJitter_->setUniform("jitterParameters_.dimensions_",
+                                     tgt::vec2(jitterTexture_->getDimensions().xy()));
+    shaderProgramJitter_->setUniform("jitterParameters_.dimensionsRCP_",
+                                     tgt::vec2(1.0f) / tgt::vec2(jitterTexture_->getDimensions().xy()));
+    shaderProgramJitter_->setIgnoreUniformLocationError(false);
 
-    // bind entry points texture and depth texture
-    glActiveTexture(tm_.getGLTexUnit(entryPointsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entrySource), tc_->getGLTexID(entrySource));
+    // bind entry points texture and depth texture (have been rendered to temporary port)
+    tmpPort_.bindColorTexture(tm_.getGLTexUnit(entryPointsTexUnit_));
     shaderProgramJitter_->setUniform("entryPoints_", tm_.getTexUnit(entryPointsTexUnit_));
-    glActiveTexture(tm_.getGLTexUnit(entryPointsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entrySource), tc_->getGLDepthTexID(entrySource));
+
+    tmpPort_.bindDepthTexture(tm_.getGLTexUnit(entryPointsDepthTexUnit_));
     shaderProgramJitter_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryPointsDepthTexUnit_));
+    tmpPort_.setTextureParameters(shaderProgramJitter_, "entryParameters_");
 
     // bind exit points texture
-    glActiveTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitSource), tc_->getGLTexID(exitSource));
+    exitPort_.bindColorTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
     shaderProgramJitter_->setUniform("exitPoints_", tm_.getTexUnit(exitPointsTexUnit_));
+    exitPort_.setTextureParameters(shaderProgramJitter_, "exitParameters_");
 
     shaderProgramJitter_->setUniform("stepLength_", jitterStepLength_.get());
 
-    tc_->setActiveTarget(entryDest, "EntryExitPoints: jitteredEntryParams");
+    entryPort_.activateTarget("jitteredEntryParams");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // render screen aligned quad
@@ -314,20 +328,22 @@ void EntryExitPoints::jitterEntryPoints(LocalPortMapping* portMapping) {
 }
 
 void EntryExitPoints::generateJitterTexture() {
-    tgt::ivec2 screenDim_ = tc_->getSize();
+    tgt::ivec2 screenDim_ = entryPort_.getSize();
 
-    if (jitterTexture_)
-        delete jitterTexture_;
+    delete jitterTexture_;
 
     jitterTexture_ = new tgt::Texture(
-        tgt::ivec3(screenDim_.x, screenDim_.y, 1),  // dimensions
-        GL_LUMINANCE,                               // format
-        GL_LUMINANCE8,                              // internal format
-        GL_UNSIGNED_BYTE,                           // data type
-        tgt::Texture::NEAREST,                      // filter
-        (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE)
-                                                    // is texture rectangle?
+            tgt::ivec3(screenDim_.x, screenDim_.y, 1),  // dimensions
+            GL_LUMINANCE,                               // format
+            GL_LUMINANCE8,                              // internal format
+            GL_UNSIGNED_BYTE,                           // data type
+            tgt::Texture::NEAREST,                      // filter
+            (!GpuCaps.isNpotSupported())                // is texture rectangle?
     );
+
+#ifdef VRN_NO_RANDOM
+    srand(0);
+#endif
 
     // create jitter values
     int* texData = new int[screenDim_.x * screenDim_.y];
@@ -364,7 +380,12 @@ void EntryExitPoints::generateJitterTexture() {
     delete[] texData;
 }
 
-void EntryExitPoints::onFilterJitterTextureChange() {
+void EntryExitPoints::onJitterEntryPointsChanged() {
+    jitterStepLength_.setVisible(jitterEntryPoints_.get());
+    filterJitterTexture_.setVisible(jitterEntryPoints_.get());
+}
+
+void EntryExitPoints::onFilterJitterTextureChanged() {
     generateJitterTexture();
     invalidate();
 }

@@ -34,6 +34,8 @@
 
 namespace voreen {
 
+class CameraInteractionHandler;
+
 /**
  * Provides a simple cube proxy with clipping.
  */
@@ -42,34 +44,15 @@ public:
     CubeProxyGeometry();
     virtual ~CubeProxyGeometry();
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.CubeProxyGeometry"; }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "CubeProxyGeometry"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new CubeProxyGeometry(); }
 
-    /**
-     * Handles the Identifier
-     *       - setUseClipping \n bool
-     *     - setLeftClipPlane \c int
-     *     - setRightClipPlane \c int
-     *     - setTopClipPlane \c int
-     *     - setBottomClipPlane \c int
-     *     - setLeftFrontPlane \c int
-     *     - setLeftBackPlane \c int
-     *     - resetClipPlanes
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-    virtual bool getUseVirtualClipplane();
-
-    /**
-     * returns (left down front) vector
-     */
-    virtual tgt::vec3 getClipPlaneLDF();
-
-    /**
-     * returns (right up back) vector
-     */
-    virtual tgt::vec3 getClipPlaneRUB();
     virtual void render();
+    virtual void process();
 
 protected:
     void revalidateCubeGeometry();
@@ -79,23 +62,6 @@ protected:
     void resetClippingPlanes();
 
     void defineBoxBrickingRegion();
-
-    /// clipping
-    BoolProp useClipping_;
-    IntProp clipLeftX_;
-    IntProp clipRightX_;
-    IntProp clipUpY_;
-    IntProp clipDownY_;
-    IntProp clipFrontZ_;
-    IntProp clipBackZ_;
-    EnumProp* brickSelectionProp_;
-    std::vector<std::string> brickSelectionPropValues_;
-    IntProp brickSelectionPriority_;
-
-    GLuint dl_;
-    BoolProp useVirtualClipplane_;
-    FloatVec4Prop clipPlane_;  ///< stored as (n.x, n.y, n.z, d)
-
     /** reactions for changes on properties */
     void setUseClipping();
     void setLeftClipPlane();
@@ -105,7 +71,22 @@ protected:
     void setFrontClipPlane();
     void setBackClipPlane();
 
-    void markAsChanged();
+    /// clipping
+    BoolProperty useClipping_;
+    IntProperty clipLeftX_;
+    IntProperty clipRightX_;
+    IntProperty clipUpY_;
+    IntProperty clipDownY_;
+    IntProperty clipFrontZ_;
+    IntProperty clipBackZ_;
+    IntProperty brickSelectionPriority_;
+
+    GLuint dl_;
+    BoolProperty useVirtualClipplane_;
+    FloatVec4Property clipPlane_;  ///< stored as (n.x, n.y, n.z, d)
+
+    VolumeHandle* currentVolumeHandle_;
+    VolumeHandle* oldHandle_;
 };
 
 } // namespace

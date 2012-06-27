@@ -123,7 +123,7 @@ void DoubleSlider::mousePressEvent(QMouseEvent* e) {
         rightSliderActive_ = true;
     }
     moveSlider(normalizedMousePos_);
-    emit switchInteractionMode(true);
+    emit toggleInteractionMode(true);
 }
 
 void DoubleSlider::mouseMoveEvent(QMouseEvent* e){
@@ -139,7 +139,7 @@ void DoubleSlider::mouseMoveEvent(QMouseEvent* e){
 
 void DoubleSlider::mouseReleaseEvent(QMouseEvent* e) {
     e->accept();
-    emit switchInteractionMode(false);
+    emit toggleInteractionMode(false);
 }
 
 void DoubleSlider::moveSlider(float mousePos) {

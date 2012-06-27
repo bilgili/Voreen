@@ -29,56 +29,36 @@
 
 #include "voreen/core/vis/properties/colorproperty.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 #include <sstream>
 
 namespace voreen {
 
-ColorProp::ColorProp(const std::string& id, const std::string& guiText,
-                     tgt::Color value, bool invalidate, bool invalidateShader)
-    : TemplateProperty<tgt::vec4>(id, guiText, value, invalidate, invalidateShader)
+ColorProperty::ColorProperty(const std::string& id, const std::string& guiText,
+                     tgt::Color value, Processor::InvalidationLevel invalidationLevel)
+    : TemplateProperty<tgt::vec4>(id, guiText, value, invalidationLevel)
 {}
 
-void ColorProp::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    tgt::vec4 color(0.0f);
-    if (propElem->QueryFloatAttribute("r", &color.r) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("g", &color.g) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("b", &color.b) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("a", &color.a) == TIXML_SUCCESS)
+void ColorProperty::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
 
-        try {
-            set(color);
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
+    s.serialize("value", value_);
 }
 
-TiXmlElement* ColorProp::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
+void ColorProperty::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
 
-    if (getSerializeTypeInformation())
-        propElem->SetAttribute("class", "ColorProperty");
-    
-    TiXmlElement* min = new TiXmlElement("minValue");
-    TiXmlElement* max = new TiXmlElement("maxValue");
-    const std::string fields = "rgba";
-    for (size_t i = 0; i < 4; ++i) {
-        propElem->SetDoubleAttribute(fields.substr(i, 1).c_str(), value_[i]);
-        min->SetDoubleAttribute(fields.substr(i, 1).c_str(), 0.0);
-        max->SetDoubleAttribute(fields.substr(i, 1).c_str(), 1.0);
+    tgt::vec4 value;
+    s.deserialize("value", value);
+    try {
+        set(value);
     }
-    if (getSerializeTypeInformation()) {
-        propElem->LinkEndChild(min);
-        propElem->LinkEndChild(max);
+    catch (Condition::ValidationFailed& e) {
+        s.addError(e);
     }
-
-    return propElem;
 }
 
-PropertyWidget* ColorProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* ColorProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

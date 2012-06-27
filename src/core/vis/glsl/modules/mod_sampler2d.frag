@@ -30,17 +30,32 @@
 uniform vec2 screenDim_;
 uniform vec2 screenDimRCP_;
 
+/*
+ * This struct contains information about a texture, like
+ * its dimensions. Additionally, the reciprocal
+ * values of all parameters are available (suffix RCP) .
+ */
+struct TEXTURE_PARAMETERS {
+    vec2 dimensions_;        // the texture's resolution, e.g. [256.0, 128.0]
+    vec2 dimensionsRCP_;
+};
+
 // definitions for textures of type GL_TEXTURE_2D
 #if defined(VRN_TEXTURE_2D)
-
     #define SAMPLER2D_TYPE sampler2D
 
     // texture lookup function for 2D textures
+    vec4 textureLookup2Dnormalized(in sampler2D texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+        return texture2D(texture, texCoords);
+    }
+
+    // texture lookup function for 2D textures
     // texture coordinates have to be passed as fragment coordinates!
-    vec4 textureLookup2D(in sampler2D texture, in vec2 texCoords) {
-        vec2 texCoordsNormalized = texCoords * screenDimRCP_;
+    vec4 textureLookup2D(in sampler2D texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+        vec2 texCoordsNormalized = texCoords * texParams.dimensionsRCP_;
         return texture2D(texture, texCoordsNormalized);
     }
+
 
 // definitions for textures of type GL_TEXTURE_RECTANGLE_ARB
 #elif defined(VRN_TEXTURE_RECTANGLE)
@@ -51,8 +66,20 @@ uniform vec2 screenDimRCP_;
 
     // texture lookup function for 2D textures
     // texture coordinates have to be passed as fragment coordinates!
-    vec4 textureLookup2D(in sampler2DRect texture, in vec2 texCoords) {
+    vec4 textureLookup2Dnormalized(in sampler2DRect texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+        return texture2DRect(texture, texCoords * texParams.dimensions_);
+    }
+
+    // texture lookup function for 2D textures
+    // texture coordinates have to be passed as fragment coordinates!
+    vec4 textureLookup2D(in sampler2DRect texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
         return texture2DRect(texture, texCoords);
     }
 
 #endif
+
+vec4 textureLookup2Dscreen(in sampler2D texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+    vec2 texCoordsNormalized = texCoords * screenDimRCP_;
+    return textureLookup2Dnormalized(texture, texParams, texCoordsNormalized);
+}
+

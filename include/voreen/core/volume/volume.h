@@ -30,32 +30,40 @@
 #ifndef VRN_VOLUME_H
 #define VRN_VOLUME_H
 
-// Note: please ensure that no OpenGL dependencies are added into this file
+// Note: please ensure that no OpenGL dependencies are added to this file
 
-#include "voreen/core/vis/message.h"
 #include "voreen/core/volume/volumemetadata.h"
 
 namespace voreen {
 
+/**
+ * OpenGL-independent base class for volumetric data sets.
+ *
+ * This class stores the raw data as well as the
+ * required meta information about it. It does,
+ * however, neither perform any OpenGL operations nor
+ * does it hold any OpenGL-related properties.
+ *
+ * \sa VolumeGL
+ *
+ */
 class Volume {
 public:
 
-    /*
-     * constructors and destructor
-     */
-
     /**
-     * @param dimensions dimesions of the new dataset
-     * @param bitsStored stored bits of the new dataset
-     * @param spacing spacing of the new dataset
-    */
+     * Constructor.
+     *
+     * @param dimensions dimensions of the new dataset
+     * @param bitsStored bit depth of the new dataset
+     * @param spacing dimensions of each voxel of the new dataset
+     */
     Volume(const tgt::ivec3& dimensions,
            int bitsStored,
            const tgt::vec3& spacing = tgt::vec3(1.f));
 
     virtual ~Volume() {}
 
-    /// Use this as a kind of a virtual constructor
+    /// Use this as a kind of a virtual constructor.
     virtual Volume* clone() const throw (std::bad_alloc) = 0;
 
     /**
@@ -66,41 +74,74 @@ public:
      */
     virtual Volume* clone(void* data) const throw (std::bad_alloc) = 0;
 
-    /*
-     * getters and setters
-     */
-
+    /// Returns the volume's dimensions in voxel coordinates.
     tgt::ivec3 getDimensions() const;
 
-    /// Returns the lower left front mapped to [-1, 1] with spacing kept in mind
+    /// Returns the lower left front mapped to [-1, 1] with spacing kept in mind.
     tgt::vec3 getLLF() const;
 
-    /// Returns the upper right backmapped to [-1, 1] with spacing kept in mind
+    /// Returns the upper right backmapped to [-1, 1] with spacing kept in mind.
     tgt::vec3 getURB() const;
 
-    /// Returns the cube vertices mapped to [-1, 1] with spacing kept in mind
+    /// Returns the cube vertices mapped to [-1, 1] with spacing kept in mind.
     const tgt::vec3* getCubeVertices() const;
 
-    /// Returns the size of the cube mapped to [-1, 1] with spacing kept in mind
+    /// Returns the size of the cube mapped to [-1, 1] with spacing kept in mind.
     tgt::vec3 getCubeSize() const;
 
-    size_t getNumVoxels() const;
+    /// Specifies the voxel dimensions of the volume.
+    void setSpacing(const tgt::vec3 spacing);
+
+    /// Returns the voxel dimensions of the volume.
     tgt::vec3 getSpacing() const;
 
-    virtual int getBitsStored() const;
+    /// Returns the number of voxels contained by the volume.
+    size_t getNumVoxels() const;
 
-    virtual int getBitsAllocated() const = 0;
-    virtual int getNumChannels() const = 0;
-    virtual int getBytesPerVoxel() const = 0;
-
-    /// Returns the number of bytes held in the \a data_ array
+    /// Returns the number of bytes held in the \a data_ array.
     virtual size_t getNumBytes() const = 0;
 
-    VolumeMetaData& meta();
-    const VolumeMetaData& meta() const;
+    /// Returns the number of channels of this volume.
+    virtual int getNumChannels() const = 0;
 
-    void setSpacing(const tgt::vec3 spacing);
-    void setBitsStored(int bitsStored);
+    /// Set the volume's bit depth.
+    virtual void setBitsStored(int bits);
+
+    /// Returns the volume's bit depth.
+    virtual int getBitsStored() const;
+
+    /// Returns the number of bits that are allocated by each voxel.
+    /// For technical reasons, it may exceed the volume's bit depth.
+    virtual int getBitsAllocated() const = 0;
+
+    /// Returns the number of bytes that are allocated for each voxel.
+    virtual int getBytesPerVoxel() const = 0;
+
+    /**
+     * Assigns a transformation matrix to the volume.
+     *
+     * This matrix has no effect on the Volume data itself,
+     * but is applied by the Processors during the rendering process.
+     * It can, for instance, be used for the registration of volumes.
+     */
+    void setTransformation(const tgt::mat4& transformationMatrix);
+
+    /**
+     * Returns the transformation matrix assigned to this volume.
+     *
+     * \sa setTransformation
+     */
+    const tgt::mat4& getTransformation() const;
+
+    /**
+     * @deprecated meta data will be moved to volume handle
+     */
+    VolumeMetaData& meta();
+
+    /**
+     * @deprecated meta data will be moved to volume handle
+     */
+    const VolumeMetaData& meta() const;
 
     /*
      * abstract access of the voxels
@@ -185,14 +226,14 @@ public:
         throw (std::bad_alloc) = 0;
 
     /**
-    * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
-    * to 1 voxel. This does not necessarily happen when using the scale(..) function.
-    */
+     * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
+     * to 1 voxel. This does not necessarily happen when using the scale(..) function.
+     */
     virtual Volume* downsample() const throw (std::bad_alloc);
 
-    /**Calculates the root mean square error between this volume and
-    * volume
-    */
+    /** Calculates the root mean square error between this volume and
+     *  volume
+     */
     virtual float calcError(Volume* volume) =0;
 
     /**
@@ -209,14 +250,12 @@ public:
      * Use this as type safe wrapper in order to get a proper typed pointer.
      */
     template<class T>
-    inline static typename T::VoxelType* getData(T* v) {
-        return (typename T::VoxelType*) v->getData();
-    }
+    inline static typename T::VoxelType* getData(T* v);
 
-	/**
-	* Use this to check if all voxels in the volume have the same value.
-	*/
-	virtual bool getAllVoxelsEqual() = 0;
+    /**
+     * Use this to check if all voxels in the volume have the same value.
+     */
+    virtual bool getAllVoxelsEqual() = 0;
 
 protected:
     // protected default constructor
@@ -231,12 +270,13 @@ protected:
     tgt::vec3   cubeSize_;
     tgt::vec3   cubeVertices_[8];
 
+    tgt::mat4 transformationMatrix_;
+
     VolumeMetaData meta_;
 
     static const std::string loggerCat_;
 };
 
-typedef TemplateMessage<Volume*> VolumePtrMsg;
 
 /**
  * You can use this macro if you want to iterate over all voxels and it is

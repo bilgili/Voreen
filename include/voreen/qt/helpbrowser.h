@@ -46,7 +46,7 @@ public:
     HelpBrowser(const QUrl& startPage = QUrl(), const QString& title ="", QWidget* parent = 0);
 
     void createAndConnectToolbar();
-    
+
 private:
     QTextBrowser* browser_;
 };

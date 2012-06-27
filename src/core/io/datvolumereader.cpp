@@ -51,19 +51,34 @@ const std::string DatVolumeReader::loggerCat_ = "voreen.io.VolumeReader.dat";
 DatVolumeReader::DatVolumeReader(IOProgress* progress)
     : VolumeReader(progress)
 {
-    name_ = "Dat Reader";
     extensions_.push_back("dat");
 }
 
-VolumeSet* DatVolumeReader::read(const std::string &fileName)
+std::string DatVolumeReader::getRelatedRawFileName(const std::string& fileName) {
+    TextFileReader reader(fileName);
+    if (! reader)
+        return "";
+
+    std::string type;
+    std::string objectFilename = "";
+    std::istringstream args;
+    while (reader.getNextLine(type, args, false) == true) {
+        if (type == "ObjectFileName:") {
+            args >> objectFilename;
+            break;
+        }
+    }
+    return objectFilename;
+}
+
+VolumeCollection* DatVolumeReader::read(const std::string &fileName)
     throw (tgt::FileException, std::bad_alloc)
 {
     return readSlices(fileName,0,0);
-
 }
 
 
-VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tgt::ivec3& dims,size_t firstSlice,size_t lastSlice)
+VolumeCollection* DatVolumeReader::readVolumeFile(const std::string &fileName, const tgt::ivec3& dims,size_t firstSlice,size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader rawReader(getProgress());
@@ -73,21 +88,21 @@ VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tg
         ivec3(1, 1, 1),     // thickness of one slice
         16,                 // bits per voxel
         "I",                // intensity image
-        "USHORT",           // one unsigned short per voxel
-        0,                  // default values
-        tgt::mat4::identity,
+        "USHORT_12",        // one unsigned short per voxel
+        6,                  // loading offset
+        tgt::mat4::identity,    // default values
         Modality::MODALITY_UNKNOWN,
         -1.0f,
         "",
-        "",
-        6);                 // loading offset
+        "");
 
-    VolumeSet* volumeSet = rawReader.readSlices(fileName, firstSlice, lastSlice);
-    fixOrigins(volumeSet, fileName);
-    return volumeSet;
+    VolumeCollection* volumeCollection = rawReader.readSlices(fileName, firstSlice, lastSlice);
+    if (!volumeCollection->empty())
+        volumeCollection->first()->setOrigin(VolumeOrigin(fileName));
+    return volumeCollection;
 }
 
-VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firstSlice,size_t lastSlice)
+VolumeCollection* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firstSlice,size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     std::string objectFilename;
@@ -102,9 +117,9 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
     tgt::mat4 transformation = tgt::mat4::identity;
     std::string unit;
     Modality modality = Modality::MODALITY_UNKNOWN;
-    int zeroPoint = 0;
     float timeStep = -1.0f;
     std::string metaString = "";
+    std::string sliceOrder = "+z";
     bool error = false;
 
     LINFO("Loading dat file " << fileName);
@@ -118,7 +133,6 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
     int bits = 0;
 
     while (reader.getNextLine(type, args, false)) {
-
         if (type == "ObjectFileName:") {
             args >> objectFilename;
             LDEBUG(type << " " << objectFilename);
@@ -156,9 +170,6 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
         } else if (type == "Unit:") {
             args >> unit;
             LDEBUG(type << " " << unit);
-        } else if (type == "ZeroPoint:") {
-            args >> zeroPoint;
-            LDEBUG(type << " " << zeroPoint);
         } else if (type == "TransformMatrix:") {
             // first argument contains number of row
             std::string row;
@@ -190,8 +201,10 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
         else if (type == "MetaString:") {
             args >> metaString;
             LDEBUG(type << " " << metaString);
-        }
-        else {
+        } else if (type == "SliceOrder:") {
+            args >> sliceOrder;
+            LDEBUG(type << " " << sliceOrder);
+        } else {
             LERROR("Unknown type: " << type);
         }
 
@@ -215,8 +228,8 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
 
     if (!error) {
         RawVolumeReader rawReader(getProgress());
-        rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, zeroPoint,
-            transformation, modality, timeStep, metaString, unit);
+        rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, 0,
+            transformation, modality, timeStep, metaString, unit, sliceOrder);
 
         // do we have a relative path?
         if ((objectFilename.substr(0, 1) != "/")  && (objectFilename.substr(0, 1) != "\\") &&
@@ -227,15 +240,16 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firs
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = rawReader.readSlices(objectFilename,firstSlice,lastSlice);
-        fixOrigins(volumeSet, fileName);
-        return volumeSet;
+        VolumeCollection* volumeCollection = rawReader.readSlices(objectFilename,firstSlice,lastSlice);
+        if (!volumeCollection->empty())
+            volumeCollection->first()->setOrigin(VolumeOrigin(fileName));
+        return volumeCollection;
     } else {
         throw tgt::CorruptedFileException("error while reading data", fileName);
     }
 }
 
-VolumeSet* DatVolumeReader::readSlices(const std::string &fileName,size_t firstSlice, size_t lastSlice)
+VolumeCollection* DatVolumeReader::readSlices(const std::string &fileName,size_t firstSlice, size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     // First of all, we have to test if the file is a simple meta-text file or contains a whole
@@ -263,15 +277,16 @@ VolumeSet* DatVolumeReader::readSlices(const std::string &fileName,size_t firstS
 
     fin.close();
 
-    if (realSize == supposedSize)
+    if (realSize == supposedSize) {
         return readVolumeFile(fileName, tgt::ivec3(dimensions),firstSlice,lastSlice);
+    }
     else
         return readMetaFile(fileName,firstSlice,lastSlice);
 }
 
 
 
-VolumeSet* DatVolumeReader::readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+VolumeCollection* DatVolumeReader::readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
     throw (tgt::FileException, std::bad_alloc)
 {
     // First of all, we have to test if the file is a simple meta-text file or contains a whole
@@ -305,7 +320,7 @@ VolumeSet* DatVolumeReader::readBrick(const std::string& fileName, tgt::ivec3 br
         return readMetaFileBrick(fileName,brickStartPos,brickSize);
 }
 
-VolumeSet* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, const tgt::ivec3& dims, 
+VolumeCollection* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, const tgt::ivec3& dims,
     tgt::ivec3 brickStartPos, int brickSize) throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader rawReader(getProgress());
@@ -316,21 +331,19 @@ VolumeSet* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, con
         16,                 // bits per voxel
         "I",                // intensity image
         "USHORT",           // one unsigned short per voxel
-        0,                  // default values
-        tgt::mat4::identity,
+        6,                  // header skip
+        tgt::mat4::identity,    // default values
         Modality::MODALITY_UNKNOWN,
         -1.0f,
         "",
-        "",
-        6);                 // loading offset
+        "");
 
-    VolumeSet* volumeSet = rawReader.readBrick(fileName,brickStartPos, brickSize);
+    VolumeCollection* volumeCollection = rawReader.readBrick(fileName,brickStartPos, brickSize);
 
-    fixOrigins(volumeSet, fileName);
-    return volumeSet;
+    return volumeCollection;
 }
 
-VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::ivec3 brickStartPos,
+VolumeCollection* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::ivec3 brickStartPos,
     int brickSize) throw (tgt::FileException, std::bad_alloc)
 {
     std::string objectFilename;
@@ -345,7 +358,6 @@ VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::i
     tgt::mat4 transformation = tgt::mat4::identity;
     std::string unit;
     Modality modality = Modality::MODALITY_UNKNOWN;
-    int zeroPoint = 0;
     float timeStep = -1.0f;
     std::string metaString = "";
     bool error = false;
@@ -386,8 +398,6 @@ VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::i
             args >> bits;
         } else if (type == "Unit:") {
             args >> unit;
-        } else if (type == "ZeroPoint:") {
-            args >> zeroPoint;
         } else if (type == "TransformMatrix:") {
             // first argument contains number of row
             std::string row;
@@ -434,7 +444,7 @@ VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::i
 
     if (!error) {
         RawVolumeReader rawReader(getProgress());
-        rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, zeroPoint,
+        rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, 0,
             transformation, modality, timeStep, metaString, unit);
 
         // do we have a relative path?
@@ -446,9 +456,8 @@ VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::i
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = rawReader.readBrick(objectFilename,brickStartPos,brickSize);
-        fixOrigins(volumeSet, fileName);
-        return volumeSet;
+        VolumeCollection* volumeCollection = rawReader.readBrick(objectFilename, brickStartPos, brickSize);
+        return volumeCollection;
     } else {
         throw tgt::CorruptedFileException("error while reading data", fileName);
     }

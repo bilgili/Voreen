@@ -31,6 +31,7 @@
 #define VRN_DATVOLUMEWRITER_H
 
 #include "voreen/core/io/volumewriter.h"
+#include <sstream>
 
 namespace voreen {
 
@@ -41,13 +42,16 @@ class DatVolumeWriter : public VolumeWriter {
 public:
     DatVolumeWriter();
 
+    std::string getDatFileString(VolumeHandle* const volumeHandle,
+        const std::string& rawFileName, char** volData, size_t& numBytes);
+
     /**
      * Writes the data of a volume into a dat- and a raw-file.
      *
      * @param fileName File name to be written
      * @param volume Volume dataset
      */
-    virtual void write(const std::string& filename, Volume* volume)
+    virtual void write(const std::string& filename, VolumeHandle* volumeHandle)
         throw (tgt::IOException);
 
 private:

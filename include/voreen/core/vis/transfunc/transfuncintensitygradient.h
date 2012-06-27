@@ -258,6 +258,16 @@ public:
      */
     const std::string getSamplerType() const;
 
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
 protected:
     /**
      * Saves the transfer function to a Xml file. Returns true if the operation

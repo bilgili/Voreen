@@ -1,8 +1,7 @@
 #ifndef VRN_CACHEINDEX_H
 #define VRN_CACHEINDEX_H
 
-#include "voreen/core/vis/identifier.h"
-#include "voreen/core/xml/serializable.h"
+#include "tinyxml/tinyxml.h"
 
 #include <map>
 #include <string>
@@ -11,7 +10,6 @@ namespace voreen {
 
 class Port;
 class Processor;
-class LocalPortMapping;
 
 /**
  * Class for managing files for cache entries and storing/loading a database-like
@@ -27,11 +25,11 @@ class LocalPortMapping;
  * and creates it if necessary.
  * CacheIndex is designed using the singleton design pattern, i.e. that there
  * is only one CacheIndex, managing all cached objects. Destinctions between
- * different kinds of object may be made by the key, 
+ * different kinds of object may be made by the key,
  *
  * The <code>CacheIndex</code> has a two-level hierarchy: it holds 0..*
- * <code>CacheIndexEntry</code> objects, which on their parts consist of a 
- * top-level key and may contain 0..* objects of the 
+ * <code>CacheIndexEntry</code> objects, which on their parts consist of a
+ * top-level key and may contain 0..* objects of the
  * <code>CacheIndexSubEntry</code> class.
  * <code>CacheIndexSubEntry</code> objects hold one <i>sub-level key</i>
  * (<i>sub-keys</i>) each and the actual file name for the cached data.
@@ -49,15 +47,15 @@ public:
 private:
     /**
      * A <code>CacheIndexEntry</code> contains conceptionally of one top-level key and
-     * multiple <code>CacheIndexSubEntry</code> objects. The top-level key is generated 
+     * multiple <code>CacheIndexSubEntry</code> objects. The top-level key is generated
      * by the attributes.
      */
-    class CacheIndexEntry : public Serializable {
+    class CacheIndexEntry {
     friend class CacheIndex;    // The only class which needs full access to this one.
 
     public:
         /**
-         * Functor used to sort the CacheIndexEntry objects in ascending order via 
+         * Functor used to sort the CacheIndexEntry objects in ascending order via
          * std::priority_queue taking pointers. The operator> has been overloaded
          * for CacheIndexEntry class.
          */
@@ -75,7 +73,7 @@ private:
          * <code>CacheIndexSubEntry</code> objects conceptually map one <i>sub-level key</i>
          * to one file name in which the cache data are stored on hard disk.
          */
-        class CacheIndexSubEntry : public Serializable {
+        class CacheIndexSubEntry {
         friend class CacheIndexEntry;   // The only class which needs full access to this one
 
         public:
@@ -100,19 +98,19 @@ private:
              *
              * @param   processorState  The string representation of the internal state of
              *                          the concerned processor.
-             * @param   porcessorInputConfig    The string representation of the configuration 
+             * @param   porcessorInputConfig    The string representation of the configuration
              *                                  of the inports of the concerned processor.
              * @param   filename    The name of the file under which the cached data are
              *                      stored to hard disk.
              */
-            CacheIndexSubEntry(const std::string& processorState, 
+            CacheIndexSubEntry(const std::string& processorState,
                 const std::string& processorInportConfig, const std::string& filename);
 
             /**
-             * Ctor for convenience intializing the members from the passed TiXmlElement*. 
+             * Ctor for convenience intializing the members from the passed TiXmlElement*.
              * Internally, <code>updateFromXml()</code> is called.
-             * If the argument is NULL or some of the xml attributes are invalid, the 
-             * object may remain partially undefinied and cause the CacheIndex not to 
+             * If the argument is NULL or some of the xml attributes are invalid, the
+             * object may remain partially undefinied and cause the CacheIndex not to
              * work as expected.
              */
             CacheIndexSubEntry(TiXmlElement* const xml);
@@ -136,21 +134,6 @@ private:
             std::string makeKey() const;
 
             /**
-             * Inherited from <code>Serializable</code>.
-             */
-            std::string getXmlElementName() const { return "CacheIndexSubEntry"; }
-
-            /**
-             * Inherited from <code>Serializable</code>.
-             */
-            virtual TiXmlElement* serializeToXml() const;
-
-            /**
-             * Inherited from <code>Serializable</code>.
-             */
-            virtual void updateFromXml(TiXmlElement* elem);
-            
-            /**
              * CacheIndexSubEntry objects are defined to be greater to other
              * ones if their respective reference counters are greater compared
              * to the each other, or if the reference counters are equal, when
@@ -162,17 +145,17 @@ private:
                 else
                     return (time_ > rhs.time_);
             }
-            
+
         private:
-            /** 
-             * The string representation of the internal state of the concerned 
+            /**
+             * The string representation of the internal state of the concerned
              * processor
              */
             std::string processorState_;
 
             /**
              * The string representation of the configuration of the inports of the
-             * concerned processor. This can be regarded as a conceptual part of the 
+             * concerned processor. This can be regarded as a conceptual part of the
              * processor's state.
              */
             std::string processorInportConfig_;
@@ -183,8 +166,8 @@ private:
             /** The unix timestamp of the time when this object has been created. */
             unsigned long time_;
 
-            /** 
-             * Reference counter which is increased everty time, the dataset associated 
+            /**
+             * Reference counter which is increased everty time, the dataset associated
              * with this CacheIndexSubEntry objectis accessed by the cache.
              */
             size_t refCounter_;
@@ -199,7 +182,7 @@ private:
          * @param   subEntries  The CacheIndexSubEntry objects which will be used
          *                      instead of the ones from cie.
          */
-        CacheIndexEntry(const CacheIndexEntry& cie, 
+        CacheIndexEntry(const CacheIndexEntry& cie,
             const std::vector<CacheIndexSubEntry>& subEntries);
 
         /**
@@ -214,18 +197,18 @@ private:
          *                      is concerned by the caching. This is usually
          *                      identical to the ports identifier, e.g.
          *                      "volumhandle.input"
-         * @param   objectClassName Name of the class the cached object is an 
+         * @param   objectClassName Name of the class the cached object is an
          *                          instance of.
          */
-        CacheIndexEntry(const std::string& processorClassName, 
-            const std::string& processorName, const std::string& portName, 
+        CacheIndexEntry(const std::string& processorClassName,
+            const std::string& processorName, const std::string& portName,
             const std::string& objectClassName);
 
         /**
-         * Ctor for convenience intializing the members from the passed TiXmlElement*. 
+         * Ctor for convenience intializing the members from the passed TiXmlElement*.
          * Internally, <code>updateFromXml()</code> is called.
-         * If the argument is NULL or some of the xml attributes are invalid, the 
-         * object may remain partially undefinied and cause the CacheIndex not to 
+         * If the argument is NULL or some of the xml attributes are invalid, the
+         * object may remain partially undefinied and cause the CacheIndex not to
          * work as expected.
          */
         CacheIndexEntry(TiXmlElement* const xml);
@@ -268,7 +251,7 @@ private:
          *
          * @param   processorState  The string representation of the internal state of
          *                          the concerned processor.
-         * @param   porcessorInputConfig    The string representation of the configuration 
+         * @param   porcessorInputConfig    The string representation of the configuration
          *                                  of the inports of the concerned processor.
          * @param   filename    The name of the file under which the cached data are
          *                      stored to hard disk.
@@ -276,7 +259,7 @@ private:
          * @return  Sub-key of the created CacheIndexSubEntry object, if the insertion
          *          was successful, of en empty string otherwise.
          */
-        std::string insert(const std::string& processorState, 
+        std::string insert(const std::string& processorState,
             const std::string& processorInportConfig, const std::string& filename);
 
         /**
@@ -286,7 +269,7 @@ private:
          *
          * "Processor{" + processorClassName_ + "}.Outport{" + portName_ + "}"
          *
-         * @return Top-level key in the format above, used to identify this 
+         * @return Top-level key in the format above, used to identify this
          *          CacheIndexEntry object within the <code>CacheIndex</code>.
          */
         std::string makeKey() const;
@@ -300,32 +283,17 @@ private:
         bool subEntryExists(const std::string& subKey) const;
 
         /**
-         * Inherited from <code>Serializable</code>.
-         */
-        virtual std::string getXmlElementName() const { return "CacheIndexEntry"; }
-
-         /**
-          * Inherited from <code>Serializable</code>.
-          */
-        virtual TiXmlElement* serializeToXml() const;
-
-        /**
-         * Inherited from <code>Serializable</code>.
-         */
-        virtual void updateFromXml(TiXmlElement* elem);
-
-        /**
          * CacheIndexEntry objects are defnied to be greater to each other
          * if their respective reference counters are greater to each other.
          */
-        bool operator>(const CacheIndexEntry& rhs) const { 
+        bool operator>(const CacheIndexEntry& rhs) const {
             return refCounter_ > rhs.refCounter_;
         }
 
     private:
         /**
-         * Removes CacheIndexSubEntry objects from this CacheIndexEntry object until the number 
-         * of data is less than the user-defined limit of data to be held for this entry. 
+         * Removes CacheIndexSubEntry objects from this CacheIndexEntry object until the number
+         * of data is less than the user-defined limit of data to be held for this entry.
          * The strategy used to determine the sub entries to be removed is reference counting.
          */
         size_t freeDataRefCount();
@@ -361,14 +329,14 @@ private:
          * Contains all sub entries which may have been displaced by inserting other ones,
          * if the storage limits has been reached. Then the reference counting is used to
          * determine which sub entries shall be displaced.
-         * This vector and the contained objects are freed, when 
+         * This vector and the contained objects are freed, when
          * <code>CacheIndex::cleanup()</code> is called and therefore has to be called!
          */
         std::vector<CacheIndexSubEntry> displacedSubEntries_;
     };
 
 public:
-    /** 
+    /**
      * The only possibility to access an instance of this class, for it has been
      * implemented by using the Singleton design pattern.
      */
@@ -379,8 +347,8 @@ public:
 
     /**
      * Dtor saving the content of this object (and especially the one of all
-     * containing CacheIndexEntry objects and the therein contained 
-     * CacheIndexSubEntry objects) to an XML file by calling 
+     * containing CacheIndexEntry objects and the therein contained
+     * CacheIndexSubEntry objects) to an XML file by calling
      * <code>writeIndexFile()</code>.
      */
     ~CacheIndex();
@@ -423,7 +391,7 @@ public:
      * of new CacheIndexEntry objects into the CacheIndex, and copies of the
      * CacheIndexEntry objects in which CacheIndexSubEntries might have been replaced
      * by insertions of new CacheIndexSubEntries.
-     * This data are used by the <code>Cache&lt;T&gt;</code> to remove files no longer 
+     * This data are used by the <code>Cache&lt;T&gt;</code> to remove files no longer
      * needed.
      */
     std::vector<CacheIndexEntry>& getDisplacedEntries() { return displacedEntries_; }
@@ -434,7 +402,7 @@ public:
      * does not exist, nothing happens.
      *
      * @param   key IndexKey (composed of top-level and sub-level) of the entries whose
-     *              reference counters shall be increased to indicate an access by the 
+     *              reference counters shall be increased to indicate an access by the
      *              Cache.
      */
     void incrementRefCounter(const IndexKey& key);
@@ -448,19 +416,19 @@ public:
      * @param   processor   The processor for which an entry shall be created
      * @param   port    The port on that processor for which the entry shall be created
      * @param   objectClassName Name of the class of the object which is cached.
-     * @param   inportConfig    String representation of the Configuration of the inports 
+     * @param   inportConfig    String representation of the Configuration of the inports
      *                          of the port on the processor.
      * @param   filename    Name of the file where the cached object is stored on hard disk.
      *
-     * @return  The concatenation of the top-level key from the created CacheIndexEntry and 
-     *          the sub-level key of the created CacheIndexSubEntry, separated by a dot 
+     * @return  The concatenation of the top-level key from the created CacheIndexEntry and
+     *          the sub-level key of the created CacheIndexSubEntry, separated by a dot
      *          (".") if the insertsion is successful. Otherwise an empty string ist retruned.
      */
-    std::string insert(Processor* const processor, Port* const port, 
+    std::string insert(Processor* const processor, Port* const port,
         const std::string& objectClassName, const std::string& inportConfig, const std::string& filename);
 
     /**
-     * Generates and returns and entire key for the given configuration of processor, 
+     * Generates and returns and entire key for the given configuration of processor,
      * port and inportConfig as an <code>IndexKey</code> object, which is actually a
      * pair of strings.
      * The top-level key is located in the first position, the sub-level key in the second
@@ -468,7 +436,7 @@ public:
      *
      * @param   processor   Processor for which the key shall be generated.
      * @param   port    Port on that processor for which the key shall be generated.
-     * @param   inportConfig    String representation of the configuration of the 
+     * @param   inportConfig    String representation of the configuration of the
      *                          inports of that processor for key generation.
      * @return  The entire key as IndexKey object with the top-level key in the first,
      *          and the sub-level key in the second position.
@@ -499,23 +467,6 @@ private:
      *          false if the folder does not exist and could not be created.
      */
     bool prepareCacheFolder();
-
-    /**
-     * Reads and parses the XML index file 'cacheindex.xml' from the cache directory.
-     * 
-     * @return false if reading or parsing of that file failed, true otherwise.
-     */
-    bool readIndexFile();
-
-    /**
-     * Serializes this object to an XML file 'cacheindex.xml' in the cache directory.
-     * This file is used to initialize the CacheIndex on next creation, which will be
-     * probably on a new execution of the programm using this class.
-     * This method will be called by the dtor, but the cache might be configured for 
-     * instant writing. Then the file will be written every time the cache's content
-     * changes.
-     */
-    bool writeIndexFile();
 
 private:
     static const std::string loggerCat_;

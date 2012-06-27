@@ -32,7 +32,7 @@
 
 #include "voreen/core/vis/properties/templateproperty.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 #include <map>
 
 namespace voreen {
@@ -40,18 +40,22 @@ namespace voreen {
 // This base class is needed for the widget to have an interface
 class OptionPropertyBase : public TemplateProperty<std::string> {
 public:
-    OptionPropertyBase(const std::string& id, const std::string& guiText, const std::string& value,
-                       bool invalidate = true, bool invalidateShader = false)
-        : TemplateProperty<std::string>(id, guiText, value, invalidate, invalidateShader)
+    OptionPropertyBase(const std::string& id, const std::string& guiText,
+                       Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT)
+        : TemplateProperty<std::string>(id, guiText, "", invalidationLevel)
     {}
 
-    virtual void setById(const std::string& id) = 0;
-    virtual const std::string& getId() const = 0;
+    virtual void selectByKey(const std::string& key) = 0;
+    virtual const std::string& getKey() const = 0;
 
-    virtual std::vector<std::string> getIds() const = 0;
+    virtual std::vector<std::string> getKeys() const = 0;
     virtual std::map<std::string, std::string> getDescriptions() const = 0;
 
-    virtual void updateFromXml(TiXmlElement* propElem);
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
     virtual std::string toString() const { return value_; }
 };
 
@@ -59,9 +63,16 @@ public:
 
 template<class T>
 struct Option {
-    std::string id;
-    std::string description;
-    T value;
+
+    Option(const std::string& key, const std::string& description, const T& value) :
+        key_(key),
+        description_(description),
+        value_(value)
+    {}
+
+    std::string key_;
+    std::string description_;
+    T value_;
 };
 
 // ----------------------------------------------------------------------------
@@ -69,24 +80,30 @@ struct Option {
 template<class T>
 class OptionProperty : public OptionPropertyBase {
 public:
-    OptionProperty(const std::string& id, const std::string& guiText, const std::vector<Option<T> >& options,
-        bool invalidate = true, bool invalidateShader = false);
+    OptionProperty(const std::string& id, const std::string& guiText,
+        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
     virtual ~OptionProperty() {}
 
-    virtual void setById(const std::string& id) { set(id); }
-    void setByValue(const T& value);
+    virtual void addOption(const std::string& key, const std::string& description, const T& value);
 
-    virtual const std::string& getId() const { return get(); }
+    virtual void selectByKey(const std::string& key) { set(key); }
+    void selectByValue(const T& value);
+
+    virtual const std::string& getKey() const { return get(); }
+    const std::string& getDescription() const;
     const T& getValue() const;
 
     const std::vector<Option<T> >& getOptions() const { return options_; }
     void setOptions(const std::vector<Option<T> >& options) { options_ = options; }
     std::set<T> allowedValues() const;
-    std::set<std::string> allowedIds() const;
-    virtual std::vector<std::string> getIds() const;
+    std::set<std::string> allowedKeys() const;
+    virtual std::vector<std::string> getKeys() const;
     virtual std::map<std::string, std::string> getDescriptions() const;
 
-    virtual TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
 
 protected:
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
@@ -98,19 +115,25 @@ protected:
 
 template<class T>
 OptionProperty<T>::OptionProperty(const std::string& id, const std::string& guiText,
-                                  const std::vector<Option<T> >& options, bool invalidate, bool invalidateShader)
-    : OptionPropertyBase(id, guiText, options.begin()->id, invalidate, invalidateShader)
+                                  Processor::InvalidationLevel invalidationLevel)
+    : OptionPropertyBase(id, guiText, invalidationLevel)
 {
-    options_ = options;
     addValidation(OptionPropertyValidation<T>(this)); // is at position 0 in the validations_ vector
 }
 
 template<class T>
-void OptionProperty<T>::setByValue(const T& value) {
+void OptionProperty<T>::addOption(const std::string& key, const std::string& description, const T& value) {
+    options_.push_back(Option<T>(key, description, value));
+    if (options_.size() == 1)
+        set(key);
+}
+
+template<class T>
+void OptionProperty<T>::selectByValue(const T& value) {
     // find the option that fits the value
     for (size_t i = 0; i < options_.size(); ++i) {
-        if (options_[i].value == value) {
-            set(options_[i].id);
+        if (options_[i].value_ == value) {
+            set(options_[i].key_);
             return;
         }
     }
@@ -119,47 +142,57 @@ void OptionProperty<T>::setByValue(const T& value) {
 }
 
 template<class T>
+const std::string& OptionProperty<T>::getDescription() const {
+    // find the option that fits the id
+    for(size_t i = 0; i < options_.size(); ++i) { // could be faster if map id -> (val, desc) is used
+        if (options_[i].key_ == value_)
+            return options_[i].description_;
+    }
+    return options_.front().description_;  // Just to silence the compiler
+}
+
+template<class T>
 const T& OptionProperty<T>::getValue() const {
     // find the option that fits the id
     for(size_t i = 0; i < options_.size(); ++i) { // could be faster if map id -> (val, desc) is used
-        if (options_[i].id == value_)
-            return options_[i].value;
+        if (options_[i].key_ == value_)
+            return options_[i].value_;
     }
-    return options_.front().value;  // Just to silence the compiler
+    return options_.front().value_;  // Just to silence the compiler
 }
 
 template<class T>
 std::set<T> OptionProperty<T>::allowedValues() const {
     std::set<T> values;
     for (size_t i = 0; i < options_.size(); ++i)
-        values.insert(options_[i].value);
+        values.insert(options_[i].value_);
 
     return values;
 }
 
 template<class T>
-std::set<std::string> OptionProperty<T>::allowedIds() const {
-    std::set<std::string> ids;
+std::set<std::string> OptionProperty<T>::allowedKeys() const {
+    std::set<std::string> keys;
     for (size_t i = 0; i < options_.size(); ++i)
-        ids.insert(options_[i].id);
+        keys.insert(options_[i].key_);
 
-    return ids;
+    return keys;
 }
 
 template<class T>
-std::vector<std::string> OptionProperty<T>::getIds() const {
-    std::vector<std::string> ids;
+std::vector<std::string> OptionProperty<T>::getKeys() const {
+    std::vector<std::string> keys;
     for (size_t i = 0; i < options_.size(); ++i)
-        ids.push_back(options_[i].id);
+        keys.push_back(options_[i].key_);
 
-    return ids;
+    return keys;
 }
 
 template<class T>
 std::map<std::string, std::string> OptionProperty<T>::getDescriptions() const {
     std::map<std::string, std::string> descriptions;
     for (size_t i = 0; i < options_.size(); ++i)
-        descriptions[options_[i].id] = options_[i].description;
+        descriptions[options_[i].key_] = options_[i].description_;
 
     return descriptions;
 }
@@ -169,23 +202,37 @@ PropertyWidget* OptionProperty<T>::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
-template<typename T>
-TiXmlElement* OptionProperty<T>::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
-    propElem->SetAttribute("value", getId());
 
-    if (getSerializeTypeInformation()) {
-        propElem->SetAttribute("class", "OptionProperty");
-        for (size_t i = 0; i < options_.size(); ++i) {
-            TiXmlElement* allowed = new TiXmlElement("allowedValue");
-            allowed->SetAttribute("value", options_[i].id);
-            allowed->SetAttribute("label", options_[i].description);
-            propElem->LinkEndChild(allowed);
-        }
+
+template<typename T>
+void OptionProperty<T>::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
+
+    s.serialize("value", getKey());
+}
+
+typedef OptionProperty<int> IntOptionProperty;
+typedef OptionProperty<float> FloatOptionProperty;
+
+// since option ids are already strings, an additional value is not necessarily required for string option properties
+class StringOptionProperty : public OptionProperty<std::string> {
+
+public:
+
+    StringOptionProperty(const std::string& id, const std::string& guiText,
+                         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT) :
+        OptionProperty<std::string>(id, guiText, invalidationLevel)
+    {}
+
+    virtual void addOption(const std::string& key, const std::string& description) {
+        addOption(key, description, key);
     }
 
-    return propElem;
-}
+    virtual void addOption(const std::string& key, const std::string& description, const std::string& value) {
+        OptionProperty<std::string>::addOption(key, description, value);
+    }
+
+};
 
 } // namespace voreen
 

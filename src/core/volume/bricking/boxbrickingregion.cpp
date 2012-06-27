@@ -41,7 +41,7 @@ namespace voreen {
     }
 
     void BoxBrickingRegion::calculateBricksInRegion() {
-        
+
         std::vector<Brick*> volumeBricks = brickingInformation_.volumeBricks;
 
         for (size_t i=0; i<volumeBricks.size(); i++) {
@@ -53,7 +53,7 @@ namespace voreen {
 
                     bricksInTheRegion_.push_back(currentBrick);
             }
-        }   
+        }
     }
 
 

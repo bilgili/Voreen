@@ -29,37 +29,36 @@
 
 #include "voreen/core/vis/properties/boolproperty.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 
 namespace voreen {
 
-BoolProp::BoolProp(const std::string& id, const std::string& guiText, bool value,
-                   bool invalidate, bool invalidateShader)
-    : TemplateProperty<bool>(id, guiText, value, invalidate, invalidateShader)
+BoolProperty::BoolProperty(const std::string& id, const std::string& guiText, bool value,
+                   Processor::InvalidationLevel invalidationLevel)
+    : TemplateProperty<bool>(id, guiText, value, invalidationLevel)
 {}
 
-void BoolProp::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    if (propElem->Attribute("value"))
-        try {
-            set(std::string("true").compare(propElem->Attribute("value")) == 0 ? true : false);
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
+void BoolProperty::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
+
+    s.serialize("value", value_);
 }
 
-TiXmlElement* BoolProp::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
-    propElem->SetAttribute("value", ((value_ == true) ? "true" : "false"));
-    if (getSerializeTypeInformation())
-        propElem->SetAttribute("class", "BoolProperty");
-    return propElem;
+void BoolProperty::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
+
+    bool value;
+    s.deserialize("value", value);
+    try {
+        set(value);
+    }
+    catch (Condition::ValidationFailed& e) {
+        s.addError(e);
+    }
 }
 
-PropertyWidget* BoolProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* BoolProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

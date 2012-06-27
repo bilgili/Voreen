@@ -56,7 +56,7 @@ namespace voreen {
 
 const std::string TransFuncEditorIntensityRamp::loggerCat_("voreen.qt.transfunceditorintensityramp");
 
-TransFuncEditorIntensityRamp::TransFuncEditorIntensityRamp(TransFuncProp* prop, QWidget* parent,
+TransFuncEditorIntensityRamp::TransFuncEditorIntensityRamp(TransFuncProperty* prop, QWidget* parent,
                                                            Qt::Orientation orientation)
     : TransFuncEditor(prop, parent)
     , transCanvas_(0)
@@ -145,7 +145,7 @@ QLayout* TransFuncEditorIntensityRamp::createButtonLayout() {
         buttonLayout = new QVBoxLayout();
 
     clearButton_ = new QToolButton();
-    clearButton_->setIcon(QIcon(":/icons/eraser.png"));
+    clearButton_->setIcon(QIcon(":/icons/clear.png"));
     clearButton_->setToolTip(tr("Reset to default transfer function"));
 
     loadButton_ = new QToolButton();
@@ -156,18 +156,18 @@ QLayout* TransFuncEditorIntensityRamp::createButtonLayout() {
     saveButton_->setIcon(QIcon(":/icons/save.png"));
     saveButton_->setToolTip(tr("Save transfer function"));
 
-    if (property_->getManualRepaint()) {
-        repaintButton_ = new QToolButton();
-        repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
-        repaintButton_->setToolTip(tr("Repaint the volume rendering"));
-    }
+    //if (property_->getManualRepaint()) {
+        //repaintButton_ = new QToolButton();
+        //repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
+        //repaintButton_->setToolTip(tr("Repaint the volume rendering"));
+    //}
 
     buttonLayout->setSpacing(0);
     buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
-    if (property_->getManualRepaint())
-        buttonLayout->addWidget(repaintButton_);
+    //if (property_->getManualRepaint())
+        //buttonLayout->addWidget(repaintButton_);
     buttonLayout->addStretch();
 
     return buttonLayout;
@@ -268,15 +268,15 @@ void TransFuncEditorIntensityRamp::createConnections() {
     connect(clearButton_, SIGNAL(clicked()), this, SLOT(clearButtonClicked()));
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
-    if (property_->getManualRepaint())
-        connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
+    //if (property_->getManualRepaint())
+        //connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
 
     // signals from transferMappingCanvas
     connect(transCanvas_, SIGNAL(changed()), this, SLOT(updateTransferFunction()));
     connect(transCanvas_, SIGNAL(loadTransferFunction()), this, SLOT(loadTransferFunction()));
     connect(transCanvas_, SIGNAL(saveTransferFunction()), this, SLOT(saveTransferFunction()));
     connect(transCanvas_, SIGNAL(resetTransferFunction()), this, SLOT(clearButtonClicked()));
-    connect(transCanvas_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(transCanvas_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // signals for colorPicker
     connect(transCanvas_, SIGNAL(colorChanged(const QColor&)),
@@ -287,12 +287,12 @@ void TransFuncEditorIntensityRamp::createConnections() {
             colorLumPicker_, SLOT(setCol(int,int)));
     connect(colorLumPicker_, SIGNAL(newHsv(int,int,int)),
             this, SLOT(markerColorChanged(int,int,int)));
-    connect(colorPicker_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
-    connect(colorLumPicker_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(colorPicker_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
+    connect(colorLumPicker_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // doubleslider
     connect(doubleSlider_, SIGNAL(valuesChanged(float, float)), this, SLOT(thresholdChanged(float, float)));
-    connect(doubleSlider_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(doubleSlider_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // threshold spinboxes
     connect(lowerThresholdSpin_, SIGNAL(valueChanged(int)), this, SLOT(lowerThresholdSpinChanged(int)));
@@ -418,9 +418,7 @@ void TransFuncEditorIntensityRamp::updateTransferFunction() {
     int width = tgt::iround(rampWidth * maximumIntensity_);
     syncRampSliders(center, width);
 
-    if (!property_->getManualRepaint())
-        causeVolumeRenderingRepaint();
-
+    property_->notifyChange();
 }
 
 void TransFuncEditorIntensityRamp::markerColorChanged(int h, int s, int v) {
@@ -508,9 +506,9 @@ void TransFuncEditorIntensityRamp::applyThreshold() {
 
 void TransFuncEditorIntensityRamp::update() {
     // check whether the volume associated with the TransFuncProperty has changed
-    Volume* newVol = property_->getVolume();
-    if (newVol != volume_) {
-        volume_ = newVol;
+    VolumeHandle* newHandle = property_->getVolumeHandle();
+    if (newHandle != volumeHandle_) {
+        volumeHandle_ = newHandle;
         volumeChanged();
     }
 
@@ -535,8 +533,8 @@ void TransFuncEditorIntensityRamp::update() {
 }
 
 void TransFuncEditorIntensityRamp::volumeChanged() {
-    if (volume_) {
-        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+    if (volumeHandle_ && volumeHandle_->getVolume()) {
+        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
         if (maxNew != maximumIntensity_) {
             float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
@@ -576,7 +574,7 @@ void TransFuncEditorIntensityRamp::volumeChanged() {
     }
 
     // propagate new volume to transfuncMappingCanvas
-    transCanvas_->volumeChanged(volume_, maximumIntensity_ + 1);
+    transCanvas_->volumeChanged(volumeHandle_);
 }
 
 void TransFuncEditorIntensityRamp::restoreThresholds() {
@@ -626,7 +624,7 @@ void TransFuncEditorIntensityRamp::updateRampCenter(int center) {
     int width = spinRampWidth_->value();
     float centerf = static_cast<float>(center) / maximumIntensity_;
     float widthf = static_cast<float>(width) / maximumIntensity_;
-    
+
     bool unblock = false;
     if (signalsBlocked() && !transCanvas_->signalsBlocked()) {
         transCanvas_->blockSignals(true);
@@ -635,7 +633,7 @@ void TransFuncEditorIntensityRamp::updateRampCenter(int center) {
     transCanvas_->setRampParameter(centerf, widthf);
     if (unblock)
         transCanvas_->blockSignals(false);
-    
+
     syncRampSliders(center, width);
 }
 
@@ -652,7 +650,7 @@ void TransFuncEditorIntensityRamp::updateRampWidth(int width) {
     transCanvas_->setRampParameter(centerf, widthf);
     if (unblock)
         transCanvas_->blockSignals(false);
-    
+
     syncRampSliders(center, width);
 }
 
@@ -672,11 +670,11 @@ void TransFuncEditorIntensityRamp::syncRampSliders(int rampCenter, int rampWidth
 }
 
 void TransFuncEditorIntensityRamp::startTracking() {
-    switchInteractionMode(true);
+    toggleInteractionMode(true);
 }
 
 void TransFuncEditorIntensityRamp::stopTracking() {
-    switchInteractionMode(false);
+    toggleInteractionMode(false);
 }
 
 void TransFuncEditorIntensityRamp::resetEditor() {
@@ -709,7 +707,7 @@ tgt::ivec2 TransFuncEditorIntensityRamp::getRampParameters() const {
     return tgt::ivec2(spinRampCenter_->value(), spinRampWidth_->value());
 }
 
-void TransFuncEditorIntensityRamp::setTransFuncProp(TransFuncProp* prop) {
+void TransFuncEditorIntensityRamp::setTransFuncProp(TransFuncProperty* prop) {
 
     TransFuncEditor::setTransFuncProp(prop);
 

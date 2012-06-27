@@ -51,12 +51,11 @@ const std::string TiffVolumeReader::loggerCat_ = "voreen.io.VolumeReader.tiff";
 
 TiffVolumeReader::TiffVolumeReader(IOProgress* progress) : VolumeReader(progress)
 {
-    name_ = "Tiff Stack Reader";
     extensions_.push_back("tiff");
     extensions_.push_back("tif");
 }
 
-VolumeSet* TiffVolumeReader::read(const std::string &fileName)
+VolumeCollection* TiffVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     ivec3 dimensions;
@@ -180,7 +179,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
         uint16 depth_, bps_;
 
         if (getProgress())
-            getProgress()->setNumSteps(dimensions.z*band);
+            getProgress()->setTotalSteps(dimensions.z*band);
 
         for (int i=0; i < dimensions.z*band; i++) {
             TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
@@ -245,7 +244,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
             TIFFReadDirectory(tif);
 
             if (getProgress())
-                getProgress()->set(i);
+                getProgress()->setProgress(i);
         }
 
         TIFFClose(tif);
@@ -264,15 +263,12 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
         return 0;
     }
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-    volumeSet->addSeries(volumeSeries);
-    for ( int i = 0; i < band; i++ ) {
+    VolumeCollection* volumeCollection = new VolumeCollection();
+    for (int i = 0; i < band; i++ ) {
         VolumeHandle* volumeHandle = new VolumeHandle(targetDataset[i], static_cast<float>(i));
-        volumeHandle->setOrigin(fileName, "unknown", static_cast<float>(i));
-        volumeSeries->addVolumeHandle(volumeHandle);
+        volumeCollection->add(volumeHandle);
     }
-    return volumeSet;
+    return volumeCollection;
 }
 
 } // namespace voreen

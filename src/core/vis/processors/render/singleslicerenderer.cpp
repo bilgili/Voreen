@@ -38,8 +38,6 @@
 
 #include "tgt/glmath.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
-
 using tgt::vec2;
 using tgt::vec3;
 
@@ -47,8 +45,8 @@ namespace voreen {
 
 SingleSliceRenderer::SingleSliceRenderer()
     : SliceSequenceRenderer(true)
+    , mwheelHandler_(&sliceIndexProp_)
 {
-    setName("SingleSliceRenderer");
 
     numSlicesPerRowProp_.setMinValue(1);
     numSlicesPerRowProp_.setMaxValue(1);
@@ -59,10 +57,7 @@ SingleSliceRenderer::SingleSliceRenderer()
     numSlicesPerColProp_.set(1);
 
     renderSliceBoundariesProp_.set(false);
-}
-
-const Identifier SingleSliceRenderer::getClassName() const {
-    return "SliceRenderer.SingleSliceRenderer";
+    addInteractionHandler(&mwheelHandler_);
 }
 
 const std::string SingleSliceRenderer::getProcessorInfo() const {

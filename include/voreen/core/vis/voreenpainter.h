@@ -33,35 +33,123 @@
 #include "tgt/exception.h"
 #include "tgt/glcanvas.h"
 #include "tgt/vector.h"
-#include "tgt/navigation/trackball.h"
 #include "tgt/painter.h"
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/message.h"
 #include "voreen/core/vis/properties/property.h"
-
-#ifdef VRN_WITH_DEVIL
-    #include <IL/il.h>
-#endif
-
-#ifdef VRN_WITH_FFMPEG
-namespace tgt {
-    class VideoEncoder;
-}
-#endif
 
 #include <vector>
 #include <list>
 
 namespace voreen {
 
-class OverlayManager;
 class NetworkEvaluator;
+class CanvasRenderer;
+
+class OverlayManager;
+class VoreenPainterOverlay;
+
+/**
+ * Specialized painter for voreen. This class takes care of rendering to a given tgt::GLCanvas,
+ * using the assigned NetworkEvaluator.
+ */
+class VoreenPainter : public tgt::Painter {
+public:
+
+    // FIXME: probably this should defined (and renamed...and converted to enum) in tgt? (jms)
+    static const int VRN_MONOSCOPIC            = 0x61;
+    static const int VRN_STEREOSCOPIC          = 0x62;
+    static const int VRN_AUTOSTEREOSCOPIC      = 0x62;
+
+    /**
+     * Constructor. Initializes the VoreenPainter.
+     *
+     * @param canvas The canvas that this painter renders on
+     * @param evaluator the network evaluator whose process() function if to be called on canvas repaints.
+     * @param canvasRenderer the canvas renderer associated with the canvas
+     */
+    VoreenPainter(tgt::GLCanvas* canvas, NetworkEvaluator* evaluator, CanvasRenderer* canvasRenderer);
+
+    virtual ~VoreenPainter();
+
+    virtual void initialize();
+
+    void repaint();
+
+    virtual void sizeChanged(const tgt::ivec2& size);
+
+    /**
+     * This method gets the focus of the painter's canvas (getCanvas()) , calls the \a processor_ and actually paints something.
+     */
+    void paint();
+
+    /**
+     * Returns the associated NetworkEvaluator.
+     */
+    NetworkEvaluator* getEvaluator() const;
+
+    /**
+     * Returns the associated CanvasRenderer.
+     */
+    CanvasRenderer* getCanvasRenderer() const;
+
+    /**
+     * Renders a snapshot to a file.
+     *
+     * The snapshot generation is delegated to the associated CanvasRenderer.
+     *
+     * @note requires Voreen to be compiled with DevIL support
+     *
+     * @param fileName name of the snapshot file
+     * @param size size of the snapshot
+     */
+    void renderToSnapshot(const std::string& fileName, const tgt::ivec2& size)
+        throw (std::bad_alloc, tgt::FileException);
+
+    /**
+     * Currently not functional.
+     */
+    void setStereoMode(int stereoMode);
+
+    // overlays (deprecated) ---------------------------------------
+    OverlayManager* getOverlayMgr() { return overlayMgr_; }
+
+    std::list<VoreenPainterOverlay*>& getOverlays() {
+        return overlays_;
+    }
+
+    void addCanvasOverlay(VoreenPainterOverlay* overlay);
+    void delCanvasOverlay(VoreenPainterOverlay* overlay);
+    // end of overlays ---------------------------------------------
+
+
+protected:
+
+    NetworkEvaluator* evaluator_;
+
+    CanvasRenderer* canvasRenderer_;
+
+    int stereoMode_; ///< The current view-mode: either monoscopic or stereoscopic view.
+
+    static const std::string loggerCat_;
+
+    // overlays (deprecated) ---------------------------------------
+    typedef std::list<VoreenPainterOverlay*> Overlays;
+    Overlays overlays_; ///< The overlays for this painter
+    OverlayManager* overlayMgr_; ///< The manager that takes care of this painters overlays.
+    // end of overlays ---------------------------------------------
+
+};
+
+
+//------------------------------------------------------------------------
 
 /**
  * VoreenPainterOverlay takes care of rendering additional content to a frame, like a FPS-display.
+ *
+ * @deprecated: Use a processor instead
  */
-class VoreenPainterOverlay : public MessageReceiver {
+class VoreenPainterOverlay {
 public:
     /**
      * Constructor. Initializes the Overlay.
@@ -84,8 +172,6 @@ public:
      * @param height The new height of the overlay
      */
     virtual void resize(int width, int height) { width_ = width; height_ = height; }
-
-    virtual void processMessage(Message* /*msg*/, const Identifier& /*dest=Message::all_*/) {}
 
     /**
      * Setter to control whether or not the overlay is active.
@@ -145,9 +231,11 @@ protected:
 //------------------------------------------------------------------------
 
 /**
- *    OverlayManager controls all the overlays of a canvas. Every canvas has an OverlayManager.
+ * OverlayManager controls all the overlays of a canvas. Every canvas has an OverlayManager.
+ *
+ * @deprecated: overlays are deprecated. Use a processor instead.
  */
-class OverlayManager : public MessageReceiver {
+class OverlayManager {
 public:
     OverlayManager();
 
@@ -158,18 +246,6 @@ public:
      *  Returns all VoreenPainterOverlays that this OverlayManager is responsible for.
      */
     std::vector<VoreenPainterOverlay*> getOverlays();
-
-    /**
-     * Takes care of incoming messages. Accepts the following message-ids:
-     *    - pushOverlayDirect:  Adds an Overlay to the manager.
-     *      Msg-Type is VoreenPainterOverlay*.
-     *    - popOverlayDirect:  Remvoes an Overlay from the manager.
-     *      Msg-Type is VoreenPainterOverlay*..
-     *
-     * @param msg The incoming message.
-     * @param dest The destination of the message.
-     */
-    void processMessage(Message* msg, const Identifier& dest);
 
     /**
      * Resizes all overlays that this OverlayManager contains.
@@ -188,186 +264,6 @@ private:
     std::vector<VoreenPainterOverlay*> overlays_;   ///< The overlays that this OverlayManager manages.
 };
 
-//------------------------------------------------------------------------
-
-/**
-* Specialized painter for voreen. This class takes care of rendering to a given tgt::GLCanvas,
-    using its Processors.
-*/
-class VoreenPainter : public tgt::Painter, public MessageReceiver {
-public:
-    // FIXME: probably this should defined (and renamed...and converted to enum) in tgt? (jms)
-    static const int VRN_MONOSCOPIC            = 0x61;
-    static const int VRN_STEREOSCOPIC          = 0x62;
-    static const int VRN_AUTOSTEREOSCOPIC      = 0x62;
-    /**
-     * Constructor. Initializes the VoreenPainter.
-     *
-     * @param canvas The canvas that this painter renders on.
-     * @param tag The Message-Tag for this painter.
-     */
-    VoreenPainter(tgt::GLCanvas* canvas, tgt::Trackball* track, const Identifier& tag = Message::all_);
-
-    virtual ~VoreenPainter();
-
-    OverlayManager* getOverlayMgr() { return overlayMgr_; }
-
-    std::list<VoreenPainterOverlay*>& getOverlays() {
-        return overlays_;
-    }
-
-    const tgt::ivec2& getSize() {
-        return size_;
-    }
-
-    /**
-     * Add an EventListener to the canvas. Incoming tgt-Events will be broadcast to the listener.
-     *
-     * @param listener The listener that is to be added.
-     */
-    void addEventListener(tgt::EventListener* listener);
-
-    /**
-     * Remove an EventListener from canvas.
-     *
-     * @param listener The listener that shall be removed.
-     */
-    void removeEventListener(tgt::EventListener* listener);
-
-    /// removes all registered EventListeners from Eventhandler
-    void removeAllEventListeners();
-
-    /**
-     * Takes care of incoming messages. Accepts the following message-ids: <br>
-     *    - repaint, which repaints the canvas. Msg-type: none <br>
-     *    - switchCoarseness, wich resizes all processors. Msg-type: bool <br>
-     *    - resize, which resizes this painter. Msg-type: ivec2 <br>
-     *    - switch.trackballContinuousSpin, which tells the camera whether or not
-     *      its trackball is continously spinning. Msg-type: bool <br>
-     *    - set.cameraApplyOrientation, which moves the camera of the associated canvas to
-     *      a given orientation using quaternions. <br>
-     *      Msg-type: std::vector<\c float> <br>
-     *    - set.cameraZoom, which sets the distance between the viewer and the center of the
-     *      scene. Msg-type: vec3 <br>
-     *    - Identifier::delCanvasOverlay, which deletes a certain overlay from \a overlays_.
-     *      Msg-type: VoreenPainterOverlay* <br>
-     *    - Identifier::addCanvasOverlay, which adds a an overlay to \a overlays_ . Msg-type: VoreenPainterOverlay*
-     *
-     * This method also redistributes incoming messages to \a overlayMgr_.
-     *
-     * @param msg The incoming message.
-     * @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
-    virtual void invalidateRendering();
-
-    void setStereoMode(int stereoMode) { stereoMode_ = stereoMode; }
-
-    /**
-     * This method gets the focus of the painter's canvas (getCanvas()) , calls the \a processor_ and actually paints something.
-     */
-    void paint();
-
-    void setEvaluator(NetworkEvaluator* eval);
-
-
-    NetworkEvaluator* getEvaluator() const {
-        return evaluator_;
-    }
-
-    /**
-     * Sets the trackball that is used for navigation
-     */
-    void setTrackball(tgt::Trackball* trackball);
-
-    /**
-     * Returns the trackball that is used for navigation. May be a null pointer.
-     */
-    tgt::Trackball* getTrackball() const;
-
-    /**
-     * Renders a snapshot to file. The image is read from the texturecontainer wich
-     * is the result of the canvasRenderer in the network.
-     *
-     * @param size size of snapshot
-     * @param fileName name of the snapshot file
-     */
-#ifdef VRN_WITH_DEVIL
-    void renderToSnapshot(tgt::ivec2 size, std::string fileName)
-        throw (std::bad_alloc, tgt::FileException);
-#else
-    void renderToSnapshot(tgt::ivec2 size, std::string fileName);
-#endif
-
-    static const Identifier removeEventListener_;
-    static const Identifier addEventListener_;
-    static const Identifier addCanvasOverlay_;
-    static const Identifier addFrameOverlay_;
-    static const Identifier delCanvasOverlay_;
-    static const Identifier delFrameOverlay_;
-    static const Identifier repaint_;
-    static const Identifier resize_;
-    static const Identifier visibleViews_;
-    static const Identifier cameraChanged_;
-    static const Identifier switchCoarseness_;
-    static const Identifier renderingFinished_;
-
-    #ifdef VRN_WITH_FFMPEG
-        static tgt::VideoEncoder* getVideoEncoder();
-    #endif
-
-protected:
-
-    void renderToEncoder();
-
-#ifdef VRN_WITH_FFMPEG
-    static tgt::VideoEncoder* videoEncoder_;
-#endif
-
-    NetworkEvaluator* evaluator_;
-
-    /**
-     *  A wrapper for convenience that calls the resize method with a tgt::ivec2 as the parameter.
-     */
-    void sizeChanged(int x, int y) {
-        tgt::ivec2 newsize(x, y);
-        sizeChanged(newsize);
-    }
-
-    virtual void sizeChanged(const tgt::ivec2& size);
-
-    /**
-     * Renders to a DevIL image.
-     *
-     * @param size desired size of the image
-     */
-#ifdef VRN_WITH_DEVIL
-    ILuint renderToILImage(const tgt::ivec2& size);
-#endif
-
-    /**
-     * Internally used by
-     * \a renderToILImage(tgt::ivec2 size)
-     */
-#ifdef VRN_WITH_DEVIL
-    ILuint renderToILImageInternal(const tgt::ivec2& size);
-#endif
-
-    tgt::Trackball* trackball_; ///< The trackball that will be used to navigate.
-                                ///< trackball_->getCamera() should be equal to getCanvas()->getCamera()
-
-    typedef std::list<VoreenPainterOverlay*> Overlays;
-    Overlays overlays_; ///< The overlays for this painter
-
-    OverlayManager* overlayMgr_; ///< The manager that takes care of this painters overlays.
-
-    int stereoMode_; ///< The current view-mode: either monoscopic or stereoscopic view.
-
-    tgt::ivec2 size_; ///< The size of this painter.
-
-    static const std::string loggerCat_;
-};
 
 } // namespace voreen
 

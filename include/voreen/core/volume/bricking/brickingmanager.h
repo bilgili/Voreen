@@ -49,7 +49,6 @@
 #include "voreen/core/volume/bricking/rammanager.h"
 #include "voreen/core/volume/bricking/volumebrickcreator.h"
 
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/voreenpainter.h"
 
 #include <math.h>
@@ -63,16 +62,16 @@ namespace voreen {
     /**
     * The BrickingManager is the central organizer for bricking. The different
     * parts of bricking are controlled from here. Every bricked volume loaded is managed
-    * by a BrickingManager. 
+    * by a BrickingManager.
     */
-	template<class T>
-	class BrickingManager : public LargeVolumeManager {
-	public:
+    template<class T>
+    class BrickingManager : public LargeVolumeManager {
+    public:
 
         /**
         * @param volumeHandle   The VolumeHandle that will contain the BrickedVolume once the
         *                       BrickingManager has created the packed texture and index texture.
-        * @param brickedVolumeReader    The BrickedVolumeReader that is used to read the volume 
+        * @param brickedVolumeReader    The BrickedVolumeReader that is used to read the volume
         *                               data of single bricks from the bv file. In contrast to
         *                               "normal" VolumeReaders, each BrickedVolume needs its
         *                               own unique instance of a BrickedVolumeReader.
@@ -80,121 +79,120 @@ namespace voreen {
         *                               bricking.
         * @param progess       The IOProgress used to update the loading bar in the GUI.
         */
-		BrickingManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedVolumeReader,
-						BrickingInformation& brickingInformation,IOProgress* progress = 0);
+        BrickingManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedVolumeReader,
+                        BrickingInformation brickingInformation,IOProgress* progress = 0);
 
-		/**
-		* Deletes everything.
-		*/
-		~BrickingManager();
+        /**
+        * Deletes everything.
+        */
+        ~BrickingManager();
 
         /**
         * Changes the class responsible for calculating the available brick resolutions (aka LODs)
-        * when camera position is used for LOD assignment. 
+        * when camera position is used for LOD assignment.
         */
-		void changeBrickResolutionCalculator(std::string mode);
+        void changeBrickResolutionCalculator(std::string mode);
 
         /**
-        * Changes the class responsible for assigning the LODs to the bricks. If a 
-        * CameraLodSelector is used, the distance from the bricks to the camera position 
+        * Changes the class responsible for assigning the LODs to the bricks. If a
+        * CameraLodSelector is used, the distance from the bricks to the camera position
         * will be used to prioritize the bricks. The the available resolutions calculated by the
         * BrickResolutionCalculator will be assigned (for example, if 500 bricks can get LOD 0 and the
-        * remaining 2800 can get LOD 1, the 500 bricks closest to the camera will get LOD 0). 
-        * If an ErrorLodSelector is used, the root mean square error between brick resolutions 
+        * remaining 2800 can get LOD 1, the 500 bricks closest to the camera will get LOD 0).
+        * If an ErrorLodSelector is used, the root mean square error between brick resolutions
         * will be used to assign LODs. In that case, the results of the BrickResolutionCalculator
         * are irrelevant.
-        */ 
+        */
         void changeBrickLodSelector(std::string selector);
 
         /**
-        * Sets whether or not bricks should be updated after coarseness mode has ended. 
-        * This only has effect if the camera position is used to assign LODs. Setting this 
+        * Sets whether or not bricks should be updated after coarseness mode has ended.
+        * This only has effect if the camera position is used to assign LODs. Setting this
         * to "true" causes all bricks to calculate their distance to the camera again,
         * and depending on the result, their LODs might change. If set to false, the bricks
-        * will never be updated, no matter how much the camera position is changed. 
+        * will never be updated, no matter how much the camera position is changed.
         */
-		void setUpdateBricks(bool b);
+        void setUpdateBricks(bool b);
 
-        /**
-        * The standard processMessage function.
-        */
-		virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+        virtual void setCamera(tgt::Camera* camera) {
+            brickingInformation_.camera = camera;
+        }
 
-	protected:
+    protected:
 
         /**
         * Starts the whole bricking process by calculating the dimensions of the packed
         * texture and index texture, creating the VolumeBricks and PackingBricks,
         * filling them with data and so on. After all that is done, a bricked volume is
-        * created, that can be used in voreen networks like any other volume. 
+        * created, that can be used in voreen networks like any other volume.
         */
         void createBrickedVolume();
 
-		/**
-		* Depending on how much texture memory is available, this function
+        /**
+        * Depending on how much texture memory is available, this function
         * calculates the optimal texture dimensions to store the volume data. For example,
         * if 240MB texture memory could be used, this function would calculate the dimensions
         * of a texture holding 240MB of data. This also depends on the voxel type of course.
-		*/
-		tgt::ivec3 calculateOptimalTextureDims();
+        */
+        tgt::ivec3 calculateOptimalTextureDims();
 
-		/**
-		* Creates the indexVolume, which is nothing else than creating a volume with 
-		* the given dimensions. The indexVolume is later filled with values by 
-		* updateIndexVolume(..)
-		*/
-		void createIndexVolume(tgt::ivec3 dimensions);
+        /**
+        * Creates the indexVolume, which is nothing else than creating a volume with
+        * the given dimensions. The indexVolume is later filled with values by
+        * updateIndexVolume(..)
+        */
+        void createIndexVolume(tgt::ivec3 dimensions);
 
-		/**
-		* Updates the index volume by inserting the packBricks location at the 
-		* VolumeBricks position
-		*/
-		void updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick);
+        /**
+        * Updates the index volume by inserting the packBricks location at the
+        * VolumeBricks position
+        */
+        void updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick);
 
-		/**
-		* Creates the PackingBricks.
+        /**
+        * Creates the PackingBricks.
         * @param numbricks The number of bricks to create.
         * @param packedVolume The volume into which the PackingBricks will write once they
-        * are filled. 
-		*/
-		void createPackingBricks(tgt::ivec3 numbricks, VolumeAtomic<T>* packedVolume);
+        * are filled.
+        */
+        void createPackingBricks(tgt::ivec3 numbricks, VolumeAtomic<T>* packedVolume);
 
-		/**
-		* Gets the determined level of detail for every VolumeBrick and puts that volume 
+        /**
+        * Gets the determined level of detail for every VolumeBrick and puts that volume
         * into an empty PackingBrick.
-		*/
-		void fillPackingBricks();
+        */
+        void fillPackingBricks();
 
-		/**
-		* Writes to volume data from all PackingBricks in bricksWithData_ to the 
-		* packed volume.
-		*/
-		void writeVolumeDataToPackedVolume();
+        /**
+        * Writes to volume data from all PackingBricks in bricksWithData_ to the
+        * packed volume.
+        */
+        void writeVolumeDataToPackedVolume();
 
-		/**
-		* If some bricks have been assigned new LODs, this function updates the packed
+        /**
+        * If some bricks have been assigned new LODs, this function updates the packed
         * volume with the new data.
-		*/
-		void updatePackedVolume();
+        */
+        void updatePackedVolume();
 
-		/**
-		* Updates the texture of the packed volume with the new data in the updated
-		* packed volume. Called by updatePackedVolume()
-		*/
-		void updatePackedVolumeTexture();
+        /**
+        * Updates the texture of the packed volume with the new data in the updated
+        * packed volume. Called by updatePackedVolume()
+        */
+        void updatePackedVolumeTexture();
 
-		/**
-		* Collects information about the original volume and puts it into
-		* brickingInformation_.
-		*/ 
-		void getBrickingInformation();
+        /**
+        * Collects information about the original volume and puts it into
+        * brickingInformation_.
+        */
+        void getBrickingInformation();
 
         /**
         * If some part of the bricking "pipeline" has changed, like the ResolutionCalculator,
         * or the LODSelector, this function updates the necessary aspects of the bricking
-        * process. 
+        * process.
         */
-		void updateBricking();
+        void updateBricking();
 
         /**
         * Adds a BoxBrickingRegion to the RegionManager. The BoxBrickingRegion will then have
@@ -202,54 +200,54 @@ namespace voreen {
         */
         void addBoxBrickingRegion(int prio, tgt::vec3 clipLLF, tgt::vec3 clipURB);
 
-		/**
-		* The PackingBricks subdivide a volume and receive their data from the VolumeBricks later on.
-		* They basically only exist to make the packing of the volume data into the packed volume 
+        /**
+        * The PackingBricks subdivide a volume and receive their data from the VolumeBricks later on.
+        * They basically only exist to make the packing of the volume data into the packed volume
         * efficient.
-		*/
-		std::list<Brick*> packingBricks_;			
+        */
+        std::list<Brick*> packingBricks_;
 
-		/**
-		* These PackingBricks have been given data and a position in the packed volume. 
-		* Calling write() for all these generates the packed volume. 
-		*/
-		std::vector<PackingBrick<T>*> bricksWithData_;	
+        /**
+        * These PackingBricks have been given data and a position in the packed volume.
+        * Calling write() for all these generates the packed volume.
+        */
+        std::vector<PackingBrick<T>*> bricksWithData_;
 
-		/**
-		* The level of detail selector used to assign the bricks their
-		* level of detail.
-		*/
-		BrickLodSelector* brickLodSelector_;
+        /**
+        * The level of detail selector used to assign the bricks their
+        * level of detail.
+        */
+        BrickLodSelector* brickLodSelector_;
 
-		/**
-		* The BrickResolutionCalculator used to calculate which resolutions (LODs) are available.
+        /**
+        * The BrickResolutionCalculator used to calculate which resolutions (LODs) are available.
         * This information is then used by the CameraLODSelector for example.
-		*/
-		BrickResolutionCalculator* brickResolutionCalculator_;
+        */
+        BrickResolutionCalculator* brickResolutionCalculator_;
 
-		/**
-		* The reader that reads the brick's volume data from the bv file.
-		*/
-		BrickedVolumeReader* brickedVolumeReader_;
+        /**
+        * The reader that reads the brick's volume data from the bv file.
+        */
+        BrickedVolumeReader* brickedVolumeReader_;
 
         /**
         * The class which creates the VolumeBricks. The code of that class
         * could also be in the BrickingManager class, but I think this way
         * it is cleaner. (s_rade02)
         */
-		VolumeBrickCreator<T>* volumeBrickCreator_;
+        VolumeBrickCreator<T>* volumeBrickCreator_;
 
         /**
         * The class that assigns the VolumeBricks to PackingBricks. The code
-        * could also be in the BrickingManager class, but this way it is 
-        * cleaner I think, and there might be other ways of assigning the 
-        * VolumeBricks later, and this way that is easier to change. 
+        * could also be in the BrickingManager class, but this way it is
+        * cleaner I think, and there might be other ways of assigning the
+        * VolumeBricks later, and this way that is easier to change.
         */
-		PackingBrickAssigner<T>* packingBrickAssigner_;
+        PackingBrickAssigner<T>* packingBrickAssigner_;
 
         /**
         * The RamManager used for controlling the reading of volume data for VolumeBricks from disk.
-        * The RamManager makes certain that a threshold of RAM isn't crossed when filling RAM 
+        * The RamManager makes certain that a threshold of RAM isn't crossed when filling RAM
         * with voluem data.
         */
         RamManager<T>* ramManager_;
@@ -258,48 +256,48 @@ namespace voreen {
         * The struct holding all the information neccessary for bricking. This
         * struct is nearly always passed by reference to the different classes
         * involved in bricking in order to keep the amount of parameters needed
-        * low. 
+        * low.
         */
-		BrickingInformation& brickingInformation_;
+        BrickingInformation brickingInformation_;
 
         /**
         * Is the current rendering using coarseness? This is needed to determine
-        * when to update the packed volume, i.e. when to recalculate brick 
+        * when to update the packed volume, i.e. when to recalculate brick
         * resolutions. TODO: This should be done on Mouse Release for example,
-        * as not every network has coarseness. 
+        * as not every network has coarseness.
         */
-		bool coarsenessOn_;
+        bool coarsenessOn_;
 
-		/**
-		* Should bricks change their resolution when camera position used to determine
+        /**
+        * Should bricks change their resolution when camera position used to determine
         * their LOD changes?
-		*/
-		bool updateBricks_;
+        */
+        bool updateBricks_;
 
         /**
         * The VolumeHandle this BrickingManager is part of. The BrickedVolume created
         * by the BrickingManager is put into that VolumeHandle.
         */
-		VolumeHandle* volumeHandle_;
+        VolumeHandle* volumeHandle_;
 
         /**
         * The packed volume consisting of all the volume data of all VolumeBricks at
         * different resolutions.
         */
-		VolumeAtomic<T>* packedVolume_;
+        VolumeAtomic<T>* packedVolume_;
 
         /**
         * The volume storing the information where a VolumeBricks data can be found
         * in the packed volume.
         */
-		Volume4xUInt16* indexVolume_;
+        Volume4xUInt16* indexVolume_;
 
         /**
         * The volume used to store the dimensions of the original volume. This is needed
         * because both the packed and index volume have different dimensions than the original
         * volume, but the dimensions of the original volume are needed to create the Entry-Exit
         * points. That's why this volume stores those dimensions, but never allocates memory.
-        * It's basically an empty container of the correct size. 
+        * It's basically an empty container of the correct size.
         */
         VolumeAtomic<uint8_t>* eepVolume_;
 
@@ -309,7 +307,7 @@ namespace voreen {
         * instead of all three volumes seperately. This way old networks don't have to be
         * changed.
         */
-		BrickedVolume* brickedVolume_;
+        BrickedVolume* brickedVolume_;
 
         /**
         * The IOPRogress used to update the loading bar in the GUI.
@@ -318,78 +316,78 @@ namespace voreen {
 
         static const std::string loggerCat_;
 
-	private:
+    private:
 
 
-	}; //class 	
-	
+    }; //class
+
 
     template<class T>
     const std::string BrickingManager<T>::loggerCat_("voreen.core.volume.bricking.BrickingManager");
 
-	template<class T>
-	BrickingManager<T>::BrickingManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedVolumeReader,
-										BrickingInformation& brickingInformation,IOProgress* ioProgress)
+    template<class T>
+    BrickingManager<T>::BrickingManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedVolumeReader,
+                                        BrickingInformation brickingInformation,IOProgress* ioProgress)
 
         : LargeVolumeManager(volumeHandle, brickedVolumeReader),
           brickedVolumeReader_(brickedVolumeReader),
           brickingInformation_(brickingInformation),
           volumeHandle_(volumeHandle),
           ioProgress_(ioProgress)
-	{
+    {
 
-		packedVolume_ = 0;
-		indexVolume_ = 0;
+        packedVolume_ = 0;
+        indexVolume_ = 0;
         eepVolume_ = 0;
-		brickLodSelector_ = 0;
-		brickResolutionCalculator_ = 0;
-		volumeBrickCreator_ = 0;
-		packingBrickAssigner_ = 0;
+        brickLodSelector_ = 0;
+        brickResolutionCalculator_ = 0;
+        volumeBrickCreator_ = 0;
+        packingBrickAssigner_ = 0;
         updateBricks_ = false;
-		coarsenessOn_ = false; 
+        coarsenessOn_ = false;
 
-        //Fill the brickingInformation_ struct with information necessary for bricking. 
-		getBrickingInformation();
+        //Fill the brickingInformation_ struct with information necessary for bricking.
+        getBrickingInformation();
 
-        //Now create the bricked volume. 
-		createBrickedVolume();
-	}
+        //Now create the bricked volume.
+        createBrickedVolume();
+    }
 
-	template<class T>
-	void BrickingManager<T>::getBrickingInformation() {
+    template<class T>
+    void BrickingManager<T>::getBrickingInformation() {
 
         //This ugly code line calculates how many different resolution levels there are, for example,
-        //if the bricksize is 32, there are a 6 different resolution levels (32 16 8 4 2 1). 
-        brickingInformation_.totalNumberOfResolutions = static_cast<int> ( ( log( 
+        //if the bricksize is 32, there are a 6 different resolution levels (32 16 8 4 2 1).
+        brickingInformation_.totalNumberOfResolutions = static_cast<int> ( ( log(
             (float)brickingInformation_.brickSize) / log(2.0) ) + 1);
 
-		brickingInformation_.numVoxelsInBrick = brickingInformation_.brickSize * 
+        brickingInformation_.numVoxelsInBrick = brickingInformation_.brickSize *
             brickingInformation_.brickSize * brickingInformation_.brickSize;
 
-		brickingInformation_.totalNumberOfBricksNeeded = brickingInformation_.numBricks.x * 
-														brickingInformation_.numBricks.y * 
-														brickingInformation_.numBricks.z; 
+        brickingInformation_.totalNumberOfBricksNeeded = brickingInformation_.numBricks.x *
+                                                        brickingInformation_.numBricks.y *
+                                                        brickingInformation_.numBricks.z;
 
-		brickingInformation_.originalVolumeVoxelSizeInByte = sizeof(T);
+        brickingInformation_.originalVolumeVoxelSizeInByte = sizeof(T);
 
-		uint64_t temp = (uint64_t)brickingInformation_.originalVolumeVoxelSizeInByte *
-						brickingInformation_.originalVolumeNumVoxels;
+        uint64_t temp = (uint64_t)brickingInformation_.originalVolumeVoxelSizeInByte *
+                        brickingInformation_.originalVolumeNumVoxels;
 
-		temp = temp / ( (uint64_t)1024 * (uint64_t)1024);
+        temp = temp / ( (uint64_t)1024 * (uint64_t)1024);
 
-		brickingInformation_.originalVolumeSizeMB = static_cast<int>(temp); 
+        brickingInformation_.originalVolumeSizeMB = static_cast<int>(temp);
 
         LINFO("original volume size: " << brickingInformation_.originalVolumeDimensions << " ("
               << brickingInformation_.originalVolumeSizeMB << " MB)");
-        
-		tgt::ivec3 bricksize = tgt::ivec3(brickingInformation_.brickSize);
-		
-		for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
-			brickingInformation_.lodToDimensionsMap.insert(std::pair<int,tgt::ivec3>(i, bricksize));
-			bricksize=bricksize / 2;
-		}
 
-		brickingInformation_.camera=0;
+        tgt::ivec3 bricksize = tgt::ivec3(brickingInformation_.brickSize);
+
+        for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
+            brickingInformation_.lodToDimensionsMap.insert(std::pair<int,tgt::ivec3>(i, bricksize));
+            bricksize=bricksize / 2;
+        }
+
+        brickingInformation_.camera=0;
         brickingInformation_.regionManager = 0;
 
         if (maxGpuMemory_ == 0) {
@@ -403,20 +401,20 @@ namespace voreen {
         }
 
         LINFO("brick size: " << brickingInformation_.brickSize);
-	}
+    }
 
-	template<class T>
-	BrickingManager<T>::~BrickingManager() {
+    template<class T>
+    BrickingManager<T>::~BrickingManager() {
 
         if (brickingInformation_.regionManager != 0) {
             delete brickingInformation_.regionManager;
             brickingInformation_.regionManager = 0;
         }
 
-		std::vector<Brick*> bricks = brickingInformation_.volumeBricks;
-		for (size_t i=0; i < bricks.size(); i++) {
-			delete bricks.at(i);
-		}
+        std::vector<Brick*> bricks = brickingInformation_.volumeBricks;
+        for (size_t i=0; i < bricks.size(); i++) {
+            delete bricks.at(i);
+        }
         bricks.clear();
 
         std::list<Brick*> packBricks = brickingInformation_.packingBricks;
@@ -427,9 +425,9 @@ namespace voreen {
         }
 
         bricks = brickingInformation_.packingBricksWithData;
-		for (size_t i=0; i < bricks.size(); i++) {
-			delete bricks.at(i);
-		}
+        for (size_t i=0; i < bricks.size(); i++) {
+            delete bricks.at(i);
+        }
         bricks.clear();
 
         delete brickResolutionCalculator_;
@@ -438,26 +436,26 @@ namespace voreen {
         delete brickLodSelector_;
         delete ramManager_;
         delete brickedVolumeReader_;
-        
+
         //TODO: Delete volumehandle too?
-	}
+    }
 
 
-	template<class T>
-	tgt::ivec3 BrickingManager<T>::calculateOptimalTextureDims() {
-	
+    template<class T>
+    tgt::ivec3 BrickingManager<T>::calculateOptimalTextureDims() {
+
         uint64_t gpuMemorySizeInByte = brickingInformation_.gpuAvailableMemory * 1024 * 1024;
 
         uint64_t originalVolumeVoxelSizeInByte =
             (uint64_t)brickingInformation_.originalVolumeVoxelSizeInByte *
             brickingInformation_.originalVolumeNumVoxels;
-        
+
         if (originalVolumeVoxelSizeInByte < (uint64_t)gpuMemorySizeInByte) {
             LINFO("original volume is smaller than memory available for bricking");
             gpuMemorySizeInByte = originalVolumeVoxelSizeInByte;
         }
         LINFO("using " << gpuMemorySizeInByte / (1024*1024) << " MB for bricking");
-        
+
         int voxelSize = brickingInformation_.originalVolumeBytesAllocated;
         int brickSize = brickingInformation_.brickSize;
         int maxDim = GpuCaps.getMax3DTextureSize();
@@ -465,318 +463,298 @@ namespace voreen {
         if ((uint64_t)maxDim*maxDim*maxDim*brickingInformation_.originalVolumeVoxelSizeInByte < gpuMemorySizeInByte) {
             gpuMemorySizeInByte = (uint64_t)maxDim*maxDim*maxDim*brickingInformation_.originalVolumeVoxelSizeInByte;
             LINFO("maximum texture dimension " << maxDim << " reduces usable memory to "
-                  << gpuMemorySizeInByte / (1024*1024) << " MB"); 
+                  << gpuMemorySizeInByte / (1024*1024) << " MB");
         }
 
         int xDim,yDim,zDim;
-		xDim = yDim = zDim = brickSize;
-        	
-		uint64_t memoryUsed = xDim*yDim*zDim * voxelSize;
+        xDim = yDim = zDim = brickSize;
+
+        uint64_t memoryUsed = xDim*yDim*zDim * voxelSize;
 
         //Increase the texture's x-dimension if possible, otherwise try y, then z.
-		while (memoryUsed < gpuMemorySizeInByte) {
+        while (memoryUsed < gpuMemorySizeInByte) {
             if (xDim + brickSize <= maxDim) {
-				xDim = xDim+brickSize;
-			} else if (yDim + brickSize <= maxDim) {
-				yDim = yDim + brickSize;
-			} else if (zDim + brickSize <= maxDim) {
-				zDim = zDim + brickSize;
+                xDim = xDim+brickSize;
+            } else if (yDim + brickSize <= maxDim) {
+                yDim = yDim + brickSize;
+            } else if (zDim + brickSize <= maxDim) {
+                zDim = zDim + brickSize;
             } else {
                 std::stringstream s;
                 s << "Max 3d texture sizes doesn't allow creation of a texture holding " << gpuMemorySizeInByte << " bytes.";
                 LINFO(s.str() );
                 break;
             }
-		    
+
             memoryUsed = xDim * yDim * zDim * voxelSize;
         }
 
         //Increasing the y or z-dimension in the while loop above potentially doubled the
-        //texture size, so we have to reduce the y or x-dimension to cope for that. 
+        //texture size, so we have to reduce the y or x-dimension to cope for that.
         int tempXDim, tempYDim, tempZDim;
         while (memoryUsed >= gpuMemorySizeInByte) {
-			tempXDim=xDim;
-			tempYDim=yDim;
-			tempZDim=zDim;
-			bool miniumReached=true;
+            tempXDim=xDim;
+            tempYDim=yDim;
+            tempZDim=zDim;
+            bool miniumReached=true;
 
-			if (xDim > brickSize) {
-				tempXDim = xDim - brickSize;
-				miniumReached=false;
-			} else if (yDim > brickSize) {
-				tempYDim = yDim - brickSize;
-				miniumReached=false;
-			} else if (zDim > brickSize) {
-				tempZDim = zDim - brickSize;
-				miniumReached=false;
-			}
-			if (miniumReached) {
-				break;
-			}
+            if (xDim > brickSize) {
+                tempXDim = xDim - brickSize;
+                miniumReached=false;
+            } else if (yDim > brickSize) {
+                tempYDim = yDim - brickSize;
+                miniumReached=false;
+            } else if (zDim > brickSize) {
+                tempZDim = zDim - brickSize;
+                miniumReached=false;
+            }
+            if (miniumReached) {
+                break;
+            }
 
-			memoryUsed=tempXDim * tempYDim * tempZDim * voxelSize;
+            memoryUsed=tempXDim * tempYDim * tempZDim * voxelSize;
 
-			if (memoryUsed >= gpuMemorySizeInByte) {
-				xDim = tempXDim;
-				yDim = tempYDim;
-				zDim = tempZDim;
-			}
-		}
+            if (memoryUsed >= gpuMemorySizeInByte) {
+                xDim = tempXDim;
+                yDim = tempYDim;
+                zDim = tempZDim;
+            }
+        }
 
         return tgt::ivec3(xDim,yDim,zDim);
-	}
+    }
 
-	template<class T>
-	void BrickingManager<T>::createPackingBricks(tgt::ivec3 optimalDimensions, 
+    template<class T>
+    void BrickingManager<T>::createPackingBricks(tgt::ivec3 optimalDimensions,
         VolumeAtomic<T>* packedVolume) {
-	
-		int bricksize = brickingInformation_.brickSize;		
-		PackingBrick<T>* newBrick;
 
-		for (int xpos=0; xpos < optimalDimensions.x; xpos = xpos+bricksize ) {
-			for (int ypos=0; ypos < optimalDimensions.y; ypos = ypos+bricksize ) {
-				for (int zpos=0; zpos < optimalDimensions.z; zpos = zpos+bricksize ) {
-					
-					newBrick = new PackingBrick<T>(tgt::ivec3(xpos, ypos, zpos), tgt::ivec3(bricksize),
-												brickingInformation_.packingBricks);
+        int bricksize = brickingInformation_.brickSize;
+        PackingBrick<T>* newBrick;
 
-					newBrick->setTargetVolume(packedVolume);
+        for (int xpos=0; xpos < optimalDimensions.x; xpos = xpos+bricksize ) {
+            for (int ypos=0; ypos < optimalDimensions.y; ypos = ypos+bricksize ) {
+                for (int zpos=0; zpos < optimalDimensions.z; zpos = zpos+bricksize ) {
 
-					brickingInformation_.packingBricks.push_back(newBrick);
-				}
-			}
-		}
-	}
+                    newBrick = new PackingBrick<T>(tgt::ivec3(xpos, ypos, zpos), tgt::ivec3(bricksize),
+                                                brickingInformation_.packingBricks);
 
-	template<class T>
-	void BrickingManager<T>::fillPackingBricks() {
+                    newBrick->setTargetVolume(packedVolume);
 
-		std::vector<Brick*> volumeBricks = brickingInformation_.volumeBricks;
-		VolumeBrick<T>* currentBrick;
+                    brickingInformation_.packingBricks.push_back(newBrick);
+                }
+            }
+        }
+    }
 
-		for (size_t i=0; i< volumeBricks.size(); i++) {
-			currentBrick = dynamic_cast<VolumeBrick<T>*>(volumeBricks.at(i));
-			packingBrickAssigner_->assignVolumeBrickToPackingBrick(currentBrick);
-		}
-	}
+    template<class T>
+    void BrickingManager<T>::fillPackingBricks() {
 
-	template<class T>
-	void BrickingManager<T>::writeVolumeDataToPackedVolume() {
+        std::vector<Brick*> volumeBricks = brickingInformation_.volumeBricks;
+        VolumeBrick<T>* currentBrick;
 
-		PackingBrick<T>* currentBrick;
+        for (size_t i=0; i< volumeBricks.size(); i++) {
+            currentBrick = dynamic_cast<VolumeBrick<T>*>(volumeBricks.at(i));
+            packingBrickAssigner_->assignVolumeBrickToPackingBrick(currentBrick);
+        }
+    }
 
-		for (size_t i=0;i < brickingInformation_.packingBricksWithData.size(); i++) {
-			currentBrick = dynamic_cast<PackingBrick<T>* >(brickingInformation_.packingBricksWithData.at(i));
-			currentBrick->setTargetVolume(packedVolume_);
-			currentBrick->write();
-		}
-	}
-	
-	template<class T>
-	void BrickingManager<T>::createIndexVolume(tgt::ivec3 dimensions) {
+    template<class T>
+    void BrickingManager<T>::writeVolumeDataToPackedVolume() {
+
+        PackingBrick<T>* currentBrick;
+
+        for (size_t i=0;i < brickingInformation_.packingBricksWithData.size(); i++) {
+            currentBrick = dynamic_cast<PackingBrick<T>* >(brickingInformation_.packingBricksWithData.at(i));
+            currentBrick->setTargetVolume(packedVolume_);
+            currentBrick->write();
+        }
+    }
+
+    template<class T>
+    void BrickingManager<T>::createIndexVolume(tgt::ivec3 dimensions) {
         if (indexVolume_ != 0) {
             delete indexVolume_;
         }
-		indexVolume_ = new Volume4xUInt16(dimensions);
-	}
+        indexVolume_ = new Volume4xUInt16(dimensions);
+    }
 
-	template<class T>
-	void BrickingManager<T>::updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick) {
+    template<class T>
+    void BrickingManager<T>::updateIndexVolume(VolumeBrick<T>* volBrick, PackingBrick<T>* packBrick) {
 
-		int scaleFactor = static_cast<int>( pow(2.f, (int)volBrick->getCurrentLevelOfDetail() ));
-		
-		tgt::ivec3 indexVolumePosition = volBrick->getPosition() / brickingInformation_.brickSize;
-		tgt::ivec4 indexVolumeValue = tgt::ivec4(packBrick->getPosition(),scaleFactor);
-		indexVolume_->voxel(indexVolumePosition ) = indexVolumeValue;
-	}
+        int scaleFactor = static_cast<int>( pow(2.f, (int)volBrick->getCurrentLevelOfDetail() ));
 
-	template<class T>
-	void BrickingManager<T>::processMessage(Message* msg, const Identifier&) {
+        tgt::ivec3 indexVolumePosition = volBrick->getPosition() / brickingInformation_.brickSize;
+        tgt::ivec4 indexVolumeValue = tgt::ivec4(packBrick->getPosition(),scaleFactor);
+        indexVolume_->voxel(indexVolumePosition ) = indexVolumeValue;
+    }
 
-		if (msg->id_ == VoreenPainter::cameraChanged_) {
-			brickingInformation_.camera = msg->getValue<tgt::Camera*>();
-		} 
-        else if (msg->id_ == VoreenPainter::switchCoarseness_) {
-			coarsenessOn_ = msg->getValue<bool>();
-			if (coarsenessOn_ == false) {
-				if (updateBricks_) {
-                    brickLodSelector_->selectLods();
-					updatePackedVolume();
-				}
-			}
-		}
-	}
+    template<class T>
+    void BrickingManager<T>::updatePackedVolume() {
+        //change the resolution of the determined blocks and upload them to the 3D texture
+        updatePackedVolumeTexture();
 
-	template<class T>
-	void BrickingManager<T>::updatePackedVolume() {
-
-		//change the resolution of the determined blocks and upload them to the 3D texture
-		updatePackedVolumeTexture();
-
-		//regenerate the index 3D texture (we could also do a lot of updates, just like with
-		//the packed 3D texture, but the index texture is always quite small, this should never
-		//take long)
+        //regenerate the index 3D texture (we could also do a lot of updates, just like with
+        //the packed 3D texture, but the index texture is always quite small, this should never
+        //take long)
         BrickedVolumeGL* brickedVolumeGL = dynamic_cast<BrickedVolumeGL*>(volumeHandle_->getVolumeGL());
-        
+
         if (brickedVolumeGL) {
-		    VolumeGL* indexVolume = brickedVolumeGL->getIndexVolumeGL();
+            VolumeGL* indexVolume = brickedVolumeGL->getIndexVolumeGL();
 
             if (indexVolume) {
-		        delete indexVolume;
-		        indexVolume=new VolumeGL(indexVolume_);
-		        brickedVolumeGL->setIndexVolumeGL(indexVolume);
+                delete indexVolume;
+                indexVolume=new VolumeGL(indexVolume_);
+                brickedVolumeGL->setIndexVolumeGL(indexVolume);
             }
         }
 
-	}
+    }
 
-	template<class T>
-	void BrickingManager<T>::updatePackedVolumeTexture() {
-
-		//Get the texture we need to update
+    template<class T>
+    void BrickingManager<T>::updatePackedVolumeTexture() {
+        //Get the texture we need to update
         BrickedVolumeGL* brickedVolumeGL = dynamic_cast<BrickedVolumeGL*>(volumeHandle_->getVolumeGL());
-		if (!brickedVolumeGL) {
-			return;
-		}
+        if (!brickedVolumeGL) {
+            return;
+        }
 
-		const VolumeTexture* packedTexture = brickedVolumeGL->getPackedVolumeGL()->getTexture();
+        const VolumeTexture* packedTexture = brickedVolumeGL->getPackedVolumeGL()->getTexture();
 
-		//a map holding all VolumeBricks that need a new LOD
-		std::map<int, std::vector<Brick* > > brickMap;
-		//an iterator for that map
-		std::map<int, std::vector<Brick* > >::iterator brickMapIterator;
-		//a map holding all PackingBricks holding space for a volume of the old LOD that are now free
-		std::map<int, std::vector<Brick* > > packBrickMap;
-		//an iterator for that map 
-		std::map<int, std::vector<Brick* > >::iterator packBrickMapIterator;
+        //a map holding all VolumeBricks that need a new LOD
+        std::map<int, std::vector<Brick* > > brickMap;
+        //an iterator for that map
+        std::map<int, std::vector<Brick* > >::iterator brickMapIterator;
+        //a map holding all PackingBricks holding space for a volume of the old LOD that are now free
+        std::map<int, std::vector<Brick* > > packBrickMap;
+        //an iterator for that map
+        std::map<int, std::vector<Brick* > >::iterator packBrickMapIterator;
 
-		int oldLod, newLod;
+        int oldLod, newLod;
 
-		for (size_t i=0; i<brickingInformation_.volumeBricks.size(); i++) {
-			
+        for (size_t i=0; i<brickingInformation_.volumeBricks.size(); i++) {
+
             VolumeBrick<T>* currentBrick = dynamic_cast<VolumeBrick<T>* >(
                 brickingInformation_.volumeBricks.at(i));
 
-			if (currentBrick->getLevelOfDetailChanged() ) {
-				//If the brick's LOD needs to be changed, get its old and new LOD
-				oldLod = currentBrick->getOldLevelOfDetail();
-				newLod = currentBrick->getCurrentLevelOfDetail();
+            if (currentBrick->getLevelOfDetailChanged() ) {
+                //If the brick's LOD needs to be changed, get its old and new LOD
+                oldLod = currentBrick->getOldLevelOfDetail();
+                newLod = currentBrick->getCurrentLevelOfDetail();
 
-				//Get the VolumeBrick's old PackingBrick and put it into the PackingBrick map, because that
-				//PackingBrick is now free and can be used again.
-				packBrickMapIterator = packBrickMap.find(oldLod);
-				if (packBrickMapIterator != packBrickMap.end() ) {
-					packBrickMap[oldLod].push_back(currentBrick->getPackingBrick() );
-				} else {
-					std::vector<Brick* > newPackVector;
-					newPackVector.push_back(currentBrick->getPackingBrick() );
-					packBrickMap.insert( std::pair<int,std::vector<Brick* > >(oldLod,newPackVector) );
-				}
+                //Get the VolumeBrick's old PackingBrick and put it into the PackingBrick map, because that
+                //PackingBrick is now free and can be used again.
+                packBrickMapIterator = packBrickMap.find(oldLod);
+                if (packBrickMapIterator != packBrickMap.end() ) {
+                    packBrickMap[oldLod].push_back(currentBrick->getPackingBrick() );
+                } else {
+                    std::vector<Brick* > newPackVector;
+                    newPackVector.push_back(currentBrick->getPackingBrick() );
+                    packBrickMap.insert( std::pair<int,std::vector<Brick* > >(oldLod,newPackVector) );
+                }
 
-				//Put the VolumeBrick into the VolumeBrick map which holds all VolumeBricks that need
-				//a new PackingBrick of a different size assigned. 
-				brickMapIterator = brickMap.find(newLod);
-				if (brickMapIterator != brickMap.end() ) {
-					brickMap[newLod].push_back(currentBrick);
-				} else {
-					std::vector<Brick* > newVector;
-					newVector.push_back(currentBrick);
-					brickMap.insert( std::pair<int,std::vector<Brick* > >(newLod,newVector) );
-				}
+                //Put the VolumeBrick into the VolumeBrick map which holds all VolumeBricks that need
+                //a new PackingBrick of a different size assigned.
+                brickMapIterator = brickMap.find(newLod);
+                if (brickMapIterator != brickMap.end() ) {
+                    brickMap[newLod].push_back(currentBrick);
+                } else {
+                    std::vector<Brick* > newVector;
+                    newVector.push_back(currentBrick);
+                    brickMap.insert( std::pair<int,std::vector<Brick* > >(newLod,newVector) );
+                }
 
-			}
-		}
+            }
+        }
 
-		//Bind the texture to be updated 
-		packedTexture->bind();
+        //Bind the texture to be updated
+        packedTexture->bind();
 
-		//Go through the map of all VolumeBricks needing a new PackingBrick and assign them
-		//the PackingBricks of the PackingBrick map (because all those bricks are free)
-		brickMapIterator = brickMap.begin();
+        //Go through the map of all VolumeBricks needing a new PackingBrick and assign them
+        //the PackingBricks of the PackingBrick map (because all those bricks are free)
+        brickMapIterator = brickMap.begin();
 
-		while (brickMapIterator != brickMap.end() ) {
-			int newLod = brickMapIterator->first;
-			//Get all the VolumeBricks needing a new PackingBrick, and all the PackingBricks 
-			//that can be used for that. 
-			std::vector<Brick* > changedVolumeBricks = brickMap[newLod];
-			std::vector<Brick* > freePackBricks = packBrickMap[newLod];
+        while (brickMapIterator != brickMap.end() ) {
+            int newLod = brickMapIterator->first;
+            //Get all the VolumeBricks needing a new PackingBrick, and all the PackingBricks
+            //that can be used for that.
+            std::vector<Brick* > changedVolumeBricks = brickMap[newLod];
+            std::vector<Brick* > freePackBricks = packBrickMap[newLod];
 
             if (changedVolumeBricks.size() > 0 && freePackBricks.size() > 0) {
-			//now assign those packingbricks to the volumebricks
-			    for (size_t i=0; i< changedVolumeBricks.size() ; i++) {
-				    VolumeBrick<T>* volBrick = dynamic_cast<VolumeBrick<T>* > (changedVolumeBricks.at(i));
-				    PackingBrick<T>* packBrick = dynamic_cast<PackingBrick<T>* > (freePackBricks.at(i));
+            //now assign those packingbricks to the volumebricks
+                for (size_t i=0; i< changedVolumeBricks.size() ; i++) {
+                    VolumeBrick<T>* volBrick = dynamic_cast<VolumeBrick<T>* > (changedVolumeBricks.at(i));
+                    PackingBrick<T>* packBrick = dynamic_cast<PackingBrick<T>* > (freePackBricks.at(i));
 
-				    //Assign the VolumeBrick's correct volume (that means of the correct LOD) to the
-				    //PackingBrick, and tell the VolumeBrick that it has a new PackingBrick.
-				    tgt::ivec3 dims = brickingInformation_.lodToDimensionsMap[newLod];
- 				    packBrick->setSourceVolume( (T*)volBrick->getLodVolume(newLod), dims );
-				    volBrick->setPackingBrick(packBrick);
-    				
-				    //Update the index texture because the VolumeBrick now has a new place in the packed
-				    //volume. 
-				    updateIndexVolume(volBrick,packBrick);
+                    //Assign the VolumeBrick's correct volume (that means of the correct LOD) to the
+                    //PackingBrick, and tell the VolumeBrick that it has a new PackingBrick.
+                    tgt::ivec3 dims = brickingInformation_.lodToDimensionsMap[newLod];
+                     packBrick->setSourceVolume( (T*)volBrick->getLodVolume(newLod), dims );
+                    volBrick->setPackingBrick(packBrick);
 
-				    //At last update the packed texture with the PackingBrick's new content.
-				    packBrick->updateTexture(packedTexture);
-			    }
+                    //Update the index texture because the VolumeBrick now has a new place in the packed
+                    //volume.
+                    updateIndexVolume(volBrick,packBrick);
+
+                    //At last update the packed texture with the PackingBrick's new content.
+                    packBrick->updateTexture(packedTexture);
+                }
             }
 
-			brickMapIterator++;
-		}
-	}
+            brickMapIterator++;
+        }
+    }
 
     template<class T>
     void BrickingManager<T>::changeBrickResolutionCalculator(std::string mode) {
 
-		if (mode == "maximum") {
+        if (mode == "maximum") {
             delete brickResolutionCalculator_;
             delete brickLodSelector_;
-			brickResolutionCalculator_ = new MaximumBrickResolutionCalculator(brickingInformation_);
+            brickResolutionCalculator_ = new MaximumBrickResolutionCalculator(brickingInformation_);
             brickLodSelector_ = new CameraLodSelector(brickingInformation_);
-		} else if (mode == "balanced") {
+        } else if (mode == "balanced") {
             delete brickResolutionCalculator_;
             delete brickLodSelector_;
-			brickResolutionCalculator_ = new BalancedBrickResolutionCalculator(brickingInformation_);
+            brickResolutionCalculator_ = new BalancedBrickResolutionCalculator(brickingInformation_);
             brickLodSelector_ = new CameraLodSelector(brickingInformation_);
-		} 
-		updateBricking();
+        }
+        updateBricking();
     }
 
     template<class T>
     void BrickingManager<T>::changeBrickLodSelector(std::string selector) {
-		if (selector == "Camera-based") {
+        if (selector == "Camera-based") {
             delete brickLodSelector_;
             brickLodSelector_ = new CameraLodSelector(brickingInformation_);
-		} else if (selector == "Error-based") {
+        } else if (selector == "Error-based") {
             delete brickLodSelector_;
             brickLodSelector_ = new ErrorLodSelector(brickingInformation_);
             setUpdateBricks(false);
-		} 
-		updateBricking();
+        }
+        updateBricking();
     }
 
-	template<class T>
+    template<class T>
     void BrickingManager<T>::setUpdateBricks(bool b) {
-		updateBricks_=b;
+        updateBricks_=b;
     }
 
-	template<class T>
-	void BrickingManager<T>::createBrickedVolume() {
-		
+    template<class T>
+    void BrickingManager<T>::createBrickedVolume() {
+
         brickingInformation_.packedVolumeDimensions = calculateOptimalTextureDims();
-		
+
         brickResolutionCalculator_ = new MaximumBrickResolutionCalculator(brickingInformation_);
 
-		brickResolutionCalculator_->calculateBrickResolutions();
+        brickResolutionCalculator_->calculateBrickResolutions();
 
-		//The type of the eep volume doesn't matter as no memory will be allocated anyway.
+        //The type of the eep volume doesn't matter as no memory will be allocated anyway.
         eepVolume_ = new VolumeAtomic<uint8_t>(brickingInformation_.originalVolumeDimensions,
-													brickingInformation_.originalVolumeSpacing,
-													brickingInformation_.originalVolumeBitsStored ,false);
+                                                    brickingInformation_.originalVolumeSpacing,
+                                                    brickingInformation_.originalVolumeBitsStored ,false);
 
-		eepVolume_->meta().setBrickSize(brickingInformation_.brickSize);
-        eepVolume_->meta().setFileName("bricking eep volume");
+        eepVolume_->meta().setBrickSize(brickingInformation_.brickSize);
 
 
         tgt::ivec3 dims = brickingInformation_.packedVolumeDimensions;
@@ -784,99 +762,97 @@ namespace voreen {
               << (((long)dims.x*(long)dims.y*(long)dims.z) / (1024*1024))
               * brickingInformation_.originalVolumeVoxelSizeInByte<< " MB)");
 
-        
+
         packedVolume_ = new VolumeAtomic<T>(brickingInformation_.packedVolumeDimensions,
-											brickingInformation_.originalVolumeSpacing,
-											brickingInformation_.originalVolumeBitsStored);
-    
-        packedVolume_->meta().setFileName("bricking packed volume");
+                                            brickingInformation_.originalVolumeSpacing,
+                                            brickingInformation_.originalVolumeBitsStored);
 
-		createIndexVolume(brickingInformation_.numBricks);
+        createIndexVolume(brickingInformation_.numBricks);
 
-		createPackingBricks(brickingInformation_.packedVolumeDimensions,packedVolume_);
+        createPackingBricks(brickingInformation_.packedVolumeDimensions,packedVolume_);
 
-		ramManager_ = new RamManager<T>(brickingInformation_, brickedVolumeReader_, maxMemory_);
+        ramManager_ = new RamManager<T>(brickingInformation_, brickedVolumeReader_, maxMemory_);
 
-		packingBrickAssigner_ = new PackingBrickAssigner<T>(brickingInformation_,indexVolume_);
+        packingBrickAssigner_ = new PackingBrickAssigner<T>(brickingInformation_,indexVolume_);
 
-		volumeBrickCreator_= new VolumeBrickCreator<T> (brickingInformation_.numBricks,
+        volumeBrickCreator_= new VolumeBrickCreator<T> (brickingInformation_.numBricks,
             brickingInformation_.brickSize ,brickingInformation_.originalVolumeDimensions,
             brickingInformation_.originalVolumeSpacing, brickingInformation_.originalVolumeLLF,
             brickingInformation_.originalVolumeURB, ramManager_);
 
-        ioProgress_->setNumSteps(static_cast<int>(brickingInformation_.totalNumberOfBricksNeeded*1.5));
+        if (ioProgress_)
+            ioProgress_->setTotalSteps(static_cast<int>(brickingInformation_.totalNumberOfBricksNeeded*1.5));
         int bricksCreated = 0;
 
-		VolumeBrick<T>* newBrick = volumeBrickCreator_->createNextBrick();
+        VolumeBrick<T>* newBrick = volumeBrickCreator_->createNextBrick();
         bricksCreated++;
         if (ioProgress_)
-            ioProgress_->set(bricksCreated);
+            ioProgress_->setProgress(bricksCreated);
 
-		while (newBrick != 0) {
+        while (newBrick != 0) {
             bricksCreated++;
             if (ioProgress_) {
-                ioProgress_->set(bricksCreated);
+                ioProgress_->setProgress(bricksCreated);
             }
-			if (newBrick->getAllVoxelsEqual() == true) {
+            if (newBrick->getAllVoxelsEqual() == true) {
                 //If all voxels are equal in the VolumeBrick, assign it a PackingBrick immediately.
                 //The LOD of this brick will never ever change anyway, so we don't have to keep
-                //track of the brick. 
-				newBrick->setCurrentLevelOfDetail(brickingInformation_.totalNumberOfResolutions -1);
+                //track of the brick.
+                newBrick->setCurrentLevelOfDetail(brickingInformation_.totalNumberOfResolutions -1);
                 packingBrickAssigner_->assignVolumeBrickToPackingBrick(newBrick, true, packedVolume_);
-			} else {
-                //The brick contains meaningful data, put it into the vector. 
-				brickingInformation_.volumeBricks.push_back(newBrick);
-			}
-			newBrick = volumeBrickCreator_->createNextBrick();
-		}
+            } else {
+                //The brick contains meaningful data, put it into the vector.
+                brickingInformation_.volumeBricks.push_back(newBrick);
+            }
+            newBrick = volumeBrickCreator_->createNextBrick();
+        }
 
         //Until now, only VolumeBricks with only voxels of the same value have been assigned a PackingBrick.
-        //And those bricks will never change their resolution, so they can permanently keep their place 
+        //And those bricks will never change their resolution, so they can permanently keep their place
         //in the packed volume. By creating a backup of the remaining PackingBricks one can rearrange
         //the other bricks inside the packed volume freely without interfering with the positions of the
-        //bricks containing only voxels of the same value. Only PackingBricks not yet assigned end up 
-        //in the backup. 
+        //bricks containing only voxels of the same value. Only PackingBricks not yet assigned end up
+        //in the backup.
         packingBrickAssigner_->createPackingBrickBackups();
 
-        BrickingRegionManager* regionManager = new BrickingRegionManager(brickingInformation_);
-        brickingInformation_.regionManager = regionManager;
-		
+        brickingInformation_.regionManager = new BrickingRegionManager(brickingInformation_);
+
         brickLodSelector_ = new ErrorLodSelector(brickingInformation_);
-		brickLodSelector_->selectLods();
-        ioProgress_->set(static_cast<int>(brickingInformation_.totalNumberOfBricksNeeded*1.5));
-		
-		fillPackingBricks();
-		
-		writeVolumeDataToPackedVolume();
+        brickLodSelector_->selectLods();
+        if (ioProgress_)
+        ioProgress_->setProgress(static_cast<int>(brickingInformation_.totalNumberOfBricksNeeded*1.5));
+
+        fillPackingBricks();
+
+        writeVolumeDataToPackedVolume();
 
         // Immediately free all bricks after the packed volume has been written. This is done
         // to prevent storing three copies in RAM (one in RamManager, one in packed volume, one
         // by OpenGL), this way they are only stored twice.
         ramManager_->freeAll();
 
-		brickedVolume_ = new BrickedVolume(indexVolume_,packedVolume_,eepVolume_);
-		volumeHandle_->setVolume(brickedVolume_);
-	}
+        brickedVolume_ = new BrickedVolume(indexVolume_,packedVolume_,eepVolume_);
+        volumeHandle_->setVolume(brickedVolume_);
+    }
 
-	template<class T>
-	void BrickingManager<T>::updateBricking() {
+    template<class T>
+    void BrickingManager<T>::updateBricking() {
+        brickResolutionCalculator_->calculateBrickResolutions();
 
-		brickResolutionCalculator_->calculateBrickResolutions();
-
-		brickLodSelector_->selectLods();
+        brickLodSelector_->selectLods();
 
         packingBrickAssigner_->deletePackingBricks();
 
         packingBrickAssigner_->createPackingBricksFromBackup();
-		
-		fillPackingBricks();
-		
-        BrickedVolumeGL* brickedVolumeGL = dynamic_cast<BrickedVolumeGL*>(volumeHandle_->getVolumeGL());
-		if (!brickedVolumeGL) {
-			return;
-		}
 
-		const VolumeTexture* packedTexture = brickedVolumeGL->getPackedVolumeGL()->getTexture();
+        fillPackingBricks();
+
+        BrickedVolumeGL* brickedVolumeGL = dynamic_cast<BrickedVolumeGL*>(volumeHandle_->getVolumeGL());
+        if (!brickedVolumeGL) {
+            return;
+        }
+
+        const VolumeTexture* packedTexture = brickedVolumeGL->getPackedVolumeGL()->getTexture();
 
         packedTexture->bind();
 
@@ -887,10 +863,10 @@ namespace voreen {
         }
 
         VolumeGL* indexVolumeGL = brickedVolumeGL->getIndexVolumeGL();
-		delete indexVolumeGL;
-		indexVolumeGL=new VolumeGL(indexVolume_);
-		brickedVolumeGL->setIndexVolumeGL(indexVolumeGL);
-	}
+        delete indexVolumeGL;
+        indexVolumeGL=new VolumeGL(indexVolume_);
+        brickedVolumeGL->setIndexVolumeGL(indexVolumeGL);
+    }
 
     template<class T>
     void BrickingManager<T>::addBoxBrickingRegion(int prio, tgt::vec3 clipLLF, tgt::vec3 clipURB) {

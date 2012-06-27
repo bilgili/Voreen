@@ -31,25 +31,15 @@
 #define VRN_VOLUMERENDERER_H
 
 #include "voreen/core/vis/processors/renderprocessor.h"
-#include "voreen/core/volume/volumeseries.h"
 
 namespace voreen {
 
 /**
  * All classes which render volumes should inherit from this class.
- * This class knows of the current volumehandle.
  */
 class VolumeRenderer : public RenderProcessor {
 public:
-    VolumeRenderer(tgt::Camera* camera = 0, TextureContainer* tc = 0);
-
-    //TODO: deprecated
-    virtual VolumeHandle* getVolumeHandle() { return currentVolumeHandle_; }
-
-    //TODO: deprecated
-    static const Identifier setTransFunc_;
-    static const Identifier setTransFunc2_;
-
+    VolumeRenderer();
 protected:
     /**
      * This struct contains information about a volume. It is exclusively used
@@ -57,11 +47,11 @@ protected:
      */
     struct VolumeStruct {
         VolumeStruct();
-        VolumeStruct(const VolumeGL* volume, const Identifier& textureUnitIdent,
+        VolumeStruct(const VolumeGL* volume, const std::string& textureUnitIdent,
                      const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier);
 
         const VolumeGL* volume_;                        ///< the volume whose texture is to bound
-        Identifier textureUnitIdent_;                   ///< specifies the texture unit the volume texture is bound to
+        std::string textureUnitIdent_;                   ///< specifies the texture unit the volume texture is bound to
         std::string samplerIdentifier_;                 ///< the sampler by which the
                                                         ///  volume is accessed in the shader
         std::string volumeParametersIdentifier_;        ///< the identifier of the volume parameter struct
@@ -69,9 +59,9 @@ protected:
 
     };
 
-    virtual std::string generateHeader();
+    virtual std::string generateHeader(VolumeHandle* volumehandle = 0);
 
-    virtual void setGlobalShaderParameters(tgt::Shader* shader);
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
 
     /**
      * This function binds the volume textures used by the volume renderer and passes the
@@ -85,9 +75,42 @@ protected:
      */
     virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes);
 
-    //TODO: deprecated
-    VolumeHandle* currentVolumeHandle_;
+    /**
+     * \brief Updates the current OpenGL context according to the
+     *        object's lighting properties (e.g. lightPosition_).
+     *
+     * The following parameters are set for GL_LIGHT0:
+     * - Light source position
+     * - Light ambient / diffuse / specular colors
+     * - Light attenuation factors
+     *
+     * The following material parameters are set (GL_FRONT_AND_BACK):
+     * - Material ambient / diffuse / specular / emissive colors
+     * - Material shininess
+     *
+     */
+    virtual void setLightingParameters();
 
+    /// The position of the light source used for lighting calculations in world coordinates
+    FloatVec4Property lightPosition_;
+    /// The light source's ambient color according to the Phong lighting model
+    ColorProperty lightAmbient_;
+    /// The light source's diffuse color according to the Phong lighting model
+    ColorProperty lightDiffuse_;
+    /// The light source's specular color according to the Phong lighting model
+    ColorProperty lightSpecular_;
+    /// The light source's attenuation factors (x = constant, y = linear, z = quadratic)
+    FloatVec3Property lightAttenuation_;
+    /// The ambient material color according to the Phong lighting model
+    ColorProperty materialAmbient_;
+    /// The diffuse material color according to the Phong lighting model
+    ColorProperty materialDiffuse_;
+    /// The specular material color according to the Phong lighting model
+    ColorProperty materialSpecular_;
+    /// The emission material color according to the Phong lighting model
+    ColorProperty materialEmission_;
+    /// The material's specular exponent according to the Phong lighting model
+    FloatProperty materialShininess_;
     static const std::string loggerCat_;
 };
 

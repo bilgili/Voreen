@@ -51,11 +51,10 @@ const std::string PVMVolumeReader::loggerCat_ = "voreen.io.VolumeReader.pvm";
 PVMVolumeReader::PVMVolumeReader(IOProgress* progress)
   : VolumeReader(progress)
 {
-    name_ = "PVM Reader";
     extensions_.push_back("pvm");
 }
 
-VolumeSet* PVMVolumeReader::read(const std::string &fileName)
+VolumeCollection* PVMVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     uint8_t* data;
@@ -68,7 +67,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName)
     unsigned char *parameter;
     unsigned char *comment;
 
-    LINFO(fileName);
+    LINFO("Reading PVM volume " << fileName);
 
     /*
         TODO This subroutine returns an array created with malloc but it should
@@ -84,10 +83,16 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName)
         tmpData = readPVMvolume(const_cast<char*>(fileName.c_str()), getProgress(), &width, &height, &depth, &components,
                                 &scalex, &scaley, &scalez, &description, &courtesy,
                                 &parameter, &comment);
-        data = new uint8_t[width * height * depth * components];
     } catch (std::bad_alloc) {
         throw; // throw it to the caller
     }
+
+    if (!tmpData) {
+        LERROR("PVM Reading failed");
+        return 0;
+    }
+
+    data = new uint8_t[width * height * depth * components];
     memcpy(data, tmpData, width * height * depth * components);
 
     Volume* dataset = 0;
@@ -131,18 +136,14 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName)
     // TODO now it is safe to free
     free(tmpData);
 
-    VolumeSet* volumeSet = 0;
-    try {
-        volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-         VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-         volumeSet->addSeries(volumeSeries);
-         VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);
-         volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-         volumeSeries->addVolumeHandle(volumeHandle);
-    } catch (std::bad_alloc) {
-        throw; // throw it to the caller
+    VolumeCollection* volumeCollection = new VolumeCollection();
+    if (dataset) {
+        VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);
+        volumeHandle->setOrigin(VolumeOrigin(fileName));
+        volumeCollection->add(volumeHandle);
     }
-    return volumeSet;
+
+    return volumeCollection;
 }
 
 } // namespace voreen

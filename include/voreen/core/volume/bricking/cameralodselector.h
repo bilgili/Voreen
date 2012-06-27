@@ -32,64 +32,64 @@
 
 namespace voreen {
 
-	/**
-	* This class assigns the levels of detail based on the distance
-	* of the VolumeBricks to the current camera position. The
-	* farther away the bricks are, the lower their resolution will
-	* be. BrickingRegions are also taken into account. The bricks in the region
+    /**
+    * This class assigns the levels of detail based on the distance
+    * of the VolumeBricks to the current camera position. The
+    * farther away the bricks are, the lower their resolution will
+    * be. BrickingRegions are also taken into account. The bricks in the region
     * with the highest priority will be assigned a level of detail first, meaning
-    * that region priority is more important than camera distance. The available 
-    * resolutions that this class can assign must be determined by a 
-    * BrickResolutionCalculator before. 
-	*/
-	class CameraLodSelector : public BrickLodSelector {
-	
-	public:
-		CameraLodSelector(BrickingInformation& brickingInformation);
+    * that region priority is more important than camera distance. The available
+    * resolutions that this class can assign must be determined by a
+    * BrickResolutionCalculator before.
+    */
+    class CameraLodSelector : public BrickLodSelector {
+
+    public:
+        CameraLodSelector(BrickingInformation& brickingInformation);
 
         /**
-        * Assigns a level of detail to all VolumeBricks in the 
+        * Assigns a level of detail to all VolumeBricks in the
         * brickingInformation_.volumeBricks vector, based on their
-        * distance to the camera position and whether or not they are in a 
+        * distance to the camera position and whether or not they are in a
         * BrickingRegion. First, all bricks inside the region with the
         * highest priority are sorted based on their distance and are assigned
         * a level of detail. This repeats until all regions have been
         * passed, and after that, bricks outside the regions are sorted on their
-        * distance to the camera. 
-        */ 
-		virtual void selectLods();
+        * distance to the camera.
+        */
+        virtual void selectLods();
 
-	protected:
+    protected:
 
         /**
         * Checks if the brick has already been assigned a level of detail. This
         * can happen if a brick is in more than one region. The region with higher
-        * priority takes precedence. 
+        * priority takes precedence.
         */
         bool checkAssignPriority(Brick* brick);
 
-		/**
-		* A map holding the distances of every brick to the camera position. The float
-        * value is the distance, the int value the position of the brick in the 
-        * brickingInformation_.volumeBricks vector. 
-		*/
-		std::multimap<float, int> distanceMap_;
+        /**
+        * A map holding the distances of every brick to the camera position. The float
+        * value is the distance, the int value the position of the brick in the
+        * brickingInformation_.volumeBricks vector.
+        */
+        std::multimap<float, int> distanceMap_;
 
-		/**
-		* A set holding the distances of all bricks to the camera position.
-		* This set is then sorted and the smallest distances are looked up
-		* in the distanceMap_, thereby getting the bricks closest to the camera.
-		*/
-		std::set<float> distanceSet_;
+        /**
+        * A set holding the distances of all bricks to the camera position.
+        * This set is then sorted and the smallest distances are looked up
+        * in the distanceMap_, thereby getting the bricks closest to the camera.
+        */
+        std::set<float> distanceSet_;
 
         /**
         * Vector containing all bricks that haven't been assigned a level of detail yet.
         */
         std::vector<Brick*> bricksWithoutLod_;
 
-	private:
+    private:
 
-	}; //end of class
+    }; //end of class
 
 
 

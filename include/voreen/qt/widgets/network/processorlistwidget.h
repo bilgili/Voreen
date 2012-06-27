@@ -30,50 +30,82 @@
 #ifndef VRN_PROCESSORLISTWIDGET_H
 #define VRN_PROCESSORLISTWIDGET_H
 
-#include "voreen/core/vis/identifier.h"
+#include <QContextMenuEvent>
 #include <QTreeWidget>
 #include <QWidget>
 
-class QLineEdit;
+#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/processorfactory.h"
+#include "voreen/qt/widgets/lineeditresetwidget.h"
+
 class QMouseEvent;
 class QTreeWidgetItem;
+class QTextBrowser;
+class QSplitter;
+class QContextMenuEvent;
 
 namespace voreen {
+
+class ProcessorListWidget;
 
 class ProcessorListTreeWidget : public QTreeWidget {
 Q_OBJECT
 public:
-    ProcessorListTreeWidget(QWidget* parent = 0);
+    ProcessorListTreeWidget(ProcessorListWidget* processorListWidget, QWidget* parent = 0);
+
+    enum SortType {
+        SORT_BY_CATEGORY,
+        SORT_BY_MODULENAME,
+        SORT_BY_MODULE_CATEGORY,
+        SORT_BY_CATEGORY_MODULE
+    };
 
 public slots:
     /**
      * Filters the processor list based in the given text. Every processor will be listed
-     * if its name includes the text
+     * if its name includes the text or, if checkDescrition is true, its descrition contains the text
      */
     void filter(const QString& text);
+    void sort(int);
+    void hideStatus(bool);
+    void searchDescription(bool);
 
 protected:
-    void mousePressEvent(QMouseEvent* event);
+    void mousePressEvent(QMouseEvent*);
 
 private:
-    void buildItems();
+    //void buildItems();
 
-    std::vector<Identifier> processorVector_;
+    ProcessorFactory::KnownClassesVector processorVector_;
     QList<QTreeWidgetItem*> items_;
+
+    // pointer to the ProcessorListWidget this widget is part of
+    ProcessorListWidget* processorListWidget_;
+
+    void sortByCategory();
+    void sortByModuleName();
+    void sortByCategoryThenModule();
+    void sortByModuleThenCategory();
+
+    SortType sortType_;
+    std::string filterText_;
+    bool showCodeState_;
+    bool searchDescription_;
+
 };
 
 //---------------------------------------------------------------------------
 
 class ProcessorListItem : public QTreeWidgetItem {
 public:
-    ProcessorListItem(Identifier id);
-
-    Identifier getId() {
-        return id_;
-    }
+    ProcessorListItem(const std::string& id);
+    const std::string& getId() { return id_; }
+    const std::string& getInfo() { return info_; }
+    void setInfo(std::string info) { info_ = info; }
 
 private:
-    Identifier id_;
+    const std::string id_;
+    std::string info_;
 };
 
 //---------------------------------------------------------------------------
@@ -82,10 +114,26 @@ class ProcessorListWidget : public QWidget {
 Q_OBJECT
 public:
     ProcessorListWidget(QWidget* parent = 0);
+public slots:
+    void processorsSelected(const std::vector<Processor*>& processors);
+    void setInfo(Processor* processor);
 
 protected:
     ProcessorListTreeWidget* tree_;
-    QLineEdit* edit_;
+    QIcon resetIcon_;
+    QTextBrowser* info_;
+    QSplitter* splitter_;
+    QAction* hideAction_;
+    QAction* searchDescription_;
+
+protected slots:
+    void setInfo();
+    void sortMenu();
+
+signals:
+    void sort(int);
+    void hideStatus(bool);
+    void searchDescription(bool);
 };
 
 

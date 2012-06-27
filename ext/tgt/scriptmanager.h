@@ -55,23 +55,15 @@ private:
 
 public:
 
-    Script()
-        : source_(0)
-        , byteCode_(0)
-        , compiled_(false)
-    {}
-
-    ~Script() {
-        if (source_)
-            delete[] source_;
-    }
+    Script();
+    ~Script();
 
     bool load(const std::string& filename, bool compileDirectly = true);
 
     /// if you compile the script execution will be faster and the internal string will be deleted
     bool compile();
     bool run();
-    std::string log() const { return log_; }
+    std::string log() const;
 };
 
 //------------------------------------------------------------------------------
@@ -91,19 +83,9 @@ public:
      * @param argc number of command line arguments
      * @param argv array of arguments
     */
-    void static setArgv(int argc, char* argv[]) {
-        PySys_SetArgv(argc, argv);
-    }
+    void static setArgv(int argc, char* argv[]);
 
-    void static setProgramName(const std::string& prgName) {
-#ifdef WIN32        
-        char* str = _strdup(prgName.c_str());
-#else
-        char* str = strdup(prgName.c_str());
-#endif
-        Py_SetProgramName(str);
-        free(str);
-    }
+    void static setProgramName(const std::string& prgName);
 };
 
 } // namespace tgt

@@ -31,12 +31,15 @@
 #define VRN_GEOMETRYPROCESSOR_H
 
 #include "voreen/core/vis/processors/renderprocessor.h"
+#include "voreen/core/vis/idmanager.h"
 #include "voreen/core/vis/properties/boolproperty.h"
 #include "voreen/core/vis/properties/eventproperty.h"
+#include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 
 namespace voreen {
 
 class GeometryRenderer;
+class CameraInteractionHandler;
 
 /**
  * Renders GeometryRenderer objects.
@@ -49,19 +52,35 @@ public:
     GeometryProcessor();
     ~GeometryProcessor();
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
+    virtual bool isReady() const;
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "GeometryProcessor"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
 
 private:
     tgt::Shader* shaderPrg_;
+    IDManager idm_;
+
+    CameraProperty camera_;
+    CameraInteractionHandler* cameraHandler_;
+
+    RenderPort inport_;
+    RenderPort outport_;
+    RenderPort tempPort_;
+    RenderPort pickingPort_;
+    GenericCoProcessorPort<GeometryRenderer> cpPort_;
 };
 
 //---------------------------------------------------------------------------
+
+class ProxyGeometry;
 
 /**
  * Abstract base class for rendering Geometry onto images.
@@ -70,47 +89,56 @@ class GeometryRenderer : public RenderProcessor {
 public:
     GeometryRenderer();
 
-    virtual void process(LocalPortMapping* portMapping);
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping=0);
+    virtual void process();
+    virtual void render() = 0;
+    virtual void renderPicking() {}
+    virtual void setIDManager(IDManager* idm) { idm_ = idm; }
+    virtual void setCamera(tgt::Camera* c) { camera_ = c; }
 
 protected:
-    virtual void render(LocalPortMapping* localPortMapping) = 0;
     ///Get 3D vector from screen position (unproject)
     tgt::vec3 getOGLPos(int x, int y, float z) const;
-};
+	///Get screen position from 3D vector (project)
+	tgt::vec3 getWindowPos(tgt::vec3 pos) const;
 
-typedef TemplateMessage<GeometryRenderer*> GeomRendererMsg;
+    tgt::Camera* camera_;
+    GenericCoProcessorPort<GeometryRenderer> outPort_;
+    IDManager* idm_;
+};
 
 //---------------------------------------------------------------------------
 
 /**
  * Light widget
  */
-class GeomLightWidget : public GeometryRenderer, public tgt::EventListener {
+class GeomLightWidget : public GeometryRenderer {
 public:
     GeomLightWidget();
     ~GeomLightWidget();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "GeomLightWidget"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
-    virtual void mousePressEvent(tgt::MouseEvent *e);
-    virtual void mouseMoveEvent(tgt::MouseEvent *e);
-    virtual void mouseReleaseEvent(tgt::MouseEvent *e);
-
-protected:
     /**
      * Renders the light widget
      */
-    virtual void render(LocalPortMapping* localPortMapping);
+    virtual void render();
+    virtual void renderPicking();
+    virtual void setIDManager(IDManager* idm);
 
 private:
-    BoolProp showLightWidget_;
-    EventProperty moveEvent_;
+    void moveSphere(tgt::MouseEvent* e);
+
+    BoolProperty showLightWidget_;
+    TemplateMouseEventProperty<GeomLightWidget>* moveSphereProp_;
 
     bool isClicked_;
 
+    FloatVec4Property lightPosition_;
     tgt::vec4 lightPositionAbs_;
     tgt::ivec2 startCoord_;
 
@@ -125,7 +153,6 @@ private:
     GLfloat light_ambient[4];
     GLfloat light_diffuse[4];
     GLfloat light_specular[4];
-
 };
 
 //---------------------------------------------------------------------------
@@ -138,19 +165,53 @@ public:
     void setLineWidth(float width);
     ///Set the stipplePattern to be used. @see OpenGL docs
     void setStipplePattern(int stippleFactor, int stipplePattern);
-    virtual const Identifier getClassName() const {return "GeometryRenderer.BoundingBox";}
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "BoundingBox"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new GeomBoundingBox();}
 
-protected:
-    virtual void render(LocalPortMapping*  portMapping);
+    virtual void render();
 private:
-    ColorProp bboxColor_;
-    FloatProp width_;
-    IntProp stippleFactor_;
-    IntProp stipplePattern_;
-    BoolProp showGrid_;
-    IntVec3Prop tilesProp_;
+    ColorProperty bboxColor_;
+    FloatProperty width_;
+    IntProperty stippleFactor_;
+    IntProperty stipplePattern_;
+    BoolProperty showGrid_;
+    IntVec3Property tilesProp_;
+    BoolProperty applyDatasetTransformationMatrix_;
+
+    VolumePort inport_;
+};
+
+//---------------------------------------------------------------------------
+
+class SlicePositionRenderer : public GeometryRenderer {
+public:
+    SlicePositionRenderer();
+
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "SlicePositionRenderer"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new SlicePositionRenderer();}
+
+    virtual void process();
+    virtual void render();
+private:
+    ColorProperty xColor_;
+    ColorProperty yColor_;
+    ColorProperty zColor_;
+    IntProperty xSliceIndexProp_;
+    IntProperty ySliceIndexProp_;
+    IntProperty zSliceIndexProp_;
+
+    FloatProperty width_;
+    IntProperty stippleFactor_;
+    IntProperty stipplePattern_;
+    VolumePort inport_;
 };
 
 //---------------------------------------------------------------------------
@@ -158,24 +219,18 @@ private:
 class PickingBoundingBox : public GeometryRenderer {
 public:
     PickingBoundingBox();
-    virtual const Identifier getClassName() const {return "GeometryRenderer.PickingBoundingBox";}
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "PickingBoundingBox"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new PickingBoundingBox();}
-    /**
-    *   Process voreen message, accepted identifiers:
-    * - set.lowerLeftFront
-    * - set.upperRightBack
-    * - set.Hide
-    */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 
-protected:
-    virtual void render(LocalPortMapping* portMapping);
+    virtual void render();
 
 private:
     tgt::vec3 lowerLeftFront_;
     tgt::vec3 upperRightBack_;
     bool displaySelection_;
+    GenericCoProcessorPort<ProxyGeometry> proxyGeomPort_;
 };
 
 //---------------------------------------------------------------------------
@@ -184,15 +239,16 @@ class GeomRegistrationMarkers : public GeometryRenderer {
 public:
     GeomRegistrationMarkers();
 
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-    virtual const Identifier getClassName() const {return "GeometryRenderer.Registration Marker-Display";}
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getClassName() const { return "Registration Marker-Display"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new GeomRegistrationMarkers();}
     void setDescription(std::string description);
 
-protected:
-    void render(LocalPortMapping*  portMapping);
+    void render();
 
+protected:
     bool marker1Selected_;
     bool marker2Selected_;
     bool marker3Selected_;
@@ -204,6 +260,7 @@ protected:
     float marker3Radius_;
     std::string description_;
     bool disableReceiving_;
+    GenericCoProcessorPort<ProxyGeometry> proxyGeomPort_;
 };
 
 } // namespace voreen

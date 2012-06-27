@@ -37,6 +37,10 @@ using tgt::ivec2;
 namespace voreen {
 
 HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
+
+    tgtAssert(volume, "HistogramIntensity: No volume");
+    tgtAssert(bucketCount > 0, "HistogramIntensity: Invalid bucket count");
+
     for (int i=0; i < bucketCount; ++i)
         hist_.push_back(0);
 
@@ -44,7 +48,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     significantRange_ = ivec2(bucketCount, -1);
 
     Volume* currentVolume = volume;
-    
+
 
     BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume);
     if (brickedVolume) {

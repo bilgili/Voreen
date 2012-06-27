@@ -29,9 +29,9 @@
 
 #include "voreen/core/vis/processors/geometry/geometryprocessor.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/idmanager.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
+#include "voreen/core/vis/interaction/camerainteractionhandler.h"
 
 #include <typeinfo>
 
@@ -40,45 +40,57 @@
 #include "tgt/vector.h"
 #include "tgt/quadric.h"
 
-#include "voreen/core/vis/lightmaterial.h"
-
 using tgt::vec4;
+using tgt::vec3;
 
 namespace voreen {
 
 GeometryProcessor::GeometryProcessor()
     : RenderProcessor()
     , shaderPrg_(0)
+    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , inport_(Port::INPORT, "image.input")
+    , outport_(Port::OUTPORT, "image.output")
+    , tempPort_(Port::OUTPORT, "image.temp")
+    , pickingPort_(Port::OUTPORT, "pickingTarget")
+    , cpPort_(Port::INPORT, "coprocessor.geometryrenderers", true)
 {
-    setName("Geometry Processor");
 
-    createInport("image.inport");
-    createOutport("image.outport");
-    createCoProcessorInport("coprocessor.geometryrenderers", true);
+    addProperty(camera_);
+    cameraHandler_ = new CameraInteractionHandler(&camera_);
+    addInteractionHandler(cameraHandler_);
 
+    addPort(inport_);
+    addPort(outport_);
+    addPrivateRenderPort(tempPort_);
+    addPrivateRenderPort(pickingPort_);
+    addPort(cpPort_);
 }
 
 GeometryProcessor::~GeometryProcessor() {
+
     if (shaderPrg_)
         ShdrMgr.dispose(shaderPrg_);
+
+    delete cameraHandler_;
 }
 
-int GeometryProcessor::initializeGL() {
-    initStatus_ = Processor::initializeGL();
-    if (initStatus_ != VRN_OK)
-        return initStatus_;
+void GeometryProcessor::initialize() throw (VoreenException) {
+    idm_.setRenderTarget(pickingPort_.getData());
+    idm_.initializeTarget();
 
-    shaderPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "vrn_interactionmode.frag",
-        generateHeader(), false);
+    RenderProcessor::initialize();
 
-    if (!shaderPrg_)
-        initStatus_ = VRN_ERROR;
+    shaderPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "pp_geometry.frag",
+        generateHeader(), false, false);
 
-    return initStatus_;
-}
+    if (!shaderPrg_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
 
-const Identifier GeometryProcessor::getClassName() const {
-    return "GeometryRenderer.GeometryProcessor";
+    initialized_ = true;
 }
 
 Processor* GeometryProcessor::create() const {
@@ -90,68 +102,112 @@ const std::string GeometryProcessor::getProcessorInfo() const {
             Objects and renders all of them on <i>render()</i>";
 }
 
-void GeometryProcessor::process(LocalPortMapping* portMapping) {
-    
-    int source;
-    try {
-        source = portMapping->getTarget("image.inport");
-    } 
-    catch (std::exception& ) {
-        source = -1;
-    }
+bool GeometryProcessor::isReady() const {
+    if (!outport_.isReady())
+        return false;
+    return true;
+}
 
-    int dest = portMapping->getTarget("image.outport");
+void GeometryProcessor::process() {
+    //if there is no data on the inport we can render directly into the outport:
+    if(!inport_.isReady())
+        outport_.activateTarget();
+    else
+        tempPort_.activateTarget();
 
-    tc_->setActiveTarget(dest, "GeometryProcessor::process() add geometry");
+    LGL_ERROR;
+    glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-    // if inport is connected, copy previous result to new texturetarget
-    if (source > -1) {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-
-        shaderPrg_->activate();
-        setGlobalShaderParameters(shaderPrg_);
-        shaderPrg_->setUniform("shadeTex_", 0);
-        shaderPrg_->setUniform("depthTex_", 1);
-
-        shaderPrg_->setUniform("interactionCoarseness_", 1);
-
-        glDepthFunc(GL_ALWAYS);
-        renderQuad();
-        glDepthFunc(GL_LESS);
-        shaderPrg_->deactivate();
-    }
+    LGL_ERROR;
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(camera_->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(camera_->getViewMatrix());
+    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    LGL_ERROR;
 
-    std::vector<PortDataCoProcessor*> portData = portMapping->getAllCoProcessorData("coprocessor.geometryrenderers");
+    //render geometry:
+    glDepthFunc(GL_LESS);
+    std::vector<GeometryRenderer*> portData = cpPort_.getConnectedProcessors();
     for (size_t i=0; i<portData.size(); i++) {
-        PortDataCoProcessor* pdcp = portData.at(i);
-        pdcp->call("render", portMapping->createLocalPortMapping(pdcp->getProcessor()));
+        GeometryRenderer* pdcp = portData.at(i);
+        if(pdcp->isReady()) {
+            pdcp->setCamera(camera_.get());
+            pdcp->render();
+            LGL_ERROR;
+        }
     }
+
+    //render picking objects:
+    idm_.activateTarget(getName());
+    idm_.clearTarget();
+    for (size_t i=0; i<portData.size(); i++) {
+        GeometryRenderer* pdcp = portData.at(i);
+        if(pdcp->isReady()) {
+            pdcp->setIDManager(&idm_);
+            pdcp->renderPicking();
+            LGL_ERROR;
+        }
+    }
+
     // restore matrices
     glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
+    glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    glLoadIdentity();
+    LGL_ERROR;
+
+    // if inport is connected, combine both results:
+    if (inport_.isReady()) {
+        outport_.activateTarget();
+
+        LGL_ERROR;
+        glClearDepth(1.0);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        LGL_ERROR;
+
+        inport_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+        tempPort_.bindTextures(GL_TEXTURE2, GL_TEXTURE3);
+
+        shaderPrg_->activate();
+
+        setGlobalShaderParameters(shaderPrg_, camera_.get());
+        shaderPrg_->setUniform("volumeShadeTex_", 0);
+        shaderPrg_->setUniform("volumeDepthTex_", 1);
+        inport_.setTextureParameters(shaderPrg_, "volumeTextureParameters_");
+
+        shaderPrg_->setUniform("geometryShadeTex_", 2);
+        shaderPrg_->setUniform("geometryDepthTex_", 3);
+        tempPort_.setTextureParameters(shaderPrg_, "geometryTextureParameters_");
+
+        glDepthFunc(GL_ALWAYS);
+        renderQuad();
+        shaderPrg_->deactivate();
+    }
+
+    glDepthFunc(GL_LESS);
+    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+    LGL_ERROR;
 }
 
 //---------------------------------------------------------------------------
 
 GeometryRenderer::GeometryRenderer()
     : RenderProcessor()
-{}
+    //, camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_(0)
+    , outPort_(Port::OUTPORT, "coprocessor.geometryrenderer")
+    , idm_(0)
+{
+    //addProperty(camera_);
+    addPort(outPort_);
+}
 
 tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) const {
+    if (!idm_)
+        return tgt::vec3(0.0f);
     // taken from NEHE article 13
     // http://nehe.gamedev.net/data/articles/article.asp?article=13
     GLint viewport[4];
@@ -174,9 +230,8 @@ tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) const {
     }
     viewport[0] = 0;
     viewport[1] = 0;
-    // use size from texture container, as processor size may be changed by coarseness mode
-    viewport[2] = tc_->getSize().x;
-    viewport[3] = tc_->getSize().y;
+    viewport[2] = idm_->getRenderTarget()->getSize().x;
+    viewport[3] = idm_->getRenderTarget()->getSize().y;
 
     winX = static_cast<GLdouble>(x);
     winY = static_cast<GLdouble>(viewport[3]) - static_cast<GLint>(y);
@@ -188,31 +243,57 @@ tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) const {
     return returned;
 }
 
-void GeometryRenderer::process(LocalPortMapping* /*portMapping*/) {
-    // DO NOTHING
+tgt::vec3 GeometryRenderer::getWindowPos(tgt::vec3 pos) const {
+	GLint viewport[4];
+	GLdouble modelview[16];
+	GLdouble projection[16];
+
+	tgt::mat4 projection_tgt = camera_->getProjectionMatrix();
+	tgt::mat4 modelview_tgt = camera_->getViewMatrix();
+	for (int i = 0; i < 4; ++i) {
+		modelview[i+0]   = modelview_tgt[i].x;
+		modelview[i+4]   = modelview_tgt[i].y;
+		modelview[i+8]   = modelview_tgt[i].z;
+		modelview[i+12]  = modelview_tgt[i].w;
+		projection[i+0]  = projection_tgt[i].x;
+		projection[i+4]  = projection_tgt[i].y;
+		projection[i+8]  = projection_tgt[i].z;
+		projection[i+12] = projection_tgt[i].w;
+	}
+	viewport[0] = 0;
+	viewport[1] = 0;
+	viewport[2] = idm_->getRenderTarget()->getSize().x;
+	viewport[3] = idm_->getRenderTarget()->getSize().y;
+
+	GLdouble pointProjectedGL[3];
+	gluProject(pos.x, pos.y, pos.z, modelview, projection, viewport,
+			   &pointProjectedGL[0], &pointProjectedGL[1], &pointProjectedGL[2]);
+
+	return tgt::vec3(static_cast<float>(pointProjectedGL[0]),
+					 static_cast<float>(pointProjectedGL[1]),
+					 static_cast<float>(pointProjectedGL[2]));
 }
 
-Message* GeometryRenderer::call(Identifier ident,LocalPortMapping* portMapping) {
-    if (ident =="render") {
-        render(portMapping);
-        return 0;
-    }
-    return 0;
+void GeometryRenderer::process() {
+    // DO NOTHING
 }
 
 //---------------------------------------------------------------------------
 
 GeomLightWidget::GeomLightWidget()
     : GeometryRenderer()
-    , tgt::EventListener()
     , showLightWidget_("set.showLightWidget", "Show Light Widget?", true)
-    , moveEvent_("Move the light widget", tgt::Event::NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT)
     , isClicked_(false)
+    , lightPosition_("lightPosition", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
+                     tgt::vec4(-10), tgt::vec4(10))
 {
-    setName("Light - Widget");
 
-    addProperty(&showLightWidget_);
-    addProperty(&moveEvent_);
+    //FIXME: memory leak (new EventAction?)
+    moveSphereProp_ = new TemplateMouseEventProperty<GeomLightWidget>("Move the light widget", new EventAction<GeomLightWidget, tgt::MouseEvent>(this, &GeomLightWidget::moveSphere), tgt::MouseEvent::PRESSED | tgt::MouseEvent::MOTION | tgt::MouseEvent::RELEASED, tgt::Event::NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT);
+
+    addProperty(showLightWidget_);
+    addProperty(lightPosition_);
+    addEventProperty(moveSphereProp_);
 
     // light parameters
     light_pos[0] = 0.0f;
@@ -246,116 +327,110 @@ GeomLightWidget::GeomLightWidget()
     ye_specular[2]    = 0.37f;
     ye_specular[3]    = 1.0f;
     ye_shininess    = 51.0f;
-
-    IDManager id1;
-    id1.addNewPickObj("lightCtrlSph");
-
-    createCoProcessorOutport("coprocessor.light", &Processor::call);
-    createCoProcessorInport("coprocessor.proxygeometry");
-
-    setIsCoprocessor(true);
 }
 
 GeomLightWidget::~GeomLightWidget() {
-}
-
-const Identifier GeomLightWidget::getClassName() const {
-    return "GeometryRenderer.GeomLightWidget";
+    delete moveSphereProp_;
 }
 
 const std::string GeomLightWidget::getProcessorInfo() const {
-    return "Draws a yellow sphere that indicates the position of the lightsource.";
+    return "Draws a yellow sphere that indicates the position of the lightsource and can be moved. Use linking to connect this widget to a light position of another processor. ";
 }
 
 Processor* GeomLightWidget::create() const {
-    GeomLightWidget* glw = new GeomLightWidget();
-    return glw;
+    return new GeomLightWidget();
 }
 
-void GeomLightWidget::mousePressEvent(tgt::MouseEvent* e) {
-    IDManager id1;
-    if (id1.isClicked("lightCtrlSph", e->x(), tc_->getSize().y - e->y())) {
-        e->accept();
-        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true), VoreenPainter::visibleViews_);
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-        isClicked_ = true;
-        lightPositionAbs_.x = lightPosition_.get().x;
-        lightPositionAbs_.y = lightPosition_.get().y;
-        lightPositionAbs_.z = lightPosition_.get().z;
-        startCoord_.x = e->coord().x;
-        startCoord_.y = e->coord().y;
-    }
-    else
-        e->ignore();
-}
+void GeomLightWidget::moveSphere(tgt::MouseEvent* e) {
+    LGL_ERROR;
+    if (!idm_)
+        return;
 
-void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent* e) {
-    if (isClicked_ && moveEvent_.accepts(e)) {
-        e->accept();
-        GLint deltaX, deltaY;
-
-        GLint viewport[4];
-        GLdouble modelview[16];
-        GLdouble projection[16];
-        GLdouble winX, winY, winZ;
-        GLdouble posX, posY, posZ;
-
-        deltaX = e->coord().x - startCoord_.x;
-        deltaY = startCoord_.y - e->coord().y;
-
-        tgt::mat4 projection_tgt = camera_->getProjectionMatrix();
-        tgt::mat4 modelview_tgt = camera_->getViewMatrix();
-        for (int i = 0; i < 4; ++i) {
-            modelview[i+0]   = modelview_tgt[i].x;
-            modelview[i+4]   = modelview_tgt[i].y;
-            modelview[i+8]   = modelview_tgt[i].z;
-            modelview[i+12]  = modelview_tgt[i].w;
-            projection[i+0]  = projection_tgt[i].x;
-            projection[i+4]  = projection_tgt[i].y;
-            projection[i+8]  = projection_tgt[i].z;
-            projection[i+12] = projection_tgt[i].w;
+    if (e->action() & tgt::MouseEvent::PRESSED) {
+        if (idm_->isHit(tgt::ivec2(e->x(), e->viewport().y - e->y() ), this)) {
+            toggleInteractionMode(true, this);
+            e->accept();
+            invalidate();
+            isClicked_ = true;
+            lightPositionAbs_.x = lightPosition_.get().x;
+            lightPositionAbs_.y = lightPosition_.get().y;
+            lightPositionAbs_.z = lightPosition_.get().z;
+            startCoord_.x = e->coord().x;
+            startCoord_.y = e->coord().y;
         }
-        viewport[0] = 0;
-        viewport[1] = 0;
-        // use size from texture container, as processor size may be changed by coarseness mode
-        viewport[2] = static_cast<GLint>(tc_->getSize().x);
-        viewport[3] = static_cast<GLint>(tc_->getSize().y);
-
-        posX = lightPositionAbs_.x;
-        posY = lightPositionAbs_.y;
-        posZ = lightPositionAbs_.z;
-
-        gluProject(posX, posY,posZ,modelview,projection, viewport,&winX, &winY, &winZ);
-
-        winX = winX + deltaX;
-        winY = winY + deltaY;
-
-        gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-
-        lightPosition_.set(vec4(static_cast<float>(posX), static_cast<float>(posY), static_cast<float>(posZ), 1.f));
-
-        MsgDistr.postMessage(new Vec4Msg(LightMaterial::setLightPosition_, lightPosition_.get()));
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+        return;
     }
-    else
-        e->ignore();
+
+    if (e->action() & tgt::MouseEvent::MOTION) {
+        if (isClicked_) {
+            e->accept();
+
+            LGL_ERROR;
+            GLint deltaX, deltaY;
+
+            GLint viewport[4];
+            GLdouble modelview[16];
+            GLdouble projection[16];
+            GLdouble winX, winY, winZ;
+            GLdouble posX, posY, posZ;
+
+            deltaX = e->coord().x - startCoord_.x;
+            deltaY = startCoord_.y - e->coord().y;
+
+            tgt::mat4 projection_tgt = camera_->getProjectionMatrix();
+            tgt::mat4 modelview_tgt = camera_->getViewMatrix();
+            for (int i = 0; i < 4; ++i) {
+                modelview[i+0]   = modelview_tgt[i].x;
+                modelview[i+4]   = modelview_tgt[i].y;
+                modelview[i+8]   = modelview_tgt[i].z;
+                modelview[i+12]  = modelview_tgt[i].w;
+                projection[i+0]  = projection_tgt[i].x;
+                projection[i+4]  = projection_tgt[i].y;
+                projection[i+8]  = projection_tgt[i].z;
+                projection[i+12] = projection_tgt[i].w;
+            }
+            viewport[0] = 0;
+            viewport[1] = 0;
+            //viewport[2] = static_cast<GLint>(e->viewport().x);
+            //viewport[3] = static_cast<GLint>(e->viewport().y);
+            viewport[2] = static_cast<GLint>(idm_->getRenderTarget()->getSize().x);
+            viewport[3] = static_cast<GLint>(idm_->getRenderTarget()->getSize().y);
+
+            posX = lightPositionAbs_.x;
+            posY = lightPositionAbs_.y;
+            posZ = lightPositionAbs_.z;
+
+            LGL_ERROR;
+            gluProject(posX, posY,posZ,modelview,projection, viewport,&winX, &winY, &winZ);
+
+            winX = winX + deltaX;
+            winY = winY + deltaY;
+
+            LGL_ERROR;
+            gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+            LGL_ERROR;
+
+            lightPosition_.set(vec4(static_cast<float>(posX), static_cast<float>(posY), static_cast<float>(posZ), 1.f));
+
+            LGL_ERROR;
+            invalidate();
+            LGL_ERROR;
+        }
+        return;
+    }
+
+    if (e->action() & tgt::MouseEvent::RELEASED) {
+        if (isClicked_) {
+            toggleInteractionMode(false, this);
+            e->accept();
+            isClicked_ = false;
+            invalidate();
+        }
+        return;
+    }
 }
 
-void GeomLightWidget::mouseReleaseEvent(tgt::MouseEvent* e) {
-    if (isClicked_) {
-        MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), VoreenPainter::visibleViews_);
-        e->accept();
-        isClicked_ = false;
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-    }
-    else
-        e->ignore();
-}
-
-void GeomLightWidget::render(LocalPortMapping* /*portMapping*/) {
+void GeomLightWidget::render() {
     if (showLightWidget_.get()) {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
@@ -378,21 +453,55 @@ void GeomLightWidget::render(LocalPortMapping* /*portMapping*/) {
         glMaterialfv(GL_FRONT_AND_BACK,    GL_AMBIENT,        ye_ambient);
         glMaterialfv(GL_FRONT_AND_BACK,    GL_DIFFUSE,        ye_diffuse);
         glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    ye_specular);
+        LGL_ERROR;
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+        LGL_ERROR;
 
-        IDManager id1;
-        id1.startBufferRendering("lightCtrlSph");
         gluSphere(quadric,0.03f,20,20);
-        id1.stopBufferRendering();
-        gluSphere(quadric,0.03f,20,20);
+        LGL_ERROR;
 
         glPopMatrix();
+        LGL_ERROR;
         glPopAttrib();
+        LGL_ERROR;
 
         gluDeleteQuadric(quadric);
+        LGL_ERROR;
+    }
+}
+
+void GeomLightWidget::renderPicking() {
+    if (!idm_)
+        return;
+    if (showLightWidget_.get()) {
+        GLUquadricObj* quadric = gluNewQuadric();
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+        LGL_ERROR;
+
+        idm_->setGLColor(this);
+        gluSphere(quadric,0.03f,20,20);
+        LGL_ERROR;
+
+        glPopMatrix();
+        gluDeleteQuadric(quadric);
+        LGL_ERROR;
+    }
+
+}
+
+void GeomLightWidget::setIDManager(IDManager* idm) {
+    if (idm_ == idm)
+        return;
+
+    idm_ = idm;
+    if (idm_) {
+        idm->registerObject(this);
     }
 }
 
@@ -400,30 +509,29 @@ void GeomLightWidget::render(LocalPortMapping* /*portMapping*/) {
 
 GeomBoundingBox::GeomBoundingBox()
     : GeometryRenderer()
-    , bboxColor_("set.BoundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
-    , width_("set.BoundingBoxWidth", "Line Width", 1.0f, 1.0f, 10.0f, true)
-    , stippleFactor_("set.BoundingBoxStippleFactor", "Stipple Factor", 1, 0, 255)
-    , stipplePattern_("set.BoundingBoxStipplePattern", "Stipple Pattern", 65535, 1,65535)
-    , showGrid_("set.BoundingBoxShowGrid", "Show Grid", false)
-    , tilesProp_("BoutndingBoxTiles", "GridElements", tgt::ivec3(10), tgt::ivec3(2), tgt::ivec3(255))
+    , bboxColor_("boundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
+    , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f, true)
+    , stippleFactor_("boundingBoxStippleFactor", "Stipple factor", 1, 0, 255)
+    , stipplePattern_("boundingBoxStipplePattern", "Stipple pattern", 65535, 1,65535)
+    , showGrid_("boundingboxGridShow", "Show Grid", false)
+    , tilesProp_("boundingboxGridSize", "GridElements", tgt::ivec3(10), tgt::ivec3(2), tgt::ivec3(255))
+    , applyDatasetTransformationMatrix_("applyDatasetTrafoMatrix", "Apply data set trafo matrix", true, Processor::INVALID_PARAMETERS)
+    , inport_(Port::INPORT, "volume")
 {
-    setName("Bounding Box");
 
-    addProperty(&width_);
-    addProperty(&stippleFactor_);
-    addProperty(&stipplePattern_);
-    addProperty(&bboxColor_);
+    addProperty(applyDatasetTransformationMatrix_);
+    addProperty(width_);
+    addProperty(stippleFactor_);
+    addProperty(stipplePattern_);
+    addProperty(bboxColor_);
 
-    addProperty(&tilesProp_);
-
-    createCoProcessorOutport("coprocessor.boundingbox",&Processor::call);
-    createCoProcessorInport("coprocessor.proxygeometry");
-
-    setIsCoprocessor(true);
+    addProperty(showGrid_);
+    addProperty(tilesProp_);
+    addPort(inport_);
 }
 
 const std::string GeomBoundingBox::getProcessorInfo() const {
-    return "Draws bounding box around the data set.";
+    return "Draws the bounding box around the data set and allows to show a grid behind the volume.";
 }
 
 void GeomBoundingBox::setLineWidth(float width) {
@@ -435,16 +543,16 @@ void GeomBoundingBox::setStipplePattern(int stippleFactor, int stipplePattern) {
     stipplePattern_.set(stipplePattern);
 }
 
-void GeomBoundingBox::render(LocalPortMapping* portMapping) {
-    tgt::vec3 dim;
+void GeomBoundingBox::render() {
+    
+    tgtAssert(inport_.isReady(), "render() called with an not-ready inport");
 
-    PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-    Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
-    if (sizeMsg)
-        dim = sizeMsg->getValue<tgt::vec3>();
-    else
-        return;
-    delete sizeMsg;
+    tgt::vec3 dim = inport_.getData()->getVolume()->getCubeSize() / 2.f;
+
+    if (applyDatasetTransformationMatrix_.get()) {
+        glPushMatrix();
+        tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
+    }
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
@@ -539,37 +647,129 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
         glEnd();
     }
     glPopAttrib();
+
+    if (applyDatasetTransformationMatrix_.get()) 
+        glPopMatrix();
+
+    LGL_ERROR;
 }
 
 //---------------------------------------------------------------------------
 
-PickingBoundingBox::PickingBoundingBox()
-  : GeometryRenderer()
-  , lowerLeftFront_(0.f,0.f,0.f)
-  , upperRightBack_(1.f,1.f,1.f)
-  , displaySelection_(false)
+SlicePositionRenderer::SlicePositionRenderer()
+    : GeometryRenderer()
+    , xColor_("xColor", "x Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
+    , yColor_("yColor", "y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
+    , zColor_("zColor", "z Color", tgt::vec4(0.0f, 0.0f, 1.0f, 1.0f))
+    , xSliceIndexProp_("xSliceIndex", "X slice number: ", 1, 1, 100)
+    , ySliceIndexProp_("ySliceIndey", "y slice number: ", 1, 1, 100)
+    , zSliceIndexProp_("zSliceIndez", "z slice number: ", 1, 1, 100)
+    , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f, true)
+    , stippleFactor_("boundingBoxStippleFactor", "Stipple factor", 1, 0, 255)
+    , stipplePattern_("boundingBoxStipplePattern", "Stipple pattern", 65535, 1,65535)
+    , inport_(Port::INPORT, "volume")
 {
-    setName("Picking Bounding Box");
 
-    createCoProcessorOutport("coprocessor.pickingboundingbox",&Processor::call);
+    addProperty(width_);
+    addProperty(stippleFactor_);
+    addProperty(stipplePattern_);
+    addProperty(xColor_);
+    addProperty(xSliceIndexProp_);
+    addProperty(yColor_);
+    addProperty(ySliceIndexProp_);
+    addProperty(zColor_);
+    addProperty(zSliceIndexProp_);
 
-    setIsCoprocessor(true);
-    createCoProcessorInport("coprocessor.proxygeometry");
+    addPort(inport_);
+}
+
+const std::string SlicePositionRenderer::getProcessorInfo() const {
+    return "Indicates the position of axis-aligned slices in a 3D view. \
+           Can be used when linking multiple views, to show the position \
+           of the 2D views with respect to the 3D view.";
+}
+
+void SlicePositionRenderer::process() {
+    if(inport_.hasChanged()) {
+        tgt::ivec3 numSlices = inport_.getData()->getVolume()->getDimensions();
+
+        xSliceIndexProp_.setMaxValue(numSlices.x);
+        xSliceIndexProp_.set(numSlices.x / 2);
+
+        ySliceIndexProp_.setMaxValue(numSlices.y);
+        ySliceIndexProp_.set(numSlices.y / 2);
+
+        zSliceIndexProp_.setMaxValue(numSlices.z);
+        zSliceIndexProp_.set(numSlices.z / 2);
+    }
+}
+
+void SlicePositionRenderer::render() {
+    if (!inport_.isReady())
+        return;
+
+    tgt::vec3 dim = inport_.getData()->getVolume()->getCubeSize() / 2.f;
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glDisable(GL_LIGHTING);
+
+    tgt::vec3 geomLlf = -dim;
+    tgt::vec3 geomUrb = dim;
+
+    glLineWidth(width_.get());
+    glEnable(GL_LINE_STIPPLE);
+    glLineStipple(stippleFactor_.get(), stipplePattern_.get());
+
+    tgt::ivec3 numSlices = inport_.getData()->getVolume()->getDimensions();
+
+    float xSlice = (((float) xSliceIndexProp_.get() / (float) numSlices.x) * (geomUrb.x - geomLlf.x)) + geomLlf.x;
+    float ySlice = (((float) ySliceIndexProp_.get() / (float) numSlices.y) * (geomUrb.y - geomLlf.y)) + geomLlf.y;
+    float zSlice = (((float) zSliceIndexProp_.get() / (float) numSlices.z) * (geomUrb.z - geomLlf.z)) + geomLlf.z;
+
+    glColor4f(xColor_.get().r, xColor_.get().g, xColor_.get().b, xColor_.get().a);
+    glBegin(GL_LINE_LOOP);
+    glVertex3f(xSlice, geomUrb.y, geomUrb.z);
+    glVertex3f(xSlice, geomLlf.y, geomUrb.z);
+    glVertex3f(xSlice, geomLlf.y, geomLlf.z);
+    glVertex3f(xSlice, geomUrb.y, geomLlf.z);
+    glEnd();
+
+    glColor4f(yColor_.get().r, yColor_.get().g, yColor_.get().b, yColor_.get().a);
+    glBegin(GL_LINE_LOOP);
+    glVertex3f(geomLlf.x, ySlice, geomLlf.z);
+    glVertex3f(geomLlf.x, ySlice, geomUrb.z);
+    glVertex3f(geomUrb.x, ySlice, geomUrb.z);
+    glVertex3f(geomUrb.x, ySlice, geomLlf.z);
+    glEnd();
+
+    glColor4f(zColor_.get().r, zColor_.get().g, zColor_.get().b, zColor_.get().a);
+    glBegin(GL_LINE_LOOP);
+    glVertex3f(geomLlf.x, geomUrb.y, zSlice);
+    glVertex3f(geomLlf.x, geomLlf.y, zSlice);
+    glVertex3f(geomUrb.x, geomLlf.y, zSlice);
+    glVertex3f(geomUrb.x, geomUrb.y, zSlice);
+    glEnd();
+
+    glPopAttrib();
+}
+
+//---------------------------------------------------------------------------
+PickingBoundingBox::PickingBoundingBox()
+    : GeometryRenderer()
+    , lowerLeftFront_(0.f,0.f,0.f)
+    , upperRightBack_(1.f,1.f,1.f)
+    , displaySelection_(false)
+    , proxyGeomPort_(Port::INPORT, "coprocessor.proxygeometry", false)
+{
+    addPort(proxyGeomPort_);
 }
 
 const std::string PickingBoundingBox::getProcessorInfo() const {
     return "No information available.";
 }
 
-void PickingBoundingBox::render(LocalPortMapping* portMapping) {
-    tgt::vec3 dim;
-    PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-    Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
-    if (sizeMsg)
-        dim = sizeMsg->getValue<tgt::vec3>();
-    else
-        return;
-    delete sizeMsg;
+void PickingBoundingBox::render() {
+    tgt::vec3 dim = proxyGeomPort_.getConnectedProcessor()->getVolumeSize() / 2.f;
 
     glDisable(GL_LIGHTING);
 
@@ -615,22 +815,6 @@ void PickingBoundingBox::render(LocalPortMapping* portMapping) {
     }
 }
 
-void PickingBoundingBox::processMessage(Message* msg, const Identifier& /*dest*/) {
-    if (msg->id_ == "set.PickingBoundingBox_lowerLeftFront") {
-        lowerLeftFront_ = tgt::vec3(msg->getValue<tgt::vec3>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.PickingBoundingBox_upperRightBack") {
-        upperRightBack_ = tgt::vec3(msg->getValue<tgt::vec3>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.PickingBoundingBox_hide") {
-        displaySelection_ = !msg->getValue<bool>();
-
-        invalidate();
-    }
-}
-
 //------------------------------------------------------------------------------
 
 GeomRegistrationMarkers::GeomRegistrationMarkers()
@@ -646,12 +830,9 @@ GeomRegistrationMarkers::GeomRegistrationMarkers()
   marker3Radius_(0.014f),
   description_(""),
   disableReceiving_(false)
+    , proxyGeomPort_(Port::INPORT, "coprocessor.proxygeometry", false)
 {
-
-    createCoProcessorOutport("coprocessor.geommarkers",&Processor::call);
-
-    setIsCoprocessor(true);
-    createCoProcessorInport("coprocessor.proxygeometry");
+    addPort(proxyGeomPort_);
 }
 
 const std::string GeomRegistrationMarkers::getProcessorInfo() const {
@@ -662,15 +843,8 @@ void GeomRegistrationMarkers::setDescription(std::string description){
     description_ = description;
 }
 
-void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
-    PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-    tgt::vec3 dim;
-    Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
-    if (sizeMsg)
-        dim = sizeMsg->getValue<tgt::vec3>();
-    else
-        return;
-    delete sizeMsg;
+void GeomRegistrationMarkers::render() {
+    tgt::vec3 dim = proxyGeomPort_.getConnectedProcessor()->getVolumeSize() / 2.f;
 
     glDisable(GL_LIGHTING);
 
@@ -711,37 +885,5 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
     glEnable(GL_DEPTH_TEST);
 }
 
-void GeomRegistrationMarkers::processMessage(Message* msg, const Identifier& /*dest*/) {
-   if ( (msg->id_ == "ct.Marker1Selected") && (description_ == "target.ct-renderer"))
-        marker1Selected_=msg->getValue<bool>();
-   else if ((msg->id_ == "ct.Marker2Selected") && (description_ == "target.ct-renderer"))
-        marker2Selected_=msg->getValue<bool>();
-   else if ((msg->id_ == "ct.Marker3Selected") && (description_ == "target.ct-renderer"))
-        marker3Selected_=msg->getValue<bool>();
-   else if ( (msg->id_ == "pet.Marker1Selected") && (description_ == "target.pet-renderer"))
-        marker1Selected_=msg->getValue<bool>();
-   else if ((msg->id_ == "pet.Marker2Selected") && (description_ == "target.pet-renderer"))
-        marker2Selected_=msg->getValue<bool>();
-   else if ((msg->id_ == "pet.Marker3Selected") && (description_ == "target.pet-renderer"))
-        marker3Selected_=msg->getValue<bool>();
-   else if ((msg->id_ == "ct.Marker1Position") && (description_ == "target.ct-renderer"))
-       marker1_ = msg->getValue<tgt::vec3>();
-   else if ((msg->id_ == "ct.Marker2Position") && (description_ == "target.ct-renderer"))
-       marker2_ = msg->getValue<tgt::vec3>();
-   else if ((msg->id_ == "ct.Marker3Position") && (description_ == "target.ct-renderer"))
-       marker3_ = msg->getValue<tgt::vec3>();
-   else if ((msg->id_ == "pet.Marker1Position") && (description_ == "target.pet-renderer"))
-       marker1_ = msg->getValue<tgt::vec3>();
-   else if ((msg->id_ == "pet.Marker2Position") && (description_ == "target.pet-renderer"))
-       marker2_ = msg->getValue<tgt::vec3>();
-   else if ((msg->id_ == "pet.Marker3Position") && (description_ == "target.pet-renderer"))
-       marker3_ = msg->getValue<tgt::vec3>();
-   else if (msg->id_ == "Marker1Radius")
-       marker1Radius_ = msg->getValue<float>();
-   else if (msg->id_ == "Marker2Radius")
-       marker2Radius_ = msg->getValue<float>();
-   else if (msg->id_ == "Marker3Radius")
-       marker3Radius_ = msg->getValue<float>();
-}
 
 } // namespace voreen

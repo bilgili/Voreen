@@ -30,68 +30,68 @@
 
 namespace voreen {
 
-	Brick::Brick(tgt::ivec3 pos, tgt::ivec3 dimensions) {
-		position_=pos;
-		dimensions_=dimensions;
-	}
+    Brick::Brick(tgt::ivec3 pos, tgt::ivec3 dimensions) {
+        position_=pos;
+        dimensions_=dimensions;
+    }
 
-	Brick::~Brick() {
-	}
+    Brick::~Brick() {
+    }
 
-	tgt::ivec3 Brick::getDimensions() {
-		return dimensions_;
-	}
+    tgt::ivec3 Brick::getDimensions() {
+        return dimensions_;
+    }
 
-	tgt::ivec3 Brick::getPosition() {
-		return position_;
-	}
+    tgt::ivec3 Brick::getPosition() {
+        return position_;
+    }
 
-	/* The implemtation of all those virtual functions
-	that are of no use in classes other than VolumeBrick */
+    /* The implemtation of all those virtual functions
+    that are of no use in classes other than VolumeBrick */
 
-	char* Brick::getVolume() {
-		return 0;
-	}
+    char* Brick::getVolume() {
+        return 0;
+    }
 
-	void Brick::setCurrentLevelOfDetail(size_t) {
-	}
+    void Brick::setCurrentLevelOfDetail(size_t) {
+    }
 
-	size_t Brick::getCurrentLevelOfDetail() {
-		return 0;
-	}
+    size_t Brick::getCurrentLevelOfDetail() {
+        return 0;
+    }
 
-	tgt::vec3 Brick::getLlf() {
-		return tgt::vec3(0.0f);
-	}
+    tgt::vec3 Brick::getLlf() {
+        return tgt::vec3(0.0f);
+    }
 
-	bool Brick::getLevelOfDetailChanged() {
-		return true;
-	}
+    bool Brick::getLevelOfDetailChanged() {
+        return true;
+    }
 
-	void Brick::setLevelOfDetailChanged(bool) {
-	}
+    void Brick::setLevelOfDetailChanged(bool) {
+    }
 
-	size_t Brick::getOldLevelOfDetail() {
-		return 0;
-	}
+    size_t Brick::getOldLevelOfDetail() {
+        return 0;
+    }
 
-	void Brick::setOldLevelOfDetail(size_t) {
-	}
+    void Brick::setOldLevelOfDetail(size_t) {
+    }
 
-	void Brick::setAllVoxelsEqual(bool) {
-	}
+    void Brick::setAllVoxelsEqual(bool) {
+    }
 
-	bool Brick::getAllVoxelsEqual() {
-		return true;
-	}
+    bool Brick::getAllVoxelsEqual() {
+        return true;
+    }
 
-	uint64_t Brick::getBvFilePosition() {
-		return 0;
-	}
+    uint64_t Brick::getBvFilePosition() {
+        return 0;
+    }
 
-	void Brick::setBvFilePosition(uint64_t) {
+    void Brick::setBvFilePosition(uint64_t) {
 
-	}
+    }
 
     void Brick::addError(float) {
     }

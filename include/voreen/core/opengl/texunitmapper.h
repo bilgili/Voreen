@@ -41,8 +41,6 @@
 
 namespace voreen {
 
-class Identifier;
-
 class TexUnitMapper{
 public:
     /**
@@ -53,34 +51,34 @@ public:
     /**
      * Constructs a mapping with one identifier.
      */
-    TexUnitMapper(const Identifier& ident);
+    TexUnitMapper(const std::string& ident);
 
     /**
      * Constructs the entire mapping with all useable identifiers.
      */
-    TexUnitMapper(const std::vector<Identifier>& idents);
+    TexUnitMapper(const std::vector<std::string>& idents);
 
     ~TexUnitMapper();
 
     /**
      * Adds a texUnit to the map.
      */
-    bool addTexUnit(const Identifier& ident);
+    bool addTexUnit(const std::string& ident);
 
     /**
      * Returns tex unit number mapped to indentifier.
      */
-    GLint getTexUnit(const Identifier& ident);
+    GLint getTexUnit(const std::string& ident);
 
     /**
      * Returns OpenGL tex unit mapped to identifier.
      */
-    GLint getGLTexUnit(const Identifier& ident);
+    GLint getGLTexUnit(const std::string& ident);
 
     /**
      * Sets the current system of texture units.
      */
-    void registerUnits(const std::vector<Identifier>& idents);
+    void registerUnits(const std::vector<std::string>& idents);
 
     /**
      * Returns the OpenGL tex unit mapped to the texUnit number
@@ -99,12 +97,12 @@ public:
     /**
      * Returns the current mapping.
      */
-    std::map<Identifier, GLint>* getCurrentSystem();
+    const std::map<std::string, GLint>& getCurrentSystem();
 
     /**
      * Removes a texture unit from registered units.
      */
-    void removeTexUnit(const Identifier& ident);
+    void removeTexUnit(const std::string& ident);
 
 private:
     /**
@@ -127,7 +125,7 @@ private:
     /**
      * Maps identifiers to texture units.
      */
-    std::map<Identifier, GLint>* registeredUnits_;
+    std::map<std::string, GLint> registeredUnits_;
 
     /**
      * Gets the next free texture unit number.

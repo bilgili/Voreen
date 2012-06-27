@@ -39,6 +39,16 @@
 // Do this at very first
 #include "tgt/scriptmanager.h"
 
+#include "voreen/qt/pyvoreenqt.h"
+#include "voreen/core/vis/pyvoreen.h"
+
+#include "voreen/core/vis/network/processornetwork.h"
+#include "voreen/core/vis/network/networkevaluator.h"
+#include "voreen/core/vis/processors/image/canvasrenderer.h"
+#include "voreen/qt/widgets/processor/canvasrendererwidget.h"
+
+#include <cstdlib>
+#include <QApplication>
 #include <QMessageBox>
 
 static PyObject* voreenqt_messageBox(PyObject* /*self*/, PyObject* args) {
@@ -65,6 +75,39 @@ static PyObject* voreenqt_questionBox(PyObject* /*self*/, PyObject* args) {
         Py_RETURN_FALSE;
 }
 
+static PyObject* voreenqt_quit(PyObject* /*self*/, PyObject* args) {
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    qApp->closeAllWindows();
+    exit(0);
+    Py_RETURN_NONE;
+}
+
+static PyObject* voreenqt_processEvents(PyObject* /*self*/, PyObject* args) {
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+    qApp->processEvents();
+    Py_RETURN_NONE;
+}
+
+static PyObject* voreenqt_repaintCanvas(PyObject* /*self*/, PyObject* args) {
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    using namespace voreen;
+    VoreenPython& p = tgt::Singleton<VoreenPython>::getRef();
+    const std::vector<Processor*> processors = p.getEvaluator()->getProcessorNetwork()->getProcessors();
+    for (std::vector<Processor*>::const_iterator iter = processors.begin(); iter != processors.end(); iter++) {
+        CanvasRenderer* canvasProc = dynamic_cast<CanvasRenderer*>(*iter);
+        if (canvasProc && canvasProc->getCanvas()) {
+            canvasProc->getCanvas()->repaint();
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
 //------------------------------------------------------------------------------
 // method table
 static PyMethodDef voreenqt_methods[] = {
@@ -80,13 +123,35 @@ static PyMethodDef voreenqt_methods[] = {
         METH_VARARGS,
         "show a question box"
     },
+    {
+        "quit",
+        voreenqt_quit,
+        METH_VARARGS,
+        "quit the application"
+    },
+    {
+        "processEvents",
+        voreenqt_processEvents,
+        METH_VARARGS,
+        "processes all events waiting in the Qt event queue"
+    },
+    {
+        "repaintCanvas",
+        voreenqt_repaintCanvas,
+        METH_VARARGS,
+        "forces a repaint of the first canvas"
+    },
     { NULL, NULL, 0, NULL} // sentinal
 };
 
 //------------------------------------------------------------------------------
 
-void initVoreenqtPythonModule() {
+namespace voreen {
+
+VoreenPythonQt::VoreenPythonQt() {
     Py_InitModule("voreenqt", voreenqt_methods);
 }
+
+} // namespace
 
 #endif // VRN_WITH_PYTHON

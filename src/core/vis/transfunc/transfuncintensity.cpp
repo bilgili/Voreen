@@ -73,14 +73,7 @@ TransFuncIntensity::TransFuncIntensity(int width)
 TransFuncIntensity::TransFuncIntensity(const TransFuncIntensity& tf)
     : TransFunc(tf.dimension_.x, tf.dimension_.y)
 {
-    lowerThreshold_ = tf.lowerThreshold_;
-    upperThreshold_ = tf.upperThreshold_;
-
-    std::vector<TransFuncMappingKey*> keys_;
-    for (size_t i = 0; i < tf.keys_.size(); ++i) {
-        TransFuncMappingKey* k = new TransFuncMappingKey(*(tf.keys_.at(i)));
-        addKey(k);
-    }
+    updateFrom(tf);
 }
 
 TransFuncIntensity::~TransFuncIntensity() {
@@ -165,6 +158,7 @@ col4 TransFuncIntensity::getMappingForValue(float value) const {
 }
 
 void TransFuncIntensity::updateTexture() {
+
     if (!tex_ || (tex_->getDimensions().xy() != dimension_))
         createTex();
 
@@ -539,6 +533,37 @@ void TransFuncIntensity::loadThreshold(TiXmlElement* root) {
     }
 }
 
+void TransFuncIntensity::updateFrom(const TransFuncIntensity& tf) {
+
+    lowerThreshold_ = tf.lowerThreshold_;
+    upperThreshold_ = tf.upperThreshold_;
+
+    clearKeys();
+    for (size_t i = 0; i < tf.keys_.size(); ++i) {
+        TransFuncMappingKey* k = new TransFuncMappingKey(*(tf.keys_.at(i)));
+        addKey(k);
+    }
+
+}
+
+void TransFuncIntensity::serialize(XmlSerializer& s) const {
+    // serialize keys...
+    s.serialize("Keys", keys_, "key");
+
+    // serialize thresholds...
+    s.serialize("lower", lowerThreshold_);
+    s.serialize("upper", upperThreshold_);
+}
+
+void TransFuncIntensity::deserialize(XmlDeserializer& s) {
+    // deserialize keys...
+    s.deserialize("Keys", keys_, "key");
+
+    // deserialize thresholds...
+    s.deserialize("lower", lowerThreshold_);
+    s.deserialize("upper", upperThreshold_);
+}
+
 bool TransFuncIntensity::loadTextTable(const std::string& filename) {
     if (filename == "")
         return false;
@@ -745,6 +770,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
     */
     if ((numValues != 768) && (numValues != 1024)) {
         // A wrong file was loaded
+        delete[] data;
         return 0;
     }
 
@@ -910,8 +936,9 @@ inline int TransFuncIntensity::readInt(std::ifstream& stream) {
     for (int i = 3; i >= 0; --i)
         stream >> buffer[i];
 
-    return *(reinterpret_cast<int*>(buffer));
+    int ret = *(reinterpret_cast<int*>(buffer));
     delete buffer;
+    return ret;
 }
 
 inline short TransFuncIntensity::readShort(std::ifstream& stream) {
@@ -920,8 +947,9 @@ inline short TransFuncIntensity::readShort(std::ifstream& stream) {
     for (int i = 1; i >= 0; --i)
         stream >> buffer[i];
 
-    return *(reinterpret_cast<short*>(buffer));
+    short ret = *(reinterpret_cast<short*>(buffer));
     delete buffer;
+    return ret;
 }
 
 inline double TransFuncIntensity::readDouble(std::ifstream& stream) {
@@ -930,8 +958,9 @@ inline double TransFuncIntensity::readDouble(std::ifstream& stream) {
     for (int i = 7; i >= 0; --i)
         stream >> buffer[i];
 
-    return *(reinterpret_cast<double*>(buffer));
+    double ret = *(reinterpret_cast<double*>(buffer));
     delete buffer;
+    return ret;
 }
 
 } // namespace voreen

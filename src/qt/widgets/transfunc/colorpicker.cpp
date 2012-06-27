@@ -102,13 +102,13 @@ void ColorPicker::mouseMoveEvent(QMouseEvent* event) {
 void ColorPicker::mousePressEvent(QMouseEvent* event) {
     QPoint p = event->pos() - contentsRect().topLeft();
     setCol(p);
-    emit switchInteractionMode(true);
+    emit toggleInteractionMode(true);
     emit newCol(hue_, sat_);
 }
 
 void ColorPicker::mouseReleaseEvent(QMouseEvent* event) {
     event->accept();
-    emit switchInteractionMode(false);
+    emit toggleInteractionMode(false);
 }
 
 void ColorPicker::paintEvent(QPaintEvent* /*event*/) {

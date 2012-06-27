@@ -35,134 +35,134 @@
 namespace voreen {
 
     /**
-    * Creates VolumeBricks. The VolumeBrickCreator is initialised with the 
+    * Creates VolumeBricks. The VolumeBrickCreator is initialised with the
     * parameters of the original volume for which VolumeBricks should be
-    * created, like dimensions, spacing etc. You have to use createNextBrick() 
-    * until all bricks are created. The reason for not creating all bricks at 
+    * created, like dimensions, spacing etc. You have to use createNextBrick()
+    * until all bricks are created. The reason for not creating all bricks at
     * once is that really large volumes need very many VolumeBricks, and creating
     * all of them at once might need too much memory. VolumeBricks holding volumedata
     * in which every voxel is the same, are for example directly deleted after writing
-    * their data to the packed texture, to avoid this problem. 
-    * 
+    * their data to the packed texture, to avoid this problem.
+    *
     */
-	template<class T>
-	class VolumeBrickCreator {
+    template<class T>
+    class VolumeBrickCreator {
 
-	public:
+    public:
 
         /**
-        * All parameters are required. 
+        * All parameters are required.
         */
-		VolumeBrickCreator(tgt::ivec3 numberOfBricksToCreate, int brickSize, 
-            tgt::ivec3 originalVolumeDimensions, tgt::vec3 originalVolumeSpacing, 
-            tgt::vec3 originalVolumeLLF, tgt::vec3 originalVolumeURB, 
+        VolumeBrickCreator(tgt::ivec3 numberOfBricksToCreate, int brickSize,
+            tgt::ivec3 originalVolumeDimensions, tgt::vec3 originalVolumeSpacing,
+            tgt::vec3 originalVolumeLLF, tgt::vec3 originalVolumeURB,
             RamManager<T>* ramManager);
 
 
         /**
         * Creates the next VolumeBrick. VolumeBricks are first created
         * in x-direction, then y, then z. When all bricks are created,
-        * 0 is returned. 
+        * 0 is returned.
         */
-		VolumeBrick<T>* createNextBrick();
+        VolumeBrick<T>* createNextBrick();
 
-	protected:
-		tgt::ivec3 numberOfBricksToCreate_; //The number of bricks to create in each dim.
-		int brickSize_;                     //The size of the bricks to create
-		tgt::ivec3 originalVolumeDimensions_;
-		tgt::vec3 originalVolumeSpacing_; 
-		tgt::vec3 originalVolumeLLF_;
-		tgt::vec3 originalVolumeURB_;
-		tgt::vec3 originalVolumeAbsoluteDimensions_; //URB-LLF
-		tgt::vec3 absolutePosition_;        //The position in camera coordinates
-		RamManager<T>* ramManager_;         //The RamManager given to the created bricks
-		BrickedVolumeReader* brickedVolumeReader_;  //Automatically extracted from the RamManager
+    protected:
+        tgt::ivec3 numberOfBricksToCreate_; //The number of bricks to create in each dim.
+        int brickSize_;                     //The size of the bricks to create
+        tgt::ivec3 originalVolumeDimensions_;
+        tgt::vec3 originalVolumeSpacing_;
+        tgt::vec3 originalVolumeLLF_;
+        tgt::vec3 originalVolumeURB_;
+        tgt::vec3 originalVolumeAbsoluteDimensions_; //URB-LLF
+        tgt::vec3 absolutePosition_;        //The position in camera coordinates
+        RamManager<T>* ramManager_;         //The RamManager given to the created bricks
+        BrickedVolumeReader* brickedVolumeReader_;  //Automatically extracted from the RamManager
 
-		tgt::ivec3 numberOfCreatedBricks_;  //Counts the bricks that are created
-		bool allBricksCreated_;             //Are all bricks created? 
-		int xpos_;                          //Helper variables to determine the bricks position. 
-		int ypos_;
-		int zpos_;
-	private:
+        tgt::ivec3 numberOfCreatedBricks_;  //Counts the bricks that are created
+        bool allBricksCreated_;             //Are all bricks created?
+        int xpos_;                          //Helper variables to determine the bricks position.
+        int ypos_;
+        int zpos_;
+    private:
 
 
-	}; //class
+    }; //class
 
     /*
     * Nothing special here, just initialising the variables with the parameters.
     */
-	template<class T>
-	VolumeBrickCreator<T>::VolumeBrickCreator(tgt::ivec3 numberOfBricksToCreate, 
-        int brickSize, tgt::ivec3 originalVolumeDimensions, tgt::vec3 originalVolumeSpacing, 
+    template<class T>
+    VolumeBrickCreator<T>::VolumeBrickCreator(tgt::ivec3 numberOfBricksToCreate,
+        int brickSize, tgt::ivec3 originalVolumeDimensions, tgt::vec3 originalVolumeSpacing,
         tgt::vec3 originalVolumeLLF, tgt::vec3 originalVolumeURB, RamManager<T>* ramManager) {
 
-		    numberOfBricksToCreate_ = numberOfBricksToCreate;
-		    brickSize_ = brickSize;
-		    originalVolumeDimensions_ = originalVolumeDimensions;
-		    originalVolumeSpacing_ = originalVolumeSpacing;
-		    originalVolumeLLF_ = originalVolumeLLF;
-		    originalVolumeURB_ = originalVolumeURB;
-		    originalVolumeAbsoluteDimensions_ = abs( originalVolumeURB_ - originalVolumeLLF_ );
-		    absolutePosition_ = tgt::vec3(0.0);
-		    ramManager_ = ramManager; 
-		    numberOfCreatedBricks_ = tgt::ivec3(0);
-		    allBricksCreated_ = false;
-		    xpos_=0;
-		    ypos_=0;
-		    zpos_=0;
-		    brickedVolumeReader_ = ramManager_->getBrickedVolumeReader();
-	}
+            numberOfBricksToCreate_ = numberOfBricksToCreate;
+            brickSize_ = brickSize;
+            originalVolumeDimensions_ = originalVolumeDimensions;
+            originalVolumeSpacing_ = originalVolumeSpacing;
+            originalVolumeLLF_ = originalVolumeLLF;
+            originalVolumeURB_ = originalVolumeURB;
+            originalVolumeAbsoluteDimensions_ = abs( originalVolumeURB_ - originalVolumeLLF_ );
+            absolutePosition_ = tgt::vec3(0.0);
+            ramManager_ = ramManager;
+            numberOfCreatedBricks_ = tgt::ivec3(0);
+            allBricksCreated_ = false;
+            xpos_=0;
+            ypos_=0;
+            zpos_=0;
+            brickedVolumeReader_ = ramManager_->getBrickedVolumeReader();
+    }
 
 
-	template<class T>
-	VolumeBrick<T>* VolumeBrickCreator<T>::createNextBrick() {
-		
+    template<class T>
+    VolumeBrick<T>* VolumeBrickCreator<T>::createNextBrick() {
+
         if (allBricksCreated_) {
-			return 0;
-		}
-			
-        //Calculate the position of the brick that is to be created. Meaning
-        //something like <512,320,256> in a originally 768^3 volume. 
-		xpos_=numberOfCreatedBricks_.x * brickSize_;
-		ypos_=numberOfCreatedBricks_.y * brickSize_;
-		zpos_=numberOfCreatedBricks_.z * brickSize_;
+            return 0;
+        }
 
-        //Calculate the bricks position in world coordinates. 
-		absolutePosition_.x = originalVolumeLLF_.x + ( ( (float)xpos_ / originalVolumeDimensions_.x ) 
+        //Calculate the position of the brick that is to be created. Meaning
+        //something like <512,320,256> in a originally 768^3 volume.
+        xpos_=numberOfCreatedBricks_.x * brickSize_;
+        ypos_=numberOfCreatedBricks_.y * brickSize_;
+        zpos_=numberOfCreatedBricks_.z * brickSize_;
+
+        //Calculate the bricks position in world coordinates.
+        absolutePosition_.x = originalVolumeLLF_.x + ( ( (float)xpos_ / originalVolumeDimensions_.x )
             * originalVolumeAbsoluteDimensions_.x* originalVolumeSpacing_.x);
 
-		absolutePosition_.y = originalVolumeLLF_.y + ( ( (float)ypos_ / originalVolumeDimensions_.y ) 
+        absolutePosition_.y = originalVolumeLLF_.y + ( ( (float)ypos_ / originalVolumeDimensions_.y )
             * originalVolumeAbsoluteDimensions_.y* originalVolumeSpacing_.y);
 
-		absolutePosition_.z = originalVolumeLLF_.z + ( ( (float)zpos_ / originalVolumeDimensions_.z ) 
+        absolutePosition_.z = originalVolumeLLF_.z + ( ( (float)zpos_ / originalVolumeDimensions_.z )
             * originalVolumeAbsoluteDimensions_.z* originalVolumeSpacing_.z);
 
         //Create the brick
-		VolumeBrick<T>* newBrick = new VolumeBrick<T>(tgt::ivec3(xpos_,ypos_,zpos_),
+        VolumeBrick<T>* newBrick = new VolumeBrick<T>(tgt::ivec3(xpos_,ypos_,zpos_),
             absolutePosition_,tgt::ivec3(brickSize_));
 
         //Read the position from the info file where the bricks volumedata can be found in
         //the data file. Also checks if all voxels are the same in this brick.
-		brickedVolumeReader_->readBrickPosition(newBrick);
+        brickedVolumeReader_->readBrickPosition(newBrick);
 
         //Set the RamManager for this brick
-		newBrick->setRamManager(ramManager_);
+        newBrick->setRamManager(ramManager_);
 
         //Check if all bricks are created
-		numberOfCreatedBricks_.x++;
-		if (numberOfCreatedBricks_.x >= numberOfBricksToCreate_.x) {
-			numberOfCreatedBricks_.y++;
-			numberOfCreatedBricks_.x = 0;
-			if (numberOfCreatedBricks_.y >= numberOfBricksToCreate_.y) {
-				numberOfCreatedBricks_.z++;
-				numberOfCreatedBricks_.y = 0;
-				if (numberOfCreatedBricks_.z >= numberOfBricksToCreate_.z) {
-					allBricksCreated_ = true;
-				}
-			}
-		}
-		return newBrick;
-	}
+        numberOfCreatedBricks_.x++;
+        if (numberOfCreatedBricks_.x >= numberOfBricksToCreate_.x) {
+            numberOfCreatedBricks_.y++;
+            numberOfCreatedBricks_.x = 0;
+            if (numberOfCreatedBricks_.y >= numberOfBricksToCreate_.y) {
+                numberOfCreatedBricks_.z++;
+                numberOfCreatedBricks_.y = 0;
+                if (numberOfCreatedBricks_.z >= numberOfBricksToCreate_.z) {
+                    allBricksCreated_ = true;
+                }
+            }
+        }
+        return newBrick;
+    }
 
 } //namespace
 

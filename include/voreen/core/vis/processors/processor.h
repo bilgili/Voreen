@@ -31,457 +31,392 @@
 #define VRN_PROCESSOR_H
 
 #include <vector>
+#include <set>
 
-#include "tgt/camera.h"
-#include "tgt/shadermanager.h"
+#include "tgt/event/eventlistener.h"
 
-#include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/message.h"
-#include "voreen/core/xml/serializable.h"
-#include "voreen/core/vis/processors/port.h"
-#include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/vis/properties/allproperties.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/volume/volumehandlevalidator.h"
+#include "voreen/core/io/serialization/serialization.h"
 
 namespace voreen {
 
-class GeometryContainer;
-class LocalPortMapping;
-class ProxyGeometry;
-class TextureContainer;
+class ProcessorFactory;
+class Port;
+class VolumePort;
+class CoProcessorPort;
+
+class Property;
+class EventProperty;
+class InteractionHandler;
+
+class ProcessorWidget;
 
 /**
  * The base class for all processor classes used in Voreen.
  */
-class Processor : public MessageReceiver, public Serializable {
+class Processor : public AbstractSerializable, public tgt::EventListener {
+
+    friend class NetworkEvaluator;
+    friend class ProcessorNetwork;
+    friend class ProcessorFactory;
+    friend class Port;
+    friend class ProcessorWidget;
+    friend class Property;
+
 public:
-    enum Status {
-        VRN_OK                  = 0x200,
-        VRN_ERROR               = 0x202
+
+    /**
+     * @brief This enum specifies how invalid the processor is.
+     * The NetworkEvaluator and Processor will only do as much as needed to get a Processor into a valid state.
+     */
+    enum InvalidationLevel {
+        VALID = 0,
+        INVALID_RESULT,        ///<  invalid rendering, volumes => call process()
+        INVALID_PARAMETERS,    ///< invalid uniforms => set uniforms
+        INVALID_PROGRAM,       ///< invalid shaders, cuda/opencl program => rebuild program
+        INVALID_PORTS,         ///< ports added/removed  => check connections, re-evaluate network
+        INVALID_PROCESSOR      ///< invalid python/matlab processor => re-create processor, re-connect ports (if possible)
     };
 
-    // One side of a connection between two processors. Needed for serialization.
-    struct ConnectionSide {
-        int processorId;
-        std::string portId;
-        int order;
+    /**
+     * @brief Identifies the state of the code of this processor.
+     * The default is CODE_STATE_EXPERIMENTAL
+     */
+    enum CodeState {
+        CODE_STATE_OBSOLETE,
+        CODE_STATE_BROKEN,
+        CODE_STATE_EXPERIMENTAL,
+        CODE_STATE_TESTING,
+        CODE_STATE_STABLE
     };
-
-    // Needed to be able to sort connections based on the order of the outgoing side.
-    struct ConnectionCompare {
-        bool operator() ( std::pair< ConnectionSide, ConnectionSide > l,
-                          std::pair< ConnectionSide, ConnectionSide > r) {
-            // connect outgoing connections with lower order prior to those with higher order
-            return (l.second.order<r.second.order);
-        }
-    };
-
-    // Needed for Serialization.
-    // Note: The order for the first port is not really needed.
-    typedef std::vector< std::pair< ConnectionSide, ConnectionSide > > ConnectionMap;
 
     Processor();
 
     virtual ~Processor();
 
-    virtual const Identifier getClassName() const = 0;
-    static const Identifier getClassName(TiXmlElement* processorElem);
-
-    virtual Processor* create() const = 0;
-
-    virtual Processor* clone() const //= 0;
-    // TODO: remove this implementation as soon as all Processors have a clone()-method
-    {
-        return create();
-    }
+    /**
+     * Returns the C++ class name of the derived class.
+     * Necessary due to the lack of code reflection in C++.
+     */
+    virtual std::string getClassName() const = 0;
 
     /**
-     * Should be called after OpenGL is initialized, initializes the processor.
+     * Returns the general category the processor belongs to. 
      *
-     * @return Returns an error code. VRN_OK means everything ok.
+     * This method is not intended to be re-implemented by each subclass,
+     * but is rather defined by the more concrete base classes,
+     * such as VolumeRaycaster or ImageProcessor.
      */
-    virtual int initializeGL();
-
-    /// Returns the error code which occured during \a initializeGL().
-    int getInitStatus() const;
-
-    /// This method is called when the processor should be processed.
-    virtual void process(LocalPortMapping* portMapping) = 0;
+    virtual std::string getCategory() const = 0;
 
     /**
-     * CoProcessors add a function pointer to their CoprocessorOutports. This
-     * function pointer usually points to this function, which is overwritten in the
-     * CoProcessors.
+     * Returns an enum indicating the state of the code of this processor.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     * The default value for all classes not re-writing this mehtod is
+     * CODE_STATE_EXPERIMENTAL.
      */
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
+    virtual Processor::CodeState getCodeState() const;
 
     /**
-	 * @deprecated: Messaging will be removed.
+     * Returns a string identifying the name of the module this processor belongs to.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     * Currently the returned default value is "unknown" which should be regarded as
+     * an error.
      */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual std::string getModuleName() const;
 
-    /// Set a name for this processor
-    void setName(const std::string& name);
+    /**
+     * Returns true if this Processor is a utility Processor (i.e., performs smaller tasks).
+     *
+     * The default implementation returns false. Override it in order to define a processor
+     * as utility.
+     */
+    virtual bool isUtility() const;
 
-    /// Returns the name of this processor.
-    const std::string& getName() const;
-
-    // Returns processor information
+    /**
+     * Returns a description of the processor's functionality.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     */
     virtual const std::string getProcessorInfo() const;
 
-    /// Marks that the processor needs to be updated
-    virtual void invalidate();
-
-    /// Adds a property to this processor
-    virtual void addProperty(Property* prop);
-
-    /// Returns the properties.
-    virtual const Properties& getProperties() const;
-
-    /**
-     * Returns the inports of this processor.
+    /** 
+     * Returns the name of this processor instance.
      */
-    virtual const std::vector<Port*>& getInports() const;
+    const std::string& getName() const;
 
     /**
-    * Returns the outports of this processor.
-    */
-    virtual const std::vector<Port*>& getOutports() const;
+     * Returns a copy of the processor.
+     */
+    virtual Processor* clone() const;
 
     /**
-    * Returns the coprocessor inports of this processor.
-    */
-    virtual const std::vector<Port*>& getCoProcessorInports() const;
+     * Returns whether the processor has been successfully initialized.
+     */
+    bool isInitialized() const;
 
     /**
-    * Returns the coprocessor outports of this processor.
-    */
-    virtual const std::vector<Port*>& getCoProcessorOutports() const;
-
-    /**
-    * Returns the private ports of this processor.
-    */
-    virtual const std::vector<Port*>& getPrivatePorts() const;
-
-    bool hasPortOfCertainType(int portTypeMask) const;
-
-    /**
-    * Returns the port that contains (or better that is represented by) the given Identifier.
-    */
-    virtual Port* getPort(Identifier ident);
-
-    /**
-     * Creates a new inport for this processor.
+     * @brief Marks that the processor needs to be updated and propagate invalidation.
      *
-     * @param type The identifier by which this port is adressed in the processor. Something
-     * like "image.entrypoints" for example.
-     * @param allowMultipleConnections Can multiple ports be connected to this processor? This
-     * should usually be false
-     */
-    virtual void createInport(Identifier type, bool allowMultipleConnections = false);
-
-    /**
-     * Creates a new outport for this processor.
+     * The new InvalidationLevel is max(inv, currentInvalidationLevel).
+     * Use setValid() to mark the processor as valid.
+     * Calls invalidate() on all outports and coprocessor outports if the processor is valid when this method is called.
      *
-     * @param type The identifier by which this port is adressed in the processor. Something
-     *             like "image.entrypoints" for example.
-     * @param isPersistent Should the render result carried by this port be persistent in the TC?
-     * @param inportIdent Some processors need to render to the same rendertarget they got their
-     *                    input from. If this is neccessary, inportIdent holds the Identifier of
-     *                    that inport.
+     * @param inv Specifies what components of this processor are invalid.
      */
-    virtual void createOutport(Identifier type, bool isPersistent = false, 
-        Identifier inportIdent = "dummy.port.unused");
+    virtual void invalidate(InvalidationLevel inv = INVALID_RESULT);
+
+    /** 
+     * Returns true, if this Processor is in interaction mode, false otherwise.
+     */
+    virtual bool interactionMode() const;
 
     /**
-     * Contains an outport which actually contains the passed data. The data will be deleted
-     * together with the port. This method is a generalization of <code>createOutport()</code>
-     * and is used for the VolumeSet / VolumeHandle concept enabling to pass pointers through
-     * the network.
+     * Returns the processor's current validation state.
+     */
+    InvalidationLevel getInvalidationLevel() const;
+
+    /**
+     * Returns true if process() can be called safely by the NetworkEvaluator.
      *
-     * @param   type    Identifies determining what kind of port the created port shall become
-     *                  (e.g. "volumehandle.input")
-     * @param   data    the data which become mapped to the port mapping and are acutally passed
-     *                  to the </code>process()</code> methods of connected processors.
-     * @param   isPersistend    just like in <code>createOutport()</code>
-     * @param   inportIdent    just like in <code>createOutport()</code>
+     * The default implementation checks, if all inports, outports and coprocessor-inports are ready,
+     * i.e. if they are connected and the inports have data assigned. Override it for custom behaviour.
      */
-    template<typename T>
-    void createGenericOutport(Identifier type, const T data, const bool isPersistent = false,
-                              const Identifier& inportIdent = "dummy.port.unused")
-    {
-        Port* outport = new GenericOutPort<T>(type, data, this, isPersistent);
-        outports_.push_back(outport);
-        portMap_.insert(std::make_pair(type, outport));
-        if (inportIdent != "dummy.port.unused") {
-            if (getPort(inportIdent) != 0)
-                outportToInportMap_.insert(std::pair<Port*, Port*>(outport, getPort(inportIdent)));
-            else
-                LWARNING("Couldn't find the inport in Processor::createGenericOutport())");
-        }
-    }
+    virtual bool isReady() const;
 
     /**
-     * Creates a new CoProcessorInport for this processor.
+     * Returns whether the processor is valid, i.e. all of its output data is valid
+     * so the processor does not have to be updated.
      *
-     * @param type The identifier by which this port is adressed in the processor. Something
-     * like "image.entrypoints" for example.
-     * @param allowMultipleConnections Can multiple ports be connected to this processor? This
-     * should usually be false
+     * The standard implementation returns true, if getInvalidationLevel() == VALID.
+     * Override it for custom behaviour.
      */
-    virtual void createCoProcessorInport(Identifier type, bool allowMultipleConnections = false);
+    virtual bool isValid() const;
 
     /**
-     * Creates a new outport for this processor.
-     *
-     * @param type The identifier by which this port is adressed in the processor. Something
-     *             like "image.entrypoints" for example.
-     * @param function CoProcessors add a functionpointer to one of their functions (usually the
-     *                 "call" function). This is that pointer. Use "&Renderer::call" as that
-     *                 pointer if you are unsure
-     * @param allowMultipleConnections Can multiple ports be connected to this processor?
-     *        Default is true for outports
-    */
-    virtual void createCoProcessorOutport(Identifier type, FunctionPointer function = 0,
-                                          bool allowMultipleConnections = true);
-
-    /**
-     * Creates a new private port for this processor. Private ports are ports that get a render
-     * target, but that target isn't connected to any other processors. (That port doesn't show
-     * up in network editor). The combiner for example needs two temporary TC targets to work correctly,
-     * and this is how it gets them. Just create two privatePorts and render your temporary
-     * render results to those targets. Private ports are always persistent.
-     *
-     * @param type The identifier by which this port is adressed in the processor. Something
-     * like "image.entrypoints" for example.
+     * Convenience function setting the processors invalidation level to VALID.
+     * This is called by the NetworkEvaluator after calling process().
      */
-    virtual void createPrivatePort(Identifier type);
-
-    /**
-     * Connects one outport of this processor with one inport of another processor. You can use
-     * this function to manually build processor networks, but the easier way is to use network editor.
-     *
-     * @param outport The outport of this processor that is to be connected
-     * @param inport The inport of the target processor to which the outport should connect.
-     */
-    virtual bool connect(Port* outport, Port* inport);
-
-    /**
-     * Disconnectes the outport of this processor from the inport from another processor
-     */
-    virtual bool disconnect(Port* outport, Port* inport);
-
-    /**
-     * Tests if the outport of this processor can be connected to the inport of the other processor
-     */
-    virtual bool testConnect(Port* outport, Port* inport);
-
-
-    /**
-     * Returns the name of the xml element used when serializing the object
-     */
-    virtual std::string getXmlElementName() const;
-
-    /**
-     * Overridden Serializable methods - serialize and deserialize everything except connections
-     */
-    virtual TiXmlElement* serializeToXml() const;
-    virtual void updateFromXml(TiXmlElement* processorElem);
-
-    /**
-     * serializes the Processor to xml
-     */
-    TiXmlElement* serializeToXml(const std::map<Processor*, int> idMap) const;
-
-    /**
-     * Updates the processor xml and returns connection info so that
-     * processors can be connected, after all have been read, in the form
-     * (id, ConnectionMap)
-     */
-    std::pair<int, ConnectionMap> getMapAndUpdateFromXml(TiXmlElement* processorElem);
-
-    /**
-     * Serialization for metadata
-     */
-    void addToMeta(TiXmlElement* elem);
-    void removeFromMeta(std::string elemName);
-    void clearMeta();
-    TiXmlElement* getFromMeta(std::string elemName) const;
-    std::vector<TiXmlElement*> getAllFromMeta() const;
-    bool hasInMeta(std::string elemName) const;
-
-    /**
-     * Checks whether this processor is a coprocessor or not
-     */
-    bool getIsCoprocessor() const;
-
-    /**
-     * Sets whether this processor is a coprocessor or not. If you want to create a coprocessor
-     * you have to use this function in the constructor of your processor.
-     */
-    void setIsCoprocessor(bool b);
-
-    /**
-     * Returns whether the processor supports caching of it's results  or not.
-     *
-     * @return true when the processor supports caching, false otherwise
-     */
-    bool getCacheable() const;
-
-    /**
-     * Sets if the results of this processor can be cachend, e.g. whether this processor
-     * supports caching or not.
-     *
-     * @param b is caching supported by this processor?
-     */
-    void setCacheable(bool b);
-
-    // FIXME: should be temporary and somehow combined with exisiting cachabel attribute (df)
-    /**
-     * Determines whether the caching of VolumeHandles on this processor's outports shall be used. 
-     * Note that only processors with outports passing VolumeHandle* are concerned of this 
-     * setting. The setting has no effect if no VolumeHandle* outports exist on this processor.
-     */
-    void enableVolumeCaching(bool enable) { useVolumeCaching_ = enable; }
-    
-    // FIXME: should be temporary and somehow combined with exisiting cachabel attribute (df)
-    /**
-     * Indicates whether ports passing VolumeHandle* of this processor make use of caching or
-     * not. Note that return value is irrelevant for processors not passing VolumeHandle*.
-     */
-    bool usesVolumeCaching() const { return useVolumeCaching_; }
-
-    /**
-     * Returns the inport with the identifier type
-     * @param type unique port type
-     * @return port with given type, null if not existing
-     */
-    Port* getInport(Identifier type);
-
-    /**
-     * Returns the outport with the identifier type
-     * @param type unique port type
-     * @return port with given type, null if not existing
-     */
-    Port* getOutport(Identifier type);
-
-    std::map<Port*, Port*> getOutportToInportMap();
+    void setValid();
 
     /// Is this processor an end processors as it does not have any output port?
+    /// @todo more doc
     virtual bool isEndProcessor() const;
+
+    /**
+     * This shall return true in processor classes which can act as roots
+     * for the network evaluation. Usually these processors have no inports
+     * and "inject" data into the network, e.g. VolumeSource or VolumeCollectionSource
+     * processor classes. This method is essential for the NetworkEvaluator and
+     * its capability of evaluating network in real-time.
+     */
+    virtual bool isRootProcessor() const;
+
+    const std::vector<Port*>& getInports() const;
+    const std::vector<Port*>& getOutports() const;
+    const std::vector<CoProcessorPort*>& getCoProcessorInports() const;
+    const std::vector<CoProcessorPort*>& getCoProcessorOutports() const;
+    const std::vector<Port*> getPorts() const;
+
+    const std::vector<Property*>& getProperties() const;
+
+    // todo: documentation of event/interaction stuff
+    virtual void onEvent(tgt::Event* e);
+    const std::vector<EventProperty*> getEventProperties() const;
+    virtual const std::vector<InteractionHandler*>& getInteractionHandlers() const;
+
+    /**
+     * Returns the processor widget that has been generated in
+     * initialize() by using the ProcessorWidgetFactory retrieved from
+     * VoreenApplication.
+     *
+     * Returns null, if no widget is present.
+     */
+    ProcessorWidget* getProcessorWidget() const;
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+   
+    /** 
+     * Returns the meta data container of this processor.
+     * External objects, such as GUI widgets, can use it
+     * to store and retrieve persistent meta data without 
+     * having to bother with the serialization themselves.
+     *
+     * @see MetaDataContainer
+     */
+    MetaDataContainer& getMetaDataContainer() const;
 
     /**
      * Returns the state of this Processor object. The state is defined
      * by the set of the values of all Property objects held by this processor.
-     * The returned value is basically meaningless and only serves for compared 
+     * The returned value is basically meaningless and only serves for compared
      * to a previously obtained value.
      * If those values are equal, not state change has occured. If the values
      * are different, the state of the processor has been changed.
      *
      * This is used i.e. by the NetworkEvaluator in order to apply caching for
      * data.
+     *
+     * @deprecated
      */
     std::string getState() const;
 
-    // identifiers commonly used in processors
-    static const std::string XmlElementName_;
-
 protected:
-    bool cacheable_; ///< is caching supported by this processor?
-    bool useVolumeCaching_;
 
     /**
-     * Is this processor a coprocessor? If you want to create a coprocessor you have to use the
-     * setIsCoProcessor(bool) function in the constructor of your processor.
+     * @brief This method is called by the NetworkEvaluator when the processor should be processed.
+     *        All rendering and volume/image processing is to be done here.
+     *
+     * @note The NetworkEvaluator assumes that the processor is valid after calling this method
+     *       and sets the invalidation level to VALID.
      */
-    bool isCoprocessor_;
+    virtual void process() = 0;
 
-    std::string name_;      ///< name of the processor
+    /**
+     * Returns an instance of the concrete Processor.
+     */
+    virtual Processor* create() const = 0;
 
-    Properties props_; ///< vector with all properties of the processor
+    /**
+     * Initializes the processor, its properties and its widget, if present.
+     *
+     * All initialization should be done in this method, instead of the constructor.
+     * It is issued by the NetworkEvaluator.
+     *
+     * @note The superclass' function must be called when it is overwritten.
+     *
+     * @throw VoreenException if the initialization failed
+     */
+    virtual void initialize() throw (VoreenException);
 
-    int initStatus_; ///< status of OpenGL initialization
+    /**
+     * This method is called if the Processor is switched into or out of interaction mode.
+     *
+     * Overwrite this method if a processor needs to react (e.g., resize RenderPorts, change samplingrate...)
+     * The default implementation does nothing.
+     */
+    virtual void interactionModeToggled();
+
+    /**
+     * This method is called if the Processor is switched into or out of interaction mode.
+     *
+     * @param interactionMode
+     * @param source The source (usually a property) that
+     */
+    void toggleInteractionMode(bool interactionMode, void* source);
+
+    /**
+     * Registers a port.
+     *
+     * Only registered ports can be connected and are visible in the GUI.
+     * Added ports will not be deleted in the destructor. Ports should
+     * be registered in the processor's constructor.
+     */
+    void addPort(Port* port);
+
+    /// @overload
+    void addPort(Port& port);
+
+    /**
+     * Registers a property.
+     *
+     * This is necessary for a property to get serialized.
+     * Properties should be added in the processor's constructor.
+     */
+    void addProperty(Property* prop);
+
+    /// \overload
+    void addProperty(Property& prop);
+
+    void addEventProperty(EventProperty* prop);
+
+    void addInteractionHandler(InteractionHandler* handler);
+
+    /// @overload
+    void addInteractionHandler(InteractionHandler& handler);
+
+    std::map<std::string, Port*> portMap_;
+
+    /// Set to true after successful initialization.
+    bool initialized_;  
 
     static const std::string loggerCat_; ///< category used in logging
 
 private:
 
-    /**
-     * Some processors need to render to the same rendertarget they got their input from. If this is neccessary,
-     * you can specify that in the createOutport function, which then makes an entry in this map. This map is then
-     * analyzed in the networkevaluator, where the appropriate rendertargets are given.
+    /** 
+     * Set a name for this processor instance. To be called
+     * by the owning processor network.
      */
-    std::map<Port*, Port*> outportToInportMap_;
-    
-    typedef std::map<Identifier, Port*> PortMap;
-    PortMap portMap_;
+    void setName(const std::string& name);
 
     /**
-     * List of ports that specifies which inputs this processor needs.
+     * Disconnects all ports. To be called by the 
+     * owning processor network.
      */
+    void disconnectAllPorts();
+
+    /**
+     * Causes the processor to give up ownership of its GUI widget without deleting it.
+     * This is called by the ProcessorWidget's destructor and prevents the processor
+     * from double freeing its widget.
+     */
+    void deregisterWidget();
+
+    /// Name of the Processor instance.
+    std::string name_;
+
+    /// The processor's current invalidation state.
+    InvalidationLevel invalidationLevel_;
+
+    /// List of ports that specifies which inputs this processor needs.
     std::vector<Port*> inports_;
 
-    /**
-     * List of ports that specifies which outputs this processor creates
-     */
+    /// List of ports that specifies which outputs this processor creates
     std::vector<Port*> outports_;
 
-    /**
-     * The CoProcessorInports this processor has.
-     */
-    std::vector<Port*> coProcessorInports_;
+    /// The CoProcessorInports this processor has.
+    std::vector<CoProcessorPort*> coProcessorInports_;
+
+    /// The CoProcessorOutports this processor has.
+    std::vector<CoProcessorPort*> coProcessorOutports_;
+
+    /// Vector with all properties of the processor.
+    std::vector<Property*> properties_;
+
+    /// Vector of all event properties of the processor.
+    std::vector<EventProperty*> eventProperties_;
+
+    /// Vector of all interaction handlers of the processor.
+    std::vector<InteractionHandler*> interactionHandlers_;
+
+    /// Optional GUI widget representing Processor instance.
+    ProcessorWidget* processorWidget_;
+
+    /// used for cycle prevention during invalidation propagation
+    bool invalidationVisited_;
+
+    std::set<void*> interactionModeSources_;
 
     /**
-     * The CoProcessorOutports this Coprocessor has. (Only CoProcessors should have CoProcessorOutports)
+     * Contains the associated meta data.
+     * 
+     * We want to return a non-const reference to it from a const member function 
+     * and since the MetaDataContainer does not affect the processor itself,
+     * mutable appears justifiable.
      */
-    std::vector<Port*> coProcessorOutports_;
+    mutable MetaDataContainer metaDataContainer_;
 
-    /**
-     * The private ports this processor has. PrivatePorts are mapped to rendertargets no other processor has access to.
-     */
-    std::vector<Port*> privatePorts_;
-
-    MetaSerializer meta_;
 };
-
-typedef TemplateMessage<Processor*> ProcessorPtrMsg;
-
-// ------------------------------------------------------------------------- //
-
-//Deprecated
-class HasShader {
-public:
-    HasShader();
-
-    virtual ~HasShader();
-
-    /**
-     * Invalidate the shader, so that recompiling is performed before the next
-     * rendering.
-     */
-    virtual void invalidateShader();
-
-protected:
-    /**
-     * Compile the shader if necessary.
-     *
-     * Checks the bool flag isShaderValid_ and calls the virtual method compile()
-     * if necessary. So derived classes should place their compile code there and
-     * call the method invalidateShader() when recompiling is required.
-     */
-    virtual void compileShader();
-
-    /**
-     * Compile and link the shader program
-     */
-    virtual void compile() = 0;
-
-private:
-    bool needRecompileShader_; ///< should the shader recompiled?
-};
-
 
 } // namespace voreen
 

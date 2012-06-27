@@ -31,11 +31,12 @@
 
 namespace voreen {
 
-IOProgressDialog::IOProgressDialog(QWidget* parent)
+IOProgressDialog::IOProgressDialog(QWidget* parent, const std::string& message)
     : progressDialog_(new QProgressDialog(parent))
 {
     progressDialog_->setCancelButton(0);
     progressDialog_->setWindowModality(Qt::WindowModal);
+    progressDialog_->setLabelText(QString::fromStdString(message));
 
     time_ = new QTime();
     time_->start();
@@ -57,13 +58,13 @@ void IOProgressDialog::update() {
     }
 }
 
-void IOProgressDialog::setNumSteps(int numSteps) {
+void IOProgressDialog::setTotalSteps(int numSteps) {
     progressDialog_->setRange(0, numSteps - 1);
     time_->restart();
 }
 
-void IOProgressDialog::show(const std::string& filename) {
-    set(0);
+/*void IOProgressDialog::show(const std::string& filename) {
+    setProgress(0);
     QString title(QObject::tr("Loading file"));
     if (!filename.empty())
         title += '"' +  QString(filename.c_str()) + '"' + "...";
@@ -71,11 +72,32 @@ void IOProgressDialog::show(const std::string& filename) {
     progressDialog_->show();
     progressDialog_->raise();
     progressDialog_->activateWindow();
+}*/
+
+void IOProgressDialog::show() {
+    setProgress(0);
+    /*QString title(QObject::tr("Loading file"));
+    if (!filename.empty())
+        title += '"' +  QString(filename.c_str()) + '"' + "...";
+    progressDialog_->setLabelText(title); */
+    progressDialog_->show();
+    progressDialog_->raise();
+    progressDialog_->activateWindow();
 }
 
 void IOProgressDialog::hide() {
-    set(progressDialog_->maximum());
+    setProgress(progressDialog_->maximum());
     progressDialog_->hide();
+}
+
+void IOProgressDialog::setMessage(const std::string& message) {
+    IOProgress::setMessage(message);
+    progressDialog_->setLabelText(QString::fromStdString(message));
+}
+
+void IOProgressDialog::setTitle(const std::string& title) {
+    IOProgress::setTitle(title);
+    progressDialog_->setWindowTitle(QString::fromStdString(title));
 }
 
 } // namespace

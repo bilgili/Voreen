@@ -35,8 +35,9 @@
 #include "voreenmainwindow.h"
 
 #include "tgt/filesystem.h"
+#include "tgt/ziparchive.h"
 
-#include "voreen/qt/applicationqt.h"
+#include "voreen/qt/voreenapplicationqt.h"
 
 #ifdef VRN_SPLASHSCREEN
 #include <QSplashScreen>
@@ -53,32 +54,37 @@ public:
     virtual void prepareCommandParser() {
         VoreenApplicationQt::prepareCommandParser();
 
-        CommandlineParser* p = getCommandLineParser();        
+        CommandlineParser* p = getCommandLineParser();
         p->addCommand(new Command_LoadDatasetSingle(&datasetFilename_));
         p->addCommandForNamelessArguments(new Command_LoadDatasetSingle(&datasetFilename_));
 
         p->addCommand(new SingleCommand<std::string>(&workspaceFilename_, "--workspace", "-w", "Load a workspace", "<workspace file>"));
+#ifdef VRN_WITH_PYTHON
+        p->addCommand(new SingleCommand<std::string>(&scriptFilename_, "--script", "-s", "Runs a python script", "<script file>"));
+#endif
     }
 
     std::string datasetFilename_;
     std::string workspaceFilename_;
+    std::string scriptFilename_;
 };
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
-
-    VoreenVEApplication vapp(argc, argv);
-    vapp.init();
+    app.setOverrideCursor(Qt::WaitCursor);
 
 #ifdef VRN_SPLASHSCREEN
-    QPixmap pixmap(":/vrn_app/image/splash.png");
+    QPixmap pixmap(":/voreenve/image/splash.png");
     QSplashScreen splash(pixmap);
     splash.show();
 #endif
 
-#if (QT_VERSION >= 0x040400) && !defined(__APPLE__)
+    VoreenVEApplication vapp(argc, argv);
+    vapp.init();
+
+#if (QT_VERSION >= 0x040400) && !defined(__APPLE__)  && !defined(VRN_NO_STYLESHEET)
     // load and set style sheet (only on Qt 4.4 or newer)
-    QFile file(":/widgetstyle/voreen.qss");
+    QFile file(":/voreenve/widgetstyle/voreen.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
     app.setStyleSheet(styleSheet);
@@ -94,21 +100,28 @@ int main(int argc, char** argv) {
 #ifdef VRN_DISTRIBUTION
     LINFOC("voreenve.main", "Loading shaders.tar into virtual file system ...");
     #ifndef __APPLE__
-    	FileSys.addPackage(vapp.getBasePath() + "/shaders.tar", "/src/core/vis/glsl/");
+        FileSys.addPackage(vapp.getBasePath() + "/shaders.tar", "/src/core/vis/glsl/");
     #else
-    	FileSys.addPackage(vapp.getAppBundleResourcesPath() + "/shaders.tar", "/src/core/vis/glsl/");
+        FileSys.addPackage(vapp.getAppBundleResourcesPath() + "/shaders.tar", "/src/core/vis/glsl/");
     #endif
 #endif
 
     VoreenMainWindow mainWindow(vapp.workspaceFilename_, vapp.datasetFilename_);
+    vapp.setMainWindow(&mainWindow);
     mainWindow.show();
-
-    vapp.initGL();
-    mainWindow.init();
+    mainWindow.init();  // also calls VoreenApplication::app()->initGL();
 
 #ifdef VRN_SPLASHSCREEN
     splash.close();
 #endif
+
+    app.restoreOverrideCursor();
+
+    if (!vapp.scriptFilename_.empty()) {
+        // first make sure that all Qt events have been processed
+        qApp->processEvents();
+        mainWindow.runScript(vapp.scriptFilename_.c_str());
+    }
 
     return app.exec();
 }

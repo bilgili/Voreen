@@ -1549,7 +1549,7 @@ void voreen::DicomMoveSCU::cancelMove() {
     opt_abortAfterStore = OFTrue;
 }
 
-const int voreen::DicomMoveSCU::getNumDownloaded() {
+int voreen::DicomMoveSCU::getNumDownloaded() {
     return filesDone_;
 }
 

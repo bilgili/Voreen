@@ -30,7 +30,6 @@
 #include "voreen/qt/widgets/transfunc/transfunceditor.h"
 
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/application.h"
 
 #include <QFileDialog>
@@ -38,20 +37,18 @@
 
 namespace voreen {
 
-TransFuncEditor::TransFuncEditor(TransFuncProp* prop, QWidget* parent)
+TransFuncEditor::TransFuncEditor(TransFuncProperty* prop, QWidget* parent)
     : QWidget(parent)
     , property_(prop)
-    , volume_(0)
+    , volumeHandle_(0)
 {
 }
 
 TransFuncEditor::~TransFuncEditor() {
 }
 
-void TransFuncEditor::switchInteractionMode(bool on) {
-    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, on));
-    if (!property_->getManualRepaint())
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_));
+void TransFuncEditor::toggleInteractionMode(bool on) {
+    property_->toggleInteractionMode(on, this);
 }
 
 const QString TransFuncEditor::getOpenFileName(QString filter) {
@@ -112,7 +109,7 @@ const QString TransFuncEditor::getTitle() {
     return title_;
 }
 
-void TransFuncEditor::setTransFuncProp(TransFuncProp* prop) {
+void TransFuncEditor::setTransFuncProp(TransFuncProperty* prop) {
     property_ = prop;
 }
 

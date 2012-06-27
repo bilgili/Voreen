@@ -40,9 +40,9 @@
  * @param samplePos the sample's position in texture space
  * @param rayDirection the ray direction
  */
-vec3 fixClipBorderGradient(vec3 samplePos, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
-    vec3 v0 = normalize(textureLookup2D(entryPoints, vec2(gl_FragCoord.x+2.0, gl_FragCoord.y) ).rgb - samplePos);
-    vec3 v1 = normalize(textureLookup2D(entryPoints, vec2(gl_FragCoord.x, gl_FragCoord.y+2.0) ).rgb - samplePos);
+vec3 fixClipBorderGradient(vec3 samplePos, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
+    vec3 v0 = normalize(textureLookup2D(entryPoints, entryParameters, vec2(gl_FragCoord.x+2.0, gl_FragCoord.y) ).rgb - samplePos);
+    vec3 v1 = normalize(textureLookup2D(entryPoints, entryParameters, vec2(gl_FragCoord.x, gl_FragCoord.y+2.0) ).rgb - samplePos);
     //FIXME: error handling if v0 or v1 is (0,0,0)
     vec3 gradient = cross(v0, v1);
     gradient = faceforward(gradient, rayDirection, gradient);
@@ -60,10 +60,10 @@ vec3 fixClipBorderGradient(vec3 samplePos, vec3 rayDirection, SAMPLER2D_TYPE ent
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientRFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientRFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
            vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v = textureLookup3DUnnormalized(volume, volumeParameters, samplePos).r;
@@ -88,10 +88,10 @@ vec3 calcGradientRFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientGFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientGFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v = textureLookup3DUnnormalized(volume, volumeParameters, samplePos).g;
@@ -116,10 +116,10 @@ vec3 calcGradientGFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientBFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientBFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v = textureLookup3DUnnormalized(volume, volumeParameters, samplePos).b;
@@ -144,10 +144,10 @@ vec3 calcGradientBFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientAFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientAFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v = textureLookup3DUnnormalized(volume, volumeParameters, samplePos).a;
@@ -172,10 +172,10 @@ vec3 calcGradientAFD(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientR(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientR(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v0 = textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(offset.x, 0.0, 0.0)).r;
@@ -202,10 +202,10 @@ vec3 calcGradientR(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sa
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientG(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientG(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v0 = textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(offset.x, 0.0, 0.0)).g;
@@ -232,10 +232,10 @@ vec3 calcGradientG(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sa
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientB(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientB(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v0 = textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(offset.x, 0.0, 0.0)).b;
@@ -262,10 +262,10 @@ vec3 calcGradientB(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sa
  *          volume borders
  * @param rayDirection the ray direction
  */
-vec3 calcGradientA(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientA(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 gradient;
     if (t == 0.0)
-        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+        gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints, entryParameters);
     else {
         vec3 offset = volumeParameters.datasetDimensionsRCP_;
         float v0 = textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(offset.x, 0.0, 0.0)).a;
@@ -290,17 +290,17 @@ vec3 calcGradientA(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sa
  * @param volumeParameters additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-vec3 calcGradientFiltered(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, SAMPLER2D_TYPE entryPoints) {
+vec3 calcGradientFiltered(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
     vec3 delta = volumeParameters.datasetDimensionsRCP_;
-    vec3 g0 = calcGradientA(volume, volumeParameters, samplePos, 0.5, vec3(0.0), entryPoints);
-    vec3 g1 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x, -delta.y, -delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g2 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x,  delta.y,  delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g3 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x,  delta.y, -delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g4 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x, -delta.y,  delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g5 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x, -delta.y,  delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g6 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x,  delta.y, -delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g7 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x,  delta.y,  delta.z), 0.5, vec3(0.0), entryPoints);
-    vec3 g8 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x, -delta.y, -delta.z), 0.5, vec3(0.0), entryPoints);
+    vec3 g0 = calcGradientA(volume, volumeParameters, samplePos, 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g1 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x, -delta.y, -delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g2 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x,  delta.y,  delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g3 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x,  delta.y, -delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g4 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x, -delta.y,  delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g5 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x, -delta.y,  delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g6 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x,  delta.y, -delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g7 = calcGradientA(volume, volumeParameters, samplePos+vec3(-delta.x,  delta.y,  delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
+    vec3 g8 = calcGradientA(volume, volumeParameters, samplePos+vec3( delta.x, -delta.y, -delta.z), 0.5, vec3(0.0), entryPoints, entryParameters);
     vec3 mix0 = mix(mix(g1, g2, 0.5), mix(g3, g4, 0.5), 0.5);
     vec3 mix1 = mix(mix(g5, g6, 0.5), mix(g7, g8, 0.5), 0.5);
     return mix(g0, mix(mix0, mix1, 0.5), 0.75);
@@ -314,8 +314,8 @@ vec3 calcGradientFiltered(sampler3D volume, VOLUME_PARAMETERS volumeParameters, 
  * @param volumeParameters additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-vec3 calcGradient(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, SAMPLER2D_TYPE entryPoints) {
-    return calcGradientA(volume, volumeParameters, samplePos, 0.5, vec3(0.0), entryPoints);
+vec3 calcGradient(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, SAMPLER2D_TYPE entryPoints, TEXTURE_PARAMETERS entryParameters) {
+    return calcGradientA(volume, volumeParameters, samplePos, 0.5, vec3(0.0), entryPoints, entryParameters);
 }
 
 // Are these functions obsolete?

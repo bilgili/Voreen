@@ -29,7 +29,7 @@
 
 namespace voreen {
 
-    BrickingRegionManager::BrickingRegionManager(BrickingInformation& brickingInformation) 
+    BrickingRegionManager::BrickingRegionManager(BrickingInformation& brickingInformation)
         : brickingInformation_(brickingInformation) {
 
         std::vector<Brick*> volumeBricks = brickingInformation_.volumeBricks;
@@ -42,9 +42,9 @@ namespace voreen {
     }
 
     void BrickingRegionManager::addRegion(BrickingRegion* region) {
-        
+
         int priority = region->getPriority();
-        
+
         removeBricksFromVector(region);
 
         if (brickingRegions_.size() == 0) {
@@ -70,7 +70,7 @@ namespace voreen {
     }
 
     void BrickingRegionManager::deleteRegions(int priority) {
-        
+
         size_t i=0;
         while (i < brickingRegions_.size() ) {
             if (brickingRegions_.at(i)->getPriority() == priority) {

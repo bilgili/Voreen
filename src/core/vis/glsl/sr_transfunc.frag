@@ -104,7 +104,7 @@ void main() {
     // keep sampling rate in mind
     //
 #ifdef USE_SAMPLING_RATE
-    mat.a *= samplingRate_;
+	mat.a *= samplingRate_;
 #endif // USE_SAMPLING_RATE
 
 /*

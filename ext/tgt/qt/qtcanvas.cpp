@@ -135,28 +135,28 @@ void QtCanvas::toggleFullScreen() {
 */
 void QtCanvas::mousePressEvent(QMouseEvent* e) {
     tgt::MouseEvent* prEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::PRESSED,
-                                                getModifier(e), getButton(e));
+        getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(prEv);
 }
 
 // See mousePressEvent
 void QtCanvas::mouseReleaseEvent (QMouseEvent* e) {
     tgt::MouseEvent* relEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::RELEASED,
-                                                 getModifier(e), getButton(e));
+        getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(relEv);
 }
 
 // See mousePressEvent
 void QtCanvas::mouseMoveEvent(QMouseEvent*  e) {
     tgt::MouseEvent* movEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::MOTION,
-                                                 getModifier(e), getButtons(e)); // FIXME: submit information which mouse buttons are pressed
+        getModifier(e), getButtons(e), tgt::ivec2(width(), height())); // FIXME: submit information which mouse buttons are pressed
     eventHandler_->broadcast(movEv);
 }
 
 // See mousePressEvent
 void QtCanvas::mouseDoubleClickEvent(QMouseEvent* e) {
     tgt::MouseEvent* dcEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::DOUBLECLICK,
-                                                getModifier(e), getButton(e));
+                                                getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(dcEv);
 }
 
@@ -167,7 +167,7 @@ void QtCanvas::wheelEvent(QWheelEvent* e) {
     if (e->delta() > 0)
         b = tgt::MouseEvent::MOUSE_WHEEL_UP;
     tgt::MouseEvent* wheelEv = new tgt::MouseEvent(e->x(),e->y(), tgt::MouseEvent::WHEEL,
-                                                   getModifier(e), b);
+                                                   getModifier(e), b, tgt::ivec2(width(), height()));
     eventHandler_->broadcast(wheelEv);
 }
 

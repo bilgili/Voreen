@@ -32,210 +32,209 @@
 #include "voreen/core/volume/bricking/brickinginformation.h"
 
 namespace voreen {
-	class BrickedVolumeReader;
+    class BrickedVolumeReader;
 
-	/**
-	* Manages the RAM while bricking large datasets that wouldn't fit into
-	* the RAM otherwise. The bricks of the volume are accessed through this
-	* class, and if a brick isn't resident in the RAM, it is loaded from
-	* the harddrive. If there isn't enough RAM available for that, another
-	* (currently not needed) brick is deleted from RAM. 
-	*/
-	template<class T>
-	class RamManager {
-	public:
-		RamManager(BrickingInformation& brickingInformation, BrickedVolumeReader* brickedVolumeReader,
+    /**
+    * Manages the RAM while bricking large datasets that wouldn't fit into
+    * the RAM otherwise. The bricks of the volume are accessed through this
+    * class, and if a brick isn't resident in the RAM, it is loaded from
+    * the harddrive. If there isn't enough RAM available for that, another
+    * (currently not needed) brick is deleted from RAM.
+    */
+    template<class T>
+    class RamManager {
+    public:
+        RamManager(BrickingInformation& brickingInformation, BrickedVolumeReader* brickedVolumeReader,
             size_t ramSize);
 
-		bool readBrickFromDisk(VolumeBrick<T>* volBrick, size_t lod);
+        bool readBrickFromDisk(VolumeBrick<T>* volBrick, size_t lod);
 
-		BrickedVolumeReader* getBrickedVolumeReader();
+        BrickedVolumeReader* getBrickedVolumeReader();
 
-		void setBrickedVolumeReader(BrickedVolumeReader* brickedVolumeReader);
-
+        void setBrickedVolumeReader(BrickedVolumeReader* brickedVolumeReader);
         /**
          * Deletes all bricks from RAM
          */
         void freeAll();
-	
-	protected:
-		/**
-		* Calculates how many bytes will be needed to store the brick in RAM.
-		*/
-		int getNumBytes(size_t lod);
 
-		/**
-		* Deletes bricks from RAM until numBytes have been freed. 
-		*/
-		bool freeMem(size_t numBytes);
+    protected:
+        /**
+        * Calculates how many bytes will be needed to store the brick in RAM.
+        */
+        int getNumBytes(size_t lod);
 
-		/**
-		* Increases usedRamInByte_ by numBytes. Exception handling will be added.
-		*/
-		bool increaseUsedRam(size_t numBytes);
+        /**
+        * Deletes bricks from RAM until numBytes have been freed.
+        */
+        bool freeMem(size_t numBytes);
 
-		BrickingInformation& brickingInformation_;
-		
-		int ramSizeInMegaByte_;
-		unsigned long ramSizeInByte_;				//This is chosen deliberately as unsigned long
-													//to take future RAM sizes into account
-		unsigned long usedRamInByte_;
+        /**
+        * Increases usedRamInByte_ by numBytes. Exception handling will be added.
+        */
+        bool increaseUsedRam(size_t numBytes);
 
-		BrickedVolumeReader* brickedReader_;		//The reader used to read bricks from the disk.
+        BrickingInformation& brickingInformation_;
 
-		/**
-		* Whenever this threshold is reached (that much ram is allocated)
-		* a message is printed in the console. Just for debugging, will be
-		* removed later. (s_rade02)
-		*/
-		//unsigned long ramThresholdInByte_;			
+        int ramSizeInMegaByte_;
+        unsigned long ramSizeInByte_;                //This is chosen deliberately as unsigned long
+                                                    //to take future RAM sizes into account
+        unsigned long usedRamInByte_;
 
-		/**
-		* This list logs which lods of which bricks are resident in the RAM
-		* at the moment. Every time a lod of a brick is read into the RAM,
-		* a pair is inserted at the end of this list, consisting of the brick
-		* and the lod. Whenever there isn't enough RAM available, the first
-		* element of this list gets deleted, and of course the associated brick and
-		* its lod aswell. 
-		*/
-		std::list<std::pair<VolumeBrick<T>*, size_t> > volumesInRam_;
+        BrickedVolumeReader* brickedReader_;        //The reader used to read bricks from the disk.
 
-	private:
+        /**
+        * Whenever this threshold is reached (that much ram is allocated)
+        * a message is printed in the console. Just for debugging, will be
+        * removed later. (s_rade02)
+        */
+        //unsigned long ramThresholdInByte_;
 
+        /**
+        * This list logs which lods of which bricks are resident in the RAM
+        * at the moment. Every time a lod of a brick is read into the RAM,
+        * a pair is inserted at the end of this list, consisting of the brick
+        * and the lod. Whenever there isn't enough RAM available, the first
+        * element of this list gets deleted, and of course the associated brick and
+        * its lod aswell.
+        */
+        std::list<std::pair<VolumeBrick<T>*, size_t> > volumesInRam_;
 
-	}; //class
+    private:
 
 
-	template<class T>
-	RamManager<T>::RamManager(BrickingInformation& brickingInformation, BrickedVolumeReader* brickedVolumeReader,
-							 size_t ramSize) 
-		: brickingInformation_(brickingInformation),
+    }; //class
+
+
+    template<class T>
+    RamManager<T>::RamManager(BrickingInformation& brickingInformation, BrickedVolumeReader* brickedVolumeReader,
+                             size_t ramSize)
+        : brickingInformation_(brickingInformation),
           ramSizeInMegaByte_(ramSize),
           usedRamInByte_(0),
           brickedReader_(brickedVolumeReader)
-	{
-			ramSizeInByte_ = ramSizeInMegaByte_ * 1024 * 1024;
-			//ramThresholdInByte_ = 1048576;
-	}
+    {
+            ramSizeInByte_ = ramSizeInMegaByte_ * 1024 * 1024;
+            //ramThresholdInByte_ = 1048576;
+    }
 
-	template<class T>
-	BrickedVolumeReader* RamManager<T>::getBrickedVolumeReader() {
-		return brickedReader_;
-	}
+    template<class T>
+    BrickedVolumeReader* RamManager<T>::getBrickedVolumeReader() {
+        return brickedReader_;
+    }
 
-	template<class T>
-	void RamManager<T>::setBrickedVolumeReader(BrickedVolumeReader* brickedVolumeReader) {
-		brickedReader_ = brickedVolumeReader;
-	}
+    template<class T>
+    void RamManager<T>::setBrickedVolumeReader(BrickedVolumeReader* brickedVolumeReader) {
+        brickedReader_ = brickedVolumeReader;
+    }
 
 
-	template<class T>
-	bool RamManager<T>::increaseUsedRam(size_t numBytes) {
-		bool success = true;
-		
-		if (usedRamInByte_ + numBytes > ramSizeInByte_) {
-			success = freeMem(numBytes);
-		}
+    template<class T>
+    bool RamManager<T>::increaseUsedRam(size_t numBytes) {
+        bool success = true;
 
-		if (!success) {
-			return false;
-		}
-		usedRamInByte_ = usedRamInByte_ + numBytes;
-		/*if (usedRamInByte_ > ramThresholdInByte_) {
-			std::cout << "Now using: " << usedRamInByte_ << "("<<usedRamInByte_/(1024*1024)<<" MB) Ram"<<std::endl;
-			ramThresholdInByte_ = usedRamInByte_ + 1048576;
-		}*/
-		return true;
-	}
+        if (usedRamInByte_ + numBytes > ramSizeInByte_) {
+            success = freeMem(numBytes);
+        }
 
-	template<class T>
-	int RamManager<T>::getNumBytes(size_t lod) {
-		int numVoxels = brickingInformation_.numVoxelsInBrick / 
-				static_cast<int> (pow(8.0f,(float)lod));
-		return numVoxels * brickingInformation_.originalVolumeBytesAllocated;
-	}
+        if (!success) {
+            return false;
+        }
+        usedRamInByte_ = usedRamInByte_ + numBytes;
+        /*if (usedRamInByte_ > ramThresholdInByte_) {
+            std::cout << "Now using: " << usedRamInByte_ << "("<<usedRamInByte_/(1024*1024)<<" MB) Ram"<<std::endl;
+            ramThresholdInByte_ = usedRamInByte_ + 1048576;
+        }*/
+        return true;
+    }
 
-	template<class T>
-	bool RamManager<T>::readBrickFromDisk(voreen::VolumeBrick<T> *volBrick, size_t lod) {
-		size_t bytes = getNumBytes(lod);
+    template<class T>
+    int RamManager<T>::getNumBytes(size_t lod) {
+        int numVoxels = brickingInformation_.numVoxelsInBrick /
+                static_cast<int> (pow(8.0f,(float)lod));
+        return numVoxels * brickingInformation_.originalVolumeBytesAllocated;
+    }
 
-		bool memAllocated = increaseUsedRam(bytes); 
-		
-		if (!memAllocated) {
-			return false;
-		}
+    template<class T>
+    bool RamManager<T>::readBrickFromDisk(voreen::VolumeBrick<T> *volBrick, size_t lod) {
+        size_t bytes = getNumBytes(lod);
 
-		tgt::ivec3 dimensions = tgt::ivec3(brickingInformation_.brickSize) / static_cast<int>(pow(2.0f,(float)lod));
-		
-		int numVoxels = dimensions.x*dimensions.y*dimensions.z;
-		int numBytes = numVoxels*sizeof(T);
-		
-		T* newVolume = new T[numVoxels];
-		
-		brickedReader_->readBrick(volBrick, (char*)newVolume,numBytes, lod);
+        bool memAllocated = increaseUsedRam(bytes);
 
-		volBrick->addLodVolume((char*)newVolume,lod);
+        if (!memAllocated) {
+            return false;
+        }
+
+        tgt::ivec3 dimensions = tgt::ivec3(brickingInformation_.brickSize) / static_cast<int>(pow(2.0f,(float)lod));
+
+        int numVoxels = dimensions.x*dimensions.y*dimensions.z;
+        int numBytes = numVoxels*sizeof(T);
+
+        T* newVolume = new T[numVoxels];
+
+        brickedReader_->readBrick(volBrick, (char*)newVolume,numBytes, lod);
+
+        volBrick->addLodVolume((char*)newVolume,lod);
 
         if (!volBrick->getAllVoxelsEqual() ) {
-		    volumesInRam_.push_back(std::pair<VolumeBrick<T>*,size_t> (volBrick,lod) );
+            volumesInRam_.push_back(std::pair<VolumeBrick<T>*,size_t> (volBrick,lod) );
         }
-		
-		return true;
 
-	}
+        return true;
 
-	template<class T>
+    }
+
+    template<class T>
     void RamManager<T>::freeAll() {
-		size_t bytesFreed = 0;
-		
-		while (volumesInRam_.size() > 0) {
-			std::pair<VolumeBrick<T>* , size_t> element = volumesInRam_.front();
+        size_t bytesFreed = 0;
 
-			//Delete the volume. This is done in the deleteLodVolume function of
-			//the VolumeBrick, so that the brick knows that that lod isn't there anymore
-			element.first->deleteLodVolume(element.second);
+        while (volumesInRam_.size() > 0) {
+            std::pair<VolumeBrick<T>* , size_t> element = volumesInRam_.front();
 
-			//Remove the entry from the list, because it's no longer in RAM.
-			volumesInRam_.pop_front();
+            //Delete the volume. This is done in the deleteLodVolume function of
+            //the VolumeBrick, so that the brick knows that that lod isn't there anymore
+            element.first->deleteLodVolume(element.second);
 
-			int newBytesFreed = brickingInformation_.numVoxelsInBrick / 
-				static_cast<int> ( pow(8.0f,(float)element.second) );
+            //Remove the entry from the list, because it's no longer in RAM.
+            volumesInRam_.pop_front();
 
-			newBytesFreed = newBytesFreed * brickingInformation_.originalVolumeBytesAllocated;
-			
-			bytesFreed += newBytesFreed;
-		}
-		usedRamInByte_ = usedRamInByte_ - bytesFreed;
-	}
+            int newBytesFreed = brickingInformation_.numVoxelsInBrick /
+                static_cast<int> ( pow(8.0f,(float)element.second) );
 
-	template<class T>
-	bool RamManager<T>::freeMem(size_t numBytes) {
-		size_t bytesFreed = 0;
-		
-		while (bytesFreed < numBytes) {
+            newBytesFreed = newBytesFreed * brickingInformation_.originalVolumeBytesAllocated;
 
-			if (volumesInRam_.size() == 0) {
-				return false; //This means something has gone wrong, we can't free any more RAM
-			}
-			std::pair<VolumeBrick<T>* , size_t> element = volumesInRam_.front();
+            bytesFreed += newBytesFreed;
+        }
+        usedRamInByte_ = usedRamInByte_ - bytesFreed;
+    }
 
-			//Delete the volume. This is done in the deleteLodVolume function of
-			//the VolumeBrick, so that the brick knows that that lod isn't there anymore
-			element.first->deleteLodVolume(element.second);
+    template<class T>
+    bool RamManager<T>::freeMem(size_t numBytes) {
+        size_t bytesFreed = 0;
 
-			//Remove the entry from the list, because it's no longer in RAM.
-			volumesInRam_.pop_front();
+        while (bytesFreed < numBytes) {
 
-			int newBytesFreed = brickingInformation_.numVoxelsInBrick / 
-				static_cast<int> ( pow(8.0f,(float)element.second) );
+            if (volumesInRam_.size() == 0) {
+                return false; //This means something has gone wrong, we can't free any more RAM
+            }
+            std::pair<VolumeBrick<T>* , size_t> element = volumesInRam_.front();
 
-			newBytesFreed = newBytesFreed * brickingInformation_.originalVolumeBytesAllocated;
-			
-			bytesFreed += newBytesFreed;
-		}
-		usedRamInByte_ = usedRamInByte_ - bytesFreed;
-		return true;
-	}
+            //Delete the volume. This is done in the deleteLodVolume function of
+            //the VolumeBrick, so that the brick knows that that lod isn't there anymore
+            element.first->deleteLodVolume(element.second);
+
+            //Remove the entry from the list, because it's no longer in RAM.
+            volumesInRam_.pop_front();
+
+            int newBytesFreed = brickingInformation_.numVoxelsInBrick /
+                static_cast<int> ( pow(8.0f,(float)element.second) );
+
+            newBytesFreed = newBytesFreed * brickingInformation_.originalVolumeBytesAllocated;
+
+            bytesFreed += newBytesFreed;
+        }
+        usedRamInByte_ = usedRamInByte_ - bytesFreed;
+        return true;
+    }
 
 
 } //namespace

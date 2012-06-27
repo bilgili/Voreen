@@ -69,7 +69,7 @@ public:
      * @param parent the parent frame to which this is added
      * @param orientation orientation of the widget, e.g. position of the color and luminancepicker
      */
-    TransFuncEditorIntensity(TransFuncProp* prop, QWidget* parent = 0,
+    TransFuncEditorIntensity(TransFuncProperty* prop, QWidget* parent = 0,
                              Qt::Orientation orientation = Qt::Horizontal);
 
     /**
@@ -80,7 +80,12 @@ public:
     /**
      * Assigns the passed transfer function property.
      */
-    void setTransFuncProp(TransFuncProp* prop);
+    void setTransFuncProp(TransFuncProperty* prop);
+
+    /**
+     * Returns the currently assigned transfer function property.
+     */
+    const TransFuncProperty* getTransFuncProp() const;
 
     /**
      * Creates the whole layout of this widget.

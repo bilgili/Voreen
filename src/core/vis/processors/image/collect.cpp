@@ -33,38 +33,51 @@ namespace voreen {
 
 Collect::Collect(std::string shaderFilename)
     : ImageProcessor(shaderFilename)
+    , inport_(Port::INPORT, "image.inputs", true)
+    , outport_(Port::OUTPORT, "image.output")
+    , tmp1Port_(Port::OUTPORT, "image.temp1", true)
+    , tmp2Port_(Port::OUTPORT, "image.temp2", true)
 {
-    createInport("image.inputs",true);
-    createOutport("image.output");
-
-    createPrivatePort("image.temp1");
-    createPrivatePort("image.temp2");
+    addPort(inport_);
+    addPort(outport_);
+    addPort(tmp1Port_);
+    addPort(tmp2Port_);
 }
 
 const std::string Collect::getProcessorInfo() const {
+    // TODO write me (ab)
     return "No information available.";
 }
 
-void Collect::process(LocalPortMapping*  portMapping) {
-    compileShader();
+void Collect::process() {
+    if (!outport_.isReady())
+        return;
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
     glDepthFunc(GL_ALWAYS);
-    processIterative(portMapping);
+    processIterative();
     glDepthFunc(GL_LESS);
 }
 
-void Collect::processIterative(LocalPortMapping* portMapping) {
-    std::vector<int> sources = portMapping->getAllTargets("image.inputs");
-    if (sources.size() <= 1)
+void Collect::processIterative() {
+
+    // processor will be removed soon
+
+    /*std::vector<RenderTarget*> sources = inport_.getAllData();
+    if (sources.size() <= 1 || !outport_.getData())
         return;
 
-    int tempTarget1 = portMapping->getTarget("image.temp1");
-    int tempTarget2 = portMapping->getTarget("image.temp2");
-    int dest = portMapping->getTarget("image.output");
+    int tempTarget1 = getTarget("image.temp1");
+    int tempTarget2 = getTarget("image.temp2");
+    int dest = outport_.getData()->textureID_;
     int currentTarget = tempTarget1;
     int source0, source1;
-    source0 = sources.at(0);
+    source0 = sources.at(0)->textureID_;
     for (size_t i=1; i<sources.size(); i++) {
-        source1 = sources.at(i);
+        if (!sources.at(i))
+            return;
+
+        source1 = sources.at(i)->textureID_;
         if ( (i+1) == sources.size())
             tc_->setActiveTarget(dest);
         else
@@ -77,7 +90,7 @@ void Collect::processIterative(LocalPortMapping* portMapping) {
             currentTarget=tempTarget2;
         else if (currentTarget == tempTarget2)
             currentTarget=tempTarget1;
-    }
+    } */
 }
 
 } // voreen namespace

@@ -50,12 +50,14 @@ class MultipleAxialSliceProxyGeometry : public AxialSliceProxyGeometry {
 public:
     MultipleAxialSliceProxyGeometry();
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.MultipleAxialSliceProxyGeometry"; }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "MultipleAxialSliceProxyGeometry"; }
     virtual const std::string getProcessorInfo() const;
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_TESTING; } ///2.0
     virtual Processor* create() const { return new MultipleAxialSliceProxyGeometry(); }
 
-    static const Identifier setNSlicesPerRow_;
-    static const Identifier setNSlicesPerCol_;
+    static const std::string setNSlicesPerRow_;
+    static const std::string setNSlicesPerCol_;
 
     virtual void render();
 
@@ -69,8 +71,8 @@ protected:
     // Renders the current slice with the preedefined size and center (only used internally)
     void build();
 
-    IntProp nSlicesPerRow_;
-    IntProp nSlicesPerCol_;
+    IntProperty nSlicesPerRow_;
+    IntProperty nSlicesPerCol_;
 
     // This flag is necessary, because we don't want to trigger an onChange-method for each change to
     // the begin_ - property

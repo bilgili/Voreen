@@ -38,14 +38,11 @@
 #include "tgt/shadermanager.h"
 #include "tgt/camera.h"
 
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/render/volumerenderer.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 
 namespace voreen {
-
-class EnumProp;
 
 /**
  * Base class for all SliceRendering sub classes.
@@ -55,6 +52,8 @@ class SliceRendererBase : public VolumeRenderer {
 public:
     SliceRendererBase();
     virtual ~SliceRendererBase();
+
+    virtual void initialize() throw (VoreenException);
 
     /// Inits some OpenGL states
     //virtual void init();
@@ -94,11 +93,14 @@ protected:
     void deactivateShader();
 
 protected:
-    TransFuncProp transferFunc_;
+    TransFuncProperty transferFunc_;
     tgt::Shader* transferFuncShader_;
 
-    static const Identifier transFuncTexUnit_;
-    static const Identifier volTexUnit_;
+    static const std::string transFuncTexUnit_;
+    static const std::string volTexUnit_;
+
+    RenderPort outport_;
+    VolumePort inport_;
 };
 
 // ----------------------------------------------------------------------------

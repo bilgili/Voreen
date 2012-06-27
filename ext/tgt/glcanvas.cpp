@@ -101,6 +101,10 @@ void GLCanvas::initPainter() {
 EventHandler* GLCanvas::getEventHandler() const {
     return eventHandler_;
 }
+void GLCanvas::setEventHandler(EventHandler* handler){
+    delete eventHandler_;
+    eventHandler_ = handler;
+}
 
 bool GLCanvas::getAutoFlush() {
  return autoFlush_;

@@ -31,20 +31,22 @@
 
 namespace voreen {
 
-const Identifier RenderStore::storeTexUnit_        = "storeTexUnit";
-const Identifier RenderStore::storeDepthTexUnit_   = "storeDepthTexUnit";
+const std::string RenderStore::storeTexUnit_        = "storeTexUnit";
+const std::string RenderStore::storeDepthTexUnit_   = "storeDepthTexUnit";
 
 RenderStore::RenderStore()
     : RenderProcessor()
-    , privateTargetID_(-1)
+    , inport_(Port::INPORT, "image.input")
+    , privatePort_(Port::OUTPORT, "image.private", true)
+    , cpPort_(Port::OUTPORT, "coprocessor.renderstore", false)
 {
-    setName("RenderStore");
-    createInport("image.input");
-    createPrivatePort("image.private");
-    createCoProcessorOutport("coprocessor.renderstore", &Processor::call);
+
+    addPort(inport_);
+    addPrivateRenderPort(&privatePort_);
+    addPort(cpPort_);
 
     // set texture unit identifiers and register
-    std::vector<Identifier> units;
+    std::vector<std::string> units;
     units.push_back(storeTexUnit_);
     units.push_back(storeDepthTexUnit_);
     tm_.registerUnits(units);
@@ -52,10 +54,6 @@ RenderStore::RenderStore()
 }
 
 RenderStore::~RenderStore() {
-}
-
-const Identifier RenderStore::getClassName() const {
-    return "Miscellaneous.RenderStore";
 }
 
 Processor* RenderStore::create() const {
@@ -68,49 +66,44 @@ const std::string RenderStore::getProcessorInfo() const {
            within a rendering pass.";
 }
 
-void RenderStore::process(LocalPortMapping* portMapping) {
+void RenderStore::process() {
 
     LGL_ERROR;
-    // render result
-    int source = portMapping->getTarget("image.input");
-    privateTargetID_ = portMapping->getTarget("image.private");
 
-    tc_->setActiveTarget(privateTargetID_,"RenderStore::process() image.private");
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    if (source != -1) {
-
-        LGL_ERROR;
-        glActiveTexture(tm_.getGLTexUnit(storeTexUnit_));
-        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-        glActiveTexture(tm_.getGLTexUnit(storeDepthTexUnit_));
-        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-        shaderPrg_->activate();
-        setGlobalShaderParameters(shaderPrg_);
-        shaderPrg_->setUniform("shadeTex_", tm_.getTexUnit(storeTexUnit_));
-        shaderPrg_->setUniform("depthTex_", tm_.getTexUnit(storeDepthTexUnit_));
-        shaderPrg_->setUniform("interactionCoarseness_", 1);
-
-        LGL_ERROR;
-
-        glDepthFunc(GL_ALWAYS);
-        renderQuad();
-        glDepthFunc(GL_LESS);
-
-        shaderPrg_->deactivate();
+    if (!privatePort_.isReady()) {
+        LWARNING("Private port not ready");
+        return;
     }
 
-    tc_->setActiveTarget(tc_->getFinalTarget(), "RenderStore::process()");
+    privatePort_.activateTarget("RenderStore::process() image.private");
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    if (!inport_.isReady()) {
+        privatePort_.deactivateTarget();
+        return;
+    }
+
+    LGL_ERROR;
+    inport_.bindTextures(tm_.getGLTexUnit(storeTexUnit_), tm_.getGLTexUnit(storeDepthTexUnit_));
+    LGL_ERROR;
+
+    shaderPrg_->activate();
+    setGlobalShaderParameters(shaderPrg_);
+    shaderPrg_->setUniform("shadeTex_", tm_.getTexUnit(storeTexUnit_));
+    shaderPrg_->setUniform("depthTex_", tm_.getTexUnit(storeDepthTexUnit_));
+    shaderPrg_->setUniform("interactionCoarseness_", 1);
+
+    LGL_ERROR;
+
+    glDepthFunc(GL_ALWAYS);
+    renderQuad();
+    glDepthFunc(GL_LESS);
+
+    shaderPrg_->deactivate();
+
+    privatePort_.deactivateTarget();
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
-}
-
-Message* RenderStore::call(Identifier ident, LocalPortMapping* /*portMapping*/) {
-    if (ident == "getStoredRenderTarget") {
-        return new IntMsg("renderstore.storedRenderTarget", getStoredTargetID());
-    }
-    else {
-        return 0;
-    }
 }
 
 bool RenderStore::isEndProcessor() const {
@@ -120,28 +113,29 @@ bool RenderStore::isEndProcessor() const {
     return true;
 }
 
-int RenderStore::initializeGL() {
+void RenderStore::initialize() throw (VoreenException) {
 
-    initStatus_ = Processor::initializeGL();
-    if (initStatus_ != VRN_OK)
-        return initStatus_;
+    RenderProcessor::initialize();
 
     shaderPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "vrn_interactionmode.frag",
-        generateHeader(), false);
+        generateHeader(), false, false);
 
-    if (!shaderPrg_)
-        initStatus_ = VRN_ERROR;
-
-    return initStatus_;
+    if(!shaderPrg_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
+    initialized_ = true;
 }
 
-tgt::vec4 RenderStore::getStoredTargetPixel(const tgt::ivec2 &pos) const {
-    int storeTarget = getStoredTargetID();
-    if (storeTarget < 0)
+tgt::vec4 RenderStore::getStoredTargetPixel(const tgt::ivec2 &pos) {
+
+    if (!privatePort_.isReady()) {
+        LWARNING("Private port not ready");
         return tgt::vec4(-1.f);
+    }
     else {
-        float* f = tc_->getTargetAsFloats(storeTarget, pos.x, pos.y);
-        return tgt::vec4(f);
+        return privatePort_.getData()->getColorAtPos(pos);
     }
 }
 

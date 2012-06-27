@@ -40,42 +40,6 @@ public:
     virtual ~VoreenException() throw() {}
 };
 
-
-//-------------------------------------------------------------------------------------------------
-
-//FIXME: remove these or move into glyph module
-
-/**
- * Unspecified message exception used as base class for glyph exceptions.
- */
-class SimpleMessageException {
-public:
-    virtual ~SimpleMessageException() {}
-    SimpleMessageException(const std::string message): message_(message) {}
-    virtual std::string getMessage() { return message_; }
-private:
-    std::string message_;
-};
-
-/**
- * Exception thrown when glyph loading fails.
- */
-class GlyphsLoadException: public SimpleMessageException {
-public:
-    virtual ~GlyphsLoadException() {}
-    GlyphsLoadException(const std::string message):
-        SimpleMessageException(message) { }
-};
-
-/**
- * Exception thrown when a value is mapped to a property to which its type does not fit.
- */
-class EnumConvertException: public SimpleMessageException {
-public:
-    EnumConvertException(const std::string message):
-        SimpleMessageException(message) {}
-};
-
 }  // namespace voreen
 
 #endif

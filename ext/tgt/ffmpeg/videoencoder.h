@@ -27,7 +27,29 @@
 #ifndef TGT_VIDEOENCODER_H
 #define TGT_VIDEOENCODER_H
 
+#include "tgt/tgt_gl.h"
+
+#include <string>
+#include <vector>
+
 namespace tgt {
+
+/**
+ * @see videoencoder.cpp#containerCodecPairNames
+ * @see videoencoder.cpp#containerAppendix
+ * @see videoencoder.cpp#containerCodecId
+ * FIXME WMVWMV crashes at av_set_parameter
+ * FIXME OGGTHEORA results in 0 second video
+ */
+enum ContainerCodecPair{
+    GUESS, // let ffmpeg guess by filename or default to mpeg4
+    MPEG4AVI,
+    WMVWMV,
+    FLVFLV,
+    HUFFYUVAVI,
+    OGGTHEORA,
+    LAST // dummy
+};
 
 /**
  *
@@ -64,13 +86,29 @@ public:
      */
     void nextFrame(GLvoid* pixels);//throw (TypeConversionFailed);
 
+    void setup(int preset, int bitrate);
+
+    ContainerCodecPair getPreset(){
+        return preset_;
+    }
+
+    const char* getContainerAppendix();
+
+    int getBitrate(){
+        return bitrate_;
+    }
+
     static std::vector<std::string> getSupportedFormatsByFileEnding();
+    static const char** getContainerCodecPairNames();
 
 protected:
     /**
      * tgt logging category
      */
     static std::string loggerCat_;
+
+    int bitrate_;
+    ContainerCodecPair preset_;
 };
 
 } // namespace

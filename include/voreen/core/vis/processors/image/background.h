@@ -35,87 +35,64 @@
 namespace voreen {
 
 /**
- * Creates a special background.
+ * Adds a background to the image.
  */
 class Background : public ImageProcessor {
 public:
     Background();
     ~Background();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Background"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
     /**
-    * Render-Method: draws the existing content over a background
-    */
-    void process(LocalPortMapping* portMapping);
-
-    /// Possible backgrounds:
-    enum BackgroundModes {
-        MONOCHROME, ///< Paint a monochrome background using the current background color.
-        GRADIENT,   ///< Paint a color gradient.
-        RADIAL,     ///< Paint a radial
-        CLOUD,      ///< Paint procedural clouds
-        TEXTURE     ///< Paint an image.
-    };
-
-    static const Identifier setBackgroundFirstColor_;
-    static const Identifier setBackgroundSecondColor_;
-    static const Identifier setBackgroundAngle_;
-
-    static const Identifier shadeTexUnit0_;
-    static const Identifier depthTexUnit0_;
-    static const Identifier shadeTexUnit1_;
-    static const Identifier depthTexUnit1_;
+     * draws the existing content over a background
+     */
+    void process();
+    virtual bool isReady() const;
 
 protected:
 
-    virtual std::string generateHeader();
     /**
-    * Render the background
-    */
+     * Render the background
+     */
     void renderBackground();
 
-    void setBackgroundModeEvt();
+    void onBackgroundModeChanged();
 
     /**
-    * load (and create) needed textures
-    */
+     * load (and create) needed textures
+     */
     void loadTexture();
+
     /**
-    * create an alpha-circle
-    */
+     * create an alpha-circle
+     */
     void createRadialTexture();
+
     /**
-    * create a cloud texture
-    */
+     * create a cloud texture
+     */
     void createCloudTexture();
-    /**
-    * blurs an image really slow
-    */
-    GLubyte* blur(GLubyte* image, int size);
-    /**
-    * doubles an image and blurs it afterwards
-    */
-    GLubyte* resize(GLubyte* image, int size);
-    /**
-    * copy an image 4 times
-    */
-    GLubyte* tile(GLubyte* image, int size);
 
-    ColorProp firstcolor_;
-    ColorProp secondcolor_;
-    IntProp angle_;
+    ColorProperty firstcolor_;
+    ColorProperty secondcolor_;
+    IntProperty angle_;
     tgt::Texture* tex_;
-    bool textureloaded_;
-    FileDialogProp filename_;
-    FloatProp tile_;
-    BackgroundModes mode_;
-    EnumProp* modeProp_;
+    bool textureLoaded_;
+    FileDialogProperty filename_;
+    FloatProperty tile_;
+    StringOptionProperty modeProp_;
 
+    RenderPort inport_;
+    RenderPort outport_;
+    RenderPort privatePort_;
 };
 
 } // namespace

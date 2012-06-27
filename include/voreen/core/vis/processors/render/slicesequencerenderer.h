@@ -40,13 +40,12 @@ namespace voreen {
  * Performs slice rendering of a multiple slices along one of the three main
  * axis of the volume.
  */
-class SliceSequenceRenderer : public SliceRendererBase, public tgt::EventListener {
+class SliceSequenceRenderer : public SliceRendererBase {
 public:
     enum SliceAlignment {
-        SAGITTAL = 0,       /**< view from the volume's right to left (negative x-axis) */
-        AXIAL = 1,          /**< view from the volume's front to back (negative z-axis) */
-        CORONAL = 2         /**< view from the volume's top to bottom (negative y-axis) */
-    };
+        XZ_PLANE = 1,
+        ZY_PLANE = 0,
+        XY_PLANE = 2};
 
 public:
     /**
@@ -57,43 +56,17 @@ public:
 
     virtual ~SliceSequenceRenderer();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Slice Rendering"; }
+    virtual std::string getClassName() const { return "SliceSequenceRenderer"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new SliceSequenceRenderer(); }
 
-    virtual void process(LocalPortMapping* portMapping);
-
-    /** Sets the index of the slice to be rendered */
-    //void setSliceIndex(size_t sliceIndex) { sliceIndexProp_.set(static_cast<int>(sliceIndex)); }
-
-    /** Returns the number of slices which can be shown i.e. the depth of the slices */
-    //size_t getNumSlices() const { return numSlices_; }
-
-    virtual void mouseMoveEvent(tgt::MouseEvent* e);
-    virtual void mousePressEvent(tgt::MouseEvent* e);
+    virtual void process();
 
 protected:
     void updateNumSlices();
-
-    void renderSlices(const size_t numSlicesRow, const size_t numSlicesCol);
-
-    /**
-     * Renders a textured quad in unit size aligned to the axial plane (xz-plane)
-     * in the volumetric texture
-     */
-    void renderAxialSlice(const float depth);
-
-    /**
-     * Renders a textured quad in unit size aligned to the sagittal plane (zy-plane)
-     * in the volumetric texture
-     */
-    void renderSagittalSlice(const float depth);
-
-    /**
-     * Renders a textured quad in unit size aligned to the coronal plane (xy-plane)
-     * in the volumetric texture
-     */
-    void renderCoronalSlice(const float depth);
 
     /**
      * Renders a GL_LINE_LOOP with white color and the current slice's
@@ -113,13 +86,17 @@ protected:
 
     void onSliceAlignmentChange();
 
+    void mouseLocalization(tgt::MouseEvent* e);
+
 protected:
-    EnumProp* alignmentProp_;       /**< Property containing the available alignments (axial, coronal, sagittal) */
-    IntProp sliceIndexProp_;        /**< Property containing the currently selected slice */
-    IntProp numSlicesPerRowProp_;   /**< Property containing the currently displayed number of slices per Row */
-    IntProp numSlicesPerColProp_;   /**< Property containing the currently displayed number of slices per Column */
-    BoolProp renderSliceBoundariesProp_;    /**< Determines whether to render the slice boundaries */
-    EventProperty eventProp_;
+    OptionProperty<SliceSequenceRenderer::SliceAlignment>* alignmentProp_;  /**< Property containing the available alignments (axial, coronal, sagittal) */
+    IntProperty sliceIndexProp_;        /**< Property containing the currently selected slice */
+    IntProperty numSlicesPerRowProp_;   /**< Property containing the currently displayed number of slices per Row */
+    IntProperty numSlicesPerColProp_;   /**< Property containing the currently displayed number of slices per Column */
+    BoolProperty renderSliceBoundariesProp_;    /**< Determines whether to render the slice boundaries */
+    ColorProperty boundaryColor_;
+    TemplateMouseEventProperty<SliceSequenceRenderer>* eventPressProp_;
+    TemplateMouseEventProperty<SliceSequenceRenderer>* eventMoveProp_;
     SliceAlignment alignment_;      /**< the currently used slice alignment */
     size_t numSlices_;              /**< The number of slices in the direction corresponding to alignment. */
 

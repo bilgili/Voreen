@@ -30,22 +30,82 @@
 #ifndef VRN_IO_PROGRESS_H
 #define VRN_IO_PROGRESS_H
 
+#include <string>
+
 namespace voreen {
 
+/**
+ * Base class for GUI toolkit specific progress bars.
+ */
 class IOProgress {
 public:
     IOProgress();
     virtual ~IOProgress() {}
 
-    void set(int progress);
-    int get() const;
+    /**
+     * Makes the progress dialog visible.
+     */
+    virtual void show() = 0;
 
-    // Override these methods to get notified on IO progress.
+    /**
+     * Makes the progress dialog invisible.
+     */
+    virtual void hide() = 0;
+
+    /// Override this method to get notified on IO progress.
     virtual void update() = 0;
-    virtual void setNumSteps(int numSteps) = 0;
+
+    /**
+     * Assigns the current progress state.
+     *
+     * @param progress Current amount of progress.
+     *  Must lie within the range [0, totalSteps]
+     *
+     * @see setTotalSteps
+     */
+    virtual void setProgress(int progress);
+
+    /**
+     * Returns the current amount of progress
+     * within the range [0, totalSteps].
+     */
+    virtual int getProgress() const;
+
+    /**
+     * Assigns a message that is to displayed by the
+     * progress dialog.
+     */
+    virtual void setMessage(const std::string& message);
+
+    /**
+     * Returns the message that is to displayed by the
+     * progress dialog.
+     */
+    virtual std::string getMessage() const;
+
+    /**
+     * Assigns a title that is to displayed by the
+     * progress dialog.
+     */
+    virtual void setTitle(const std::string& title);
+
+    /**
+     * Returns the title that is to displayed by the
+     * progress dialog.
+     */
+    virtual std::string getTitle() const;
+
+    /**
+     * Assigns the total number of progress steps.
+     *
+     * @param totalSteps number of steps >= 0
+     */
+    virtual void setTotalSteps(int totalSteps) = 0;
 
 protected:
     int progress_;
+    std::string message_;
+    std::string title_;
 };
 
 } // namespace voreen

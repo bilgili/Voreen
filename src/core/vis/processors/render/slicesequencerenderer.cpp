@@ -37,7 +37,6 @@
 #include "tgt/font.h"
 #include "tgt/tgt_gl.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/application.h"
 
 using tgt::vec2;
@@ -54,8 +53,8 @@ SliceSequenceRenderer::SliceSequenceRenderer(const bool isSingleSlice)
     , numSlicesPerRowProp_("numSlicesPerRowProp", "slices per Row: ", 4, 1, 5)
     , numSlicesPerColProp_("numSlicesPerColProp", "slices per Column: ", 4, 1, 5)
     , renderSliceBoundariesProp_("renderSliceBoundariesProp", "render slice boundaries: ", true)
-    , eventProp_("Show cursor position", tgt::Event::NONE, tgt::MouseEvent::MOUSE_ALL)
-    , alignment_(SAGITTAL)
+    , boundaryColor_("boundaryColor", "Boundary Color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
+    , alignment_(XY_PLANE)
     , numSlices_(0)
     , slicePos_(1.0f)
     , sliceSize_(0.0f)
@@ -63,24 +62,31 @@ SliceSequenceRenderer::SliceSequenceRenderer(const bool isSingleSlice)
     , lastMousePosition_(0, 0)
     , voxelPosPermutation_(0, 1, 2)
 {
-    setName("SliceSequenceRenderer");
+    //FIXME: memory leak (EventAction?)
+    eventPressProp_ = new TemplateMouseEventProperty<SliceSequenceRenderer>("Show cursor position", new EventAction<SliceSequenceRenderer, tgt::MouseEvent>(this, &SliceSequenceRenderer::mouseLocalization), tgt::MouseEvent::PRESSED, tgt::Event::NONE, tgt::MouseEvent::MOUSE_ALL);
+    //FIXME: memory leak (EventAction?)
+    eventMoveProp_ = new TemplateMouseEventProperty<SliceSequenceRenderer>("Show cursor position", new EventAction<SliceSequenceRenderer, tgt::MouseEvent>(this, &SliceSequenceRenderer::mouseLocalization), tgt::MouseEvent::MOTION, tgt::Event::NONE, tgt::MouseEvent::MOUSE_ALL);
+    eventPressProp_->setOwner(this);
+    eventMoveProp_->setOwner(this);
 
-    std::vector<std::string> alignments;
-    alignments.push_back("SAGITTAL");
-    alignments.push_back("AXIAL");
-    alignments.push_back("CORONAL");
-    alignmentProp_ = new EnumProp("sliceAlignmentProp", "slice alignment: ", alignments, 0);
-    alignmentProp_->onChange(
+    alignmentProp_ = new OptionProperty<SliceAlignment>("sliceAlignmentProp", "slice alignment:");
+    alignmentProp_->addOption("xy-plane", "xy-plane", XY_PLANE);
+    alignmentProp_->addOption("xz-plane", "xz-plane", XZ_PLANE);
+    alignmentProp_->addOption("zy-plane", "zy-plane", ZY_PLANE);
+        alignmentProp_->onChange(
         CallMemberAction<SliceSequenceRenderer>(this, &SliceSequenceRenderer::onSliceAlignmentChange) );
     addProperty(alignmentProp_);
 
-    addProperty(&sliceIndexProp_);
+    addProperty(sliceIndexProp_);
     if (isSingleSlice == false) {
-        addProperty(&numSlicesPerRowProp_);
-        addProperty(&numSlicesPerColProp_);
+        addProperty(numSlicesPerRowProp_);
+        addProperty(numSlicesPerColProp_);
     }
-    addProperty(&renderSliceBoundariesProp_);
-    addProperty(&eventProp_);
+    addProperty(renderSliceBoundariesProp_);
+    addProperty(boundaryColor_);
+
+    addEventProperty(eventPressProp_);
+    addEventProperty(eventMoveProp_);
 
     // call this method to set the correct permutation for the
     // screen-position-to-voxel-position mapping.
@@ -89,11 +95,9 @@ SliceSequenceRenderer::SliceSequenceRenderer(const bool isSingleSlice)
 }
 
 SliceSequenceRenderer::~SliceSequenceRenderer() {
+    delete eventPressProp_;
+    delete eventMoveProp_;
     delete alignmentProp_;
-}
-
-const Identifier SliceSequenceRenderer::getClassName() const {
-    return "SliceRenderer.SliceSequenceRenderer";
 }
 
 const std::string SliceSequenceRenderer::getProcessorInfo() const {
@@ -105,9 +109,9 @@ void SliceSequenceRenderer::updateNumSlices() {
     if (numSlices_ == 0)
         return;
 
-    int sliceIndex = static_cast<int>(numSlices_ / 2);
     sliceIndexProp_.setMaxValue(numSlices_);
-    sliceIndexProp_.set(sliceIndex);
+    if (sliceIndexProp_.get() > static_cast<int>(numSlices_))
+        sliceIndexProp_.set(static_cast<int>(numSlices_ / 2));
 
     numSlicesPerColProp_.setMaxValue(numSlices_);
     numSlicesPerRowProp_.setMaxValue(numSlices_);
@@ -119,51 +123,29 @@ void SliceSequenceRenderer::updateNumSlices() {
         numSlicesPerColProp_.set( numSlices_ );
 }
 
-void SliceSequenceRenderer::mouseMoveEvent(tgt::MouseEvent* e) {
-    if ((e != 0) && (eventProp_.accepts(e))) {
+void SliceSequenceRenderer::mouseLocalization(tgt::MouseEvent* e) {
+    if (e != 0) {
         lastMousePosition_ = e->coord();
         e->ignore();
     }
 }
 
-void SliceSequenceRenderer::mousePressEvent(tgt::MouseEvent* e) {
-    if ((e != 0) && (eventProp_.accepts(e))) {
-        lastMousePosition_ = e->coord();
-        e->ignore();
-
-        // call invalidate() in order to re-render the textual infos...
-        //
-        invalidate();
-    }
-}
-
-void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
-    bool handleChanged = false;
-    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle"), &handleChanged) == false)
-    {
-        return;
-    }
-
-    if (handleChanged == true) {
-        volumeDimensions_ = currentVolumeHandle_->getVolume()->getDimensions();
+void SliceSequenceRenderer::process() {
+    if (inport_.hasChanged()) {
+        volumeDimensions_ = inport_.getData()->getVolume()->getDimensions();
         updateNumSlices();  // validate the currently set values and adjust them if necessary
-        transferFunc_.setVolumeHandle(currentVolumeHandle_);
+        transferFunc_.setVolumeHandle(inport_.getData());
     }
+
+    outport_.activateTarget();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    LGL_ERROR;
 
     setupShader();
     if (ready() == false)
         return;
 
-    if (tc_ != 0) {
-        std::ostringstream oss;
-        oss << "SingleSliceRenderer::render(dataset = " << currentVolumeHandle_ << ") dest";
-        int dest = portMapping->getTarget("image.outport");
-        tc_->setActiveTarget(dest, oss.str());
-    } else
-        return;
-
-    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
+    VolumeGL* volumeGL = inport_.getData()->getVolumeGL();
     const VolumeTexture* const tex = volumeGL->getTexture();
     if (tex == 0) {
         LERROR("setVolumeHandle(): VolumeTexture in VolumGL is NULL!");
@@ -176,63 +158,61 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
     tgt::vec3 llb = tex->getLLF();
     urf.z = llb.z;
     llb.z = tex->getURB().z;
-    const tgt::vec3 texDim = urf - llb;
-    tgt::vec2 texDim2D(0.0f);
 
-    // pointer to the method responsible for rendering the correctly aligned slice
+    // Re-calculate texutre dimensions, urf, llb and center of the texture
+    // for it might be a NPOT texture and therefore migh have been inflated.
+    // In that case, the inflating need to be undone and the volume texture
+    // needs to be "cropped" to its original measures.
     //
-    void (SliceSequenceRenderer::*renderSliceFunc)(float) = 0;
+    const tgt::vec3 texDim = tex->getMatrix() * (urf - llb);
+    urf = texDim / 2.0f;
+    llb = texDim / -2.0f;
+    tgt::vec3 texCenter = (llb + (texDim * 0.5f));
+
+    // Use OpenGL's ability of multiplying texture coodinate vectors with a matrix
+    // on the texture matrix stack to permute the components of the texture
+    // coordinates to obtain a correct setting for the current slice alignment.
+    //
+    tgt::mat4 textureMatrix = tgt::mat4::zero;
+    tgt::vec2 texDim2D(0.0f);   // laziness... (no matrix multiplication to determine 2D size of texture)
 
     // set slice's width and height according to currently slice alignment
     // and set the pointer to the slice rendering method to the matching version
     //
     switch (alignment_) {
-        case SliceSequenceRenderer::SAGITTAL:
-            texDim2D.x = texDim.y;
-            texDim2D.y = texDim.z;
-            renderSliceFunc = &SliceSequenceRenderer::renderSagittalSlice;
-            break;
-
-        case SliceSequenceRenderer::AXIAL:
+        case SliceSequenceRenderer::XZ_PLANE:
             texDim2D.x = texDim.x;
             texDim2D.y = texDim.z;
-            renderSliceFunc = &SliceSequenceRenderer::renderAxialSlice;
+            textureMatrix.t00 = 1.0f;   // setup a permutation matrix, swaping z- and y-
+            textureMatrix.t12 = 1.0f;   // components on vectors being multiplied with it
+            textureMatrix.t21 = 1.0f;
+            textureMatrix.t33 = 1.0f;
             break;
 
-        case SliceSequenceRenderer::CORONAL:
-            texDim2D.x = texDim.y;
-            texDim2D.y = texDim.x;
-            renderSliceFunc = &SliceSequenceRenderer::renderCoronalSlice;
+        case SliceSequenceRenderer::ZY_PLANE:
+            texDim2D.x = texDim.z;
+            texDim2D.y = texDim.y;
+            textureMatrix.t02 = 1.0f;   // setup a permutation matrix, swaping x- and z-
+            textureMatrix.t11 = 1.0f;   // components on vectors being multiplied with it
+            textureMatrix.t20 = 1.0f;
+            textureMatrix.t33 = 1.0f;
             break;
 
+        case SliceSequenceRenderer::XY_PLANE:
+            texDim2D.x = texDim.x;
+            texDim2D.y = texDim.y;
+            // no break here
         default:
+            textureMatrix = tgt::mat4::identity;    // use identity as default
             break;
     }   // switch
 
-    if (renderSliceFunc == 0) {
-        LERROR("process(): failed to find a suitable rendering function for slice alignment '"
-            << static_cast<int>(alignment_) << "'!");
-        return;
-    }
-
-    const float canvasWidth = static_cast<float>(size_.x);
-    const float canvasHeight = static_cast<float>(size_.y);
+    const float canvasWidth = static_cast<float>(outport_.getSize().x);
+    const float canvasHeight = static_cast<float>(outport_.getSize().y);
     const size_t numSlicesCol = static_cast<size_t>(numSlicesPerColProp_.get());
     const size_t numSlicesRow = static_cast<size_t>(numSlicesPerRowProp_.get());
     float scaleWidth = canvasWidth / (texDim2D.x * numSlicesCol);
     float scaleHeight = canvasHeight / (texDim2D.y * numSlicesRow);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0.0f, canvasWidth, 0.0f, canvasHeight, -1.0f, 1.0f);
-
-    glMatrixMode(GL_TEXTURE);
-    tgt::loadMatrix( tex->getMatrix() );
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
 
     glActiveTexture(tm_.getGLTexUnit(transFuncTexUnit_));
     transferFunc_.get()->bind();
@@ -241,6 +221,8 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    LGL_ERROR;
+
     // find minimal scaling factor (either scale along canvas' width or
     // canvas' height)
     //
@@ -248,11 +230,32 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
         sliceSize_ = texDim2D * scaleWidth;
         slicePos_.x = 0.0f;
         slicePos_.y = (canvasHeight - (numSlicesRow * sliceSize_.y)) / 2.0f;
-    } else {
+    }
+    else {
         sliceSize_ = texDim2D * scaleHeight;
         slicePos_.x = (canvasWidth - (numSlicesCol * sliceSize_.x)) / 2.0f;
         slicePos_.y = 0.0f;
     }
+
+    glMatrixMode(GL_TEXTURE);
+    glPushMatrix();
+    tgt::loadMatrix(textureMatrix);
+    tgt::multMatrix(tex->getMatrix());
+
+    LGL_ERROR;
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0.0f, canvasWidth, 0.0f, canvasHeight, -1.0f, 1.0f);
+
+    LGL_ERROR;
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    LGL_ERROR;
 
     float depth = 0.0f;
     const size_t sliceIndex = static_cast<size_t>(sliceIndexProp_.get() - 1);
@@ -265,14 +268,14 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
 
         // calculate depth in llb/urf space
         depth = ((static_cast<float>(sliceNumber) / static_cast<float>(numSlices_ - 1)) - 0.5f)
-            * volumeGL->getVolume()->getCubeSize()[alignment_];
+            * texDim[alignment_];
 
         // check whether the given slice is not within tex
         if ((depth < llb[alignment_]) || (depth > urf[alignment_]))
             continue;
 
         // map depth to [0, 1]
-        depth -= tex->getCenter()[alignment_];  // center around origin
+        depth -= texCenter[alignment_];  // center around origin
         depth /= texDim[alignment_];            // map to [-0.5, -0.5]
         depth += 0.5f;                          // map to [0, 1]
 
@@ -281,11 +284,26 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
             slicePos_.y + ((numSlicesRow - (y + 1)) * sliceSize_.y), 0.0f);
         glScalef(sliceSize_.x, sliceSize_.y, 1.0f);
 
-        if (renderSliceFunc != 0)
-            (this->*renderSliceFunc)(depth);
+        glBegin(GL_QUADS);
+            glTexCoord3f(0.0f, 0.0f, depth); glVertex2f(0.0f, 0.0f);
+            glTexCoord3f(1.0f, 0.0f, depth); glVertex2f(1.0f, 0.0f);
+            glTexCoord3f(1.0f, 1.0f, depth); glVertex2f(1.0f, 1.0f);
+            glTexCoord3f(0.0f, 1.0f, depth); glVertex2f(0.0f, 1.0f);
+        glEnd();
+
+        LGL_ERROR;
     }   // for (pos
 
+    // Has to be done here for some reason. I suspect pending side-effects in subsequent
+    // calls to other methods / functions. (dirk)
+    //
+    glMatrixMode(GL_TEXTURE);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+
     deactivateShader();
+
+    LGL_ERROR;
 
     // render a white border around each slice's boundaries if desired
     //
@@ -293,60 +311,37 @@ void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {
         glLoadIdentity();
         glTranslatef(slicePos_.x, slicePos_.y, 0.0f);
         glScalef(sliceSize_.x * numSlicesCol, sliceSize_.y * numSlicesRow, 1.0f);
+        glDepthFunc(GL_ALWAYS);
         renderSliceBoundaries(numSlicesRow, numSlicesCol);
+        glDepthFunc(GL_LESS);
     }
 
-    // If freetype is available render the slice's number, otherwise this will do nothing
+    // If freetype is available render the slice's number, otherwise this will do nothing.
     //
     renderInfoTexts(numSlicesRow, numSlicesCol);
+    LGL_ERROR;
 
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+    LGL_ERROR;
 
     glActiveTexture(GL_TEXTURE0);
+
+    outport_.deactivateTarget();
+
+    LGL_ERROR;
 }
 
 // protected methods
 //
 
-void SliceSequenceRenderer::renderCoronalSlice(const float depth) {
-    glTranslatef(0.5f, 0.5f, 0.0f);
-    glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
-    glBegin(GL_QUADS);
-        glTexCoord3f(0.0f, 0.0f, depth); glVertex2f(-0.5f, -0.5f);
-        glTexCoord3f(1.0f, 0.0f, depth); glVertex2f(0.5f, -0.5f);
-        glTexCoord3f(1.0f, 1.0f, depth); glVertex2f(0.5f, 0.5f);
-        glTexCoord3f(0.0f, 1.0f, depth); glVertex2f(-0.5f, 0.5f);
-    glEnd();
-}
-
-void SliceSequenceRenderer::renderSagittalSlice(const float depth) {
-    glBegin(GL_QUADS);
-        glTexCoord3f(depth, 0.0f, 0.0f); glVertex2f(0.0f, 0.0f);
-        glTexCoord3f(depth, 1.0f, 0.0f); glVertex2f(1.0f, 0.0f);
-        glTexCoord3f(depth, 1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
-        glTexCoord3f(depth, 0.0f, 1.0f); glVertex2f(0.0f, 1.0f);
-    glEnd();
-}
-
-void SliceSequenceRenderer::renderAxialSlice(const float depth) {
-    glTranslatef(0.5f, 0.5f, 0.0f);
-    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-    glBegin(GL_QUADS);
-        glTexCoord3f(0.0f, depth, 0.0f); glVertex2f(-0.5f, -0.5f);
-        glTexCoord3f(0.0f, depth, 1.0f); glVertex2f(0.5f, -0.5f);
-        glTexCoord3f(1.0f, depth, 1.0f); glVertex2f(0.5f, 0.5f);
-        glTexCoord3f(1.0f, depth, 0.0f); glVertex2f(-0.5f, 0.5f);
-    glEnd();
-}
-
 void SliceSequenceRenderer::renderSliceBoundaries(const size_t numSlicesRow, const size_t numSlicesCol) {
     if ((numSlicesRow <= 0) || (numSlicesCol <= 0))
         return;
 
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glColor4f(boundaryColor_.get().r, boundaryColor_.get().g, boundaryColor_.get().b, boundaryColor_.get().a);
     glDisable(GL_DEPTH_TEST);
     glBegin(GL_LINE_LOOP);
         glVertex2f(0.0f, 0.0f);
@@ -373,49 +368,63 @@ void SliceSequenceRenderer::renderSliceBoundaries(const size_t numSlicesRow, con
 }
 
 #ifdef VRN_WITH_FONTRENDERING
-void SliceSequenceRenderer::renderInfoTexts(const size_t numSlicesRow, const size_t numSlicesCol) {
-    tgt::Font font(VoreenApplication::app()->getFontPath(fontName_));
-    tgt::Font fontPos(VoreenApplication::app()->getFontPath(fontName_));
-
+void SliceSequenceRenderer::renderInfoTexts(const size_t numSlicesRow, const size_t numSlicesCol)
+{
     glDisable(GL_DEPTH_TEST);
-
-    // Initialize the font with its size according to the slices' width
-    //
-    const int n = ((static_cast<int>(size_.x / sliceSize_.x) / 2) - 0);
-    font.setSize(20 - (2*n));
-
-    fontPos.setSize(20);
 
     // ESSENTIAL: if you don't use this, your text will become texturized!
     glActiveTexture(GL_TEXTURE0);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    LGL_ERROR;
 
-    // render voxel position information
-    //
-    tgt::ivec3 voxelPos = screenToVoxelPos(lastMousePosition_);
-    glLoadIdentity();
-    std::ostringstream oss;
-    oss << "[" << voxelPos.x << "," << voxelPos.y << "," << voxelPos.z << "]";
-    fontPos.render(tgt::vec3(10, 10, 0), oss.str());
+	// render voxel position information
+    tgt::Font fontPos(VoreenApplication::app()->getFontPath(fontName_));
+    fontPos.setSize(20);
+	tgt::ivec3 voxelPos = screenToVoxelPos(lastMousePosition_);
+	glLoadIdentity();
+	std::ostringstream oss;
+	oss << "[" << voxelPos.x << "," << voxelPos.y << "," << voxelPos.z << "]";
+	fontPos.render(tgt::vec3(10, 10, 0), oss.str());
+	LGL_ERROR;
 
-    // render the slice number information
+    // Initialize the font with its size according to the slices' width, but
+    // the font size may not be smaller than 8.
+	//
+    tgt::Font font(VoreenApplication::app()->getFontPath(fontName_));
+	const int n = static_cast<int>(outport_.getSize().x / sliceSize_.x);
+	font.setSize(std::max(8, (20 - n)));
+
+    // Therefore calculate the rendered text's bounding box by using a dummy
+    // string.
     //
-    size_t sliceNumber = static_cast<size_t>(sliceIndexProp_.get() - 1);
-    for (size_t pos = 0, x = 0, y = 0; pos < static_cast<size_t>(numSlicesCol * numSlicesRow);
-        ++pos, x = pos % numSlicesCol, y = pos / numSlicesCol)
-    {
-        glLoadIdentity();
-        if ((pos + sliceNumber) >= numSlices_)
-            break;
-        glTranslatef(slicePos_.x + (x * sliceSize_.x),
-            slicePos_.y + ((numSlicesRow - (y + 1)) * sliceSize_.y), 0.0f);
-        std::ostringstream oss;
-        oss << (sliceNumber + pos + 1) << "/" << numSlices_;
-        font.render(tgt::vec3(10,10,0), oss.str());
+    tgt::Bounds bounds = font.getBounds(tgt::vec3(10.0f, 10.0f, 0.0f), "000/000");
+    float textWidth = ceilf(bounds.getURB().x - bounds.getLLF().x);
+
+    // Do not render the slice numbers if the slice width becomes too small to
+    // prevent FTGL from creating OpenGL state errors.
+    //
+    if (floorf(sliceSize_.x) > textWidth) {
+	    // render the slice number information
+	    size_t sliceNumber = static_cast<size_t>(sliceIndexProp_.get() - 1);
+	    for (size_t pos = 0, x = 0, y = 0; pos < static_cast<size_t>(numSlicesCol * numSlicesRow);
+		    ++pos, x = pos % numSlicesCol, y = pos / numSlicesCol)
+	    {
+		    glLoadIdentity();
+		    if ((pos + sliceNumber) >= numSlices_)
+			    break;
+		    glTranslatef(slicePos_.x + (x * sliceSize_.x),
+			    slicePos_.y + ((numSlicesRow - (y + 1)) * sliceSize_.y), 0.0f);
+		    std::ostringstream oss;
+		    oss << (sliceNumber + pos + 1) << "/" << numSlices_;
+		    font.render(tgt::vec3(10,10,0), oss.str());
+	    }
+	    LGL_ERROR;
     }
 
-    glColor4f(0.0f, 0.0f, 0.0f, 0.0f);
-    glEnable(GL_DEPTH_TEST);
+    glLoadIdentity();
+	glColor4f(0.0f, 0.0f, 0.0f, 0.0f);
+	glEnable(GL_DEPTH_TEST);
+	LGL_ERROR;
 }
 #else
 void SliceSequenceRenderer::renderInfoTexts(const size_t /*numSlicesRow*/, const size_t /*numSlicesCol*/) {
@@ -473,24 +482,17 @@ tgt::ivec3 SliceSequenceRenderer::screenToVoxelPos(const tgt::ivec2& screenPos) 
 void SliceSequenceRenderer::onSliceAlignmentChange() {
     if (alignmentProp_ == 0)
         return;
-
-    // Use fool-proof method instead of directly assigning
-    // alignmentProp_->get() to alignment_. Someone could
-    // a string to the property...
-    //
-    switch (alignmentProp_->get()) {
-        case 1:
-            alignment_ = SliceSequenceRenderer::AXIAL;
-            voxelPosPermutation_ = tgt::ivec3(0, 2, 1);
+    alignment_ = alignmentProp_->getValue();
+    switch (alignment_) {
+        case ZY_PLANE:
+            voxelPosPermutation_ = tgt::ivec3(2, 1, 0);
             break;
-        case 2:
-            alignment_ = SliceSequenceRenderer::CORONAL;
+        case XY_PLANE:
             voxelPosPermutation_ = tgt::ivec3(0, 1, 2);
             break;
-        case 0:
+        case XZ_PLANE:
         default:
-            alignment_ = SliceSequenceRenderer::SAGITTAL;
-            voxelPosPermutation_ = tgt::ivec3(1, 2, 0);
+            voxelPosPermutation_ = tgt::ivec3(0, 2, 1);
             break;
     }
     updateNumSlices();

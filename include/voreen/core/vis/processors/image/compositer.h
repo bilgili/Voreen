@@ -31,31 +31,40 @@
 #define VRN_COMPOSITER_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/collect.h"
+#include "voreen/core/vis/processors/image/imageprocessor.h"
 
 namespace voreen {
 
-/// Composites the result of two Renderer objects with a set of blending methods.
+/// Composites the the images at the two inports using the selected blending method.
 class Compositer : public ImageProcessor {
 public:
 
     Compositer();
-    virtual const Identifier getClassName() const {return "ImageProcessor.Compositer";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Compositer"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new Compositer();}
     ~Compositer();
 
-    void process(LocalPortMapping* portMapping);
+    void process();
 
 protected:
 
-    EnumProp* compositingMode_;
-    std::vector<std::string> compositingModes_;
+    virtual std::string generateHeader();
+    virtual void compile();
 
-    FloatProp blendFactor_;
+    StringOptionProperty compositingMode_;
 
-    static const Identifier shadeTexUnit1_;
-    static const Identifier depthTexUnit1_;
+    FloatProperty blendFactor_;
+
+    static const std::string shadeTexUnit1_;
+    static const std::string depthTexUnit1_;
+
+    RenderPort inport0_;
+    RenderPort inport1_;
+    RenderPort outport_;
 };
 
 

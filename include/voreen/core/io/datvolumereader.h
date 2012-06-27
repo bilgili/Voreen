@@ -59,7 +59,7 @@ namespace voreen {
  * - <tt>ZeroPoint</tt>: offset for the voxel data for supporting signed data
  * - <tt>MetaString</tt>: a string containing arbitrary meta-data
  *
- * Example file <tt>nucleon.raw</tt>:
+ * Example file <tt>nucleon.dat</tt>:
  \verbatim
 ObjectFileName: nucleon.raw
 TaggedFileName: ---
@@ -76,28 +76,36 @@ class DatVolumeReader : public VolumeReader {
 public:
     DatVolumeReader(IOProgress* progress = 0);
 
-    virtual VolumeSet* read(const std::string& fileName)
+    /**
+     * Reads the file name called 'ObjectFileName' from the .dat file and
+     * returns it. This is particular useful to determine the correct name
+     * of the .raw file related to a .dat file, because it might be different
+     * than the .dat file name!
+     */
+    static std::string getRelatedRawFileName(const std::string& fileName);
+
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeSet* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+    virtual VolumeCollection* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeSet* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeCollection* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
 private:
     static const std::string loggerCat_;
 
-    VolumeSet* readVolumeFile(const std::string& fileName, const tgt::ivec3& dims,size_t firstSlice, size_t lastSlice)
+    VolumeCollection* readVolumeFile(const std::string& fileName, const tgt::ivec3& dims,size_t firstSlice, size_t lastSlice)
         throw (tgt::FileException, std::bad_alloc);
 
-    VolumeSet* readVolumeFileBrick(const std::string& fileName,const tgt::ivec3& dims, tgt::ivec3 brickStartPos,
+    VolumeCollection* readVolumeFileBrick(const std::string& fileName,const tgt::ivec3& dims, tgt::ivec3 brickStartPos,
         int brickSize) throw (tgt::FileException, std::bad_alloc);
 
-    VolumeSet* readMetaFile(const std::string& fileName,size_t firstSlice, size_t lastSlice)
+    VolumeCollection* readMetaFile(const std::string& fileName,size_t firstSlice, size_t lastSlice)
         throw (tgt::FileException, std::bad_alloc);
 
-    VolumeSet* readMetaFileBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    VolumeCollection* readMetaFileBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
         throw (tgt::FileException, std::bad_alloc);
 };
 

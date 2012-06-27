@@ -41,9 +41,10 @@
  */
 vec4 compositeDVR(in vec4 curResult, in vec4 color, in float t, inout float tDepth) {
     vec4 result = curResult;
-    // multiply alpha by raycastingQualityFactorRCP_
+    // multiply alpha by samplingStepSizeComposite_
     // to accomodate for variable slice spacing
-    color.a *= raycastingQualityFactorRCP_;
+    color.a *= samplingStepSizeComposite_;
+
     result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
     result.a = result.a + (1.0 -result.a) * color.a;
     // save first hit ray parameter for depth value calculation
@@ -75,7 +76,8 @@ vec4 compositeMIP(in vec4 curResult, in vec4 color, in float t, inout float tDep
  */
 vec4 compositeISO(in vec4 curResult, in vec4 color, in float t, inout float tDepth, in float isoValue) {
     vec4 result = curResult;
-    if (color.a >= isoValue) {
+    float epsilon = 0.05;
+    if (color.a >= isoValue-epsilon && color.a <= isoValue+epsilon) {
         result = color;
         result.a = 1.0;
         // save ray parameter for depth value calculation

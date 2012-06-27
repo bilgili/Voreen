@@ -35,65 +35,70 @@
 
 namespace voreen {
 
+    class BrickedVolumeReader : public VolumeReader {
+    public:
+        BrickedVolumeReader(IOProgress* progress = 0);
 
-	class BrickedVolumeReader : public VolumeReader {
-	public:
-		BrickedVolumeReader(IOProgress* progress = 0);
+        /**
+        * Opens the Information file (bvi = bricked volume information) and
+        * reads the neccessary information from it, like dimensions, format etc.
+        */
+        bool openFile(std::string filename);
 
-		/**
-		* Opens the Information file (bvi = bricked volume information) and 
-		* reads the neccessary information from it, like dimensions, format etc.
-		*/
-		bool openFile(std::string filename);
+        /**
+        * Closes all open files and deletes the handles.
+        */
+        void closeFile();
 
-		/**
-		* Closes all open files and deletes the handles.
-		*/
-		void closeFile();
+        /**
+        * Reads a brick from the file, indicated by the bricks position and its lod.
+        */
+        void readBrick(Brick* brick, char* volumeData, int numBytes, size_t lod);
 
-		/**
-		* Reads a brick from the file, indicated by the bricks position and its lod.
-		*/
-		void readBrick(Brick* brick, char* volumeData, int numBytes, size_t lod);
+        /**
+        * Reads the bricks position in the bv file from the information stored in the
+        * bpi file (bpi = brick position information). Also reads if the bricks voxels
+        * have the same values or not.
+        */
+        void readBrickPosition(Brick* brick);
 
-		/**
-		* Reads the bricks position in the bv file from the information stored in the 
-		* bpi file (bpi = brick position information). Also reads if the bricks voxels
-		* have the same values or not.
-		*/
-		void readBrickPosition(Brick* brick);
+        void resetBpiFilePosition();
 
-		void resetBpiFilePosition();
+        BrickingInformation getBrickingInformation();
 
-		BrickingInformation getBrickingInformation();
+        virtual VolumeCollection* read(const std::string& fileName)
+            throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-		virtual VolumeSet* read(const std::string& fileName)
-			throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        virtual VolumeCollection* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+            throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-        virtual VolumeSet* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
-			throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        /**
+         * When a bricked volume was loaded successfully, the reader should stay in memory so
+         * that it can do incremental loading based on view position. The reader will be freed
+         * through the BrickingManager.
+         */
+        bool isPersistent() const { return persistent_; }
 
-	protected:
-
-		/**
-		* When reading the file, the gathered information is used to update
-		* the BrickingInformation.
-		*/
-		BrickingInformation brickingInformation_;
+    protected:
+        /**
+        * When reading the file, the gathered information is used to update
+        * the BrickingInformation.
+        */
+        BrickingInformation brickingInformation_;
 
         /**
         * The filestream used for reading brick positions from the bpi file.
         * The .bpi file stores the information where bricks can be found in the
         * .bv file.
         */
-		std::fstream* bpiStream_;
+        std::fstream* bpiStream_;
 
         /**
         * The FILE used to access the .bv file. This is a FILE* and not a stream
         * because streams can't seek in files larger than 2gb. With FILE we can use
-        * fseeki64. 
+        * fseeki64.
         */
-		FILE* bvFile_;
+        FILE* bvFile_;
 
         uint64_t* positionArray_;
         char* allVoxelsEqualArray_;
@@ -101,12 +106,14 @@ namespace voreen {
         uint64_t currentBrick_;
         uint64_t errorArrayPosition_;
 
+        bool persistent_;
+        
         static IOProgress* ioProgress_;
 
-	private:
-		static const std::string loggerCat_;
-	};
+    private:
+        static const std::string loggerCat_;
+    };
 
 } // namespace voreen
 
-#endif 
+#endif

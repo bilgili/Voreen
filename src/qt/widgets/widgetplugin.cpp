@@ -28,9 +28,9 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/widgetplugin.h"
+#include "tgt/logmanager.h"
 
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 namespace voreen {
 
@@ -39,32 +39,21 @@ QIcon WidgetPlugin::getIcon() {
 }
 
 bool WidgetPlugin::usable(const std::vector<Processor*>& /*processors*/) {
-    return true;    
-}
-    
-void WidgetPlugin::setMessageReceiver(MessageReceiver* receiver) {
-    msgReceiver_ = receiver;
+    return true;
 }
 
 void WidgetPlugin::startTracking() {
-    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
+    //MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
     repaintCanvas();
 }
 
 void WidgetPlugin::stopTracking() {
-    MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
+    //MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
     repaintCanvas();
 }
 
 void WidgetPlugin::repaintCanvas() {
-    MsgDistr.postMessage(new Message(VoreenPainter::repaint_));
-}
-
-void WidgetPlugin::postMessage(Message* msg, const Identifier& dest) {
-    if (msgReceiver_)
-        msgReceiver_->postMessage(msg, dest);
-    else
-        MsgDistr.postMessage(msg, dest);
+    LWARNINGC("WidgetPlugin", "WidgetPlugin::repaintCanvas() called (unimplemented)");
 }
 
 } // namespace voreen

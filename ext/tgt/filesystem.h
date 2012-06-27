@@ -31,8 +31,11 @@
 #include <map>
 #include <string>
 #include <fstream>
+#include <stdio.h>
 
 namespace tgt {
+
+class ZipArchive;
 
 /**
  * Base class for input files.
@@ -78,7 +81,7 @@ public:
     /// Seeks to pos (relative to the begin of file)
     virtual void seek(size_t pos) = 0;
     /// Seeks to offset (relative to seekDir)
-    virtual void seek(size_t offset, SeekDir seekDir) = 0;
+    virtual void seek(std::streamoff offset, SeekDir seekDir) = 0;
     /// Returns the current reading position
     virtual size_t tell() = 0;
 
@@ -109,7 +112,7 @@ public:
 
     virtual void skip(long count);
     virtual void seek(size_t pos);
-    virtual void seek(size_t offset, File::SeekDir seekDir);
+    virtual void seek(std::streamoff offset, File::SeekDir seekDir);
     virtual size_t tell();
 
     virtual bool eof();
@@ -137,7 +140,7 @@ public:
 
     virtual void skip(long count);
     virtual void seek(size_t pos);
-    virtual void seek(size_t offset, File::SeekDir seekDir);
+    virtual void seek(std::streamoff offset, File::SeekDir seekDir);
     virtual size_t tell();
 
     virtual bool eof();
@@ -165,7 +168,7 @@ public:
 
     virtual void skip(long count);
     virtual void seek(size_t pos);
-    virtual void seek(size_t offset, File::SeekDir seekDir);
+    virtual void seek(std::streamoff offset, File::SeekDir seekDir);
     virtual size_t tell();
 
     virtual bool eof();
@@ -238,6 +241,8 @@ protected:
 	static const std::string loggerCat_;
 };
 
+//-----------------------------------------------------------------------------
+
 /**
  * Reads content of a zip archive and creates File objects for all files in it.
  * Needs TGT_HAS_ZLIB define to read from compressed zip files.
@@ -246,10 +251,6 @@ protected:
  */
 class ZipFileFactory : public FileFactory {
 public:
-    struct ArchivedFile {
-        size_t offset_;
-    };
-    
     /**
      * Create Factory from zipfile filename.
      * Reads content of zipfile and save offsets for all contained files.
@@ -263,14 +264,13 @@ public:
      * Reads file from zip to memory and creates+returns a Memoryfile
      */
     virtual File* open(const std::string& filename);
+
     virtual std::vector<std::string> getFilenames();
 
 protected:
     static const std::string loggerCat_;
 
-    File* file_;
-    std::string filename_;
-    std::map<std::string, ArchivedFile> files_;
+    ZipArchive* archive_;
 };
 
 //-----------------------------------------------------------------------------
@@ -340,10 +340,20 @@ public:
      */
     static std::string currentDirectory();
 
+    /**
+     * Returns whether the passed paths refer to the same file/directory.
+     */
+    static bool comparePaths(const std::string& path1, const std::string& path2);
+    
     //
     // file system manipulation/information
     //   
     
+    /**
+     * Changes the current working directory to the given one.
+     */
+    static bool changeDirectory(const std::string& directory);
+
     /**
      * Creates the directory of the give name if it does not already exists.
      * 
@@ -351,6 +361,8 @@ public:
      * @return  true if the creation was succesful or false otherwise
      */
     static bool createDirectory(const std::string& directory);
+
+    static bool deleteDirectory(const std::string& directory);
 
     /**
      * Deletes the file with the given filename.
@@ -361,17 +373,17 @@ public:
     static bool deleteFile(const std::string& filename);
 
     /**
+     * Returns whether the given directory exists.
+     */
+    static bool dirExists(const std::string& dirpath);
+
+    /**
      * Determines whether a file of the given name exists or not.
      *
      * @param   filename   name of the file which is suspected to exist
      * @return  true if the file exists, false otherwise
      */
     static bool fileExists(const std::string& filename);
-
-    /**
-     * Returns whether the given directory exists.
-     */
-    static bool dirExists(const std::string& dirpath);
     
     /**
      * Reads the content of the the directory, ignoring "." and ".."
@@ -387,11 +399,28 @@ public:
     static std::vector<std::string> readDirectory(const std::string& directory, 
                                                   const bool sort = true,
                                                   const bool recursiveSearch = true);
+    /**
+     * Renames the file given by filename, if it exists to the name given in
+     * newName. If ignorePath is true (default), the file will only be renamed, 
+     * but not moved. Otherwise, if newName contains a path and the path exists,
+     * file is moved to that directory.
+     *
+     * @param   filename    name of the file to be renamed
+     * @param   newName new name of the file
+     * @param   ignorePath  Determines whether to rename the file in its current
+     *                      directory only or whether to move to a different 
+     *                      directory which might be containing in newName
+     * @return  true if the files was renamed/moved successfully, false otherwise.
+     */
+    static bool renameFile(const std::string& filename, const std::string& newName,
+        bool ignorePath = true);
 
 protected:
     std::map<std::string, FileFactory*> virtualFS_;
     std::vector<FileFactory*> factories_;
     static const std::string loggerCat_;
+    static const char goodSlash_;   /** '/' on non-Windows OS, '\' on Windows OS */
+    static const char badSlash_;    /** '\' on non-Windows OS, '/' on Windows OS */
 };
 
 } // namespace

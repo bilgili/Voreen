@@ -32,6 +32,7 @@
 
 #include "tgt/shadermanager.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/glcanvas.h"
 
 namespace voreen {
 
@@ -124,6 +125,8 @@ void TransFuncTexturePainter::paint() {
 }
 
 void TransFuncTexturePainter::initialize() {
+    getCanvas()->getGLFocus();
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0.f, 1.f, 0.f, 1.f, -2.f, 1.f);
@@ -132,6 +135,8 @@ void TransFuncTexturePainter::initialize() {
 }
 
 void TransFuncTexturePainter::sizeChanged(const tgt::ivec2& size) {
+    getCanvas()->getGLFocus();
+
     glViewport(0, 0, size.x, size.y);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

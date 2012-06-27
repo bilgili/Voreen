@@ -35,18 +35,25 @@
 
 namespace voreen {
 
-class ColorProp : public TemplateProperty<tgt::vec4> {
+class ColorProperty : public TemplateProperty<tgt::vec4> {
 public:
-    ColorProp(const std::string& id, const std::string& guiText, tgt::Color value = tgt::Color(0.0),
-        bool invalidate = true, bool invalidateShader = false);
+    ColorProperty(const std::string& id, const std::string& guiText, tgt::Color value = tgt::Color(0.0),
+        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~ColorProp() {}
+    virtual ~ColorProperty() {}
 
-    void updateFromXml(TiXmlElement* propElem);
-    TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
-    virtual std::string toString() const { 
+    virtual std::string toString() const {
         return Property::valueToString(value_);
     }
 };

@@ -9,12 +9,12 @@
 <h1>VoreenVE - Getting Started</h1>
 
 <p>
-  VoreenVE (Voreen Visualization Environment) is a tool to construct processor
-  networks for Voreen with an easy to use graphical user interface. It allows to
+  VoreenVE (Voreen Visualization Environment) is an application developed to construct processor
+  networks for Voreen with an easy to use graphical user interface. The underlying concept is based
+  on the idea of dataflow networks found in many image processing environments. VoreenVE allows to
   create complex rendering networks by simply dragging the desired processors
-  into the workspace with the mouse and linking them by drawing the required
-  connections. The networks can be tested immediately to visualize volume data
-  sets.
+  into the workspace by using the mouse and connecting them by drawing the required
+  connections.
 </p>
 
 <a name="toc"></a>
@@ -24,17 +24,17 @@
 	<li><a href="#main_window">Main Window</a></li>
 	<li><a href="#menu">Toolbar</a></li>
 	<li><a href="#scene">Network Editor</a></li>
-	<li><a href="#output">Visualization Window</a></li>
+	<li><a href="#output">Canvas Interaction</a></li>
 	<li><a href="#properties">Properties</a></li>
 	<li><a href="#processor_list">Processor List</a></li>
     <li><a href="#howto_loadfiles">Loading Data Sets</a></li>
-    <li><a href="#texture_container">Texture Container</a></li>
+    <li><a href="#texture_container">Render Target View</a></li>
 </ul>
 
 <a name="main_window"></a>
 <h2>Main Window</h2>
 
-<p>The following window appears when starting the VoreenVE application:</p>
+<p>The following screenshot shows a typical state of a VoreenVE session:</p>
 <br>
 <img src="images/image_numbers.png" alt="main window">
 
@@ -46,11 +46,13 @@
 
 	<li>The <i>network editor</i> shows the current processor network and allows the user to modify it interactively.</li>
 
-	<li>The <i>visualization window</i> shows the result produced by the current network (you need to press the evaluate button <img src="images/eval.jpg"> to start rendering).</li>
+	<li>The <i>canvas window</i> shows the result produced by the current network. When there are multiple canvas processors in your network, also multiple canvas windows will appear.</li>
 
 	<li>The <i>processors list</i> shows all available processors. These can be used to construct networks.</li>
 
 	<li>The <i>properties</i> allow configuration of the selected processor.</li>
+
+	<li>The <i>volume container</i> shows the currently loaded volumes.</li>
 
     </ol>
 
@@ -60,12 +62,14 @@
 <h3>Modes</h3>
 
 <p>
-VoreenVE can be used in <i>network mode</i> and <i>visualization mode</i>.
-Rendering networks are constructed in network mode. Switching to
+VoreenVE can be used in <i>development mode</i> and <i>visualization mode</i>.
+Rendering networks are constructed in the development mode. Switching to
 visualization mode hides the network editor and displays a larger
 visualization window. While the layout of the rendering network cannot be
 changed in visualization mode, it is still possible to modify
-properties of the processors in the network.
+properties of the processors in the network. However, property editing in the
+visualization mode is restricted to those properties, where the eye symbol is
+set in the development mode.
 </p>
 
 <p>The same network in visualization mode looks like this:</p>
@@ -81,32 +85,34 @@ properties of the processors in the network.
 
 
 <ul>
-	<li><b>New Workspace:</b> Create a new empty workspace.</li>
-	<li><b>Open Workspace:</b> Load an existing workspace.</li>
-	<li><b>Save Workspace:</b> Save the current workspace.</li>
-	<li><b>Open Network:</b> Load an existing network, replacing the current network in the workspace.</li>
-	<li><b>Open Data Set:</b> Load a volume data set (See <a href="#howto_loadfiles">Loading data sets</a>).</li>
-	<li><b>Evaluate Network:</b> Evaluate the network and start rendering. This
-	command is needed when new processors were added to the network or connections were changed.</li>
-	<li><b>Processors:</b> Hide/show the processor list (only available in network mode).</li>
-	<li><b>Properties:</b> Hide/show the properties.</li>
-	<li><b>Volumes:</b> Hide/show information about the currently loaded volume data sets.</li>
-	<li><b>Debug Console:</b> Hide/show a debug console containing log messages.</li>
-	<li><b>Texture Container:</b> Hide/show the texture container, which shows
-	intermediate rendering results, useful for debugging.</li>
-	<li><b>Network Mode:</b> Switch to network mode.</li>
-	<li><b>Visualization Mode:</b> Switch to visualization mode.</li>
-	<li><b>Camera Orientation:</b> Allows finer control of the camera position, as well as loading/saving of the camera state.</li>
-	<li><b>Snapshot:</b> Save the content of the visualization window into an image file.</li>
-	<li><b>Animation:</b> Create animations using camera paths and save these animations as videos.</li>
+	<li><b>New Workspace</b> - Create a new empty workspace.</li>
+	<li><b>Open Workspace...</b> - Load an existing workspace.</li>
+	<li><b>Save Workspace</b> - Save the current workspace.</li>
+	<li><b>Save Workspace as...</b> - Save the current workspace under a different file name.</li>
+	<li><b>Load Data Set...</b> - Load a volume data set (See <a href="#howto_loadfiles">Loading data sets</a>).</li>
+	<li><b>Load DICOM Slices...</b> - Load the content of a directory containing DICOM slices (only available when Voreen has been compiled with DICOM support).</li>
+	<li><b>Export Network...</b> - Export the current network.</li>
+	<li><b>Import Network...</b> - Import an existing network, replacing the current network in the workspace.</li>
+	<li><b>Quit</b> - Exit Voreen.</li>
+	<li><b>Development Mode</b> - Switch to development mode.</li>
+	<li><b>Visualization Mode</b> - Switch to visualization mode.</li>
+	<li><b>Processors</b> - Hide/show the processor list (only available in network mode).</li>
+	<li><b>Properties</b> - Hide/show the property view.</li>
+	<li><b>Volumes</b> - Hide/show information about the currently loaded volume data sets.</li>
+	<li><b>Input Mapping</b> - Hide/show the currently set input mapping for handling keyboard and mouse events.</li>
+	<li><b>Debug Console</b> - Hide/show a debug console containing log messages.</li>
+	<li><b>Render Targets</b> - Hide/show the render target view, which shows intermediate rendering results, useful for debugging.</li>
+	<li><b>Snapshot</b> - Save the content of one of the canvases into an image file.</li>
+	<li><b>Animation</b> - Create animations using camera paths and save these animations as videos.</li>
+	<li><b>Rebuild Shaders</b> - Rebuild all currently load shader programs, which allows runtime shader editing with external programs.</li>
 </ul>
 
 <h3>Networks and Workspaces</h3>
 
 <p>
-VoreenVE can save and load networks and workspaces. <i>Networks</i> contain the
-current rendering network, including all properties. <i>Workspaces</i> contain
-additional information such as the loaded volume data sets.
+VoreenVE can save and load workspaces. Workspaces are the project files of Voreen, which
+contain and store the entire state. <i>Networks</i> contain just the current rendering
+network, and can be exchanged between workspaces by using the export/import functionality.
 </p>
 
 <a name="scene"></a>
@@ -114,7 +120,7 @@ additional information such as the loaded volume data sets.
 
 <h3>Processors</h3>
 
-<p>This image shows how a processor is visualized in VoreenVE:</p>
+<p>This image shows how a processor is displayed in the VoreenVE network editor:</p>
 <br>
 <img src="images/processor.png">
 
@@ -123,10 +129,10 @@ side of each processor item, outports are found on the lower side, and
 coprocessor ports are placed on the left. 
 </p>
 
-<h3>Creating Render Networks</h3>
+<h3>Creating Dataflow Networks</h3>
 
 <p>In the network editor the graphical representation of the current network is
-shown. In order to build a rendering network, you can simply add new processors
+shown. In order to build a dataflow network, you can simply add new processors
 by dragging them from the processor list into the network editor. Processor can
 be connected via their different ports, however the port types have to match
 (different types are identifiable by their colors).
@@ -143,45 +149,36 @@ valid inport (green arrow) creates a connection.
 
 <h3>Working with Networks</h3>
 
-<p>In the following described how a network can be modified by the user.
+<p>In the following it is described, how a network can be modified by the user.
 </p>
 
 <ul>
-  <li>An item it <b>selected</b> by simply clicking it. Multiple items can be selected by holding the <i>CTRL</i> key
-	and selecting another one or by spanning a rectangle over the items
-	using the left mouse button.</li>
+  <li>A processor can be <b>selected</b> by clicking on it. Multiple processors can be selected by holding the <i>CTRL</i> key
+	and selecting another one or by spanning a rectangle around the processors using the left mouse button.</li>
 
-  <li>An item can be <b>moved</b> by clicking on it, moving it to the desired position and releasing the mouse button.</li>
+  <li>A processor can be <b>moved</b> by clicking on it, moving it to the desired position and releasing the mouse button.</li>
 
-  <li><b>Renaming</b> a processor or an aggregation can be done using the context menu.</li>
+  <li><b>Renaming</b> a processor can be done using the context menu.</li>
 
-  <li>Items can be <b>deleted</b> by selecting them and either using the delete entry from the context menu or just pressing the <i>DEL</i> key.</li>
+  <li>Processors and arrows can be <b>deleted</b> by selecting them and either using the delete entry from the context menu (just for processors) or by pressing the <i>DEL</i> key.</li>
 
-  <li>The workspace can be <b>zoomed</b> in and out via the mouse wheel or by using the <i>+</i> and <i>-</i> keys.</li>
+  <li>The <b>zoom level</b> of the network view can be altered via the mouse wheel or by using the <i>+</i> and <i>-</i> keys.</li>
 
 </ul>
 
 <p>
-After building a network you can start it by <i>evaluating</i> it pressing <img src="images/eval.jpg" alt="the evaluate button">
-in the toolbar. If no error occurs, an output image is rendered and
-displayed in the visualization window.
-</p>
-
-<p>
-For connection that handle image data, the intermediate result can be shown by
-hovering the mouse of the connection arrow until a tooltip appears:
+For arrow connections that handle image data, the intermediate result can be shown by
+hovering the mouse over the connection arrow until a tooltip appears:
 </p>
 <br>
 <img src="images/tooltip.png">
 
 
 <a name="output"></a>
-<h2>Visualization Window</h2>
+<h2>Canvas Interaction</h2>
 
 <p>
-After setting up a valid network you can start it by clicking on the toolbar
-item <img src="images/eval.jpg" alt="evaluate button">. The output of the
-network is then rendered in the visualization window. You can rotate the
+Within each canvas you can rotate the
 camera by moving the mouse in the window while pressing the left mouse
 button. Using the mouse wheel or moving the mouse up and down while pressing the
 right mouse button, zooms the visualization. Pressing <i>SHIFT</i> and the left
@@ -194,10 +191,9 @@ button moves the scene.
 <h2>Properties</h2>
 
 <p>Properties are used to configure the selected processor. Changes become
-visible immediately in the visualization window. The buttons on the right of
-each property entry toggle visibility in visualization mode. For the following example,
-"Active Segment", "Use Segmentation" and "Masking" are not visible in
-visualization mode:
+visible immediately in the rendering output. The eye symbols on the right of
+each property entry toggle its visibility in the visualization mode. In the following example,
+several properties have been set to be not visible in the visualization mode:
 </p>
 <br>
 <img src="images/property.png">
@@ -207,30 +203,33 @@ visualization mode:
 
 <p>The processor list displays all available processors that can be
 used to build networks. You can search for processors by typing in the
-text box at the top.
+text box at the top. Furthermore, you can sort the list using the tool
+drop-down button, and the current code state of each processor is indicated
+by the colored dot. The text box in the bottom shows a brief description of
+the processor functionality.
 </p>
 <br>
 <img src="images/processors.png">
 
 <p>
-You can add processors to your network simply by dragging them from the list into the network editor.
+You can add processors to your network by dragging them from the list into the network editor.
 </p>
 
 <a name="howto_loadfiles"></a>
 <h2>Loading Data Sets</h2>
 
-<p>To load a data set simply click on "Open Data Set" in the toolbar or in the
+<p>To load a data set click on "Load data set..." in the toolbar or in the
 file-menu. The data set is then added to the volume container. To render the
-loaded data set select the VolumeSetSource processor in the network and change
-the VolumeSet property.
+loaded data set select the <b>VolumeSource</b> processor in the network and
+choose the data set within the combo box.
 </p>
 <br>
 <img src="images/vss_proc.png">
 
 <a name="texture_container"></a>
-<h2>Texture Container</h2>
+<h2>Render Target View</h2>
 
-<p>The texture container can be used to inspect intermediate rendering
+<p>The render target view can be used to inspect intermediate rendering
 results. A left-click enlarges a texture, a second click shrinks it
 again. With the context menu, alpha-channels and depth buffers can be accessed.
 </p>

@@ -31,6 +31,21 @@ namespace tgt {
 
 const std::string Script::loggerCat_ = "tgt.Script";
 
+Script::Script()
+    : source_(0)
+    , byteCode_(0)
+    , compiled_(false)
+{}
+
+Script::~Script() {
+    if (source_)
+        delete[] source_;
+}
+
+std::string Script::log() const {
+	return log_;
+}
+
 bool Script::load(const std::string& filename, bool compileDirectly) {
     File* file = FileSys.open(filename);
 
@@ -142,6 +157,20 @@ ScriptManager::ScriptManager(bool initSignalHandlers)
 ScriptManager::~ScriptManager() {
     // clean up python interpreter
     Py_Finalize();
+}
+
+void ScriptManager::setArgv(int argc, char* argv[]) {
+    PySys_SetArgv(argc, argv);
+}
+
+void ScriptManager::setProgramName(const std::string& prgName) {
+#ifdef WIN32        
+    char* str = _strdup(prgName.c_str());
+#else
+    char* str = strdup(prgName.c_str());
+#endif
+    Py_SetProgramName(str);
+    free(str);
 }
 
 Script* ScriptManager::load(const std::string& filename, bool compileDirectly) {

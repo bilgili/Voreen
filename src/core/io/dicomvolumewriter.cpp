@@ -99,6 +99,7 @@
 
 using std::string;
 using std::vector;
+using std::pair;
 
 namespace voreen {
 

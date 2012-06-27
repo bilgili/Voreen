@@ -38,7 +38,6 @@
 #include "voreen/core/vis/properties/property.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/image/imageprocessor.h"
-#include "voreen/core/vis/processors/portmapping.h"
 
 namespace voreen {
 
@@ -46,11 +45,13 @@ class RegionModifier : public ImageProcessor {
 public:
     RegionModifier();
 
-    virtual const Identifier getClassName() const {return "ImageProcessor.RegionModifier";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "RegionModifier"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new RegionModifier();}
+    virtual Processor* create() const;
 
-    void process(LocalPortMapping* portMapping);
+    void process();
 
     enum RegionModifierModes {
         MODE_REPLACE,
@@ -64,12 +65,16 @@ protected:
 
     RegionModifierModes mode_;
     std::map<RegionModifierModes, std::string> modeDefinesMap_;
-    EnumProp* modeProp_;
-    ColorProp segmentId_;
-    ColorProp destColor_;
+    StringOptionProperty modeProp_;
+    ColorProperty segmentId_;
+    ColorProperty destColor_;
 
-    static const Identifier shadeTexUnit1_;
-    static const Identifier depthTexUnit1_;
+    static const std::string shadeTexUnit1_;
+    static const std::string depthTexUnit1_;
+
+    RenderPort inport_;
+    RenderPort maskPort_;
+    RenderPort outport_;
 };
 
 

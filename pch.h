@@ -1,5 +1,7 @@
-/*
- * Precompiled Header File for voreenlib
+/**
+ * @file
+ * 
+ * Precompiled Header File for voreenlib.
  *
  * The precompiled header must contain code which is *stable* and *static*
  * throughout the project.

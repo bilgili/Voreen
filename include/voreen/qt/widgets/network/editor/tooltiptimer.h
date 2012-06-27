@@ -42,9 +42,9 @@ class TooltipTimer : public QTimer {
 
 public:
     TooltipTimer(QPoint p, qreal radius, QObject* parent = 0);
-    qreal radius() { return radius_; }
+    qreal radius();
     void setRadius(qreal radius);
-    QPointF point() { return p_; }
+    QPointF point();
     void setPoint(QPoint p);
     qreal distance(const QPoint & p) const;
 
@@ -61,7 +61,6 @@ public slots:
     void resetIfDistant(const QPoint & p, int msec);
 
 protected:
-
     QPoint p_;
     qreal radius_;
 };

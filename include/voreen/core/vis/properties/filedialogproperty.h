@@ -34,27 +34,35 @@
 
 namespace voreen {
 
-class FileDialogProp : public TemplateProperty<std::string> {
+class FileDialogProperty : public TemplateProperty<std::string> {
 public:
 
     enum FileMode {
-        FILE      = 0,
+        OPEN_FILE = 0,
         DIRECTORY = 1,
+        SAVE_FILE = 2
     };
 
-    FileDialogProp(const std::string& id, const std::string& guiText, const std::string& dialogCaption,
-                   const std::string& directory, const std::string& fileFilter = "", FileMode fileMode = FILE,
-                   bool invalidate = true, bool invalidateShader = false);
+    FileDialogProperty(const std::string& id, const std::string& guiText, const std::string& dialogCaption,
+                   const std::string& directory, const std::string& fileFilter = "", FileMode fileMode = OPEN_FILE,
+                   Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~FileDialogProp() {}
+    virtual ~FileDialogProperty() {}
 
     const std::string& getDialogCaption() const { return dialogCaption_; }
     const std::string& getDirectory() const { return directory_; }
     const std::string& getFileFilter() const { return fileFilter_; }
     FileMode getFileMode() const { return fileMode_; }
 
-    TiXmlElement* serializeToXml() const;
-    void updateFromXml(TiXmlElement* propElem);
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
     virtual std::string toString() const { return value_; }

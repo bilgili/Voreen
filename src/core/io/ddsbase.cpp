@@ -31,6 +31,7 @@ The author's contact address is:
 #define DDS_ISINTEL (*((unsigned char *)(&DDS_INTEL)+1)==0)
 
 #include "voreen/core/io/ioprogress.h"
+#include "tgt/exception.h"
 
 FILE *DDS_file;
 
@@ -233,7 +234,8 @@ void writeDDSfile(char *filename, unsigned char *data, unsigned int bytes, unsig
     if ((DDS_file = fopen(filename, "wb")) == NULL)
         ERRORMSG();
 
-    fprintf(DDS_file, (version == 1) ? DDS_ID : DDS_ID2);
+    fprintf(DDS_file, (version == 1) ? DDS_ID : DDS_ID2, 0); //supress gcc warning
+    //fprintf(DDS_file, (version == 1) ? DDS_ID : DDS_ID2);
 
     deinterleave(data, bytes, skip, DDS_INTERLEAVE);
 
@@ -414,11 +416,11 @@ unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigne
     cnt = act = 0;
 
     if (progress)
-        progress->setNumSteps(DDS_BLOCKSIZE - 1);
+        progress->setTotalSteps(DDS_BLOCKSIZE - 1);
 
     while ((cnt1 = readbits(DDS_file, DDS_RL)) != 0) {
         if (progress)
-            progress->set(cnt);
+            progress->setProgress(cnt);
 
         bits = DDS_decode(readbits(DDS_file, 3));
 
@@ -756,9 +758,9 @@ unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
     unsigned int len1 = 0, len2 = 0, len3 = 0, len4 = 0;
 
     if ((data = readDDSfile(filename, progress, &bytes)) == NULL)
-        return (NULL);
+        throw tgt::FileNotFoundException("Unable to open PVM file for reading", filename);
     if (bytes < 5)
-        return (NULL);
+        throw tgt::CorruptedFileException("PVM file corrupted", filename);
 
     if ((data = (unsigned char *)realloc(data, bytes + 1)) == NULL)
         ERRORMSG();
@@ -770,7 +772,7 @@ unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
         else if (strncmp((char *)data, "PVM3\n", 5) == 0)
             version = 3;
         else
-            return (NULL);
+            throw tgt::CorruptedFileException("PVM file corrupted", filename);
 
         if (sscanf((char *)&data[5], "%d %d %d\n%g %g %g\n", width, height, depth, &sx, &sy, &sz) != 6)
             ERRORMSG();

@@ -36,11 +36,8 @@
 
 #include "tgt/exception.h"
 
-#ifndef VRN_VOLUMESET_H
-#include "voreen/core/volume/volumeset.h"
-#endif
-
 #include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/volume/volumecollection.h"
 
 namespace voreen {
 
@@ -77,9 +74,9 @@ protected:
 //------------------------------------------------------------------------------
 
 /**
- * You can register several VolumeReader instances in this class.
- * A call to \a load will then automatically select the proper VolumeReader
- * for you.
+ * You can register several VolumeReader and VolumeWriter instances in this class.
+ * A call to \a load or \a save will then automatically select the proper VolumeReader /
+ * VolumeWriter and delegate the loading / saving to it.
  */
 class VolumeSerializer {
 public:
@@ -88,28 +85,67 @@ public:
     ~VolumeSerializer();
 
     /**
-     * Load one data set given by \p filename.
+     * Loads one or multiple volumes from the specified URL.
      *
-     * @param filename The file name of the dataset
+     * @param url The URL the data set is to be read from.
+     *      This may be a file path, e.g. /file/to/volume.dat,
+     *      or a complete URL with resource type and inner path, e.g.
+     *      zip://path/to/archive.zip/volume.dat
+     * @return VolumeCollection containing all volumes read from the url.
+     *      the caller is responsible for freeing the memory.
      */
-    VolumeSet* load(const std::string& filename)
+    VolumeCollection* load(const std::string& url) const
         throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Instead of reading the whole dataset, only some slices are read from file and written
      * to the newly built volume. This isn't supported by all file formats.
+     *
+     * @return new VolumeCollection, the caller is responsible for freeing the memory.
      */
-    VolumeSet* loadSlices(const std::string& filename, size_t firstSlice, size_t lastSlice)
+    VolumeCollection* loadSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
         throw (tgt::FileException, std::bad_alloc);
 
     /**
-     * Instead of reading the whole dataset, only a brick of volumedata, specified by
+     * Instead of reading the whole dataset, only a brick of volume data, specified by
      * its starting location and its dimensions, is read. This isn't supported by all file formats.
+     *
+     * @return new VolumeCollection, the caller is responsible for freeing the memory.
      */
-    VolumeSet* loadBrick(const std::string& filename,tgt::ivec3 brickStartPos, int brickSize)
+    VolumeCollection* loadBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)  const
         throw (tgt::FileException, std::bad_alloc);
 
-    VolumeHandle* loadFromOrigin(VolumeHandle::Origin origin);
+    /**
+     * Reads a single volume from the specified origin.
+     *
+     * This function is mainly used for the deserialization
+     * of VolumeHandles.
+     *
+     * @return VolumeHandle encapsulating the loaded volume.
+     *      The caller is responsible for freeing the memory.
+     */
+    VolumeHandle* load(const VolumeOrigin& origin) const
+        throw (tgt::FileException, std::bad_alloc);
+
+    /**
+     * Converts the file path of the passed origin to a path relative to the passed base path.
+     * The conversion is delegated to the appropriate reader.
+     *
+     * @return origin with relative file path. If the passed origin already has a relative path or
+     *      if it does not contain a file path at all, an identical copy is returned.
+     */
+    VolumeOrigin convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const
+        throw (tgt::FileException);
+
+    /**
+     * Converts the passed origin's file path from a path relative to the passed base path
+     * to an absolute path. The conversion is delegated to the appropriate reader.
+     *
+     * @return origin with absolute file path. If the passed origin already has an absolute path or
+     *      if it does not contain a file path at all, an identical copy is returned.
+     */
+    VolumeOrigin convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const
+        throw (tgt::FileException);
 
     /**
      * Saves a Volume to the given file.
@@ -117,8 +153,15 @@ public:
      * @param fileName The file name where the data should go.
      * @param volume The Volume that should be saved.
      */
-    void save(const std::string& filename, Volume* volume)
-        throw (tgt::FileException);
+    void save(const std::string& filename, VolumeHandle* volume) const throw (tgt::FileException);
+
+    /**
+     * Saves a Volume to the given file.
+     *
+     * @param fileName The file name where the data should go.
+     * @param volume The Volume that should be saved.
+     */
+    void save(const std::string& filename, Volume* volume) const throw (tgt::FileException);
 
     /**
      * Use this method to register a VolumeReader.
@@ -137,10 +180,31 @@ public:
         throw (FormatClashException);
 
 private:
-    typedef std::map<std::string, VolumeReader*> Readers;
-    typedef std::map<std::string, VolumeWriter*> Writers;
-    Readers readers_; ///< maps one or more extensions to a VolumeReader
-    Writers writers_; ///< maps one or more extensions to a VolumeWriter
+
+    /// maps from filename extensions to the appropriate reader
+    std::map<std::string, VolumeReader*> readersExtensionMap_;
+
+    /// maps from protocol strings (e.g. zip, dicom) to the appropriate reader
+    std::map<std::string, VolumeReader*> readersProtocolMap_;
+
+    /// maps from filename extensions to the appropriate writer
+    std::map<std::string, VolumeWriter*> writersMap_;
+
+    /**
+     * @brief Find a suitable VolumeReader for the specified URL.
+     *
+     * @return A VolumeReader that is able to read from the URL.
+     */
+    VolumeReader* getReader(const std::string& url) const
+        throw (tgt::FileException, std::bad_alloc);
+
+    /**
+     * @brief Find a suitable VolumeWriter for the specified filename.
+     *
+     * @return A VolumeWriter that is able to write to this file.
+     */
+    VolumeWriter* getWriter(const std::string& filename) const
+        throw (tgt::FileException, std::bad_alloc);
 };
 
 } // namespace voreen

@@ -31,46 +31,40 @@
 
 namespace voreen {
 
-const Identifier AxialSliceProxyGeometry::setAxis_("set.Axis");
-const Identifier AxialSliceProxyGeometry::setBegin_("set.Begin");
-const Identifier AxialSliceProxyGeometry::setThickness_("set.Thickness");
+const std::string AxialSliceProxyGeometry::setAxis_("Axis");
+const std::string AxialSliceProxyGeometry::setBegin_("Begin");
+const std::string AxialSliceProxyGeometry::setThickness_("Thickness");
 
 using tgt::vec3;
 
 AxialSliceProxyGeometry::AxialSliceProxyGeometry()
     : ProxyGeometry()
     , dl_(0)
-    , alignment_(SAGITTAL)
+    , alignmentProp_("sliceAlignmentProp", "slice alignment")
     , begin_(setBegin_, "Begin")
     , thickness_(setThickness_, "Thickness", 5)
 {
-    setName("AxialSliceProxyGeometry");
 
-    std::vector<std::string> alignments;
-    alignments.push_back("SAGITTAL");
-    alignments.push_back("AXIAL");
-    alignments.push_back("CORONAL");
-    alignmentProp_ = new EnumProp("sliceAlignmentProp", "slice alignment: ", alignments, 0);
-    alignmentProp_->onChange(CallMemberAction<AxialSliceProxyGeometry>(this, &AxialSliceProxyGeometry::setAxis));
+    alignmentProp_.addOption("sagittal","SAGITTAL", AxialSliceProxyGeometry::SAGITTAL);
+    alignmentProp_.addOption("axial",   "AXIAL",    AxialSliceProxyGeometry::AXIAL);
+    alignmentProp_.addOption("coronal", "CORONAL",  AxialSliceProxyGeometry::CORONAL);
+    alignmentProp_.onChange(CallMemberAction<AxialSliceProxyGeometry>(this, &AxialSliceProxyGeometry::setAxis));
     addProperty(alignmentProp_);
 
     begin_.onChange(CallMemberAction<AxialSliceProxyGeometry>(this, &AxialSliceProxyGeometry::setBegin));
     thickness_.onChange(CallMemberAction<AxialSliceProxyGeometry>(this, &AxialSliceProxyGeometry::setThickness));
 
-    addProperty(&begin_);
-    addProperty(&thickness_);
-
-    createInport("volumehandle.volumehandle");
-    createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
-
-    setIsCoprocessor(true);
+    addProperty(begin_);
+    addProperty(thickness_);
 }
 
 AxialSliceProxyGeometry::~AxialSliceProxyGeometry() {
     if (dl_)
         glDeleteLists(dl_,1);
+}
 
-    delete alignmentProp_;
+Processor* AxialSliceProxyGeometry::create() const {
+    return new AxialSliceProxyGeometry();
 }
 
 const std::string AxialSliceProxyGeometry::getProcessorInfo() const {
@@ -96,13 +90,15 @@ void AxialSliceProxyGeometry::revalidateGeometry() {
     vec3 geomLlf = (-volumeSize_/2.f) + volumeCenter_;
     vec3 geomUrb = (volumeSize_/2.f) + volumeCenter_;
 
-    geomLlf[alignment_] = -(volumeSize_[alignment_] * (thicknessRatio/2.f)) + volumeCenter_[alignment_];
-    geomUrb[alignment_] =  (volumeSize_[alignment_] * (thicknessRatio/2.f)) + volumeCenter_[alignment_];
+    int alignment = alignmentProp_.getValue();
+
+    geomLlf[alignment] = -(volumeSize_[alignment] * (thicknessRatio/2.f)) + volumeCenter_[alignment];
+    geomUrb[alignment] =  (volumeSize_[alignment] * (thicknessRatio/2.f)) + volumeCenter_[alignment];
 
     vec3 texLlf = vec3(0.f);
     vec3 texUrb = vec3(1.f);
-    texLlf[alignment_] = beginRatio;
-    texUrb[alignment_] = beginRatio + thicknessRatio;
+    texLlf[alignment] = beginRatio;
+    texUrb[alignment] = beginRatio + thicknessRatio;
 
     if (!dl_)
         dl_ = glGenLists(1);
@@ -148,23 +144,6 @@ void AxialSliceProxyGeometry::revalidateGeometry() {
 }
 
 void AxialSliceProxyGeometry::setAxis() {
-    // Use fool-proof method instead of directly assigning
-    // alignmentProp_->get() to alignment. Someone could
-    // a string to the property...
-    //
-    switch (alignmentProp_->get()) {
-        case 1:
-            alignment_ = AxialSliceProxyGeometry::AXIAL;
-            break;
-        case 2:
-            alignment_ = AxialSliceProxyGeometry::CORONAL;
-            break;
-        case 0:
-        default:
-            alignment_ = AxialSliceProxyGeometry::SAGITTAL;
-            break;
-    }
-
     needsBuild_ = true;
     invalidate();
 }

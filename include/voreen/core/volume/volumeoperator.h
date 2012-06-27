@@ -31,6 +31,10 @@
 #define VRN_VOLUMEOPERATOR_H
 
 #include "voreen/core/volume/volumeatomic.h"
+#ifdef VRN_MODULE_FLOWREEN
+#include "voreen/modules/flowreen/volumeflow3d.h"
+#endif
+
 #include <vector>
 
 namespace voreen {
@@ -134,6 +138,10 @@ ReturnValue VolumeOperatorUnary<Derived>::apply(Volume* volume) const {
         return ReturnValue(d->apply_internal(v));
     else if (VolumeAtomic<tgt::Vector4<double> >* v = dynamic_cast<VolumeAtomic<tgt::Vector4<double> >*>(volume))
         return ReturnValue(d->apply_internal(v));
+#ifdef VRN_MODULE_FLOWREEN
+    else if (dynamic_cast<VolumeFlow3D*>(volume) != 0)
+        return ReturnValue(d->apply_internal(v));
+#endif
     else {
         std::cout << "serious problem:\n\tcannot apply unary volume operator to volume of type '"
             << typeid(volume).name() << "'!\n";

@@ -34,27 +34,27 @@
 
 namespace voreen {
 
-	CameraLodSelector::CameraLodSelector(BrickingInformation &brickingInformation) 
-		: BrickLodSelector(brickingInformation) 
-	{
-	}
+    CameraLodSelector::CameraLodSelector(BrickingInformation &brickingInformation)
+        : BrickLodSelector(brickingInformation)
+    {
+    }
 
     void CameraLodSelector::selectLods() {
         bricksWithoutLod_.clear();
         bricksWithoutLod_ = std::vector<Brick*>(brickingInformation_.volumeBricks);
 
-        int currentLevelOfDetail = 0;               // The lod we are currently assigning to bricks. 
-		int maxNumberOfCurrentLODBlocks = 0;        // The number of bricks that can be given that lod. 
-		int numberOfBlocksOfCurrentLODAssigned = 0; // The number of bricks that have that lod assigned.
+        int currentLevelOfDetail = 0;               // The lod we are currently assigning to bricks.
+        int maxNumberOfCurrentLODBlocks = 0;        // The number of bricks that can be given that lod.
+        int numberOfBlocksOfCurrentLODAssigned = 0; // The number of bricks that have that lod assigned.
 
-		//In brickResolutions there is the information about how many bricks can be given which lod.
-		for (size_t i=0; i<brickingInformation_.brickResolutions.size(); i++) {
-			if (brickingInformation_.brickResolutions.at(i) != 0) {
-				currentLevelOfDetail = i;
-				maxNumberOfCurrentLODBlocks = brickingInformation_.brickResolutions.at(i);
-				break;
-			}
-		}
+        //In brickResolutions there is the information about how many bricks can be given which lod.
+        for (size_t i=0; i<brickingInformation_.brickResolutions.size(); i++) {
+            if (brickingInformation_.brickResolutions.at(i) != 0) {
+                currentLevelOfDetail = i;
+                maxNumberOfCurrentLODBlocks = brickingInformation_.brickResolutions.at(i);
+                break;
+            }
+        }
 
         //Get all the regions that are defined. Regions with the higher priorities are assigned
         //the higher available levels of detail.
@@ -69,16 +69,16 @@ namespace voreen {
         regions.push_back(bricksWithoutRegionRegion);
 
         tgt::vec3 cameraPos;
-		if (!brickingInformation_.camera)
-			cameraPos = tgt::vec3(0.0,0.0,3.75);
-		else
-			cameraPos = brickingInformation_.camera->getPosition(); 
+        if (!brickingInformation_.camera)
+            cameraPos = tgt::vec3(0.0,0.0,3.75);
+        else
+            cameraPos = brickingInformation_.camera->getPosition();
 
-        //Regions at the beginning of the vector have a higher priority, so assign the higher LODs to 
-        //them. 
+        //Regions at the beginning of the vector have a higher priority, so assign the higher LODs to
+        //them.
         for (size_t i=0; i<regions.size(); i++) {
             distanceSet_.clear();
-		    distanceMap_.clear();
+            distanceMap_.clear();
 
             std::vector<Brick*> bricks = regions.at(i)->getBricks();
 
@@ -86,84 +86,84 @@ namespace voreen {
 
                 if (checkAssignPriority(bricks.at(j) ) == true ) {
                     tgt::vec3 brickPos = bricks.at(j)->getLlf();
-			        float dist = tgt::lengthSq(brickPos - cameraPos);
-        			
-			        //Insert the distance into the distance set. We use a set because no
-			        //distance can occur more then once that way.
-			        distanceSet_.insert(dist);
+                    float dist = tgt::lengthSq(brickPos - cameraPos);
 
-			        //Insert the distance together with the volume brick number into the 
-			        //distance multimap. That way we now the volumebrick numbers for every
-			        //distance. 
-			        distanceMap_.insert(std::pair<float,int>(dist,j));
+                    //Insert the distance into the distance set. We use a set because no
+                    //distance can occur more then once that way.
+                    distanceSet_.insert(dist);
+
+                    //Insert the distance together with the volume brick number into the
+                    //distance multimap. That way we now the volumebrick numbers for every
+                    //distance.
+                    distanceMap_.insert(std::pair<float,int>(dist,j));
                 }
             }
 
-            //Typical iterator declaration for the multimap. 
-		    typedef std::multimap<float,int>::const_iterator Iterator;
+            //Typical iterator declaration for the multimap.
+            typedef std::multimap<float,int>::const_iterator Iterator;
 
-		    //Now the iterator for the set. 
-		    std::set<float>::iterator distanceIterator = distanceSet_.begin();
+            //Now the iterator for the set.
+            std::set<float>::iterator distanceIterator = distanceSet_.begin();
 
 
-		    //Go through the entire set, starting with the smallest distance. 
-		    while (distanceIterator != distanceSet_.end() ) {
-			    float currentDistance;
+            //Go through the entire set, starting with the smallest distance.
+            while (distanceIterator != distanceSet_.end() ) {
+                float currentDistance;
 
-			    //Get the smallest distance.
-			    currentDistance = *(distanceIterator);
+                //Get the smallest distance.
+                currentDistance = *(distanceIterator);
 
-			    //This looks a bit..bad, but as it is a multimap, we have to deal with that. We get a pair
-			    //of iterators, the first one at the beginning of all entrys with the current distance, the second 
-			    //one at the end. 
-			    const std::pair<Iterator,Iterator> blocks = distanceMap_.equal_range(currentDistance);
-    			
-			    //Start at the first iterator, stop at the second, thereby going through all entrys with
-			    //the current distance as first value. The iterators point to a pair, the first value the distance,
-			    //the second one the number of the volume brick that has that distance. 
-			    for (Iterator it = blocks.first; it!= blocks.second; ++it) {
+                //This looks a bit..bad, but as it is a multimap, we have to deal with that. We get a pair
+                //of iterators, the first one at the beginning of all entrys with the current distance, the second
+                //one at the end.
+                const std::pair<Iterator,Iterator> blocks = distanceMap_.equal_range(currentDistance);
 
-				    //Check if the volume brick isn't empty. 
-				    if (!bricks.at(it->second)->getAllVoxelsEqual()) {
+                //Start at the first iterator, stop at the second, thereby going through all entrys with
+                //the current distance as first value. The iterators point to a pair, the first value the distance,
+                //the second one the number of the volume brick that has that distance.
+                for (Iterator it = blocks.first; it!= blocks.second; ++it) {
 
-					    //The brick isn't empty, so we assign the correct lod. 
-					    bricks.at(it->second)->setCurrentLevelOfDetail(currentLevelOfDetail);
-					    numberOfBlocksOfCurrentLODAssigned++;	//Keep track of how many bricks have that lod.
-    					
-					    //Check if we have assigned this lod to as many bricks as we were allowed to. 
-					    if (numberOfBlocksOfCurrentLODAssigned >= maxNumberOfCurrentLODBlocks) {
-						    //If we have, start assigning the next lod.
-						    currentLevelOfDetail++;
+                    //Check if the volume brick isn't empty.
+                    if (!bricks.at(it->second)->getAllVoxelsEqual()) {
 
-						    //Search the next lod we can assign to bricks, meaning the value in the vector is not 0
-						    for ( ; (size_t)currentLevelOfDetail < brickingInformation_.brickResolutions.size(); currentLevelOfDetail++){
-							    if (brickingInformation_.brickResolutions.at(currentLevelOfDetail) != 0) {
-								    maxNumberOfCurrentLODBlocks = brickingInformation_.brickResolutions.at(currentLevelOfDetail);
-								    numberOfBlocksOfCurrentLODAssigned=0;
-								    break;
-							    }
-						    }
-					    }
-				    } else {
-					    //The volume brick has an "empty" volume, meaning all voxels have the same value, and
-					    //therefore we can assign the lowest lod possible. 
-					    size_t lowestLod = brickingInformation_.brickResolutions.size()-1;
-					    bricks.at(it->second)->setCurrentLevelOfDetail(lowestLod);
-				    }
-			    }
-    			
-			    //We have a lod assigned to all bricks with the current distance, so go to the 
-			    //next distance. 
-			    ++distanceIterator;
+                        //The brick isn't empty, so we assign the correct lod.
+                        bricks.at(it->second)->setCurrentLevelOfDetail(currentLevelOfDetail);
+                        numberOfBlocksOfCurrentLODAssigned++;    //Keep track of how many bricks have that lod.
+
+                        //Check if we have assigned this lod to as many bricks as we were allowed to.
+                        if (numberOfBlocksOfCurrentLODAssigned >= maxNumberOfCurrentLODBlocks) {
+                            //If we have, start assigning the next lod.
+                            currentLevelOfDetail++;
+
+                            //Search the next lod we can assign to bricks, meaning the value in the vector is not 0
+                            for ( ; (size_t)currentLevelOfDetail < brickingInformation_.brickResolutions.size(); currentLevelOfDetail++){
+                                if (brickingInformation_.brickResolutions.at(currentLevelOfDetail) != 0) {
+                                    maxNumberOfCurrentLODBlocks = brickingInformation_.brickResolutions.at(currentLevelOfDetail);
+                                    numberOfBlocksOfCurrentLODAssigned=0;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        //The volume brick has an "empty" volume, meaning all voxels have the same value, and
+                        //therefore we can assign the lowest lod possible.
+                        size_t lowestLod = brickingInformation_.brickResolutions.size()-1;
+                        bricks.at(it->second)->setCurrentLevelOfDetail(lowestLod);
+                    }
+                }
+
+                //We have a lod assigned to all bricks with the current distance, so go to the
+                //next distance.
+                ++distanceIterator;
 
             } //distance iterator
 
         } //region loop
 
-	} //function
+    } //function
 
     bool CameraLodSelector::checkAssignPriority(Brick* brick) {
-        std::vector<Brick*>::iterator finder = 
+        std::vector<Brick*>::iterator finder =
             std::find(bricksWithoutLod_.begin(),bricksWithoutLod_.end(),brick);
 
         if (finder != bricksWithoutLod_.end()) {

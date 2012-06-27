@@ -34,6 +34,253 @@ using std::string;
 
 namespace tgt {
 
+//------------------------------------------------------------------------------
+
+namespace {
+
+/**
+ * Resolve the line number to take into account the include directives.
+ * Returns a string containing file name and line number in that file.
+ */
+std::string resolveLineNumber(int number, const std::vector<ShaderObject::LineInfo>& lineTracker) {
+    int found = lineTracker.size() - 1;
+    for (int i = static_cast<int>(lineTracker.size()) - 1; i >= 0 ; i--) {
+        if (lineTracker[i].lineNumber_ <= number) {
+            found = i;
+            break;
+        }
+    }
+
+    std::ostringstream result;
+    if (found >= 0) {
+        result << FileSystem::fileName(lineTracker[found].filename_) << ":"
+               << (number - lineTracker[found].lineNumber_ + lineTracker[found].sourceLineNumber_);
+    }
+    return result.str();
+}
+
+} // namespace
+
+/**
+ * Parses #include statements and geometry shader settings
+ */
+class ShaderPreprocessor {
+public:
+    enum Mode {
+        MODE_NONE      = 0,
+        MODE_INCLUDE   = 1,
+        MODE_GEOMETRY  = 2
+    };
+
+    ShaderPreprocessor(ShaderObject* obj, Mode mode = Mode(MODE_INCLUDE | MODE_GEOMETRY));
+
+    // Returns the parsed result
+    std::string getResult() const { return result_.str(); }
+    
+    GLint getGeomShaderInputType() const { return inputType_; }
+    GLint getGeomShaderOutputType() const { return outputType_; }
+    GLint getGeomShaderVerticesOut() const { return verticesOut_; }
+    
+protected:
+    void parse();
+    void parsePart(const std::string input, const std::string& name = "");
+
+    void outputComment(const std::string comment, const std::string type = "INFO");
+    
+	/**
+     *	Scan for geometry shader directives in shader source.
+     *	
+     *	Accepted directives:
+     *	GL_GEOMETRY_INPUT_TYPE_EXT(GL_POINTS | GL_LINES | GL_LINES_ADJACENCY_EXT | GL_TRIANGLES | GL_TRIANGLES_ADJACENCY_EXT)
+     *	GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_POINTS | GL_LINE_STRIP | GL_TRIANGLE_STRIP)
+     *	GL_GEOMETRY_VERTICES_OUT_EXT(<int>)
+     *	No newline or space allowed between each pair of brackets.
+     *
+     *	Example geometry shader header:
+     *	#version 120 
+     *	#extension GL_EXT_geometry_shader4 : enable
+     *
+     *	//GL_GEOMETRY_INPUT_TYPE_EXT(GL_LINES)
+     *	//GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_LINE_STRIP)
+     *	//GL_GEOMETRY_VERTICES_OUT_EXT(42)
+     *	[...]
+     */
+    bool scanGeomShaderDirectives();
+
+	std::string getGeomShaderDirective(std::string d);
+
+    
+    ShaderObject* shd_;
+    std::vector<ShaderObject::LineInfo>& lineTracker_; ///< keeps track of line numbers when includes are used
+    int activeLine_;
+    std::ostringstream result_;
+
+    GLint inputType_;
+    GLint outputType_;
+    GLint verticesOut_;
+    
+    static const std::string loggerCat_;   
+};
+
+
+const std::string ShaderPreprocessor::loggerCat_("tgt.Shader.ShaderPreprocessor");
+
+ShaderPreprocessor::ShaderPreprocessor(ShaderObject* obj, Mode /*mode*/)
+    : shd_(obj), lineTracker_(obj->lineTracker_), inputType_(0), outputType_(0), verticesOut_(0)
+{
+    parse();
+}
+
+void ShaderPreprocessor::parsePart(const std::string input, const std::string& name) {
+    std::istringstream source(input);
+    int locallinenumber = 0;
+
+    lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, name, 1));
+    
+    string line;
+    while (std::getline(source, line)) {
+        locallinenumber++;
+        string::size_type pos = line.find("#include");
+
+        // At least partly support for comments.
+        // "/*"-style comments starting on previous lines are not detected.
+        string::size_type comment1 = line.find("//");
+        string::size_type comment2 = line.find("/*");
+        bool inComment = (comment1 != string::npos && comment1 < pos) || (comment2 != string::npos && comment2 < pos);
+
+        if (pos != string::npos && !inComment) {
+            pos = line.find("\"", pos + 1);
+            string::size_type end = line.find("\"", pos + 1);
+            string filename(line, pos + 1, end - pos - 1);
+            filename = ShdrMgr.completePath(filename);
+
+            File* file = FileSys.open(filename);
+            string content;
+            if ((!file) || (!file->isOpen())) {
+                LERROR("Cannot open shader include '" << filename << "' in " << resolveLineNumber(activeLine_, lineTracker_));
+            } else {
+                size_t len = file->size();
+                // check if file is empty
+                if (len == 0)
+                    content = "";
+                else
+                    content = file->getAsString();
+                file->close();
+
+                outputComment("BEGIN INCLUDE " + filename, "BEGIN");
+                
+                if (!content.empty() && content[content.size() - 1] != '\n')
+                    content += "\n";
+                
+                parsePart(content, filename);
+                
+                outputComment("END INCLUDE " + filename, "END");
+
+                lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, name, locallinenumber + 1));
+            }
+            delete file;
+        } else {
+            result_ << line << "\n";
+            activeLine_++;
+        }
+    }
+}
+
+void ShaderPreprocessor::parse() {
+    activeLine_ = 1;
+    lineTracker_.clear();
+    result_.clear();
+    
+    if (!shd_->header_.empty()) {
+        outputComment("BEGIN HEADER");
+        parsePart(shd_->header_, "HEADER");
+        outputComment("END HEADER");
+    }
+    
+    parsePart(shd_->unparsedSource_, shd_->filename_);
+}
+
+void ShaderPreprocessor::outputComment(const std::string comment, const std::string type) {
+    result_ << "// " << comment << "\n";
+    lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, type, 0));
+    activeLine_++;
+}
+
+bool ShaderPreprocessor::scanGeomShaderDirectives() {
+	LDEBUG("Scanning for geometry shader compile directives...");
+	std::string input = getGeomShaderDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
+
+    if (input == "GL_POINTS")
+		inputType_ = GL_POINTS;
+	else if (input == "GL_LINES")
+		inputType_ = GL_LINES;
+	else if (input == "GL_LINES_ADJACENCY_EXT")
+		inputType_ = GL_LINES_ADJACENCY_EXT;
+	else if (input == "GL_TRIANGLES")
+		inputType_ = GL_TRIANGLES;
+	else if (input == "GL_TRIANGLES_ADJACENCY_EXT")
+		inputType_ = GL_TRIANGLES_ADJACENCY_EXT;
+	else {
+		LERROR("Unknown input type: " << input);
+        return false;
+	};
+
+	std::string output = getGeomShaderDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
+	if (output == "GL_POINTS")
+		outputType_ = GL_POINTS;
+	else if (output == "GL_LINE_STRIP")
+		outputType_ = GL_LINE_STRIP;
+	else if (output == "GL_TRIANGLE_STRIP")
+		outputType_ = GL_TRIANGLE_STRIP;
+	else {
+		LERROR("Unknown output type: " << output);
+        return false;
+	};
+
+	std::string verticesOut = getGeomShaderDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
+
+	std::istringstream myStream(verticesOut);
+	if (myStream >> verticesOut_) {
+		LDEBUG("VERTICES_OUT: " << verticesOut_);
+	}
+	else {
+		LERROR("Failed to parse argument(" << verticesOut << ") as integer for directive GL_GEOMETRY_VERTICES_OUT_EXT.");
+		return false;
+	}
+
+    return true;
+}
+
+std::string ShaderPreprocessor::getGeomShaderDirective(std::string d) {
+    string sourceStr(shd_->source_);
+    string::size_type curPos = sourceStr.find(d + "(", 0);
+	string::size_type length = d.length() + 1;
+	if (curPos != string::npos) {
+		string::size_type endPos = sourceStr.find(")", curPos);
+
+		if (endPos != string::npos) {
+			std::string ret = sourceStr.substr(curPos + length, endPos - curPos - length);
+			// test for space, newline:
+			if ((ret.find(" ", 0) == string::npos) && (ret.find("\n", 0) == string::npos) ) {
+				LINFO("Directive " << d << ": " << ret);
+				return ret;
+			}
+			else {
+				LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << d);
+				return "";
+			}
+		}
+		LERROR("Missing ending bracket for directive " << d);
+		return "";
+	}
+	else {
+		LWARNING("Could not locate directive " << d << "!");
+		return "";
+	}
+}
+
+//------------------------------------------------------------------------------
+
 const string ShaderObject::loggerCat_("tgt.Shader.ShaderObject");
 
 ShaderObject::ShaderObject(const string& filename, ShaderType type)
@@ -63,7 +310,9 @@ bool ShaderObject::loadSourceFromFile(const string& filename) {
         return false;
 	}
 
-    source_ = file->getAsString();
+	filename_ = filename;
+    unparsedSource_ = file->getAsString();
+    source_ = unparsedSource_;
 
     file->close();
     delete file;
@@ -72,122 +321,8 @@ bool ShaderObject::loadSourceFromFile(const string& filename) {
 }
 
 void ShaderObject::uploadSource() {
-    string completeSrc = replaceIncludes(header_ + source_);
-    const GLchar* tmpShaderSource = completeSrc.c_str();
-    glShaderSource(id_, 1, &tmpShaderSource, 0);
-}
-
-string ShaderObject::replaceIncludes(const string& completeSource) {
-    string sourceStr = completeSource;
-    int replaceStart = 0;
-    int replaceEnd = 0;
-	int numReplaced = 0;
-
-    string::size_type curPos = sourceStr.find("#include", 0);
-
-    while (curPos != string::npos) {
-        // find last comment before the #include
-        string::size_type comment = sourceStr.rfind("//", curPos);
-        // find last ending before the #include 
-        string::size_type end = sourceStr.rfind("\n", curPos);
-        // repalce if there wasn't any comment or comment is before the last line ending
-        if ((comment == string::npos) || (comment < end)) {
-            replaceStart = curPos;
-            curPos = sourceStr.find("\"", curPos+1);
-            replaceEnd = sourceStr.find("\"", curPos+1);
-            string fileName(sourceStr, curPos + 1, replaceEnd - curPos - 1);
-
-            fileName = ShdrMgr.completePath(fileName);
-
-            File* file = FileSys.open(fileName);
-            string content;
-            if (file && file->isOpen()) {
-                content = file->getAsString();
-                file->close();
-
-                content = "// BEGIN INCLUDE " + fileName + "\n" + content;
-                if (content[content.size() - 1] != '\n')
-                    content += "\n";
-                content += "// END INCLUDE " + fileName + "\n";
-            }
-            else {
-                LERROR("Unable to open include file " << fileName);
-            }
-            delete file;
-            sourceStr.replace(replaceStart, replaceEnd - replaceStart + 1, content);
-            numReplaced++;
-            curPos = replaceEnd;
-        }
-        curPos = sourceStr.find("#include", curPos + 1);
-    }
-
-    if (numReplaced > 0) {
-      // write the complete Shader into a file for debugging the shader
-//#define TGT_SHADER_INCLUDE_DEBUG
-#ifdef TGT_SHADER_INCLUDE_DEBUG
-        string basename;
-        string::size_type first_pos = filename_.find_last_of("/");
-        if (first_pos != string::npos)
-            basename = filename_.substr(first_pos + 1);
-        else
-            basename = filename_;
-
-		std::ofstream out(basename.c_str()); // output file
-
-        if (!out) {
-            LERROR("Cannot open output file: " << basename.c_str() << " (VRN_SHADER_INCLUDE_DEBUG)");
-        } else {
-			out << sourceStr.c_str() << std::endl;
-            out.close();
-        }
-#endif
-
-    }
-    return sourceStr;
-}
-
-bool ShaderObject::scanDirectives() {
-	LDEBUG("Scanning for geometry shader compile directives...");
-	string input = getDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
-	if (input == "GL_POINTS")
-		inputType_ = GL_POINTS;
-	else if (input == "GL_LINES")
-		inputType_ = GL_LINES;
-	else if (input == "GL_LINES_ADJACENCY_EXT")
-		inputType_ = GL_LINES_ADJACENCY_EXT;
-	else if (input == "GL_TRIANGLES")
-		inputType_ = GL_TRIANGLES;
-	else if (input == "GL_TRIANGLES_ADJACENCY_EXT")
-		inputType_ = GL_TRIANGLES_ADJACENCY_EXT;
-	else {
-		LERROR("Unknown input type: " << input);
-        return false;
-	};
-
-	string output = getDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
-	if (output == "GL_POINTS")
-		outputType_ = GL_POINTS;
-	else if (output == "GL_LINE_STRIP")
-		outputType_ = GL_LINE_STRIP;
-	else if (output == "GL_TRIANGLE_STRIP")
-		outputType_ = GL_TRIANGLE_STRIP;
-	else {
-		LERROR("Unknown output type: " << output);
-		return false;
-	};
-
-	string verticesOut = getDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
-
-	std::istringstream myStream(verticesOut);
-	if (myStream >> verticesOut_) {
-		LDEBUG("VERTICES_OUT: " << verticesOut_);
-	}
-	else {
-		LERROR("Failed to parse argument(" << verticesOut << ") as integer for directive GL_GEOMETRY_VERTICES_OUT_EXT.");
-		return false;
-	}
-
-	return true;
+    const GLchar* s = source_.c_str();
+    glShaderSource(id_, 1,  &s, 0);
 }
 
 void ShaderObject::setDirectives(GLuint id) {
@@ -196,35 +331,23 @@ void ShaderObject::setDirectives(GLuint id) {
 	glProgramParameteriEXT(id, GL_GEOMETRY_VERTICES_OUT_EXT, verticesOut_);
 }
 
-string ShaderObject::getDirective(const string& directive) {
-	string sourceStr = source_;
-    string::size_type curPos = sourceStr.find(directive + "(", 0);
-	string::size_type length = directive.length() + 1;
-
-    if (curPos != string::npos) {
-		string::size_type endPos = sourceStr.find(")", curPos);
-
-		if (endPos != string::npos) {
-			string ret = sourceStr.substr(curPos + length, (endPos - curPos - length));
-			// test for space, newline
-			if ((ret.find(" ", 0) == string::npos) && (ret.find("\n", 0) == string::npos)) {
-				LINFO("Directive " << directive << ": " << ret);
-				return ret;
-			} else {
-				LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << directive);
-				return "";
-			}
-		}
-		LERROR("Missing ending bracket for directive " << directive);
-		return "";
-	} else {
-		LWARNING("Could not locate directive " << directive << "!");
-		return "";
-	}
-}
-
 bool ShaderObject::compileShader() {
     isCompiled_ = false;
+
+    ShaderPreprocessor p(this);
+    source_ = p.getResult();
+
+    if (shaderType_ == GEOMETRY_SHADER) {
+        if (p.getGeomShaderInputType())
+            inputType_ = p.getGeomShaderInputType();
+        if (p.getGeomShaderOutputType())
+            outputType_ = p.getGeomShaderOutputType();
+        if (p.getGeomShaderVerticesOut())
+            verticesOut_ = p.getGeomShaderVerticesOut();        
+    }
+    
+    uploadSource();
+
     glCompileShader(id_);
     GLint check = 0;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &check);
@@ -232,19 +355,91 @@ bool ShaderObject::compileShader() {
     return isCompiled_;
 }
 
+namespace {
+
+int parseLogLineNumberNVIDIA(const std::string& message) {
+    // Errors look like this:
+    // 0(1397) : error C0000: syntax error, unexpected '=' at token "="
+    std::istringstream ls(message);
+    int id; // first number (probably used when multiple sources are bound), ignored
+    if (ls >> id) {
+        char c = 0; // should be an opening parenthesis
+        if (ls >> c &&c == '(') {
+            int num; // line number
+            if (ls >> num)
+                return num;
+        }
+    }
+    return 0;
+}
+
+int parseLogLineNumberATI(const std::string& message) {
+    // Errors look like this:
+    // ERROR: 0:2785: 'frontPos' : undeclared identifier
+    std::istringstream ls(message);
+    std::string s;
+    if (ls >> s && s == "ERROR:") {
+        int id; // first number (probably used when multiple sources are bound), ignored
+        if (ls >> id) {
+            char c = 0; // should be a colon
+            if (ls >> c && c == ':') {
+                int num; // line number
+                if (ls >> num)
+                    return num;
+            }
+        }        
+    }        
+    
+    return 0;
+}
+
+/**
+ * Tries to extract the line number for a given compile messages.
+ * Returns 0 if no line number was found.
+ */
+int parseLogLineNumber(const std::string& message) {
+    int n = 0;
+
+    n = parseLogLineNumberNVIDIA(message);
+    if (n > 0)
+        return n;
+        
+    n = parseLogLineNumberATI(message);
+    if (n > 0)
+        return n;
+
+    return 0;
+}
+
+} // namespace
+
 string ShaderObject::getCompilerLog() {
     GLint len;
     glGetShaderiv(id_, GL_INFO_LOG_LENGTH , &len);
 
     if (len > 1) {
         GLchar* log = new GLchar[len];
-        if (len == 0)
+        if (log == 0)
             return "Memory allocation for log failed!";
         GLsizei l;  // length returned
         glGetShaderInfoLog(id_, len, &l, log);
-        string retStr(log);
+        std::istringstream str(log);
         delete[] log;
-        return retStr;
+        
+        std::ostringstream result;
+
+        string line;
+        while (getline(str, line)) {
+            result << line;
+
+            int num = parseLogLineNumber(line);            
+            if (num > 0)
+                result << " [" << resolveLineNumber(num, lineTracker_) << "]";                
+
+            result << '\n';
+        }
+
+        return result.str();
     } else {
         return "";
     }
@@ -278,7 +473,7 @@ void ShaderObject::generateHeader(const string& defines) {
 
 bool ShaderObject::rebuildFromFile() {
     if (!loadSourceFromFile(filename_)) {
-        LWARNING("Failed to load vertexshader " << filename_);
+        LWARNING("Failed to load shader " << filename_);
         return false;
     } else {
         uploadSource();
@@ -298,8 +493,7 @@ bool ShaderObject::rebuildFromFile() {
 const string Shader::loggerCat_("tgt.Shader.Shader");
 
 Shader::Shader()
-    : isLinked_(false),
-    ignoreError_(false)
+    : isLinked_(false), ignoreError_(false)
 {
     id_ = glCreateProgram();
     if (id_ == 0)
@@ -391,15 +585,12 @@ string Shader::getLinkerLog() {
 
     if (len > 1) {
         GLchar* log = new GLchar[len];
-
-        if (len == 0)
+        if (log == 0)
             return "Memory allocation for log failed!";
-
         GLsizei l;  // length returned
         glGetProgramInfoLog(id_, len, &l, log);
         string retStr(log);
         delete[] log;
-
         return retStr;
     }
 
@@ -412,7 +603,6 @@ bool Shader::rebuild() {
         for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
             glDetachShader(id_, (*iter)->id_);
             (*iter)->uploadSource();
-
             if (!(*iter)->compileShader()) {
                 LERROR("Failed to compile shader object.");
                 LERROR("Compiler Log: \n" << (*iter)->getCompilerLog());
@@ -479,14 +669,14 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!vert->loadSourceFromFile(vert_filename)) {
-            LERROR("Failed to load vertexshader " << vert_filename);
+            LERROR("Failed to load vertex shader " << vert_filename);
             delete vert;
             return false;
         } else {
             vert->uploadSource();
 
             if (!vert->compileShader()) {
-                LERROR("Failed to compile vertexshader " << vert_filename);
+                LERROR("Failed to compile vertex shader " << vert_filename);
                 LERROR("Compiler Log: \n" << vert->getCompilerLog());
                 delete vert;
                 return false;
@@ -505,17 +695,14 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!geom->loadSourceFromFile(geom_filename)) {
-            LERROR("Failed to load geometryshader " << geom_filename);
+            LERROR("Failed to load geometry shader " << geom_filename);
             delete vert;
             delete geom;
             return false;
         } else {
             geom->uploadSource();
-
-			geom->scanDirectives();
-
             if (!geom->compileShader()) {
-                LERROR("Failed to compile geometryshader " << geom_filename);
+                LERROR("Failed to compile geometry shader " << geom_filename);
                 LERROR("Compiler Log: \n" << geom->getCompilerLog());
                 delete vert;
                 delete geom;
@@ -535,7 +722,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!frag->loadSourceFromFile(frag_filename)) {
-            LERROR("Failed to load fragmentshader " << frag_filename);
+            LERROR("Failed to load fragment shader " << frag_filename);
             delete frag;
             delete geom;
             delete vert;
@@ -544,7 +731,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
 			frag->uploadSource();
 
             if (!frag->compileShader()) {
-                LERROR("Failed to compile fragmentshader " << frag_filename);
+                LERROR("Failed to compile fragment shader " << frag_filename);
                 LERROR("Compiler Log: \n" << frag->getCompilerLog());
                 delete vert;
                 delete geom;
@@ -605,18 +792,6 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
     }
 
     return true;
-}
-
-//FIXME: this returns header AND source, rename?
-string Shader::getSource(int i) {
-    int j = 0;
-
-    for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter, ++j) {
-        if (i == j)
-            return (*iter)->header_ + (*iter)->source_;
-    }
-
-    return "";
 }
 
 GLint Shader::getUniformLocation(const string& name) {

@@ -30,32 +30,29 @@
 #include "voreen/core/vis/processors/proxygeometry/slicingproxygeometry.h"
 #include "tgt/camera.h"
 
-namespace voreen
-{
+namespace voreen {
 
 SlicingProxyGeometry::SlicingProxyGeometry()
-    : ProxyGeometry(),
-    displayList_(0),
-    cubeProxy_(0),
-    proxyGeometry_(0),
-    clipPlane_(1.0f, 0.0f, 0.0f, 0.1f),
-    sliceThickness_(0.1f),
-    numSlices_(0),
-    clipPlaneProp_(0),
-    sliceThicknessProp_(0)
+    : ProxyGeometry()
+    , displayList_(0)
+    , cubeProxy_(0)
+    , proxyGeometry_(0)
+    , clipPlane_(1.0f, 0.0f, 0.0f, 0.1f)
+    , sliceThickness_(0.1f)
+    , numSlices_(0)
+    , clipPlaneProp_(0)
+    , sliceThicknessProp_(0)
 {
-    setName("SlicingProxyGeometry");
-    createInport("volumehandle.volumehandle");
-    createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
-    setIsCoprocessor(true);
 
-    clipPlaneProp_ = new FloatVec4Prop("clipPlaneProp", "plane equation: ", clipPlane_,
+    clipPlaneProp_ = new FloatVec4Property("clipPlaneProp", "plane equation: ", clipPlane_,
         tgt::vec4(-2.0f), tgt::vec4(2.0f));
+    clipPlaneProp_->setStepping(tgt::vec4(0.1f));
     clipPlaneProp_->onChange(
         CallMemberAction<SlicingProxyGeometry>(this, &SlicingProxyGeometry::onClipPlaneChange));
 
-    sliceThicknessProp_ = new FloatProp("sliceThicknessProp", "slice thickness: ", sliceThickness_,
+    sliceThicknessProp_ = new FloatProperty("sliceThicknessProp", "slice thickness: ", sliceThickness_,
         0.0f, 1.0f);
+    sliceThicknessProp_->setStepping(0.05f);
     sliceThicknessProp_->onChange(
         CallMemberAction<SlicingProxyGeometry>(this, &SlicingProxyGeometry::onSliceThicknessChange));
 
@@ -77,23 +74,20 @@ SlicingProxyGeometry::~SlicingProxyGeometry() {
     sliceThicknessProp_ = 0;
 }
 
-
 const std::string SlicingProxyGeometry::getProcessorInfo() const {
-    return "Provides a proxy geometry based on a cube which can be cut arbitrary. \
+    return "Provides a proxy geometry based on a cube which can be cut arbitrarily. \
            The resulting geometry depends on the ratio of the values in dim.";
 }
 
-void SlicingProxyGeometry::process(LocalPortMapping* portMapping) {
-    bool changed = false;
-    const bool res = VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle"), &changed);
-    if ((res == false) || (changed == false))
+void SlicingProxyGeometry::process() {
+
+    if (!inport_.isReady() || !inport_.hasChanged())
         return;
 
     // the volume has changed and is not NULL, so the proxy geometry needs to be
     // rebuilt
     //
-    volume_ = currentVolumeHandle_->getVolume();
+    volume_ = inport_.getData()->getVolume();
     volumeSize_ = volume_->getCubeSize() / 2.0f;
     numSlices_ = calculateNumSlices();
 
@@ -108,16 +102,6 @@ void SlicingProxyGeometry::process(LocalPortMapping* portMapping) {
 
     buildCubeProxyGeometry();
     needsBuild_ = true;
-}
-
-Message* SlicingProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/) {
-    if (ident == "render") {
-        renderDisplayList();
-        return 0;
-    } else if (ident == getVolumeSize_)
-        return new Vec3Msg("", volumeSize_);
-
-    return 0;
 }
 
 void SlicingProxyGeometry::renderDisplayList() {

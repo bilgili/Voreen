@@ -34,6 +34,7 @@
 
 #include "gpucapabilities.h"
 #include "tgt/singleton.h"
+#include "tgt/types.h"
 
 #ifdef TGT_WITH_WMI
     #include <wbemidl.h>

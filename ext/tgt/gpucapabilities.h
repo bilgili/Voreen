@@ -357,6 +357,9 @@ public:
      */
     bool areFramebufferObjectsSupported();
 
+	///Returns the maximal number of color attachments for a FBO
+	int getMaxColorAttachments(); 
+
     /**
      * Writes the most important GPU features to the
      * log (debug-level info).
@@ -428,6 +431,7 @@ private:
     bool sharedPalettedTextures_;
     int colorTableWidth_;
     bool framebufferObjects_;
+	int maxColorAttachments_;
 };
 
 } // namespace tgt

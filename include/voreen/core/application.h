@@ -35,7 +35,15 @@
 #include <string>
 #include "tgt/logmanager.h"
 
+namespace tgt {
+    class Timer;
+    class EventHandler;
+}
+
 namespace voreen {
+
+class ProcessorWidgetFactory;
+class IOProgress;
 
 /**
  * Represents basic properties of a Voreen application. There should only be one instance of
@@ -54,8 +62,8 @@ public:
     };
 
     /**
-     * @param name Short name of the application in lowercase ("voreendev")
-     * @param displayName Nice-looking name of the application ("VoreenDev")
+     * @param name Short name of the application in lowercase ("voreenve")
+     * @param displayName Nice-looking name of the application ("VoreenVE")
      * @param argc Number of arguments as retrieved from main()
      * @param argv Argument vector as retrieved from main()
      * @param appType Features to activate
@@ -79,11 +87,11 @@ public:
      * Overwrite this method to add commands to the CommandlineParser.
      */
     virtual void prepareCommandParser();
-    
+
     //
     // Initialization
     //
-    
+
     /**
      * Do the actual initializations as controlled by appType_:
      * Initialize tgt, execute command parser, start logging, detect paths and initialize Python.
@@ -95,17 +103,61 @@ public:
      */
     virtual void initGL();
 
+    //
+    // Factory methods
+    //
+
+    /**
+     * Factory method for timers.
+     *
+     * @param handler The event handler that will be used
+     *  for broadcasting the timer events. Must not be null.
+     *
+     * @note You have to override this function in a toolkit specific subclass
+     *  in order to actual create a timer. The standard implementation returns
+     *  the null pointer.
+     */
+    virtual tgt::Timer* createTimer(tgt::EventHandler* handler) const;
+
+    /**
+     * Factory method for progress dialogs.
+     *
+     * @note You have to override this function in a toolkit specific subclass
+     *  in order to actual create a progress dialog. The standard implementation returns
+     *  the null pointer.
+     */
+    virtual IOProgress* createProgressDialog() const;
+
+    //
+    // Factories
+    //
+
+    /**
+     * Sets a toolkit specific factory that is used by the processors
+     * for creating their processor widgets. Processor widgets are created
+     * by Processor::initialize, if a factory is available.
+     */
+    void setProcessorWidgetFactory(ProcessorWidgetFactory* factory);
+
+    /**
+     * Returns a toolkit specific factory that is used by the processors
+     * for creating their processor widgets.
+     *
+     * If no factory has been assigned, the null pointer is returned.
+     */
+    const ProcessorWidgetFactory* getProcessorWidgetFactory() const;
+
     ///
     /// Paths
     ///
-    
+
     /**
      * Returns the application's base path as detected by \sa init().
      */
     std::string getBasePath() const;
-     
+
     /**
-     * Constructs an absolute path consisting of the cache directory 
+     * Constructs an absolute path consisting of the cache directory
      * (typically voreen/data/cache) and the given filename.
      */
     std::string getCachePath(const std::string& filename = "") const;
@@ -129,22 +181,28 @@ public:
     std::string getShaderPath(const std::string& filename = "") const;
 
     /**
+     * Constructs an absolute path consisting of Snapshot directory and the given
+     * filename.
+     */
+    std::string getSnapshotPath(const std::string& filename = "") const;
+
+    /**
      * Constructs an absolute path consisting of the font directory (typically
      * voreen/data/fonts) and the given filename.
      */
     std::string getFontPath(const std::string& filename = "") const;
 
-	/**
-	* Constructs an absolute path consisting of network file directory (typically
-	* voreen/data/networks) and the given filename.
-	*/
-	std::string getNetworkPath(const std::string& filename = "") const;
+    /**
+    * Constructs an absolute path consisting of network file directory (typically
+    * voreen/data/networks) and the given filename.
+    */
+    std::string getNetworkPath(const std::string& filename = "") const;
 
-	/**
-	* Constructs an absolute path consisting of workspace file directory (typically
-	* voreen/data/workspaces) and the given filename.
-	*/
-	std::string getWorkspacePath(const std::string& filename = "") const;
+    /**
+    * Constructs an absolute path consisting of workspace file directory (typically
+    * voreen/data/workspaces) and the given filename.
+    */
+    std::string getWorkspacePath(const std::string& filename = "") const;
 
     /**
      * Constructs an absolute path consisting of script directory (typically
@@ -188,7 +246,7 @@ public:
      * filename.
      */
     std::string getDocumentsPath(const std::string& filename = "") const;
-    
+
 #ifdef __APPLE__
     /**
      * Constructs an absolute path consisting of the Mac application bundle's resource
@@ -196,7 +254,7 @@ public:
      */
     std::string getAppBundleResourcesPath(const std::string& filename = "") const;
 #endif
-    
+
 protected:
     static VoreenApplication* app_;
 
@@ -204,6 +262,8 @@ protected:
     std::string name_;
     std::string displayName_;
     CommandlineParser cmdParser_;
+
+    ProcessorWidgetFactory* processorWidgetFactory_;
 
     std::string basePath_;
     std::string shaderPath_;
@@ -216,7 +276,7 @@ protected:
     std::string documentationPath_;
     std::string documentsPath_;
 #ifdef __APPLE__
-	std::string appBundleResourcesPath_;
+    std::string appBundleResourcesPath_;
 #endif
 
     tgt::LogLevel logLevel_;

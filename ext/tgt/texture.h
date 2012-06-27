@@ -116,12 +116,16 @@ public:
     /// destroys the buffer for the texture and sets arraySize_ to zero
     void destroy() {
         arraySize_ = 0;
-        delete[] pixels_;
+		if(pixels_)
+			delete[] pixels_;
         pixels_ = 0;// so nothing really nasty can happen
     }
 
     /// calculates the bytes per pixel from dataType and internalformat
     int calcBpp();
+
+	///calculates size on the GPU (using internalformat)
+	int getSizeOnGPU();
 
     /**
      * calculates the type_ (GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D or GL_TEXTURE_RECTANGLE_ARB) from
@@ -144,7 +148,6 @@ public:
 
     /**
      * Enable texturing on the active texture unit.
-     * FIXME: this is not a per-texture operation. remove?
      */
     void enable() const
     {
@@ -153,7 +156,6 @@ public:
 
     /**
      * Disable texturing on the active texture unit
-     * FIXME: this is not a per-texture operation. remove?
      */
     void disable() const
     {

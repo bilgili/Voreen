@@ -37,10 +37,7 @@ namespace voreen {
     void DatasetCreator::createDataset() {
     }
 
-    void DatasetCreator::processMessage(Message* /*msg*/, const Identifier& /*dest*/) {
-    }
-
-    void DatasetCreator::process(LocalPortMapping* /*portMapping*/) {
+    void DatasetCreator::process() {
     }
 
 } //namespace voreen

@@ -68,7 +68,7 @@ public:
      * @param prop the transfer function property
      * @param parent parent widget
      */
-    TransFuncEditorIntensityPet(TransFuncProp* prop, QWidget* parent = 0);
+    TransFuncEditorIntensityPet(TransFuncProperty* prop, QWidget* parent = 0);
 
     /**
      * Destructor - deletes transfer function for expanded gradient

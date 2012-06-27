@@ -28,7 +28,6 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/proxygeometry/cubecutproxygeometry.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 #include "tgt/vector.h"
 
@@ -37,36 +36,22 @@ namespace voreen {
 using tgt::vec3;
 
 CubeCutProxyGeometry::CubeCutProxyGeometry()
-  : ProxyGeometry(),
-    cutCube_("switch.cutCube", "Render cut cube", false),
-    cubeSize_("set.cutCubeSize", "Cutted cube size", vec3(25.f, 50.f, 75.f), vec3(0.f), vec3(100.f)),
+  : ProxyGeometry()
+  , cutCube_("cutCube", "Render cut cube", false)
+  , cubeSize_("cutCubeSize", "Cutted cube size", vec3(25.f, 50.f, 75.f), vec3(0.f), vec3(100.f)),
     dl_(0)
 {
-    setName("CubeCutProxyGeometry");
 
     CallMemberAction<CubeCutProxyGeometry> cma(this, &CubeCutProxyGeometry::onSettingsChange);
     cutCube_.onChange(cma);
     cubeSize_.onChange(cma);
 
-    addProperty(&cutCube_);
-    addProperty(&cubeSize_);
-
-    createInport("volumehandle.volumehandle");
-    createCoProcessorOutport("coprocessor.proxygeometry",&Processor::call);
-
-    setIsCoprocessor(true);
+    addProperty(cutCube_);
+    addProperty(cubeSize_);
 }
 
 const std::string CubeCutProxyGeometry::getProcessorInfo() const {
     return "Provides a simple clipping cube proxy.";
-}
-
-Message* CubeCutProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/) {
-    if (ident == "render") {
-        needsBuild_ = true;
-        render();
-    }
-    return 0;
 }
 
 CubeCutProxyGeometry::~CubeCutProxyGeometry() {
@@ -74,11 +59,15 @@ CubeCutProxyGeometry::~CubeCutProxyGeometry() {
         glDeleteLists(dl_, 1);
 }
 
+Processor* CubeCutProxyGeometry::create() const {
+    return new CubeCutProxyGeometry();
+}
+
 /**
  * Renders the OpenGL list (and creates it, when needed).
  */
 void CubeCutProxyGeometry::render() {
-    if (volume_) {
+    if (inport_.hasData()) {
         if (needsBuild_) {
             if (!dl_)
                 dl_ = glGenLists(1);
@@ -236,6 +225,10 @@ void CubeCutProxyGeometry::revalidateCubeGeometry() {
         renderCubeWithCutting();
     LGL_ERROR;
 
+}
+
+void CubeCutProxyGeometry::onSettingsChange() {
+    needsBuild_ = true;
 }
 
 } // namespace

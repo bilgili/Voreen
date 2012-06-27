@@ -26,15 +26,16 @@
 
 namespace tgt {
 
-MouseEvent::MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button)
+MouseEvent::MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button, ivec2 viewport)
     : Event()
     , coord_(x,y)
+    , viewport_(viewport)
     , buttonCode_(button)
     , action_(action)
     , mod_(mod)
 {}
 
-int MouseEvent::getEventType(){
+int MouseEvent::getEventType() {
 	switch (action_) {
 		case MOTION:
 			// motion = move?
@@ -57,27 +58,31 @@ int MouseEvent::getEventType(){
 	}
 }
 
-ivec2 MouseEvent::coord() {
+ivec2 MouseEvent::coord() const {
     return coord_;
 }
 
-int MouseEvent::x() {
+int MouseEvent::x() const {
     return coord_.x;
 }
 
-int MouseEvent::y() {
+int MouseEvent::y() const {
     return coord_.y;
 }
 
-MouseEvent::MouseButtons MouseEvent::button() {
+ivec2 MouseEvent::viewport() const {
+    return viewport_;
+}
+
+MouseEvent::MouseButtons MouseEvent::button() const {
     return buttonCode_;
 }
 
-MouseEvent::MouseAction MouseEvent::action() {
+MouseEvent::MouseAction MouseEvent::action() const {
     return action_;
 }
 
-Event::Modifier MouseEvent::modifiers() {
+Event::Modifier MouseEvent::modifiers() const {
     return mod_;
 }
 

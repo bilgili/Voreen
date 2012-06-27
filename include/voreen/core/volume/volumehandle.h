@@ -31,7 +31,9 @@
 #define VRN_VOLUMEHANDLE_H
 
 #include "voreen/core/volume/volume.h"
+#include "voreen/core/volume/modality.h"
 #include "voreen/core/volume/bricking/largevolumemanager.h"
+#include "voreen/core/observer.h"
 
 #ifndef VRN_NO_OPENGL
 #include "voreen/core/volume/volumegl.h"
@@ -41,57 +43,124 @@
 #include "voreen/modules/cuda/volumecuda.h"
 #endif
 
-#include "voreen/core/xml/serializable.h"
+#include "voreen/core/io/serialization/serialization.h"
 
 #include <set>
 #include <string>
 
 namespace voreen {
 
-class VolumeSet;
-class VolumeSeries;
-class Modality;
+class VolumeHandle;
 
 /**
- * Class for handling different types and needs for volumes. Besides this
- * class holds the current timestep of the selected volume in its VolumeSeries.
- * The class is designed for being the only class which has to take care of
- * what kind of hardware volumes are used.
+ * Interface for volume handle observers.
  */
-class VolumeHandle : public Serializable {
+class VolumeHandleObserver : public Observer {
+
 public:
-    friend class VolumeSeries; // for setParentSeries()
 
     /**
-     * Stores the source where the Volume was loaded from.
+     * This method is called by the observed VolumeHandle's destructor.
+     *
+     * @param source the calling VolumeHandle
      */
-    struct Origin : public Serializable {
-        Origin() : filename(""), seriesname(""), timestep(-1.0) {}
+    virtual void volumeHandleDelete(const VolumeHandle* source) = 0;
 
-        Origin(std::string fn, std::string sn, float ts)
-            : filename(fn), seriesname(sn), timestep(ts)
-        {}
+    /**
+     * This method is called by the observed VolumeHandle
+     * after its member Volume object has changed.
+     *
+     * When this function is called, the new Volume object has
+     * already been assigned. The former Volume object is still
+     * valid at this point, but it is deleted immediately after
+     * this function has been called.
+     *
+     * @param source the calling VolumeHandle
+     */
+    virtual void volumeChange(const VolumeHandle* source) = 0;
 
-        virtual ~Origin() {}
+};
 
-        bool operator==(const Origin& rhs) const;
-        bool operator<(const Origin& rhs) const;
+/**
+ * Stores the source where the Volume is loaded from.
+ *
+ * TODO: Documentation
+ */
+struct VolumeOrigin : public Serializable {
 
-        virtual std::string getXmlElementName() const { return XmlElementName; }
-        virtual TiXmlElement* serializeToXml() const;
-        virtual void updateFromXml(TiXmlElement* elem);
+    VolumeOrigin();
+    VolumeOrigin(const VolumeOrigin& rhs);
 
-        static void setBasePath(const std::string& basePath) { basePath_ = basePath; }
-        
-        std::string filename;
-        std::string seriesname;
-        float timestep;
-        static const std::string XmlElementName;
-        static std::string basePath_;
-    };
+    /// Constructs the origin from the passed URL.
+    VolumeOrigin(const std::string& URL);
 
-    /** Holds the name of the xml element used when serializing the object */
-    static const std::string XmlElementName;
+    /// Constructs the origin from the specified protocol string, filepath and optional search string
+    VolumeOrigin(const std::string& protocol, const std::string& filepath, const std::string& searchString = "");
+
+    virtual ~VolumeOrigin();
+
+    VolumeOrigin& operator=(const VolumeOrigin& rhs);
+    bool operator==(const VolumeOrigin& rhs) const;
+
+    /// Returns the complete URL where volume is loaded from.
+    const std::string& getURL() const;
+
+    /// Returns the protocol portion of the URL. May be empty.
+    std::string getProtocol() const;
+
+    /// Returns the path portion of the URL, without a trailing search string.
+    std::string getPath() const;
+
+    /// Returns the file name component of the URL. May be empty, if URL does not reference a file.
+    std::string getFilename() const;
+
+    /// Returns the search string portion of the URL. May be empty.
+    std::string getSearchString() const;
+
+    /// Appends the given search parameter to the URL in the form: "key=value"
+    void addSearchParameter(const std::string& key, const std::string& value);
+
+    /// Returns the value corresponding to the passed key in the URL's search string.
+    std::string getSearchParameter(std::string key) const;
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
+private:
+
+    /// Replaces backslashes.
+    void cleanupURL();
+
+    /**
+     * Copy VolumeOrigin object (used by operator=() and copy-ctor).
+     */
+    void clone(const VolumeOrigin& rhs) {
+        url_ = rhs.getURL();
+    }
+
+    std::string url_;
+
+    static const std::string loggerCat_;
+};
+
+/**
+ * Class for handling different types and needs for volumes.
+ *
+ * Besides the hardware volume
+ * this class holds information about the volume's origin, modality and timestep.
+ * It is designed for being the only class which has to take care of
+ * what kind of hardware volumes are used.
+ */
+class VolumeHandle : public Serializable, public Observable<VolumeHandleObserver> {
+
+public:
 
     /**
      * All types of available hardware specializations.
@@ -105,75 +174,31 @@ public:
     };
 
     /**
-     * Comparator structure for ensuring that the comparison of VolumeHandles used
-     * by the std::set compares the dereferenced pointers and not the pointers
-     * themselves!
-     */
-    struct VolumeHandleComparator {
-        bool operator()(const VolumeHandle* const handle1, const VolumeHandle* const handle2) const {
-            if (handle1 == 0 || handle2 == 0)
-                return false;
-            else
-                return (*handle1 < *handle2);
-        }
-    };
-    typedef std::set<VolumeHandle*, VolumeHandleComparator> HandleSet;
-
-    /**
-     * Constructor
+     * Constructor.
      *
-     * NOTE: No hardware specific volume data like VolumeGL are created initially. If you want
-     * to use hardware specific volume data / textures, call generateHardwareVolumes() or
-     * directly use getVolumeGL() which implicitly generates a hardware volume.
+     * @note No hardware specific volume data like VolumeGL are created initially. If you want
+     *  to use hardware specific volume data / textures, call generateHardwareVolumes() or
+     *  directly use getVolumeGL() which implicitly generates a hardware volume.
      *
-     * @param   parentSeries The VolumeSeries containing this VolumeHandle. Should be
-     *  non-NULL to prevent unpredictable results.
      * @param   volume  The volume data for this VolumeHandle.
-     * @param   time    The timestep fot this VolumeHandle.
+     * @param   time    The timestep for this VolumeHandle.
      */
     VolumeHandle(Volume* const volume, const float time = 0.f);
 
     /**
-     * Copy constructor
-     */
-    VolumeHandle(const VolumeHandle& handle);
-
-    /**
      * Delete all Volume pointers and the hardware specific ones, if they have been generated.
      */
-    ~VolumeHandle();
+    virtual ~VolumeHandle();
 
     /**
-     * Takes the values from the given handle and writes them into this instance
+     * Gives up ownership of associated volumes without deleting them.
+     * Calls this in order to prevent deletion of the volumes on destruction
+     * of the handle.
      */
-    void CopyValuesFromVolumeHandle(const VolumeHandle* handle);
+    void releaseVolumes();
 
     /**
-     * Comparison of the handles is defined as the comparison
-     * of the timesteps held by the handles.
-     */
-    bool operator<(const VolumeHandle& handle) const;
-    bool operator==(const VolumeHandle& handle) const;
-
-    /**
-     * Operator for convenience: a handle can be casted into its timestep.
-     */
-    operator float() const;
-
-    /**
-     * Compares the internal ID with the one of the given VolumeHandle.
-     * The internal IDs are used to distinguish different objects: each
-     * time you call the ctor you will get a different ID. This is done for
-     * performance improvements and memory management.
-     *
-     * @return  "true" if both IDs and there both objects are identical, "false"
-     *          otherwise.
-     */
-    bool isIdentical(const VolumeHandle& handle) const;
-    bool isIdentical(VolumeHandle* const handle) const;
-
-    /**
-     * Returns the generic (Voreen) Volume.
+     * Returns the generic Volume.
      */
     Volume* getVolume() const;
 
@@ -185,27 +210,35 @@ public:
      */
     void setVolume(Volume* const volume);
 
+    void setModality(Modality modality);
+    Modality getModality() const;
+
     /**
-     * Returns the associated Timestep for the selected volume from the VolumeSeries
-     * containing the object of this class.
+     * Returns the associated timestep of this volume handle.
      */
     float getTimestep() const;
 
     /**
-     * Sets the Timestep for this VolumeHandle. This is only need on insertion into
-     * VolumeSeries if a VolumeHandle is already contained within the series.
-     * The timestep can only be set if the parent VolumeSeries (if existing) contains
-     * no other VolumeHandle with the same timestep as the given one. If it does, the
-     * method will fail and return "false".
-     * If setting the timestep succeeds, "true" is returned.
-     * If there is no parent VolumeSeries, setting the timestep always succeeds.
+     * Sets the timestep for this VolumeHandle.
      */
-    bool setTimestep(const float timestep);
+    void setTimestep(float timestep);
+
+    void setOrigin(const VolumeOrigin& origin);
+    const VolumeOrigin& getOrigin() const;
 
     /**
-     * Returns the VolumeSeries which this VolumeHandle belongs to.
+     * Reloads the volume from its origin, usually from the
+     * hard disk, and regenerates the dependent hardware volumes.
+     *
+     * @note The Volume object as well as the dependent hardware volume objects
+     *       are replaced during this operation.
+     *
+     * After a successful reload, volumeChanged() is called on the registered observers.
+     * In case the reloading failed, the VolumeHandle's state remains unchanged.
+     *
+     * @return true, if the volume could be successfully reloaded.
      */
-    VolumeSeries* getParentSeries() const;
+    bool reloadVolume();
 
     /**
      * Returns the mask indicating what hardware volume are currently used
@@ -236,64 +269,21 @@ public:
      */
     void freeHardwareVolumes(int volumeMask = HARDWARE_VOLUME_ALL);
 
-    /**
-     * Returns the first pointer to a VolumeHandle object of the given
-     * modality and the same timestep as this VolumeHandle from all
-     * VolumeSeries know to its parent VolumeSet or 0 if no
-     * such series, timestep or volume exist.
-     * This is useful for finding other series (former "modalities")
-     * of the same scan at the same timestep.
-     */
-    VolumeHandle* getRelatedVolumeHandle(const Modality& modality) const;
-
-    /**
-     * Returns the first pointer to a Volume object of the given
-     * modality and the same timestep as this VolumeHandle from all
-     * VolumeSeries know to its parent VolumeSet or 0 if no
-     * such series, timestep or volume exist.
-     * This is useful for finding other series (former "modalities")
-     * of the same scan at the same timestep.
-     */
-    Volume* getRelatedVolume(const Modality& modality) const;
-
-    /**
-     * Returns the object ID. Whenever the ctor is called, a new ID is created.
-     */
-    unsigned int getObjectID() const;
-
-    void setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep);
-    void setOrigin(const Origin& origin);
-    const Origin& getOrigin() const;
-
-    /**
-     * Returns the name of the xml element used when serializing the object
-     */
-    virtual std::string getXmlElementName() const { return XmlElementName; }
-
-    /**
-     * Serializes the object to XML.
-     */
-    virtual TiXmlElement* serializeToXml() const;
-
-    virtual void updateFromXml(TiXmlElement* elem);
-
-    static std::string getFileNameFromXml(TiXmlElement* elem);
-
     LargeVolumeManager* getLargeVolumeManager();
-	void setLargeVolumeManager(LargeVolumeManager* largeVolumeManager);
+    void setLargeVolumeManager(LargeVolumeManager* largeVolumeManager);
 
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
 #ifndef VRN_NO_OPENGL
-    /**
-     * Returns the first pointer to a VolumeGL object of the given
-     * modality and the same timestep as this VolumeHandle from all
-     * VolumeSeries know to its parent VolumeSet or 0 if no
-     * such series, timestep or volume exist.
-     * This is useful for finding other series (former "modalities")
-     * of the same scan at the same timestep.
-     */
-    VolumeGL* getRelatedVolumeGL(const Modality& modality);
-
     /**
      * Returns an OpenGL hardware volume for this volume, generating a new one via
      * generateHardwareVolumes() if it does not already exist. You can use hasHardwareVolumes() to
@@ -312,20 +302,27 @@ public:
 #endif
 
 protected:
+
     /**
-     * Sets the given Series as the new parent Series for this VolumeHandle.
-     * This method is usually only called by class VolumeSeries on inserting
-     * a VolumeHandle from <code>VolumeSeries::addVolumeHandle()</code>
-     * so use with caution in order to prevent unpredictable behavior.
+     * Notifies the registered VolumeHandleObservers about the pending
+     * deletion of the VolumeHandle.
      */
-    void setParentSeries(VolumeSeries* const series);
+    void notifyDelete();
+
+    /**
+     * Notifies the registered VolumeHandleObservers that a reload
+     * of the volume was done.
+     */
+    void notifyReload();
+
+    VolumeOrigin origin_;
 
     Volume* volume_;
     float time_;
+    Modality modality_;
     int hardwareVolumeMask_;
-    VolumeSeries* parentSeries_;    ///< VolumeSeries containing this object
-    unsigned int objectID_;         ///< unique ID for each INSTANCE of this class
-    LargeVolumeManager* largeVolumeManager_; /** In case this handle holds a bricked 
+
+    LargeVolumeManager* largeVolumeManager_; /** In case this handle holds a bricked
                                                  volume, this is the Manager responsible
                                                  for updating bricks etc. 0 if no bricked
                                                  volume is present.*/
@@ -338,9 +335,14 @@ protected:
     VolumeCUDA* volumeCUDA_;
 #endif
 
-    Origin origin_;
     static const std::string loggerCat_;
-    static unsigned int nextObjectID_;
+
+private:
+    friend class XmlDeserializer;
+    /**
+     * Default constructor needed for serialization.
+     */
+    VolumeHandle();
 };
 
 } // namespace

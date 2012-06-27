@@ -32,9 +32,8 @@
 #include "voreen/core/vis/processors/render/volumeraycaster.h"
 #include "voreen/core/vis/voreenpainter.h"
 
-#include "voreen/core/vis/processors/networkevaluator.h"
-
-#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/network/networkevaluator.h"
+#include "voreen/core/vis/network/processornetwork.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -58,23 +57,19 @@ namespace voreen {
 using tgt::ivec2;
 
 SegmentationPlugin::SegmentationPlugin(QWidget* parent, NetworkEvaluator* evaluator)
-    : WidgetPlugin(parent, 0),
+    : WidgetPlugin(parent),
       evaluator_(evaluator),
       intensityEditor_(0)
 {
     setObjectName(tr("Segmentation"));
     icon_ = QIcon(":/icons/segmentation.png");
 
-    MsgDistr.insert(this);
-
     createWidgets();
     createConnections();
 
-    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_, this));
 }
 
 SegmentationPlugin::~SegmentationPlugin() {
-    MsgDistr.remove(this);
 }
 
 bool SegmentationPlugin::usable(const std::vector<Processor*>& processors) {
@@ -119,7 +114,7 @@ void SegmentationPlugin::createWidgets() {
     vboxLayout->addWidget(line);
 
     // tf editor
-    intensityEditor_ = new TransFuncEditorIntensity(new TransFuncProp("dummy","dummy"));
+    intensityEditor_ = new TransFuncEditorIntensity(new TransFuncProperty("dummy","dummy"));
     intensityEditor_->createWidgets();
     intensityEditor_->createConnections();
     vboxLayout->addWidget(intensityEditor_);
@@ -234,16 +229,6 @@ void SegmentationPlugin::createConnections() {
 
 }
 
-void SegmentationPlugin::processMessage(Message* msg, const Identifier& /*dest*/) {
-    if (msg->id_ == "evaluatorUpdated") {
-        SegmentationRaycaster* segmentationRaycaster = getSegmentationRaycaster(true);
-        if (segmentationRaycaster) {
-            registerAsListener();
-            applySegmentationToggled();
-        }
-    }
-}
-
 void SegmentationPlugin::toggleApplySegmentation(bool useSegmentation) {
 
     if (!getSegmentationRaycaster())
@@ -294,10 +279,10 @@ void SegmentationPlugin::mousePressEvent(tgt::MouseEvent* e) {
         return;
     }
 
-    if (!evaluator_->getTextureContainer()) {
+    //if (!evaluator_->getTextureContainer()) {
         LERRORC("voreen.qt.SegmentationPlugin", "No texture container");
         return;
-    }
+    //}
 
     e->accept();
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -306,8 +291,8 @@ void SegmentationPlugin::mousePressEvent(tgt::MouseEvent* e) {
     propagateRegionGrowingParams();
 
     // propagate picking coords to RegionGrowing processor and start growing
-    ivec2 tcDims = evaluator_->getTextureContainer()->getSize();
-    getRegionGrowingProcessor()->startGrowing(ivec2(e->coord().x, tcDims.y - e->coord().y), outputSegment_->value());
+    //ivec2 tcDims = evaluator_->getTextureContainer()->getSize();
+    //getRegionGrowingProcessor()->startGrowing(ivec2(e->coord().x, tcDims.y - e->coord().y), outputSegment_->value());
     QApplication::restoreOverrideCursor();
 
     repaintCanvas();
@@ -339,13 +324,17 @@ void SegmentationPlugin::loadSegmentation() {
 
 
 SegmentationRaycaster* SegmentationPlugin::getSegmentationRaycaster(bool suppressWarning) {
+
     if (!evaluator_) {
         LERRORC("voreen.qt.SegmentationPlugin", "No network evaluator.");
         return 0;
     }
 
+    if (!evaluator_->getProcessorNetwork())
+        return 0;
+
     SegmentationRaycaster* segproc = 0;
-    std::vector<Processor*>& procs = evaluator_->getProcessors();
+    const std::vector<Processor*>& procs = evaluator_->getProcessorNetwork()->getProcessors();
     for (size_t i=0; i < procs.size(); i++) {
         if ((segproc = dynamic_cast<SegmentationRaycaster*>(procs[i])))
             break;
@@ -358,20 +347,24 @@ SegmentationRaycaster* SegmentationPlugin::getSegmentationRaycaster(bool suppres
 }
 
 RegionGrowingProcessor* SegmentationPlugin::getRegionGrowingProcessor(bool suppressWarning) {
+
     if (!evaluator_) {
         LERRORC("voreen.qt.SegmentationPlugin", "No network evaluator.");
         return 0;
     }
 
+    if (!evaluator_->getProcessorNetwork())
+        return 0;
+
     RegionGrowingProcessor* regionGrowing = 0;
-    std::vector<Processor*>& procs = evaluator_->getProcessors();
+    const std::vector<Processor*>& procs = evaluator_->getProcessorNetwork()->getProcessors();
     for (size_t i=0; i < procs.size(); i++) {
         if ((regionGrowing = dynamic_cast<RegionGrowingProcessor*>(procs[i])))
             break;
     }
 
     if (!regionGrowing && !suppressWarning)
-        QMessageBox::warning(this, tr("No RegionGrowing processor"), 
+        QMessageBox::warning(this, tr("No RegionGrowing processor"),
             tr("No RegionGrowing processor found in the current network."));
 
     return regionGrowing;
@@ -393,7 +386,7 @@ void SegmentationPlugin::propagateRegionGrowingParams() {
         return;
 
     getRegionGrowingProcessor()->getStrictnessProp().set(spinStrictness_->value());
-    getRegionGrowingProcessor()->getCostFunctionProp()->set(comboCostFunction_->currentIndex());
+//    getRegionGrowingProcessor()->getCostFunctionProp().set(comboCostFunction_->currentIndex());
     getRegionGrowingProcessor()->getMaxSeedDistanceProp().set(spinMaxSeedDist_->value());
     getRegionGrowingProcessor()->getAdaptiveProp().set(checkAdaptive_->isChecked());
     if (checkApplyThresholds_->isChecked()) {
@@ -414,7 +407,7 @@ void SegmentationPlugin::applySegmentationToggled() {
     checkApplySegmentation_->setChecked(applySegmentation);
     labelCurrentSegment_->setEnabled(applySegmentation);
     spinCurrentSegment_->setEnabled(applySegmentation);
-        
+
     updateIntensityEditor();
 
 }
@@ -426,10 +419,10 @@ void SegmentationPlugin::updateIntensityEditor() {
     bool useSegmentation = getSegmentationRaycaster()->getApplySegmentationProp().get();
 
     if (useSegmentation) {
-        PropertyVector& segmentationTransFuncs = getSegmentationRaycaster()->getSegmentationTransFuncs();
+        const PropertyVector& segmentationTransFuncs = getSegmentationRaycaster()->getSegmentationTransFuncs();
         int currentSegment = spinCurrentSegment_->value();
-        if (currentSegment >= 0 && currentSegment < segmentationTransFuncs.getNumProperties()) {
-            TransFuncProp* segTransFuncProp = segmentationTransFuncs.getProperty<TransFuncProp>(currentSegment);
+        if (currentSegment >= 0 && currentSegment < segmentationTransFuncs.size()) {
+            TransFuncProperty* segTransFuncProp = segmentationTransFuncs.getProperty<TransFuncProperty*>(currentSegment);
             if (segTransFuncProp)
                 intensityEditor_->setTransFuncProp(segTransFuncProp);
         }
@@ -444,17 +437,17 @@ void SegmentationPlugin::registerAsListener() {
     if (!segmentationRaycaster)
         return;
 
-    // register as change listener of segmentation raycaster's transfunc prop      
+    // register as change listener of segmentation raycaster's transfunc prop
     segmentationRaycaster->getTransFunc().onChange(
         CallMemberAction<SegmentationPlugin>(this, &SegmentationPlugin::transFuncChangedExternally));
 
     // register as change listener of segmentation raycaster's segmentation transfunc props
-    PropertyVector& segTransFuncs = segmentationRaycaster->getSegmentationTransFuncs();
-    for (int i=0; i<segTransFuncs.getNumProperties(); ++i) {
-        TransFuncProp* tfProp = segTransFuncs.getProperty<TransFuncProp>(i);
+    const PropertyVector& segTransFuncs = segmentationRaycaster->getSegmentationTransFuncs();
+    for (int i=0; i<segTransFuncs.size(); ++i) {
+        TransFuncProperty* tfProp = segTransFuncs.getProperty<TransFuncProperty*>(i);
         if (tfProp)
-            tfProp->onChange(CallMemberAction<SegmentationPlugin>(this, 
-            &SegmentationPlugin::transFuncChangedExternally));
+            tfProp->onChange(CallMemberAction<SegmentationPlugin>(this,
+                &SegmentationPlugin::transFuncChangedExternally));
     }
 
     // register as listener of the segmentation raycaster's apply segmentation prop

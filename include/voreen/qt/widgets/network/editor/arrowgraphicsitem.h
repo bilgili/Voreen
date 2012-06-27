@@ -32,44 +32,40 @@
 
 #include <QtGui>
 
-#ifndef VRN_NETWORK_GRAPH
-#include "voreen/core/vis/processors/networkevaluator.h"
-#else
-#include "voreen/core/vis/processors/networkevaluatorg.h"
-#endif
+#include "voreen/core/vis/network/networkevaluator.h"
 
-#include "networkeditor.h"
+#include "voreen/qt/widgets/network/editor/networkeditor.h"
+#include "voreen/qt/widgets/network/editor/itooltip.h"
+#include "voreen/qt/voreenqtglobal.h"
 
 namespace voreen {
 
 class PortGraphicsItem;
-
 /**
  * This class creates an arrow from a QGraphicsItem (sourceNode) pointing to another QGraphicsItem (destNode)
  * or to a QPointF position.
  */
-class ArrowGraphicsItem : public QGraphicsItem, public HasTooltip {
+class ArrowGraphicsItem : public QGraphicsItem, public ITooltip {
 public:
     /**
      * Constructor. Every Arrow has to have a source node, where it starts.
      */
-    ArrowGraphicsItem(QGraphicsItem* sourceNode, QGraphicsItem* destNode=0);
-    ~ArrowGraphicsItem();
+    ArrowGraphicsItem(PortGraphicsItem* sourceNode, PortGraphicsItem* destNode=0);
 
     /**
      * Returns the item where the arrow starts.
      */
-    QGraphicsItem* getSourceNode() { return source_; }
+    PortGraphicsItem* getSourceNode();
 
     /**
      * Returns the item the arrow is pointing on (may be 0).
      */
-    QGraphicsItem* getDestNode() { return dest_; }
+    PortGraphicsItem* getDestNode();
 
     /**
      * Sets the dest item.
      */
-    void setDestNode(QGraphicsItem* node);
+    void setDestNode(PortGraphicsItem* node);
 
     /**
      * Adjusts the arrow if source- or dest-item has moved.
@@ -85,12 +81,8 @@ public:
     /**
      * Used to identfy an item in the scene as Arrow
      */
-    enum { Type = UserType + 4 };
-
-    /**
-     * Returns the type that identifies this item as a Arrow.
-     */
-    int type() const { return Type; }
+    enum { Type = UserType + UserTypesArrowGraphicsItem };
+    int type() const;
 
     QRectF boundingRect() const;
     QPointF center() const;
@@ -103,22 +95,17 @@ public:
      */
     QGraphicsItem* tooltip() const;
 
+    void setColor(QColor color);
+
+    void setLayer(NetworkEditorLayer layer);
+
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
-    /**
-    * Returns the mapped texture container target for the port of the source port.
-    * If no texture container target is mapped, -1 is returned.
-    */
-    int getSourceTextureContainerTarget(NetworkEvaluator* neteval) const;
-
 private:
-    // helps drawing smooth curves
-    qreal deflection() const;
-
     // arrow goes from source_ to dest_
-    QGraphicsItem* source_;
-    QGraphicsItem* dest_;
+    PortGraphicsItem* source_;
+    PortGraphicsItem* dest_;
 
     // start and end point of arrow
     QPointF sourcePoint_;

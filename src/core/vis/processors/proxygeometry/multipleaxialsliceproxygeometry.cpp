@@ -33,8 +33,8 @@ namespace voreen {
 
 using tgt::vec3;
 
-const Identifier MultipleAxialSliceProxyGeometry::setNSlicesPerRow_("set.nSlicesPerRow");
-const Identifier MultipleAxialSliceProxyGeometry::setNSlicesPerCol_("set.nSlicesPerCol");
+const std::string MultipleAxialSliceProxyGeometry::setNSlicesPerRow_("nSlicesPerRow");
+const std::string MultipleAxialSliceProxyGeometry::setNSlicesPerCol_("nSlicesPerCol");
 
 MultipleAxialSliceProxyGeometry::MultipleAxialSliceProxyGeometry()
     : AxialSliceProxyGeometry()
@@ -42,13 +42,12 @@ MultipleAxialSliceProxyGeometry::MultipleAxialSliceProxyGeometry()
     , nSlicesPerCol_(setNSlicesPerCol_, "Select the number of slices per col", 1, 1, 10)
     , isInBuildMethod(false)
 {
-    setName("MultipleAxialSliceProxyGeometry");
 
     nSlicesPerRow_.onChange(CallMemberAction<MultipleAxialSliceProxyGeometry>(this, &MultipleAxialSliceProxyGeometry::setNSlicesPerRow));
     nSlicesPerCol_.onChange(CallMemberAction<MultipleAxialSliceProxyGeometry>(this, &MultipleAxialSliceProxyGeometry::setNSlicesPerCol));
 
-    addProperty(&nSlicesPerRow_);
-    addProperty(&nSlicesPerCol_);
+    addProperty(nSlicesPerRow_);
+    addProperty(nSlicesPerCol_);
 
     // All the other properties will be used automatically
 }
@@ -81,13 +80,15 @@ void MultipleAxialSliceProxyGeometry::render() {
         // that both divisions are done with integers] and render those slices with no further
         // calculation
 
+        int alignment = alignmentProp_.getValue();
+
         if (nSlicesPerRow_.get()%2 == 0) {
             if (nSlicesPerCol_.get()%2 == 0) {
                 // nSlicesPerRow is even  ;  nSlicesPerCol is even
                 for (int iterCol = -nSlicesPerCol+1; iterCol < nSlicesPerCol; ++(++iterCol)) {
-                    volumeCenter_[(alignment_+1)%3] = iterCol * (volumeSize_[(alignment_+1)%3]/2.f);
+                    volumeCenter_[(alignment+1)%3] = iterCol * (volumeSize_[(alignment+1)%3]/2.f);
                     for (int iterRow = -nSlicesPerRow+1; iterRow < nSlicesPerRow; ++(++iterRow)) {
-                        volumeCenter_[(alignment_+2)%3] = iterRow * (volumeSize_[(alignment_+2)%3]/2.f);
+                        volumeCenter_[(alignment+2)%3] = iterRow * (volumeSize_[(alignment+2)%3]/2.f);
 
                         build();
                     }
@@ -96,9 +97,9 @@ void MultipleAxialSliceProxyGeometry::render() {
             else {
                 // nSlicesPerRow is even  ;  nSlicesPerCol is odd
                 for (int iterCol = -nSlicesPerCol/2; iterCol <= nSlicesPerCol/2; ++iterCol) {
-                    volumeCenter_[(alignment_+1)%3] = iterCol * volumeSize_[(alignment_+1)%3];
+                    volumeCenter_[(alignment+1)%3] = iterCol * volumeSize_[(alignment+1)%3];
                     for (int iterRow = -nSlicesPerRow+1; iterRow < nSlicesPerRow; ++(++iterRow)) {
-                        volumeCenter_[(alignment_+2)%3] = iterRow * (volumeSize_[(alignment_+2)%3]/2.f);
+                        volumeCenter_[(alignment+2)%3] = iterRow * (volumeSize_[(alignment+2)%3]/2.f);
 
                         build();
                     }
@@ -109,9 +110,9 @@ void MultipleAxialSliceProxyGeometry::render() {
             if (nSlicesPerCol_.get()%2 == 0) {
                 // nSlicesPerRow is odd  ;  nSlicesPerCol is even
                 for (int iterCol = -nSlicesPerCol+1; iterCol < nSlicesPerCol; ++(++iterCol)) {
-                    volumeCenter_[(alignment_+1)%3] = iterCol * (volumeSize_[(alignment_+1)%3]/2.f);
+                    volumeCenter_[(alignment+1)%3] = iterCol * (volumeSize_[(alignment+1)%3]/2.f);
                     for (int iterRow = -nSlicesPerRow/2; iterRow <= nSlicesPerRow/2; ++iterRow) {
-                        volumeCenter_[(alignment_+2)%3] = iterRow * volumeSize_[(alignment_+2)%3];
+                        volumeCenter_[(alignment+2)%3] = iterRow * volumeSize_[(alignment+2)%3];
 
                         build();
                     }
@@ -120,9 +121,9 @@ void MultipleAxialSliceProxyGeometry::render() {
             else {
                 // nSlicesPerRow is odd  ;  nSlicesPerCol is odd
                 for (int iterCol = -nSlicesPerCol/2; iterCol <= nSlicesPerCol/2; ++iterCol) {
-                    volumeCenter_[(alignment_+1)%3] = iterCol * volumeSize_[(alignment_+1)%3];
+                    volumeCenter_[(alignment+1)%3] = iterCol * volumeSize_[(alignment+1)%3];
                     for (int iterRow = -nSlicesPerRow/2; iterRow <= nSlicesPerRow/2; ++iterRow) {
-                        volumeCenter_[(alignment_+2)%3] = iterRow * volumeSize_[(alignment_+2)%3];
+                        volumeCenter_[(alignment+2)%3] = iterRow * volumeSize_[(alignment+2)%3];
 
                         build();
                     }

@@ -31,8 +31,10 @@
 #include "modules/mod_sampler3d.frag"        // contains struct VOLUME_PARAMETERS
 
 uniform SAMPLER2D_TYPE entryTex_;
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE entryTexDepth_;
 uniform SAMPLER2D_TYPE exitTex_;
+uniform TEXTURE_PARAMETERS exitParameters_;
 
 uniform VOLUME_PARAMETERS volumeParameters_; // additional information about the volume the eep are generated for
 
@@ -43,22 +45,20 @@ uniform VOLUME_PARAMETERS volumeParameters_; // additional information about the
 void main() {
 
     vec2 fragCoord = gl_FragCoord.xy;
-    vec4 exitCol = textureLookup2D(exitTex_, fragCoord);
-    vec4 entryCol = textureLookup2D(entryTex_, fragCoord);
+    fragCoord *= screenDimRCP_;
+    vec4 exitCol = textureLookup2Dnormalized(exitTex_, exitParameters_, fragCoord);
+    vec4 entryCol = textureLookup2Dnormalized(entryTex_, entryParameters_, fragCoord);
 
-    /*
-     * Check every vector component separately instead of the whole vector
-     * to prevent visualization errors concerning some ATI graphic card.
-     */
-	if (exitCol.r != 0 || exitCol.g != 0 || exitCol.b != 0 || exitCol.a != 0) {
-
-        if (entryCol.r != 0 || entryCol.g != 0 || entryCol.b != 0 || entryCol.a != 0) {
+    if (exitCol.a != 0.0) {
+        // For some reason the near plane clipping can cause alpha values that lie between 0.0
+        // and 1.0, so do a conservative test here.
+        if (entryCol.a >= 0.5) {
             // entry point is okay
             gl_FragColor = entryCol;
-            gl_FragDepth = textureLookup2D(entryTexDepth_, fragCoord).z;
+            gl_FragDepth = textureLookup2Dnormalized(entryTexDepth_, entryParameters_, fragCoord).z;
         }
         else {
-            // entry point is 0 because of near plane clipping: fill holes
+            // alpha value of entry point less than 1.0 because of near plane clipping: fill holes
 
             // I don't know why, but NDC z-value -20.00 seems to be more correct than -1.0
             // However, this only applies to coarseness mode, without coarseness depth=-1.0 is fine
@@ -78,7 +78,7 @@ void main() {
         }
     }
     else {
-        // exit point is 0
+        // exit point is 0.0, ignore
         discard;
     }
 }

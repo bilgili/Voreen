@@ -73,14 +73,14 @@ public:
     * Gets information like spacing etc from a volume. This function is used to fill
     * the brickingInformation struct with the necessary information to brick the volume.
     */
-	void getVolumeInformation(BrickingInformation& brickingInformation, Volume* volume);
+    void getVolumeInformation(BrickingInformation& brickingInformation, Volume* volume);
 };
 
 
 class CommandScaleTexCoords : public Command {
 public:
-	CommandScaleTexCoords();
-	bool execute(const std::vector<std::string>& parameters);
+    CommandScaleTexCoords();
+    bool execute(const std::vector<std::string>& parameters);
 };
 
 

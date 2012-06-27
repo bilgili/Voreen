@@ -31,23 +31,27 @@
 #define VRN_VOLUMEINVERSION_H
 
 #include <string>
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/volume/volumeprocessor.h"
+#include "voreen/core/vis/properties/boolproperty.h"
 
 
 namespace voreen {
 
 class VolumeHandle;
 
-class VolumeInversion : public Processor {
+class VolumeInversion : public VolumeProcessor {
 public:
     VolumeInversion();
     virtual ~VolumeInversion();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "Volume Processing"; }
+    virtual std::string getClassName() const { return "VolumeInversion"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new VolumeInversion(); }
 
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
 
 private:
     void forceUpdate();
@@ -55,13 +59,12 @@ private:
 
 private:
     VolumeHandle* inputVolumeHandle_;       /** VolumeHandle from the inport */
-    VolumeHandle* outputVolumeHandle_;      /** VolumeHandle for the outport */
     VolumeHandle* processedVolumeHandle_;   /** VolumeHandle for the locally Volume */
-    BoolProp enableProcessingProp_;
+    BoolProperty enableProcessingProp_;
     bool forceUpdate_;
 
-    static const std::string inportName_;
-    static const std::string outportName_;
+    VolumePort inport_;
+    VolumePort outport_;
 };
 
 }   //namespace

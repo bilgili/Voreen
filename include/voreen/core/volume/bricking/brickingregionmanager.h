@@ -33,7 +33,7 @@
 namespace voreen {
 
     /**
-    * This class manages the BrickingRegions. 
+    * This class manages the BrickingRegions.
     */
     class BrickingRegionManager {
     public:
@@ -45,7 +45,7 @@ namespace voreen {
         BrickingRegionManager(BrickingInformation& brickingInformation);
 
         ~BrickingRegionManager();
-    
+
         /**
         * Adds a BrickingRegion to the BrickingRegionManagers control.
         */

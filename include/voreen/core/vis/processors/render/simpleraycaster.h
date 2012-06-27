@@ -39,26 +39,18 @@ namespace voreen {
  */
 class SimpleRaycaster : public VolumeRaycaster {
 public:
-
-    /**
-     * Constructor.
-     *
-     */
     SimpleRaycaster();
 
     virtual ~SimpleRaycaster();
 
-    virtual const Identifier getClassName() const {return "Raycaster.SimpleRaycaster";}
+    virtual std::string getCategory() const { return "Raycasting"; }
+    virtual std::string getClassName() const { return "SimpleRaycaster"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new SimpleRaycaster();}
+    virtual Processor* create() const;
 
-    virtual int initializeGL();
-
-    /**
-     * Load the needed shader.
-     *
-     */
-    virtual void loadShader();
+    virtual void initialize() throw (VoreenException);
 
     /**
      * Performs the raycasting.
@@ -67,15 +59,26 @@ public:
      * a screen aligned quad. The render destination is determined by the
      * invoking class.
      */
-    virtual void process(LocalPortMapping*  portMapping);
+    virtual void process();
 
 protected:
-    virtual std::string generateHeader();
 
-    virtual void compile();
+    /**
+     * Load the needed shader.
+     */
+    virtual void loadShader();
+
+    virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
+    virtual void compile(VolumeHandle* volumeHandle);
 
 private:
-    TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
+    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
+    CameraProperty camera_;
+
+    VolumePort volumePort_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+    RenderPort outport_;
 };
 
 

@@ -42,11 +42,10 @@ namespace voreen {
 const std::string InterfileVolumeReader::loggerCat_("voreen.io.VolumeReader.hv");
 
 InterfileVolumeReader::InterfileVolumeReader()  {
-    name_ = "Hv Reader";
     extensions_.push_back("hv");
 }
 
-VolumeSet* InterfileVolumeReader::read(const std::string &fileName)
+VolumeCollection* InterfileVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string imageDataFilename;
@@ -166,18 +165,17 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName)
             dataFileName = fileName.substr(0, p + 1) + dataFileName;
         }
 
-        VolumeSet* volumeSet = 0;
+        VolumeCollection* volumeCollection = 0;
         try {
-            volumeSet = rawReader.read(dataFileName);
+            volumeCollection = rawReader.read(dataFileName);
         }
         catch (...) {
             throw; // throw it to the caller
         }
 
-        std::vector<VolumeHandle*> handles = volumeSet->getAllVolumeHandles();
-        for ( size_t i = 0; i < handles.size(); i++ ) {
-            Volume* volume = handles[i]->getVolume();
-            if ( volume == 0 )
+        for (size_t i = 0; i < volumeCollection->size(); ++i) {
+            Volume* volume = volumeCollection->at(i)->getVolume();
+            if (volume == 0)
                 continue;
 
             // This should mirror the z-axis, create a new Volume
@@ -189,10 +187,9 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName)
             // replace the existing Volume* by the mirrored
             // one by deleting the old, non-mirrored Volume*.
             //
-            handles[i]->setVolume(volume->mirrorZ());
+            volumeCollection->at(i)->setVolume(volume->mirrorZ());
         }
-        fixOrigins(volumeSet, fileName);
-        return volumeSet;
+        return volumeCollection;
     }
     else
         throw tgt::CorruptedFileException();

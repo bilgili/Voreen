@@ -84,11 +84,16 @@ SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent ) :
 }
 
 QSize SliderSpinBoxWidget::sizeHint () const {
-    return QSize(160,22);
+    return QSize(320,22);
 }
 
+void SliderSpinBoxWidget::setSingleStep( int step ) {
+    spinBoxSPB->setSingleStep(step);
+}
+
+
 void SliderSpinBoxWidget::setValue(int value) {
-    if (value != value_) {
+    if (value != value_ || sliderSLD->value() != value || spinBoxSPB->value() != value) {
         value_ = value;
         sliderSLD->setValue(value_);
         spinBoxSPB->setValue(value_);
@@ -169,19 +174,13 @@ DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) :
     sliderSLD->setOrientation(Qt::Horizontal);
     sliderSLD->setTickPosition(QSlider::NoTicks);
     sliderSLD->setTickInterval(5);
-
     hboxLayout->addWidget(sliderSLD);
 
     spinBoxSPB = new QDoubleSpinBox(this);
     spinBoxSPB->setObjectName(QString::fromUtf8("spinBoxSPB"));
 
     hboxLayout->addWidget(spinBoxSPB);
-
     vboxLayout->addLayout(hboxLayout);
-
-    spacerItem = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-    vboxLayout->addItem(spacerItem);
 
     setWindowTitle(QApplication::translate("DoubleSliderSpinBoxWidget", "DoubleSliderSpinBoxWidget", 0, QApplication::UnicodeUTF8));
     // signals and slots connections
@@ -196,7 +195,7 @@ DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) :
 }
 
 QSize DoubleSliderSpinBoxWidget::sizeHint () const {
-    return QSize(160,22);
+    return QSize(320,22);
 }
 
 void DoubleSliderSpinBoxWidget::setValue(double value) {

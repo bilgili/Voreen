@@ -43,7 +43,7 @@ namespace voreen {
 class PropertyVector : public Property {
 public:
 
-    PropertyVector(const std::string& id, const std::string& guiText, std::vector<Property*> properties); 
+    PropertyVector(const std::string& id, const std::string& guiText, std::vector<Property*> properties);
 
     virtual ~PropertyVector();
 
@@ -52,25 +52,32 @@ public:
     const std::vector<Property*>& getProperties() const;
 
     template<typename T>
-    T* getProperty(int id) {
-        T* prop = 0;       
-        if (id >= 0 && id < getNumProperties()) {
-            prop = dynamic_cast<T*>(properties_[id]);
+    T getProperty(int id) const {
+        T prop = 0;
+        if (id >= 0 && id < size()) {
+            prop = dynamic_cast<T>(properties_[id]);
             if (!prop) {
-                LERROR("Property is of invalid type");
+                LWARNING("Property is of invalid type");
             }
         }
         else {
+            tgtAssert(false, "Invalid property id.");
             LERROR("Invalid property id: " << id);
         }
         return prop;
-    } 
+    }
 
-    int getNumProperties() const;
+    int size() const;
 
-    void updateFromXml(TiXmlElement* propElem);
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
 
-    TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 

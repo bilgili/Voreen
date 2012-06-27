@@ -31,144 +31,65 @@
 #define VRN_IDMANAGER_H
 
 #include "tgt/vector.h"
-#include "voreen/core/vis/message.h"
+#include "voreen/core/vis/rendertarget.h"
 
 namespace voreen {
 
-class TextureContainer;
-
-/**
- * Data Structure - enhanced Identifier
- */
-class IDF {
-public:
-    IDF(std::string name);
-    friend bool operator==(const IDF &x, const IDF &y);
-    friend bool operator==(const std::string &x, const IDF &y);
-    friend bool operator==(const IDF &x, const std::string &y);
-    tgt::vec3 vec() const { return tgt::vec3(x_, y_, z_); }
-
-    float x_;
-    float y_;
-    float z_;
-    std::string name_;
+struct colComp {
+    bool operator()(tgt::col3 c1, tgt::col3 c2) const {
+        if (c1.r < c2.r)
+            return true;
+        else if (c1.r == c2.r) {
+            if (c1.g < c2.g)
+                return true;
+            else if (c1.g == c2.g) {
+                if (c1.b < c2.b)
+                    return true;
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+        else
+            return false;
+    }
 };
 
 /**
- * Construct an IDF with a std::string
- */
-inline IDF::IDF(std::string name) : name_(name) {}
-
-/**
- * Compares two IDF's
- */
-inline bool operator==(const IDF &x, const IDF &y) {
-    return x.name_.compare(y.name_) == 0;
-}
-
-/**
- * Compares std:string with IDF
- */
-inline bool operator==(const std::string &x, const IDF &y) {
-    return x.compare(y.name_) == 0;
-}
-
-/**
- * Compares IDF with std::string
- */
-inline bool operator==(const IDF &x, const std::string &y) {
-    return x.name_.compare(y) == 0;
-}
-
-
-/**
  * IDManager class for picking
- * usage:
- * Processor: addNewPickObj() - startBufferRenderering() - stopBufferRendering()
- * Validation: isClicked()
  */
 class IDManager {
-
-    class IDManagerContents {
-    public:
-        IDManagerContents();
-        int currentID_R_;
-        int currentID_G_;
-        int currentID_B_;
-        int textureTarget_;
-        int oldRT_;
-        bool isTC_;
-        bool newRenderingPass_;
-        TextureContainer* tc_;
-        std::vector<IDF> picks_;
-    };
-
 public:
     IDManager();
+    void initializeTarget();
 
-    static IDManagerContents* getContent() {return content_;}
+    tgt::col3 registerObject(void* obj);
+    void deregisterObject(void* obj);
+    void clearRegisteredObjects();
+    tgt::col3 getColorFromObject(void* obj);
+    void setGLColor(void* obj);
+    void* getObjectFromColor(tgt::col3 col);
 
-    /**
-     * adds new picking object to the manager
-     * @param ident identifies the picking object
-     */
-    void addNewPickObj(Identifier ident);
+    void* getObjectAtPos(tgt::ivec2 pos);
+    tgt::col3 getColorAtPos(tgt::ivec2 pos);
 
-    /**
-     * clears buffer (picking texture)
-     */
-    void clearTextureTarget();
+    bool isHit(tgt::ivec2 pos, void* obj);
 
-    /**
-     * Tells the IDManager that a new rendering pass has begun. The content of the
-     * textureTarget will be deleted when startBufferRendering is called for the first time
-     * in a rendering pass.
-     */
-    void signalizeNewRenderingPass();
+    void activateTarget(std::string debugLabel = "");
+    void clearTarget();
+    void setRenderTarget(RenderTarget* rt);
+    RenderTarget* getRenderTarget();
 
-    /**
-     * Sets rendering target to picking buffer
-     * Sets the correct color for picking object
-     */
-    void startBufferRendering(Identifier identIN);
-
-    /**
-     * Resets rendering target
-     */
-    void stopBufferRendering();
-
-    /**
-     * Validates picking objects position
-     */
-    bool isClicked(Identifier ident, int x, int y);
-
-    /**
-     * Resets saved picking objects
-     */
-    void clearIDs();
-
-    /**
-     * Sets texture container
-     */
-    void setTC(TextureContainer* tc);
-
-    /**
-     * Returns color at position (x,y) in the picking texture
-     */
-    tgt::vec3 getIDatPos(int x, int y) const;
-
-    /** Returns the name of the picked object at position (x, y).
-     *
-     * NOTE: in contrast to methods <code>getIDadPos()</code> and
-     * <code>isClicked()</code>, this methods flips the y-coordinate!
-     * The caller has to pass the y-component in screen coordinates
-     * like it is obtained for example by Qt mousePressEvent().
-     *
-     */
-    std::string getNameAtPos(int x, int y) const;
-
+    bool isRegistered(void* obj);
+    bool isRegistered(tgt::col3 col);
 private:
-    static IDManagerContents* content_;
+    void increaseID();
+
+    std::map<tgt::col3, void*, colComp> colorToID_;
+    std::map<void*, tgt::col3> IDToColor_;
+    RenderTarget* rt_;
+    tgt::col3 currentID_;
 };
 
 

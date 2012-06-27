@@ -36,8 +36,11 @@
 #include "tgt/gpucapabilities.h"
 
 #include "voreen/core/volume/volumeatomic.h"
-#include "voreen/core/volume/volumeset.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
+
+#ifdef VRN_MODULE_FLOWREEN
+#include "voreen/modules/flowreen/volumeflow3d.h"
+#endif
 
 #ifdef VRN_MODULE_GLYPHS_MESH
 #include "voreen/modules/glyphs_mesh/meshpositiondata.h"
@@ -214,6 +217,13 @@ VolumeGL::VolumeGL(Volume* volume, TransFunc* tf /*= 0*/, float alphaScale /*= 1
         internalFormat_ = GL_RGB;
         dataType_ = GL_FLOAT;
     }
+#ifdef VRN_MODULE_FLOWREEN
+    else if (volumeType_ == typeid(VolumeFlow3D)) {
+        format_ = GL_RGB;
+        internalFormat_ = GL_RGB16;
+        dataType_ = GL_FLOAT;
+    }
+#endif
 #ifdef VRN_MODULE_GLYPHS_MESH
     else if (volumeType_ == typeid(MeshPositionData)) {
         format_ = GL_RGB;
@@ -284,9 +294,9 @@ VolumeGL::VolumeGL(Volume* volume, TransFunc* tf /*= 0*/, float alphaScale /*= 1
     // do not call generateTextures if tf is zero and tfSupport_ == SOFTWARE
     if (tf != 0 || tfSupport_ != SOFTWARE) {
         try {
-			//if (volume->getData() != 0) {
-				generateTextures(tf, alphaScale);
-			//}
+            //if (volume->getData() != 0) {
+                generateTextures(tf, alphaScale);
+            //}
         }
         catch (std::bad_alloc) {
             // release all resources
@@ -795,18 +805,52 @@ void VolumeGL::uploadTexture(TransFunc* tf, float alphaScale /*= 1.f*/,
         }
     }
 
+    tgt::vec3* temp2 = 0;
+#ifdef VRN_MODULE_FLOWREEN
+    // Textures containing flow data need to contain data
+    // within range [0.0, 1.0], so the values have to be mapped
+    //
+    VolumeFlow3D* flowTex = dynamic_cast<VolumeFlow3D*>(v);
+    if (flowTex != 0) {
+        const float minValue = flowTex->getMinValue();
+        const float maxValue = flowTex->getMaxValue();
+        const float range = (maxValue - minValue);
+
+        const tgt::vec3* const voxels = flowTex->voxel();
+        temp2 = new tgt::vec3[v->getNumVoxels()];
+        for (size_t i = 0; i < v->getNumVoxels(); ++i) {
+            if (voxels[i] != tgt::vec3::zero) {
+                temp2[i].x = (voxels[i].x - minValue) / range;
+                temp2[i].y = (voxels[i].y - minValue) / range;
+                temp2[i].z = (voxels[i].z - minValue) / range;
+            }
+        }
+    }
+#endif
+
     // create texture
-    VolumeTexture* vTex = new VolumeTexture(
-        temp ? temp : static_cast<GLubyte*>(v->getData()), // use temp data if this was created
-        matrix, llf, urb, v->getDimensions(),
-        format_, internalFormat_, dataType_, filter_
-    );
+    VolumeTexture* vTex = 0;
+
+    // use temp data if this was created
+    if (temp) {
+        vTex = new VolumeTexture(temp,
+            matrix, llf, urb, v->getDimensions(),
+            format_, internalFormat_, dataType_, filter_);
+    } else if (temp2 != 0) {
+        vTex = new VolumeTexture(reinterpret_cast<GLubyte*>(temp2),
+            matrix, llf, urb, v->getDimensions(),
+            format_, internalFormat_, dataType_, filter_);
+    } else {
+        vTex = new VolumeTexture(static_cast<GLubyte*>(v->getData()),
+            matrix, llf, urb, v->getDimensions(),
+            format_, internalFormat_, dataType_, filter_);
+    }
 
     vTex->bind();
     // call glTexImage3D
-	if (v->getData() != 0) {
-		vTex->uploadTexture();
-	}
+    if (v->getData() != 0) {
+        vTex->uploadTexture();
+    }
     // set texture wrap to clamp
     vTex->setWrapping(tgt::Texture::CLAMP);
 

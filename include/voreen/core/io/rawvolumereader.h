@@ -60,48 +60,51 @@ public:
      * @param objectModel \c I (intensity) or \c RGBA
      * @param format voxel data format, one of \c UCHAR, \c USHORT, \c USHORT_12 (for CT datasets),
      *        \c FLOAT 8 and \c FLOAT16.
-     * @param zeroPoint offset for the voxel data for supporting signed data
+     * @param headerskip number of bytes to skip at the beginning of the raw file
      * @param transformation 4x4-matrix for affine transformation of volume
      * @param metaString a string containing arbitrary meta-data
-     * @param offset if the loading shouldn't start at the beginning but at an offset
      * @param unit a string containing the unit of the dataset
      */
     void readHints(tgt::ivec3 dimensions,
                    tgt::vec3 spacing,
                    int bitsStored,
-                   const std::string objectModel = "RGBA",
-                   const std::string format = "UCHAR",
-                   int zeroPoint = 0,
+                   const std::string& objectModel = "I",
+                   const std::string& format = "UCHAR",
+                   int headerskip = 0,
                    tgt::mat4 transformation = tgt::mat4::identity,
                    Modality modality = Modality::MODALITY_UNKNOWN,
-				   float timeStep_ = -1.0f,
-                   std::string metaString = "",
-                   std::string unit = "",
-                   int offset = 0);
+                   float timeStep_ = -1.0f,
+                   const std::string& metaString = "",
+                   const std::string& unit = "",
+                   const std::string& sliceOrder = "+z");
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeSet* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+    virtual VolumeCollection* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeSet* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeCollection* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
-private:
+    /**
+     * Extracts the parameters necessary for loading the raw volume from the passed Origin and loads it.
+     */
+    virtual VolumeHandle* read(const VolumeOrigin& origin) throw (tgt::FileException, std::bad_alloc);
 
+private:
     tgt::ivec3 dimensions_;
     int bitsStored_;
     tgt::vec3 spacing_;
     std::string objectModel_;
     std::string format_;
-    int zeroPoint_;
+    uint64_t headerskip_;
     tgt::mat4 transformation_;
     Modality modality_;
     float timeStep_;
     std::string metaString_;
-    uint64_t offset_;
     std::string unit_;
+    std::string sliceOrder_;
 
     static const std::string loggerCat_;
 };

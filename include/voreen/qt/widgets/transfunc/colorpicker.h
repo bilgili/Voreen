@@ -86,7 +86,7 @@ signals:
      *
      * @param on should coarseness mode switched on or off?
      */
-    void switchInteractionMode(bool b);
+    void toggleInteractionMode(bool b);
 
 protected:
     /**
@@ -114,7 +114,7 @@ protected:
     void mousePressEvent(QMouseEvent* event);
 
     /**
-     * Only emits the switchInteractionMode signal, so that coarseness mode is siwtched off.
+     * Only emits the toggleInteractionMode signal, so that coarseness mode is siwtched off.
      *
      * @param event the mouse event
      */

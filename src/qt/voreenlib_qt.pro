@@ -44,7 +44,9 @@ win32: {
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
 # file 'foo_qt.pri' there.
-for(i, VRN_MODULES) : include(../modules/$${i}/$${i}_qt.pri)
+for(i, VRN_MODULES) : exists($${VRN_HOME}/src/modules/$${i}/$${i}_qt.pri) {
+  include($${VRN_HOME}/src/modules/$${i}/$${i}_qt.pri)
+}
 
 # include resource files
 RESOURCES = $${VRN_HOME}/resource/qt/vrn_qt.qrc
@@ -55,75 +57,82 @@ RESOURCES = $${VRN_HOME}/resource/qt/vrn_qt.qrc
 ##############
 SOURCES += \
     aboutbox.cpp \
-    applicationqt.cpp \
-    datasetserver.cpp \
     helpbrowser.cpp \
     ioprogressdialog.cpp \
-    opennetworkfiledialog.cpp \
     pyvoreenqt.cpp \
     versionqt.cpp \
-    voreenapp.cpp \
-    voreenmainframe.cpp
+    voreenapplicationqt.cpp
 SOURCES += \
     widgets/animationplugin.cpp \
-    widgets/backgroundplugin.cpp \
     widgets/choicelistcombobox.cpp \
-    widgets/clipperwidget.cpp \
-    widgets/clippingplugin.cpp \
     widgets/consoleplugin.cpp \
-    widgets/dynamicsplugin.cpp \
     widgets/eventpropertywidget.cpp \
     widgets/expandableheaderbutton.cpp \
+    widgets/glslhighlighter.cpp \
     widgets/keydetectorwidget.cpp \
-    widgets/informationplugin.cpp \
     widgets/labelingwidgetqt.cpp \
-    widgets/lightmaterialplugin.cpp \
-    widgets/orientationplugin.cpp \
-    widgets/pickingplugin.cpp\
     widgets/plugindialog.cpp \
-    widgets/processorpropertieswidget.cpp \
     widgets/qlabelclickable.cpp \
-    widgets/qpropertywidget.cpp \
+    widgets/lineeditresetwidget.cpp \
+    widgets/rawvolumewidget.cpp \
     widgets/segmentationplugin.cpp \
+    widgets/shaderplugin.cpp \
     widgets/shortcutpreferenceswidget.cpp \
-    widgets/showtexcontainerwidget.cpp \
+    widgets/rendertargetdebugwidget.cpp \
     widgets/sliderspinboxwidget.cpp \
     widgets/snapshotplugin.cpp \
-    widgets/stereoplugin.cpp \
-    widgets/thresholdwidget.cpp \
-    widgets/volumesetwidget.cpp \
+    widgets/tablesstextedit.cpp \
+    widgets/volumecontainerwidget.cpp \
+    widgets/volumeviewhelper.cpp \
     widgets/voreentoolwindow.cpp \
     widgets/widgetplugin.cpp
 SOURCES += \
-    widgets/compactproperty/compactboolpropertywidget.cpp \
-    widgets/compactproperty/compactcolorpropertywidget.cpp \
-    widgets/compactproperty/compactenumpropertywidget.cpp \
-    widgets/compactproperty/compactfiledialogpropertywidget.cpp \
-    widgets/compactproperty/compactfloatpropertywidget.cpp \
-    widgets/compactproperty/compactfloatvec2propertywidget.cpp \
-    widgets/compactproperty/compactfloatvec3propertywidget.cpp \
-    widgets/compactproperty/compactfloatvec4propertywidget.cpp \
-    widgets/compactproperty/compactintpropertywidget.cpp \
-    widgets/compactproperty/compactintvec2propertywidget.cpp \
-    widgets/compactproperty/compactintvec3propertywidget.cpp \
-    widgets/compactproperty/compactintvec4propertywidget.cpp \
-    widgets/compactproperty/compactoptionpropertywidget.cpp \
-    widgets/compactproperty/compactpropertywidget.cpp \
-    widgets/compactproperty/compactpropertyvectorwidget.cpp \
-    widgets/compactproperty/compactpropertywidgetfactory.cpp \
-    widgets/compactproperty/compactstringpropertywidget.cpp \
-    widgets/compactproperty/compactstringselectionpropertywidget.cpp \
-    widgets/compactproperty/compactstringvectorpropertywidget.cpp \
-    widgets/compactproperty/compacttransfuncpropertywidget.cpp   
+    widgets/property/boolpropertywidget.cpp \
+    widgets/property/buttonpropertywidget.cpp \
+    widgets/property/camerapropertywidget.cpp \
+    widgets/property/colorpropertywidget.cpp \
+    widgets/property/filedialogpropertywidget.cpp \
+    widgets/property/floatpropertywidget.cpp \
+    widgets/property/floatvec2propertywidget.cpp \
+    widgets/property/floatvec3propertywidget.cpp \
+    widgets/property/floatvec4propertywidget.cpp \
+    widgets/property/intpropertywidget.cpp \
+    widgets/property/intvec2propertywidget.cpp \
+    widgets/property/intvec3propertywidget.cpp \
+    widgets/property/intvec4propertywidget.cpp \
+    widgets/property/optionpropertywidget.cpp \
+    widgets/property/propertyvectorwidget.cpp \
+    widgets/property/processorpropertieswidget.cpp \
+    widgets/property/qpropertywidget.cpp \
+    widgets/property/qpropertywidgetfactory.cpp \
+    widgets/property/shaderpropertywidget.cpp \
+    widgets/property/stringpropertywidget.cpp \
+    widgets/property/transfuncpropertywidget.cpp \
+	widgets/property/vecpropertywidget.cpp \
+    widgets/property/volumecollectionpropertywidget.cpp \
+    widgets/property/volumehandlepropertywidget.cpp
 SOURCES += \
     widgets/network/processorlistwidget.cpp \
     widgets/network/propertylistwidget.cpp \
     widgets/network/editor/arrowgraphicsitem.cpp \
-    widgets/network/editor/guiitem.cpp \
+    widgets/network/editor/linkarrowgraphicsitem.cpp \
+    widgets/network/editor/portgraphicsitem.cpp \
     widgets/network/editor/networkeditor.cpp \
+    widgets/network/editor/openpropertylistbutton.cpp \
     widgets/network/editor/processorgraphicsitem.cpp \
+    widgets/network/editor/propertylistgraphicsitem.cpp \
     widgets/network/editor/tctooltip.cpp \
+    widgets/network/editor/propertygraphicsitem.cpp \
+    widgets/network/editor/propertylinkdialog.cpp \
+    widgets/network/editor/scripteditor.cpp \
+    widgets/network/editor/textgraphicsitem.cpp \
     widgets/network/editor/tooltiptimer.cpp
+SOURCES += \
+    widgets/processor/qprocessorwidget.cpp \
+    widgets/processor/qprocessorwidgetfactory.cpp \
+    widgets/processor/canvasrendererwidget.cpp
+SOURCES += \
+    widgets/property/camerawidget.cpp 
 SOURCES += \
     widgets/transfunc/colorluminancepicker.cpp \
     widgets/transfunc/colorpicker.cpp \
@@ -150,77 +159,85 @@ SOURCES += \
     
 HEADERS += \
     ../../include/voreen/qt/aboutbox.h \
-    ../../include/voreen/qt/applicationqt.h \
-    ../../include/voreen/qt/datasetserver.h \
     ../../include/voreen/qt/helpbrowser.h \
     ../../include/voreen/qt/ioprogressdialog.h \
-    ../../include/voreen/qt/opennetworkfiledialog.h \
     ../../include/voreen/qt/pyvoreenqt.h \
     ../../include/voreen/qt/qdebug.h \
     ../../include/voreen/qt/versionqt.h \
-    ../../include/voreen/qt/voreenapp.h \
-    ../../include/voreen/qt/voreenmainframe.h
+    ../../include/voreen/qt/voreenapplicationqt.h \
+    ../../include/voreen/qt/voreenqtglobal.h
 HEADERS += \
     ../../include/voreen/qt/widgets/animationplugin.h \
-    ../../include/voreen/qt/widgets/backgroundplugin.h \
     ../../include/voreen/qt/widgets/choicelistcombobox.h \
-    ../../include/voreen/qt/widgets/clipperwidget.h \
-    ../../include/voreen/qt/widgets/clippingplugin.h \
     ../../include/voreen/qt/widgets/consoleplugin.h \
-    ../../include/voreen/qt/widgets/dynamicsplugin.h \
     ../../include/voreen/qt/widgets/eventpropertywidget.h \
     ../../include/voreen/qt/widgets/expandableheaderbutton.h \
+    ../../include/voreen/qt/widgets/glslhighlighter.h \
     ../../include/voreen/qt/widgets/keydetectorwidget.h \
-    ../../include/voreen/qt/widgets/informationplugin.h \
     ../../include/voreen/qt/widgets/labelingwidgetqt.h \
-    ../../include/voreen/qt/widgets/lightmaterialplugin.h \
-    ../../include/voreen/qt/widgets/orientationplugin.h \
-    ../../include/voreen/qt/widgets/pickingplugin.h\
     ../../include/voreen/qt/widgets/plugindialog.h \
-    ../../include/voreen/qt/widgets/processorpropertieswidget.h \
     ../../include/voreen/qt/widgets/qlabelclickable.h \
-    ../../include/voreen/qt/widgets/qpropertywidget.h \
+    ../../include/voreen/qt/widgets/lineeditresetwidget.h \
+    ../../include/voreen/qt/widgets/rawvolumewidget.h \
     ../../include/voreen/qt/widgets/segmentationplugin.h \
+    ../../include/voreen/qt/widgets/shaderplugin.h \
     ../../include/voreen/qt/widgets/shortcutpreferenceswidget.h \
-    ../../include/voreen/qt/widgets/showtexcontainerwidget.h \
+    ../../include/voreen/qt/widgets/rendertargetdebugwidget.h \
     ../../include/voreen/qt/widgets/sliderspinboxwidget.h \
     ../../include/voreen/qt/widgets/snapshotplugin.h \
-    ../../include/voreen/qt/widgets/stereoplugin.h \
-    ../../include/voreen/qt/widgets/thresholdwidget.h \
-    ../../include/voreen/qt/widgets/volumesetwidget.h \
+    ../../include/voreen/qt/widgets/tablesstextedit.h \
+    ../../include/voreen/qt/widgets/volumecontainerwidget.h \
+    ../../include/voreen/qt/widgets/volumeviewhelper.h \
     ../../include/voreen/qt/widgets/voreentoolwindow.h \
     ../../include/voreen/qt/widgets/widgetplugin.h
 HEADERS += \
-    ../../include/voreen/qt/widgets/compactproperty/compactboolpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactcolorpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactenumpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactfiledialogpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactfloatpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactfloatvec2propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactfloatvec3propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactfloatvec4propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactintpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactintvec2propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactintvec3propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactintvec4propertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactoptionpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactpropertyvectorwidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactpropertywidgetfactory.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactstringpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactstringselectionpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactstringvectorpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compacttransfuncpropertywidget.h \
-    ../../include/voreen/qt/widgets/compactproperty/compactvectorpropertywidget.h
+    ../../include/voreen/qt/widgets/property/boolpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/buttonpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/camerapropertywidget.h \
+    ../../include/voreen/qt/widgets/property/colorpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/filedialogpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatvec2propertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatvec3propertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatvec4propertywidget.h \
+    ../../include/voreen/qt/widgets/property/intpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/intvec2propertywidget.h \
+    ../../include/voreen/qt/widgets/property/intvec3propertywidget.h \
+    ../../include/voreen/qt/widgets/property/intvec4propertywidget.h \
+    ../../include/voreen/qt/widgets/property/optionpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/propertyvectorwidget.h \
+    ../../include/voreen/qt/widgets/property/processorpropertieswidget.h \
+    ../../include/voreen/qt/widgets/property/qpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/qpropertywidgetfactory.h \
+    ../../include/voreen/qt/widgets/property/shaderpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/stringpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/transfuncpropertywidget.h \
+	../../include/voreen/qt/widgets/property/vecpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/volumecollectionpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/volumehandlepropertywidget.h 
 HEADERS += \
     ../../include/voreen/qt/widgets/network/processorlistwidget.h \
     ../../include/voreen/qt/widgets/network/propertylistwidget.h \
     ../../include/voreen/qt/widgets/network/editor/arrowgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/guiitem.h \
+    ../../include/voreen/qt/widgets/network/editor/linkarrowgraphicsitem.h \
+    ../../include/voreen/qt/widgets/network/editor/portgraphicsitem.h \
     ../../include/voreen/qt/widgets/network/editor/networkeditor.h \
+    ../../include/voreen/qt/widgets/network/editor/openpropertylistbutton.h \
     ../../include/voreen/qt/widgets/network/editor/processorgraphicsitem.h \
+    ../../include/voreen/qt/widgets/network/editor/propertylistgraphicsitem.h \
     ../../include/voreen/qt/widgets/network/editor/tctooltip.h \
-    ../../include/voreen/qt/widgets/network/editor/tooltiptimer.h
+    ../../include/voreen/qt/widgets/network/editor/textgraphicsitem.h \
+    ../../include/voreen/qt/widgets/network/editor/tooltiptimer.h \
+    ../../include/voreen/qt/widgets/network/editor/propertylinkdialog.h \
+    ../../include/voreen/qt/widgets/network/editor/scripteditor.h \
+    ../../include/voreen/qt/widgets/network/editor/itooltip.h \
+    ../../include/voreen/qt/widgets/network/editor/propertygraphicsitem.h
+HEADERS += \
+    ../../include/voreen/qt/widgets/processor/qprocessorwidget.h \
+    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h \       
+    ../../include/voreen/qt/widgets/processor/canvasrendererwidget.h
+HEADERS += \
+    ../../include/voreen/qt/widgets/property/camerawidget.h
 HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/colorluminancepicker.h \
     ../../include/voreen/qt/widgets/transfunc/colorpicker.h \
@@ -236,8 +253,7 @@ HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/transfuncmappingcanvasramp.h \
     ../../include/voreen/qt/widgets/transfunc/transfuncplugin.h \
     ../../include/voreen/qt/widgets/transfunc/transfunctexturepainter.h
-    
-    
+
 HEADERS += \
     ../../ext/tgt/qt/qtcanvas.h \
     ../../ext/tgt/qt/qttimer.h
@@ -247,7 +263,14 @@ MSVC_IDE: SOURCES += \
     ../core/vis/glsl/stc_showfloatcolor.frag \
     ../core/vis/glsl/stc_showtexture.frag
 
-FORMS = aboutbox.ui
+contains(DEFINES, VRN_WITH_DCMTK) {
+  HEADERS += ../../include/voreen/qt/dicomdialog.h
+  SOURCES += dicomdialog.cpp
+}
+
+
+
+FORMS += aboutbox.ui scripteditor.ui
 
 
 # this must come after all SOURCES, HEADERS and FORMS have been added

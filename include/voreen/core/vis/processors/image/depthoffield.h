@@ -38,7 +38,6 @@
 #include "tgt/quadric.h"
 #include "tgt/types.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
@@ -60,20 +59,24 @@ public:
      * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     DepthOfField();
-    virtual const Identifier getClassName() const {return "ImageProcessor.DepthOfField";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "DepthOfField"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new DepthOfField();}
+    virtual Processor* create() const;
 
 
     void setDepthThreshold(float depthThreshold);
 
-    void process(LocalPortMapping* portMapping);
+    void process();
 
-    static const Identifier setDepthOfFieldThreshold_;
+    static const std::string setDepthOfFieldThreshold_;
 
 protected:
+    FloatProperty depthThreshold_;
 
-    FloatProp depthThreshold_;
+    RenderPort inport_;
+    RenderPort outport_;
 };
 
 

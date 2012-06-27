@@ -30,79 +30,79 @@
 
 namespace voreen {
 
-	BalancedBrickResolutionCalculator::BalancedBrickResolutionCalculator(
-        BrickingInformation &brickingInformation) 
-		: BrickResolutionCalculator(brickingInformation) 
-	{
-	}
+    BalancedBrickResolutionCalculator::BalancedBrickResolutionCalculator(
+        BrickingInformation &brickingInformation)
+        : BrickResolutionCalculator(brickingInformation)
+    {
+    }
 
-	void BalancedBrickResolutionCalculator::calculateBrickResolutions() {
-		std::vector<int> result;
+    void BalancedBrickResolutionCalculator::calculateBrickResolutions() {
+        std::vector<int> result;
 
-		//Get the number of bricks we actually have to calculate lods for. Empty
-		//bricks always get the lowest possible lod and therefor mustn't be considered
-		//in the calculation.
-		int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded 
-							- brickingInformation_.numberOfBricksWithEmptyVolumes;
+        //Get the number of bricks we actually have to calculate lods for. Empty
+        //bricks always get the lowest possible lod and therefor mustn't be considered
+        //in the calculation.
+        int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded
+                            - brickingInformation_.numberOfBricksWithEmptyVolumes;
 
-		//The size in byte that one brick has. This depends on the number of bytes a voxel
-		//has (like char or short or tgt::vec3) and the number of voxels in a brick obviously. 
-		int brickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte * 
-							  brickingInformation_.numVoxelsInBrick;
-		
-		//We now start calculating which resolutions can be used. For that we take the size 
-		//of the entire volume and check which lods would fit. However empty bricks will get lowest
-		//resolution anyway, we can be certain of that, and can therefore  substract those.
-		float volumeSize = (float)brickingInformation_.originalVolumeSizeMB;
+        //The size in byte that one brick has. This depends on the number of bytes a voxel
+        //has (like char or short or tgt::vec3) and the number of voxels in a brick obviously.
+        int brickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte *
+                              brickingInformation_.numVoxelsInBrick;
 
-		float temp = static_cast<float>(
-			(brickSizeInByte - 1 ) * (brickingInformation_.numberOfBricksWithEmptyVolumes) );
-		
+        //We now start calculating which resolutions can be used. For that we take the size
+        //of the entire volume and check which lods would fit. However empty bricks will get lowest
+        //resolution anyway, we can be certain of that, and can therefore  substract those.
+        float volumeSize = (float)brickingInformation_.originalVolumeSizeMB;
+
+        float temp = static_cast<float>(
+            (brickSizeInByte - 1 ) * (brickingInformation_.numberOfBricksWithEmptyVolumes) );
+
         temp = temp / (1024.f * 1024.f);
-		volumeSize = volumeSize - temp;
+        volumeSize = volumeSize - temp;
 
-		//We are looking for two resolutions levels right next to each other, this one is the lower one.
-		int lowerResolution = 0;
-		bool resolutionFound = false;
+        //We are looking for two resolutions levels right next to each other, this one is the lower one.
+        int lowerResolution = 0;
+        bool resolutionFound = false;
 
-        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x * 
+        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x *
                                     brickingInformation_.packedVolumeDimensions.y *
                                     brickingInformation_.packedVolumeDimensions.z *
                                     brickingInformation_.originalVolumeBytesAllocated -
-                                    ((brickingInformation_.numberOfBricksWithEmptyVolumes)* 
+                                    ((brickingInformation_.numberOfBricksWithEmptyVolumes)*
                                     brickingInformation_.originalVolumeBytesAllocated);
 
         double availableMemInMegaByte = availableMemInByte / (1024.0 * 1024.0);
 
-		//Go through all available resolutions and check if the bricked volume would fit
-		//into GPU memory if we only used bricks of that resolution. We start at resolution
-		//level 1.
-		for (int i=1; i<=brickingInformation_.totalNumberOfResolutions; i++) {
-			
+        //Go through all available resolutions and check if the bricked volume would fit
+        //into GPU memory if we only used bricks of that resolution. We start at resolution
+        //level 1.
+        for (int i=1; i<=brickingInformation_.totalNumberOfResolutions; i++) {
+
             //Every decrease in resoltion decreases volume size by 1.
-			volumeSize = static_cast<float>(volumeSize / 8.0);	
-			
+            volumeSize = static_cast<float>(volumeSize / 8.0);
+
             if (volumeSize < availableMemInMegaByte) {
-				//If the volume now fits into the gpu memory, we can take this resolution as the lower one. 
-				lowerResolution = i;
-				resolutionFound = true;
-				break;
-			}
-		}
+                //If the volume now fits into the gpu memory, we can take this resolution as the lower one.
+                lowerResolution = i;
+                resolutionFound = true;
+                break;
+            }
+        }
 
-		if (resolutionFound == false) {
-			//Do someting here, that means the dataset can't be shrinked enough to fit on the gpu.
-			//Should never happen though.
-		} else {
-			
-            //The higher resolution is one level above the lower one obviously. 
-			int higherResolution = lowerResolution - 1;
+        if (resolutionFound == false) {
+            //Do someting here, that means the dataset can't be shrinked enough to fit on the gpu.
+            //Should never happen though.
+        } else {
 
-			//The sizes of bricks of our lower and higher resolution.
-			int lowResolutionBrickSize = static_cast<int> (brickSizeInByte / pow(8.0,lowerResolution));
-			int highResolutionBrickSize = static_cast<int> (lowResolutionBrickSize * 8.0);
+            //The higher resolution is one level above the lower one obviously.
+            int higherResolution = lowerResolution - 1;
 
-			int numberOfHighBricks,numberOfLowBricks;
+            //The sizes of bricks of our lower and higher resolution.
+            int lowResolutionBrickSize = static_cast<int> (brickSizeInByte / pow(8.0,lowerResolution));
+            int highResolutionBrickSize = static_cast<int> (lowResolutionBrickSize * 8.0);
+
+            int numberOfHighBricks,numberOfLowBricks;
 
             numberOfHighBricks=0;
             numberOfLowBricks=numberOfBricks;
@@ -111,11 +111,11 @@ namespace voreen {
 
             while(!done) {
 
-                if ( ( (numberOfHighBricks+1) * highResolutionBrickSize) + 
+                if ( ( (numberOfHighBricks+1) * highResolutionBrickSize) +
                     ( (numberOfLowBricks-1) * lowResolutionBrickSize) < availableMemInByte) {
 
                         if (numberOfHighBricks+1 > numberOfBricks || numberOfLowBricks-1 < 0) {
-                            //There are no more bricks to give a higher/lower resolution, so 
+                            //There are no more bricks to give a higher/lower resolution, so
                             //we're done
                             done=true;
                         } else {
@@ -130,20 +130,20 @@ namespace voreen {
             }
 
             //Write the calculated results in the result vector. The number at position 0 means
-			//x bricks can have level of detail 0, the number at position 1 means y bricks can have
-			//level of detail 1 and so on. 
-			for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
-				if (i == higherResolution)
-					result.push_back(numberOfHighBricks);
-				else if (i == lowerResolution)
-					result.push_back(numberOfLowBricks);
-				else
-					result.push_back(0);
-			}
-		}
+            //x bricks can have level of detail 0, the number at position 1 means y bricks can have
+            //level of detail 1 and so on.
+            for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
+                if (i == higherResolution)
+                    result.push_back(numberOfHighBricks);
+                else if (i == lowerResolution)
+                    result.push_back(numberOfLowBricks);
+                else
+                    result.push_back(0);
+            }
+        }
 
-		brickingInformation_.brickResolutions = result;
-	}
+        brickingInformation_.brickResolutions = result;
+    }
 
 } //namespace
 

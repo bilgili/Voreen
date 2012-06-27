@@ -30,35 +30,23 @@
 #ifndef VRN_TRANSFUNCPLUGIN_H
 #define VRN_TRANSFUNCPLUGIN_H
 
-#include "voreen/qt/widgets/qpropertywidget.h"
+#include <QWidget>
 
-#include <QShowEvent>
-
-class QStackedWidget;
 class QTabWidget;
+class QShowEvent;
 
 namespace voreen {
 
-class Processor;
 class TransFuncEditor;
-class TransFuncProp;
+class TransFuncProperty;
 
 /**
- * Container class for transfer function editors. Actually 3 editors for intensity
- * transfer functions are possible. They are arrenged in a QTabWidget.
+ * Container class for transfer function editors. Actually 4 editors for intensity
+ * transfer functions are possible. They are arranged in a QTabWidget.
  */
-class TransFuncPlugin : public QPropertyWidget {
-Q_OBJECT
+class TransFuncPlugin : public QWidget {
+    Q_OBJECT
 public:
-    /**
-     * Constructor
-     *
-     * @param proc editors for the transfer function property in this processor are created
-     * @param parent the parent widget
-     * @param orientation should the editors layouted vertically or horizontally?
-     */
-    TransFuncPlugin(Processor* proc, QWidget* parent = 0,
-                    Qt::Orientation orientation = Qt::Horizontal);
 
     /**
      * Constructor
@@ -67,7 +55,7 @@ public:
      * @param parent the parent widget
      * @param orientation should the editors layouted vertically or horizontally?
      */
-    TransFuncPlugin(TransFuncProp* prop, QWidget* parent = 0,
+    TransFuncPlugin(TransFuncProperty* prop, QWidget* parent = 0,
                     Qt::Orientation orientation = Qt::Horizontal);
 
     /**
@@ -81,7 +69,7 @@ public:
      * @param parent the parent widget
      * @param orientation should the editors layouted vertically or horizontally?
      */
-    void createEditors(int index, QWidget* parent, Qt::Orientation orientation);
+    void createEditors(QWidget* parent, Qt::Orientation orientation);
 
     /**
      * Creates the widgets for all editors and puts them into a QTabWidget.
@@ -100,10 +88,6 @@ public:
      */
     void update();
 
-    /**
-     * Sets disconnected_ to true. This indicates that the widget is already removed from the
-     * property or not.
-     */
     void disconnect();
 
 public slots:
@@ -116,14 +100,6 @@ public slots:
      */
     void editorChanged(int index);
 
-    /**
-     * Slot that is called when the user selects another transfer function in the combobox.
-     * It changes the displayed editors to the editors for the selected transfer function.
-     *
-     * @param index index of selected transfer function
-     */
-    void comboBoxChanged(int index);
-
 signals:
     /**
      * This signal is emitted whenever the transfer function has changed. It is used to force a
@@ -132,21 +108,18 @@ signals:
     void transferFunctionChanged();
 
 protected:
+    /**
+     * Called by Qt when the widget is shown. Calls update() on the current active TransFuncEditor.
+     *
+     * @param event the showevent
+     */
     void showEvent(QShowEvent* event);
 
-    // The following method stubs are necessary, because transfuncplugin inherits from qpropertywidget
-    void addVisibilityControls() {}
-    void showLODControls() {}
-    void hideLODControls() {}
-    void setLevelOfDetail(bool /*value*/) {}
-    
 private:
-    std::vector<std::vector<TransFuncEditor*> > editors_; ///< vector with all editors. The user can choose between all.
-    std::vector<TransFuncProp*> properties_; ///< vector with all transfer function properties that belong to this plugin
-    std::vector<QTabWidget*> tabWidgets_;    ///< vector with all created QTabWidgets
-    QStackedWidget* stackedWidget_;          ///< stacked widget in which all editors are displayed
-    bool disconnected_;                      ///< indicates whether the widget was already disconnected from the property
-    int oldIndex_;                           ///< index of the last active tab
+    std::vector<TransFuncEditor*> editors_; ///< vector with all editors. The user can choose between all.
+    TransFuncProperty* property_;               ///< transfer function property that belongs to this plugin
+    QTabWidget* tabWidget_;                 ///< QTabWidget with all created editors
+    int oldIndex_;                          ///< index of the last active tab
 };
 
 } // namespace voreen

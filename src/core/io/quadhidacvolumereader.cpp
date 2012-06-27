@@ -62,7 +62,7 @@ namespace voreen {
 
 const std::string QuadHidacVolumeReader::loggerCat_ = "voreen.io.VolumeReader.QuadHidac";
 
-VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName)
+VolumeCollection* QuadHidacVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string title;
@@ -255,7 +255,7 @@ VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName)
     // check whether we have a 12 or a 16 bit dataset
     int bits = max <= 4095.0f ? 12 : 16;
     VolumeUInt16* dataset = new VolumeUInt16(scalars, dims, tgt::vec3(dxyr), bits);
-    dataset->meta().setTransformation(transformationMatrix);
+    dataset->setTransformation(transformationMatrix);
 
     LINFO("min/max value: " << min << "/" << max);
     if (min < 0.0f) {
@@ -266,14 +266,11 @@ VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName)
     file.close();
     delete[] slice;
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-    volumeSet->addSeries(volumeSeries);
+    VolumeCollection* volumeCollection = new VolumeCollection();
     VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);
-    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
+    volumeCollection->add(volumeHandle);
 
-    return volumeSet;
+    return volumeCollection;
 }
 
 } // namespace voreen

@@ -46,17 +46,14 @@ public:
 
     virtual ~SingleVolumeRaycaster();
 
-    virtual const Identifier getClassName() const { return "Raycaster.SingleVolumeRaycaster"; }
+    virtual std::string getCategory() const { return "Raycasting"; }
+    virtual std::string getClassName() const { return "SingleVolumeRaycaster"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new SingleVolumeRaycaster(); }
 
-    virtual int initializeGL();
-
-    /**
-     * Load the needed shader.
-     *
-     */
-    virtual void loadShader();
+    virtual void initialize() throw (VoreenException);
 
     /**
      * Performs the raycasting.
@@ -65,22 +62,36 @@ public:
      * a screen aligned quad. The render destination is determined by the
      * invoking class.
      */
-    virtual void process(LocalPortMapping*  portMapping);
+    virtual void process();
 
+    virtual bool isReady() const;
 protected:
-    virtual std::string generateHeader();
-    virtual void compile();
 
-    void raycastingQualityChanged();
-    
+    /**
+     * Load the needed shader.
+     */
+    virtual void loadShader();
+
+    virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
+    virtual void compile(VolumeHandle* volumeHandle);
+
 private:
-    TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
+    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
+    CameraProperty camera_;           ///< the camera used for lighting calculations
 
-    EnumProp* compositingMode1_;    ///< What compositing mode should be applied for second outport
-    EnumProp* compositingMode2_;    ///< What compositing mode should be applied for third outport
+    StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
+    StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport
 
-    bool destActive_[2];
-    GLint maxProgramExecInstructions_; ///< maximum number of shader instruction supported by GPU
+    // interaction handlers
+    VolumePort volumeInport_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+
+    RenderPort outport_;
+    RenderPort outport1_;
+    RenderPort outport2_;
+
+    PortGroup portGroup_;
 };
 
 

@@ -28,29 +28,29 @@
  **********************************************************************/
 
 /**
-* This is the "master" bricking file where the getVoxel and getVoxelUnnormalized 
-* functions are declared. 
+* This is the "master" bricking file where the getVoxel and getVoxelUnnormalized
+* functions are declared.
 *
-* The Entry-Exit-Points for bricking are exactly the same as for a normal 
-* dataset. The volume itself however is handled differently. The volume is 
-* subdivided into bricks, and all these bricks are packed together in a 
+* The Entry-Exit-Points for bricking are exactly the same as for a normal
+* dataset. The volume itself however is handled differently. The volume is
+* subdivided into bricks, and all these bricks are packed together in a
 * "packed texture". An "index texture" keeps track of where the bricks are
 * inside the packed texture. In order to do a texture lookup one needs to do
-* the following: 
+* the following:
 *
 * ->    Check in which brick the current sample is.
 *
 * ->    Calculate where in the index texture we can read the brick's
-*       position in the packed texture. 
+*       position in the packed texture.
 *
 * ->    Read that information from the index texture.
 *
 * ->    Use that information to calculate the sample's exact position
 *       in the packed texture.
 *
-* ->    Read the sample, using either intrablock or interblock interpolation. 
-* 
-* For more information read the papers by Kraus and Ertl (Adaptive Texture Maps) and 
+* ->    Read the sample, using either intrablock or interblock interpolation.
+*
+* For more information read the papers by Kraus and Ertl (Adaptive Texture Maps) and
 * by Ljung et al. (Multiresolution Interblock Interpolation in Direct Volume Rendering)
 */
 
@@ -63,60 +63,60 @@
 #include "modules/bricking/mod_adaptive_sampling.frag"
 
 /**
-* Lookup the current sample. 
-*/ 
+* Lookup the current sample.
+*/
 vec4 getVoxel(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sample) {
-	
+
     //Check in which brick the sample is in.
-	vec3 brick = getBrick(sample);
-            
-    //Calculate where in the index texture the brick's position in the 
+    vec3 brick = getBrick(sample);
+
+    //Calculate where in the index texture the brick's position in the
     //packed texture can be found.
     vec3 lookupPos = getIndexVolumePosition(brick);
-    
-    //Read that information. 
-    vec4 indexVolumeSample = indexVolumeLookup(lookupPos);  
+
+    //Read that information.
+    vec4 indexVolumeSample = indexVolumeLookup(lookupPos);
 
     //The scalefactor is stored globally (which is not..elegant) because
     //that information is needed when adaptive sampling is used.
-	currentScaleFactor = indexVolumeSample.a;
-  
-	vec4 voxel;
-	
+    currentScaleFactor = indexVolumeSample.a;
+
+    vec4 voxel;
+
     //Do the actual lookup. Either intrablock or interblock interpolation is used.
-	voxel = LOOKUP_VOXEL(sample,brick,indexVolumeSample);
+    voxel = LOOKUP_VOXEL(sample,brick,indexVolumeSample);
 
     #ifdef ADAPTIVE_SAMPLING
         numberOfSkippedSamples = getNumberOfSkippedSamples(sample, directionWithStepSize);
-    #endif 
-    
+    #endif
+
     return voxel;
 }
 
 vec4 getVoxelUnnormalized(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 sample) {
-	
+
      //Check in which brick the sample is in.
-	vec3 brick = getBrick(sample);
-            
-    //Calculate where in the index texture the brick's position in the 
+    vec3 brick = getBrick(sample);
+
+    //Calculate where in the index texture the brick's position in the
     //packed texture can be found.
     vec3 lookupPos = getIndexVolumePosition(brick);
-    
-    //Read that information. 
-    vec4 indexVolumeSample = indexVolumeLookup(lookupPos);  
-  
+
+    //Read that information.
+    vec4 indexVolumeSample = indexVolumeLookup(lookupPos);
+
     vec4 voxel;
 
     //Do the actual lookup. Either intrablock or interblock interpolation is used.
     voxel = LOOKUP_VOXEL(sample,brick,indexVolumeSample);
 
     voxel /= packedVolumeParameters_.bitDepthScale_;
-	
+
     return voxel;
 }
 
 /*
- * Function for volume texture lookup. In addition to the volume and the texture coordinates 
+ * Function for volume texture lookup. In addition to the volume and the texture coordinates
  * the corresponding VOLUME_PARAMETERS struct has to be passed .
  * In contrast to textureLookup3D() this function does not normalize the intensity values,
  * in order to deal with 12 bit data sets.

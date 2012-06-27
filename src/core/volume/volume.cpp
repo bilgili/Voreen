@@ -40,13 +40,12 @@ namespace voreen {
 
 const std::string Volume::loggerCat_("Voreen.Volume");
 
-Volume::Volume(const ivec3& dimensions,
-               int bitsStored,
-               const vec3& spacing)
-  : dimensions_(dimensions),
-    numVoxels_(hmul(dimensions)),
-    bitsStored_(bitsStored),
-    spacing_(spacing)
+Volume::Volume(const ivec3& dimensions, int bitsStored, const vec3& spacing)
+    : dimensions_(dimensions)
+    , numVoxels_(hmul(dimensions))
+    , bitsStored_(bitsStored)
+    , spacing_(spacing)
+    , transformationMatrix_(tgt::mat4::identity)
 {
     cubeSize_ = vec3(dimensions) * spacing;
     cubeSize_ = cubeSize_ * 2.f / max(cubeSize_);
@@ -79,7 +78,7 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
 
     const VolumeFloat*  v_float  = dynamic_cast<const VolumeFloat*>(v);
     const VolumeDouble* v_double = dynamic_cast<const VolumeDouble*>(v);
-    
+
     if (t_ui8 && v_ui16) {
         LINFO("using accelerated conversion from VolumeUInt16 -> VolumeUInt8 without smart convert");
 
@@ -105,20 +104,20 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
 
         LINFO("Converting float volume with data range [" << min << "; " << max << "] to "
               << getBitsAllocated() << " bit.");
-        
+
         VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
             setVoxelFloat((v_float->voxel(i) - min) / range, i);
     }
     else if (v_double) {
-        double min = v_float->min();
-        double max = v_float->max();
+        double min = v_double->min();
+        double max = v_double->max();
         double range = (max - min);
 
         LINFO("Converting double volume with data range [" << min << "; " << max << "] to "
               << getBitsAllocated() << " bit.");
-        
+
         VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
-            setVoxelFloat((v_float->voxel(i) - min) / range, i);
+            setVoxelFloat(static_cast<float>((v_double->voxel(i) - min) / range), i);
     }
     else {
         LINFO("using fallback with setVoxelFloat and getVoxelFloat and without smart convert");
@@ -138,6 +137,10 @@ ivec3 Volume::getDimensions() const {
 
 size_t Volume::getNumVoxels() const {
     return numVoxels_;
+}
+
+void Volume::setBitsStored(int bits) {
+    bitsStored_ = bits;
 }
 
 int Volume::getBitsStored() const {
@@ -164,6 +167,14 @@ vec3 Volume::getCubeSize() const {
     return cubeSize_;
 }
 
+void Volume::setTransformation(const tgt::mat4& transformationMatrix) {
+    transformationMatrix_ = transformationMatrix;
+}
+
+const tgt::mat4& Volume::getTransformation() const {
+    return transformationMatrix_;
+}
+
 const VolumeMetaData& Volume::meta() const {
     return meta_;
 }
@@ -176,8 +187,9 @@ void Volume::setSpacing(const tgt::vec3 spacing) {
     spacing_ = spacing;
 }
 
-void Volume::setBitsStored(int bitsStored) {
-    bitsStored_ = bitsStored;
+template<class T>
+inline typename T::VoxelType* Volume::getData(T* v) {
+    return (typename T::VoxelType*) v->getData();
 }
 
 /*
@@ -211,5 +223,6 @@ float Volume::getVoxelFloatLinear(const vec3& pos, size_t channel /*= 0*/) const
 Volume* Volume::downsample() const throw (std::bad_alloc) {
     return 0;
 }
+
 
 } // namespace voreen

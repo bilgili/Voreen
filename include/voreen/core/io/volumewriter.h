@@ -39,7 +39,7 @@ namespace voreen {
 
 // forward declarations
 class IOProgress;
-class Volume;
+class VolumeHandle;
 
 /**
  * Reads a volume dataset.
@@ -56,9 +56,12 @@ public:
      * @param fileName The file name where the data should go.
      * @param Volume The volume which should be saved.
      */
-    virtual void write(const std::string& fileName, Volume* volume)
+    virtual void write(const std::string& fileName, VolumeHandle* volumeHandle)
         throw (tgt::IOException) = 0;
 
+    /**
+     * Returns the filename extensions that are supported by the writer.
+     */
     const std::vector<std::string>& getExtensions() const;
 
     /**
@@ -78,9 +81,11 @@ public:
     static std::string getExtension(const std::string& filename);
 
 protected:
-    std::vector<std::string> extensions_;
-    std::string name_;
+
     IOProgress* progress_;
+
+    /// List of filename extensions supported by the reader.
+    std::vector<std::string> extensions_;
 
     static const std::string loggerCat_;
 };

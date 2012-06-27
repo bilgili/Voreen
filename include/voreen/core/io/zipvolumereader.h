@@ -46,10 +46,15 @@ class ZipVolumeReader : public VolumeReader {
 public:
     ZipVolumeReader(VolumeSerializerPopulator* populator_, IOProgress* progress = 0);
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::FileException, std::bad_alloc);
-    
-    virtual VolumeHandle* readFromOrigin(const VolumeHandle::Origin& origin);
+
+    virtual VolumeHandle* read(const VolumeOrigin& origin)
+        throw (tgt::FileException, std::bad_alloc);
+
+    virtual VolumeOrigin convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const;
+
+    virtual VolumeOrigin convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const;
 
 protected:
     VolumeSerializerPopulator* populator_;

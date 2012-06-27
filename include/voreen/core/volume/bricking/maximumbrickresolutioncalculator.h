@@ -32,17 +32,17 @@
 
 namespace voreen {
 
-	/**
-	* This class calculates maximum resolutions for the bricks.
-	* That means that it is tried to provide as many bricks as 
-	* possible with maximum resolution. As a result of this, every
-	* other brick will have MINUMUM resolution, losing nearly all 
-	* of its information.
-	*/
-	class MaximumBrickResolutionCalculator : public BrickResolutionCalculator {
-	
-	public:
-		MaximumBrickResolutionCalculator(BrickingInformation& brickingInformation);
+    /**
+    * This class calculates maximum resolutions for the bricks.
+    * That means that it is tried to provide as many bricks as
+    * possible with maximum resolution. As a result of this, every
+    * other brick will have MINUMUM resolution, losing nearly all
+    * of its information.
+    */
+    class MaximumBrickResolutionCalculator : public BrickResolutionCalculator {
+
+    public:
+        MaximumBrickResolutionCalculator(BrickingInformation& brickingInformation);
 
         /**
         * Calculates brick resolutions in a way that produces a maximum amount
@@ -50,15 +50,15 @@ namespace voreen {
         * resolution. The calculated resolutions are stored in the brickingInformation_
         * struct.
         */
-		virtual void calculateBrickResolutions();
+        virtual void calculateBrickResolutions();
 
-	protected:
+    protected:
 
-	private:
+    private:
 
 
 
-	}; //end of class
+    }; //end of class
 
 
 

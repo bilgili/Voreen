@@ -189,11 +189,6 @@ public:
      */
     void setTransFunc(TransFuncIntensityGradient* tf);
 
-    /**
-     * Returns the scaling factor that is currently applied to the y coordinate of primitives.
-     */
-    float getScaleFactor() const;
-
 public slots:
     /**
      * Adds a quad primitive to the editor and updates the texture of the tf.
@@ -276,7 +271,7 @@ signals:
      *
      * @param on coarseness mode on or off?
      */
-    void switchInteractionMode(bool on);
+    void toggleInteractionMode(bool on);
 
     /**
      * Signal that notifies the transfer function property about a change in transfer function

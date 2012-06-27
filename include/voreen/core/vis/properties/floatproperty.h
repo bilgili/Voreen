@@ -34,14 +34,23 @@
 
 namespace voreen {
 
-class FloatProp : public NumericProperty<float> {
+class FloatProperty : public NumericProperty<float> {
 public:
-    FloatProp(const std::string& id, const std::string& guiText, float value = 0.0f,
+    FloatProperty(const std::string& id, const std::string& guiText, float value = 0.0f,
               float minValue = 0.0f, float maxValue = 1.0f, bool instantValueChange = false,
-              bool invalidate = true, bool invalidateShader = false);
+              Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~FloatProp() {}
+    virtual ~FloatProperty() {}
 
+    /**
+     * For convenience only: this method converts the given double to float
+     * and calls the method inherited from NumericProperty<float>.
+     */
+/*
+    void set(const double value, const bool updateWidgets = true) {
+        NumericProperty<float>::set(static_cast<const float>(value), updateWidgets);
+    }
+*/
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 };
 

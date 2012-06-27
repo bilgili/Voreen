@@ -29,6 +29,7 @@
 #define VRN_VOLUMEMANAGER_H
 
 #include "voreen/core/volume/volume.h"
+#include "tgt/camera.h"
 
 namespace voreen {
 
@@ -39,10 +40,10 @@ class BrickedVolumeReader;
 * This class is just a wrapper for the BrickingManager.
 * The BrickingManager is templated and therefore can't be used
 * as an attribute in a class easily. So we do things just like
-* VolumeAtomic and Volume do. BrickingManager derives from 
-* LargeVolumeManager, and so the LVM can be used as an attribute. 
+* VolumeAtomic and Volume do. BrickingManager derives from
+* LargeVolumeManager, and so the LVM can be used as an attribute.
 */
-class LargeVolumeManager : public MessageReceiver{
+class LargeVolumeManager {
 
 public:
 
@@ -51,15 +52,15 @@ public:
     *                       by the BrickingManager (child class of LargeVolumeManager).
     * @param brickedReder   The BrickedVolumeReader that is used to read the VolumeBricks' volume.
     */
-	LargeVolumeManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedReader);
-	
-	~LargeVolumeManager();
+    LargeVolumeManager(VolumeHandle* volumeHandle, BrickedVolumeReader* brickedReader);
 
-	virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual ~LargeVolumeManager();
+
+    virtual void setCamera(tgt::Camera* /*camera*/) {}
 
     /**
     * Changes the class responsible for calculating the available brick resolutions (aka LODs)
-    * when camera position is used for LOD assignment. 
+    * when camera position is used for LOD assignment.
     */
     virtual void changeBrickResolutionCalculator(std::string);
 
@@ -69,13 +70,13 @@ public:
     virtual void changeBrickLodSelector(std::string);
 
     /**
-    * Sets whether or not bricks should be updated after coarseness mode has ended. 
-    * This only has effect if the camera position is used to assign LODs. Setting this 
+    * Sets whether or not bricks should be updated after coarseness mode has ended.
+    * This only has effect if the camera position is used to assign LODs. Setting this
     * to "true" causes all bricks to calculate their distance to the camera again,
     * and depending on the result, their LODs might change. If set to false, the bricks
-    * will never be updated, no matter how much the camera position is changed. 
+    * will never be updated, no matter how much the camera position is changed.
     */
-	virtual void setUpdateBricks(bool b);
+    virtual void setUpdateBricks(bool b);
 
     /**
     * Adds a BoxBrickingRegion to the RegionManager. The BoxBrickingRegion will then have
@@ -97,12 +98,12 @@ public:
     /**
      * Tries to calculate how much GPU memory can be used (in megabytes).
      * This is completely independant of setMaxMemory().
-     */ 
+     */
     static size_t estimateMaxGpuMemory();
 
     static size_t getMaxMemory() { return maxMemory_; }
     static size_t getMaxGpuMemory() { return maxGpuMemory_; }
-    
+
 protected:
     static size_t maxMemory_;
     static size_t maxGpuMemory_;

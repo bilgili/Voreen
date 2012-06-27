@@ -43,12 +43,11 @@ namespace voreen {
 class NrrdVolumeReader : public VolumeReader {
 public:
     NrrdVolumeReader() {
-        name_ = "NRRD Reader";
         extensions_.push_back("nrrd");
         extensions_.push_back("nhdr");
     }
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

@@ -31,6 +31,7 @@
 #include "voreen/core/volume/gradient.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
+#include "voreen/core/volume/volumecollection.h"
 
 #include "tgt/exception.h"
 
@@ -58,14 +59,14 @@ bool CommandGrad::checkParameters(const std::vector<std::string>& parameters) {
 
 bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
     //load volume dataset
     Volume* sourceDataset_;
     Volume* targetDataset_ = 0;
 
-    VolumeSet* volumeSet = serializer->load(parameters[1]);
-    sourceDataset_ = volumeSet->getFirstVolume();
+    VolumeCollection* volumeCollection = serializer->load(parameters[1]);
+    sourceDataset_ = volumeCollection->first()->getVolume();
 
 
     if (parameters[0] == "simple")
@@ -73,13 +74,11 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     else if (parameters[0] == "26")
         targetDataset_ = calcGradients26(sourceDataset_);
     else if (parameters[0] == "sobel")
-        targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, false);
-    else if (parameters[0] == "sobelic")
-        targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, true);
+        targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_);
 
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[2], targetDataset_);
         delete serializer;
         delete targetDataset_;
@@ -113,14 +112,14 @@ bool CommandFilterGrad::checkParameters(const std::vector<std::string>& paramete
 
 bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
     //load volume dataset
     Volume* sourceDataset_;
     Volume* targetDataset_ = 0;
 
-    VolumeSet* volumeSet = serializer->load(parameters[2]);
-    sourceDataset_ = volumeSet->getFirstVolume();
+    VolumeCollection* volumeCollection = serializer->load(parameters[2]);
+    sourceDataset_ = volumeCollection->first()->getVolume();
 
     if (parameters[0] == "simple")
         targetDataset_ = filterGradients(sourceDataset_);
@@ -149,7 +148,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
 
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[3], targetDataset_);
         delete serializer;
         delete targetDataset_;

@@ -30,8 +30,6 @@
 #ifndef VRN_GEOMETRY_H
 #define VRN_GEOMETRY_H
 
-#include "voreen/core/vis/identifier.h"
-
 namespace voreen {
 
 class Geometry {
@@ -43,13 +41,13 @@ class Geometry {
 
         Geometry() : name_(""), id_(0), changed_(true) {}
 
-        const Identifier& getName() { return name_; }
+        const std::string& getName() { return name_; }
         int getID() { return id_; }
         bool hasChanged() const { return changed_; }
         void setHasChanged(bool changed) { changed_ = changed; }
 
     protected:
-        Identifier name_;
+        std::string name_;
         int id_;
 
         /**

@@ -42,11 +42,10 @@ class Volume;
 class QuadHidacVolumeReader : public VolumeReader {
 public:
     QuadHidacVolumeReader() {
-        name_ = "QuadHidac Reader";
         extensions_.push_back("i4d");
     }
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

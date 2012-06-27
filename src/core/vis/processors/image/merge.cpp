@@ -40,8 +40,8 @@ namespace voreen {
 
 //---------------------------------------------------------------------------
 
-const Identifier Merge::shadeTexUnit1_ = "shadeTexUnit1";
-const Identifier Merge::depthTexUnit1_ = "depthTexUnit1";
+const std::string Merge::shadeTexUnit1_ = "shadeTexUnit1";
+const std::string Merge::depthTexUnit1_ = "depthTexUnit1";
 
 Merge::Merge()
     : Collect("pp_merge")
@@ -51,38 +51,38 @@ Merge::Merge()
 }
 
 const std::string Merge::getProcessorInfo() const {
-    return "Merges two sources";
+    return "Merges two sources.<br><br><strong><font color=\"#FF0000\">deprecated</font></strong>: use Compositer instead";
 }
 
-void Merge::renderTwo(int source0, int source1, int /*pass*/) {
-    // bind shading and depth result from first ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source0), tc_->getGLTexID(source0));
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source0), tc_->getGLDepthTexID(source0));
-    LGL_ERROR;
+void Merge::renderTwo(int /*source0*/, int /*source1*/, int /*pass*/) {
+    //// bind shading and depth result from first ray cast
+    //glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
+    //glBindTexture(tc_->getGLTexTarget(source0), tc_->getGLTexID(source0));
+    //glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
+    //glBindTexture(tc_->getGLDepthTexTarget(source0), tc_->getGLDepthTexID(source0));
+    //LGL_ERROR;
 
-    // bind shading and depth result from second ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
-    glBindTexture(tc_->getGLTexTarget(source1), tc_->getGLTexID(source1));
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
-    glBindTexture(tc_->getGLDepthTexTarget(source1), tc_->getGLDepthTexID(source1));
-    LGL_ERROR;
+    //// bind shading and depth result from second ray cast
+    //glActiveTexture(tm_.getGLTexUnit(shadeTexUnit1_));
+    //glBindTexture(tc_->getGLTexTarget(source1), tc_->getGLTexID(source1));
+    //glActiveTexture(tm_.getGLTexUnit(depthTexUnit1_));
+    //glBindTexture(tc_->getGLDepthTexTarget(source1), tc_->getGLDepthTexID(source1));
+    //LGL_ERROR;
 
-    // initialize shader
-    program_->activate();
-    setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
-    program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
-    program_->setUniform("backgroundColor_", backgroundColor_.get());
+    //// initialize shader
+    //program_->activate();
+    //setGlobalShaderParameters(program_);
+    //program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
+    //program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
+    //program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
+    //program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
+    //program_->setUniform("backgroundColor_", backgroundColor_.get());
 
-    renderQuad();
+    //renderQuad();
 
-    program_->deactivate();
-    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
-    LGL_ERROR;
+    //program_->deactivate();
+    //glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+    //LGL_ERROR;
 }
 
 } // voreen namespace

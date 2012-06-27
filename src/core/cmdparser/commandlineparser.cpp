@@ -61,7 +61,7 @@ inline int extractArguments(const vector<string> in, vector<string>* out, const 
         for (size_t i = begin; i < in.size(); ++i, ++num)
             out->push_back(in[i]);
     }
-    else 
+    else
         if (count == -2) {
             // Extract arguments until a new command is found
             for (size_t i = begin; (i < in.size()) && (in[i][0] != '-'); ++i, num++) {
@@ -135,7 +135,7 @@ void CommandlineParser::execute() {
 
     vector<string> argumentsForNameless;
 
-    // We store the commands and parameters in a map to be able to execute them without parsing the 
+    // We store the commands and parameters in a map to be able to execute them without parsing the
     // commandline again
     multimap<Command*, vector<string> > parameterMap;
 
@@ -268,7 +268,7 @@ void CommandlineParser::displayHelp() {
     std::cout << std::endl << std::endl << "Help:" << std::endl << "-----" << std::endl;
 
     FORALLCOMMANDS {
-		std::cout << (*iter)->help() << std::endl;
+        std::cout << (*iter)->help() << std::endl;
     }
 
     exit(EXIT_FAILURE);

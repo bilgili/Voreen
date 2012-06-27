@@ -31,6 +31,7 @@
 #define VRN_PROPERTIES_DECL_H
 
 /**
+ * @file
  * This file contains forward declarations for all Property classes only!
  * Rather include this file in your header files for Processor classes than
  * to include a whole bunch of header files for the implementations of the
@@ -40,26 +41,27 @@
 namespace voreen {
 
 class Property;
-class FloatProp;
-class IntProp;
-class BoolProp;
-class StringProp;
-class StringVectorProp;
-class StringSelectionProp;
-class ColorProp;
-class EnumProp;
-class FileDialogProp;
-class TransFuncProp;
-class FloatVec2Prop;
-class FloatVec3Prop;
-class FloatVec4Prop;
-class IntVec2Prop;
-class IntVec3Prop;
-class IntVec4Prop;
+class BoolProperty;
+class ButtonProperty;
+class CameraProperty;
+class ColorProperty;
+class FileDialogProperty;
+class FloatProperty;
+class FloatVec2Property;
+class FloatVec3Property;
+class FloatVec4Property;
+class IntProperty;
+class IntVec2Property;
+class IntVec3Property;
+class IntVec4Property;
 class OptionPropertyBase;
 class PropertyVector;
+class ShaderProperty;
+class StringProperty;
+class TransFuncProperty;
+class VolumeCollectionProperty;
+class VolumeHandleProperty;
 
-
-}   // namespace
+} // namespace
 
 #endif  // VRN_PROPERTIES_DECL_H

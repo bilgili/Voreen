@@ -30,7 +30,9 @@
 #include "voreen/qt/widgets/snapshotplugin.h"
 
 #include "voreen/core/application.h"
-#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/processors/image/canvasrenderer.h"
+
+#include "tgt/gpucapabilities.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -45,10 +47,14 @@
 
 namespace voreen {
 
-SnapshotPlugin::SnapshotPlugin(QWidget* parent, VoreenPainter* painter)
+SnapshotPlugin::SnapshotPlugin(QWidget* parent, CanvasRenderer* canvasRenderer)
     : WidgetPlugin(parent)
-    , painter_(painter)
+    , canvasRenderer_(canvasRenderer)
 {
+
+    tgtAssert(canvasRenderer_, "No canvas renderer");
+
+    setWindowTitle(tr("Snapshot: ") + QString::fromStdString(canvasRenderer_->getName()));
     setObjectName(tr("Snapshot"));
 
     resolutions_.push_back("512x512");
@@ -57,20 +63,25 @@ SnapshotPlugin::SnapshotPlugin(QWidget* parent, VoreenPainter* painter)
     resolutions_.push_back("1024x1024");
     resolutions_.push_back("1280x1024");
     resolutions_.push_back("1600x1200");
+    resolutions_.push_back("1920x1080");
+    resolutions_.push_back("1920x1200");
+    resolutions_.push_back("2048x2048");
     resolutions_.push_back("canvas size");
     resolutions_.push_back("user-defined");
+
+    setWindowFlags(Qt::Tool);
 }
 
 SnapshotPlugin::~SnapshotPlugin() {
 }
 
 void SnapshotPlugin::createWidgets() {
-    resize(300, 300);
 
     QVBoxLayout* vboxLayout = new QVBoxLayout();
     QGridLayout* gridLayout = new QGridLayout();
 
-    gridLayout->addWidget(new QLabel(tr("Resolution:")), 0, 0);
+    gridLayout->addWidget(new QLabel(tr("Preset:")), 0, 0);
+    gridLayout->addWidget(new QLabel(tr("Resolution:")), 1, 0);
 
     sizeCombo_ = new QComboBox();
     QStringList resolution;
@@ -79,18 +90,17 @@ void SnapshotPlugin::createWidgets() {
 
     sizeCombo_->addItems(resolution);
     gridLayout->addWidget(sizeCombo_, 0, 1, 1, 3);
-    
+
     spWidth_ = new QSpinBox();
     gridLayout->addWidget(spWidth_, 1, 1);
 
     gridLayout->addWidget(new QLabel("x"), 1, 2, Qt::AlignCenter);
     spHeight_ = new QSpinBox();
     gridLayout->addWidget(spHeight_, 1, 3);
-    spWidth_->setRange(1, 2048);
-    spHeight_->setRange(1, 2048);
+    spWidth_->setRange(1, GpuCaps.getMaxTextureSize());
+    spHeight_->setRange(1, GpuCaps.getMaxTextureSize());
     spWidth_->setValue(800);
     spHeight_->setValue(600);
-    widthSpinChanged(spWidth_->value()); // to select the correct list entry
     gridLayout->setColumnStretch(1, 5);
     gridLayout->setColumnStretch(2, 1);
     gridLayout->setColumnStretch(3, 5);
@@ -98,85 +108,56 @@ void SnapshotPlugin::createWidgets() {
 
     buMakeSnapshot_ = new QToolButton();
     buMakeSnapshot_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    buMakeSnapshot_->setText(tr("Save snapshot as..."));
-    buMakeSnapshot_->setIcon(QIcon(":/icons/floppy.png"));
+    buMakeSnapshot_->setText(tr(" Save snapshot as..."));
+    buMakeSnapshot_->setIcon(QIcon(":/icons/saveas.png"));
     buMakeSnapshot_->setToolTip(tr("Save snapshot as..."));
+    buMakeSnapshot_->setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred));
     vboxLayout->addWidget(buMakeSnapshot_);
 
     vboxLayout->addStretch();
-    
+
     setLayout(vboxLayout);
+
+    // initialize widget state
+    sizeComboChanged(sizeCombo_->currentIndex());
 }
 
 void SnapshotPlugin::createConnections() {
-    connect(buMakeSnapshot_, SIGNAL(clicked()), this, SLOT(makeSnapshot()));
+    connect(buMakeSnapshot_, SIGNAL(clicked()), this, SLOT(takeSnapshot()));
     connect(spWidth_, SIGNAL(valueChanged(int)), this, SLOT(widthSpinChanged(int)));
     connect(spHeight_, SIGNAL(valueChanged(int)), this, SLOT(heightSpinChanged(int)));
     connect(sizeCombo_, SIGNAL(currentIndexChanged(int)), this, SLOT(sizeComboChanged(int)));
 }
 
-void SnapshotPlugin::widthSpinChanged(int value) {
-    // construct string and compare with the entries in the combobox
-    QString s = QString("%1x%2").arg(value).arg(spHeight_->value());
-    int index = -1;
-    for (size_t i = 0; i < resolutions_.size(); ++i) {
-        if (resolutions_[i] == s) {
-            index = i;
-            break;
-        }
-    }
-
-    // set combobox to found resolution, "canvas size" or "user-defined"
-    sizeCombo_->blockSignals(true);
-    if (index != -1)
-        sizeCombo_->setCurrentIndex(index);
-    else {
-        if (painter_ && painter_->getCanvas() && 
-            painter_->getCanvas()->getSize() == tgt::ivec2(value, spHeight_->value()))
-        {
-            sizeCombo_->setCurrentIndex(sizeCombo_->count()-2);
-        }
-        else
-            sizeCombo_->setCurrentIndex(sizeCombo_->count()-1);
-    }
-    sizeCombo_->blockSignals(false);
+void SnapshotPlugin::widthSpinChanged(int /*value*/) {
+    // currently nothing todo
 }
 
-void SnapshotPlugin::heightSpinChanged(int value) {
-    // construct string and compare with the entries in the combobox
-    QString s = QString("%1x%2").arg(spWidth_->value()).arg(value);
-    int index = -1;
-    for (size_t i = 0; i < resolutions_.size(); ++i) {
-        if (resolutions_[i] == s) {
-            index = i;
-            break;
-        }
-    }
-
-    // set combobox to found resolution or "user-defined"
-    sizeCombo_->blockSignals(true);
-    if (index != -1)
-        sizeCombo_->setCurrentIndex(index);
-    else {
-        if (painter_ && painter_->getCanvas() && 
-            painter_->getCanvas()->getSize() == tgt::ivec2(spWidth_->value(), value))
-        {
-            sizeCombo_->setCurrentIndex(sizeCombo_->count()-2);
-        }
-        else
-            sizeCombo_->setCurrentIndex(sizeCombo_->count()-1);
-    }
-    sizeCombo_->blockSignals(false);
+void SnapshotPlugin::heightSpinChanged(int /*value*/) {
+    // currently nothing todo
 }
 
 void SnapshotPlugin::sizeComboChanged(int index) {
-    if (index == sizeCombo_->count()-1)
+
+    tgtAssert(canvasRenderer_ && canvasRenderer_->getCanvas(), "No canvas present");
+
+    // if user-defined
+    if (index == sizeCombo_->count()-1) {
+        spWidth_->setEnabled(true);
+        spHeight_->setEnabled(true);
         return;
+    }
+    else {
+        spWidth_->setEnabled(false);
+        spHeight_->setEnabled(false);
+    }
 
     spWidth_->blockSignals(true);
     spHeight_->blockSignals(true);
+
+    // if canvas-size
     if (index == sizeCombo_->count()-2) {
-        tgt::ivec2 size = painter_->getCanvas()->getSize();
+        tgt::ivec2 size = canvasRenderer_->getCanvas()->getSize();
         spWidth_->setValue(size.x);
         spHeight_->setValue(size.y);
     }
@@ -194,7 +175,8 @@ void SnapshotPlugin::sizeComboChanged(int index) {
     spHeight_->blockSignals(false);
 }
 
-void SnapshotPlugin::makeSnapshot() {
+void SnapshotPlugin::takeSnapshot() {
+
     QFileDialog filedialog(this);
     filedialog.setDefaultSuffix(tr("png"));
     filedialog.setWindowTitle(tr("Save Snapshot"));
@@ -210,7 +192,7 @@ void SnapshotPlugin::makeSnapshot() {
     filedialog.setSidebarUrls(urls);
 
     if (path_.isEmpty())
-        filedialog.setDirectory(VoreenApplication::app()->getDocumentsPath().c_str());
+        filedialog.setDirectory(VoreenApplication::app()->getSnapshotPath().c_str());
     else
         filedialog.setDirectory(path_);
     filedialog.selectFile(tr("snapshot.png"));
@@ -230,7 +212,7 @@ void SnapshotPlugin::makeSnapshot() {
             text += "No file extension specified.";
         else
             text += "Invalid file extension: " + fileList[0].right(fileList[0].size()-index-1).toStdString();
-        
+
         QMessageBox::critical(this, tr("Error saving snapshot"), tr(text.c_str()));
         return;
     }
@@ -238,21 +220,35 @@ void SnapshotPlugin::makeSnapshot() {
     tgt::ivec2 size(spWidth_->value(), spHeight_->value());
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    qApp->processEvents();
     try {
-        if (painter_)
-            painter_->renderToSnapshot(size, fileList.at(0).toStdString());
-        QApplication::restoreOverrideCursor();    
-    }
-    catch (const std::bad_alloc&) {
+        bool success = canvasRenderer_->renderToImage(fileList.at(0).toStdString(), size);
         QApplication::restoreOverrideCursor();
-        QString text = tr("Snapshot could not be saved.\nNot enough system memory.");
-        QMessageBox::critical(this, tr("Error saving snapshot"), text);
+        if (!success) {
+            QString text = tr("Snapshot could not be saved:\n%1").arg(
+                QString::fromStdString(canvasRenderer_->getRenderToImageError()));
+            QMessageBox::warning(this, tr("Error saving snapshot"), text);
+        }
     }
-    catch (const tgt::FileException& e) {
+    catch (const std::exception& e) {
         QApplication::restoreOverrideCursor();
-        QString text = tr("Snapshot could not be saved.\n%1").arg(e.what());
-        QMessageBox::critical(this, tr("Error saving snapshot"), text);
+        QString text = tr("Snapshot could not be saved:\n%1").arg(e.what());
+        QMessageBox::warning(this, tr("Error saving snapshot"), text);
     }
+
+}
+
+void SnapshotPlugin::updateFromProcessor() {
+
+    tgtAssert(canvasRenderer_ && canvasRenderer_->getCanvas(), "No canvas present");
+
+    // if canvas-size
+    if (sizeCombo_->currentIndex() == sizeCombo_->count()-2) {
+        tgt::ivec2 size = canvasRenderer_->getCanvas()->getSize();
+        spWidth_->setValue(size.x);
+        spHeight_->setValue(size.y);
+    }
+
 }
 
 } // namespace voreen

@@ -48,18 +48,16 @@ public:
 
     virtual ~SegmentationRaycaster();
 
-    virtual const Identifier getClassName() const { return "Raycaster.SegmentationRaycaster"; }
+    virtual std::string getCategory() const { return "Raycasting"; }
+    virtual std::string getClassName() const { return "SegmentationRaycaster"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new SegmentationRaycaster(); }
+    virtual Processor* create() const;
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
-    /**
-     * Load the needed shader.
-     *
-     */
-    virtual void loadShader();
-
+    virtual bool isReady() const;
     /**
      * Performs the raycasting.
      *
@@ -67,17 +65,22 @@ public:
      * a screen aligned quad. The render destination is determined by the
      * invoking class.
      */
-    virtual void process(LocalPortMapping*  portMapping);
+    virtual void process();
 
-    TransFuncProp& getTransFunc();
+    TransFuncProperty& getTransFunc();
 
-    PropertyVector& getSegmentationTransFuncs();
+    const PropertyVector& getSegmentationTransFuncs();
 
-    BoolProp& getApplySegmentationProp();
+    BoolProperty& getApplySegmentationProp();
 
 protected:
-    virtual std::string generateHeader();
-    virtual void compile();
+    /**
+     * Load the needed shader.
+     */
+    virtual void loadShader();
+
+    virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
+    virtual void compile(VolumeHandle* volumeHandle);
 
 private:
 
@@ -92,11 +95,13 @@ private:
 
     // create the segmentation transfer function
     void createSegmentationTransFunc();
-    // initializes the segmentation transfunc texture from the segmentatio transfer functions
+    // initializes the segmentation transfunc texture from the segmentation transfer functions
     void initializeSegmentationTransFuncTex();
 
+    CameraProperty camera_;
+
     // The transfer function property used in non-segmentation mode
-    TransFuncProp transferFunc_;
+    TransFuncProperty transferFunc_;
 
     // Segmentation transfuncs used in segmentation mode
     PropertyVector* segmentTransFuncs_;
@@ -108,18 +113,26 @@ private:
 
     VolumeHandle* segmentationHandle_;
 
-    BoolProp applySegmentation_;
-    EnumProp* transFuncResolutionProp_;
+    BoolProperty applySegmentation_;
+    IntOptionProperty transFuncResolutionProp_;
     std::vector<std::string> transFuncResolutions_;
     int lastSegment_;
 
-    EnumProp* compositingMode1_;    ///< What compositing mode should be applied for second outport
-    EnumProp* compositingMode2_;    ///< What compositing mode should be applied for third outport
+    StringOptionProperty compositingMode1_;    ///< What compositing mode should be applied for second outport
+    StringOptionProperty compositingMode2_;    ///< What compositing mode should be applied for third outport
 
     bool destActive_[2];
 
-};
+    VolumePort volumeInport_;
+    VolumePort segmentationInport_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
 
+    RenderPort outport1_;
+    RenderPort outport2_;
+    RenderPort outport3_;
+    PortGroup portGroup_;
+};
 
 } // namespace
 

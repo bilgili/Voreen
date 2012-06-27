@@ -36,13 +36,13 @@
 
 namespace voreen {
 
-const Identifier StereoPlugin::setStereoMode_("set.stereoMode");
-const Identifier StereoPlugin::setEyeDistance_("set.eyeDistance");
-const Identifier StereoPlugin::setFocalDistance_("set.focalDistance");
-const Identifier StereoPlugin::setCorrectWindowPos_("set.correctWindowPos");
+const std::string StereoPlugin::setStereoMode_("set.stereoMode");
+const std::string StereoPlugin::setEyeDistance_("set.eyeDistance");
+const std::string StereoPlugin::setFocalDistance_("set.focalDistance");
+const std::string StereoPlugin::setCorrectWindowPos_("set.correctWindowPos");
 
 
-StereoPlugin::StereoPlugin(QWidget* parent, MessageReceiver* msgReceiver) : WidgetPlugin(parent, msgReceiver) {
+StereoPlugin::StereoPlugin(QWidget* parent) : WidgetPlugin(parent) {
     setObjectName(tr("Stereoscopy"));
     icon_ = QIcon(":/icons/3d-glasses.png");
 }
@@ -97,37 +97,38 @@ void StereoPlugin::createConnections() {
 }
 
 void StereoPlugin::changeStereoMode(int stereoMode) {
+
     switch(stereoMode) {
     case 0:
-        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_MONOSCOPIC));
+        //postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_MONOSCOPIC));
         repaintCanvas();
         break;
     case 1:
-        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_STEREOSCOPIC));
+        //postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_STEREOSCOPIC));
         repaintCanvas();
         break;
     case 2:
-        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_AUTOSTEREOSCOPIC));
+        //postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_AUTOSTEREOSCOPIC));
         repaintCanvas();
         break;
     }
 }
 
-void StereoPlugin::changeEyeDistance(int dist) {
-    postMessage(new IntMsg(setEyeDistance_, dist));
+void StereoPlugin::changeEyeDistance(int /*dist*/) {
+    //postMessage(new IntMsg(setEyeDistance_, dist));
     repaintCanvas();
 }
 
-void StereoPlugin::changeFocalDistance(int dist) {
-    postMessage(new IntMsg(setFocalDistance_, dist));
+void StereoPlugin::changeFocalDistance(int /*dist*/) {
+    //postMessage(new IntMsg(setFocalDistance_, dist));
     repaintCanvas();
 }
 
 void StereoPlugin::correctWindowPos(bool /*on*/) {
-    if (correctWindowPosChecker_->isChecked())
+    /*if (correctWindowPosChecker_->isChecked())
         postMessage(new IntMsg(setCorrectWindowPos_, 1));
     else
-        postMessage(new IntMsg(setCorrectWindowPos_, 0));
+        postMessage(new IntMsg(setCorrectWindowPos_, 0)); */
     repaintCanvas();
 }
 

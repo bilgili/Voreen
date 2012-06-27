@@ -65,7 +65,7 @@ void EventListener::setEventTypes(int eventTypes){
     eventTypes_ = eventTypes;
 }
 
-int EventListener::getEventTypes(){
+int EventListener::getEventTypes() const{
 	return eventTypes_;
 }
 

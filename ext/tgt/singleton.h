@@ -56,7 +56,7 @@ public:
      * Must be done at last.
      */
     static void deinit() {
-        tgtAssert( singletonClass_, "singletonClass_ has already been deintitialized." );
+        tgtAssert( singletonClass_ != 0, "singletonClass_ has already been deintitialized." );
         delete singletonClass_;
         singletonClass_ = 0;
     }
@@ -66,7 +66,7 @@ public:
      * @return Pointer of the actual class
      */
     static T* getPtr() {
-        tgtAssert( singletonClass_, "singletonClass_ has not been intitialized." );
+        tgtAssert( singletonClass_ != 0, "singletonClass_ has not been intitialized." );
         return singletonClass_;
     }
 
@@ -75,7 +75,7 @@ public:
      * @return reference of the actual class
     */
     static T& getRef() {
-        tgtAssert( singletonClass_ , "singletonClass_ has not been intitialized." );
+        tgtAssert( singletonClass_ != 0 , "singletonClass_ has not been intitialized." );
         return *singletonClass_;
     }
 

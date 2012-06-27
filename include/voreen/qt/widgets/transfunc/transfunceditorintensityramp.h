@@ -70,7 +70,7 @@ public:
      * @param parent the parent frame to which this widget is added
      * @param orientation orientation of the widget, e.g. position of the color and luminancepicker
      */
-    TransFuncEditorIntensityRamp(TransFuncProp* prop, QWidget* parent = 0,
+    TransFuncEditorIntensityRamp(TransFuncProperty* prop, QWidget* parent = 0,
                                  Qt::Orientation orientation = Qt::Horizontal);
 
     /**
@@ -91,7 +91,7 @@ public:
     /**
     * Assigns the passed transfer function property.
     */
-    void setTransFuncProp(TransFuncProp* prop);
+    void setTransFuncProp(TransFuncProperty* prop);
 
     /**
      * Tests whether the volume associated with the transFuncProperty has changed and updates

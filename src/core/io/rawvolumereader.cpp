@@ -52,49 +52,94 @@ RawVolumeReader::RawVolumeReader(IOProgress* progress)
     : VolumeReader(progress),
       dimensions_(),
       spacing_()
-{}
+{
+    protocols_.push_back("raw");
+}
 
 void RawVolumeReader::readHints(ivec3 dimensions, vec3 spacing, int bitsStored,
-                                std::string objectModel, std::string format,
-                                int zeroPoint, tgt::mat4 transformation, Modality modality,
-                                float timeStep, std::string metaString, std::string unit,
-                                int offset)
+                                const std::string& objectModel, const std::string& format,
+                                int headerskip, tgt::mat4 transformation, Modality modality,
+                                float timeStep, const std::string& metaString, const std::string& unit,
+                                const std::string& sliceOrder)
 {
     dimensions_ = dimensions;
     bitsStored_ = bitsStored;
     spacing_ = spacing;
     objectModel_ = objectModel;
     format_ = format;
-    zeroPoint_ = zeroPoint;
+    headerskip_ = headerskip;
     transformation_ = transformation;
     modality_ = modality;
     timeStep_ = timeStep;
     metaString_ = metaString;
-    offset_ = offset;
     unit_ = unit;
+    sliceOrder_ = sliceOrder;
 }
 
-VolumeSet* RawVolumeReader::read(const std::string &fileName)
-    throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
+VolumeCollection* RawVolumeReader::read(const std::string &fileName)
+    throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     return readSlices(fileName,0,0);
 }
 
-VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t firstSlice, size_t lastSlice )
-    throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
+VolumeHandle* RawVolumeReader::read(const VolumeOrigin& origin)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    // read parameters from origin
+    std::string filename = origin.getPath();
+    std::string objectModel = origin.getSearchParameter("objectModel");
+    std::string format = origin.getSearchParameter("format");
+
+    tgt::ivec3 dimensions;
+    std::istringstream s1(origin.getSearchParameter("dim_x"));
+    s1 >> dimensions.x;
+    s1.str(origin.getSearchParameter("dim_y"));
+    s1.clear();
+    s1 >> dimensions.y;
+    s1.str(origin.getSearchParameter("dim_z"));
+    s1.clear();
+    s1 >> dimensions.z;
+
+    tgt::vec3 spacing;
+    std::istringstream s2(origin.getSearchParameter("spacing_x"));
+    s2 >> spacing.x;
+    s2.str(origin.getSearchParameter("spacing_y"));
+    s2.clear();
+    s2 >> spacing.y;
+    s2.str(origin.getSearchParameter("spacing_z"));
+    s2.clear();
+    s2 >> spacing.z;
+
+    int headerskip;
+    std::istringstream s3(origin.getSearchParameter("headerskip"));
+    s3 >> headerskip;
+
+    // pass read hints and load volume
+    readHints(static_cast<ivec3>(dimensions), static_cast<vec3>(spacing), 0, objectModel, format, headerskip);
+    VolumeHandle* handle = 0;
+    VolumeCollection* collection = read(filename);
+    if (!collection->empty())
+        handle = collection->first();
+
+    delete collection;
+
+    return handle;
+}
+
+VolumeCollection* RawVolumeReader::readSlices(const std::string &fileName, size_t firstSlice, size_t lastSlice )
+    throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     //Remember the dimensions of the entire volume.
     tgt::ivec3 originalVolumeDimensions = dimensions_;
 
-	//Check if we have to read only some slices instead of the whole volume.
-	if ( ! (firstSlice==0 && lastSlice==0)) {
-		if (lastSlice > firstSlice) {
-			dimensions_.z = lastSlice - firstSlice;
-		}
-	}
+    // check if we have to read only some slices instead of the whole volume.
+    if ( ! (firstSlice==0 && lastSlice==0)) {
+        if (lastSlice > firstSlice) {
+            dimensions_.z = lastSlice - firstSlice;
+        }
+    }
 
-	std::string info = "Loading raw file " + fileName + " ";
-    LINFO("Loading file " << fileName);
+    std::string info = "Loading raw file " + fileName + " ";
 
     if (dimensions_ == tgt::ivec3::zero) {
         throw tgt::CorruptedFileException("No readHints set.", fileName);
@@ -113,30 +158,22 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
         if (format_ == "UCHAR") {
             LINFO(info << "(8 bit dataset)");
             VolumeUInt8* v = new VolumeUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
 
         }
         else if ((format_ == "USHORT" && bitsStored_ == 12) || format_ == "USHORT_12") {
             LINFO(info << "(12 bit dataset)");
             VolumeUInt16* v = new VolumeUInt16(dimensions_, spacing_, 12);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
         }
         else if (format_ == "USHORT") {
             LINFO(info << "(16 bit dataset)");
             VolumeUInt16* v = new VolumeUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
         }
-        else if (format_ == "FLOAT8" || format_ == "FLOAT16") {
+        else if (format_ == "FLOAT8" || format_ == "FLOAT16" || format_ == "FLOAT") {
             LINFO(info << "(32 bit float dataset, converting to 8 or 16 bit)");
             VolumeFloat* v = new VolumeFloat(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(static_cast<float>(zeroPoint_));
             volume = v;
         }
         else {
@@ -147,15 +184,11 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
         if (format_ == "UCHAR") {
             LINFO(info << "(4x8 bit dataset)");
             Volume4xUInt8* v = new Volume4xUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::col4(zeroPoint_));
             volume = v;
         }
         else if (format_ == "USHORT") {
             LINFO(info << "(4x16 bit dataset)");
             Volume4xUInt16* v = new Volume4xUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::Vector4<uint16_t>(zeroPoint_));
             volume = v;
         }
         else {
@@ -166,58 +199,59 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
         if (format_ == "UCHAR") {
             LINFO(info << "(3x8 bit dataset)");
             Volume3xUInt8* v = new Volume3xUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::col3(zeroPoint_));
             volume = v;
         }
         else if (format_ == "USHORT") {
             LINFO(info << "(3x16 bit dataset)");
             Volume3xUInt16* v = new Volume3xUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::Vector3<uint16_t>(zeroPoint_));
             volume = v;
-        }
-        else {
+        } else if (format_ == "FLOAT") {
+            LINFO(info << "(3x32 bit dataset)");
+            Volume3xFloat* v = new Volume3xFloat(dimensions_, spacing_);
+            volume = v;
+        } else {
             throw tgt::CorruptedFileException("Format '" + format_ + "' not supported for object model RGB", fileName);
         }
     }
     else if (objectModel_ == "LA") { // luminance alpha
         LINFO(info << "(luminance16 alpha16 dataset)");
         Volume4xUInt8* v = new Volume4xUInt8(dimensions_, spacing_);
-        if (zeroPoint_ != 0)
-            v->setZeroPoint(tgt::col4(zeroPoint_));
         volume = v;
     }
     else {
         throw tgt::CorruptedFileException("unsupported ObjectModel '" + objectModel_ + "'", fileName);
     }
 
-	//If we only have to read slices, skip to the position we have to read the first
-	//slice from 
-	uint64_t skip = (uint64_t)dimensions_.x * (uint64_t)dimensions_.y * (uint64_t)firstSlice* 
+    //If we only have to read slices, skip to the position we have to read the first
+    //slice from
+    uint64_t skip = (uint64_t)dimensions_.x * (uint64_t)dimensions_.y * (uint64_t)firstSlice*
         (uint64_t) (volume->getBitsAllocated() / 8);
 
-    //Now add that to the offset we might have received
-	offset_ = offset_ + skip;
+    // now add that to the headerskip we might have received
+    uint64_t offset = headerskip_ + skip;
 
     #ifdef _MSC_VER
-        _fseeki64(fin,offset_,SEEK_SET);
+        _fseeki64(fin,offset,SEEK_SET);
     #else
-        fseek(fin,offset_,SEEK_SET);
+        fseek(fin,offset,SEEK_SET);
     #endif
 
-	volume->clear();
+    volume->clear();
 
+    if (getProgress()) {
+        getProgress()->setTitle("Loading volume");
+        getProgress()->setMessage("Loading volume: " + tgt::FileSystem::fileName(fileName));
+    }
     VolumeReader::read(volume, fin);
 
-	if (lastSlice == 0) {
+    if (lastSlice == 0) {
         if (feof(fin) ) {
-		   	delete volume;
-        	// throw exception
-        	throw tgt::CorruptedFileException("unexpected EOF: raw file truncated or ObjectModel '" + 
+               delete volume;
+            // throw exception
+            throw tgt::CorruptedFileException("unexpected EOF: raw file truncated or ObjectModel '" +
                 objectModel_ + "' invalid", fileName);
-		}
-	}
+        }
+    }
 
     fclose(fin);
 
@@ -226,7 +260,7 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
 
     if (format_ == "FLOAT8")
         conv = new VolumeUInt8(dimensions_, spacing_);
-    else if (format_ == "FLOAT16")
+    else if ((format_ == "FLOAT16") || ((format_ == "FLOAT") && (objectModel_ != "RGB")))
         conv = new VolumeUInt16(dimensions_, spacing_);
 
     if (conv) {
@@ -235,23 +269,45 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
         delete conv;
     }
 
-    volume->meta().setFileName(fileName);
-    volume->meta().setTransformation(transformation_);
+    if (sliceOrder_ == "-x") {
+        LINFO("slice order is -x, reversing order to +x...\n");
+        reverseXSliceOrder(volume);
+    } else if (sliceOrder_ == "-y") {
+        LINFO("slice order is -y, reversing order to +y...\n");
+        reverseYSliceOrder(volume);
+    } else if (sliceOrder_ == "-z") {
+        LINFO("slice order is -z, reversing order to +z...\n");
+        reverseZSliceOrder(volume);
+    }
+
+    volume->setTransformation(transformation_);
     volume->meta().setString(metaString_);
-	volume->meta().setParentVolumeDimensions(originalVolumeDimensions);
     volume->meta().setUnit(unit_);
+    volume->meta().setParentVolumeDimensions(originalVolumeDimensions);
 
-    VolumeSet* volumeSet = new VolumeSet(fileName);
-    VolumeSeries* volumeSeries = new VolumeSeries(modality_.getName(), modality_);
-    volumeSet->addSeries(volumeSeries);
+    VolumeCollection* volumeCollection = new VolumeCollection();
     VolumeHandle* volumeHandle = new VolumeHandle(volume, 0.0f);
-    volumeHandle->setOrigin(fileName, modality_.getName(), 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
+    volumeHandle->setModality(modality_);
 
-    return volumeSet;
+    // encode raw parameters into search string
+    std::ostringstream searchStream;
+    searchStream << "objectModel=" << objectModel_ << "&";
+    searchStream << "format=" << format_ << "&";
+    searchStream << "dim_x=" << dimensions_.x << "&";
+    searchStream << "dim_y=" << dimensions_.y << "&";
+    searchStream << "dim_z=" << dimensions_.z << "&";
+    searchStream << "spacing_x=" << spacing_.x << "&";
+    searchStream << "spacing_y=" << spacing_.y << "&";
+    searchStream << "spacing_z=" << spacing_.z << "&";
+    searchStream << "headerskip=" << headerskip_;
+    volumeHandle->setOrigin(VolumeOrigin("raw", fileName, searchStream.str()));
+
+    volumeCollection->add(volumeHandle);
+
+    return volumeCollection;
 }
 
-VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 brickStartPos,int brickSize)
+VolumeCollection* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 brickStartPos,int brickSize)
     throw(tgt::FileException, std::bad_alloc)
 {
     tgt::ivec3 datasetDims = dimensions_;
@@ -274,30 +330,22 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
         if (format_ == "UCHAR") {
             //LINFO("Reading 8 bit dataset");
             VolumeUInt8* v = new VolumeUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
 
         }
         else if ((format_ == "USHORT" && bitsStored_ == 12) || format_ == "USHORT_12") {
             //LINFO("Reading 12 bit dataset");
             VolumeUInt16* v = new VolumeUInt16(dimensions_, spacing_, 12);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
         }
         else if (format_ == "USHORT") {
             //LINFO("Reading 16 bit dataset");
             VolumeUInt16* v = new VolumeUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(zeroPoint_);
             volume = v;
         }
-        else if (format_ == "FLOAT8" || format_ == "FLOAT16") {
+        else if (format_ == "FLOAT8" || format_ == "FLOAT16" || format_ == "FLOAT") {
             //LINFO("Reading 32 bit float dataset, converting to 8 or 16 bit");
             VolumeFloat* v = new VolumeFloat(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(static_cast<float>(zeroPoint_));
             volume = v;
         }
         else {
@@ -308,15 +356,11 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
         if (format_ == "UCHAR") {
             //LINFO("Reading 4x8 bit dataset");
             Volume4xUInt8* v = new Volume4xUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::col4(zeroPoint_));
             volume = v;
         }
         else if (format_ == "USHORT") {
             //LINFO("Reading 4x16 bit dataset");
             Volume4xUInt16* v = new Volume4xUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::Vector4<uint16_t>(zeroPoint_));
             volume = v;
         }
         else {
@@ -327,26 +371,22 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
         if (format_ == "UCHAR") {
             //LINFO("Reading 3x8 bit dataset");
             Volume3xUInt8* v = new Volume3xUInt8(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::col3(zeroPoint_));
             volume = v;
         }
         else if (format_ == "USHORT") {
             //LINFO("Reading 3x16 bit dataset");
             Volume3xUInt16* v = new Volume3xUInt16(dimensions_, spacing_);
-            if (zeroPoint_ != 0)
-                v->setZeroPoint(tgt::Vector3<uint16_t>(zeroPoint_));
             volume = v;
-        }
-        else {
+        } else if (format_ == "FLOAT") {
+            Volume3xFloat* v = new Volume3xFloat(dimensions_, spacing_);
+            volume = v;
+        } else {
             throw tgt::CorruptedFileException("Format '" + format_ + "' not supported for object model RGB", fileName);
         }
     }
     else if (objectModel_ == "LA") { // luminance alpha
         //LINFO("Reading luminance16 alpha16 dataset");
         Volume4xUInt8* v = new Volume4xUInt8(dimensions_, spacing_);
-        if (zeroPoint_ != 0)
-            v->setZeroPoint(tgt::col4(zeroPoint_));
         volume = v;
     }
     else {
@@ -360,7 +400,8 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
     uint64_t initialSeekPos = (brickStartPos.z *(datasetDims.x*datasetDims.y)*brickSize*voxelSize )+
         (brickStartPos.y * datasetDims.x*brickSize*voxelSize) + (brickStartPos.x*brickSize*voxelSize);
 
-    initialSeekPos = initialSeekPos + offset_;
+    // add header skip
+    initialSeekPos += headerskip_;
 
     #ifdef _MSC_VER
         _fseeki64(fin, initialSeekPos, SEEK_SET);
@@ -373,7 +414,7 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
                 int volumePos = brickSize*j + (i*brickSize*brickSize);
                 volumePos = volumePos*voxelSize;
                 if (fread(reinterpret_cast<char*>(volume->getData()) + volumePos, 1, brickSize*voxelSize, fin) == 0)
-                    LWARNING("fread() failed");                    
+                    LWARNING("fread() failed");
                 #ifdef _MSC_VER
                     _fseeki64(fin, (datasetDims.x - brickSize)*voxelSize, SEEK_CUR);
                 #else
@@ -388,13 +429,13 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
         }
 
     fclose(fin);
-   
+
     // convert if neccessary
     Volume* conv = 0;
 
     if (format_ == "FLOAT8")
         conv = new VolumeUInt8(dimensions_, spacing_);
-    else if (format_ == "FLOAT16")
+    else if ((format_ == "FLOAT16") || ((format_ == "FLOAT") && (objectModel_ != "RGB")))
         conv = new VolumeUInt16(dimensions_, spacing_);
 
     if (conv) {
@@ -403,20 +444,31 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
         delete conv;
     }
 
-    volume->meta().setFileName(fileName);
-    volume->meta().setTransformation(transformation_);
+    volume->setTransformation(transformation_);
     volume->meta().setString(metaString_);
-	volume->meta().setParentVolumeDimensions(datasetDims);
     volume->meta().setUnit(unit_);
+    volume->meta().setParentVolumeDimensions(datasetDims);
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-    VolumeSeries* volumeSeries = new VolumeSeries(modality_.getName(), modality_);
-    volumeSet->addSeries(volumeSeries);
+    VolumeCollection* volumeCollection = new VolumeCollection();
     VolumeHandle* volumeHandle = new VolumeHandle(volume, 0.0f);
-    volumeHandle->setOrigin(fileName, modality_.getName(), 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
+    volumeHandle->setModality(modality_);
 
-    return volumeSet;
+    // encode raw parameters into search string
+    std::ostringstream searchStream;
+    searchStream << "objectModel=" << objectModel_ << "&";
+    searchStream << "format=" << format_ << "&";
+    searchStream << "dim_x=" << dimensions_.x << "&";
+    searchStream << "dim_y=" << dimensions_.y << "&";
+    searchStream << "dim_z=" << dimensions_.z << "&";
+    searchStream << "spacing_x=" << spacing_.x << "&";
+    searchStream << "spacing_y=" << spacing_.y << "&";
+    searchStream << "spacing_z=" << spacing_.z << "&";
+    searchStream << "headerskip=" << headerskip_;
+    volumeHandle->setOrigin(VolumeOrigin("raw", fileName, searchStream.str()));
+
+    volumeCollection->add(volumeHandle);
+
+    return volumeCollection;
 }
 
-} // namespace voreen
+}   // namespace voreen

@@ -39,6 +39,7 @@ GLUTCanvas::GLUTCanvas(const std::string& title,
                        const GLCanvas::Buffers buffers)
     : GLCanvas(title, size, buffers)
 {
+    fullscreen_ = false;
     glutMouse_ = 0;
     holdButton_ = MouseEvent::NO_MOUSE_BUTTON;
 }
@@ -66,8 +67,8 @@ void GLUTCanvas::init() {
                       glutGet(GLUT_WINDOW_ALPHA_SIZE)) ;
     stencilSize_ = glutGet(GLUT_WINDOW_STENCIL_SIZE);
     depthSize_ = glutGet(GLUT_WINDOW_DEPTH_SIZE);
-    doubleBuffered_ = glutGet(GLUT_WINDOW_DOUBLEBUFFER);
-    stereoViewing_ = glutGet(GLUT_WINDOW_STEREO);
+    doubleBuffered_ = (0 != glutGet(GLUT_WINDOW_DOUBLEBUFFER));
+    stereoViewing_ =  (0 != glutGet(GLUT_WINDOW_STEREO));
 
     GLCanvas::init();
 }
@@ -133,7 +134,7 @@ void GLUTCanvas::mouseMotion(const int& x, const int& y) {
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, holdButton_);
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, holdButton_, getSize());
     getEventHandler()->broadcast(moveEvent);
 }
 
@@ -142,7 +143,7 @@ void GLUTCanvas::passiveMouseMotion(const int& x, const int& y) {
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE);
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, MouseEvent::NO_MOUSE_BUTTON, getSize());
     getEventHandler()->broadcast(moveEvent);
 }
 
@@ -174,7 +175,7 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
     Event::Modifier tgtModifier = static_cast<Event::Modifier>(getModifier(modifier));
 
     // Create and broadcast event
-    MouseEvent* mousePressedEvent = new MouseEvent(x, y, action, tgtModifier, pressedButton);
+    MouseEvent* mousePressedEvent = new MouseEvent(x, y, action, tgtModifier, pressedButton, getSize());
     getEventHandler()->broadcast(mousePressedEvent);
 }
 

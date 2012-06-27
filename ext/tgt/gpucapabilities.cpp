@@ -171,6 +171,10 @@ bool GpuCapabilities::areFramebufferObjectsSupported() {
     return framebufferObjects_;
 }
 
+int GpuCapabilities::getMaxColorAttachments() {
+    return maxColorAttachments_;
+}
+
 void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     if (osString)
         LINFO("OS version:          " << osVersionString_);
@@ -212,6 +216,8 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     features.clear();
     features.str("");
     features << "Framebuffer Objects: " << (areFramebufferObjectsSupported() ? "yes" : "no");
+	if(areFramebufferObjectsSupported())
+		features << ", max " << getMaxColorAttachments() << " color attachments";
     LINFO(features.str());
 
     features.clear();
@@ -300,12 +306,12 @@ void GpuCapabilities::detectCapabilities() {
     }
 
     // Shader model
-    // see http://www.opengl.org/wiki/index.php/Shading_languages:_How_to_detect_shader_model%3F
+    // see http://www.opengl.org/wiki/Shading_languages:_How_to_detect_shader_model%3F
     // for information about shader models in OpenGL
     if (isExtensionSupported("GL_EXT_geometry_shader4"))
         shaderModel_ = SHADER_MODEL_4;
     else if (isExtensionSupported("GL_NV_vertex_program3")  ||
-              isExtensionSupported("GL_ATI_shader_texture_lod"))
+             isExtensionSupported("GL_ATI_shader_texture_lod"))
         shaderModel_ = SHADER_MODEL_3;
     else if (glVersion_ >= GlVersion::TGT_GL_VERSION_2_0)
         shaderModel_ = SHADER_MODEL_2;
@@ -371,6 +377,12 @@ void GpuCapabilities::detectCapabilities() {
         colorTableWidth_ = 0;
 
     framebufferObjects_ = (isExtensionSupported("GL_EXT_framebuffer_object"));
+
+	if(framebufferObjects_) {
+		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &maxColorAttachments_);
+	}
+	else
+		maxColorAttachments_ = -1;
 
 }
 

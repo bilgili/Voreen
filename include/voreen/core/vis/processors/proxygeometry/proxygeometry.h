@@ -35,6 +35,8 @@
 
 namespace voreen {
 
+class EntryExitPoints;
+
 /**
  * Abstract base class for all proxy geometries. Derived classes create
  * their proxy geometry.
@@ -43,30 +45,20 @@ class ProxyGeometry : public VolumeRenderer {
 public:
     ProxyGeometry();
     virtual ~ProxyGeometry() { }
-    virtual const Identifier getClassName() const {return "ProxyGeometry.ProxyGeometry";}
     virtual tgt::vec3 getVolumeSize();
 
-    //virtual void setVolumeHandle(VolumeHandle* const handle);
-
-    /**
-     * Should called when OpenGL is initialized.
-     */
-    virtual int initializeGL();
-
-    static const Identifier setUseClipping_;
-    static const Identifier setLeftClipPlane_;
-    static const Identifier setRightClipPlane_;
-    static const Identifier setTopClipPlane_;
-    static const Identifier setBottomClipPlane_;
-    static const Identifier setFrontClipPlane_;
-    static const Identifier setBackClipPlane_;
-    static const Identifier resetClipPlanes_;
-    static const Identifier getVolumeSize_;
+    static const std::string setUseClipping_;
+    static const std::string setLeftClipPlane_;
+    static const std::string setRightClipPlane_;
+    static const std::string setTopClipPlane_;
+    static const std::string setBottomClipPlane_;
+    static const std::string setFrontClipPlane_;
+    static const std::string setBackClipPlane_;
+    static const std::string resetClipPlanes_;
 
     virtual void render() {}
 
-    virtual void process(LocalPortMapping* portMapping);
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
+    virtual void process();
 
 protected:
     /**
@@ -96,9 +88,10 @@ protected:
     /** Determines wether the transformation matrix assigned to a dataset
      *  is considered when rendering the proxygeometry.
      */
-    BoolProp useDatasetTransformationMatrix_;
-    tgt::mat4 datasetTransformationMatrix_;
+    BoolProperty applyDatasetTransformationMatrix_;
 
+    VolumePort inport_;
+    GenericCoProcessorPort<ProxyGeometry> cpPort_;
 };
 
 } // namespace voreen

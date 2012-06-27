@@ -34,33 +34,27 @@
 
 namespace voreen {
 
-class StringProp : public TemplateProperty<std::string> {
+class StringProperty : public TemplateProperty<std::string> {
 public:
-    StringProp(const std::string& id, const std::string& guiText, const std::string& value = "",
-        bool invalidate = true, bool invalidateShader = false);
+    StringProperty(const std::string& id, const std::string& guiText, const std::string& value = "",
+        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~StringProp() {}
+    virtual ~StringProperty() {}
 
-    void updateFromXml(TiXmlElement* propElem);
-    TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
     virtual std::string toString() const { return value_; }
 };
 
-// ============================================================================
-
-class StringVectorProp : public TemplateProperty<std::vector<std::string> > {
-public:
-    StringVectorProp(const std::string& id, const std::string& guiText, const std::vector<std::string>& value,
-        bool invalidate = true, bool invalidateShader = false);
-
-    virtual ~StringVectorProp() {}
-
-    PropertyWidget* createWidget(PropertyWidgetFactory* f);
-    virtual std::string toString() const;
-};
-
-}   // namespace
+}
 
 #endif

@@ -46,19 +46,25 @@ public:
      * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the PostProcessing.
      */
     Glow();
-    virtual const Identifier getClassName() const {return "ImageProcessor.Glow";}
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "Glow"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new Glow();}
-    void process(LocalPortMapping* portMapping);
+    virtual Processor* create() const;
+    void process();
 
-    static const Identifier setGlowColor;
-    static const Identifier setGlowRange;
+    static const std::string setGlowColor;
+    static const std::string setGlowRange;
 
 protected:
 
-    void renderInternalPass(int source, int pass);
-    ColorProp glowColor_;
-    IntProp glowRange_;
+    void renderInternalPass(RenderPort* port, int pass);
+    ColorProperty glowColor_;
+    IntProperty glowRange_;
+
+    RenderPort inport_;
+    RenderPort outport_;
+    RenderPort tmpPort_;
 };
 
 

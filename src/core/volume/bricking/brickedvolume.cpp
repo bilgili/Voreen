@@ -31,48 +31,48 @@
 
 
 namespace voreen {
- 
-	BrickedVolume::BrickedVolume(Volume* indexVolume, Volume* packedVolume, Volume* eepVolume) 
+
+    BrickedVolume::BrickedVolume(Volume* indexVolume, Volume* packedVolume, Volume* eepVolume)
         : Volume(tgt::ivec3(0), packedVolume->getBitsStored(), tgt::vec3(1.f)) ,
         indexVolume_(indexVolume),
         packedVolume_(packedVolume),
-        eepVolume_(eepVolume) 
+        eepVolume_(eepVolume)
     {
-	}
+    }
 
-	BrickedVolume::~BrickedVolume() {
-		delete indexVolume_;
-		delete packedVolume_;
-		delete eepVolume_;
-	}
+    BrickedVolume::~BrickedVolume() {
+        delete indexVolume_;
+        delete packedVolume_;
+        delete eepVolume_;
+    }
 
-	Volume* BrickedVolume::getIndexVolume() {
-		return indexVolume_;
-	}
+    Volume* BrickedVolume::getIndexVolume() {
+        return indexVolume_;
+    }
 
-	Volume* BrickedVolume::getPackedVolume() {
-		return packedVolume_;
-	}
+    Volume* BrickedVolume::getPackedVolume() {
+        return packedVolume_;
+    }
 
-	Volume* BrickedVolume::getEepVolume() {
-		return eepVolume_;
-	}
+    Volume* BrickedVolume::getEepVolume() {
+        return eepVolume_;
+    }
 
-	void BrickedVolume::setIndexVolume(Volume *indexVolume) {
-		indexVolume_ = indexVolume;
-	}	
+    void BrickedVolume::setIndexVolume(Volume *indexVolume) {
+        indexVolume_ = indexVolume;
+    }
 
-	void BrickedVolume::setPackedVolume(Volume *packedVolume) {
-		packedVolume_ = packedVolume;
-	}
+    void BrickedVolume::setPackedVolume(Volume *packedVolume) {
+        packedVolume_ = packedVolume;
+    }
 
-	void BrickedVolume::setEepVolume(Volume *eepVolume) {
-		eepVolume_ = eepVolume;
-	}
+    void BrickedVolume::setEepVolume(Volume *eepVolume) {
+        eepVolume_ = eepVolume;
+    }
 
-	int BrickedVolume::getBitsStored() const {
-		return packedVolume_->getBitsStored();
-	}
+    int BrickedVolume::getBitsStored() const {
+        return packedVolume_->getBitsStored();
+    }
 
 } //namespace
 

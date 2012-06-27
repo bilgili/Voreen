@@ -31,37 +31,10 @@
 
 namespace voreen {
 
-EventProperty::EventProperty(const std::string& guiText, tgt::Event::Modifier modifier, tgt::KeyEvent::KeyCode keyCode)
+EventProperty::EventProperty(const std::string& guiText, tgt::Event::Modifier modifier)
     : Property("", guiText)
-    , isMouseEvent_(false)
     , modifier_(modifier)
-    , mouseButtons_(tgt::MouseEvent::NO_MOUSE_BUTTON)
-    , keyCode_(keyCode)
 {}
-
-EventProperty::EventProperty(const std::string& guiText, tgt::Event::Modifier modifier, tgt::MouseEvent::MouseButtons mouseButtons)
-    : Property("", guiText)
-    , isMouseEvent_(true)
-    , modifier_(modifier)
-    , mouseButtons_(mouseButtons)
-    , keyCode_(tgt::KeyEvent::K_UNKNOWN)
-{}
-
-bool EventProperty::accepts(tgt::MouseEvent* e) {
-    return ((e->modifiers() == getModifier()) && (e->button() & getMouseButtons()));
-}
-
-bool EventProperty::accepts(tgt::KeyEvent* e) {
-    return (e->keyCode() == getKeyCode());
-}
-
-bool EventProperty::isMouseEvent() {
-    return isMouseEvent_;
-}
-
-bool EventProperty::isKeyEvent() {
-    return !isMouseEvent_;
-}
 
 tgt::Event::Modifier EventProperty::getModifier() {
     return modifier_;
@@ -69,22 +42,6 @@ tgt::Event::Modifier EventProperty::getModifier() {
 
 void EventProperty::setModifier(tgt::Event::Modifier value) {
     modifier_ = value;
-}
-
-tgt::MouseEvent::MouseButtons EventProperty::getMouseButtons() {
-    return mouseButtons_;
-}
-
-void EventProperty::setMouseButtons(tgt::MouseEvent::MouseButtons value) {
-    mouseButtons_ = value;
-}
-
-tgt::KeyEvent::KeyCode EventProperty::getKeyCode() {
-    return keyCode_;
-}
-
-void EventProperty::setKeyCode(tgt::KeyEvent::KeyCode value) {
-    keyCode_ = value;
 }
 
 std::string EventProperty::toString() const {

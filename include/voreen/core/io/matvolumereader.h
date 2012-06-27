@@ -34,6 +34,7 @@
 
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/volume/volume.h"
+#include "voreen/core/volume/volumeatomic.h"
 
 // Matlab header
 #include "mat.h"
@@ -59,7 +60,7 @@ public:
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     template<class T>
-    Volume* readMatrix(mxArray* pa, tgt::ivec3 dim, const MatSizeType* matDim, int w) {
+    static Volume* readMatrix(mxArray* pa, tgt::ivec3 dim, const MatSizeType* matDim, int w) {
         VolumeAtomic<T>* dataset;
         try {
             dataset = new VolumeAtomic<T>(dim);

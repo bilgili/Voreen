@@ -1,147 +1,195 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<Workspace version="1" readonly="true">
-    <Settings />
-    <Camera>
-        <position x="2.077511" y="0.122099" z="2.288838" />
-        <focus x="-0.017547" y="0.012634" z="0.015563" />
-        <upVector x="-0.734938" y="-0.013861" z="0.677992" />
-    </Camera>
-    <ProcessorNetwork version="2">
-        <MetaData>
-            <RptAggregationItems />
-        </MetaData>
-        <Settings reuseTCTargets="false" />
-        <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="0">
-            <MetaData>
-                <RptProcessorItem x="-349" y="-114" />
-            </MetaData>
-            <Property id="set.supportCameraInsideVolume" lod="1" value="false" />
-            <Property id="set.jitterEntryPoints" lod="1" value="false" />
-            <Outport type="image.entrypoints">
-                <Processor id="7" port="image.entrypoints" />
-            </Outport>
-            <Outport type="image.exitpoints">
-                <Processor id="7" port="image.exitpoints" />
-            </Outport>
-        </Processor>
-        <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="1">
-            <MetaData>
-                <RptProcessorItem x="-585" y="-114" />
-            </MetaData>
-            <Property id="set.UseClipping" lod="1" value="true" />
-            <Property id="set.LeftClipPlane" lod="1" value="0" />
-            <Property id="set.RightClipPlane" lod="1" value="0" />
-            <Property id="set.BottomClipPlane" lod="1" value="0" />
-            <Property id="set.TopClipPlane" lod="1" value="0" />
-            <Property id="set.FrontClipPlane" lod="1" value="0" />
-            <Property id="set.BackClipPlane" lod="1" value="0" />
-            <Property id="set.bricking.region.priority" value="1" />
-            <Property id="set.useDatasetTrafoMatrix" value="false" />
-            <Outport type="coprocessor.proxygeometry">
-                <Processor id="0" port="coprocessor.proxygeometry" />
-            </Outport>
-        </Processor>
-        <Processor type="ImageProcessor.Background" name="Background" id="2">
-            <MetaData>
-                <RptProcessorItem x="-426" y="213" />
-            </MetaData>
-            <Property id="set.backgroundModeAsString" value="Monochrome" />
-            <Property id="set.backgroundFirstColor" r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
-            <Property id="set.backgroundSecondColor" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
-            <Property id="set.backgroundAngle" value="180" />
-            <Property id="set.backgroundfilenameAsString" value="" />
-            <Property id="set.backgroundtile" value="1.000000" />
-            <Outport type="image.output">
-                <Processor id="5" port="image.input" />
-            </Outport>
-        </Processor>
-        <Processor type="VolumeProcessor.VolumeSetSource" name="VolumeSetSource" id="3">
-            <MetaData>
-                <RptProcessorItem x="-454" y="-307" />
-            </MetaData>
-            <Property id="update.currentVolumeSet" value="nucleon.raw" />
-            <Outport type="volumeset.volumeset">
-                <Processor id="4" port="volumeset.volumeset" />
-            </Outport>
-        </Processor>
-        <Processor type="VolumeProcessor.VolumeSelector" name="VolumeSelector" id="4">
-            <MetaData>
-                <RptProcessorItem x="-450" y="-214" />
-            </MetaData>
-            <Property id="set.currentModality" lod="1" value="" />
-            <Property id="set.currentTimestep" lod="1" value="0" />
-            <Outport type="volumehandle.volumehandle">
-                <Processor id="0" port="volumehandle.volumehandle" />
-                <Processor id="1" port="volumehandle.volumehandle" />
-                <Processor id="7" port="volumehandle.volumehandle" />
-            </Outport>
-        </Processor>
-        <Processor type="Miscellaneous.Canvas" name="Canvas" id="5">
-            <MetaData>
-                <RptProcessorItem x="-427" y="307" />
-            </MetaData>
-            <Property id="set.useCaching" lod="1" value="true" />
-        </Processor>
-        <Processor type="Miscellaneous.CoarsenessRenderer" name="CoarsenessRenderer" id="6">
-            <MetaData>
-                <RptProcessorItem x="-449" y="120" />
-            </MetaData>
-            <Property id="set.Coarseness" value="4" />
-            <Outport type="image.outport">
-                <Processor id="2" port="image.input" />
-            </Outport>
-        </Processor>
-        <Processor type="Raycaster.SimpleRaycaster" name="SimpleRaycaster" id="7">
-            <MetaData>
-                <RptProcessorItem x="-436" y="1" />
-            </MetaData>
-            <Property id="raycasting.quality" value="normal" />
-            <Property id="set.interpolation.mode" value="Intrablock Interpolation" />
-            <Property id="set.brickLodSelector" value="Error-based" />
-            <Property id="set.bricking.strategy.mode" value="Balanced" />
-            <Property id="set.bricking.update.strategy" value="Never" />
-            <Property id="swith.adaptive.sampling" value="false" />
-            <Property id="switch.interpolation.coarseness" value="false" />
-            <Property id="set.TransferFunction" tfType="TransFuncIntensity">
-                <MetaData>
-                    <EditorWindow visible="1" x="295" y="435" width="542" height="294" />
-                </MetaData>
-                <Keys>
-                    <key intensity="0.134868" split="0">
-                        <col4 r="153" g="0" b="255" a="0" />
-                    </key>
-                    <key intensity="0.184211" split="1">
-                        <col4 r="129" g="90" b="255" a="26" />
-                        <col4 r="142" g="0" b="0" a="0" />
-                    </key>
-                    <key intensity="0.407895" split="0">
-                        <col4 r="255" g="0" b="0" a="0" />
-                    </key>
-                    <key intensity="0.457237" split="1">
-                        <col4 r="255" g="0" b="0" a="36" />
-                        <col4 r="92" g="92" b="92" a="0" />
-                    </key>
-                    <key intensity="0.756579" split="0">
-                        <col4 r="4" g="255" b="0" a="0" />
-                    </key>
-                    <key intensity="0.875000" split="0">
-                        <col4 r="88" g="255" b="86" a="255" />
-                    </key>
-                </Keys>
-                <threshold lower="0.000000" upper="1.000000" />
-            </Property>
-            <Outport type="image.output">
-                <Processor id="6" port="image.inport" />
-            </Outport>
-        </Processor>
-    </ProcessorNetwork>
-    <VolumeSetContainer>
-        <VolumeSet name="nucleon.raw">
-            <VolumeSeries name="unknown" modality="unknown">
-                <VolumeHandle timestep="0.000000">
-                    <Origin filename="../nucleon.dat" seriesname="unknown" timestep="0.000000" />
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" readonly="true">
+        <VolumeContainer>
+            <VolumeHandles>
+                <VolumeHandle modality="unknown" timestep="0.000000" id="ref6">
+                    <Origin filename="../nucleon.dat" />
                 </VolumeHandle>
-            </VolumeSeries>
-        </VolumeSet>
-    </VolumeSetContainer>
-</Workspace>
+            </VolumeHandles>
+        </VolumeContainer>
+        <ProcessorNetwork version="5" reuseTCTargets="false">
+            <Processors>
+                <Processor type="EntryExitPoints" name="EntryExitPoints" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-388" y="-23" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="842" y="448" />
+                            </MetaData>
+                            <position x="-1.101992" y="0.305807" z="1.733812" />
+                            <focus x="0.000000" y="0.000000" z="0.000000" />
+                            <upVector x="-0.721088" y="-0.596065" z="-0.353184" />
+                        </Property>
+                        <Property name="camerahandler.active" value="true" />
+                        <Property name="camerahandler.shareEvents" value="false" />
+                        <Property name="filterJitterTexture" value="true" />
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005000" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                    </Properties>
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="Cube-ProxyGeometry" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-600" y="-24" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClipPlane" value="41" />
+                        <Property name="bottomClipPlane" value="0" />
+                        <Property name="frontClipPlane" value="0" />
+                        <Property name="leftClipPlane" value="0" />
+                        <Property name="regionPriority" value="1" />
+                        <Property name="rightClipPlane" value="41" />
+                        <Property name="topClipPlane" value="41" />
+                        <Property name="useClipping" value="false" />
+                        <Property name="useDatasetTrafoMatrix" value="true" />
+                    </Properties>
+                </Processor>
+                <Processor type="Background" name="Background" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-436" y="195" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="angle" value="159" />
+                        <Property name="backgroundModeAsString" value="monochrome" />
+                        <Property name="color1">
+                            <value x="1.000000" y="1.000000" z="1.000000" w="1.000000" />
+                        </Property>
+                        <Property name="color2">
+                            <value x="0.313726" y="0.313726" z="0.313726" w="1.000000" />
+                        </Property>
+                        <Property name="repeat" value="1.000000" />
+                        <Property name="texture" value="" />
+                    </Properties>
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-433" y="290" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="316" y="99" width="256" height="256" />
+                    </MetaData>
+                    <Properties />
+                </Processor>
+                <Processor type="SimpleRaycaster" name="SimpleRaycaster" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-451" y="102" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="adaptive.sampling" value="false" />
+                        <Property name="brickLodSelector" value="error-based" />
+                        <Property name="bricking.strategy.mode" value="balanced" />
+                        <Property name="bricking.update.strategy" value="never" />
+                        <Property name="camera" adjustProjectionToViewport="true">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="842" y="448" />
+                            </MetaData>
+                            <position x="0.000000" y="0.000000" z="3.500000" />
+                            <focus x="0.000000" y="0.000000" z="0.000000" />
+                            <upVector x="0.000000" y="1.000000" z="0.000000" />
+                        </Property>
+                        <Property name="interactionCoarseness" value="4" />
+                        <Property name="interactionQuality" value="1.000000" />
+                        <Property name="interpolation.coarseness" value="false" />
+                        <Property name="interpolationMode" value="intrablock" />
+                        <Property name="samplingRate" value="9.756098" />
+                        <Property name="transferFunction">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0.000000" upper="1.000000">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.462500" split="false">
+                                        <colorL r="41" g="41" b="41" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.521875" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                </Processor>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-478" y="-151" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeHandle">
+                            <value ref="ref6" />
+                        </Property>
+                    </Properties>
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="EntryExitPoints" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.entrypoints">
+                        <Processor type="SimpleRaycaster" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="EntryExitPoints" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.exitpoints">
+                        <Processor type="SimpleRaycaster" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="Background" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="SimpleRaycaster" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Background" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="EntryExitPoints" ref="ref0" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="SimpleRaycaster" ref="ref1" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.proxygeometry">
+                        <Processor type="CubeProxyGeometry" ref="ref5" />
+                    </Outport>
+                    <Inport name="coprocessor.proxygeometry">
+                        <Processor type="EntryExitPoints" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+            </CoProcessorConnections>
+            <PropertyLinks />
+        </ProcessorNetwork>
+    </Workspace>
+</VoreenData>

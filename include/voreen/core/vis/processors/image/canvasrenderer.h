@@ -31,48 +31,142 @@
 #define VRN_CANVASRENDERER_H
 
 #include "voreen/core/vis/processors/renderprocessor.h"
+#include "voreen/core/vis/exception.h"
+
+namespace tgt {
+class GLCanvas;  // forward declaration
+class Texture;
+}
 
 namespace voreen {
 
 /**
- * A CanvasRenderer is the last processor in a network. Its only purpose is to copy
- * its input to the finaltarget of texture container. Additionally the CanvasRenderer
- * is able to cache the rendering result, if no parameter in any processor in the network
- * has been changed since last rendering.
+ * A CanvasRenderer is a terminating element in a network. Its purpose is to copy
+ * its input to the associated canvas and to issue canvas updates on invalidations. 
+ * Additionally, the CanvasRenderer can take snapshots of arbitrary dimensions.
  */
 class CanvasRenderer : public RenderProcessor {
 public:
     CanvasRenderer();
     ~CanvasRenderer();
 
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getCategory() const { return "View"; }
+    virtual std::string getClassName() const { return "Canvas"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
     virtual bool isEndProcessor() const;
-    virtual bool usesCaching() const;
+
+    virtual bool isReady() const;
+    virtual void invalidate(InvalidationLevel inv = INVALID_RESULT);
+
+    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
 
     /**
-     * Returns the ID of the image which will be copied to the frame buffer in order
-     * to enable others to access the render target from the TextureContainer where
-     * the final image is held.
+     * Assigns a canvas object to the CanvasRenderer. The CanvasRenderer
+     * uses this reference to call update() on the canvas when its
+     * invalidate() function is called.
      */
-    int getImageID() { return imageID_; }
-    
+    void setCanvas(tgt::GLCanvas* canvas);
+
+    /**
+     * Returns the associated canvas object, may be null.
+     */
+    tgt::GLCanvas* getCanvas() const;
+
+    /**
+     * Writes the input rendering to an image file with the same
+     * dimensions as the current canvas size.
+     *
+     * @note This function requires Voreen to be built with DevIL support.
+     *
+     * @param filename the filename of the output file. Must have an
+     *      extension known by the DevIL library. *.jpg and *.png
+     *      should work fine.
+     *
+     * @return true, if the render-to-image operation was successful.
+     *      Otherwise, \c getRenderToImageError() returns a description of the error.
+     */
+    bool renderToImage(const std::string &filename);
+
+    /**
+     * Writes the current input rendering to an image file with the specified dimensions.
+     *
+     * @note This function requires Voreen to be built with DevIL support.
+     *
+     * @param filename the filename of the output image. Must have an
+     *      extension known by the DevIL library. *.jpg and *.png
+     *      should work fine.
+     * @param dimensions The desired size of the output image. The rendered image
+     *      is not scaled but re-generated with the target image size.
+     *
+     * @return true, if the render-to-image operation was successful.
+     *      Otherwise, \c getRenderToImageError() returns a description of the error.
+     */
+    bool renderToImage(const std::string &filename, tgt::ivec2 dimensions);
+
+    /**
+     * Returns the current color texture part of the rendered image. The
+     * return value may be 0.
+     *
+     * @note If the returned texture is not 0, you probably need to call
+     *      <code>downloadTexture()</code> on it, in order to access the pixels.
+     *      Otherwise, no memory is allocated for the pixels and no rendered data
+     *      are contained.
+     */
+    tgt::Texture* getImageColorTexture() const { return inport_.getColorTexture(); }
+
+    /**
+     * Returns a description of the error that has occurred
+     * during the last \c renderToImage() call.
+     *
+     * If the last render-to-image operation was successful, an empty string is returned.
+     */
+    std::string getRenderToImageError() const;
+
+    virtual void onEvent(tgt::Event* e);
+
 protected:
+
     /**
-     * The shader program used by this \c CanvasRenderer.
+     * Writes the rendering currently held by the inport to an
+     * image with the specified filename. This function is called
+     * by the process() function with renderToImageFilename_ as parameter,
+     * when the renderToImage_ flag is set. The actually image saving
+     * is delegated to the inport.
+     *
+     * @note Requires DevIL support.
+     *
+     * @throws VoreenException if the CanvasRenderer's inport has no valid rendering
+     * @throws std::bad_alloc if the rendered image is too large to be downloaded from the GPU
      */
-    tgt::Shader* raycastPrg_;
+    void renderInportToImage(const std::string& filename)
+        throw(VoreenException, std::bad_alloc);
 
-    BoolProp useCaching_; ///< property that activates or deactivates caching in this processor
+    /// Pointer to the associated OpenGL canvas
+    tgt::GLCanvas* canvas_;
 
-    /// Render target holding the input image within the TextureContainer.
-    int imageID_;    
+    /// Inport whose rendering is mapped to the frame buffer.
+    RenderPort inport_;
+
+    /// Texture that is shown when the inport_ is not ready.
+    tgt::Texture* errorTex_;
+
+    /// Flag to set when the input rendering should be to written to an image file.
+    bool renderToImage_;
+
+    /// Filename of the image file to write to.
+    std::string renderToImageFilename_;
+
+    /// Description of the error occured during last renderToImage
+    std::string renderToImageError_;
+
 };
 
 } // namespace voreen

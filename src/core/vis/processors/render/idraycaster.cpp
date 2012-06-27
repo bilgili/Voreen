@@ -30,16 +30,27 @@
 #include "voreen/core/vis/processors/render/idraycaster.h"
 #include "voreen/core/vis/voreenpainter.h"
 
+#include "voreen/core/vis/properties/cameraproperty.h"
+
+using tgt::vec3;
+
 namespace voreen {
 
-const Identifier IDRaycaster::firstHitPointsTexUnit_("firstHitPointsTexUnit");
+const std::string IDRaycaster::firstHitPointsTexUnit_("firstHitPointsTexUnit");
 
 IDRaycaster::IDRaycaster()
-  : VolumeRaycaster(),
-    coarse_(false),
-    penetrationDepth_("set.penetrationDepth", "penetration depth", 0.05f, 0.f, 0.5f)
+    : VolumeRaycaster()
+    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , penetrationDepth_("penetrationDepth", "penetration depth", 0.05f, 0.f, 0.5f)
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
+    , entryPort_(Port::INPORT, "image.entrypoints")
+    , exitPort_(Port::INPORT, "image.exitpoints")
+    , firstHitpointsPort_(Port::INPORT, "image.firsthitpoints")
+    , idMapPort_(Port::OUTPORT, "image.idmap", true)
 {
-    addProperty(&penetrationDepth_ );
+    
+    addProperty(penetrationDepth_ );
+    addProperty(camera_);
 
     tm_.addTexUnit(entryParamsTexUnit_);
     tm_.addTexUnit(entryParamsTexUnit_);
@@ -47,12 +58,11 @@ IDRaycaster::IDRaycaster()
     tm_.addTexUnit(exitParamsTexUnit_);
     tm_.addTexUnit(exitParamsTexUnit_);
 
-    createInport("volumehandle.volumehandle");
-    createInport("image.entrypoints");
-    createInport("image.firsthitpoints");
-    createInport("image.exitpoints");
-
-    createOutport("image.idmap");
+    addPort(volumePort_);
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPort(firstHitpointsPort_);
+    addPort(idMapPort_);
 }
 
 IDRaycaster::~IDRaycaster() {
@@ -63,9 +73,13 @@ const std::string IDRaycaster::getProcessorInfo() const {
         "rendering target. The three color channels are filled with the first-hit-positions.";
 }
 
-int IDRaycaster::initializeGL() {
+Processor* IDRaycaster::create() const {
+    return new IDRaycaster();
+}
+
+void IDRaycaster::initialize() throw (VoreenException) {
+    VolumeRaycaster::initialize();
     loadShader();
-    return VRN_OK;
 }
 
 /**
@@ -73,8 +87,8 @@ int IDRaycaster::initializeGL() {
  *
  */
 void IDRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_id.frag", generateHeader(), false);
-    invalidateShader();
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_id.frag", generateHeader(), false, false);
+    invalidate(Processor::INVALID_PROGRAM);
 }
 
 /**
@@ -92,75 +106,66 @@ void IDRaycaster::compile() {
  * Initialize two texture units with the entry and exit params and renders
  * a screen aligned quad.
  */
-void IDRaycaster::process(LocalPortMapping* portMapping) {
-    if (!VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-                                                  portMapping->getVolumeHandle("volumehandle.volumehandle")))
-    {
+void IDRaycaster::process() {
+
+    if (!volumePort_.isReady())
         return;
-    }
 
-    compileShader();
+    if(getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
     LGL_ERROR;
-    int entryPoints = portMapping->getTarget("image.entrypoints");
-    int firstHitPoints = portMapping->getTarget("image.firsthitpoints");
-    int exitPoints = portMapping->getTarget("image.exitpoints");
-    int dest = portMapping->getTarget("image.idmap");
 
-    tc_->setActiveTarget(dest, "IDRaycaster::render");
+    idMapPort_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // don't render when coarse
-    if (coarse_) {
+    // don't render when in interaction mode
+    if (interactionMode()) {
         glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
         return;
     }
 
     // bind entry points
-    glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entryPoints), tc_->getGLTexID(entryPoints));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entryPoints), tc_->getGLDepthTexID(entryPoints));
+    entryPort_.bindTextures(tm_.getGLTexUnit(entryParamsTexUnit_), tm_.getGLTexUnit(entryParamsDepthTexUnit_));
 
     // bind first hit points
-    glActiveTexture(tm_.getGLTexUnit(firstHitPointsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(firstHitPoints), tc_->getGLTexID(firstHitPoints));
+    firstHitpointsPort_.bindColorTexture(tm_.getGLTexUnit(firstHitPointsTexUnit_));
 
     // bind exit points
-    glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitPoints), tc_->getGLTexID(exitPoints));
-    glActiveTexture(tm_.getGLTexUnit(exitParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(exitPoints), tc_->getGLDepthTexID(exitPoints));
-    LGL_ERROR;
+    exitPort_.bindTextures(tm_.getGLTexUnit(exitParamsTexUnit_), tm_.getGLTexUnit(exitParamsDepthTexUnit_));
 
     // vector containing the volumes to bind
     std::vector<VolumeStruct> volumes;
 
     volumes.push_back(VolumeStruct(
-        currentVolumeHandle_->getVolumeGL(),
+        volumePort_.getData()->getVolumeGL(),
         volTexUnit_,
         "segmentation_",
         "segmentationParameters_")
     );
 
     glActiveTexture(tm_.getGLTexUnit(segmentationTexUnit_));
-    currentVolumeHandle_->getVolumeGL()->getTexture()->bind();
+    volumePort_.getData()->getVolumeGL()->getTexture()->bind();
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // initialize shader
     raycastPrg_->activate();
-    setGlobalShaderParameters(raycastPrg_);
+    setGlobalShaderParameters(raycastPrg_, camera_.get());
     bindVolumes(raycastPrg_, volumes);
     raycastPrg_->setUniform("entryPoints_", tm_.getTexUnit(entryParamsTexUnit_));
     raycastPrg_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    entryPort_.setTextureParameters(raycastPrg_, "entryParameters_");
     raycastPrg_->setUniform("firstHitPoints_", tm_.getTexUnit(firstHitPointsTexUnit_));
+    firstHitpointsPort_.setTextureParameters(raycastPrg_, "firstHitParameters_");
     raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
     raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
+    entryPort_.setTextureParameters(raycastPrg_, "exitParameters_");
 
     raycastPrg_->setUniform("penetrationDepth_", penetrationDepth_.get());
     renderQuad();
 
     raycastPrg_->deactivate();
+    idMapPort_.deactivateTarget();
 
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;

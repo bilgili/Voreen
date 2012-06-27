@@ -121,10 +121,10 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\framebufferObject.cpp">
+				RelativePath=".\fboclass_framebufferobject.cpp">
 			</File>
 			<File
-				RelativePath=".\framebufferObject.h">
+				RelativePath=".\fboclass_framebufferobject.h">
 			</File>
 			<File
 				RelativePath=".\glErrorUtil.cpp">
@@ -136,10 +136,10 @@
 				RelativePath=".\helloGPGPU_GLSL_FBO.cpp">
 			</File>
 			<File
-				RelativePath=".\renderbuffer.cpp">
+				RelativePath=".\fboclass_renderbuffer.cpp">
 			</File>
 			<File
-				RelativePath=".\renderbuffer.h">
+				RelativePath=".\fboclass_renderbuffer.h">
 			</File>
 		</Filter>
 		<Filter

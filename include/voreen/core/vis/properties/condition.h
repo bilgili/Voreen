@@ -30,7 +30,7 @@
 #ifndef VRN_CONDITION_H
 #define VRN_CONDITION_H
 
-#include "voreen/core/vis/properties/action.h"
+#include "voreen/core/vis/properties/allactions.h"
 
 namespace voreen {
 /**
@@ -89,10 +89,10 @@ public:
     };
 
     /**
-     * Checks if the Conditions is met and throws a Condition::ValidationFailed if not.
+     * Returns whether the condition is met and logs a warning, if not.
      * This is used for validation of TemplateProperties and should not be abused.
      */
-    void validate() const throw (Condition::ValidationFailed);
+    bool validate() const;
 
     /**
      * Returns a string describing the condition. This is added to the exception message when
@@ -134,6 +134,7 @@ public:
     virtual ~NumericPropertyValidation() {}
     virtual NumericPropertyValidation* clone() const { return new NumericPropertyValidation(*this); }
     virtual bool met() const throw ();
+    virtual std::string description() const;
 
 protected:
     NumericProperty<T>* observed_;
@@ -163,7 +164,7 @@ protected:
 
 template<typename T>
 bool OptionPropertyValidation<T>::met() const throw() {
-    std::set<std::string> allowedValues = observed_->allowedIds();
+    std::set<std::string> allowedValues = observed_->allowedKeys();
     return (allowedValues.find(observed_->get()) != allowedValues.end());
 }
 

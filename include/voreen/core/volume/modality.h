@@ -48,7 +48,8 @@ public:
     const std::string& getName() const { return name_; }
     bool isUnknown() const { return name_ == MODALITY_UNKNOWN.name_; }
 
-    static const std::vector<std::string>& getModalities();
+    static const std::vector<Modality*> getModalities() { return modalities(); }
+    static const std::vector<std::string>& getModalityNames() { return modalityNames_(); }
 
     // all known modalities
     static const Modality MODALITY_UNKNOWN;
@@ -56,6 +57,7 @@ public:
     static const Modality MODALITY_CT;
     static const Modality MODALITY_PET;
     static const Modality MODALITY_MR;
+    static const Modality MODALITY_US;
     static const Modality MODALITY_SEGMENTATION;
     static const Modality MODALITY_MASKING;
     static const Modality MODALITY_LENSEVOLUME;
@@ -69,27 +71,29 @@ public:
     static const Modality MODALITY_GRADIENTS;
     static const Modality MODALITY_GRADIENT_MAGNITUDES;
     static const Modality MODALITY_2ND_DERIVATIVES;
-	static const Modality MODALITY_INDEX_VOLUME;
-	static const Modality MODALITY_BRICKED_VOLUME;
-	static const Modality MODALITY_EEP_VOLUME;
+    static const Modality MODALITY_FLOW;
+    static const Modality MODALITY_INDEX_VOLUME;
+    static const Modality MODALITY_BRICKED_VOLUME;
+    static const Modality MODALITY_EEP_VOLUME;
 
 protected:
     std::string name_;
 
     // This indirection is done to prevent the "static initialization order fiasco"
     // see http://www.parashift.com/c++-faq-lite/ctors.html (10.13)
-    static std::vector<std::string>& modalities_() {
-        static std::vector<std::string> modalities;
+    static std::vector<std::string>& modalityNames_() {
+        static std::vector<std::string> modalityNames;
+        return modalityNames;
+    }
+
+    static std::vector<Modality*>& modalities() {
+        static std::vector<Modality*> modalities;
         return modalities;
     }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Modality& m) {
     return os << m.name_;
-}
-
-inline const std::vector<std::string>& Modality::getModalities() {
-    return modalities_();
 }
 
 } // namespace voreen

@@ -39,11 +39,7 @@ namespace voreen {
 
 VolumeMetaData::VolumeMetaData(const std::string& str)
   : string_(str)
-  , fileName_(std::string())
   , imagePositionZ_(0.f)
-  , transformation_(tgt::mat4::identity)
-  , size_(tgt::ivec2(0))
-  , parentVolumeDimensions_(tgt::ivec3(0) )
   , brickSize_(0)
 {}
 
@@ -59,14 +55,6 @@ void VolumeMetaData::setString(const std::string& str) {
     string_ = str;
 }
 
-void VolumeMetaData::setFileName(const std::string& fileName) {
-    fileName_ = fileName;
-}
-
-const std::string& VolumeMetaData::getFileName() const {
-    return fileName_;
-}
-
 float VolumeMetaData::getImagePositionZ() const {
     return imagePositionZ_;
 }
@@ -75,37 +63,13 @@ void VolumeMetaData::setImagePositionZ(float pos) {
     imagePositionZ_ = pos;
 }
 
-void VolumeMetaData::setTransformation(const tgt::mat4& trans) {
-    transformation_ = trans;
-}
-
-const tgt::mat4& VolumeMetaData::getTransformation() const {
-    return transformation_;
-}
-
-void VolumeMetaData::setSize(const tgt::ivec2& size) {
-    size_ = size;
-}
-
-const tgt::ivec2& VolumeMetaData::getSize() const {
-    return size_;
-}
-
-void VolumeMetaData::setParentVolumeDimensions(tgt::ivec3 parentVolumeDimensions) {
-    parentVolumeDimensions_ = parentVolumeDimensions;
-}
-
-tgt::ivec3 VolumeMetaData::getParentVolumeDimensions() {
-	return parentVolumeDimensions_;
-}
-
 void VolumeMetaData::setBrickSize(size_t bricksize) {
     brickSize_ = bricksize;
 }
 
 size_t VolumeMetaData::getBrickSize() {
-	return brickSize_;
-} 
+    return brickSize_;
+}
 
 void VolumeMetaData::setUnit(const std::string& unit) {
     unit_ = unit;
@@ -113,6 +77,14 @@ void VolumeMetaData::setUnit(const std::string& unit) {
 
 const std::string& VolumeMetaData::getUnit() const {
     return unit_;
+}
+
+void VolumeMetaData::setParentVolumeDimensions(tgt::ivec3 dimensions) {
+    parentVolumeDimensions_ = dimensions;
+}
+
+tgt::ivec3 VolumeMetaData::getParentVolumeDimensions() {
+    return parentVolumeDimensions_;
 }
 
 } // namespace voreen

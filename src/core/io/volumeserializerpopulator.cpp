@@ -33,6 +33,7 @@
 #include "voreen/core/io/datvolumewriter.h"
 #include "voreen/core/io/nrrdvolumereader.h"
 #include "voreen/core/io/nrrdvolumewriter.h"
+#include "voreen/core/io/philipsusvolumereader.h"
 #include "voreen/core/io/quadhidacvolumereader.h"
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/io/tuvvolumereader.h"
@@ -41,6 +42,12 @@
 #include "voreen/core/io/multivolumereader.h"
 
 #include "voreen/core/io/volumeserializer.h"
+
+#include "voreen/core/application.h"
+
+#ifdef VRN_MODULE_FLOWREEN
+#include "voreen/modules/flowreen/flowreader.h"
+#endif
 
 #ifdef VRN_WITH_DCMTK
     #include "voreen/core/io/dicomvolumereader.h"
@@ -58,32 +65,47 @@
     #include "voreen/core/io/tiffvolumereader.h"
 #endif
 
-#ifdef VRN_WITH_ZIP
+#ifdef VRN_WITH_ZLIB
     #include "voreen/core/io/zipvolumereader.h"
 #endif
 
 
 namespace voreen {
 
-VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*/)
-  : progress_(progress),
-    vs_(new VolumeSerializer())
+VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
+  : vs_(new VolumeSerializer()),
+    progressDialog_(0)
 {
+
+    if (showProgress) {
+        progressDialog_ = VoreenApplication::app()->createProgressDialog();
+        if(progressDialog_) {
+            progressDialog_->setTitle("Loading volume");
+            progressDialog_->setMessage("Loading volume ...");
+        }
+    }
+
     /*
         populate array with all known VolumeReaders
         --> if an FormatClashException occurs here it is an error in this method
     */
-    readers_.push_back(new DatVolumeReader(progress_));
+    readers_.push_back(new DatVolumeReader(progressDialog_));
     readers_.push_back(new NrrdVolumeReader());
     readers_.push_back(new QuadHidacVolumeReader());
-    readers_.push_back(new RawVolumeReader(progress_));
+    readers_.push_back(new RawVolumeReader(progressDialog_));
     readers_.push_back(new TUVVolumeReader());
     readers_.push_back(new InterfileVolumeReader());
-	readers_.push_back(new BrickedVolumeReader(progress_) );
-    readers_.push_back(new MultiVolumeReader(this, progress_));
+    readers_.push_back(new BrickedVolumeReader(progressDialog_) );
+    readers_.push_back(new MultiVolumeReader(this, progressDialog_));
 
 #ifdef VRN_WITH_DCMTK
-    readers_.push_back(new DicomVolumeReader(progress_));
+    readers_.push_back(new DicomVolumeReader(progressDialog_));
+#else
+    readers_.push_back(new PhilipsUSVolumeReader());
+#endif
+
+#ifdef VRN_MODULE_FLOWREEN
+    readers_.push_back(new FlowReader(progressDialog_));
 #endif
 
 #ifdef VRN_WITH_MATLAB
@@ -91,15 +113,15 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
 #endif
 
 #ifdef VRN_WITH_PVM
-    readers_.push_back(new PVMVolumeReader(progress_));
+    readers_.push_back(new PVMVolumeReader(progressDialog_));
 #endif
 
 #ifdef VRN_WITH_TIFF
-    readers_.push_back(new TiffVolumeReader(progress_));
+    readers_.push_back(new TiffVolumeReader(progressDialog_));
 #endif
 
-#ifdef VRN_WITH_ZIP
-    readers_.push_back(new ZipVolumeReader(this, progress_));
+#ifdef VRN_WITH_ZLIB
+    readers_.push_back(new ZipVolumeReader(this, progressDialog_));
 #endif
 
     for (size_t i = 0; i < readers_.size(); ++i)
@@ -120,14 +142,45 @@ VolumeSerializerPopulator::~VolumeSerializerPopulator() {
     delete vs_;
 
     for (size_t i = 0; i < readers_.size(); ++i)
-        delete readers_[i];
+        if (readers_[i] && !readers_[i]->isPersistent())
+            delete readers_[i];
 
     for (size_t i = 0; i < writers_.size(); ++i)
         delete writers_[i];
+
+    if (progressDialog_)
+        progressDialog_->hide();
+    delete progressDialog_;
 }
 
-VolumeSerializer* VolumeSerializerPopulator::getVolumeSerializer() const {
+const VolumeSerializer* VolumeSerializerPopulator::getVolumeSerializer() const {
     return vs_;
+}
+
+std::vector<std::string> VolumeSerializerPopulator::getSupportedReadExtensions() const {
+
+    std::vector<std::string> extensions;
+    for (size_t i=0; i<readers_.size(); ++i) {
+        for (size_t j=0; j<readers_[i]->getExtensions().size(); ++j) {
+            if (std::find(extensions.begin(), extensions.end(), readers_[i]->getExtensions()[j]) == extensions.end())
+                extensions.push_back(readers_[i]->getExtensions()[j]);
+        }
+    }
+
+    return extensions;
+}
+
+std::vector<std::string> VolumeSerializerPopulator::getSupportedWriteExtensions() const {
+
+    std::vector<std::string> extensions;
+    for (size_t i=0; i<writers_.size(); ++i) {
+        for (size_t j=0; j<writers_[i]->getExtensions().size(); ++j) {
+            if (std::find(extensions.begin(), extensions.end(), writers_[i]->getExtensions()[j]) == extensions.end())
+                extensions.push_back(writers_[i]->getExtensions()[j]);
+        }
+    }
+
+    return extensions;
 }
 
 } // namespace voreen

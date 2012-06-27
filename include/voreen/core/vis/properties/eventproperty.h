@@ -34,36 +34,151 @@
 #include "tgt/event/event.h"
 #include "tgt/event/keyevent.h"
 #include "tgt/event/mouseevent.h"
+#include "voreen/core/vis/properties/action.h"
+#include "voreen/core/vis/properties/targetaction.h"
 
 namespace voreen {
 
+template<class T, class P>
+class EventAction : public TargetAction<T> {
+protected:
+    using TargetAction<T>::target_;
+
+public:
+    EventAction(T* target, void (T::*fpt)(P*))
+        : TargetAction<T>(target), fpt_(fpt), param_(0)
+    {    }
+
+    virtual ~EventAction() {}
+    virtual EventAction* clone() const { return new EventAction(*this); }
+
+    virtual void setParam(P* value) {
+        param_ = value;
+    }
+    virtual void exec() {
+        if ((target_ != 0) && (fpt_ != 0))
+            (target_->*fpt_)(param_);
+    }
+
+private:
+    void (T::*fpt_)(P*);
+    P* param_;
+};
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 class EventProperty : public Property {
 public:
-    EventProperty(const std::string& guiText, tgt::Event::Modifier modifier, tgt::KeyEvent::KeyCode keyCode);
-    EventProperty(const std::string& guiText, tgt::Event::Modifier modifier, tgt::MouseEvent::MouseButtons mouseButtons);
+    EventProperty(const std::string& guiText, tgt::Event::Modifier modifier);
 
     tgt::Event::Modifier getModifier();
     void setModifier(tgt::Event::Modifier value);
 
-    tgt::MouseEvent::MouseButtons getMouseButtons();
-    void setMouseButtons(tgt::MouseEvent::MouseButtons value); 
-
-    tgt::KeyEvent::KeyCode getKeyCode();
-    void setKeyCode(tgt::KeyEvent::KeyCode value);
-
-    bool accepts(tgt::MouseEvent* e);
-    bool accepts(tgt::KeyEvent* e);
-
-    bool isMouseEvent();
-    bool isKeyEvent();
-
     virtual std::string toString() const;
 
 protected:
-    bool isMouseEvent_;
     tgt::Event::Modifier modifier_;
+};
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+class MouseEventProperty : public EventProperty {
+public:
+    MouseEventProperty(const std::string& guiText, int mouseAction, tgt::Event::Modifier modifier, tgt::MouseEvent::MouseButtons mouseButtons)
+        : EventProperty(guiText, modifier)
+        , mouseAction_(tgt::MouseEvent::MouseAction(mouseAction))
+        , mouseButtons_(mouseButtons)
+    {}
+
+    tgt::MouseEvent::MouseButtons getMouseButtons() {
+        return mouseButtons_;
+    }
+
+    void setMouseButtons(tgt::MouseEvent::MouseButtons value) {
+        mouseButtons_ = value;
+    }
+    bool accepts(tgt::Event* e);
+
+    tgt::MouseEvent::MouseAction getMouseAction() {
+        return mouseAction_;
+    }
+
+    void setMouseAction(tgt::MouseEvent::MouseAction value) {
+        mouseAction_ = value;
+    }
+
+    virtual void execute(tgt::MouseEvent* e) = 0;
+
+protected:
+    tgt::MouseEvent::MouseAction mouseAction_;
     tgt::MouseEvent::MouseButtons mouseButtons_;
+};
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+template<class T>
+class TemplateMouseEventProperty : public MouseEventProperty {
+public:
+    TemplateMouseEventProperty(const std::string& guiText, EventAction<T, tgt::MouseEvent>* action , int mouseAction, tgt::Event::Modifier modifier, tgt::MouseEvent::MouseButtons mouseButtons)
+        : MouseEventProperty(guiText, mouseAction, modifier, mouseButtons)
+        , action_(action)
+    {}
+
+    virtual void execute(tgt::MouseEvent* e) {
+        if ( (e->modifiers() == getModifier()) && (e->action() & getMouseAction()) && (e->button() & getMouseButtons()) ) {
+            action_->setParam(e);
+            action_->exec();
+            //e->accept();
+        }
+    }
+
+protected:
+    EventAction<T, tgt::MouseEvent>* action_;
+};
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+class KeyboardEventProperty : public EventProperty {
+public:
+    KeyboardEventProperty(const std::string& guiText, tgt::Event::Modifier modifier, tgt::KeyEvent::KeyCode keyCode)
+        : EventProperty(guiText, modifier)
+        , keyCode_(keyCode)
+    {}
+
+    tgt::KeyEvent::KeyCode getKeyCode() {
+        return keyCode_;
+    }
+    void setKeyCode(tgt::KeyEvent::KeyCode value) {
+        keyCode_ = value;
+    }
+
+    virtual void execute(tgt::KeyEvent* e) = 0;
+
+protected:
     tgt::KeyEvent::KeyCode keyCode_;
+};
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+template <class T>
+class TemplateKeyboardEventProperty : public KeyboardEventProperty {
+public:
+    TemplateKeyboardEventProperty(const std::string& guiText, EventAction<T, tgt::KeyEvent>* action, tgt::Event::Modifier modifier, tgt::KeyEvent::KeyCode keyCode)
+        : EventProperty(guiText, modifier, keyCode)
+        , action_(action)
+    {}
+
+    virtual void execute(tgt::KeyEvent* e) {
+        if (e->keyCode() == getKeyCode()) {
+            action_->setParam(e);
+            action_->exec();
+            //e->accept();
+        }
+    }
+
+protected:
+    EventAction<T, tgt::KeyEvent>* action_;
 };
 
 } // namespace

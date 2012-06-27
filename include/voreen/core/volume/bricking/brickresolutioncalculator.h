@@ -32,34 +32,34 @@
 
 namespace voreen {
 
-	/**
-	* This class is the superclass to all classes that implement
-	* the calculation of the brick resolutions used in the bricking of
-	* large volumes. Each class implementing that calculation receives
-	* all the information it needs by the BrickingInformation struct,
-	* including information about the available gpu memory and so on. The
-	* calculated resolutions are stored in the same BrickingInformation
-	* struct.
-	*/
-	class BrickResolutionCalculator {
-	public:
-		BrickResolutionCalculator(BrickingInformation& brickingInformation);
-		
+    /**
+    * This class is the superclass to all classes that implement
+    * the calculation of the brick resolutions used in the bricking of
+    * large volumes. Each class implementing that calculation receives
+    * all the information it needs by the BrickingInformation struct,
+    * including information about the available gpu memory and so on. The
+    * calculated resolutions are stored in the same BrickingInformation
+    * struct.
+    */
+    class BrickResolutionCalculator {
+    public:
+        BrickResolutionCalculator(BrickingInformation& brickingInformation);
+
         virtual ~BrickResolutionCalculator() {}
-        
+
         /**
          * Calculates the available brick resolutions a BrickLodSelector can assign
          * to the VolumeBricks. The available resolutions are stored in the
          * brickingInformation_ struct.
          */
-		virtual void calculateBrickResolutions() = 0;
+        virtual void calculateBrickResolutions() = 0;
 
-	protected:
-		BrickingInformation& brickingInformation_;
+    protected:
+        BrickingInformation& brickingInformation_;
 
-	private:
+    private:
 
-	}; //end of class
+    }; //end of class
 
 
 

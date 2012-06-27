@@ -1,10 +1,3 @@
-/*
- * bsplineanimation.h
- *
- *  Created on: 11.07.2009
- *      Author: jan
- */
-
 #ifndef BSPLINEANIMATION_H_
 #define BSPLINEANIMATION_H_
 
@@ -39,9 +32,9 @@ public:
     virtual vec3 getEye();
 
 private:
-    BSpline *camPositionSpline_;
-    BSpline *camFocusSpline_;
-    BSpline *camUpSpline_;
+    BSpline* camPositionSpline_;
+    BSpline* camFocusSpline_;
+    BSpline* camUpSpline_;
     float curIndex_;
 };
 

@@ -38,15 +38,44 @@ namespace tgt {
 
 /**
  * Type of a shader object, can be vertex, fragment or geometry shader
+ *
+ * #include statements are allowed.
+ * 
+ * Geometry shaders can be controled using directives in shader source.
+ * Accepted directives:
+ * GL_GEOMETRY_INPUT_TYPE_EXT(GL_POINTS | GL_LINES | GL_LINES_ADJACENCY_EXT | GL_TRIANGLES | GL_TRIANGLES_ADJACENCY_EXT)
+ * GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_POINTS | GL_LINE_STRIP | GL_TRIANGLE_STRIP)
+ * GL_GEOMETRY_VERTICES_OUT_EXT(<int>)
+ * No newline or space allowed between each pair of brackets.
+ *
+ * Example geometry shader header:
+ * #version 120 
+ * #extension GL_EXT_geometry_shader4 : enable
+ * //GL_GEOMETRY_INPUT_TYPE_EXT(GL_LINES)
+ * //GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_LINE_STRIP)
+ * //GL_GEOMETRY_VERTICES_OUT_EXT(42)
+ * [...]
  */
 class ShaderObject {
 public:
     friend class Shader;
+    friend class ShaderPreprocessor;
     
     enum ShaderType {
         VERTEX_SHADER = GL_VERTEX_SHADER,
         FRAGMENT_SHADER = GL_FRAGMENT_SHADER,
         GEOMETRY_SHADER = GL_GEOMETRY_SHADER_EXT
+    };
+
+    // Helper for resolving line number when includes are used in shader files
+    struct LineInfo {
+        LineInfo(int n, std::string s, int sn)
+            : lineNumber_(n), filename_(s), sourceLineNumber_(sn) {}
+    
+        int lineNumber_;          //< line number in preprocessed file
+        std::string filename_;    //< filename of included file
+        int sourceLineNumber_;    //< line number in included file (needed when it itself
+                                  //< includes another file)
     };
 
     /**
@@ -60,29 +89,6 @@ public:
     ~ShaderObject();
 
     bool loadSourceFromFile(const std::string& filename);
-
-    //TODO: this should be protected. joerg
-    void uploadSource();
-
-    /**
-     * Scan for geometry shader directives in shader source.
-     * 
-     * Accepted directives:
-     * GL_GEOMETRY_INPUT_TYPE_EXT(GL_POINTS | GL_LINES | GL_LINES_ADJACENCY_EXT | GL_TRIANGLES | GL_TRIANGLES_ADJACENCY_EXT)
-     * GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_POINTS | GL_LINE_STRIP | GL_TRIANGLE_STRIP)
-     * GL_GEOMETRY_VERTICES_OUT_EXT(<int>)
-     * No newline or space allowed between each pair of brackets.
-     *
-     * Example geometry shader header:
-     * #version 120 
-     * #extension GL_EXT_geometry_shader4 : enable
-     * //GL_GEOMETRY_INPUT_TYPE_EXT(GL_LINES)
-     * //GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_LINE_STRIP)
-     * //GL_GEOMETRY_VERTICES_OUT_EXT(42)
-     * [...]
-     */
-    //TODO: this should be protected. joerg
-	bool scanDirectives();
 
 	/**
      * Set directives using glProgramParameteriEXT(...), used for geometry shaders.
@@ -114,6 +120,12 @@ public:
 
     ShaderType getType() { return shaderType_; }
 
+	void setSource(std::string source) {
+		source_ = source;
+		unparsedSource_ = source;
+	}
+	std::string getSource() { return unparsedSource_; }
+
     /**
      * Set geometry shader input type. For this change to take effect call setDirectives() and
      * re-link already linked shaders. Currently only GL_POINTS, GL_LINES,
@@ -139,28 +151,21 @@ public:
 	GLint getVerticesOut() const { return verticesOut_; }
 
 protected:
-    /**
-     * Returns directive used for controlling geometry shaders.
-     */
-	std::string getDirective(const std::string& directive);
+    void uploadSource();
 
-    /**
-	 * Searches for #include preprocessor directives and replaces them by
-	 * the content of the referenced file, returning the result.
-	 */
-	std::string replaceIncludes(const std::string& completeSource);
-
-    std::string filename_;
+	std::string filename_;
     ShaderType shaderType_;
 
     GLuint id_;
     std::string source_;
+    std::string unparsedSource_;
     std::string header_;
     bool isCompiled_;
 	GLint inputType_;
 	GLint outputType_;
 	GLint verticesOut_;    
 
+    std::vector<LineInfo> lineTracker_; ///< keeps track of line numbers when includes are used
     static const std::string loggerCat_;
 };
 
@@ -217,7 +222,6 @@ public:
     bool isLinked() { return isLinked_; }
 
     std::string getLinkerLog();
-    std::string getSource(int i);
 
     //
     // Uniform stuff

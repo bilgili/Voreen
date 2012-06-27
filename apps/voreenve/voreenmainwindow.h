@@ -30,86 +30,33 @@
 #ifndef VRN_VOREENMAINWINDOW_H
 #define VRN_VOREENMAINWINDOW_H
 
+#include "voreenvisualization.h"
+
 #include <QtGui>
 
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/processornetwork.h"
+namespace tgt {
+    class QtCanvas;
+}
 
 namespace voreen {
 
+class Workspace;
 class ConsolePlugin;
 class NetworkEvaluator;
 class PropertyListWidget;
 class NetworkEditor;
 class ProcessorNetwork;
-class VoreenCanvasWidget;
 class ProcessorListWidget;
-class VolumeSetContainer;
-class VolumeSetWidget;
+class VolumeContainer;
+class VolumeContainerWidget;
 class VoreenToolWindow;
 class VoreenToolDockWindow;
 class WidgetPlugin;
 class ShortcutPreferencesWidget;
+class RenderTargetDebugWidget;
+class AnimationPlugin;
 
 //---------------------------------------------------------------------------
-
-class VoreenMainWindow;
-
-class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
-    Q_OBJECT
-public:
-    VoreenVisualization();
-    ~VoreenVisualization();
-
-    void init();
-    
-    NetworkEvaluator* getEvaluator() const { return evaluator_; }
-    VolumeSetContainer* getVolumeSetContainer() const { return volsetContainer_; }
-    tgt::Camera* getCamera() const { return camera_; }
-
-    void openNetwork(const std::string& filename, VoreenMainWindow* mainwindow) throw (SerializerException);
-    void saveNetwork(const std::string& filename, bool reuseTCTargets) throw (SerializerException);
-
-    void newWorkspace();
-    void openWorkspace(const std::string& filename, VoreenMainWindow* mainwindow)
-        throw (SerializerException);
-    void saveWorkspace(const std::string& filename, bool reuseTCTargets, VoreenMainWindow* mainwindow)
-        throw (SerializerException);
-
-    // Implementation of the ProcessorNetworkObserver interface
-    void networkChanged();
-    void processorAdded(Processor* processor);
-    void processorRemoved(Processor* processor);
-
-    void clearScene();
-    void setNetwork(ProcessorNetwork* network);
-    void setVolumeSetContainer(VolumeSetContainer* volumeSetContainer);
-    std::vector<std::string> getNetworkErrors();
-    bool evaluateNetwork();
-    bool rebuildShaders();
-
-    void setCanvasWidget(VoreenCanvasWidget* renderWidget);
-    void setNetworkEditorWidget(NetworkEditor* networkEditorWidget);
-    void setVolumeSetWidget(VolumeSetWidget* volumeSetWidget);
-
-    bool readOnlyWorkspace() const { return readOnlyWorkspace_; }
-
-signals:
-    void networkLoaded(ProcessorNetwork* network);
-    void networkModified(ProcessorNetwork* network);
-    
-private:
-    NetworkEvaluator* evaluator_;
-    ProcessorNetwork* processorNetwork_;
-    VolumeSetContainer* volsetContainer_;
-    GeometryContainer* geoContainer_;
-    tgt::Camera* camera_;
-
-    VoreenCanvasWidget* canvasWidget_;
-    NetworkEditor* networkEditorWidget_;
-    VolumeSetWidget* volumeSetWidget_;
-    bool readOnlyWorkspace_;
-};
 
 class VoreenMdiSubWindow : public QMdiSubWindow {
 public:
@@ -118,7 +65,7 @@ public:
     QByteArray saveGeometry() const;
     bool restoreGeometry(const QByteArray& geometry);
 protected:
-    void closeEvent(QCloseEvent* event);   
+    void closeEvent(QCloseEvent* event);
 };
 
 /**
@@ -133,13 +80,15 @@ public:
         MODE_VISUALIZATION,
         MODE_NETWORK
     };
-    
+
     VoreenMainWindow(const std::string& workspace = "", const std::string& dataset = "");
     ~VoreenMainWindow();
 
     void init();
 
-               
+signals:
+    void closeMainWindow();
+
 public slots:
     void setWindowTitle(const QString& title);
 
@@ -147,51 +96,57 @@ public slots:
     void openNetwork();
     void openNetwork(const QString& filename);
     bool saveNetworkAs();
-    void setNetwork(ProcessorNetwork* network);
-    void setVolumeSetContainer(VolumeSetContainer* volSetContainer);
 
     // workspace
+    void exportWorkspace();
+    void extractZippedWorkspace();
     void newWorkspace();
     void openWorkspace();
     void openWorkspace(const QString& filename);
-    void saveWorkspace(const QString& filename = "");
-    void saveWorkspaceAs();
+    bool saveWorkspace(const QString& filename = "");
+    bool saveWorkspaceAs();
 
     // dataset
     void openDataset();
-
     void openRecentFile();
 
+    void buttonAddDICOMClicked();
+
     // action menu
-    void evaluateNetwork();
+    void adaptWidgetsToNetwork();
     void rebuildShaders();
     void runScript();
+    void runScript(const QString& filename);
 
     // option menu
-    void navigationChanged();
     void setLoadLastWorkspace();
     void setReuseTargets();
-    void displayShortcutPreferences();
-    
+
     // help menu
     void helpAbout();
     void helpFirstSteps();
 
     // further slots
-    void processorSelected(Processor* processor);
-    void showProperties();
-    void modified();
-
+    void networkModified();
     void guiModeChanged();
 
 protected:
     void changeEvent(QEvent* event);
+
+protected slots:
+    void snapshotActionTriggered(bool checked);
+
+    /// Adjust the canvas widgets to the currently active gui mode.
+    void adjustCanvasWidgets(GuiMode guiMode);
+
+    /// Adjust snapshot tool menu to network.
+    void adjustSnapshotMenu();
     
 private:
     //
     // GUI setup
     //
-    
+
     void createMenus();
     void createToolBars();
 
@@ -209,9 +164,11 @@ private:
      * @param name object name used for serialization of position and size
      * @return the newly created window
      */
-    VoreenToolDockWindow* addToolDockWindow(QAction* action, QWidget* widget, const QString& name = "",
-                                            Qt::DockWidgetArea dockarea = Qt::LeftDockWidgetArea, bool basic = true);
-    
+    VoreenToolWindow* addToolDockWindow(QAction* action, QWidget* widget, const QString& name = "",
+                                        Qt::DockWidgetArea dockarea = Qt::LeftDockWidgetArea, 
+                                        Qt::DockWidgetAreas allowedAreas = Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea ,
+                                        bool basic = true);
+
     /**
      * Create all tool windows. Has to be called after tgt::initGL() and initCanvas().
      */
@@ -227,43 +184,46 @@ private:
     //
     // further methods
     //
-    void loadDataset(const std::string& filename, bool showProgress = true);
-    void clearScene();
+    void loadDataset(const std::string& filename);
     bool askSave();
     void showNetworkErrors();
+    void showWorkspaceErrors();
 
     void addToRecentFiles(const QString& filename);
     void updateRecentFiles();
 
     void updateWindowTitle();
-    
+
     void closeEvent(QCloseEvent* event);
     void dragEnterEvent(QDragEnterEvent* event);
     void dropEvent(QDropEvent* event);
 
     void setGuiMode(GuiMode guiMode);
-    
+
     GuiMode guiMode_;
 
-    VoreenCanvasWidget* canvasWidget_;
-    VolumeSetWidget* volumeSetWidget_;
+    tgt::QtCanvas* sharedContext_;
+    VolumeContainerWidget* volumeContainerWidget_;
     NetworkEditor* networkEditorWidget_;
     ShortcutPreferencesWidget* shortcutPrefWidget_;
+    RenderTargetDebugWidget* renderTargetDebugWidget_;
 
     VoreenVisualization* vis_;
-    
+
     QToolBar* fileToolBar_;
+    QToolBar* viewToolBar_;
     QToolBar* toolsToolBar_;
-    QToolBar* guiModeToolBar_;
-    QToolBar* processorToolsToolBar_;
+    QToolBar* actionToolBar_;
     QList<VoreenToolWindow*> toolWindows_;
     QList<std::pair<WidgetPlugin*, QAction*> > tools_;
-    
-    VoreenToolDockWindow* propertyListTool_;
+
+    VoreenToolWindow* propertyListTool_;
     PropertyListWidget* propertyListWidget_;
     ProcessorListWidget* processorListWidget_;
-    VoreenToolDockWindow* processorListTool_;
+    VoreenToolWindow* processorListTool_;
+    VoreenToolWindow* volumeContainerTool_;
     VoreenToolWindow* consoleTool_;
+    VoreenToolWindow* animationTool_;
 
     QSettings settings_;
     QByteArray visualizationModeState_;
@@ -274,19 +234,16 @@ private:
 
     QMdiArea* mdiArea_;
     VoreenMdiSubWindow* networkEditorWindow_;
-    VoreenMdiSubWindow* renderWindow_;
     VoreenMdiSubWindow* shortcutPrefWindow_;
-    
+
     // Main menu
     QMenuBar* menu_;
     QMenu* fileMenu_;
-    QMenu* dicomMenu_;
-    QMenu* editMenu_;
-    QMenu* actionMenu_;
+    QMenu* viewMenu_;
     QMenu* toolsMenu_;
+    QMenu* actionMenu_;
     QMenu* optionsMenu_;
     QMenu* helpMenu_;
-    QMenu* navigationMenu_;
 
     QAction* workspaceNewAction_;
     QAction* workspaceOpenAction_;
@@ -294,18 +251,15 @@ private:
     QAction* workspaceSaveAsAction_;
 
     QAction* aboutAction_;
-    QAction* evaluatorAction_;
     QAction* helpFirstStepsAct_;
     QAction* openDatasetAction_;
-    QAction* openNetworkFileAction_;
-    QAction* saveNetworkAsAction_;
+    QAction* importNetworkAction_;
+    QAction* exportNetworkAction_;
     QAction* showShortcutPreferencesAction_;
-    QAction* openDicomDirAct_;
     QAction* openDicomFilesAct_;
     QAction* quitAction_;
-    QAction* trackballNaviAction_;
-    QAction* flythroughNaviAction_;
-    QActionGroup* navigationGroup_;
+
+    QAction* workspaceExtractAction_;
 
     QAction* setReuseTargetsAction_;
     QAction* rebuildShadersAction_;
@@ -314,26 +268,30 @@ private:
 
     QAction* modeVisualizationAction_;
     QAction* modeNetworkAction_;
-    
+
     QAction* processorListAction_;
+    QAction* snapshotAction_;
 
     QList<QAction*> recentFileActs_;
-        
+
     ConsolePlugin* consolePlugin_;
     
     bool resetSettings_;
     bool loadLastWorkspace_;
     QString lastWorkspace_;
 
-    QString datasetPath_;
     QString networkPath_;
     QString workspacePath_;
 
-    QString currentNetwork_; 
-    QString currentWorkspace_;   
+    QString currentNetwork_;
+    QString currentWorkspace_;
     QString defaultDataset_;
 
     QString originalWindowTitle_;
+    tgt::ivec2 canvasPos_;
+    tgt::ivec2 canvasSize_;
+
+    bool ignoreWindowTitleModified_; ///< will not add * to the window title when this is set
 };
 
 } // namespace

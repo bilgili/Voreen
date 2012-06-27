@@ -38,8 +38,10 @@ vec4 result2 = vec4(0.0);
 // declare entry and exit parameters
 uniform SAMPLER2D_TYPE entryPoints_;            // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;       // ray entry points depth
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE exitPoints_;                // ray exit points
 uniform SAMPLER2D_TYPE exitPointsDepth_;        // ray exit points depth
+uniform TEXTURE_PARAMETERS exitParameters_;
 // declare volume
 uniform sampler3D volume_;                      // volume data set
 uniform VOLUME_PARAMETERS volumeParameters_;    // texture lookup parameters for volume_
@@ -65,13 +67,13 @@ void rayTraversal(in vec3 first, in vec3 last) {
         // apply masking
         if (RC_NOT_MASKED(samplePos, voxel.a)) {
             // calculate gradients
-            voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_);
+            voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_, entryParameters_);
 
             // apply classification
             vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
 
             // apply shading
-            color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));//color.rgb);
+            color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
 
             // if opacity greater zero, apply compositing
             if (color.a > 0.0) {
@@ -91,8 +93,8 @@ void rayTraversal(in vec3 first, in vec3 last) {
  ***/
 void main() {
 
-    vec3 frontPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
+    vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
+    vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
 
     // initialize light and material parameters
     matParams = gl_FrontMaterial;

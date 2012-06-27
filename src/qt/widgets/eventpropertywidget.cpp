@@ -48,9 +48,9 @@ EventPropertyWidget::EventPropertyWidget(EventProperty* property, QWidget* paren
     layout_->addWidget(name);
     layout_->addSpacing(20);
 
-    if (property->isMouseEvent())
+    if (dynamic_cast<MouseEventProperty*>(property))
         createMouseWidgets();
-    if (property->isKeyEvent())
+    if (dynamic_cast<KeyboardEventProperty*>(property))
         createKeyWidgets();
 }
 
@@ -68,7 +68,7 @@ void EventPropertyWidget::createMouseWidgets() {
     buttonBox->addItem("Mouse wheel up");
     buttonBox->addItem("Mouse wheel down");
     buttonBox->addItem("All buttons");
-    switch (property_->getMouseButtons()) {
+    switch (static_cast<MouseEventProperty*>(property_)->getMouseButtons()) {
         case tgt::MouseEvent::MOUSE_BUTTON_LEFT:
             buttonBox->setCurrentIndex(0);
             break;
@@ -95,7 +95,7 @@ void EventPropertyWidget::createMouseWidgets() {
 
 void EventPropertyWidget::createKeyWidgets() {
     KeyDetectorWidget* keyWidget = new KeyDetectorWidget;
-    keyWidget->setText(KeyDetectorWidget::getStringForKey(KeyDetectorWidget::getQtKeyFromTGT(property_->getKeyCode())));
+    keyWidget->setText(KeyDetectorWidget::getStringForKey(KeyDetectorWidget::getQtKeyFromTGT(static_cast<KeyboardEventProperty*>(property_)->getKeyCode())));
     connect(keyWidget, SIGNAL(key(int)), this, SLOT(keyChanged(int)));
     layout_->addWidget(keyWidget);
 }
@@ -106,28 +106,28 @@ void EventPropertyWidget::modifierChanged(Qt::KeyboardModifiers modifier) {
 }
 
 void EventPropertyWidget::keyChanged(int key) {
-    property_->setKeyCode(KeyDetectorWidget::getTGTKeyFromQt(key));
+    static_cast<KeyboardEventProperty*>(property_)->setKeyCode(KeyDetectorWidget::getTGTKeyFromQt(key));
 }
 
 void EventPropertyWidget::buttonChanged(int button) {
     switch (button) {
     case 0:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_LEFT);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_LEFT);
         break;
     case 1:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_MIDDLE);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_MIDDLE);
         break;
     case 2:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_RIGHT);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_RIGHT);
         break;
     case 3:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_UP);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_UP);
         break;
     case 4:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_DOWN);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_DOWN);
         break;
     case 5:
-        property_->setMouseButtons(tgt::MouseEvent::MOUSE_ALL);
+        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_ALL);
         break;
     }
 }

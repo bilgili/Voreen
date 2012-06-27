@@ -28,88 +28,56 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/edgedetect.h"
-#include "voreen/core/vis/voreenpainter.h"
+
 
 namespace voreen {
 
 EdgeDetect::EdgeDetect()
     : ImageProcessorDepth("pp_edgedetect"),
-      edgeThreshold_("set.edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f, true),
-      showImage_("set.showImage", "Show image", 1, 0, 1, true),
-      edgeColor_("set.edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-      fillColor_("set.fillColor", "Fill color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
-      coarsnessOn_(false),
-      labelMode_("set.labelMode", "Use label mode", false)
+      edgeThreshold_("edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f, true),
+      showImage_("showImage", "Show image", true),
+      blendMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM),
+      edgeStyle_("edgeStyle", "Edge style", Processor::INVALID_PROGRAM),  
+      edgeColor_("edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
+      inport_(Port::INPORT, "image.inport"),
+      outport_(Port::OUTPORT, "image.outport")
 {
-    setName("Edge detection");
 
     backgroundColor_.set(tgt::vec4(0.0f,0.0f,0.0f,1.0f));
 
-    addProperty(&edgeColor_);
-    addProperty(&backgroundColor_);
-    addProperty(&fillColor_);
     edgeThreshold_.setNumDecimals(3);
-    addProperty(&edgeThreshold_);
-    addProperty(&showImage_);
-    blendModes_.push_back("Replace");
-    blendModes_.push_back("Pseudo chromadepth");
-    blendModes_.push_back("Blend");
-    blendMode_ = new EnumProp("set.blendMode", "Blend mode:", blendModes_, 0, true, true);
-    addProperty(blendMode_);
-    edgeStyles_.push_back("Contour");
-    edgeStyles_.push_back("Silhouette");
-    edgeStyles_.push_back("Contour (depth-based thickness)");
-    edgeStyle_ = new EnumProp("set.edgeStyle", "Edge style:", edgeStyles_, 0, true, true);
+    blendMode_.addOption("replace", "Replace", 0);
+    blendMode_.addOption("pseudo-chromadepth", "Pseudo chromadepth", 1);
+    blendMode_.addOption("blend", "Blend", 2);
+    edgeStyle_.addOption("contour", "Contour", 0);
+    edgeStyle_.addOption("silhouette", "Silhouette", 1);
+    edgeStyle_.addOption("contour-depth-based", "Contour (depth-based thickness)", 2);
     addProperty(edgeStyle_);
-    addProperty(&labelMode_);
+    addProperty(edgeThreshold_);
+    addProperty(blendMode_);
+    addProperty(edgeColor_);
+    addProperty(backgroundColor_);
+    addProperty(showImage_);
 
-    createInport("image.input");
-    createOutport("image.output");
+    addPort(inport_);
+    addPort(outport_);
 }
 
 EdgeDetect::~EdgeDetect() {
-    delete blendMode_;
-    delete edgeStyle_;
 }
 
 const std::string EdgeDetect::getProcessorInfo() const {
-    return "Performs an edge detection. The detected edge is then drawn in selectable colors, \
-           styles, modi of blending etc.";
+    return "Performs an edge detection based on the Sobel operator. The detected edge is then drawn in selectable colors, \
+           styles, blending modi etc.";
 }
 
-void EdgeDetect::process(LocalPortMapping*  portMapping) {
-    int source;
-    int dest;
-    if (labelMode_.get()) {
-        if (coarsnessOn_)
-            return;
-        source = portMapping->getTarget("image.input");
-        if (source == -1)
-            return;
-        dest = source;
-        tc_->setActiveTarget(dest, "EdgeDetect::process");
-        glDisable(GL_DEPTH_TEST);
-        glColorMask(false, false, false, true);
-    }
-    else {
-        source = portMapping->getTarget("image.input");
-        if (source == -1)
-            return;
-        dest = portMapping->getTarget("image.output");
-        tc_->setActiveTarget(dest, "EdgeDetect::process");
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+void EdgeDetect::process() {
+    outport_.activateTarget();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    analyzeDepthBuffer(source);
+    analyzeDepthBuffer(&inport_);
 
-    // bind shading result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    LGL_ERROR;
-
-    // bind depth result from previous ray cast
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
     LGL_ERROR;
 
     // initialize shader
@@ -119,36 +87,18 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());
     program_->setUniform("edgeColor_", edgeColor_.get());
-    program_->setUniform("fillColor_", fillColor_.get());
     program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("backgroundColor_", backgroundColor_.get());
     program_->setUniform("edgeThreshold_", edgeThreshold_.get());
-    if (labelMode_.get()) {
-        program_->setUniform("showImage_", 2);
-        program_->setUniform("blendMode_", 3);
-    }
-    else {
-        program_->setUniform("showImage_", showImage_.get());
-        program_->setUniform("blendMode_", blendMode_->get());
-    }
-    program_->setUniform("edgeStyle_", edgeStyle_->get());
+    program_->setUniform("showImage_", showImage_.get());
+    program_->setUniform("blendMode_", blendMode_.getValue());
+    program_->setUniform("edgeStyle_", edgeStyle_.getValue());
 
     renderQuad();
 
     program_->deactivate();
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
-
-    if (labelMode_.get()) {
-        glEnable(GL_DEPTH_TEST);
-        glColorMask(true, true, true, true);
-    }
-}
-
-void EdgeDetect::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
-    ImageProcessor::processMessage(msg, dest);
-    if (msg->id_ == VoreenPainter::switchCoarseness_)
-        coarsnessOn_ = msg->getValue<bool>();
 }
 
 } // voreen namespace

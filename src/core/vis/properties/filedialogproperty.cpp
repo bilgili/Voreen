@@ -29,54 +29,62 @@
 
 #include "voreen/core/vis/properties/filedialogproperty.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 
 namespace voreen {
 
-FileDialogProp::FileDialogProp(const std::string& id, const std::string& guiText,
+FileDialogProperty::FileDialogProperty(const std::string& id, const std::string& guiText,
                                const std::string& dialogCaption, const std::string& directory,
-                               const std::string& fileFilter, FileDialogProp::FileMode fileMode, 
-                               bool invalidate, bool invalidateShader)
-    : TemplateProperty<std::string>(id, guiText, "", invalidate, invalidateShader),
+                               const std::string& fileFilter, FileDialogProperty::FileMode fileMode,
+                               Processor::InvalidationLevel invalidationLevel)
+    : TemplateProperty<std::string>(id, guiText, "", invalidationLevel),
       dialogCaption_(dialogCaption),
       directory_(directory),
       fileMode_(fileMode),
       fileFilter_(fileFilter)
 {
 
-    if (fileMode == DIRECTORY) 
+    if (fileMode == DIRECTORY)
         set(directory_);
-
 }
 
-TiXmlElement* FileDialogProp::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
+void FileDialogProperty::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
 
-    propElem->SetAttribute("value", get());
+    // convert path to an relative one with respect to the document's path
+    std::string path = value_;
+    if (!path.empty() && !s.getDocumentPath().empty())
+        path = tgt::FileSystem::relativePath(path, tgt::FileSystem::dirName(s.getDocumentPath()));
 
-    if (getSerializeTypeInformation()) {
-        propElem->SetAttribute("class", "FileDialogProperty");
-        propElem->SetAttribute("caption", getDialogCaption());
-        propElem->SetAttribute("directory", getDirectory());
-        propElem->SetAttribute("filefilter", getFileFilter());
+    // cleanup path: replace backslashes
+    std::string::size_type pos = path.find("\\");
+    while (pos != std::string::npos) {
+        path[pos] = '/';
+        pos = path.find("\\");
     }
-    
-    return propElem;
+
+    s.serialize("value", path);
 }
 
-void FileDialogProp::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    if (propElem->Attribute("value"))
-        try {
-            set(propElem->Attribute("value"));
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
+void FileDialogProperty::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
+
+    std::string value;
+    s.deserialize("value", value);
+
+    // convert path relative to the document's path to an absolute one
+    if (!value.empty() && !s.getDocumentPath().empty())
+        value = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + value);
+
+    try {
+        set(value);
+    }
+    catch (Condition::ValidationFailed& e) {
+        s.addError(e);
+    }
 }
 
-PropertyWidget* FileDialogProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* FileDialogProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 

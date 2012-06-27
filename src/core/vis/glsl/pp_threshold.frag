@@ -31,8 +31,8 @@
 
 uniform SAMPLER2D_TYPE shadeTex_;
 uniform SAMPLER2D_TYPE depthTex_;
+uniform TEXTURE_PARAMETERS texParams_;
 
-uniform float delta_;
 uniform float threshold_;
 
 /***
@@ -41,31 +41,33 @@ uniform float threshold_;
  * @fragCoord - screen coordinates of the current fragment
  * @delta - sepcifies the distance to the neighboor texels to be fetched
  ***/
-vec4 threshold(in vec2 fragCoord, in float delta) {
+bool threshold(in vec2 fragCoord, in float delta) {
+    vec3 N = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(0.0,-delta)).rgb;
+    vec3 NE = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(delta,-delta)).rgb;
+    vec3 E = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(delta, 0.0)).rgb;
+    vec3 SE = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(delta, delta)).rgb;
+    vec3 S = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(0.0, delta)).rgb;
+    vec3 SW = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-delta, delta)).rgb;
+    vec3 W = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-delta, 0.0)).rgb;
+    vec3 NW = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord+vec2(-delta,-delta)).rgb;
 
-    vec4 center = textureLookup2D(shadeTex_, vec2(fragCoord.x, fragCoord.y)).rgba;
-    vec4 west = textureLookup2D(shadeTex_, vec2(fragCoord.x-delta, fragCoord.y)).rgba;
-    vec4 northwest = textureLookup2D(shadeTex_, vec2(fragCoord.x-delta, fragCoord.y-delta)).rgba;
-    vec4 north = textureLookup2D(shadeTex_, vec2(fragCoord.x, fragCoord.y-delta)).rgba;
-    vec4 northeast = textureLookup2D(shadeTex_, vec2(fragCoord.x+delta, fragCoord.y-delta)).rgba;
-    vec4 east = textureLookup2D(shadeTex_, vec2(fragCoord.x+delta, fragCoord.y)).rgba;
-    vec4 southeast = textureLookup2D(shadeTex_, vec2(fragCoord.x+delta, fragCoord.y+delta)).rgba;
-    vec4 south = textureLookup2D(shadeTex_, vec2(fragCoord.x, fragCoord.y+delta)).rgba;
-    vec4 southwest = textureLookup2D(shadeTex_, vec2(fragCoord.x-delta, fragCoord.y+delta)).rgba;
-
-    if (west.r + northwest.r + north.r + northeast.r + east.r + southeast.r + south.r + southwest.r >= threshold_)
-        return center;
+    if (length(N)+length(NE)+length(E)+length(SE)+length(S)+length(SW)+length(W)+length(NW) >= threshold_)
+        return true;
     else
-        return vec4(0.0);
+        return false;
 }
 
 /***
  * The main method.
  ***/
 void main() {
-
-    vec4 fragCoord = gl_FragCoord;
-
-    gl_FragColor = threshold(fragCoord.xy, delta_);
-    gl_FragDepth = textureLookup2D(depthTex_, fragCoord.xy).z;
+    vec2 fragCoord = gl_FragCoord.xy;
+    vec4 resultColor = vec4(0.0);
+    float resultDepth = 1.0;
+    if (threshold(fragCoord, 1.0)) {
+        resultColor = textureLookup2Dscreen(shadeTex_, texParams_, fragCoord);
+        resultDepth = textureLookup2Dscreen(depthTex_, texParams_, fragCoord).z;
+    }
+    gl_FragColor = resultColor;
+    gl_FragDepth = resultDepth;
 }

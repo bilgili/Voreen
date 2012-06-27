@@ -34,7 +34,7 @@
 
 namespace voreen {
 
-class TextureContainer;
+class RenderTarget;
 
 /**
  * Graphical tooltip for texture containers in network editor
@@ -46,7 +46,7 @@ public:
     TCTooltip(qreal x, qreal y, qreal width, qreal height, QGraphicsItem* parent = 0);
     ~TCTooltip();
 
-    void initialize(int id, TextureContainer* tc);
+    void initialize(RenderTarget* rt);
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem* option, QWidget* widget);

@@ -30,18 +30,23 @@
 #ifndef VRN_PROCESSORGRAPHICSITEM_H
 #define VRN_PROCESSORGRAPHICSITEM_H
 
-#include <QtGui>
-//#include "guiitem.h"
+#include <QObject>
+#include <QGraphicsItem>
 
-#include "voreen/core/vis/processors/volumesetsourceprocessor.h"
+#include "voreen/qt/voreenqtglobal.h"
+#include "voreen/qt/widgets/network/editor/networkeditor.h"
+#include "voreen/qt/widgets/network/editor/propertylistgraphicsitem.h"
+#include "voreen/qt/widgets/network/editor/openpropertylistbutton.h"
+#include "voreen/qt/widgets/network/editor/textgraphicsitem.h"
 
 namespace voreen {
 
 class Processor;
 class PortGraphicsItem;
-class TextGraphicsItem;
 class ArrowGraphicsItem;
 class Port;
+class PropertyGraphicsItem;
+class Property;
 
 /**
  * Representation of a Processor in the scene. The interface to connect with other processor- or port-items
@@ -49,77 +54,57 @@ class Port;
  */
 class ProcessorGraphicsItem : public QObject, public QGraphicsItem {
     Q_OBJECT
+#if (QT_VERSION >= 0x040600)
+    Q_INTERFACES(QGraphicsItem)
+#endif
+    friend class PortGraphicsItem;
 public:
-    /**
-     * Constructor.
-     * @param type type of represented processor
-     */
-    ProcessorGraphicsItem(Identifier type, QGraphicsItem* parent=0);
-    ProcessorGraphicsItem(Processor* processor, QGraphicsItem* parent=0);
+    ProcessorGraphicsItem(Processor* processor, NetworkEditor* networkEditor);
     virtual ~ProcessorGraphicsItem();
+
+    ProcessorGraphicsItem* clone();
 
     /**
      * Returns the name of this processor item.
      */
-    const std::string getName() const;
-
-    /**
-     * Creates and adjusts the port items
-     */
-    void createIO();
-
-    Identifier getType() { return type_; }
+    const QString getName() const;
 
     void setName(const std::string& name);
+    void setName(const QString& name);
 
     /**
      * Returns the type that identifies this item's class.
      */
-    int type() const { return Type; }
+    int type() const;
 
-    virtual PortGraphicsItem* getPortItem(Identifier ident);
-
-    /**
-    * Returns the inports of this processor item.
-    */
-    std::vector<PortGraphicsItem*> getInports() {return inports_;}
+    QPointF dockingPoint() const;
 
     /**
     * Returns the inports of this processor item.
     */
-    std::vector<PortGraphicsItem*> getOutports() {return outports_;}
+    QList<PortGraphicsItem*> getInports() const;
+
+    /**
+    * Returns the inports of this processor item.
+    */
+    QList<PortGraphicsItem*> getOutports() const;
 
     /**
     * Returns the coprocessor inports of this processor item.
     */
-    std::vector<PortGraphicsItem*> getCoProcessorInports() {return coProcessorInports_;}
+    QList<PortGraphicsItem*> getCoProcessorInports() const;
 
     /**
     * Returns the coprocessor inports of this processor item.
     */
-    std::vector<PortGraphicsItem*> getCoProcessorOutports() {return coProcessorOutports_;}
+    QList<PortGraphicsItem*> getCoProcessorOutports() const ;
 
-    /**
-    * Returns the inport-item belonging to the given port.
-    */
-    PortGraphicsItem* getInport(Port* port);
+    QList<PortGraphicsItem*> getPorts() const;
 
-    /**
-    * Returns the outport-item belonging to the given port.
-    */
-    PortGraphicsItem* getOutport(Port* port);
+    PortGraphicsItem* getPort(Port* port);
+    QPointF getPositionForPort(PortGraphicsItem* portItem);
 
-    /**
-    * Returns the first inport with the matching type.
-    * If no such port exits returns 0.
-    */
-    PortGraphicsItem* getInport(Identifier type);
-
-    /**
-    * Returns the outport with the matching type.
-    * If no such port exits returns 0.
-    */
-    PortGraphicsItem* getOutport(Identifier type);
+    PropertyGraphicsItem* getProperty(Property* property);
 
     /**
     * Connects to the matching ports of dest.
@@ -135,14 +120,16 @@ public:
 
     /**
     * Connect to a port to the port of another processor item.
-    * TODO: rename parameters like in disconnect(...)
     * @param sourcePort outport of this item
     * @param dest processor item to connect with
     * @param destPort inport of dest to connect with
     * @return true if connect succeeds
     */
-    bool connect(PortGraphicsItem* outport, PortGraphicsItem* inport);
-    bool testConnect(PortGraphicsItem* outport, PortGraphicsItem* inport);
+    bool connect(PortGraphicsItem* outport, PortGraphicsItem* dest);
+    bool testConnect(PortGraphicsItem* outport, PortGraphicsItem* dest);
+
+    ///Test if connection failed because of different size origins:
+    bool sizeOriginConnectFailed(PortGraphicsItem* outport, PortGraphicsItem* inport);
 
     /**
     * Same as connect, but creates an arrow.
@@ -152,16 +139,14 @@ public:
     void connectGuionly(PortGraphicsItem* outport, PortGraphicsItem* inport);
 
     /**
-    * Disconnects the given ports. Returns true if disconnecting successful.
+    * Disconnects the given ports.
     */
-    bool disconnect(PortGraphicsItem* outport, PortGraphicsItem* inport);
+    void disconnect(PortGraphicsItem* outport, PortGraphicsItem* inport);
 
     /**
-    * Disconnects everything connected to this item. Returns true if disconnecting successful.
+    * Disconnects everything connected to this item.
     */
-    bool disconnectAll();
-
-    void repositionPorts();
+    void disconnectAll();
 
     /**
     * Removes this item from the scene.
@@ -188,15 +173,18 @@ public:
     */
     virtual void adjustArrows();
 
-    void contentChanged();
+    bool linkExists();
+    void setLinkExists(bool b);
 
     void enterRenameMode();
+
+    virtual void update();
 
     /**
      * @param id used to identify specific object
      * Returns the represented
      */
-    Processor* getProcessor(PortGraphicsItem* /*port*/=0) { return processor_; }
+    Processor* getProcessor();
 
     ProcessorGraphicsItem& saveMeta();
     ProcessorGraphicsItem& loadMeta();
@@ -204,7 +192,7 @@ public:
     /**
      * Used to identify an item in the scene as ProcessorGraphicsItem
      */
-    enum { Type = UserType + 2 };
+    enum { Type = UserType + UserTypesProcessorGraphicsItem };
 
 //    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -215,24 +203,35 @@ public:
     // Constructs a QPainterPath for round buttons.
     QPainterPath coprocessorBoundingPath(QRectF) const;
     QPainterPath canvasBoundingPath(QRectF) const;
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
-    /** DropEvent for dropping VolumeSets onto VolumeSetSourceProcessors.
-     * This method is called by NetworkEditor, when the dropping target is
-     * a NetworkEditor and the event is delegated to this class.
-     * Any NetworkEditor which does not hold a VolumeSetSourceProcessor*
-     * in its member processor_ and has nothing to do with VolumeSet
-     * should ignore this event.
-     */
-    void dropEvent(QDropEvent* event);
+    QGraphicsItem* getPropertyLinkPortGraphicsItem();
+    bool isExpanded();
+
+    QList<PropertyGraphicsItem*> getPropertyGraphicsItems();
+
+    void setLayer(NetworkEditorLayer layer);
+    NetworkEditorLayer currentLayer() const;
+
+    QList<ArrowGraphicsItem*> connectionsTo(ProcessorGraphicsItem* processorItem);
 
 public slots:
     virtual void nameChanged();
     void renameFinished();
+    void showPropertyList();
 
 signals:
-    void changed();
     void processorNameChanged(Processor*);
+    //void hasChangedVisibilityOfPropertyList();
+    //void managePropertyLinking(PropertyGraphicsItem* propertyGraphicsItem);
+    void pressedPropertyGraphicsItem(PropertyGraphicsItem* propertyGraphicsItem);
+
+    /**
+     * Informs the parent NetworkEditor widget about changes of the connections
+     * of the ports. This method is intended to be called by methods which change
+     * the connections between the ports.
+     */
+    void portConnectionsChanged();
 
 protected:
     /**
@@ -241,30 +240,40 @@ protected:
      */
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
+    void createChildItems();
+    void layoutChildItems();
+
+    //void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
-
-
-    // inports, outports
-    std::vector<PortGraphicsItem*> inports_;
-    std::vector<PortGraphicsItem*> outports_;
-
-    // coprocessor ports
-    std::vector<PortGraphicsItem*> coProcessorInports_;
-    std::vector<PortGraphicsItem*> coProcessorOutports_;
-
-    // item that shows the name of type_
-    TextGraphicsItem* textItem_;
+    void mouseDoubleClickEvent( QGraphicsSceneMouseEvent* event);
 
 private:
+    NetworkEditor* networkEditor_;
+    // represented processor
+    Processor* processor_;
+
+    // inports, outports
+    QList<PortGraphicsItem*> inports_;
+    QList<PortGraphicsItem*> outports_;
+
+    // coprocessor ports
+    QList<PortGraphicsItem*> coProcessorInports_;
+    QList<PortGraphicsItem*> coProcessorOutports_;
+
     // sets the color depending on processor type
     void setColor();
 
     // color
     QColor color_;
 
-    Identifier type_;
-    // represented processor
-    Processor* processor_;
+    bool linkExists_;
+
+    // item that shows the name of type_
+    TextGraphicsItem textItem_;
+    PropertyListGraphicsItem propertyListItem_;
+
+    OpenPropertyListButton openPropertyListButton_;
 
 };
 

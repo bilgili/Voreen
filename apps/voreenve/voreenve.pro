@@ -6,7 +6,10 @@ CONFIG += console qt
 QT += opengl
 
 # Include local configuration
-include(../../config.txt)
+!include(../../config.txt) {
+  warning("config.txt not found! Using config-default.txt instead. For custom behavior, copy config-default.txt to config.txt and edit!")
+  include(../../config-default.txt)
+}
 
 # Include common configuration
 include(../../commonconf.txt)
@@ -15,23 +18,13 @@ include(../../commonconf.txt)
 include(../voreenapp.txt)
 
 HEADERS += \
-    voreencanvaswidget.h \
     voreenmainwindow.h \
-    workspace.h 
-
-    
-contains(DEFINES, VRN_WITH_DCMTK) {
-  HEADERS += voreen/qt/dicomdialog.h
-}
+    voreenvisualization.h
 
 SOURCES += \
     main.cpp \
-    voreencanvaswidget.cpp \
-    voreenmainwindow.cpp
-
-contains(DEFINES, VRN_WITH_DCMTK) {
-  SOURCES +=  ../../src/qt/dicomdialog.cpp
-}
+    voreenmainwindow.cpp \
+    voreenvisualization.cpp
 
 # for compiled-in files (see Qt resource system)
 !contains(DEFINES, VRN_SNAPSHOT) {
@@ -43,7 +36,7 @@ win32 {
     RC_FILE = "../../resource/vrn_share/icons/winicon.rc"
 }
 
-macx {
+macx {  
   # icon for the application bundle
   ICON = "$${VRN_HOME}/resource/vrn_share/icons/icon.icns"
 
@@ -96,15 +89,7 @@ win32-g++ {
     QMAKE_EXTRA_TARGETS += tiff_dll zlib_dll
     POST_TARGETDEPS += $$DLLDEST\libtiff3.dll $$DLLDEST\zlib1.dll
   }
-  
-  contains(DEFINES, VRN_WITH_ZIP) {
-    ziparchive_dll.target = $$DLLDEST\libziparchive.dll
-    ziparchive_dll.commands = copy $$EXTDIR\ziparchive\lib\mingw\libziparchive.dll $$DLLDEST
-    
-    QMAKE_EXTRA_TARGETS += ziparchive_dll
-    POST_TARGETDEPS += $$DLLDEST\libziparchive.dll
-  }
-  
+
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
     freetype_dll.target = $$DLLDEST\libfreetype-6.dll
     freetype_dll.commands = copy $$EXTDIR\freetype\lib\mingw\libfreetype-6.dll $$DLLDEST

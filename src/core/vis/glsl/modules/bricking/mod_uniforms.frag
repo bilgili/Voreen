@@ -34,11 +34,11 @@
 */
 
 //The packed texture.
-uniform sampler3D packedVolume_;                             
-uniform VOLUME_PARAMETERS packedVolumeParameters_;          
+uniform sampler3D packedVolume_;
+uniform VOLUME_PARAMETERS packedVolumeParameters_;
 
 //The index texture.
-uniform sampler3D indexVolume_;                            
+uniform sampler3D indexVolume_;
 uniform VOLUME_PARAMETERS indexVolumeParameters_;
 
 //The number of bricks in each dimension.
@@ -66,14 +66,14 @@ uniform float indexVolumeFactorZ_;
 
 // The factor necessary to calculate a position in the packed texture. The packed texture
 // and the original volume don't have the same dimensions, thus the same sample coordinates
-// would have different meaning. These factors take care of that. 
+// would have different meaning. These factors take care of that.
 uniform float offsetFactorX_;
 uniform float offsetFactorY_;
 uniform float offsetFactorZ_;
 
-// These values are only passed to save rendering time by reducing the number of 
+// These values are only passed to save rendering time by reducing the number of
 // computations in the shader. If someone knows better names for them, don't hesitate
-// to change them. 
+// to change them.
 uniform float temp1;    //1.0f / (2.0f * numbricksX_);
 uniform float temp2;    //1.0f / (2.0f * numbricksY_);
 uniform float temp3;    //1.0f / (2.0f * numbricksZ_);
@@ -87,7 +87,7 @@ uniform float boundaryZ_;   //1.0 - (1.0 / numbricksZ)
 
 // If interpolation coarseness is enabled (when normal coarseness is turned on,
 // intrablock interpolation will be used instead of interblock interpolation),
-// this uniform indicates whether or not coarseness is enabled at the moment. 
+// this uniform indicates whether or not coarseness is enabled at the moment.
 #ifdef INTERPOLATION_COARSENESS
  uniform bool coarsenessOn_;
 #endif

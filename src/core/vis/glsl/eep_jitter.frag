@@ -31,8 +31,11 @@
 
 uniform SAMPLER2D_TYPE entryPoints_;      // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_; // depth values of entry points
+uniform TEXTURE_PARAMETERS entryParameters_;
 uniform SAMPLER2D_TYPE exitPoints_;          // ray exit points
+uniform TEXTURE_PARAMETERS exitParameters_;
 uniform SAMPLER2D_TYPE jitterTexture_;    // 8 bit random values
+uniform TEXTURE_PARAMETERS jitterParameters_;
 
 uniform float stepLength_;                  // raycasting step length
 
@@ -41,8 +44,9 @@ uniform float stepLength_;                  // raycasting step length
  */
 void main() {
     vec2 p = gl_FragCoord.xy;
-    vec4 frontPos = textureLookup2D(entryPoints_, p);
-    vec4 backPos = textureLookup2D(exitPoints_, p);
+    p *= screenDimRCP_;
+    vec4 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p);
+    vec4 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p);
 
     vec4 fragColor;
     float fragDepth;
@@ -55,19 +59,18 @@ void main() {
         // do not jitter very short rays
         if (rayLength <= stepLength_) {
             fragColor = frontPos;
-            fragDepth = textureLookup2D(entryPointsDepth_, p ).z;
+            fragDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p ).z;
         }
         else {
             vec3 dir = (backPos.rgb - frontPos.rgb)/rayLength;
-            float jitterValue = textureLookup2D(jitterTexture_, p).x;
+            float jitterValue = textureLookup2Dnormalized(jitterTexture_, jitterParameters_, p).x;
             vec3 frontPosNew = frontPos.rgb + (jitterValue*stepLength_)*dir;
             // save jitter value in alpha channel (for inverting jittering later if necessary)
             fragColor = vec4(frontPosNew, 1.0 - jitterValue*stepLength_);
-            fragDepth = textureLookup2D(entryPointsDepth_, p ).z;
+            fragDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p ).z;
         }
     }
 
     gl_FragColor = fragColor;
     gl_FragDepth = fragDepth;
-
 }

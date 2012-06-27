@@ -33,132 +33,24 @@
 namespace voreen {
 
 template<typename T>
-void NumericProperty<T>::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
+void NumericProperty<T>::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
 
-    const std::string componentNames = "xyzw";
-    bool res = true;
-    double temp = 0.0;
-    T vector;
-    size_t size = T::size;
-    for (size_t i = 0; (i < size && i < 4 && res); ++i) {
-        res = (res && (propElem->QueryDoubleAttribute(componentNames.substr(i, 1), &temp) == TIXML_SUCCESS));
-        vector.elem[i] = static_cast<typename T::ElemType>(temp);
-    }
-
-    if (res) {
-        try {
-            set(vector);
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
-
-    if (T::size > 4)
-        errors_.store(std::string("Deserialization of Property incomplete! TgtVector has more than 4 components!"));
+    s.serialize("value", value_);
 }
 
 template<typename T>
-TiXmlElement* NumericProperty<T>::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
+void NumericProperty<T>::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
 
-    // I admit that this looks quite hackish, but therefore we do not need
-    // to write this method for every derived class and can make use of
-    // typedefs instead (df)
-    std::ostringstream oss;
-    if (Property::getSerializeTypeInformation()) {
-        size_t size = T::size;
-        oss << "Vec" << size << "Property";
-        propElem->SetAttribute("class", oss.str());
+    T value;
+    s.deserialize("value", value);
+    try {
+        set(value);
     }
-
-    const std::string componentNames = "xyzw";
-    TiXmlElement* min = new TiXmlElement("minValue");
-    TiXmlElement* max = new TiXmlElement("maxValue");
-    for (size_t i = 0; i < T::size; ++i) {
-        oss.str(""); oss << value_[i];
-        propElem->SetAttribute(componentNames.substr(i, 1), oss.str());
-
-        oss.str(""); oss << minValue_[i];
-        min->SetAttribute(componentNames.substr(i, 1), oss.str());
-
-        oss.str(""); oss << maxValue_[i];
-        max->SetAttribute(componentNames.substr(i, 1), oss.str());
+    catch (Condition::ValidationFailed& e) {
+        s.addError(e);
     }
-    if (Property::getSerializeTypeInformation()) {
-        propElem->LinkEndChild(min);
-        propElem->LinkEndChild(max);
-    }
-    
-    return propElem;
-}
-
-// specializations for float and int template arguments
-
-// ----------------------------------------------------------------------------
-
-template<>
-void NumericProperty<float>::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    float value;
-    if (propElem->QueryFloatAttribute("value", &value) == TIXML_SUCCESS) {
-        try {
-            set(value);
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    } 
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
-}
-
-template<>
-TiXmlElement* NumericProperty<float>::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
-
-    propElem->SetDoubleAttribute("value", value_);
-
-    if (getSerializeTypeInformation()) {
-        propElem->SetAttribute("class", "FloatProperty");
-        propElem->SetDoubleAttribute("minValue", minValue_);
-        propElem->SetDoubleAttribute("maxValue", maxValue_);
-    }
-    
-    return propElem;
-}
-
-// ----------------------------------------------------------------------------
-
-template<>
-void NumericProperty<int>::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    int value;
-    if (propElem->QueryIntAttribute("value", &value) == TIXML_SUCCESS) {
-        try {
-            set(value);
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
-}
-
-template<>
-TiXmlElement* NumericProperty<int>::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
-
-    propElem->SetAttribute("value", value_);
-
-    if (getSerializeTypeInformation()) {
-        propElem->SetAttribute("class", "IntProperty");   
-        propElem->SetAttribute("minValue", minValue_);
-        propElem->SetAttribute("maxValue", maxValue_);
-    }
-
-    return propElem;
 }
 
 // explicit template instantiation to enable distribution of

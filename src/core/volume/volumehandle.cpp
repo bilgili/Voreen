@@ -29,10 +29,9 @@
 
 #include "voreen/core/volume/volumehandle.h"
 
-#include "voreen/core/volume/volumeset.h"
-#include "voreen/core/volume/volumeseries.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
+#include "voreen/core/volume/modality.h"
 
 #include "tgt/filesystem.h"
 
@@ -42,96 +41,237 @@ using std::string;
 
 namespace voreen {
 
-const std::string VolumeHandle::loggerCat_("Voreen.VolumeHandle");
-const std::string VolumeHandle::XmlElementName = "VolumeHandle";
-unsigned int VolumeHandle::nextObjectID_ = 0;
+const std::string VolumeHandle::loggerCat_("voreen.VolumeHandle");
+const std::string VolumeOrigin::loggerCat_("voreen.VolumeOrigin");
 
-const std::string VolumeHandle::Origin::XmlElementName = "Origin";
-std::string VolumeHandle::Origin::basePath_ = "";
+VolumeOrigin::VolumeOrigin()
+    : url_("")
+{}
 
-bool VolumeHandle::Origin::operator==(const Origin& rhs) const {
-    return (filename == rhs.filename && seriesname == rhs.seriesname && timestep == rhs.timestep);
+VolumeOrigin::VolumeOrigin(const VolumeOrigin& rhs)
+    : Serializable()
+{
+    clone(rhs);
 }
 
-bool VolumeHandle::Origin::operator<(const Origin& rhs) const {
-    return (filename < rhs.filename);
+VolumeOrigin::VolumeOrigin(const std::string& filepath)
+    : url_(filepath)
+{
+    cleanupURL();
 }
 
-TiXmlElement* VolumeHandle::Origin::serializeToXml() const {
-    TiXmlElement* originElem = new TiXmlElement(XmlElementName);
+VolumeOrigin::VolumeOrigin(const std::string& protocol, const std::string& filepath, const std::string& searchString) {
 
-    if (!basePath_.empty()) {
-        string protocol;
-        string path = filename;
-        string inzip;
+    // TODO: validate parameters
 
-        // Handle "zip://..."
-        string::size_type pos = filename.find("://");
-        if (pos != string::npos) {
-            protocol = filename.substr(0, pos + 3);
-            path = filename.substr(pos + 3);
+    url_ = filepath;
 
-            // Extract part after the .zip file
-            //TODO: not robust, doesn't handle uppercase file names
-            string::size_type zippos = path.find(".zip/");
-            if (zippos != string::npos) {
-                inzip = path.substr(zippos + 4);
-                path = path.substr(0, zippos + 4);
-            }
+    if (!protocol.empty())
+        url_.insert(0, protocol + "://");
+
+    if (!searchString.empty())
+        url_.append("?" + searchString);
+
+    cleanupURL();
+}
+
+void VolumeOrigin::serialize(XmlSerializer& s) const {
+
+   std::string basePath = tgt::FileSystem::dirName(s.getDocumentPath());
+   if (!basePath.empty()) {
+        VolumeSerializerPopulator serializerPopulator;
+        VolumeOrigin originConv = serializerPopulator.getVolumeSerializer()->convertOriginToRelativePath(*this, basePath);
+        s.serialize("filename", originConv.getURL());
+    }
+    else {
+        s.serialize("filename", getURL());
+    }
+}
+
+void VolumeOrigin::deserialize(XmlDeserializer& s) {
+    s.deserialize("filename", url_);
+
+    std::string basePath = tgt::FileSystem::dirName(s.getDocumentPath());
+    if (!basePath.empty()) {
+        VolumeSerializerPopulator serializerPopulator;
+        VolumeOrigin originConv = serializerPopulator.getVolumeSerializer()->convertOriginToAbsolutePath(*this, basePath);
+        url_ = originConv.getURL();
+    }
+
+    cleanupURL();
+}
+
+VolumeOrigin::~VolumeOrigin() {
+}
+
+VolumeOrigin& VolumeOrigin::operator=(const VolumeOrigin& rhs) {
+    clone(rhs);
+    return *this;
+}
+
+bool VolumeOrigin::operator==(const VolumeOrigin& rhs) const {
+    return (tgt::FileSystem::comparePaths(getPath(), rhs.getPath()));
+}
+
+const std::string& VolumeOrigin::getURL() const {
+    return url_;
+}
+
+std::string VolumeOrigin::getPath() const {
+
+    if (url_.empty()) {
+        LWARNING("Empty origin URL");
+        return "";
+    }
+
+    std::string fullPath; // path + searchstring
+
+    // remove protocol portion
+    string::size_type sep_pos = url_.find("://");
+    if (sep_pos == std::string::npos) {
+        // URL does not contain protocol specifier
+        fullPath = url_;
+    }
+    else {
+        // return substring after protocol separator
+        if (url_.size() < sep_pos + 1) {
+            LWARNING("Origin URL does not contain a path");
+            return "";
+        }
+        fullPath = url_.substr(sep_pos + 3);
+    }
+
+    // remove search string
+    sep_pos = fullPath.find("?");
+    if (sep_pos == std::string::npos) {
+        // URL does not contain search string
+        return fullPath;
+    }
+    else {
+        // return substring before search string separator
+        return fullPath.substr(0, sep_pos);
+    }
+
+}
+
+std::string VolumeOrigin::getFilename() const {
+
+    if (url_.empty()) {
+        LWARNING("Empty origin URL");
+        return "";
+    }
+
+    return tgt::FileSystem::fileName(getPath());
+}
+
+std::string VolumeOrigin::getSearchString() const {
+
+    if (url_.empty()) {
+        LWARNING("Empty origin URL");
+        return "";
+    }
+
+    // find search string separator
+    string::size_type sep_pos = url_.find("?");
+    if (sep_pos == std::string::npos) {
+        // URL does not contain a search string
+        return "";
+    }
+    else {
+        // return substring after search string separator
+        return url_.substr(sep_pos + 1);
+    }
+
+}
+
+std::string VolumeOrigin::getProtocol() const {
+
+    string::size_type sep_pos = url_.find("://");
+    if (sep_pos == std::string::npos) {
+        // URL does not contain protocol specifier
+        return "";
+    }
+    else {
+        // return substring before protocol separator
+        return url_.substr(0, sep_pos);
+    }
+
+}
+
+void VolumeOrigin::cleanupURL() {
+    // replace backslashes
+    string::size_type pos = url_.find("\\");
+    while (pos != string::npos) {
+        url_[pos] = '/';
+        pos = url_.find("\\");
+    }
+}
+
+void VolumeOrigin::addSearchParameter(const std::string& key, const std::string& value) {
+
+    if (key.empty() || value.empty()) {
+        LWARNING("Search key or value empty.");
+        return;
+    }
+
+    if (url_.empty()) {
+        LWARNING("Empty origin URL");
+        return;
+    }
+
+    // start search string, if not present
+    if (getSearchString().empty())
+        url_.append("?");
+    else
+        url_.append("&");
+
+    // append search parameter
+    url_.append(key);
+    url_.append("=");
+    url_.append(value);
+
+}
+
+std::string VolumeOrigin::getSearchParameter(std::string key) const {
+
+    std::string searchString = getSearchString();
+    if (searchString.empty())
+        return "";
+
+    // insert parameter separator at front of search string (eases the following search operation)
+    searchString.insert(0, "&");
+
+    // find key
+    key.insert(0, "&");
+    key.append("=");
+    string::size_type param_pos = searchString.find(key);
+    if (param_pos == std::string::npos) {
+        // not found
+        return "";
+    }
+    else {
+        // found, detect position of next parameter in search string
+        string::size_type next_pos = searchString.find("&", param_pos + key.size());
+        if (next_pos == std::string::npos) {
+            // parameter is the last one in search string
+            return searchString.substr(param_pos + key.size());
+        }
+        else {
+            // return substring till next parameter
+            return searchString.substr(param_pos + key.size(), next_pos - param_pos - key.size());
         }
 
-        originElem->SetAttribute("filename", protocol + tgt::FileSystem::relativePath(path, basePath_) + inzip);
-    } else {
-        originElem->SetAttribute("filename", filename);
     }
-    originElem->SetAttribute("seriesname", seriesname);
-    originElem->SetDoubleAttribute("timestep", timestep);
-    return originElem;
 }
 
-void VolumeHandle::Origin::updateFromXml(TiXmlElement* elem) {
-    errors_.clear();
-
-    if (!(elem->Attribute("filename") &&
-          elem->Attribute("seriesname") &&
-          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
-        throw XmlAttributeException("Origin remains unknown"); // TODO Better Exception
-    
-    filename = elem->Attribute("filename");
-
-    // replace backslashes
-    string::size_type pos = filename.find("\\");
-    while (pos != string::npos) {
-        filename[pos] = '/';
-        pos = filename.find("\\"); 
-    } 
-    
-    if (!basePath_.empty()) {
-        string protocol;
-        string path = filename;
-
-        // Handle "zip://..."
-        pos = filename.find("://");
-        if (pos != string::npos) {
-            protocol = filename.substr(0, pos + 3);
-            path = filename.substr(pos + 3);
-        }        
-
-        // build new path only if this is not an absolute path
-        if (path.find("/") != 0 && path.find("\\") != 0 && path.find(":") != 1)
-            filename = protocol + tgt::FileSystem::absolutePath(basePath_ + "/" + path);    
-    }
-    
-    seriesname = elem->Attribute("seriesname");
-}
+// ----------------------------------------------------------------------------
 
 VolumeHandle::VolumeHandle(Volume* const volume, const float time)
-    : volume_(volume),
-      time_(time),
-      hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE),
-      parentSeries_(0),
-      objectID_(++nextObjectID_),
-      largeVolumeManager_(0)
+    : volume_(volume)
+    , time_(time)
+    , modality_(Modality::MODALITY_UNKNOWN)
+    , hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE)
+    , largeVolumeManager_(0)
 {
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
@@ -142,55 +282,45 @@ VolumeHandle::VolumeHandle(Volume* const volume, const float time)
 #endif
 }
 
-VolumeHandle::VolumeHandle(const VolumeHandle& handle) : Serializable() {
-    if (handle != *this) {
-        CopyValuesFromVolumeHandle(&handle);
-    }
-}
-
-void VolumeHandle::CopyValuesFromVolumeHandle(const VolumeHandle* handle) {
-    volume_ = handle->getVolume();
-    time_ = handle->getTimestep();
-    parentSeries_ = 0;
-    hardwareVolumeMask_ = handle->getHardwareVolumeMask();
-    objectID_ = ++nextObjectID_;
+VolumeHandle::VolumeHandle()
+    : volume_(0)
+    , time_(0.0f)
+    , modality_(Modality::MODALITY_UNKNOWN)
+    , hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE)
+    , largeVolumeManager_(0)
+{
 #ifndef VRN_NO_OPENGL
-    volumeGL_ = handle->volumeGL_;
+    volumeGL_ = 0;
 #endif
 
 #ifdef VRN_MODULE_CUDA
-    volumeCUDA_ = handle->volumeCUDA_;
+    volumeCUDA_ = 0;
 #endif
 }
 
 VolumeHandle::~VolumeHandle() {
+    notifyDelete();
     freeHardwareVolumes();
     delete volume_;
     delete largeVolumeManager_;
 }
 
-bool VolumeHandle::operator<(const VolumeHandle& handle) const {
-    return (time_ < handle.time_);
+void VolumeHandle::releaseVolumes() {
+
+    volume_ = 0;
+
+#ifndef VRN_NO_OPENGL
+    volumeGL_ = 0;
+    hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_GL; // remove bit
+#endif
+
+#ifdef VRN_MODULE_CUDA
+    volumeCUDA_ = 0;
+    hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_CUDA; // remove bit
+#endif
+
 }
 
-bool VolumeHandle::operator==(const VolumeHandle& handle) const {
-    return (time_ == handle.time_);
-}
-
-bool VolumeHandle::isIdentical(const VolumeHandle& handle) const {
-    return (objectID_ == handle.getObjectID());
-}
-
-bool VolumeHandle::isIdentical(VolumeHandle* const handle) const {
-    if (handle == 0)
-        return false;
-
-    return (objectID_ == handle->getObjectID());
-}
-
-VolumeHandle::operator float() const {
-    return time_;
-}
 
 Volume* VolumeHandle::getVolume() const {
     return volume_;
@@ -203,7 +333,8 @@ void VolumeHandle::setVolume(Volume* const volume) {
 
         // As the volume has changed, the hardware volumes need
         // to be updated, too! So simply regenerate them.
-        generateHardwareVolumes(hardwareVolumeMask_);
+        if (volume_)
+            generateHardwareVolumes(hardwareVolumeMask_);
     }
 }
 
@@ -211,34 +342,50 @@ float VolumeHandle::getTimestep() const {
     return time_;
 }
 
-bool VolumeHandle::setTimestep(const float timestep) {
-    if (timestep != time_) {
-        // If the timestep is not already contained in
-        // the parent VolumeSeries it can be used for
-        // this VolumeHandle. Otherwise it cannot be used.
-        if (parentSeries_ != 0 && parentSeries_->findVolumeHandle(timestep) == 0) {
-            time_ = timestep;
-            parentSeries_->timestepChanged(this);
-            return true;
-        }
-        if (parentSeries_ == 0) {
-            time_ = timestep;
-            return true;
-        }
+void VolumeHandle::setTimestep(float timestep) {
+    time_ = timestep;
+}
+
+bool VolumeHandle::reloadVolume() {
+
+    // try to load volume from origin
+    VolumeSerializerPopulator populator;
+    VolumeHandle* handle = 0;
+    try {
+        handle = populator.getVolumeSerializer()->load(origin_);
     }
-    return false;
-}
+    catch (tgt::FileException e) {
+        LWARNING(e.what());
+    }
+    catch (std::bad_alloc e) {
+        LWARNING("std::Error BAD ALLOCATION");
+    }
 
-VolumeSeries* VolumeHandle::getParentSeries() const {
-    return parentSeries_;
-}
+    if (!handle || !handle->getVolume()) {
+        delete handle;
+        return false;
+    }
 
-void VolumeHandle::setParentSeries(VolumeSeries* const series) {
-    parentSeries_ = series;
-}
+    // free dependent volumes
+    freeHardwareVolumes();
 
-unsigned int VolumeHandle::getObjectID() const {
-    return objectID_;
+    // assigns new volume, but save temporal reference to former one
+    Volume* volumeTemp = volume_;
+    volume_ = handle->getVolume();
+    handle->releaseVolumes();
+    delete handle;
+
+    // regenerate dependent volumes
+    generateHardwareVolumes(hardwareVolumeMask_);
+
+    // inform observers
+    notifyReload();
+
+    // now delete former volume object
+    delete volumeTemp;
+
+    return true;
+
 }
 
 int VolumeHandle::getHardwareVolumeMask() const {
@@ -250,19 +397,20 @@ bool VolumeHandle::hasHardwareVolumes(int volumeMask) const {
 }
 
 void VolumeHandle::generateHardwareVolumes(int volumeMask) {
-    std::string filename = (volume_->meta().getFileName().empty() ? "unknown" : volume_->meta().getFileName());
+    tgtAssert(volume_, "No volume");
 
 #ifndef VRN_NO_OPENGL
     if (volumeMask & VolumeHandle::HARDWARE_VOLUME_GL) {
-        LDEBUG("generate GL hardware volume for " << filename);
+        LDEBUG("generate GL hardware volume for " << origin_.getURL());
         delete volumeGL_;
 
-		BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume_);
-		if (brickedVolume) {
-			volumeGL_ = new BrickedVolumeGL(brickedVolume);
-		} else {
-			volumeGL_ = new VolumeGL(volume_);
-		}
+        BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume_);
+        if (brickedVolume) {
+            volumeGL_ = new BrickedVolumeGL(brickedVolume);
+        }
+        else {
+            volumeGL_ = new VolumeGL(volume_);
+        }
 
         hardwareVolumeMask_ |= VolumeHandle::HARDWARE_VOLUME_GL; // set bit
     }
@@ -296,41 +444,7 @@ void VolumeHandle::freeHardwareVolumes(int volumeMask) {
 #endif
 }
 
-VolumeHandle* VolumeHandle::getRelatedVolumeHandle(const Modality& modality) const {
-    if (parentSeries_ == 0)
-        return 0;
-
-    VolumeSet* set = parentSeries_->getParentSet();
-    if (set != 0) {
-        std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for (size_t i = 0; i < series.size(); ++i) {
-            if (series[i] != parentSeries_) {
-                VolumeHandle* handle = series[i]->findVolumeHandle(time_);
-                if (handle)
-                    return handle;
-            }
-        }
-    }
-    return 0;
-}
-
-Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const {
-    VolumeHandle* handle = getRelatedVolumeHandle(modality);
-    if (handle)
-        return handle->getVolume();
-    else
-        return 0;
-}
-
 #ifndef VRN_NO_OPENGL
-
-VolumeGL* VolumeHandle::getRelatedVolumeGL(const Modality& modality) {
-    VolumeHandle* handle = getRelatedVolumeHandle(modality);
-    if (handle)
-        return handle->getVolumeGL();
-    else
-        return 0;
-}
 
 VolumeGL* VolumeHandle::getVolumeGL() {
     if (volumeGL_ == 0)
@@ -352,58 +466,88 @@ VolumeCUDA* VolumeHandle::getVolumeCUDA() {
 
 #endif // VRN_MODULE_CUDA
 
-const VolumeHandle::Origin& VolumeHandle::getOrigin() const {
+const VolumeOrigin& VolumeHandle::getOrigin() const {
     return origin_;
 }
 
-void VolumeHandle::setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep) {
-    origin_.filename = filename;
-    origin_.seriesname = seriesname;
-    origin_.timestep = timestep;
-}
-
-void VolumeHandle::setOrigin(const VolumeHandle::Origin& origin) {
+void VolumeHandle::setOrigin(const VolumeOrigin& origin) {
     origin_ = origin;
 }
 
-TiXmlElement* VolumeHandle::serializeToXml() const {
-    TiXmlElement* handleElem = new TiXmlElement(getXmlElementName());
-    // Serialize Data TODO remove filename
-    //handleElem->SetAttribute("filename", getFileName());
-    handleElem->SetDoubleAttribute("timestep", getTimestep());
-    // Serialize Origin
-    handleElem->LinkEndChild(origin_.serializeToXml());
-    return handleElem;
+void VolumeHandle::serialize(XmlSerializer& s) const {
+    s.serialize("modality", getModality().getName());
+    s.serialize("timestep", getTimestep());
+    s.serialize("Origin", origin_);
 }
 
-void VolumeHandle::updateFromXml(TiXmlElement* elem) {
-    errors_.clear();
-    // deserialize VolumeHandle TODO remove filename
+void VolumeHandle::deserialize(XmlDeserializer& s) {
+    // deserialize modality
+    try {
+        std::string modality;
+        s.deserialize("modality", modality);
+        setModality(Modality(modality));
+    }
+    catch (XmlSerializationNoSuchDataException&) {
+        // No modality found in VolumeHandle element...
+        s.removeLastError();
+    }
+
+    // deserialize timestep
     float timestep;
-    if (!(elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
-        throw XmlAttributeException("Attributes missing on VolumeHandle element"); // TODO Better Exception
+    s.deserialize("timestep", timestep);
     setTimestep(timestep);
+
     // deserialize Origin
-    origin_.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
+    s.deserialize("Origin", origin_);
 
+    // load volume from origin
     VolumeSerializerPopulator populator;
-    VolumeHandle* handle = populator.getVolumeSerializer()->loadFromOrigin(origin_);
-    
-    CopyValuesFromVolumeHandle(handle);
-}
-
-std::string VolumeHandle::getFileNameFromXml(TiXmlElement* elem) {
-    Origin origin;
-    origin.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
-    return origin.filename;
+    VolumeHandle* handle = 0;
+    try {
+        handle = populator.getVolumeSerializer()->load(origin_);
+        // copy over loaded volume from temporary handle and free it
+        if (handle) {
+            setVolume(handle->getVolume());
+            handle->releaseVolumes();
+            delete handle;
+        }
+    }
+    catch (tgt::FileException& e) {
+        s.addError(e);
+        LWARNING(e.what());
+    }
+    catch (std::bad_alloc& /*e*/) {
+        s.addError("Unable to load " + origin_.getPath() + ": bad allocation");
+        LWARNING("bad allocation when reading " << origin_.getPath() + " (URL: " + origin_.getURL() + ")");
+    }
 }
 
 LargeVolumeManager* VolumeHandle::getLargeVolumeManager() {
-	return largeVolumeManager_;
+    return largeVolumeManager_;
 }
 
 void VolumeHandle::setLargeVolumeManager(LargeVolumeManager* largeVolumeManager) {
-	largeVolumeManager_ = largeVolumeManager;
+    largeVolumeManager_ = largeVolumeManager;
+}
+
+void VolumeHandle::setModality(Modality modality) {
+    modality_ = modality;
+}
+
+Modality VolumeHandle::getModality() const {
+    return modality_;
+}
+
+void VolumeHandle::notifyDelete() {
+    std::vector<VolumeHandleObserver*> observers = getObservers();
+    for (size_t i=0; i<observers.size(); ++i)
+        observers[i]->volumeHandleDelete(this);
+}
+
+void VolumeHandle::notifyReload() {
+    std::vector<VolumeHandleObserver*> observers = getObservers();
+    for (size_t i=0; i<observers.size(); ++i)
+        observers[i]->volumeChange(this);
 }
 
 } // namespace

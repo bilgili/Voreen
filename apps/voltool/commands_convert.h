@@ -30,11 +30,11 @@
 #ifndef VRN_COMMANDS_CONVERT_H
 #define VRN_COMMANDS_CONVERT_H
 
-#ifdef VRN_WITH_DEVIL
-
 #include "voreen/core/cmdparser/command.h"
 
 namespace voreen {
+
+#ifdef VRN_WITH_DEVIL
 
 class CommandStackImg : public Command {
 public:
@@ -42,6 +42,8 @@ public:
     bool execute(const std::vector<std::string>& parameters);
     bool checkParameters(const std::vector<std::string>& parameters);
 };
+
+#endif // VRN_WITH_DEVIL
 
 class CommandStackRaw : public Command {
 public:
@@ -57,7 +59,5 @@ public:
 };
 
 }   //namespace voreen
-
-#endif // VRN_WITH_DEVIL
 
 #endif //VRN_COMMANDS_CONVERT_H

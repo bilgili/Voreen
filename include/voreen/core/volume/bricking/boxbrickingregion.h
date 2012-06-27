@@ -34,7 +34,7 @@ namespace voreen {
 
     /**
     * This class defines a box inside the volume. Every brick inside that
-    * box will be inside the region. 
+    * box will be inside the region.
     */
     class BoxBrickingRegion : public BrickingRegion{
     public:
@@ -45,10 +45,10 @@ namespace voreen {
         * Define the box by specifying the lower-left-front and upper-right-back corner
         * of the block.
         */
-        void setBox(tgt::vec3 boxLLF,tgt::vec3 boxURB); 
+        void setBox(tgt::vec3 boxLLF,tgt::vec3 boxURB);
 
         /**
-        * Calculate all bricks inside the specified box. 
+        * Calculate all bricks inside the specified box.
         */
         virtual void calculateBricksInRegion();
 
@@ -59,7 +59,7 @@ namespace voreen {
         tgt::vec3 boxLLF_;
 
         /**
-        * Upper-right-back corner of the box. 
+        * Upper-right-back corner of the box.
         */
         tgt::vec3 boxURB_;
 

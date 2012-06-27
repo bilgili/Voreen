@@ -31,8 +31,6 @@
 #define LABELINGWIDGETQT_H
 
 #include "widgetplugin.h"
-#include "voreen/core/vis/message.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/image/labeling.h"
 #include <QTabWidget>
 #include <QListWidget>
@@ -45,7 +43,7 @@ class LabelingWidgetQt : public WidgetPlugin, LabelingWidget
     Q_OBJECT
 
 public:
-    LabelingWidgetQt(QWidget* parent=0, MessageReceiver* msgReceiver=0);
+    LabelingWidgetQt(QWidget* parent=0);
     std::string showInputDialog(const std::string &title,
         const std::string &label,
         const std::string &text);

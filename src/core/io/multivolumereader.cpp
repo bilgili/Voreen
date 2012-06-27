@@ -45,18 +45,17 @@ MultiVolumeReader::MultiVolumeReader(VolumeSerializerPopulator* populator, IOPro
     : VolumeReader(progress),
       populator_(populator)
 {
-    name_ = "MultiVolume Reader";
     extensions_.push_back("mv");
 }
 
-VolumeSet* MultiVolumeReader::read(const std::string& fileName)
+VolumeCollection* MultiVolumeReader::read(const std::string& fileName)
     throw (tgt::FileException, std::bad_alloc)
 {
     std::fstream fin(fileName.c_str(), std::ios::in | std::ios::binary);
     if (!fin.good() || fin.eof() || !fin.is_open())
         throw tgt::FileNotFoundException("Unable to open mv file for reading", fileName);
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
+    VolumeCollection* volumeCollection = new VolumeCollection();
 
     // extract file path from file name
     string path;
@@ -78,24 +77,18 @@ VolumeSet* MultiVolumeReader::read(const std::string& fileName)
             line = line.substr(0, line.length()-1);
 
         LINFO("Loading:  " << line);
-        
-        VolumeSet* curVolumeSet = populator_->getVolumeSerializer()->load(path + line);
 
-        // Move series from this file into the output VolumeSet
-        if (curVolumeSet != 0) {
-            const VolumeSeries::SeriesSet& seriesSet = curVolumeSet->getSeries();
-            while (seriesSet.begin() != seriesSet.end()) {
-                VolumeSeries* series = *(seriesSet.begin());
-                curVolumeSet->removeSeries(series);
-                volumeSet->addSeries(series);
-            }
-            delete curVolumeSet;
+        VolumeCollection* curCollection = populator_->getVolumeSerializer()->load(path + line);
+
+        // Merge collection into output collection
+        if (curCollection != 0) {
+            volumeCollection->add(*curCollection);
         }
     } while (!fin.eof());
 
     fin.close();
 
-    return volumeSet;
+    return volumeCollection;
 }
 
 } // namespace voreen

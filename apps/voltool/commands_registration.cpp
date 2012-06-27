@@ -30,6 +30,7 @@
 #include "commands_registration.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
+#include "voreen/core/volume/volumecollection.h"
 #include "tgt/math.h"
 
 #include <vector>
@@ -103,9 +104,9 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
 
     // load volumes
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
-    Volume* destVol = serializer->load(destVolFilename)->getFirstVolume();
-    Volume* srcVol = serializer->load(srcVolFilename)->getFirstVolume();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    Volume* destVol = serializer->load(destVolFilename)->first()->getVolume();
+    Volume* srcVol = serializer->load(srcVolFilename)->first()->getVolume();
 
     // transform reference points from voxel coordinates to world coordinates
     p0dest = transformFromVoxelToWorldCoords(p0dest, destVol);
@@ -190,7 +191,7 @@ bool CommandRegistrationUniformScaling::execute(const std::vector<std::string>& 
     }
 
     if (input == "y") {
-        srcVol->meta().setTransformation(M);
+        srcVol->setTransformation(M);
         serializer->save(srcVolFilename, srcVol);
     }
 
@@ -248,9 +249,9 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
 
     // load volumes
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
-    Volume* destVol = serializer->load(destVolFilename)->getFirstVolume();
-    Volume* srcVol = serializer->load(srcVolFilename)->getFirstVolume();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    Volume* destVol = serializer->load(destVolFilename)->first()->getVolume();
+    Volume* srcVol = serializer->load(srcVolFilename)->first()->getVolume();
 
     // transform reference points from voxel coordinates to world coordinates
     for (int i=0; i<numReferencePoints; ++i) {
@@ -337,7 +338,7 @@ bool CommandRegistrationAffine::execute(const std::vector<std::string>& paramete
     }
 
     if (input == "y") {
-        srcVol->meta().setTransformation(M);
+        srcVol->setTransformation(M);
         serializer->save(srcVolFilename, srcVol);
     }
 

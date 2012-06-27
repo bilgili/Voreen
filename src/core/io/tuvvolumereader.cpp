@@ -48,7 +48,7 @@ namespace voreen {
 
 const std::string TUVVolumeReader::loggerCat_ = "voreen.io.VolumeReader.tuv";
 
-VolumeSet* TUVVolumeReader::read(const std::string &fileName)
+VolumeCollection* TUVVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     LINFO(fileName);
@@ -76,14 +76,12 @@ VolumeSet* TUVVolumeReader::read(const std::string &fileName)
 
     fin.close();
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-    volumeSet->addSeries(volumeSeries);
+    VolumeCollection* volumeCollection = new VolumeCollection();
     VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);
-    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
+    volumeHandle->setOrigin(fileName);
+    volumeCollection->add(volumeHandle);
 
-    return volumeSet;
+    return volumeCollection;
 }
 
 } // namespace voreen

@@ -32,7 +32,6 @@
 #define ABSTRACTANIMATION_H_
 
 #include "tgt/vector.h"
-#include <QPixmap>
 
 namespace tgt {
 
@@ -71,10 +70,11 @@ public:
     virtual vec3 getCenter() = 0;
     virtual vec3 getEye() = 0;
 
+    int getNumFrames() const { return numFrames_; }
+
 protected:
     int fps_;
     int numFrames_;
-
 };
 
 /**
@@ -85,7 +85,6 @@ struct KeyFrame {
     vec3 focus_;
     vec3 up_;
     double timeToNextFrame_;
-    QPixmap pic_;
 };
 
 } // namespace tgt

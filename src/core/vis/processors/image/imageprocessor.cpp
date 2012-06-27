@@ -31,15 +31,15 @@
 
 namespace voreen {
 
-const Identifier ImageProcessor::shadeTexUnit_ = "shadeTexUnit";
-const Identifier ImageProcessor::depthTexUnit_ = "depthTexUnit";
+const std::string ImageProcessor::shadeTexUnit_ = "shadeTexUnit";
+const std::string ImageProcessor::depthTexUnit_ = "depthTexUnit";
 
 ImageProcessor::ImageProcessor(const std::string& shaderFilename)
     : RenderProcessor()
     , program_(0)
     , shaderFilename_(shaderFilename)
 {
-    std::vector<Identifier> units;
+    std::vector<std::string> units;
     units.push_back(depthTexUnit_);
     units.push_back(shadeTexUnit_);
     tm_.registerUnits(units);
@@ -50,22 +50,29 @@ ImageProcessor::~ImageProcessor() {
         ShdrMgr.dispose(program_);
 }
 
-int ImageProcessor::initializeGL() {
-    if (!shaderFilename_.empty()) {
-        program_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag", generateHeader(), false);
-        if (program_) {
-            invalidateShader();
-            compileShader();
-        }
-        initStatus_ = program_ ? VRN_OK : VRN_ERROR;
-    }
-    else {
-        program_ = 0;
-        initStatus_ = VRN_OK;
-        return VRN_OK;
-    }
+void ImageProcessor::initialize() throw (VoreenException) {
 
-    return initStatus_;
+    RenderProcessor::initialize();
+
+    if (!shaderFilename_.empty()) {
+        program_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag", generateHeader(), false, false);
+        if (program_) {
+            invalidate(Processor::INVALID_PROGRAM);
+            if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+                compile();
+        }
+        if (!program_) {
+            LERROR("Failed to load shaders!");
+            initialized_ = false;
+            throw VoreenException(getClassName() + ": Failed to load shaders!");
+        }
+        else {
+            program_->deactivate();
+        }
+    }
+    else
+        program_ = 0;
+
 }
 
 void ImageProcessor::compile() {

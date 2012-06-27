@@ -44,7 +44,7 @@ public:
     PointListGeometry() : Geometry() { points_ = new std::vector<T>(); }
     virtual ~PointListGeometry() { delete points_; points_ = 0; }
     virtual void draw() {
-        
+
         if (!points_)
             return;
 
@@ -57,13 +57,35 @@ public:
         glEnd();
     }
 
+    void addPoint(T point) {points_->push_back(point);}
     const std::vector<T>& getData() const { return *points_; }
-    void setData(const std::vector<T>& points) { *points_ = points; }
-    size_t getNumPoints() const { return points_.size(); }
+    void setData(std::vector<T> points) { *points_ = points; }
+    size_t getNumPoints() const { return points_->size(); }
 
 protected:
     std::vector<T>* points_;
 
+};
+
+// -------------------------------------------------------------------------
+
+class PointListGeometryVec3 : public PointListGeometry<tgt::vec3> {
+public:
+    PointListGeometryVec3() { }
+    ~PointListGeometryVec3() { }
+
+    void draw()
+    {
+        //vector<tgt::vec3>& points = static_cast< vector<tgt::vec3> >(points_);
+        glBegin(GL_POINTS);
+        for ( size_t i = 0; i < points_->size(); i++ )
+        {
+            //tgt::vec3& v = static_cast<tgt::vec3>(points[i]);
+            tgt::vec3& v = this->points_->at(i);
+            glVertex3f(v.x, v.y, v.z);
+        }
+        glEnd();
+    }
 };
 
 } // namespace

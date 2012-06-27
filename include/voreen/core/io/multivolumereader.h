@@ -44,7 +44,7 @@ class MultiVolumeReader : public VolumeReader {
 public:
     MultiVolumeReader(VolumeSerializerPopulator* populator, IOProgress* progress = 0);
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::FileException, std::bad_alloc);
 
 private:

@@ -31,7 +31,8 @@
 #include "voreen/qt/widgets/keydetectorwidget.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/properties/eventproperty.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
+#include "voreen/core/vis/network/networkevaluator.h"
+#include "voreen/core/vis/network/processornetwork.h"
 #include "voreen/qt/widgets/eventpropertywidget.h"
 
 #include <QComboBox>
@@ -40,10 +41,13 @@
 
 namespace voreen {
 
-ShortcutPreferencesWidget::ShortcutPreferencesWidget(NetworkEvaluator* evaluator) 
+ShortcutPreferencesWidget::ShortcutPreferencesWidget(NetworkEvaluator* evaluator)
     : evaluator_(evaluator)
 {
     layout_ = new QVBoxLayout(this);
+    label_ = new QLabel("No event properties available in this network");
+    label_->hide();
+    layout_->addWidget(label_);
     createWidgets();
 }
 
@@ -56,18 +60,22 @@ void ShortcutPreferencesWidget::rebuildWidgets() {
 }
 
 void ShortcutPreferencesWidget::createWidgets() {
-    std::vector<Processor*> processors = evaluator_->getProcessors();
+    if (!evaluator_ || !evaluator_->getProcessorNetwork())
+        return;
+    label_->hide();
+
+    const std::vector<Processor*> processors = evaluator_->getProcessorNetwork()->getProcessors();
     std::vector<EventProperty*> props;
 
     // Get all the Processors which have an EventProperty into a map with the corresponding EventProperties
-    for (std::vector<Processor*>::iterator procIter = processors.begin(); procIter != processors.end(); ++procIter) {
-        Properties allProps = (*procIter)->getProperties();
-        for (Properties::iterator propIter = allProps.begin(); propIter != allProps.end(); ++propIter) {
-            EventProperty* eventProp = dynamic_cast<EventProperty*>(*propIter);
-            if (eventProp != 0) {
-                props.push_back(eventProp);
-            }
-        }
+    for (std::vector<Processor*>::const_iterator procIter = processors.begin(); procIter != processors.end(); ++procIter) {
+        std::vector<EventProperty*> allProps = (*procIter)->getEventProperties();
+        for (std::vector<EventProperty*>::iterator iter = allProps.begin(); iter != allProps.end(); ++iter)
+            props.push_back(*iter);
+    }
+
+    if (props.size() == 0) {
+        label_->show();
     }
 
     for (std::vector<EventProperty*>::iterator iter = props.begin(); iter != props.end(); ++iter) {
@@ -76,6 +84,5 @@ void ShortcutPreferencesWidget::createWidgets() {
         layout_->addWidget(wdt);
     }
 }
-
 
 } // namespace

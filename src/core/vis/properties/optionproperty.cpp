@@ -31,14 +31,16 @@
 
 namespace voreen {
 
-void OptionPropertyBase::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
+void OptionPropertyBase::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
+
+    std::string id;
+    s.deserialize("value", id);
     try {
-        setById(propElem->Attribute("value"));
+        selectByKey(id);
     }
     catch (Condition::ValidationFailed& /*e*/) {
-        errors_.store(XmlAttributeException(std::string("Invalid option value: ")
-                                            + propElem->Attribute("value")));
+        s.addError("Invalid option value: " + id);
     }
 }
 

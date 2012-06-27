@@ -93,12 +93,12 @@ namespace voreen {
 
     /**
      * This simplest region of them all. You manually supply a vector of bricks that are to be
-     * considered inside the region. 
+     * considered inside the region.
      */
     class SimpleBrickingRegion : public BrickingRegion {
     public:
 
-        SimpleBrickingRegion(BrickingInformation& brickingInformation, std::vector<Brick*> bricks) 
+        SimpleBrickingRegion(BrickingInformation& brickingInformation, std::vector<Brick*> bricks)
             :BrickingRegion(brickingInformation) {
             bricksInTheRegion_ = bricks;
         }

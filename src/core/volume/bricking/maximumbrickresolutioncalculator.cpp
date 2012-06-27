@@ -29,72 +29,72 @@
 
 namespace voreen {
 
-	MaximumBrickResolutionCalculator::MaximumBrickResolutionCalculator(BrickingInformation &brickingInformation) 
-		: BrickResolutionCalculator(brickingInformation) 
-	{
-	}
+    MaximumBrickResolutionCalculator::MaximumBrickResolutionCalculator(BrickingInformation &brickingInformation)
+        : BrickResolutionCalculator(brickingInformation)
+    {
+    }
 
-	void MaximumBrickResolutionCalculator::calculateBrickResolutions() {
-		std::vector<int> result;
+    void MaximumBrickResolutionCalculator::calculateBrickResolutions() {
+        std::vector<int> result;
 
-		//Get the number of bricks we actually have to calculate lods for. Empty
-		//bricks always get the lowest possible lod and therefor mustn't be considered
-		//in the calculation.
-		int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded 
-							- brickingInformation_.numberOfBricksWithEmptyVolumes;
-		
-		//The size in byte that one brick has. This depends on the number of bytes a voxel
-		//has (like char or short or tgt::vec3) and the number of voxels in a brick obviously. 
-		int highestBrickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte * 
-									 brickingInformation_.numVoxelsInBrick;
+        //Get the number of bricks we actually have to calculate lods for. Empty
+        //bricks always get the lowest possible lod and therefor mustn't be considered
+        //in the calculation.
+        int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded
+                            - brickingInformation_.numberOfBricksWithEmptyVolumes;
 
-		//A brick of lowest resolution always has only one voxel.
-		int lowestBrickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte;
-		
-        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x * 
+        //The size in byte that one brick has. This depends on the number of bytes a voxel
+        //has (like char or short or tgt::vec3) and the number of voxels in a brick obviously.
+        int highestBrickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte *
+                                     brickingInformation_.numVoxelsInBrick;
+
+        //A brick of lowest resolution always has only one voxel.
+        int lowestBrickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte;
+
+        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x *
                                     brickingInformation_.packedVolumeDimensions.y *
                                     brickingInformation_.packedVolumeDimensions.z *
                                     brickingInformation_.originalVolumeBytesAllocated -
                                     (brickingInformation_.numberOfBricksWithEmptyVolumes *
                                      brickingInformation_.originalVolumeBytesAllocated);
 
-		//The maximum resolution possible. That means if even only block of the		
-		//highest resolution together with only blocks of minimal resolution fit into
-		//memory, that is ok. If not, then the resolution below highest resolution is tested.
-		//The first resolution that can fit one block into gpu memory becomes the max resolution.
-		int maxResolution=0; 
-		int maxResolutionBrickSizeInByte=highestBrickSizeInByte;
+        //The maximum resolution possible. That means if even only block of the
+        //highest resolution together with only blocks of minimal resolution fit into
+        //memory, that is ok. If not, then the resolution below highest resolution is tested.
+        //The first resolution that can fit one block into gpu memory becomes the max resolution.
+        int maxResolution=0;
+        int maxResolutionBrickSizeInByte=highestBrickSizeInByte;
 
-		bool maxResolutionFound=false;
+        bool maxResolutionFound=false;
 
-		int i=0;
-		while(!maxResolutionFound) {
+        int i=0;
+        while(!maxResolutionFound) {
 
-			maxResolutionBrickSizeInByte = (int)(maxResolutionBrickSizeInByte / pow(8.0,i));
-			
-            if ( (maxResolutionBrickSizeInByte * 1 + lowestBrickSizeInByte * (numberOfBricks-1) ) < 
+            maxResolutionBrickSizeInByte = (int)(maxResolutionBrickSizeInByte / pow(8.0,i));
+
+            if ( (maxResolutionBrickSizeInByte * 1 + lowestBrickSizeInByte * (numberOfBricks-1) ) <
                 availableMemInByte) {
 
-				maxResolutionFound=true;
-				maxResolution=i;
-			}
-			if (i < brickingInformation_.totalNumberOfResolutions -1)  {
-				i++;
-			} else {
-				break;
-			}
-		}
+                maxResolutionFound=true;
+                maxResolution=i;
+            }
+            if (i < brickingInformation_.totalNumberOfResolutions -1)  {
+                i++;
+            } else {
+                break;
+            }
+        }
 
-		if (maxResolutionFound) {
+        if (maxResolutionFound) {
 
-			int numberOfHighBricks=0;
+            int numberOfHighBricks=0;
             int numberOfLowBricks=numberOfBricks;
 
             bool done=false;
 
             while(!done) {
 
-                if ( ( (numberOfHighBricks+1) * highestBrickSizeInByte) + 
+                if ( ( (numberOfHighBricks+1) * highestBrickSizeInByte) +
                     ( (numberOfLowBricks-1) * lowestBrickSizeInByte) < availableMemInByte) {
 
                         if (numberOfHighBricks+1 > numberOfBricks || numberOfLowBricks-1 < 0) {
@@ -108,25 +108,25 @@ namespace voreen {
                 }
             }
 
-			//Write the calculated results in the result vector. The number at position 0 means
-			//x bricks can have level of detail 0, the number at position 1 means y bricks can have
-			//level of detail 1 and so on. 
-			for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
-				if (i == maxResolution)
-					result.push_back(numberOfHighBricks);
-				else if (i == brickingInformation_.totalNumberOfResolutions-1)
-					result.push_back(numberOfLowBricks);
-				else
-					result.push_back(0);
-			}
+            //Write the calculated results in the result vector. The number at position 0 means
+            //x bricks can have level of detail 0, the number at position 1 means y bricks can have
+            //level of detail 1 and so on.
+            for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
+                if (i == maxResolution)
+                    result.push_back(numberOfHighBricks);
+                else if (i == brickingInformation_.totalNumberOfResolutions-1)
+                    result.push_back(numberOfLowBricks);
+                else
+                    result.push_back(0);
+            }
 
-		} else {
-			//do error handling
-		}
+        } else {
+            //do error handling
+        }
 
-		brickingInformation_.brickResolutions = result;
+        brickingInformation_.brickResolutions = result;
 
-	}
+    }
 
 } //namespace
 

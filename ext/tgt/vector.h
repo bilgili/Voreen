@@ -193,14 +193,14 @@ struct Vector2 {
     /// Default constructor
     Vector2() {}
     /// Init all elements with the same value
-    explicit Vector2(T t) {
+    explicit Vector2(T v) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t;
+            elem[i] = v;
     }
     /// Init from array with equal size
-    explicit Vector2(const T* t) {
+    explicit Vector2(const T* v) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t[i];
+            elem[i] = v[i];
     }
     /// Init componentwisely
     Vector2(T t1, T t2) {
@@ -276,14 +276,14 @@ struct Vector3 {
     /// default constructor
     Vector3() {}
     /// Init all elements with the same value
-    explicit Vector3(T t) {
+    explicit Vector3(T v) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t;
+            elem[i] = v;
     }
     /// Init from array with equal size
-    explicit Vector3(const T* t) {
+    explicit Vector3(const T* v) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t[i];
+            elem[i] = v[i];
     }
     /// Init componentwisely
     Vector3(T t1, T t2, T t3) {
@@ -292,10 +292,10 @@ struct Vector3 {
         elem[2] = t3;
     }
     /// Init x and y with v, z with _z
-    Vector3(const Vector2<T>& v, T _z) {
-        elem[0] = v.elem[0];
-        elem[1] = v.elem[1];
-        elem[2] = _z;
+    Vector3(const Vector2<T>& vec, T z_) {
+        elem[0] = vec.elem[0];
+        elem[1] = vec.elem[1];
+        elem[2] = z_;
     }
     /// Init y and z with vec2, x with _x
     Vector3(T _x, const Vector2<T>& v) {
@@ -393,14 +393,14 @@ struct Vector4 {
     /// default constructor
     Vector4() {}
     /// Init all elements with the same value
-    explicit Vector4(T t) {
+    explicit Vector4(T init) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t;
+            elem[i] = init;
     }
     /// Init from array with equal size
-    explicit Vector4(const T* t) {
+    explicit Vector4(const T* init) {
         for (size_t i = 0; i < size; ++i)
-            elem[i] = t[i];
+            elem[i] = init[i];
     }
     /// Init componentwisely
     Vector4(T t1, T t2, T t3, T t4) {
@@ -417,11 +417,11 @@ struct Vector4 {
         elem[3] = v2.elem[1];
     }
     /// Init x and y with vec2, z and w with _z and _w
-    Vector4(const Vector2<T>& v, T _z, T _w) {
-        elem[0] = v.elem[0];
-        elem[1] = v.elem[1];
-        elem[2] = _z;
-        elem[3] = _w;
+    Vector4(const Vector2<T>& vec, T z_, T w_) {
+        elem[0] = vec.elem[0];
+        elem[1] = vec.elem[1];
+        elem[2] = z_;
+        elem[3] = w_;
     }
     /// Init x and y with _x and _y, z and w with _z and _w
     Vector4(T _x, T _y, const Vector2<T>& v) {
@@ -431,15 +431,15 @@ struct Vector4 {
         elem[3] = v.elem[1];
     }
     /// Init x, y, z with v and w with _w
-    Vector4(const Vector3<T>& v, T _w) {
-        elem[0] = v.elem[0];
-        elem[1] = v.elem[1];
-        elem[2] = v.elem[2];
-        elem[3] = _w;
+    Vector4(const Vector3<T>& vec, T w_) {
+        elem[0] = vec.elem[0];
+        elem[1] = vec.elem[1];
+        elem[2] = vec.elem[2];
+        elem[3] = w_;
     }
     /// Init x with _x and y, z and w with v
-    Vector4(T _x, const Vector2<T>& v) {
-        elem[0] = _x;
+    Vector4(T x_, const Vector2<T>& v) {
+        elem[0] = x_;
         elem[1] = v.elem[0];
         elem[2] = v.elem[1];
         elem[3] = v.elem[2];

@@ -70,13 +70,13 @@ void ColorLuminancePicker::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void ColorLuminancePicker::mousePressEvent(QMouseEvent* event) {
-    emit switchInteractionMode(true);
+    emit toggleInteractionMode(true);
     setVal(y2val(event->y()));
 }
 
 void ColorLuminancePicker::mouseReleaseEvent(QMouseEvent* event) {
     event->accept();
-    emit switchInteractionMode(false);
+    emit toggleInteractionMode(false);
 }
 
 void ColorLuminancePicker::setVal(int v) {

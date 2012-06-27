@@ -37,8 +37,8 @@
 
 namespace voreen {
 
-LabelingWidgetQt::LabelingWidgetQt(QWidget *parent, MessageReceiver* msgReceiver) :
-    WidgetPlugin(parent, msgReceiver)
+LabelingWidgetQt::LabelingWidgetQt(QWidget *parent) :
+    WidgetPlugin(parent)
 {
     setObjectName(tr("Labeling"));
     createWidgets();
@@ -114,14 +114,13 @@ void LabelingWidgetQt::createConnections() {
     }
 }
 
-void LabelingWidgetQt::selectionChanged(QListWidgetItem* item) {
+void LabelingWidgetQt::selectionChanged(QListWidgetItem* /*item*/) {
     //std::cout << "selection changed" << std::endl;
-    if (item->listWidget()->selectedItems().contains(item))
+    /*if (item->listWidget()->selectedItems().contains(item))
         postMessage(new StringMsg("add.unsegmentedLabel", item->text().toStdString() ) );
     else
         postMessage(new StringMsg("remove.unsegmentedLabel", item->text().toStdString() ) );
-
-    MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+    */
 }
 
 std::string LabelingWidgetQt::showInputDialog(const std::string &title,

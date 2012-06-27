@@ -29,57 +29,37 @@
 
 #include "voreen/core/vis/properties/stringproperty.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 #include <sstream>
 
 namespace voreen {
 
-StringProp::StringProp(const std::string& id, const std::string& guiText,
-                       const std::string& value, bool invalidate, bool invalidateShader)
-    : TemplateProperty<std::string>(id, guiText, value, invalidate, invalidateShader)
+StringProperty::StringProperty(const std::string& id, const std::string& guiText,
+                       const std::string& value, Processor::InvalidationLevel invalidationLevel)
+    : TemplateProperty<std::string>(id, guiText, value, invalidationLevel)
 {}
 
-void StringProp::updateFromXml(TiXmlElement* propElem) {
-    Property::updateFromXml(propElem);
-    if (propElem->Attribute("value"))
-        try {
-            set(propElem->Attribute("value"));
-        } catch (Condition::ValidationFailed& e) {
-            errors_.store(e);
-        }
-    else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
+void StringProperty::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
+
+    s.serialize("value", value_);
 }
 
-TiXmlElement* StringProp::serializeToXml() const {
-    TiXmlElement* propElem = Property::serializeToXml();
-    propElem->SetAttribute("value", value_);
-    if (getSerializeTypeInformation())
-        propElem->SetAttribute("class", "StringProperty");
+void StringProperty::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
 
-    return propElem;
+    std::string value;
+    s.deserialize("value", value);
+    try {
+        set(value);
+    }
+    catch (Condition::ValidationFailed& e) {
+        s.addError(e);
+    }
 }
 
-PropertyWidget* StringProp::createWidget(PropertyWidgetFactory* f) {
+PropertyWidget* StringProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
-}
-
-// ============================================================================
-
-StringVectorProp::StringVectorProp(const std::string& id, const std::string& guiText,
-                                   const std::vector<std::string>& value, bool invalidate, bool invalidateShader)
-    : TemplateProperty<std::vector<std::string> >(id, guiText, value, invalidate, invalidateShader)
-{}
-
-PropertyWidget* StringVectorProp::createWidget(PropertyWidgetFactory* f) {
-    return f->createWidget(this);
-}
-
-std::string StringVectorProp::toString() const {
-    std::stringstream oss;
-    for (size_t i = 0; i < value_.size(); ++i)
-        oss << value_[i];
-    return oss.str();
 }
 
 }   // namespace

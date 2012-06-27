@@ -31,10 +31,12 @@
  * This module contains all functions which are used for the raysetup
  * as well as the ray traversal within a raycaster.
  * RC_BEGIN_LOOP and RC_END_LOOP are used within the raycaster fragment
- * shaders to controll the ray traversal.
+ * shaders to control the ray traversal.
  */
 
-uniform float raycastingQualityFactorRCP_;
+uniform float samplingStepSize_;
+uniform float samplingStepSizeComposite_;
+uniform float isoValue_;
 
 /***
  * Calculates the direction of the ray and returns the number
@@ -42,7 +44,7 @@ uniform float raycastingQualityFactorRCP_;
  ***/
 void raySetup(in vec3 first, in vec3 last, out vec3 rayDirection, out float tIncr, out float tEnd) {
     // calculate ray parameters
-    tIncr = 0.005 * raycastingQualityFactorRCP_;
+    tIncr = samplingStepSize_;
 
     rayDirection = last - first;
     tEnd = length(rayDirection);
@@ -69,17 +71,17 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
 #if defined(VRN_OS_APPLE) && defined(VRN_VENDOR_ATI)
   // We do manual inlining in order to deal with older ATI boards on Mac where these function
   // calls seem to drastically reduce rendering speed (triggering fallback to software mode).
-  #define RC_EARLY_RAY_TERMINATION(opacity, maxOpacity, finished) \ 
+  #define RC_EARLY_RAY_TERMINATION(opacity, maxOpacity, finished) \
     if (opacity >= maxOpacity) {                                  \
         opacity = 1.0;                                            \
         finished = true;                                          \
-    }                                                           
+    }
 #else
   // Just wrap the usual functions
   #define RC_EARLY_RAY_TERMINATION(opacity, maxOpacity, finished) \
     finished = earlyRayTermination(opacity, maxOpacity)
-  #define WRITE_DEPTH_VALUE(t, tEnd, entryPointsDepth, exitPointsDepth) \
-    gl_FragDepth = getDepthValue(t, tEnd, entryPointsDepth, exitPointsDepth);
+  #define WRITE_DEPTH_VALUE(t, tEnd, entryPointsDepth, entryParameters, exitPointsDepth, exitParameters) \
+    gl_FragDepth = getDepthValue(t, tEnd, entryPointsDepth, entryParameters, exitPointsDepth, exitParameters);
 #endif
 
 /***
@@ -94,24 +96,24 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
 /***
  * The end of a typical raycasting loop. If adaptive sampling
  * is used for rendering bricked volumes, t is increased by a
- * multiple of tIncr, thereby skipping several samples. 
+ * multiple of tIncr, thereby skipping several samples.
  */
 #ifdef ADAPTIVE_SAMPLING
-#define RC_END_LOOP(result)									\
-			RC_EARLY_RAY_TERMINATION(result.a, 0.9, finished); \
-			t += (tIncr * float(numberOfSkippedSamples));				\
-    		finished = finished || (t > tEnd);				\
-		}													\
-	}														\
-    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, exitPointsDepth_);
+#define RC_END_LOOP(result)                                    \
+            RC_EARLY_RAY_TERMINATION(result.a, 0.95, finished); \
+            t += (tIncr * float(numberOfSkippedSamples));                \
+            finished = finished || (t > tEnd);                \
+        }                                                    \
+    }                                                        \
+    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
 #else
-#define RC_END_LOOP(result)									\
-			RC_EARLY_RAY_TERMINATION(result.a, 0.9, finished); \
-			t += tIncr;				                        \
-    		finished = finished || (t > tEnd);				\
-		}													\
-	}														\
-    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, exitPointsDepth_);
+#define RC_END_LOOP(result)                                    \
+            RC_EARLY_RAY_TERMINATION(result.a, 0.95, finished); \
+            t += tIncr;                                        \
+            finished = finished || (t > tEnd);                \
+        }                                                    \
+    }                                                        \
+    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
 #endif
 
 /**
@@ -119,19 +121,19 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
 * with bricking and adaptive sampling, these defines can be placed
 * before and after the compositing function calls to enable adaptive
 * sampling when bricking is used. For normal datasets these defines
-* will have no impact at all. 
-*/ 
+* will have no impact at all.
+*/
 #ifdef ADAPTIVE_SAMPLING
 #define RC_BEGIN_COMPOSITING                                \
     for (int i=0; i<numberOfSkippedSamples; i++) {
-#else 
-    #define RC_BEGIN_COMPOSITING                                                                            
+#else
+    #define RC_BEGIN_COMPOSITING
 #endif
 
 #ifdef ADAPTIVE_SAMPLING
 #define RC_END_COMPOSITING                                  \
     }
-#else 
-#define RC_END_COMPOSITING                                                                               
+#else
+#define RC_END_COMPOSITING
 #endif
 

@@ -116,7 +116,7 @@ public:
     static void cancelMove();
 
     /// Return the number of downloaded files
-    static const int getNumDownloaded();
+    static int getNumDownloaded();
 private:
     static std::string ourtitle_;
     static int retrievePort_;

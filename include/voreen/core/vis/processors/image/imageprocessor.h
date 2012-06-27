@@ -40,7 +40,7 @@ namespace voreen {
  * Normally in a derived class you have only to call the ctor with the
  * appropriate shader name and overwrite the render method.
  */
-class ImageProcessor : public RenderProcessor, public HasShader {
+class ImageProcessor : public RenderProcessor {
 public:
     /**
      * Constructor.
@@ -50,8 +50,9 @@ public:
     ImageProcessor(const std::string& shaderFilename = "");
     virtual ~ImageProcessor();
 
-    virtual const Identifier getClassName() const { return "ImageProcessor.ImageProcessor"; }
-    virtual int initializeGL();
+    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getClassName() const { return "ImageProcessor"; }
+    virtual void initialize() throw (VoreenException);
 
 protected:
     /**
@@ -62,8 +63,8 @@ protected:
     tgt::Shader* program_;
     std::string shaderFilename_;
 
-    static const Identifier shadeTexUnit_;
-    static const Identifier depthTexUnit_;
+    static const std::string shadeTexUnit_;
+    static const std::string depthTexUnit_;
 };
 
 

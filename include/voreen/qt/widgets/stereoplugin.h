@@ -36,20 +36,17 @@
 
 #include "widgetplugin.h"
 
-#include "voreen/core/vis/identifier.h"
-
-
 namespace voreen {
 
 class StereoPlugin : public WidgetPlugin {
     Q_OBJECT
 public:
-    StereoPlugin(QWidget* parent = 0, MessageReceiver* msgreceiver = 0);
+    StereoPlugin(QWidget* parent = 0);
 
-    static const Identifier setStereoMode_;
-    static const Identifier setEyeDistance_;
-    static const Identifier setFocalDistance_;
-    static const Identifier setCorrectWindowPos_;
+    static const std::string setStereoMode_;
+    static const std::string setEyeDistance_;
+    static const std::string setFocalDistance_;
+    static const std::string setCorrectWindowPos_;
 
 protected:
     virtual void createWidgets();

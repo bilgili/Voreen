@@ -39,21 +39,35 @@ namespace tgt {
 /**
  * Performs a rotation around the focus point.
  */
-class CircleAnimation: public AbstractAnimation {
+class CircleAnimation : public AbstractAnimation {
 public:
-	CircleAnimation(float totalAngle, int speed, int fps, tgt::Trackball* trackBall);
-
+    /**
+     * Ctor for an Animtion which leads the camera on a circular curve with the 
+     * focused point as the center by rotating it around its up-vector.
+     *
+     * @param   totalAngle  Angle in DEGREE which shall be circulated
+     * @param   duration    Duration in SECONDS which shall be taken for the circulation
+     * @param   fps         Number of frames per second for the Animation
+     * @param   camera      Camera used for initialization. This parameter must not be NULL!
+     */
+    CircleAnimation(float totalAngle, int duration, int fps, Camera* const camera);
     virtual ~CircleAnimation() {}
 
 public:
-    virtual void moveToFrame(int /*frame*/);
+    virtual void moveToFrame(int frame);
     virtual vec3 getUp();
     virtual vec3 getCenter();
     virtual vec3 getEye();
 
 private:
-    double stepAngle_;
-    tgt::Trackball* trackBall_;
+    float stepAngle_;
+    float currentAngle_;
+    mat3 rotation_;
+    vec3 initialCamPos_;
+    vec3 initialCamUpVector_;
+    vec3 initialCamFocus_;
+    vec3 camPos_;
+    vec3 camFocus_;
 };
 
 } // namespace tgt

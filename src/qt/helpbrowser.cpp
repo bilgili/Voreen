@@ -43,7 +43,7 @@ HelpBrowser::HelpBrowser(const QUrl& startPage, const QString& title, QWidget* p
     browser_->createStandardContextMenu();
     setCentralWidget(browser_);
 
-    setWindowIcon(QIcon(":/icons/bulb.png"));
+    setWindowIcon(QIcon(":/voreenve/icons/help.png"));
 
     setWindowTitle(title.isEmpty() ? tr("Voreen Help Browser") : title);
 
@@ -54,22 +54,22 @@ void HelpBrowser::createAndConnectToolbar() {
     // create toolbar
     QToolBar* toolBar = new QToolBar(tr("Navigation"), this);
 
-    // backward
-    QAction* backwardAction = new QAction(QIcon(":/icons/go-previous.png"), tr("&Backward"), this);
-    backwardAction->setStatusTip(tr("Show previous page"));
-    backwardAction->setToolTip(tr("Show previous page"));
-    backwardAction->setShortcut(tr("Ctrl+B"));
-    toolBar->addAction(backwardAction);
-
     // home
-    QAction* homeAction = new QAction(QIcon(":/icons/go-home.png"), tr("&Home"), this);
+    QAction* homeAction = new QAction(QIcon(":/voreenve/icons/go-home.png"), tr("&Home"), this);
     homeAction->setStatusTip(tr("Show index"));
     homeAction->setToolTip(tr("Show first page"));
     homeAction->setShortcut(tr("Ctrl+H"));
     toolBar->addAction(homeAction);
 
+    // backward
+    QAction* backwardAction = new QAction(QIcon(":/voreenve/icons/go-previous.png"), tr("&Backward"), this);
+    backwardAction->setStatusTip(tr("Show previous page"));
+    backwardAction->setToolTip(tr("Show previous page"));
+    backwardAction->setShortcut(tr("Ctrl+B"));
+    toolBar->addAction(backwardAction);
+
     // forward
-    QAction* forwardAction = new QAction(QIcon(":/icons/go-next.png"), tr("&Forward"), this);
+    QAction* forwardAction = new QAction(QIcon(":/voreenve/icons/go-next.png"), tr("&Forward"), this);
     forwardAction->setStatusTip(tr("Show next page"));
     forwardAction->setToolTip(tr("Show next page"));
     forwardAction->setShortcut(tr("Ctrl+F"));
@@ -79,9 +79,9 @@ void HelpBrowser::createAndConnectToolbar() {
     toolBar->addSeparator();
 
     // quit browser
-    QAction* quitBrowserAction = new QAction(QIcon(":/icons/list-remove.png"), tr("&Quit"), this);
-    quitBrowserAction->setStatusTip(tr("Exit Help"));
-    quitBrowserAction->setToolTip(tr("Exit Help"));
+    QAction* quitBrowserAction = new QAction(QIcon(":/voreenve/icons/exit.png"), tr("&Quit"), this);
+    quitBrowserAction->setStatusTip(tr("Exit help"));
+    quitBrowserAction->setToolTip(tr("Exit help"));
     quitBrowserAction->setShortcut(tr("Ctrl+W"));
     toolBar->addAction(quitBrowserAction);
 

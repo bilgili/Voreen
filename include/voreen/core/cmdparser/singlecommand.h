@@ -84,6 +84,7 @@ public:
         , ptr4_(ptr4)
     {}
 
+    ~SingleCommand() {}
     bool execute(const std::vector<std::string>& parameters) {
         *ptr1_ = cast<T>(parameters[0]);
         if (ptr2_ != 0)

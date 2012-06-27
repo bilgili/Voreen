@@ -52,11 +52,10 @@ namespace voreen {
 const std::string SiemensReader::loggerCat_ = "voreen.io.VolumeReader.siemens";
 
 SiemensReader::SiemensReader() {
-    name_ = "Siemens 3DUS Reader";
     extensions_.push_back("hdr");
 }
 
-VolumeSet* SiemensReader::read(const std::string &fname)
+VolumeCollection* SiemensReader::read(const std::string &fname)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     tgt::ivec3 dimensions;
@@ -103,13 +102,11 @@ VolumeSet* SiemensReader::read(const std::string &fname)
 
    fin.close();
 
-   VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
-   VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-   volumeSet->addSeries(volumeSeries);
+   VolumeCollection* volumeCollection = new VolumeCollection();
    VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);
-   volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-   volumeSeries->addVolumeHandle(volumeHandle);
-   return volumeSet;
+   volumeCollection->add(volumeHandle);
+
+   return volumeCollection;
 }
 
 vector<string> SiemensReader::splitLine(string s, const char *ch) {

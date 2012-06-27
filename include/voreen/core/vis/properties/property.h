@@ -31,9 +31,9 @@
 #define VRN_PROPERTY_H
 
 #include "tgt/vector.h"
-#include "voreen/core/vis/identifier.h"
-#include "voreen/core/xml/serializable.h"
-#include "tinyxml/tinyxml.h"
+#include "voreen/core/vis/properties/link/propertylink.h"
+#include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/vis/processors/processor.h"
 
 #include <string>
 #include <vector>
@@ -42,16 +42,18 @@
 
 namespace voreen {
 
-class Processor;
 class PropertyWidget;
 class PropertyWidgetFactory;
+class ProcessorNetwork;
 
 /**
- * Base class for properties in the messaging sytem. All data sent with messages is
- * encapsulated in properties.
- * TODO: remove messaging system leftovers
+ * Base class for processor properties.
  */
-class Property : public Serializable {
+class Property : public AbstractSerializable {
+
+    friend class PropertyLink;
+    friend class ProcessorNetwork;
+
 public:
     /**
      * Every property has a level of detail setting which determines, whether the property
@@ -65,15 +67,36 @@ public:
     /**
      * Constructor - sets standard-values
      */
-    Property(const std::string& id, const std::string& guiText);
+    Property(const std::string& id, const std::string& guiText,
+             Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
     virtual ~Property();
+
+    /**
+     * @brief Returns the InvalidationLevel of this property.
+     *
+     * @return The owner is invalidated with this InvalidationLevel upon change.
+     */
+    Processor::InvalidationLevel getInvalidationLevel();
 
     /**
      * Returns the string that is displayed in the gui.
      */
     std::string getGuiText() const;
 
+    /**
+     * Enables or disables all widgets of this property.
+     */
+    void setWidgetsEnabled(bool enabled);
+
+    /**
+     * Indicates whether the widgets of this property are enabled or disabled.
+     */
+    bool getWidgetsEnabled() const;
+
+    /**
+     * Sets the visibility of this property in the gui.
+     */
     void setVisible(bool state);
 
     /**
@@ -82,32 +105,48 @@ public:
     bool isVisible() const;
 
     /**
-     * Returns the associated identifier of the property
+     * Returns the identifier of the property.
      */
-    Identifier getIdent() const;
-
-    const static Identifier getIdent(TiXmlElement* propertyElem);
-
     std::string getId() const;
 
     /**
-    * Returns the name of the xml element uses when serializing the object
-    */
-    virtual std::string getXmlElementName() const;
+     * Override this method for performing initializations
+     * of the property. It is called by the owning Processor's
+     * initialize() function.
+     *
+     * @note All OpenGL initializations must be done here,
+     *       instead of the constructor! Time-consuming operations
+     *       should also happen here.
+     *
+     * @throw VoreenException if the initialization failed
+     */
+    virtual void initialize() throw (VoreenException);
 
     /**
-     * Serializes the property to XML. Derived classes should implement their own version.
+     * @see Serializable::serialize
      */
-    virtual TiXmlElement* serializeToXml() const;
+    virtual void serialize(XmlSerializer& s) const;
 
     /**
-     * Updates the property from XML. Derived classes should implement their own version.
+     * @see Serializable::deserialize
      */
-    virtual void updateFromXml(TiXmlElement* propElem);
+    virtual void deserialize(XmlDeserializer& s);
 
+    /**
+     * Sets the processor this property is assigned to.
+     */
     virtual void setOwner(Processor* processor);
 
+    /**
+     * Returns the processor this property is assigned to.
+     */
     Processor* getOwner() const;
+
+    /**
+     * Notifies the property that its stored value has changed.
+     *
+     */
+    void invalidate();
 
     /**
      * add Widget
@@ -120,7 +159,7 @@ public:
     void removeWidget(PropertyWidget* widget);
 
     /**
-     * calls update() on the widgets
+     * Calls updateFromProperty() on the widgets
      */
     void updateWidgets();
 
@@ -142,22 +181,20 @@ public:
     virtual PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
     /**
-     * Creates a Widget for this Property, and
-     * adds it to the Property
+     * Creates a Widget for this Property, sets enabled+visible and
+     * adds it to the Property.
      */
     PropertyWidget* createAndAddWidget(PropertyWidgetFactory* f);
 
-    std::set<PropertyWidget*> getPropertyWidgets() const;
-
     /**
-     * Returns a TiXmlElement containing the serialized meta data.
-     * May be null.
+     * Returns all property widgets of this property.
      */
-    const TiXmlElement* getMetaData() const;
+    const std::set<PropertyWidget*> getPropertyWidgets() const;
 
     LODSetting getLevelOfDetail();
     void setLevelOfDetail(LODSetting lod);
 
+	//only needed for processor state (volume caching):
     virtual std::string toString() const = 0;
 
     template<typename T>
@@ -166,36 +203,80 @@ public:
         oss << value;
         return oss.str();
     }
-
-    static const std::string XmlElementName_;
-
-    /** 
-     * Returns whether property type information is to be
-     * serialized.
-     */
-    static bool getSerializeTypeInformation();
+	//-------------------------------------------------
 
     /**
-     * Determines whether property type information is to be
-     * serialized (e.g. the property's class name, GUI label,
-     * min/max values).
+     * Returns the property links currently registered
+     * at the property.
      */
-    static void setSerializeTypeInformation(bool enable);
+    const std::vector<PropertyLink*>& getLinks() const;
+
+    /**
+     *
+     * Switch interactionmode on or off.
+     *
+     * @param interactionMode
+     * @param source The source (usually a GUI element) that has issued the interaction mode.
+     */
+    void toggleInteractionMode(bool interactionmode, void* source);
+
+    /** 
+     * Returns the meta data container of this processor.
+     * External objects, such as GUI widgets, can use it
+     * to store and retrieve persistent meta data without 
+     * having to bother with the serialization themselves.
+     *
+     * @see MetaDataContainer
+     */
+    MetaDataContainer& getMetaDataContainer() const;
 
  protected:
+    /**
+     * Invalidates the owner with the InvalidationLevel set in the constructor
+     */
+    void invalidateOwner();
+
+    /**
+     * Invalidates the owner with a given InvalidationLevel.
+     *
+     * @param invalidationLevel Use this InvalidationLevel to invalidate
+     */
+    void invalidateOwner(Processor::InvalidationLevel invalidationLevel);
+
     std::string id_;
     std::string guiText_;
 
     Processor* owner_;
+    Processor::InvalidationLevel invalidationLevel_;
+    bool widgetsEnabled_;
     bool visible_;
     LODSetting lod_;
 
     std::set<PropertyWidget*> widgets_;
+    std::vector<PropertyLink*> links_;
 
 private:
-    static bool serializeTypeInformation_; 
-    TiXmlElement* metaData_;
+    /**
+     * Adds the passed property link to the property.
+     */
+    void registerLink(PropertyLink* link);
 
+    /**
+     * Removes the passed link from the property, but does not delete it.
+     */
+    void removeLink(PropertyLink* link);
+    
+    /// Used for cycle prevention during interaction mode propagation
+    bool interactionModeVisited_;
+
+    /**
+     * Contains the associated meta data.
+     * 
+     * We want to return a non-const reference to it from a const member function 
+     * and since the MetaDataContainer does not affect the processor itself,
+     * mutable appears justifiable.
+     */
+    mutable MetaDataContainer metaDataContainer_;
 };
 
 typedef std::vector<Property*> Properties;

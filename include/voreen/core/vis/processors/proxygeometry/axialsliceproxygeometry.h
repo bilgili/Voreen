@@ -35,12 +35,13 @@
 namespace voreen {
 
 /**
- * This class creates a single slice along on of the main axes. It is possible to set the thickness,
+ * Creates a single slice along one of the main axes. It is possible to set the thickness,
  * and the starting point of the slice (both in percentage of the complete volume).
  *
- * \sa alignment_ and \sa alignmentProp_ Determines, along which axis the slice will be generated
- * \sa begin_ Sets the front end of the slice (in percentage of the volume)
- * \sa thickness_ Sets the thickness of the slice (also in percentage)
+ * - #alignment_ and #alignmentProp_ determine along which axis the slice will be generated.
+ * - #begin_ sets the front end of the slice (in percentage of the volume).
+ * - #thickness_ sets the thickness of the slice (also in percentage).
+ *
  * \sa ProxyGeometry
  */
 class AxialSliceProxyGeometry : public ProxyGeometry {
@@ -48,16 +49,20 @@ public:
     AxialSliceProxyGeometry();
     virtual ~AxialSliceProxyGeometry();
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.AxialSliceProxyGeometry"; }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "AxialSliceProxyGeometry"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new AxialSliceProxyGeometry(); }
+    virtual Processor* create() const;
 
-    static const Identifier setAxis_;
-    static const Identifier setBegin_;
-    static const Identifier setThickness_;
+    static const std::string setAxis_;
+    static const std::string setBegin_;
+    static const std::string setThickness_;
 
     virtual void render();
 
+    /// Alignment of the slices
     enum SliceAlignment {
         SAGITTAL = 0,       /**< view from the volume's right to left (negative x-axis) */
         AXIAL = 1,          /**< view from the volume's front to back (negative z-axis) */
@@ -72,10 +77,9 @@ protected:
     virtual void setThickness();
 
     GLuint dl_;
-    EnumProp* alignmentProp_;
-    SliceAlignment alignment_;
-    IntProp begin_;
-    IntProp thickness_;
+    IntOptionProperty alignmentProp_;
+    IntProperty begin_;
+    IntProperty thickness_;
 };
 
 } // namespace

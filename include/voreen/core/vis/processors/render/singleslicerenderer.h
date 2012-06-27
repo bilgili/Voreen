@@ -31,6 +31,7 @@
 #define VRN_SINGLESLICERENDERER_H
 
 #include "voreen/core/vis/processors/render/slicesequencerenderer.h"
+#include "voreen/core/vis/interaction/mwheelnumpropinteractionhandler.h"
 
 namespace voreen {
 
@@ -43,9 +44,12 @@ public:
     SingleSliceRenderer();
     virtual ~SingleSliceRenderer() {}
 
-    virtual const Identifier getClassName() const;
+    virtual std::string getClassName() const { return "SingleSliceRenderer"; }
     virtual const std::string getProcessorInfo() const;
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual Processor* create() const { return new SingleSliceRenderer(); }
+protected:
+    MWheelNumPropInteractionHandler<int> mwheelHandler_;
 };
 
 }   // namespace

@@ -41,7 +41,6 @@ TransFunc::TransFunc(int width, int height)
     : tex_(0)
     , textureUpdateNeeded_(true)
 {
-    fitDimension(width, height);
     dimension_ = tgt::ivec2(width, height);
 }
 
@@ -66,6 +65,13 @@ void TransFunc::bind() {
         updateTexture();
 
     tex_->bind();
+}
+
+void TransFunc::updateTexture() {
+    int width, height;
+    fitDimension(width, height);
+    if (dimension_ != tgt::ivec2(width, height))
+        dimension_ = tgt::ivec2(width, height);
 }
 
 tgt::Texture* TransFunc::getTexture() {

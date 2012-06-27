@@ -31,7 +31,6 @@
 #define VRN_DATASETCREATOR_H
 
 #include "voreen/core/vis/processors/processor.h"
-//#include "voreen/core/volume/volumecontainer.h"
 
 namespace voreen {
 
@@ -41,24 +40,11 @@ namespace voreen {
 
         virtual void createDataset();
 
-        void process(LocalPortMapping* portMapping);
+        void process();
 
-        void processMessage(Message* msg, const Identifier& dest=Message::all_);
-/*
-        VolumeContainer* getVolumeContainer() {
-            return volumeContainer_;
-        }
-
-        void setVolumeContainer(VolumeContainer* volumeContainer) {
-            volumeContainer_ = volumeContainer;
-        }
-*/
     protected:
         std::string slicePath_;
         std::string datasetName_;
-
-        //VolumeContainer* volumeContainer_;
-
         int volumeNumber_;
 
     };

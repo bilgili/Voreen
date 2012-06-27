@@ -39,35 +39,37 @@
 namespace voreen {
 
 CrossHair::CrossHair()
-    : ImageProcessor("pp_crosshair"), tgt::EventListener()
+    : ImageProcessor("pp_crosshair")
     , crossHairPrg_(0)
     , color_("crosshaircolor", "Crosshair-Color", tgt::vec4(1.0f,0.0f,0.0f,1.0f))
     , useChromaDepth_("ueschromadepth", "Use chroma depth gradient", false)
     , removeBackground_("removeBackground", "Remove background depth", true)
     , textureSize_("textureSize", "Size of transfer texture", 256, 0, 8192)
     , cutAfterDecimalPlaces_("cutAfterDecimalPlaces", "Cut depth values after decimal place", 4)
-    , eventProp_("Show crosshair", tgt::Event::SHIFT, tgt::MouseEvent::MOUSE_ALL)
     , showCrossHair_(false)
-    , depthToColorTex_(0)      
+    , depthToColorTex_(0)
+    , inport_(Port::INPORT, "image.inport")
+    , outport_(Port::OUTPORT, "image.outport")
 {
-    setName("CrossHair");
+
+    //FIXME: memory leak (EventAction?)
+    eventProp_ = new TemplateMouseEventProperty<CrossHair>("Show crosshair", new EventAction<CrossHair, tgt::MouseEvent>(this, &CrossHair::eventMethod), tgt::MouseEvent::PRESSED | tgt::MouseEvent::MOTION | tgt::MouseEvent::RELEASED, tgt::Event::SHIFT, tgt::MouseEvent::MOUSE_ALL);
+
     chromaDepthTex_ = 0;
-    addProperty(&color_);
-    addProperty(&useChromaDepth_);
-    addProperty(&removeBackground_);
-    addProperty(&textureSize_);
-    addProperty(&cutAfterDecimalPlaces_);
-    addProperty(&eventProp_);
-    Option<int> pm[] = {
-        { "relative", "relative", 0 },
-        { "absolute", "absolute", 1 },
-    };
-    std::vector< Option<int> > mappingModes(pm, pm+2);
-    mappingModeProp_ = new OptionProperty<int>("mappingmode", "Mapping", mappingModes);
-    mappingModeProp_->setByValue(pm[0].value);
-    createInport("image.inport");
+    addProperty(color_);
+    addProperty(useChromaDepth_);
+    addProperty(removeBackground_);
+    addProperty(textureSize_);
+    addProperty(cutAfterDecimalPlaces_);
+
+    addEventProperty(eventProp_);
+
+    mappingModeProp_ = new OptionProperty<int>("mappingmode", "Mapping");
+    mappingModeProp_->addOption("relative", "relative", 0);
+    mappingModeProp_->addOption("absolute", "absolute", 1);
+
+    mappingModeProp_->selectByValue(0);
     addProperty(mappingModeProp_);
-    createOutport("image.outport");
 }
 
 CrossHair::~CrossHair() {
@@ -83,62 +85,53 @@ Processor* CrossHair::create() const {
     return ch;
 }
 
-int CrossHair::initializeGL() {
+void CrossHair::initialize() throw (VoreenException) {
     chromaDepthTex_ = TexMgr.load(VoreenApplication::app()->getTransFuncPath("chromadepthspectrum.bmp"),
                                   tgt::Texture::LINEAR, false, true, false);
 
     depthToColorTex_ = new tgt::Texture(tgt::ivec3(textureSize_.get(), 1, 1));
 
-    if (ImageProcessor::initializeGL() == VRN_OK) {
-        crossHairPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag",
-                                             generateHeader() + "#define VRN_CROSSHAIR\n", false);
-        if (crossHairPrg_) {
-            invalidateShader();
-            compileShader();
-        }
-        initStatus_ = crossHairPrg_ ? VRN_OK : VRN_ERROR;
+    ImageProcessor::initialize();
+    crossHairPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag",
+            generateHeader() + "#define VRN_CROSSHAIR\n", false, false);
+    if(!crossHairPrg_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
     }
-    else {
-        crossHairPrg_ = 0;
-        initStatus_ = VRN_ERROR;
-        return VRN_ERROR;
-    }
-
-    return initStatus_;
+    initialized_ = true;
+    invalidate(Processor::INVALID_PROGRAM);
+    if(getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
 }
 
-void CrossHair::mousePressEvent(tgt::MouseEvent *e) {
-    if (eventProp_.accepts(e)) {
+void CrossHair::eventMethod(tgt::MouseEvent* e) {
+    if (e->button() & tgt::MouseEvent::PRESSED) {
         showCrossHair_ = true;
         cursorPos_ = e->coord();
         e->accept();
         invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
-    else
-        e->ignore();
-}
 
-void CrossHair::mouseMoveEvent(tgt::MouseEvent *e) {
-    if (showCrossHair_) {
-        cursorPos_ = e->coord();
-        e->accept();
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+    if (e->button() & tgt::MouseEvent::MOTION) {
+        if (showCrossHair_) {
+            cursorPos_ = e->coord();
+            e->accept();
+            invalidate();
+        }
+        else
+            e->ignore();
     }
-    else
-        e->ignore();
-}
 
-void CrossHair::mouseReleaseEvent(tgt::MouseEvent *e) {
-    if (showCrossHair_) {
-        showCrossHair_ = false;
-        e->accept();
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-    }
-    else
-        e->ignore();
+    if (e->button() & tgt::MouseEvent::RELEASED) {
+        if (showCrossHair_) {
+            showCrossHair_ = false;
+            e->accept();
+            invalidate();
+        }
+        else
+            e->ignore();
+     }
 }
 
 float CrossHair::cutDecimalPlaces(float number, int decimalPlaces) {
@@ -184,25 +177,27 @@ void CrossHair::createAbsDepthToColorTex() {
     maxValue_ = 1.0f;
 }
 
-void CrossHair::createRelDepthToColorTex(int source) {
-    if (cursorPos_.x < 0 || cursorPos_.y < 0 || cursorPos_.x >= size_.x || cursorPos_.y >= size_.y)
+void CrossHair::createRelDepthToColorTex(RenderPort* source) {
+    tgt::ivec2 size = outport_.getSize();
+    if (cursorPos_.x < 0 || cursorPos_.y < 0 || cursorPos_.x >= size.x || cursorPos_.y >= size.y)
         return;
     std::vector<float> depthLine;
-    float* pixels = tc_->getDepthTargetAsFloats(source);
+    source->getDepthTexture()->downloadTexture();
+    float* pixels = (float*)source->getDepthTexture()->getPixelData();
 
-    depthLine.reserve(size_t(size_.x + size_.y));
+    depthLine.reserve(size_t(size.x + size.y));
     float value;
     minValue_ = 1.0f;
     maxValue_ = 0.0f;
-    for (int i=0; i<size_.x; ++i) {
-        value = pixels[getSize().x*(getSize().y-cursorPos_.y-1)+i];
+    for (int i=0; i<size.x; ++i) {
+        value = pixels[size.x*(size.y-cursorPos_.y-1)+i];
         depthLine.push_back(cutDecimalPlaces(value, cutAfterDecimalPlaces_.get()));
     }
-    for (int i=0; i<size_.y; ++i) {
-        value = pixels[getSize().x*i+cursorPos_.x];
+    for (int i=0; i<size.y; ++i) {
+        value = pixels[size.x*i+cursorPos_.x];
         depthLine.push_back(cutDecimalPlaces(value, cutAfterDecimalPlaces_.get()));
     }
-    delete[] pixels;
+    source->getDepthTexture()->destroy();
 
     std::sort(depthLine.begin(), depthLine.end());
 
@@ -272,24 +267,14 @@ void CrossHair::compile() {
         crossHairPrg_->rebuild();
 }
 
-void CrossHair::process(LocalPortMapping* portMapping) {
-    compileShader();
+void CrossHair::process() {
+    if(getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
 
-    int source = portMapping->getTarget("image.inport");
-    int dest = portMapping->getTarget("image.outport");
-
-    tc_->setActiveTarget(dest, "CrossHair::render dest");
-
+    outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // bind image from inport
-    glActiveTexture(tm_.getGLTexUnit(shadeTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-    LGL_ERROR;
-
-    // bind depth from inport
-    glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+    inport_.bindTextures(tm_.getGLTexUnit(shadeTexUnit_), tm_.getGLTexUnit(depthTexUnit_));
     LGL_ERROR;
 
     // copy image to the outport image
@@ -303,7 +288,7 @@ void CrossHair::process(LocalPortMapping* portMapping) {
     glActiveTexture(GL_TEXTURE0);
     if (showCrossHair_) {
         if (mappingModeProp_->getValue() == 0)
-            createRelDepthToColorTex(source);
+            createRelDepthToColorTex(&inport_);
         else
             createAbsDepthToColorTex();
 
@@ -315,8 +300,7 @@ void CrossHair::process(LocalPortMapping* portMapping) {
         LGL_ERROR;
 
         // bind depth from inport
-        glActiveTexture(tm_.getGLTexUnit(depthTexUnit_));
-        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+        inport_.bindDepthTexture(tm_.getGLTexUnit(depthTexUnit_));
         LGL_ERROR;
 
         crossHairPrg_->activate();
@@ -329,8 +313,8 @@ void CrossHair::process(LocalPortMapping* portMapping) {
         crossHairPrg_->setUniform("decimalPlaces_", cutAfterDecimalPlaces_.get());
 
         // render cross hair
-        float px = (2.0f * cursorPos_.x - size_.x) / size_.x;
-        float py = (size_.y - 2.0f * cursorPos_.y) / size_.y;
+        float px = (2.0f * cursorPos_.x - outport_.getSize().x) / outport_.getSize().x;
+        float py = (outport_.getSize().y - 2.0f * cursorPos_.y) / outport_.getSize().y;
         glBegin(GL_LINES);
         glVertex2f(-1.0f, py); glVertex2f(1.0f, py);
         glVertex2f(px, -1.0f); glVertex2f(px, 1.0f);

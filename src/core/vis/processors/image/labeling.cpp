@@ -39,10 +39,9 @@
 #include "tgt/vector.h"
 #include "tgt/gpucapabilities.h"
 
-#include "voreen/core/vis/message.h"
-#include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/application.h"
+#include "voreen/core/vis/properties/cameraproperty.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -74,49 +73,57 @@ using std::string;
 using std::vector;
 using std::swap;
 
-const Identifier Labeling::setLabelingWidget_("set.labelingWidget");
-const Identifier Labeling::setLayout_("set.Layout");
-const Identifier Labeling::setLabelColor_("set.LabelColor");
-const Identifier Labeling::setHaloColor_("set.HaloColor");
-const Identifier Labeling::setFont_("set.Font");
-const Identifier Labeling::setFontSize_("set.FontSize");
-const Identifier Labeling::switchDrawHalo_("switch.drawHalo");
-const Identifier Labeling::setSegmentDescriptionFile_("set.SegmentDescriptionFile");
+const std::string Labeling::setLabelingWidget_("labelingWidget");
+const std::string Labeling::setLayout_("layout");
+const std::string Labeling::setLabelColor_("labelColor");
+const std::string Labeling::setHaloColor_("haloColor");
+const std::string Labeling::setFont_("font");
+const std::string Labeling::setFontSize_("fontSize");
+const std::string Labeling::switchDrawHalo_("drawHalo");
+const std::string Labeling::setSegmentDescriptionFile_("segmentDescriptionFile");
 
-const Identifier Labeling::labelTexUnit_ = "labelTexUnit";
+const std::string Labeling::labelTexUnit_ = "labelTexUnit";
 
 const std::string Labeling::loggerCat_("voreen.Labeling");
 
 Labeling::Labeling()
     : ImageProcessor("pp_labeling")
-    , tgt::EventListener()
     , labelingWidget_(0)
     , pg_(0)
     , labelShader_(0)
+    , showLabels_("showLabels", "Render Labels")
+    , labelFile_("labelFile", "Segment Description File", "Path to Segment Description File",
+        VoreenApplication::app()->getDataPath(""))
     , labelColorExtern_(setLabelColor_, "Label-Color", tgt::Color::blue)
     , haloColorExtern_(setHaloColor_, "Halo-Color", Color(0.8f, 0.8f, 0.8f, 1.0f))
     , fontSizeExtern_(setFontSize_, "Font-Size", 12, 6, 60)
-    , lockInternalFontSettings_("set.lockInternalFontSettings", "Lock internal to external font settings", true)
-    , labelColorIntern_("set.labelColorIntern", "Label-Color (internal)", tgt::Color::blue)
-    , haloColorIntern_("set.haloColorIntern", "Halo-Color (internal)", Color(0.8f, 0.8f, 0.8f, 1.0f))
-    , fontSizeIntern_("set.fontSizeIntern", "Font-Size (internal)", 12, 6, 60)
-    , shape3D_("set.shape3D", "3D shape fitting", true)
+    , lockInternalFontSettings_("lockInternalFontSettings", "Lock internal to external font settings", true)
+    , labelColorIntern_("labelColorIntern", "Label-Color (internal)", tgt::Color::blue)
+    , haloColorIntern_("haloColorIntern", "Halo-Color (internal)", Color(0.8f, 0.8f, 0.8f, 1.0f))
+    , fontSizeIntern_("fontSizeIntern", "Font-Size (internal)", 12, 6, 60)
+    , shape3D_("shape3D", "3D shape fitting", true)
     , drawHalo_(switchDrawHalo_, "Draw Halo", true)
-    , minSegmentSize_("set.minSegmentSize", "Minimal segment size", 10, 0, 500)
-    , maxIterations_("set.maxIterations", "Iteration limit", 40, 1, 100)
-    , filterDelta_("set.filterDelta", "Filter gap", 2, 1, 10)
-    , distanceMapStep_("set.distanceMapStep", "Distance map step", 4, 1, 10)
-    , glyphAdvance_("set.glyphAdvance", "Glyph advance", 2, 0, 10)
-    , polynomialDegree_("set.polynomialDegree", "Polynomial degree", 2, 1, 10)
-    , bezierHorzDegree_("set.bezierHorzDegree", "Bezier horz. degree", 8, 1, 12)
-    , bezierVertDegree_("set.bezierVertDegree", "Bezier vert. degree", 4, 1, 10)
+    , layout_("labelLayoutAsString", "Layout")
+    , minSegmentSize_("minSegmentSize", "Minimal segment size", 10, 0, 500)
+    , maxIterations_("maxIterations", "Iteration limit", 40, 1, 100)
+    , filterKernel_("filterKernel", "Filter kernel")
+    , filterDelta_("filterDelta", "Filter gap", 2, 1, 10)
+    , distanceMapStep_("distanceMapStep", "Distance map step", 4, 1, 10)
+    , glyphAdvance_("glyphAdvance", "Glyph advance", 2, 0, 10)
+    , polynomialDegree_("polynomialDegree", "Polynomial degree", 2, 1, 10)
+    , bezierHorzDegree_("bezierHorzDegree", "Bezier horz. degree", 8, 1, 12)
+    , bezierVertDegree_("bezierVertDegree", "Bezier vert. degree", 4, 1, 10)
     , valid_(false)
-    , coarse_(false)
     , editMode_(false)
-    , drag_(false)
+    , texturesGenerated_(false)
+    , idMapPort_(Port::INPORT, "image.idmap")
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
     , pickedLabel_(0)
+    , drag_(false)
+    , labelingPort_(Port::OUTPORT, "image.labeling", true)
+    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , currentVolumeHandle_(0)
-    , cameraChanged_(true)
+
 #ifdef labelDEBUG
     , showSegmentIDs_("showSegmentIDs", "Show segment IDs", false)
     , drawDebugMaps_("drawDebugMaps", "Draw debug maps", false)
@@ -124,9 +131,8 @@ Labeling::Labeling()
 #endif
 
 {
-    setName("Labeling");
     fontPath_ = VoreenApplication::app()->getFontPath("Vera.ttf");
-    
+
     // setup callbacks which are invoked by changing the properties' values
 
     fontSizeExtern_.onChange(CallMemberAction<Labeling>(this, &Labeling::updateFontSizeEvt));
@@ -143,7 +149,7 @@ Labeling::Labeling()
     drawHalo_.onChange(CallMemberAction<Labeling>(this, &Labeling::genTextures));
     glyphAdvance_.onChange(CallMemberAction<Labeling>(this, &Labeling::genTextures));
 
-    std::vector<Identifier> units;
+    std::vector<std::string> units;
     units.push_back(labelTexUnit_);
     tm_.registerUnits(units);
 
@@ -155,18 +161,17 @@ Labeling::Labeling()
     face_ = 0;
 #endif
 
-    std::vector<std::string> showModeEnum;
-    showModeEnum.push_back("All");
-    showModeEnum.push_back("None");
-    showModeEnum.push_back("External only");
-    showModeEnum.push_back("Internal only");
-    showLabels_ = new EnumProp("set.showLabels", "Show Labels", showModeEnum, SHOW_ALL);
+    showLabels_.addOption("all", "All");
+    showLabels_.addOption("none", "None");
+    showLabels_.addOption("external-only", "External only");
+    showLabels_.addOption("internal-only", "Internal only");
     addProperty(showLabels_);
 
-    std::vector<std::string> layoutEnum;
-    layoutEnum.push_back("Silhouette");
-    layoutEnum.push_back("Left-Right");
-    layout_ = new EnumProp("set.labelLayoutAsString", "Layout", layoutEnum, SILHOUETTE);
+    labelFile_.onChange(CallMemberAction<Labeling>(this, &Labeling::labelFileChanged));
+    addProperty(labelFile_);
+
+    layout_.addOption("silhouette", "Silhouette");
+    layout_.addOption("left-right", "Left-Right");
     addProperty(layout_);
 
     /*GroupProp* fontProps = new GroupProp("fontProperties", "Font Properties");
@@ -175,25 +180,23 @@ Labeling::Labeling()
     fontProps->addGroupedProp(&haloColorExtern_);
     fontProps->addGroupedProp(&drawHalo_);
     addProperty(fontProps);*/
-    addProperty(&fontSizeExtern_);
-    addProperty(&labelColorExtern_);
-    addProperty(&haloColorExtern_);
-    addProperty(&drawHalo_);
+    addProperty(fontSizeExtern_);
+    addProperty(labelColorExtern_);
+    addProperty(haloColorExtern_);
+    addProperty(drawHalo_);
 
     createFilterKernels();
-    std::vector<std::string> filterEnum;
     for (unsigned int i=0; i<kernels_.size(); i++)
-        filterEnum.push_back(kernels_[i].caption);
+        filterKernel_.addOption(kernels_[i]->caption, kernels_[i]->caption, i);
 
-    filterKernel_ = new EnumProp("set.filterKernel", "Filter kernel", filterEnum, 2);
     /*GroupProp* distMapProps = new GroupProp("distMapProps", "Distance Map Settings");
     distMapProps->addGroupedProp(filterKernel_);
     distMapProps->addGroupedProp(&filterDelta_);
     distMapProps->addGroupedProp(&distanceMapStep_);
     addProperty(distMapProps);*/
     addProperty(filterKernel_);
-    addProperty(&filterDelta_);
-    addProperty(&distanceMapStep_);
+    addProperty(filterDelta_);
+    addProperty(distanceMapStep_);
 
     /*GroupProp* internGroup = new GroupProp("internalLabelSettings", "Internal Labels");
 
@@ -218,6 +221,8 @@ Labeling::Labeling()
     addProperty( &bezierVertDegree_ );
     addProperty( &glyphAdvance_ );
 
+    addProperty(camera_);
+
 #ifdef labelDEBUG
 
     segmentationTarget_ = -1;
@@ -227,22 +232,22 @@ Labeling::Labeling()
     tc_->changeType(distanceMapTarget_+3, getTargetType(Identifier::Unknown));
     tc_->changeType(distanceMapTarget_+4, getTargetType(Identifier::Unknown));*/
 
-	/*
+    /*
     GroupProp* debugGroup = new GroupProp("debugGroup", "Debugging");
     debugGroup->addGroupedProp(&showSegmentIDs_);
     debugGroup->addGroupedProp(&drawConvexHull_);
     debugGroup->addGroupedProp(&drawDebugMaps_);
     addProperty(debugGroup);
-	*/
-	addProperty(&showSegmentIDs_);
-	addProperty(&drawConvexHull_);
-	addProperty(&drawDebugMaps_);
+    */
+    addProperty(showSegmentIDs_);
+    addProperty(drawConvexHull_);
+    addProperty(drawDebugMaps_);
 
 #endif
 
-    createInport("volumehandle.volumehandle");
-    createInport("image.idmap");
-    createOutport("image.labeling");
+    addPort(volumePort_);
+    addPort(idMapPort_);
+    addPort(labelingPort_);
 }
 
 const std::string Labeling::getProcessorInfo() const {
@@ -253,22 +258,28 @@ const std::string Labeling::getProcessorInfo() const {
            rendering or internally on the corresponding segment. Also see IDRaycaster";
 }
 
-int Labeling::initializeGL() {
+void Labeling::initialize() throw (VoreenException) {
 #ifdef VRN_WITH_FONTRENDERING
     FT_Error error = FT_Init_FreeType( &library_ );
     if ( error ) {
-        LERROR("Labeling: failed to initialize freetype library \n");
+        LERROR("Labeling: failed to initialize freetype library");
         face_ = 0;
     } else {
         loadFont();
     }
 #endif
 
-    if ( (ImageProcessor::initializeGL() == VRN_OK) &&
-         (labelShader_ = ShdrMgr.loadSeparate("", "pp_labeling.frag", generateHeader(), false)) != 0 )
-        return VRN_OK;
-    else
-        return VRN_ERROR;
+    ImageProcessor::initialize();
+    labelShader_ = ShdrMgr.loadSeparate("", "pp_labeling.frag", generateHeader(), false, false);
+    if(!labelShader_) {
+        LERROR("Failed to load shaders!");
+        initialized_ = false;
+        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    }
+
+    labelFileChanged();
+
+    initialized_ = true;
 }
 
 // destructor
@@ -276,286 +287,71 @@ Labeling::~Labeling() {
     for (size_t i=0; i<labelPersistentData_.size(); i++)
         if (labelPersistentData_[i]->text.textureExtern > 0)
             glDeleteTextures(1, &(labelPersistentData_[i]->text.textureExtern));
-
-}
-
-void Labeling::processMessage(Message* msg, const Identifier& dest) {
-    ImageProcessor::processMessage(msg, dest);
-    if (msg->id_ == VoreenPainter::switchCoarseness_) {
-        coarse_ = msg->getValue<bool>();
-        valid_ &= !coarse_;
+    while(!kernels_.empty()) {
+        delete kernels_.back();
+        kernels_.pop_back();
     }
-    else if (msg->id_ == setLayout_){
-        int layout = msg->getValue<int>();
-        if ( (layout == layout_->get()) || ( (layout != LEFTRIGHT) && (layout != SILHOUETTE) ) )
-            return;
-        layout_->set(static_cast<LabelLayouts>(layout));
-        cameraChanged_ = true; // force layout recalculation
-        invalidate();
-    }
-    /*
-    else if (msg->id_ == "set.labelLayoutAsString") {
-        string layoutStr = msg->getValue<string>();
-        if (layoutStr == "Silhouette")
-            layout_->set( SILHOUETTE );
-        else if (layoutStr == "Left-Right")
-            layout_->set( LEFTRIGHT );
-        cameraChanged_ = true; // force layout recalculation
-        invalidate();
-    }
-    else if (msg->id_ == "set.showLabels") {
-        string showModeStr = msg->getValue<string>();
-        if (showModeStr == "All")
-            showLabels_->set( SHOW_ALL );
-        else if (showModeStr == "None")
-            showLabels_->set( SHOW_NONE );
-        else if (showModeStr == "External only")
-            showLabels_->set( SHOW_EXTERNAL_ONLY );
-        else if (showModeStr == "Internal only")
-            showLabels_->set( SHOW_INTERNAL_ONLY );
-        invalidate();
-    }
-    else if (msg->id_ == setLabelColor_) {
-        labelColorExtern_.set(msg->getValue<tgt::Color>() );
-        if (lockInternalFontSettings_.get() )
-            labelColorIntern_.set(msg->getValue<tgt::Color>() );
-        genTextures();
-        invalidate();
-    }
-    else if (msg->id_ == setHaloColor_) {
-        haloColorExtern_.set( msg->getValue<tgt::Color>() );
-        if (lockInternalFontSettings_.get() )
-            haloColorIntern_.set(msg->getValue<tgt::Color>() );
-        genTextures();
-        invalidate();
-    }
-    else if (msg->id_ == switchDrawHalo_) {
-        drawHalo_.set( msg->getValue<bool>() );
-        genTextures();
-        invalidate();
-    }*/
-    else if (msg->id_ == setFont_) {
-        fontPath_ = msg->getValue<std::string>();
-        loadFont();
-        genTextures();
-        invalidate();
-    }
-    /*
-    else if (msg->id_ == setFontSize_) {
-        fontSizeExtern_.set( msg->getValue<int>() );
-        if (lockInternalFontSettings_.get() )
-            fontSizeIntern_.set( msg->getValue<int>() );
-        loadFont();
-        genTextures();
-        invalidate();
-    }
-    else if (msg->id_ == "set.lockInternalFontSettings") {
-        lockInternalFontSettings_.set( msg->getValue<bool>() );
-        if ( lockInternalFontSettings_.get() ){
-            fontSizeIntern_.set( fontSizeExtern_.get() );
-            labelColorIntern_.set( labelColorExtern_.get() );
-            haloColorIntern_.set( haloColorExtern_.get() );
-            genTextures();
-        }
-        invalidate();
-    }
-    else if (msg->id_ == "set.fontSizeIntern" ) {
-        fontSizeIntern_.set( msg->getValue<int>() );
-        loadFont();
-        genTextures();
-        lockInternalFontSettings_.set( false );
-        invalidate();
-    }
-    else if (msg->id_ == "set.labelColorIntern") {
-        labelColorIntern_.set(msg->getValue<tgt::Color>() );
-        genTextures();
-        lockInternalFontSettings_.set( false );
-        invalidate();
-    }
-    else if (msg->id_ == "set.haloColorIntern") {
-        haloColorIntern_.set( msg->getValue<tgt::Color>() );
-        genTextures();
-        lockInternalFontSettings_.set( false );
-        invalidate();
-    }
-    else if (msg->id_ == "set.shape3D" ) {
-        shape3D_.set( msg->getValue<bool>() );
-        for (size_t i=0; i<labels_.size(); i++)
-            if (labels_[i].intern)
-                labels_[i].intern = findBezierPoints(labels_[i]);
-        toWorld();
-        pickedLabel_ = NULL;
-        time.reset();
-        time.start();
-        invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-    }*/
-    else if (msg->id_ == setSegmentDescriptionFile_) {
-        std::string filename = msg->getValue<std::string>();
-        filename.replace(filename.length()-3, 3, "xml");
-        readSegmentData(filename);
-        genTextures();
-        invalidate();
-    }
-    /*
-    else if ( msg->id_ == "set.filterKernel") {
-        std::string filterCaption = msg->getValue<std::string>();
-        for (unsigned int i=0; i<kernels_.size(); i++)
-            if (kernels_[i].caption == filterCaption)
-                filterKernel_->set(i);
-        invalidate();
-    }
-    else if ( msg->id_ == "set.filterDelta") {
-        filterDelta_.set( msg->getValue<int>() );
-        invalidate();
-    }
-    else if ( msg->id_ == "set.distanceMapStep") {
-        distanceMapStep_.set(msg->getValue<int>());
-        invalidate();
-    }*/
-    else if ( msg->id_ == "add.unsegmentedLabel") {
-        addUnsegmentedLabelData(msg->getValue<std::string>());
-        genTextures();
-        for (size_t i=0; i<labels_.size(); i++)
-            if (!labels_[i].labelData->belongsToSegment) {
-                labels_.erase(labels_.begin()+i);
-                --i;
-            }
-        appendUnsegmentedLabels();
-        toWorld();
-        time.reset();
-        time.start();
-        editMode_ = true;
-        invalidate();
-    }
-    else if ( msg->id_ == "remove.unsegmentedLabel") {
-        bool finished = false;
-        for (size_t i=0; i<labels_.size() && !finished; i++)
-            if ( labels_[i].labelData->text.text == msg->getValue<std::string>() ) {
-                labels_.erase(labels_.begin()+i);
-                finished = true;
-            }
-        removeUnsegmentedLabelData(msg->getValue<std::string>());
-        time.reset();
-        time.start();
-        editMode_ = true;
-        invalidate();
-    }
-    /*
-    else if ( msg->id_ == "set.polynomialDegree") {
-        polynomialDegree_.set( msg->getValue<int>() );
-        invalidate();
-    }
-    else if ( msg->id_ == "set.bezierHorzDegree") {
-        bezierHorzDegree_.set( msg->getValue<int>() );
-        invalidate();
-    }
-    else if ( msg->id_ == "set.bezierVertDegree") {
-        bezierVertDegree_.set( msg->getValue<int>() );
-        invalidate();
-    }
-    else if ( msg->id_ == "set.glyphAdvance") {
-        glyphAdvance_.set( msg->getValue<int>() );
-        genTextures();
-        invalidate();
-    }
-    else if ( msg->id_ == setLabelingWidget_)
-        msg->getValue<LabelingWidget*>(labelingWidget_);
-        //
-        // FIXME: What was that? (df)
-    */
-    else if (msg->id_ == VoreenPainter::cameraChanged_)
-        cameraChanged_ = true;
-
-#ifdef labelDEBUG
-    else if (msg->id_ == "showSegmentIDs") {
-        showSegmentIDs_.set(msg->getValue<bool>());
-        genTextures();
-        invalidate();
-    }
-    else if (msg->id_ == "drawConvexHull") {
-        drawConvexHull_.set(msg->getValue<bool>());
-    }
-#endif
 
 }
 
 // analyzes id-raycasting result and renders labels
-void Labeling::process(LocalPortMapping* portMapping) {
+void Labeling::process() {
     valid_ = false;
 
-    int source = portMapping->getTarget("image.idmap");
+    if (!idMapPort_.isReady() || !labelingPort_.isReady() || !volumePort_.isReady())
+        return;
 
     // if no user-interaction during the last 500ms and
     // not in dragging-mode, leave edit-mode
     if (editMode_ && !drag_ && time.getRuntime() > 500)
         editMode_ = false;
 
-    // get and clear render target
-    int dest = portMapping->getTarget("image.labeling");
-    tc_->setActiveTarget(dest);
+    // activate and clear render target
+    labelingPort_.activateTarget();
     glPushAttrib(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(backgroundColor_.get().r, backgroundColor_.get().g, backgroundColor_.get().b, 0.f);
     glClearDepth(0.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPopAttrib();
 
-    VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != 0) {
-        if (!volumeHandle->isIdentical(currentVolumeHandle_)) {
-            currentVolumeHandle_ = volumeHandle;
-            std::string filename = volumeHandle->getVolume()->meta().getFileName();
-            filename.replace(filename.length()-3, 3, "xml");
-            readSegmentData(filename);
-            genTextures();
-        }
+    if (volumePort_.hasChanged()) {
+        currentVolumeHandle_ = volumePort_.getData();
     }
-    else
-       currentVolumeHandle_ = 0;
 
-    if (currentVolumeHandle_ == 0)
-        return;
-
-    // if not in coarseness-mode, perform labeling
-    if (!coarse_ && labelPersistentData_.size() > 0) {
+    // if not in coarseness-mode and label textures are available, perform labeling
+    if (!interactionMode() && texturesGenerated_ && labelPersistentData_.size() > 0) {
 
         // if currently no user interaction, renew label layout
+
         if (!editMode_) {
 
             pickedLabel_ = NULL;
-            /*deleteLabels();
-            readImage(source);
-            findAnchors();
-            labelLayout();*/
-
 #ifdef labelDEBUG
             if (drawDebugMaps_.get())
-               renderMaps();
+                renderMaps();
 #endif
         }
 
-        if (cameraChanged_) {
-            cameraChanged_ = false;
-            deleteLabels();
-            readImage(source);
-            findAnchors();
-            labelLayout();
-        }
+        deleteLabels();
+        readImage();
+        findAnchors();
+        labelLayout();
 
-        renderLabels(dest);
+        renderLabels();
 
         valid_ = true;
     }
 
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
+
 }
 
 // ----------- labeling methods --------------
 
 // performs the labeling
 void Labeling::labelLayout() {
-    if (layout_->get() == SILHOUETTE)
+    if (layout_.get() == "silhouette")
         calcConvexHull();
 
     calcLabelPositions();
@@ -579,7 +375,7 @@ void Labeling::labelLayout() {
  */
 #ifdef VRN_WITH_FONTRENDERING
 // TODO: Use new font system
-void Labeling::renderTextToBitmap(std::string text, int fontSize, const ColorProp& labelColor, const ColorProp& haloColor,
+void Labeling::renderTextToBitmap(std::string text, int fontSize, const ColorProperty& labelColor, const ColorProperty& haloColor,
                                     labeling::Bitmap<GLfloat> &bitmap,
                                     bool antialias, int border, int glyphAdvance,
                                     bool drawHalo, int haloOffset )
@@ -710,8 +506,8 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, const ColorPro
     }
 }
 #else // VRN_WITH_FONTRENDERING
-void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, const ColorProp& labelColor,
-                                    const ColorProp& /*haloColor*/, labeling::Bitmap<GLfloat> &bitmap,
+void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, const ColorProperty& labelColor,
+                                    const ColorProperty& /*haloColor*/, labeling::Bitmap<GLfloat> &bitmap,
                                     bool /*antialias*/, int /*border*/, int /*glyphAdvance*/,
                                     bool /*drawHalo*/, int /*haloOffset*/ )
 {
@@ -737,8 +533,7 @@ void Labeling::genTextures() {
     if (labelPersistentData_.size() == 0)
         return;
 
-    GLenum targetType = tc_->getTextureContainerTextureType() ==
-        TextureContainer::VRN_TEXTURE_RECTANGLE ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
+    GLenum targetType = !GpuCaps.isNpotSupported() ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
     glActiveTexture(tm_.getGLTexUnit(labelTexUnit_));
 
     // generation of textures for external labels
@@ -812,6 +607,8 @@ void Labeling::genTextures() {
     delete[] texturesIntern;
 
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+
+    texturesGenerated_ = true;
 }
 
 namespace {
@@ -1168,8 +965,8 @@ void Labeling::findAnchors() {
                 // blur the distancemap pixel
                 int gap = (filterDelta_.get()/distanceMapStep_.get())*distanceMapStep_.get();
                 int distance = 0;
-                int* kernel = kernels_[filterKernel_->get()].kernel;
-                int kernelSize = kernels_[filterKernel_->get()].size;
+                int* kernel = kernels_[filterKernel_.getValue()]->kernel;
+                int kernelSize = kernels_[filterKernel_.getValue()]->size;
                 for (int kX = 0; kX < kernelSize; kX++) {
                     for (int kY = 0; kY < kernelSize; kY++) {
                         int x_t = x + (kX - (kernelSize/2))*gap;
@@ -1184,7 +981,7 @@ void Labeling::findAnchors() {
                         }
                     }
                 }
-                distanceField[y*image_.width + x] = distance / kernels_[filterKernel_->get()].coefficientsSum;
+                distanceField[y*image_.width + x] = distance / kernels_[filterKernel_.getValue()]->coefficientsSum;
 
                 // Set the anchor point.
                 // if not set anchor or if set and the new distanceField point is larger than the old
@@ -1320,191 +1117,185 @@ void Labeling::calcLabelPositions() {
 
 
     // determine layout of external labels
-    switch(layout_->get()) {
+    if (layout_.get() == "left-right") {
 
     //---- left-right layout ---- //
-        case LEFTRIGHT: {
+        LabelVec leftLabels;
+        LabelVec rightLabels;
 
-            LabelVec leftLabels;
-            LabelVec rightLabels;
-
-            // sort labels by their horizontal position (ascending)
-            for (size_t i = 0; i < externLabels.size(); ++i) {
-                for (size_t j = i+1; j < externLabels.size(); ++j) {
-                    if (externLabels[i].anchorPoint.x > externLabels[j].anchorPoint.x ) {
-                        swap(externLabels[i], externLabels[j]);
-                    }
+        // sort labels by their horizontal position (ascending)
+        for (size_t i = 0; i < externLabels.size(); ++i) {
+            for (size_t j = i+1; j < externLabels.size(); ++j) {
+                if (externLabels[i].anchorPoint.x > externLabels[j].anchorPoint.x ) {
+                    swap(externLabels[i], externLabels[j]);
                 }
             }
+        }
 
-            // left half of labels are put on the left side
-            // right half on the right side
-            // (but dont put a label to far away from its anchor)
-            size_t mid = tgt::iround(externLabels.size() / 2.f);
-            // calculate initial label layout
-            int objectWidth = image_.tr.x-image_.bl.x;
-            for (size_t i = 0; i < externLabels.size(); ++i) {
-                int labelRelPos = externLabels[i].anchorPoint.x-image_.bl.x;
-                if ( ( (i >= mid && labelRelPos > static_cast<int>(objectWidth*(1/3.f)) )  ||
-                    ( (labelRelPos > static_cast<int>(objectWidth*(2/3.f)) ))  ) ) {
-                        externLabels[i].connectionPoint.x = image_.tr.x + gaps_.LR_BboxObject;
-                        externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
-                        rightLabels.push_back(externLabels[i]);
-                }
-                else {
-                    externLabels[i].connectionPoint.x = image_.bl.x - gaps_.LR_BboxObject;
+        // left half of labels are put on the left side
+        // right half on the right side
+        // (but dont put a label to far away from its anchor)
+        size_t mid = tgt::iround(externLabels.size() / 2.f);
+        // calculate initial label layout
+        int objectWidth = image_.tr.x-image_.bl.x;
+        for (size_t i = 0; i < externLabels.size(); ++i) {
+            int labelRelPos = externLabels[i].anchorPoint.x-image_.bl.x;
+            if ( ( (i >= mid && labelRelPos > static_cast<int>(objectWidth*(1/3.f)) )  ||
+                ( (labelRelPos > static_cast<int>(objectWidth*(2/3.f)) ))  ) ) {
+                    externLabels[i].connectionPoint.x = image_.tr.x + gaps_.LR_BboxObject;
                     externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
-                    leftLabels.push_back(externLabels[i]);
+                    rightLabels.push_back(externLabels[i]);
+            }
+            else {
+                externLabels[i].connectionPoint.x = image_.bl.x - gaps_.LR_BboxObject;
+                externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
+                leftLabels.push_back(externLabels[i]);
+            }
+        }
+
+        externLabels.clear();
+
+        // sort left labels by their vertical label position (ascending)
+        for (size_t i = 0; i < leftLabels.size(); ++i) {
+            for (size_t j = i+1; j < leftLabels.size(); ++j) {
+                if (leftLabels[i].connectionPoint.y > leftLabels[j].connectionPoint.y ) {
+                    swap(leftLabels[i], leftLabels[j]);
                 }
             }
+        }
 
-            externLabels.clear();
-
-            // sort left labels by their vertical label position (ascending)
-            for (size_t i = 0; i < leftLabels.size(); ++i) {
-                for (size_t j = i+1; j < leftLabels.size(); ++j) {
-                    if (leftLabels[i].connectionPoint.y > leftLabels[j].connectionPoint.y ) {
-                        swap(leftLabels[i], leftLabels[j]);
-                    }
+        // sort right labels by their vertical label position (ascending)
+        for (size_t i = 0; i < rightLabels.size(); ++i) {
+            for (size_t j = i+1; j < rightLabels.size(); ++j) {
+                if (rightLabels[i].connectionPoint.y > rightLabels[j].connectionPoint.y ) {
+                    swap(rightLabels[i], rightLabels[j]);
                 }
             }
+        }
 
-            // sort right labels by their vertical label position (ascending)
-            for (size_t i = 0; i < rightLabels.size(); ++i) {
-                for (size_t j = i+1; j < rightLabels.size(); ++j) {
-                    if (rightLabels[i].connectionPoint.y > rightLabels[j].connectionPoint.y ) {
-                        swap(rightLabels[i], rightLabels[j]);
-                    }
-                }
-            }
+        // resolve vertical label overlaps
+        int bottom, top;
+        if (leftLabels.size() > 1) {
+            stackLabels(leftLabels, 0, leftLabels.size()-1, bottom, top);
+        }
+        if (rightLabels.size() > 1) {
+            stackLabels(rightLabels, 0, rightLabels.size()-1, bottom, top);
+        }
 
-            // resolve vertical label overlaps
-            int bottom, top;
-            if (leftLabels.size() > 1) {
-                stackLabels(leftLabels, 0, leftLabels.size()-1, bottom, top);
-            }
-            if (rightLabels.size() > 1) {
-                stackLabels(rightLabels, 0, rightLabels.size()-1, bottom, top);
-            }
+        // resolve line intersections
+        resolveLineIntersections(leftLabels);
+        resolveLineIntersections(rightLabels);
 
-            // resolve line intersections
-            resolveLineIntersections(leftLabels);
-            resolveLineIntersections(rightLabels);
+        // recombine left and right labels to one label vector
+        for (size_t i = 0; i < leftLabels.size(); ++i) {
+            externLabels.push_back(leftLabels[i]);
+        }
+        for (size_t i = 0; i < rightLabels.size(); ++i) {
+            externLabels.push_back(rightLabels[i]);
+        }
 
-            // recombine left and right labels to one label vector
-            for (size_t i = 0; i < leftLabels.size(); ++i) {
-                externLabels.push_back(leftLabels[i]);
-            }
-            for (size_t i = 0; i < rightLabels.size(); ++i) {
-                externLabels.push_back(rightLabels[i]);
-            }
+        // finally calculate label positions from connpoints
+        for (size_t i = 0; i < externLabels.size(); ++i) {
+            labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
 
-            // finally calculate label positions from connpoints
-            for (size_t i = 0; i < externLabels.size(); ++i) {
-                labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
-
-                // Fixme: labelPos is now the center of the label (before bottom-left corner)
-                externLabels[i].labelPos += ivec2(externLabels[i].labelData->text.width/2,
-                    externLabels[i].labelData->text.height/2);
-            }
-
-            }
-            break;
-
+            // Fixme: labelPos is now the center of the label (before bottom-left corner)
+            externLabels[i].labelPos += ivec2(externLabels[i].labelData->text.width/2,
+                externLabels[i].labelData->text.height/2);
+        }
+    }
+    else if (layout_.get() == "silhouette") {
 
     //---- silhouette layout ---- //
-        case SILHOUETTE: {
 
-            // first find connection point closest to its anchor
+        // first find connection point closest to its anchor
 
-            // number of projections per anchor point
-            int stepCount = 60;
+        // number of projections per anchor point
+        int stepCount = 60;
 
-            float stepAngle = deg2rad(360.f / stepCount);
+        float stepAngle = deg2rad(360.f / stepCount);
 
-            // for each anchor point the distance to its nearest connpoint (so far) is saved
-            int* nearest = new int[externLabels.size()];
-            for (size_t i=0; i<externLabels.size(); ++i)
-                nearest[i] = image_.width*image_.height;
+        // for each anchor point the distance to its nearest connpoint (so far) is saved
+        int* nearest = new int[externLabels.size()];
+        for (size_t i=0; i<externLabels.size(); ++i)
+            nearest[i] = image_.width*image_.height;
 
-            // dir is the direction of projection (DOP); it is rotated after each iteration
-            // start with a normalized direction vector
-            vec2 dir = vec2(0,1);
-            mat2 rotationMatrix = mat2(cosf(stepAngle), sinf(stepAngle),
-                                       -sinf(stepAngle), cosf(stepAngle));
+        // dir is the direction of projection (DOP); it is rotated after each iteration
+        // start with a normalized direction vector
+        vec2 dir = vec2(0,1);
+        mat2 rotationMatrix = mat2(cosf(stepAngle), sinf(stepAngle),
+                                   -sinf(stepAngle), cosf(stepAngle));
 
-            // for each anchor:
-            // find projection of anchor point onto hull
-            // regarding current DOP (vector dir).
-            // if new connpoint is the closest for its anchor, it is saved
-            for (int step=0; step < stepCount - 1; ++step) {
-                for (size_t i=0; i < externLabels.size(); ++i) {
+        // for each anchor:
+        // find projection of anchor point onto hull
+        // regarding current DOP (vector dir).
+        // if new connpoint is the closest for its anchor, it is saved
+        for (int step=0; step < stepCount - 1; ++step) {
+            for (size_t i=0; i < externLabels.size(); ++i) {
 
-                    ivec2 anchor = externLabels[i].anchorPoint;
+                ivec2 anchor = externLabels[i].anchorPoint;
 
-                    // project anchor point onto image boundary
-                    // using dir as DOP.
-                    // projected point is 'end'
-                    ivec2 end;
-                    float scale_x = (image_.width - 1 - anchor.x) / dir.x;
-                    if (scale_x < 0)
-                        scale_x = (- anchor.x) / dir.x;
+                // project anchor point onto image boundary
+                // using dir as DOP.
+                // projected point is 'end'
+                ivec2 end;
+                float scale_x = (image_.width - 1 - anchor.x) / dir.x;
+                if (scale_x < 0)
+                    scale_x = (- anchor.x) / dir.x;
 
-                    float scale_y = (image_.height - 1 - anchor.y) / dir.y;
-                    if (scale_y < 0)
-                        scale_y = (- anchor.y) / dir.y;
+                float scale_y = (image_.height - 1 - anchor.y) / dir.y;
+                if (scale_y < 0)
+                    scale_y = (- anchor.y) / dir.y;
 
-                    if (scale_x < scale_y) {
-                        end.x = anchor.x + tgt::iround(dir.x*scale_x);
-                        end.y = anchor.y + tgt::iround(dir.y*scale_x);
-                    }
-                    else {
-                        end.x = anchor.x + tgt::iround(dir.x*scale_y);
-                        end.y = anchor.y + tgt::iround(dir.y*scale_y);
-                    }
-
-                    // find hull intersection of line anchor->end
-                    ivec2 intersect, normal;
-                    midPointLine(anchor, end, HullIntersect, intersect, normal);
-                    intersect.x += tgt::iround(dir.x*gaps_.SIL_LabelHull);
-                    intersect.y += tgt::iround(dir.y*gaps_.SIL_LabelHull);
-                    int len = dot(intersect-anchor, intersect-anchor);
-                    // if new connpoint is the closest, save it
-                    if ( len < nearest[i] ) {
-                        nearest[i] = len;
-                        externLabels[i].connectionPoint = intersect;
-                        externLabels[i].normal = normal;
-                    }
-
+                if (scale_x < scale_y) {
+                    end.x = anchor.x + tgt::iround(dir.x*scale_x);
+                    end.y = anchor.y + tgt::iround(dir.y*scale_x);
                 }
-                // rotate dir-vector
-                dir = rotationMatrix * dir;
+                else {
+                    end.x = anchor.x + tgt::iround(dir.x*scale_y);
+                    end.y = anchor.y + tgt::iround(dir.y*scale_y);
+                }
+
+                // find hull intersection of line anchor->end
+                ivec2 intersect, normal;
+                midPointLine(anchor, end, HullIntersect, intersect, normal);
+                intersect.x += tgt::iround(dir.x*gaps_.SIL_LabelHull);
+                intersect.y += tgt::iround(dir.y*gaps_.SIL_LabelHull);
+                int len = dot(intersect-anchor, intersect-anchor);
+                // if new connpoint is the closest, save it
+                if ( len < nearest[i] ) {
+                    nearest[i] = len;
+                    externLabels[i].connectionPoint = intersect;
+                    externLabels[i].normal = normal;
+                }
+
             }
+            // rotate dir-vector
+            dir = rotationMatrix * dir;
+        }
 
-         // calculate initial label positions from connpoints
-         for (size_t i = 0; i < externLabels.size(); ++i) {
-             labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
-             correctHullGap(externLabels[i], externLabels[i].labelPos);
-         }
+     // calculate initial label positions from connpoints
+     for (size_t i = 0; i < externLabels.size(); ++i) {
+         labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
+         correctHullGap(externLabels[i], externLabels[i].labelPos);
+     }
 
-         // resolve label / line overlaps
-         bool finished = false;
-         for (int i=0; (i < maxIterations_.get()) && !finished ; ++i) {
-             finished = true;
-             finished &= resolveLineIntersections(externLabels);
-             finished &= resolveLabelOverlaps(externLabels);
-         }
+     // resolve label / line overlaps
+     bool finished = false;
+     for (int i=0; (i < maxIterations_.get()) && !finished ; ++i) {
+         finished = true;
+         finished &= resolveLineIntersections(externLabels);
+         finished &= resolveLabelOverlaps(externLabels);
+     }
 
-         // finally calculate connpoints from corrected labelpositions
-         for (size_t i=0; i < externLabels.size(); ++i)
-            connPointFromLabelPos(externLabels[i], externLabels[i].connectionPoint, externLabels[i].normal);
+     // finally calculate connpoints from corrected labelpositions
+     for (size_t i=0; i < externLabels.size(); ++i)
+        connPointFromLabelPos(externLabels[i], externLabels[i].connectionPoint, externLabels[i].normal);
 
 #ifdef labelDEBUG
-         if (!finished)
-             LINFO("Layout not finished! (iteration limit reached: " <<
-                          maxIterations_.get() << ")" << std::endl );
+     if (!finished)
+         LINFO("Layout not finished! (iteration limit reached: " <<
+                      maxIterations_.get() << ")" << std::endl );
 #endif
-        break; }
 
     } // switch
 
@@ -1561,7 +1352,10 @@ void Labeling::toWorld(Label* pLabel) {
 //   2. pass: render connection lines and anchors with normal thickness
 //            + render quads at label positions mapping a font texture onto them (external),
 //              render bezier patches mapping a font texture onto them (internal)
-void Labeling::renderLabels(int dest) {
+void Labeling::renderLabels() {
+
+    LGL_ERROR;
+
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -1572,7 +1366,7 @@ void Labeling::renderLabels(int dest) {
 
     glDisable(GL_TEXTURE_2D);
 
-    tc_->setActiveTarget(dest);
+    labelingPort_.activateTarget();
 
     // TODO: check if it's still the case (ab)
     // strange enough, but alpha test seems to work improperly on ATI ...
@@ -1583,6 +1377,8 @@ void Labeling::renderLabels(int dest) {
     //glDisable(GL_DEPTH_TEST);
     glDepthFunc(GL_ALWAYS);
     glDepthMask(false);
+
+    LGL_ERROR;
 
     for (int pass = 1; pass <= 2; ++pass) {
         // settings for different render passes
@@ -1601,8 +1397,10 @@ void Labeling::renderLabels(int dest) {
             glColor4fv(labelColorExtern_.get().elem);
         }
 
+        LGL_ERROR;
+
         // anchor points and connection lines for external labels
-        if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_EXTERNAL_ONLY ) {
+        if ( showLabels_.get() == "all" || showLabels_.get() == "external-only" ) {
             // anchor points (only for extern labels)
             glBegin(GL_POINTS);
             for (size_t i = 0; i < labels_.size(); ++i) {
@@ -1625,6 +1423,8 @@ void Labeling::renderLabels(int dest) {
             glEnd();
         }
 
+        LGL_ERROR;
+
         // render anchor and connection-line of dragged label
         if (drag_ && pickedLabel_ && !pickedLabel_->intern && !pickedLabel_->offLabel) {
 
@@ -1646,6 +1446,8 @@ void Labeling::renderLabels(int dest) {
 
         }
 
+        LGL_ERROR;
+
         // render text quads (second pass only)
         // FIXME: use texture rectangles, if necessary
         if (pass == 2) {
@@ -1654,21 +1456,32 @@ void Labeling::renderLabels(int dest) {
 
                 // render quad with label texture for extern labels
                 if ( (!labels_[i].intern ) &&
-                    ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_EXTERNAL_ONLY ||
+                    ( showLabels_.get() == "all" || showLabels_.get() == "external-only" ||
                       (drag_ && pickedLabel_->labelData->id == labels_[i].labelData->id )) ) {
 
-                    labelShader_->activate();
-                    setGlobalShaderParameters(labelShader_);
+                    LGL_ERROR;
 
-                    vec2 texCoordScale = (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ?
-                        static_cast<vec2>(tc_->getSize()) :
-                        vec2(static_cast<float>(labels_[i].labelData->text.textureExternWidth), static_cast<float>(labels_[i].labelData->text.textureExternHeight)));
-                    labelShader_->setUniform("texCoordScale_", texCoordScale);
+                    labelShader_->activate();
+                    setGlobalShaderParameters(labelShader_, camera_.get());
+
+                    LGL_ERROR;
+
+                    //vec2 texCoordScale = (GpuCaps.isNpotSupported() ?
+                        //static_cast<vec2>(labelingPort_.getSize()) :
+                        //vec2(static_cast<float>(labels_[i].labelData->text.textureExternWidth), static_cast<float>(labels_[i].labelData->text.textureExternHeight)));
+                    //labelShader_->setUniform("texCoordScale_", texCoordScale);
+
+                    LGL_ERROR;
 
                     // bind label's pre-generated text texture
                     glActiveTexture(tm_.getGLTexUnit(labelTexUnit_));
+                    LGL_ERROR;
                     glBindTexture(labels_[i].labelData->text.textureTargetType, labels_[i].labelData->text.textureExtern);
+                    LGL_ERROR;
                     labelShader_->setUniform("labelTex_", tm_.getTexUnit(labelTexUnit_));
+                    labelingPort_.setTextureParameters(labelShader_, "textureParameters_");
+
+                    LGL_ERROR;
 
                     // scale and translate quad
                     glPushMatrix();
@@ -1676,6 +1489,8 @@ void Labeling::renderLabels(int dest) {
                     glRotatef(labels_[i].rotAngle, 0.f, 0.f, 1.f);
                     glScalef(labels_[i].labelData->text.widthWorld/2.f,
                         labels_[i].labelData->text.heightWorld/2.f, 1.f);
+
+                    LGL_ERROR;
 
                     // render quad mapping text texture onto it
                     glBegin(GL_QUADS);
@@ -1691,21 +1506,29 @@ void Labeling::renderLabels(int dest) {
 
                     labelShader_->deactivate();
 
+                    LGL_ERROR;
+
                     // second rendering for picking
-                    idManager_.startBufferRendering(labels_[i].labelData->idstr);
+                    /*tc_->getIDManager().startBufferRendering(labels_[i].labelData->idstr);
                     glBegin(GL_QUADS);
                     glVertex3f(-1.f, -1.f, -1.f);
                     glVertex3f(1.f, -1.f, -1.f);
                     glVertex3f(1.f, 1.f, -1.f);
                     glVertex3f(-1.f, 1.f, -1.f);
                     glEnd();
-                    idManager_.stopBufferRendering();
+                    tc_->getIDManager().stopBufferRendering(); */
+
+                    LGL_ERROR;
 
                     glPopMatrix();
 
+                    LGL_ERROR;
+
                 // render internal labels by mapping their text texture onto their bezier patch
                 }
-                else if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_INTERNAL_ONLY ) {
+                else if ( showLabels_.get() == "all" || showLabels_.get() == "internal-only" ) {
+
+                    LGL_ERROR;
 
                     // render bezier patches for internal labels
 
@@ -1722,19 +1545,19 @@ void Labeling::renderLabels(int dest) {
                     // -> load projection and camera view matrix
                     if ( shape3D_.get() ) {
                         glMatrixMode(GL_PROJECTION);
-                        tgt::loadMatrix(camera_->getProjectionMatrix());
+                        tgt::loadMatrix(camera_.get()->getProjectionMatrix());
                         glMatrixMode(GL_MODELVIEW);
-                        tgt::loadMatrix(camera_->getViewMatrix());
+                        tgt::loadMatrix(camera_.get()->getViewMatrix());
                     }
 
                     for (size_t i=0; i<labels_.size(); ++i) {
                         if (labels_[i].intern) {
 
                             labelShader_->activate();
-                            setGlobalShaderParameters(labelShader_);
+                            setGlobalShaderParameters(labelShader_, camera_.get());
 
-                            vec2 texCoordScale = (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ?
-                                static_cast<vec2>(tc_->getSize()) :
+                            vec2 texCoordScale = (GpuCaps.isNpotSupported() ?
+                                static_cast<vec2>(labelingPort_.getSize()) :
                             vec2(static_cast<float>(labels_[i].labelData->text.textureInternWidth), static_cast<float>(labels_[i].labelData->text.textureInternHeight)));
                             labelShader_->setUniform("texCoordScale_", texCoordScale);
 
@@ -1746,10 +1569,16 @@ void Labeling::renderLabels(int dest) {
 
                             labelShader_->deactivate();
 
+                            LGL_ERROR;
+
                             // second rendering for picking
-                            idManager_.startBufferRendering(labels_[i].labelData->idstr);
+                            /*tc_->getIDManager().startBufferRendering(labels_[i].labelData->idstr);
                             labels_[i].bezierPatch.render(4, 1, false, 0);
-                            idManager_.stopBufferRendering();
+                            tc_->getIDManager().stopBufferRendering();
+                            */
+
+                            LGL_ERROR;
+
                         }
                     }
 
@@ -1757,11 +1586,16 @@ void Labeling::renderLabels(int dest) {
                     glPopMatrix();
                     glMatrixMode(GL_MODELVIEW);
                     glPopMatrix();
+
+                    LGL_ERROR;
+
                 }
             }
             // disable texturing on this texture unit
         }
     }
+
+    LGL_ERROR;
 
     // reset settings
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
@@ -1798,6 +1632,11 @@ void Labeling::renderLabels(int dest) {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+
+    labelingPort_.deactivateTarget();
+
+    LGL_ERROR;
+
 }
 
 // clear current label vector
@@ -1814,93 +1653,89 @@ void Labeling::deleteLabels() {
 void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec2 &normal, bool calcNormal) {
     Adjustments h_adjust, v_adjust;    // connPoint is placed left|right, up|down from label
 
-    switch (layout_->get()){
-        case LEFTRIGHT:
-        case SILHOUETTE: {
+    if (layout_.get() == "silhouette" || layout_.get() == "left-right"){
 
-            // gradient thresholds for chosing one of the potential centers for the line connpoint.
-            // after center is found, the connpoint is found by projecting the center onto the label's
-            // textbox-hull in the direction of the anchor
-            float l_thresh = 3.0;
-            float u_thresh = 8.0;
+        // gradient thresholds for chosing one of the potential centers for the line connpoint.
+        // after center is found, the connpoint is found by projecting the center onto the label's
+        // textbox-hull in the direction of the anchor
+        float l_thresh = 3.0;
+        float u_thresh = 8.0;
 
-            // label's adjustment regarding its connpoint,
-            // depending on its relative position to anchor
-            h_adjust = (pLabel.labelPos.x >= pLabel.anchorPoint.x) ? RIGHT : LEFT;
-            v_adjust = (pLabel.labelPos.y >= pLabel.anchorPoint.y) ? UP : DOWN;
+        // label's adjustment regarding its connpoint,
+        // depending on its relative position to anchor
+        h_adjust = (pLabel.labelPos.x >= pLabel.anchorPoint.x) ? RIGHT : LEFT;
+        v_adjust = (pLabel.labelPos.y >= pLabel.anchorPoint.y) ? UP : DOWN;
 
-            // these are the potential centers
-            ivec2 center_middle, center_out, center_semimiddle;
+        // these are the potential centers
+        ivec2 center_middle, center_out, center_semimiddle;
 
-            // line would be connected to center of label
-            center_middle.y = pLabel.labelPos.y;
-            // line would be connected to the label's outside (left or right)
-            center_out.y = pLabel.labelPos.y;
-            // line would be connected to the center point between center_middle and center_out
-            center_semimiddle.y = pLabel.labelPos.y;
+        // line would be connected to center of label
+        center_middle.y = pLabel.labelPos.y;
+        // line would be connected to the label's outside (left or right)
+        center_out.y = pLabel.labelPos.y;
+        // line would be connected to the center point between center_middle and center_out
+        center_semimiddle.y = pLabel.labelPos.y;
 
-            center_middle.x = pLabel.labelPos.x;
-            if (h_adjust == LEFT) {
-                center_out.x = pLabel.labelPos.x + tgt::iround(pLabel.labelData->text.width/2.f) -
-                    tgt::iround(pLabel.labelData->text.height/2.f);
-                center_semimiddle.x = pLabel.labelPos.x + tgt::iround( (1/4.f)*pLabel.labelData->text.width );
-            }
-            else {
-                center_out.x = pLabel.labelPos.x - tgt::iround(pLabel.labelData->text.width/2.f) +
-                    tgt::iround(pLabel.labelData->text.height/2.f);
-                center_semimiddle.x = pLabel.labelPos.x - tgt::iround( (1/4.f)*pLabel.labelData->text.width );
-            }
+        center_middle.x = pLabel.labelPos.x;
+        if (h_adjust == LEFT) {
+            center_out.x = pLabel.labelPos.x + tgt::iround(pLabel.labelData->text.width/2.f) -
+                tgt::iround(pLabel.labelData->text.height/2.f);
+            center_semimiddle.x = pLabel.labelPos.x + tgt::iround( (1/4.f)*pLabel.labelData->text.width );
+        }
+        else {
+            center_out.x = pLabel.labelPos.x - tgt::iround(pLabel.labelData->text.width/2.f) +
+                tgt::iround(pLabel.labelData->text.height/2.f);
+            center_semimiddle.x = pLabel.labelPos.x - tgt::iround( (1/4.f)*pLabel.labelData->text.width );
+        }
 
-            // connection lines from anchor to potential connection points
-            ivec2 t_middle = center_middle - pLabel.anchorPoint;
-            ivec2 t_out = center_out - pLabel.anchorPoint;
-            ivec2 t_semimiddle = center_semimiddle - pLabel.anchorPoint;
+        // connection lines from anchor to potential connection points
+        ivec2 t_middle = center_middle - pLabel.anchorPoint;
+        ivec2 t_out = center_out - pLabel.anchorPoint;
+        ivec2 t_semimiddle = center_semimiddle - pLabel.anchorPoint;
 
-            // now choose one center by comparing the connection lines' gradients
-            // to the thresholds
-            ivec2 center;
-            if ( (fabs(static_cast<float>(t_out.y) / t_out.x) < l_thresh) &&
-                    tgt::sign( (t_middle.x-pLabel.labelData->text.width/2)*(t_middle.x+pLabel.labelData->text.width/2)) == 1 )
-                center = center_out;
-            else if ( (fabs(static_cast<float>(t_middle.y) / t_middle.x) > u_thresh ) ||
-                (tgt::sign(t_middle.x*t_semimiddle.x) == -1) )
-                center = center_middle;
+        // now choose one center by comparing the connection lines' gradients
+        // to the thresholds
+        ivec2 center;
+        if ( (fabs(static_cast<float>(t_out.y) / t_out.x) < l_thresh) &&
+                tgt::sign( (t_middle.x-pLabel.labelData->text.width/2)*(t_middle.x+pLabel.labelData->text.width/2)) == 1 )
+            center = center_out;
+        else if ( (fabs(static_cast<float>(t_middle.y) / t_middle.x) > u_thresh ) ||
+            (tgt::sign(t_middle.x*t_semimiddle.x) == -1) )
+            center = center_middle;
+        else
+            center = center_semimiddle;
+
+
+        // finally we have to project the center onto the label's textbox-hull
+        // (in the direction of the anchor point)
+        ivec2 r = pLabel.anchorPoint - center;
+        float s_y, s_x;
+        if (r.y != 0)
+            s_y = (pLabel.labelData->text.height/2.f + gaps_.LabelConnpoint) / abs(r.y);
+        else
+            s_y = static_cast<float>(image_.width*image_.height);
+
+        if (r.x != 0) {
+            if (h_adjust == LEFT)
+                s_x = ( pLabel.labelData->text.width/2.f -
+                    (center.x - pLabel.labelPos.x) + gaps_.LabelConnpoint) / static_cast<float>(r.x);
             else
-                center = center_semimiddle;
+                s_x = ( - pLabel.labelData->text.width/2.f +
+                    ( pLabel.labelPos.x - center.x) - gaps_.LabelConnpoint) / static_cast<float>(r.x);
+        }
+        else
+            s_x = static_cast<float>(image_.width*image_.height);
 
+        // set connpoint
+        float s = (s_x < s_y ? s_x : s_y);
+        connPoint = center + (ivec2)(s*(vec2)r);
 
-            // finally we have to project the center onto the label's textbox-hull
-            // (in the direction of the anchor point)
-            ivec2 r = pLabel.anchorPoint - center;
-            float s_y, s_x;
-            if (r.y != 0)
-                s_y = (pLabel.labelData->text.height/2.f + gaps_.LabelConnpoint) / abs(r.y);
-            else
-                s_y = static_cast<float>(image_.width*image_.height);
+        // update hullintersection
+        if (calcNormal) {
+            ivec2 inter;
+            midPointLine(connPoint, pLabel.anchorPoint, HullIntersect, inter, normal);
+        }
 
-            if (r.x != 0) {
-                if (h_adjust == LEFT)
-                    s_x = ( pLabel.labelData->text.width/2.f -
-                        (center.x - pLabel.labelPos.x) + gaps_.LabelConnpoint) / static_cast<float>(r.x);
-                else
-                    s_x = ( - pLabel.labelData->text.width/2.f +
-                        ( pLabel.labelPos.x - center.x) - gaps_.LabelConnpoint) / static_cast<float>(r.x);
-            }
-            else
-                s_x = static_cast<float>(image_.width*image_.height);
-
-            // set connpoint
-            float s = (s_x < s_y ? s_x : s_y);
-            connPoint = center + (ivec2)(s*(vec2)r);
-
-            // update hullintersection
-            if (calcNormal) {
-                ivec2 inter;
-                midPointLine(connPoint, pLabel.anchorPoint, HullIntersect, inter, normal);
-            }
-
-            }
-            break;
     }
 }
 
@@ -1911,62 +1746,54 @@ void Labeling::labelPosFromConnPoint(const Label &pLabel, ivec2 &labelPos) {
 
     Adjustments h_adjust, v_adjust;    // label is placed left|right, up|down from conn-point
 
-    switch(layout_->get()) {
-        case LEFTRIGHT: {
+    if (layout_.get() == "left-right") {
+        h_adjust = (pLabel.anchorPoint.x < pLabel.connectionPoint.x) ? RIGHT : LEFT;
 
-            h_adjust = (pLabel.anchorPoint.x < pLabel.connectionPoint.x) ? RIGHT : LEFT;
+        if (h_adjust == RIGHT) {
+            labelPos.x = pLabel.connectionPoint.x + x_gap;
+        }
+        else {
+            labelPos.x = static_cast<int>(pLabel.connectionPoint.x - pLabel.labelData->text.width
+                                          - x_gap);
+        }
+        labelPos.y = pLabel.connectionPoint.y - (pLabel.labelData->text.height-1) / 2;
+    }
+    else if (layout_.get() == "silhouette") {
+        h_adjust = (pLabel.normal.x >= 0) ? RIGHT : LEFT;
+        v_adjust = (pLabel.normal.y >= 0) ? UP : DOWN;
 
-            if (h_adjust == RIGHT) {
-                labelPos.x = pLabel.connectionPoint.x + x_gap;
-            }
-            else {
-                labelPos.x = static_cast<int>(pLabel.connectionPoint.x - pLabel.labelData->text.width
-                                              - x_gap);
-            }
-            labelPos.y = pLabel.connectionPoint.y - (pLabel.labelData->text.height-1) / 2;
+        float l_thresh = 3.0;
+        float u_thresh = 8.0;
 
-              break;
+        ivec2 r = pLabel.connectionPoint - pLabel.anchorPoint;
+
+        ivec2 shift;
+        // connection-line has a small gradient
+        if ((r.x != 0) && ((static_cast<float>(abs(r.y / r.x))) < l_thresh) ) {
+            if (h_adjust == LEFT)
+                shift.x = - tgt::iround(pLabel.labelData->text.width/2.f) - gaps_.LabelConnpoint;
+            else
+                shift.x = tgt::iround(pLabel.labelData->text.width/2.f) + gaps_.LabelConnpoint;
+            shift.y = 0;
+        // connection-line has a huge gradient
+        }
+        else if ((r.x == 0) || ((static_cast<float>(abs(r.y / r.x))) > u_thresh) ) {
+            shift.x = 0;
+            if (v_adjust == DOWN)
+                shift.y = - (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
+            else
+                shift.y = (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
+        // connection-line gradient between lower and upper threshold
+        }
+        else {
+            shift.x = tgt::iround(pLabel.labelData->text.width/4.f * sign(r.x));
+            if (v_adjust == DOWN)
+                shift.y = - ( tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint );
+            else
+                shift.y = ( tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint );
         }
 
-        case SILHOUETTE: {
-
-            h_adjust = (pLabel.normal.x >= 0) ? RIGHT : LEFT;
-            v_adjust = (pLabel.normal.y >= 0) ? UP : DOWN;
-
-            float l_thresh = 3.0;
-            float u_thresh = 8.0;
-
-            ivec2 r = pLabel.connectionPoint - pLabel.anchorPoint;
-
-            ivec2 shift;
-            // connection-line has a small gradient
-            if ((r.x != 0) && ((static_cast<float>(abs(r.y / r.x))) < l_thresh) ) {
-                if (h_adjust == LEFT)
-                    shift.x = - tgt::iround(pLabel.labelData->text.width/2.f) - gaps_.LabelConnpoint;
-                else
-                    shift.x = tgt::iround(pLabel.labelData->text.width/2.f) + gaps_.LabelConnpoint;
-                shift.y = 0;
-            // connection-line has a huge gradient
-            }
-            else if ((r.x == 0) || ((static_cast<float>(abs(r.y / r.x))) > u_thresh) ) {
-                shift.x = 0;
-                if (v_adjust == DOWN)
-                    shift.y = - (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
-                else
-                    shift.y = (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
-            // connection-line gradient between lower and upper threshold
-            }
-            else {
-                shift.x = tgt::iround(pLabel.labelData->text.width/4.f * sign(r.x));
-                if (v_adjust == DOWN)
-                    shift.y = - ( tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint );
-                else
-                    shift.y = ( tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint );
-            }
-
-            labelPos = pLabel.connectionPoint + shift;
-            break;
-        }
+        labelPos = pLabel.connectionPoint + shift;
     }
 }
 
@@ -2003,14 +1830,14 @@ bool Labeling::resolveLineIntersections(LabelVec &pLabels) {
                     pLabels[j].anchorPoint-(ivec2)gapj,
                     intersection, onSegment);
                 if (onSegment) {
-                    if (layout_->get() == LEFTRIGHT) {
+                    if (layout_.get() == "left-right") {
                         // swap connpoints and recalculate label positions afterwards
                         swap(pLabels[i].connectionPoint, pLabels[j].connectionPoint);
                         labelPosFromConnPoint(pLabels[i], pLabels[i].labelPos);
                         labelPosFromConnPoint(pLabels[j], pLabels[j].labelPos);
 
                     }
-                    else if (layout_->get() == SILHOUETTE) {
+                    else if (layout_.get() == "silhouette") {
                         // swap connpoints
                         swap(pLabels[i].connectionPoint, pLabels[j].connectionPoint);
 
@@ -3195,7 +3022,8 @@ void Labeling::addUnsegmentedLabelData(std::string text) {
     labelPersistentData_.push_back(labelData);
 
     // register segment as picking object
-    idManager_.addNewPickObj(labelData->idstr);
+    //TODO: tc_
+    //labelingPort_.getTextureContainer()->getIDManager().addNewPickObj(labelData->idstr);
 
     //std::cout << labelData->idstr<< std::endl;
 }
@@ -3250,14 +3078,15 @@ void Labeling::rotateLabel(Label& pLabel, float angle) {
 // - idImage: greater zero, where intensity of volume between thresholds (=> volume visible)
 //            (necessary for silhouette calculation, blue channel)
 // - distanceField: distance field internally used by find anchors (can be used for debugging)
-void Labeling::readImage(int source) {
-    image_.width = tc_->getSize().x;
-    image_.height = tc_->getSize().y;
-    tc_->setActiveTarget(source);
+void Labeling::readImage() {
+    image_.width = labelingPort_.getSize().x;
+    image_.height = labelingPort_.getSize().y;
 
    // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     //GLushort* buffer = new GLushort[image_.width*image_.height*4];
-    GLfloat* buffer = tc_->getTargetAsFloats(source);
+    //GLfloat* buffer = idMapPort_.getTargetAsFloats();
+    idMapPort_.getColorTexture()->downloadTexture();
+    GLfloat* buffer = (GLfloat*)idMapPort_.getColorTexture()->getPixelData();
 
     int* idImage = new int[image_.width*image_.height];
     int* idBuffer = new int[image_.width*image_.height];
@@ -3285,11 +3114,11 @@ void Labeling::readImage(int source) {
     image_.firstHitPositions.setData(positionBuffer, image_.width, image_.height, 3);
   //  image_.firstHitPositions.setVolumeSize(pg_->getVolumeSize());
     image_.firstHitPositions.setVolumeSize(currentVolumeHandle_->getVolume()->getCubeSize() / 2.f);
-    image_.firstHitPositions.calcTransformationMatrix(camera_->getViewMatrix(),
-        camera_->getProjectionMatrix(),
+    image_.firstHitPositions.calcTransformationMatrix(camera_.get()->getViewMatrix(),
+        camera_.get()->getProjectionMatrix(),
         ivec2(image_.width, image_.height));
 
-    delete[] buffer;
+    idMapPort_.getColorTexture()->destroy();
 }
 
 // compare-function for graham-scan:
@@ -3321,7 +3150,7 @@ void Labeling::calcConvexHull() {
     for (size_t i=0; i<image_.silPoints.size(); ++i)
         image_.silPoints[i] += -shift;
 
-    stable_sort(image_.silPoints.begin(), image_.silPoints.end(), angleComp);
+    std::sort(image_.silPoints.begin(), image_.silPoints.end(), angleComp);
     for (size_t i=0; i<image_.silPoints.size(); ++i)
         image_.silPoints[i] += shift;
 
@@ -3359,13 +3188,14 @@ void Labeling::calcConvexHull() {
 
 // returns the label positioned at (x,y),
 // or 0 if there is none
-Labeling::Label* Labeling::getPickedLabel(int x, int y) {
+Labeling::Label* Labeling::getPickedLabel(int /*x*/, int /*y*/) {
     Label* pLabel = 0;
 
     for (size_t i = 0; (i < labels_.size()) && (pLabel == 0); ++i) {
-        if (idManager_.isClicked(labels_[i].labelData->idstr, x, y)){
-            pLabel = &(labels_[i]);
-        }
+        //TODO: tc_
+        //if (labelingPort_.getTextureContainer()->getIDManager().isClicked(labels_[i].labelData->idstr, x, y)){
+            //pLabel = &(labels_[i]);
+        //}
     }
 /*    for (size_t i=0; i<invisibleLabels_.size() && pLabel == 0; i++){
         if (idManager_.isClicked(invisibleLabels_[i].labelData->idstr, x, y)){
@@ -3424,20 +3254,21 @@ bool Labeling::updateSegmentCaption(Label& pLabel, std::string const& newCaption
 }
 
 void Labeling::loadFont() {
+    //return;
 #ifdef VRN_WITH_FONTRENDERING
     if (face_)
         FT_Done_Face(face_);
 
     FT_Error error = FT_New_Face( library_, fontPath_.c_str(), 0, &face_ );
     if ( error ) {
-        LERROR("Labeling: failed to load font \"" << fontPath_ << "\" \n");
+        LERROR("Labeling: failed to load font \"" << fontPath_ << "\"");
         face_ = 0;
         return;
     }
     error = FT_Set_Pixel_Sizes(face_, fontSizeExtern_.get(), 0);
     if ( error ) {
         LERROR("Labeling: failed to set font size " << fontSizeExtern_.get()
-            << " for font \"" << fontPath_ << "\" \n");
+            << " for font \"" << fontPath_ << "\"");
         face_ = 0;
         return;
     }
@@ -3461,7 +3292,7 @@ void Labeling::loadFont() {
 //      ...
 //  </segmentation>
 //
-void Labeling::readSegmentData(std::string filename) {
+bool Labeling::readSegmentData(std::string filename) {
     std::istringstream is;
     std::ostringstream os;
 
@@ -3494,8 +3325,8 @@ void Labeling::readSegmentData(std::string filename) {
                 continue;
             }
             labelData->text.text = pChild->GetText();
-            labelData->text.textureExtern = -1;
-            labelData->text.textureIntern = -1;
+            labelData->text.textureExtern = 0;
+            labelData->text.textureIntern = 0;
 
             labelData->xmlNode = pLabel;
             labelData->internPreferred = false;
@@ -3504,7 +3335,8 @@ void Labeling::readSegmentData(std::string filename) {
             labelPersistentData_.push_back(labelData);
 
             // register segment as picking object
-            idManager_.addNewPickObj(labelData->idstr);
+            //TODO: tc_
+            //labelingPort_.getTextureContainer()->getIDManager().addNewPickObj(labelData->idstr);
 
             pLabel = pLabel->NextSiblingElement("label");
         }
@@ -3542,80 +3374,51 @@ void Labeling::readSegmentData(std::string filename) {
         } */
     }
     else {
-        LERROR("Labeling: failed to load segment description file \"" << filename << "\" \n");
-        return;
+        LERROR("Failed to load segment description file \"" << filename << "\"");
+        return false;
     }
 
-    LINFO("\n\nLabeling: read segment data from file \"" << filename << "\" \n");
+    LINFO("Read segment data from file \"" << filename << "\"");
+    return true;
+}
+
+void Labeling::labelFileChanged() {
+    if (!labelFile_.get().empty()) {
+        if (readSegmentData(labelFile_.get()))
+            genTextures();
+    }
 }
 
 void Labeling::createFilterKernels() {
-    FilterKernel f0, f1, f2, f3, f4, f5;
     // no filter
-    f0.size = 1;
-    f0.coefficientsSum = 1;
-    f0.kernel = new int[1];
-    f0.kernel[0] = 1;
-    f0.caption = "no filtering";
-    kernels_.push_back(f0);
+    kernels_.push_back(new FilterKernel(1, "no filtering"));
 
     // average 3x3
-    f1.size = 3;
-    f1.coefficientsSum = 9;
-    f1.kernel = new int[9];
-    for (int i=0; i<9; i++)
-        f1.kernel[i] = 1;
-
-    f1.caption = "average 3x3";
-    kernels_.push_back(f1);
+    kernels_.push_back(new FilterKernel(3, "average 3x3"));
 
     // average 5x5
-    f2.size = 5;
-    f2.coefficientsSum = 25;
-    f2.kernel = new int[25];
-    for (int i=0; i<25; i++)
-        f2.kernel[i] = 1;
-
-    f2.caption = "average 5x5";
-    kernels_.push_back(f2);
+    kernels_.push_back(new FilterKernel(5, "average 5x5"));
 
     // average 7x7
-    f3.size = 7;
-    f3.coefficientsSum = 49;
-    f3.kernel = new int[49];
-    for (int i=0; i<49; i++)
-        f3.kernel[i] = 1;
-
-    f3.caption = "average 7x7";
-    kernels_.push_back(f3);
+    kernels_.push_back(new FilterKernel(7, "average 7x7"));
 
     // average 9x9
-    f4.size = 9;
-    f4.coefficientsSum = 81;
-    f4.kernel = new int[81];
-    for (int i=0; i<81; i++)
-        f4.kernel[i] = 1;
-
-    f4.caption = "average 9x9";
-    kernels_.push_back(f4);
+    kernels_.push_back(new FilterKernel(9, "average 9x9"));
 
     // gaussian blur 3x3
-    f5.size = 3;
-    f5.coefficientsSum = 16;
-    f5.kernel = new int[9];
-    f5.kernel[0] = 1;
-    f5.kernel[1] = 2;
-    f5.kernel[2] = 1;
+    kernels_.push_back(new FilterKernel(3, "gaussian 3x3"));
+    kernels_.back()->coefficientsSum = 16;
+    kernels_.back()->kernel[0] = 1;
+    kernels_.back()->kernel[1] = 2;
+    kernels_.back()->kernel[2] = 1;
 
-    f5.kernel[3] = 2;
-    f5.kernel[4] = 4;
-    f5.kernel[5] = 2;
+    kernels_.back()->kernel[3] = 2;
+    kernels_.back()->kernel[4] = 4;
+    kernels_.back()->kernel[5] = 2;
 
-    f5.kernel[6] = 1;
-    f5.kernel[7] = 2;
-    f5.kernel[8] = 1;
-    f5.caption = "gaussian 3x3";
-    kernels_.push_back(f5);
+    kernels_.back()->kernel[6] = 1;
+    kernels_.back()->kernel[7] = 2;
+    kernels_.back()->kernel[8] = 1;
 }
 
 #ifdef labelDEBUG
@@ -3789,9 +3592,7 @@ void Labeling::setShape3DEvt() {
     time.reset();
     time.start();
 
-    // FIXME: does this still make sense? (df)
-    //
-    MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+    invalidate();
 }
 
 void Labeling::unlockInternalFontSettingsEvt() {
@@ -3869,8 +3670,6 @@ void Labeling::mouseDoubleClickEvent(MouseEvent* e) {
                     calcLabelPositions();
                     toWorld();
                     invalidate();
-                    MsgDistr.postMessage(new BoolMsg(VoreenPainter::repaint_, true),
-                        VoreenPainter::visibleViews_);
                 }
                 else
                     LERROR("Labeling: failed saving new segment caption to xml-file");
@@ -3931,7 +3730,6 @@ void Labeling::mouseReleaseEvent(MouseEvent* e) {
             time.reset();
             time.start();
             invalidate();
-            MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         }
         time.start();
     }
@@ -3980,7 +3778,6 @@ void Labeling::mouseMoveEvent(MouseEvent* e) {
             }
             toWorld(pickedLabel_);
             invalidate();
-            MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         }
     }
 
@@ -4003,7 +3800,6 @@ void Labeling::wheelEvent(tgt::MouseEvent* e) {
 
         toWorld(pickedLabel_);
         invalidate();
-        MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
 }
 

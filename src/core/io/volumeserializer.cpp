@@ -34,6 +34,7 @@
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/io/brickedvolumereader.h"
 #include "voreen/core/io/volumewriter.h"
+#include "voreen/core/volume/volumehandle.h"
 #include "tgt/filesystem.h"
 
 namespace voreen {
@@ -61,106 +62,82 @@ VolumeSerializer::VolumeSerializer() {
 VolumeSerializer::~VolumeSerializer() {
 }
 
-VolumeSet* VolumeSerializer::load(const std::string& filename)
+VolumeCollection* VolumeSerializer::load(const std::string& url) const
     throw (tgt::FileException, std::bad_alloc)
 {
-    return loadSlices(filename,0, 0);
+    VolumeReader* reader = getReader(url);
+    return reader->read(url);
 }
 
-VolumeSet* VolumeSerializer::loadSlices(const std::string& filename, size_t firstSlice, size_t lastSlice)
+VolumeCollection* VolumeSerializer::loadSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
     throw (tgt::FileException, std::bad_alloc)
 {
-    std::string realfile = filename;
-    std::string extension = tgt::FileSystem::fileExtension(filename, true);
-
-    // Special handling for DICOM "URLs", as DICOM file often have new extension. Also allows
-    // specifiying entire directories by adding a trailing '/' or '\'.
-    if (filename.find("dicom://") == 0) {
-        extension = "dicom";
-        realfile = filename.substr(8); // strip dicom://
-    }
-
-    if (readers_.find(extension) == readers_.end())
-        throw tgt::UnsupportedFormatException(extension, filename);
-    VolumeReader* reader = readers_.find(extension)->second;
-    VolumeSet* volumeSet =0;
-    if (filename.find("dicom://") == 0) {
-        // dicom reader does not support readSlices() yet
-        volumeSet = reader->read(realfile);
-    } else if (dynamic_cast<BrickedVolumeReader*>(reader)) {
-        BrickedVolumeReader* brickedReader = new BrickedVolumeReader();
-        volumeSet = brickedReader->readSlices(realfile,firstSlice,lastSlice);
-    } else {
-        volumeSet = reader->readSlices(realfile,firstSlice,lastSlice);  
-    }
-    return volumeSet;
+    VolumeReader* reader = getReader(url);
+    return reader->readSlices(url, firstSlice, lastSlice);
 }
 
-VolumeSet* VolumeSerializer::loadBrick(const std::string& filename, tgt::ivec3 brickStartPos,
-    int brickSize) throw (tgt::FileException, std::bad_alloc)
+VolumeCollection* VolumeSerializer::loadBrick(const std::string& url, tgt::ivec3 brickStartPos,
+    int brickSize) const throw (tgt::FileException, std::bad_alloc)
 {
-    std::string realfile = filename;
-    std::string extension = tgt::FileSystem::fileExtension(filename, true);
-
-    // Special handling for DICOM "URLs", as DICOM file often have new extension. Also allows
-    // specifiying entire directories by adding a trailing '/' or '\'.
-    if (filename.find("dicom://") == 0) {
-        extension = "dicom";
-        realfile = filename.substr(8); // strip dicom://
-    }
-
-    if (readers_.find(extension) == readers_.end())
-        throw tgt::UnsupportedFormatException(extension, filename);
-    VolumeReader* reader = readers_.find(extension)->second;
-    VolumeSet* volumeSet =0;
-    if (dynamic_cast<BrickedVolumeReader*>(reader)) {
-    } else {
-        volumeSet = reader->readBrick(realfile,brickStartPos,brickSize);
-    }
-    return volumeSet;
+    VolumeReader* reader = getReader(url);
+    return reader->readBrick(url, brickStartPos, brickSize);
 }
 
-VolumeHandle* VolumeSerializer::loadFromOrigin(VolumeHandle::Origin origin) {
-    std::string extension;
-        
-    if (origin.filename.find("zip://") == 0) {
-        // The filename starts with "zip://"
-        extension = "zip";
-        origin.filename = origin.filename.substr(6);
-    }
-    else
-        extension = tgt::FileSystem::fileExtension(origin.filename, true);
-    
-    if (readers_.find(extension) == readers_.end())
-        throw tgt::UnsupportedFormatException(extension, origin.filename);
-    VolumeReader* reader = readers_.find(extension)->second;
-    VolumeHandle* volumeHandle = reader->readFromOrigin(origin);
-    return volumeHandle;    
+VolumeHandle* VolumeSerializer::load(const VolumeOrigin& origin) const
+    throw (tgt::FileException, std::bad_alloc)
+{
+    VolumeReader* reader = getReader(origin.getURL());
+    VolumeHandle* volumeHandle = reader->read(origin);
+    return volumeHandle;
 }
 
-void VolumeSerializer::save(const std::string& filename, Volume* volume)
+void VolumeSerializer::save(const std::string& filename, VolumeHandle* volumeHandle) const throw (tgt::FileException)
+{
+    VolumeWriter* writer = getWriter(filename);
+    writer->write(filename, volumeHandle);
+}
+
+void VolumeSerializer::save(const std::string& filename, Volume* volume) const throw (tgt::FileException) {
+    save(filename, new VolumeHandle(volume));
+}
+
+VolumeOrigin VolumeSerializer::convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const
     throw (tgt::FileException)
 {
-    std::string extension = tgt::FileSystem::fileExtension(filename, true);
+    VolumeReader* reader = getReader(origin.getURL());
+    return reader->convertOriginToRelativePath(origin, basePath);
+}
 
-    if (writers_.find(extension) != writers_.end())
-        writers_.find(extension)->second->write(filename, volume);
-    else
-        throw tgt::UnsupportedFormatException(extension, filename);
+VolumeOrigin VolumeSerializer::convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const
+    throw (tgt::FileException)
+{
+    VolumeReader* reader = getReader(origin.getURL());
+    return reader->convertOriginToAbsolutePath(origin, basePath);
 }
 
 void VolumeSerializer::registerReader(VolumeReader* vr)
     throw (FormatClashException)
 {
     std::vector<std::string> clashes; // already inserted extensions are tracked here
-    const std::vector<std::string>& extensions = vr->getExtensions();
 
+    // update extensions map
+    const std::vector<std::string>& extensions = vr->getExtensions();
     for (size_t i = 0; i < extensions.size(); ++i) {
-        std::pair<Readers::iterator, bool> p =
-            readers_.insert( std::make_pair(extensions[i], vr) );
+        std::pair<std::map<std::string, VolumeReader*>::iterator, bool> p =
+            readersExtensionMap_.insert( std::make_pair(extensions[i], vr) );
 
         if (p.second == false) // if insertion was not successful
             clashes.push_back(extensions[i]);
+    }
+
+    // update formats map
+    const std::vector<std::string>& formats = vr->getProtocols();
+    for (size_t i = 0; i < formats.size(); ++i) {
+        std::pair<std::map<std::string, VolumeReader*>::iterator, bool> p =
+            readersProtocolMap_.insert( std::make_pair(formats[i], vr) );
+
+        if (p.second == false) // if insertion was not successful
+            clashes.push_back(formats[i]);
     }
 
     // was there a format clash?
@@ -172,11 +149,12 @@ void VolumeSerializer::registerWriter(VolumeWriter* vw)
     throw (FormatClashException)
 {
     std::vector<std::string> clashes; // already inserted extensions are tracked here
-    const std::vector<std::string>& extensions = vw->getExtensions();
 
+    // update extensions map
+    const std::vector<std::string>& extensions = vw->getExtensions();
     for (size_t i = 0; i < extensions.size(); ++i) {
-        std::pair<Writers::iterator, bool> p =
-            writers_.insert( std::make_pair(extensions[i], vw) );
+        std::pair<std::map<std::string, VolumeWriter*>::iterator, bool> p =
+            writersMap_.insert( std::make_pair(extensions[i], vw) );
 
         if (p.second == false) // if insertion was not successful
             clashes.push_back(extensions[i]);
@@ -186,5 +164,41 @@ void VolumeSerializer::registerWriter(VolumeWriter* vw)
     if (!clashes.empty())
         throw FormatClashException(clashes);
 }
+
+VolumeReader* VolumeSerializer::getReader(const std::string& url) const
+        throw (tgt::FileException, std::bad_alloc)
+{
+
+    VolumeOrigin origin(url);
+
+    // check if a reader for the URL's resource type is available
+    std::string protocol = origin.getProtocol();
+    if (!protocol.empty()) {
+        if (readersProtocolMap_.find(protocol) != readersProtocolMap_.end())
+            return readersProtocolMap_.find(protocol)->second;
+        else
+            tgt::UnsupportedFormatException(protocol, url);
+    }
+
+    // check if a reader for the filename extension is available
+    std::string extension = tgt::FileSystem::fileExtension(origin.getPath(), true);
+    if (readersExtensionMap_.find(extension) != readersExtensionMap_.end())
+        return readersExtensionMap_.find(extension)->second;
+    else
+        throw tgt::UnsupportedFormatException(extension, url);
+
+}
+
+VolumeWriter* VolumeSerializer::getWriter(const std::string& filename)
+    const throw (tgt::FileException, std::bad_alloc) {
+
+    std::string extension = tgt::FileSystem::fileExtension(filename, true);
+
+    if (writersMap_.find(extension) == writersMap_.end())
+        throw tgt::UnsupportedFormatException(extension, filename);
+
+    return writersMap_.find(extension)->second;
+}
+
 
 } // namespace voreen

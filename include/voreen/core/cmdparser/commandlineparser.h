@@ -119,7 +119,7 @@ protected:
     /// The stored commands
     std::vector<Command*> commands_;
 
-    /// The command we want to use for nameless arguments    
+    /// The command we want to use for nameless arguments
     Command* commandForNamelessArguments_;
 
     /// All the arguments passed onto this parser

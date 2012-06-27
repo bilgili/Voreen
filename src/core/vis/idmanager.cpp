@@ -29,169 +29,139 @@
 
 #include "voreen/core/vis/idmanager.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/processors/processor.h"
 
+#include "tgt/logmanager.h"
+
 namespace voreen {
 
-IDManager::IDManagerContents::IDManagerContents() {
-    currentID_B_ = 10;
-    currentID_G_ = 10;
-    currentID_R_ = 10;
-    textureTarget_ = -1;
-    isTC_ = false;
-    newRenderingPass_ = false;
+IDManager::IDManager() :
+      rt_(0)
+       , currentID_(0,0,1)
+{
 }
 
-IDManager::IDManagerContents * IDManager::content_ = 0;
+void IDManager::initializeTarget() {
+    if (!rt_)
+        return;
 
-IDManager::IDManager() {
-    if (content_ == 0)
-        content_ = new IDManager::IDManagerContents();
+    rt_->initialize(GL_RGB);
 }
 
-void IDManager::setTC(TextureContainer *tc) {
-    content_->tc_ = tc;
-    content_->isTC_ = tc ? true : false;
+tgt::col3 IDManager::registerObject(void* obj) {
+    increaseID();
+    colorToID_[currentID_] = obj;
+    IDToColor_[obj] = currentID_;
+    return currentID_;
 }
 
-void IDManager::signalizeNewRenderingPass() {
-    content_->newRenderingPass_ = true;
+void IDManager::deregisterObject(void* obj) {
+    tgt::col3 col = getColorFromObject(obj);
+    colorToID_.erase(col);
+    IDToColor_.erase(obj);
 }
 
-bool IDManager::isClicked(Identifier ident, int x, int y) {
-    tgt::vec3 myID = getIDatPos(x,y);
-    int validI = -1;
-    for (size_t i = 0; i < content_->picks_.size(); ++i) {
-        double delta = tgt::distance(myID, content_->picks_[i].vec());
-        if (delta <= (1.f/255.f)) {
-            validI = i;
-            i = content_->picks_.size();
-        }
+void IDManager::clearRegisteredObjects() {
+    colorToID_.clear();
+    IDToColor_.clear();
+    currentID_ = tgt::col3(0,0,1);
+}
+
+tgt::col3 IDManager::getColorFromObject(void* obj) {
+    if (obj == 0)
+        return tgt::col3(0,0,0);
+
+    if (isRegistered(obj))
+        return IDToColor_[obj];
+    else
+        return tgt::col3(0,0,0);
+}
+
+void IDManager::setGLColor(void* obj) {
+    tgt::col3 col = getColorFromObject(obj);
+    glColor3ub(col.x, col.y, col.z);
+}
+
+void* IDManager::getObjectFromColor(tgt::col3 col) {
+    if (col == tgt::col3(0,0,0))
+        return 0;
+
+    if (isRegistered(col))
+        return colorToID_[col];
+    else
+        return 0;
+}
+
+void* IDManager::getObjectAtPos(tgt::ivec2 pos) {
+    return getObjectFromColor(getColorAtPos(pos));
+}
+
+tgt::col3 IDManager::getColorAtPos(tgt::ivec2 pos) {
+    rt_->activateTarget();
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    tgt::col3 pixels;
+    glReadPixels(pos.x, pos.y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixels);
+    return pixels;
+}
+
+bool IDManager::isHit(tgt::ivec2 pos, void* obj) {
+    return (getObjectAtPos(pos) == obj);
+}
+
+void IDManager::activateTarget(std::string debugLabel) {
+    if (rt_) {
+        rt_->activateTarget();
+        rt_->increaseNumUpdates();
+        rt_->setDebugLabel("ID target" + (debugLabel.empty() ? "" : " (" + debugLabel + ")"));
     }
-    if (validI == -1)
-        return false;
-    if (content_->picks_[validI].name_ == ident.getName())
+    else
+        LERRORC("voreen.idmanager", "No RenderTarget set!");
+}
+
+void IDManager::clearTarget() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void IDManager::setRenderTarget(RenderTarget* rt) {
+    rt_ = rt;
+}
+
+RenderTarget* IDManager::getRenderTarget() {
+    return rt_;
+}
+
+void IDManager::increaseID() {
+    if (currentID_.b == 255) {
+        currentID_.b = 0;
+        if (currentID_.g == 255) {
+            currentID_.g = 0;
+            if (currentID_.r == 255) {
+                LERRORC("voreen.idmanager", "Out of ids...");
+            }
+            else
+                currentID_.r++;
+
+        }
+        else
+            currentID_.g++;
+    }
+    else
+        currentID_.b++;
+}
+
+bool IDManager::isRegistered(void* obj) {
+    if(IDToColor_.find(obj) != IDToColor_.end())
         return true;
     else
         return false;
 }
 
-tgt::vec3 IDManager::getIDatPos(int x, int y) const {
-    if (content_->isTC_) {
-        tgt::vec3 returnedID;
-
-        float* buffer = content_->tc_->getTargetAsFloats(content_->textureTarget_, x, y);
-
-        returnedID.x = buffer[0];
-        returnedID.y = buffer[1];
-        returnedID.z = buffer[2];
-        delete[] buffer;
-        return returnedID;
-    }
+bool IDManager::isRegistered(tgt::col3 col) {
+    if (colorToID_.find(col) != colorToID_.end())
+        return true;
     else
-        return tgt::vec3::zero;
-}
-
-std::string IDManager::getNameAtPos(int x, int y) const {
-    if ( (content_->isTC_ == false) )
-        return "";
-
-    int flippedY = content_->tc_->getSize().y - y;
-    flippedY = (flippedY >= 0) ? flippedY : 0;
-
-    tgt::vec3 myID = getIDatPos(x, flippedY);
-    for (size_t i = 0; i < content_->picks_.size(); ++i) {
-        double delta = tgt::distance(myID, content_->picks_[i].vec());
-        if (delta <= (1.0f / 255.0f))
-            return content_->picks_[i].name_;
-    }
-    return "";
-}
-
-void IDManager::addNewPickObj(Identifier identIN) {
-    bool isOkay = true;
-    content_->currentID_B_ += 10;
-    if (content_->currentID_B_ >= 255) {
-        content_->currentID_B_ = 1;
-        content_->currentID_G_ += 10;
-    }
-    if (content_->currentID_G_ >= 255) {
-        content_->currentID_G_ = 1;
-        content_->currentID_R_ += 10;
-    }
-    if (content_->currentID_R_ >= 255) {
-        isOkay = false;
-        //logger exception - no further picking objects
-    }
-    tgt::vec3 returnedID = tgt::vec3(content_->currentID_R_/255.f, content_->currentID_G_/255.f, content_->currentID_B_/255.f);
-    IDF ident = IDF(identIN.getName());
-    ident.x_ = returnedID.x;
-    ident.y_ = returnedID.y;
-    ident.z_ = returnedID.z;
-    content_->picks_.push_back(ident);
-}
-
-
-//clearBuffers
-void IDManager::clearTextureTarget() {
-    LGL_ERROR;
-    if (content_->isTC_ && content_->textureTarget_ > -1) {
-        content_->oldRT_ = content_->tc_->getActiveTarget();
-        LGL_ERROR;
-        content_->tc_->setActiveTarget(content_->textureTarget_, "IDManager::initNewRenderering()");
-        LGL_ERROR;
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        LGL_ERROR;
-        content_->tc_->setActiveTarget(content_->oldRT_);
-    }
-    else {
-        //FIXME
-        //RPTMERGE: allocTarget shouldnt be called, we somehow have to get a portMapping here
-        //content_->renderBufferID_ = content_->tc_->allocTarget(Processor::ttId_, "IDManager::initNewRendering");
-        //content_->tc_->setPersistent(content_->renderBufferID_, true);
-    }
-}
-
-//use this function carefully !!!
-// TODO: more comments why to use it carefully? (ab)
-void IDManager::clearIDs() {
-    content_->currentID_B_ = 0;
-    content_->currentID_G_ = 0;
-    content_->currentID_R_ = 0;
-}
-
-// enable the correct buffers
-void IDManager::startBufferRendering(Identifier identIN) {
-    int foundIDF = -1;
-    for (size_t i=0; i<content_->picks_.size(); ++i) {
-        if (content_->picks_[i].name_ == identIN) {
-            foundIDF = i;
-            break;
-        }
-    }
-    if (content_->newRenderingPass_) {
-        content_->newRenderingPass_ = false;
-        clearTextureTarget();
-    }
-    if (content_->isTC_) {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        content_->oldRT_ = content_->tc_->getActiveTarget();
-        content_->tc_->setActiveTarget(content_->textureTarget_);
-        glDisable(GL_LIGHTING);
-        glColor3f(content_->picks_[foundIDF].x_,
-                  content_->picks_[foundIDF].y_,
-                  content_->picks_[foundIDF].z_);
-    }
-}
-
-// disable the correct buffers
-void IDManager::stopBufferRendering() {
-   if (content_->isTC_) {
-       content_->tc_->setActiveTarget(content_->oldRT_);
-       glPopAttrib();
-   }
+        return false;
 }
 
 } // namespace voreen

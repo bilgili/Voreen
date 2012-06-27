@@ -30,198 +30,200 @@
 
 #include "voreen/core/volume/bricking/brick.h"
 
+#include "tgt/camera.h"
+
 namespace voreen {
 
     class BrickingRegionManager;
 
-	/**
-	* This struct holds all the information needed during the different steps
-	* of bricking. Some of these steps like calculating brick resolutions need 
-    * a lot of paramters and return a lot of values. Therefore, this struct is used
-    * and is mostly passed by reference. Instead of returning a lot of values,
-    * these values are written to this struct and as a result all the other steps 
-    * have all the information they need (because of passing this struct by 
-    * reference).
-	*/
-	struct BrickingInformation {
+    /**
+     * This struct holds all the information needed during the different steps
+     * of bricking. Some of these steps like calculating brick resolutions need
+     * a lot of paramters and return a lot of values. Therefore, this struct is used
+     * and is mostly passed by reference. Instead of returning a lot of values,
+     * these values are written to this struct and as a result all the other steps
+     * have all the information they need (because of passing this struct by
+     * reference).
+     */
+    struct BrickingInformation {
 
-		/**
-		* The name of the volume that is to be bricked without filename extension. 
-		*/
-		std::string originalVolumeName;
+        /**
+        * The name of the volume that is to be bricked without filename extension.
+        */
+        std::string originalVolumeName;
 
-		/**
-		* The size in byte of one voxel in the original volume.
-		*/
-		int originalVolumeVoxelSizeInByte;
+        /**
+        * The size in byte of one voxel in the original volume.
+        */
+        int originalVolumeVoxelSizeInByte;
 
-		/**
-		* The number of voxels in the original volume.
-		*/
-		uint64_t originalVolumeNumVoxels;
+        /**
+        * The number of voxels in the original volume.
+        */
+        uint64_t originalVolumeNumVoxels;
 
-		/**
-		* The size in megabyte of the original volume.
-		*/
-		int originalVolumeSizeMB;
+        /**
+        * The size in megabyte of the original volume.
+        */
+        int originalVolumeSizeMB;
 
-		/**
-		* The dimensions of the original volume.
-		*/
-		tgt::ivec3 originalVolumeDimensions;
+        /**
+        * The dimensions of the original volume.
+        */
+        tgt::ivec3 originalVolumeDimensions;
 
-		/**
-		* The lower left front of the original volume in world coordinates.
-		*/
-		tgt::vec3 originalVolumeLLF;
+        /**
+        * The lower left front of the original volume in world coordinates.
+        */
+        tgt::vec3 originalVolumeLLF;
 
-		/**
-		* The upper right back of the original volume in world coordinates.
-		*/
-		tgt::vec3 originalVolumeURB;
+        /**
+        * The upper right back of the original volume in world coordinates.
+        */
+        tgt::vec3 originalVolumeURB;
 
-		/**
-		* The spacing of the original volume.
-		*/
-		tgt::vec3 originalVolumeSpacing;
+        /**
+        * The spacing of the original volume.
+        */
+        tgt::vec3 originalVolumeSpacing;
 
-		/**
-		* Bits stored of the original volume.
-		*/
-		int originalVolumeBitsStored;
+        /**
+        * Bits stored of the original volume.
+        */
+        int originalVolumeBitsStored;
 
-		/**
-		* The number of BYTES allocated for each voxel in
-		* the original volume. 
-		*/
-		int originalVolumeBytesAllocated;
+        /**
+        * The number of BYTES allocated for each voxel in
+        * the original volume.
+        */
+        int originalVolumeBytesAllocated;
 
-		/**
-		* The format of the original volume, lile UCHAR or USHORT
-		*/
-		std::string originalVolumeFormat;
+        /**
+        * The format of the original volume, lile UCHAR or USHORT
+        */
+        std::string originalVolumeFormat;
 
-		/**
-		* The ObjectModel of the original volume, like RGB or RGBA
-		*/
-		std::string originalVolumeModel;
+        /**
+        * The ObjectModel of the original volume, like RGB or RGBA
+        */
+        std::string originalVolumeModel;
 
-		/**
-		* The total number of bricks needed to store the complete
-		* original volume.
-		*/
-		int totalNumberOfBricksNeeded;
+        /**
+        * The total number of bricks needed to store the complete
+        * original volume.
+        */
+        int totalNumberOfBricksNeeded;
 
-		/**
-		* The number of bricks in each dimension neccessary to store
-		* the original volume.
-		*/
-		tgt::ivec3 numBricks;
+        /**
+        * The number of bricks in each dimension neccessary to store
+        * the original volume.
+        */
+        tgt::ivec3 numBricks;
 
-		/**
-		* The number of bricks that have "empty" volumes, meaning
-		* all their voxels have the same value. Such bricks can 
-		* be downsampled to the extreme, as no information is lost.
-		*/
-		int numberOfBricksWithEmptyVolumes;
+        /**
+        * The number of bricks that have "empty" volumes, meaning
+        * all their voxels have the same value. Such bricks can
+        * be downsampled to the extreme, as no information is lost.
+        */
+        int numberOfBricksWithEmptyVolumes;
 
-		/**
-		* The number of voxels needed to store the packed volume.
-		*/
-		int numberOfVoxelsNeededForPackedVolume;
+        /**
+        * The number of voxels needed to store the packed volume.
+        */
+        int numberOfVoxelsNeededForPackedVolume;
 
-		/**
-		* The dimensions of the packed volume neccessary to hold all data.
-		*/
-		tgt::ivec3 packedVolumeDimensions;	
+        /**
+        * The dimensions of the packed volume neccessary to hold all data.
+        */
+        tgt::ivec3 packedVolumeDimensions;
 
-		/**
-		* The size of a brick in each dimension.
-		*/
-		int brickSize;
+        /**
+        * The size of a brick in each dimension.
+        */
+        int brickSize;
 
-		/**
-		* The number of voxels inside a brick.
-		*/
-		int numVoxelsInBrick;
+        /**
+        * The number of voxels inside a brick.
+        */
+        int numVoxelsInBrick;
 
-		/**
-		* The total size of the memory on the gpu.
-		*/
-		int gpuMemorySize;
+        /**
+        * The total size of the memory on the gpu.
+        */
+        int gpuMemorySize;
 
-		/**
-		* A reserve for the memory on the graphics card. The brickingmanager
-		* will try to fill the graphics card memory as much as possible in order
-		* to produce an image with the best possible quality. But the dataset won't
-		* be on the graphics card exclusively, we have to account for transfer functions,
-		* rendertargets etc. That's why we introduce this reserve that the brickingmanager
-		* won't touch.
-		*/
-		int gpuMemoryReserve;		
+        /**
+        * A reserve for the memory on the graphics card. The brickingmanager
+        * will try to fill the graphics card memory as much as possible in order
+        * to produce an image with the best possible quality. But the dataset won't
+        * be on the graphics card exclusively, we have to account for transfer functions,
+        * rendertargets etc. That's why we introduce this reserve that the brickingmanager
+        * won't touch.
+        */
+        int gpuMemoryReserve;
 
-		/**
-		* gpuMemorySizeMB_ - gpuMemoryReserve_
-		*/
-		int gpuAvailableMemory;
+        /**
+        * gpuMemorySizeMB_ - gpuMemoryReserve_
+        */
+        int gpuAvailableMemory;
 
-		/*
-		* The first element in the vector defines the number of bricks with maximum
-		* resolution, 2nd element the number of bricks with (maximum/2) resolution
-		* that fit into gpu memory and so on. 
-		*/
-		std::vector<int> brickResolutions;
+        /*
+        * The first element in the vector defines the number of bricks with maximum
+        * resolution, 2nd element the number of bricks with (maximum/2) resolution
+        * that fit into gpu memory and so on.
+        */
+        std::vector<int> brickResolutions;
 
-		/**
-		* The total number of different resolutions possible for a brick
-		*/
-		int totalNumberOfResolutions;
+        /**
+        * The total number of different resolutions possible for a brick
+        */
+        int totalNumberOfResolutions;
 
-		/**
-		* A map storing the dimensions of volume data at a specific level of detail.
-		*/
-		std::map<int,tgt::ivec3> lodToDimensionsMap;
+        /**
+        * A map storing the dimensions of volume data at a specific level of detail.
+        */
+        std::map<int,tgt::ivec3> lodToDimensionsMap;
 
-		/**
-		* The bricks the volume is divided into. These bricks are actually
-		* of the type VolumeBrick<T>* , but this way they can be used in non-templated 
-		* classes. 
-		*/
-		std::vector<Brick*> volumeBricks;	
+        /**
+        * The bricks the volume is divided into. These bricks are actually
+        * of the type VolumeBrick<T>* , but this way they can be used in non-templated
+        * classes.
+        */
+        std::vector<Brick*> volumeBricks;
 
-		/**
-		* The packingbricks subdivide a volume and receive their data from the volumebricks later on.
-		* They basically only exist to make the packing of the resampled volumedata 
-		* into the packed volume efficient.
-		*/
-		std::list<Brick*> packingBricks;			
+        /**
+        * The packingbricks subdivide a volume and receive their data from the volumebricks later on.
+        * They basically only exist to make the packing of the resampled volumedata
+        * into the packed volume efficient.
+        */
+        std::list<Brick*> packingBricks;
 
         /**
         * This list holds all PackingBricks that don't hold a VolumeBrick with only voxels
         * of the same value. So if the ResolutionCalculator is changed and new packing bricks
         * are necessary, one can just copy these. This saves rereading the voxel data from disc
         * again, as the volume bricks with only voxels of the same value retain their position
-        * in the packed volume. 
+        * in the packed volume.
         */
         std::list<Brick*> packingBrickBackups;
 
-		/**
-		* These packingbricks have been given data and a position in the packed volume. 
-		* Calling write() for all these generates the packed volume.
-		*/
-		std::vector<Brick*> packingBricksWithData;	
-
-		/**
-		* The camera position. Mostly used for Lod selection
-		*/
-		tgt::Camera* camera;	
+        /**
+        * These packingbricks have been given data and a position in the packed volume.
+        * Calling write() for all these generates the packed volume.
+        */
+        std::vector<Brick*> packingBricksWithData;
 
         /**
-        * The class responsible for managing the regions that can be defined for bricking.  
+        * The camera position. Mostly used for Lod selection
+        */
+        tgt::Camera* camera;
+
+        /**
+        * The class responsible for managing the regions that can be defined for bricking.
         */
         BrickingRegionManager* regionManager;
 
-	};
+    };
 
 } //namespace
 

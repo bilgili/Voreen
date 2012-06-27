@@ -42,7 +42,7 @@ class VolumeHandle;
  *
  * @author  Dirk Feldmann, June/July 2009
  */
-class VolumeCache : public Cache<VolumeHandle*> {
+class VolumeCache : public Cache<VolumeHandle> {
 public:
     VolumeCache();
 
@@ -52,8 +52,7 @@ protected:
     /**
      * Inherited from <code>Cache&lt;T&gt;</code>.
      */
-    virtual VolumeHandle* getPortData(const Identifier& portType, 
-        LocalPortMapping* const localPortMapping) const;
+    //virtual VolumeHandle* getPortData(Port* const port) const;
 
     /**
      * Inherited from <code>Cache&lt;T&gt;</code>.
@@ -66,13 +65,12 @@ protected:
      *
      * "[complete filename]([timestep])", e.g. "D:/data/nucleon.dat(0)"
      */
-    virtual std::string portContentToString(const Identifier& portID, 
-        LocalPortMapping* const localPortMapping) const;
+    virtual std::string portContentToString(Port* const port) const;
 
     /**
      * Inherited from <code>Cache&lt;T&gt;</code>.
      */
-    virtual std::string saveObject(VolumeHandle* const object, const std::string& directory,
+    virtual std::string saveObject(VolumeHandle* object, const std::string& directory,
         const std::string& filename);
 };
 

@@ -31,71 +31,77 @@
 #define VRN_ENTRYEXITPOINTS_H
 
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
-#include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/vis/processors/render/volumerenderer.h"
 #include "voreen/core/opengl/texunitmapper.h"
 
 #include "tgt/shadermanager.h"
 
 namespace voreen {
 
+class CameraInteractionHandler;
+
 /**
- * Calculates the entry and exit points for GPU raycasting. The parameters are stored in
- * (float) textures. The textures are provided by the class TextureContainer.
+ * Calculates the entry and exit points for GPU raycasting.
  */
 class EntryExitPoints : public VolumeRenderer {
 public:
-
-    /**
-     *   Constructor
-     */
     EntryExitPoints();
     virtual ~EntryExitPoints();
 
-    virtual const Identifier getClassName() const { return "EntryExitPoints.EntryExitPoints"; }
-
+    virtual std::string getCategory() const { return "EntryExitPoints"; }
+    virtual std::string getClassName() const { return "EntryExitPoints"; }
+    virtual std::string getModuleName() const { return "core"; }
     virtual Processor* create() const { return new EntryExitPoints(); }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual const std::string getProcessorInfo() const;
 
-    virtual int initializeGL();
+    virtual void initialize() throw (VoreenException);
 
-    virtual void process(LocalPortMapping* portMapping);
-
-    /**
-    * Process voreen message, accepted identifiers:
-    * -  VoreenPainter::cameraChanged_
-    */
-    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
+    virtual bool isReady() const;
+    virtual void process();
 
 protected:
-
     /// Complements the parts of the entry points texture clipped by the near plane.
-    void complementClippedEntryPoints(LocalPortMapping* portMapping);
+    void complementClippedEntryPoints();
 
     /**
      *  Jitters entry points in ray direction.
      *  Entry and Exit Params have to be generated before
      *  calling this method.
      */
-    void jitterEntryPoints(LocalPortMapping* portMapping);
+    void jitterEntryPoints();
 
     /// (Re-)generates jitter texture
     void generateJitterTexture();
 
-    void onFilterJitterTextureChange();
+    void onJitterEntryPointsChanged();
+    void onFilterJitterTextureChanged();
 
     tgt::Shader* shaderProgram_;
     tgt::Shader* shaderProgramJitter_;
     tgt::Shader* shaderProgramClipping_;
-    static const Identifier entryPointsTexUnit_;
-    static const Identifier entryPointsDepthTexUnit_;
-    static const Identifier exitPointsTexUnit_;
-    static const Identifier jitterTexUnit_;
+    static const std::string entryPointsTexUnit_;
+    static const std::string entryPointsDepthTexUnit_;
+    static const std::string exitPointsTexUnit_;
+    static const std::string jitterTexUnit_;
 
     // processor properties
-    BoolProp supportCameraInsideVolume_;
-    BoolProp jitterEntryPoints_;
-    BoolProp filterJitterTexture_;
-    FloatProp jitterStepLength_;
+    BoolProperty supportCameraInsideVolume_;
+    BoolProperty jitterEntryPoints_;
+    BoolProperty filterJitterTexture_;
+    FloatProperty jitterStepLength_;
     tgt::Texture* jitterTexture_;
+    CameraProperty camera_;  ///< camera used for rendering the proxy geometry
+
+    // interaction handlers
+    CameraInteractionHandler* cameraHandler_;
+
+    // ports
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+    VolumePort inport_;
+    GenericCoProcessorPort<ProxyGeometry> cpPort_;
+    RenderPort tmpPort_;
 
     static const std::string loggerCat_;
 };

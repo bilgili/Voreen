@@ -34,7 +34,6 @@
 #include "tgt/event/eventlistener.h"
 #include "voreen/core/vis/processors/render/segmentationraycaster.h"
 #include "voreen/core/vis/processors/volume/regiongrowing.h"
-#include "voreen/core/vis/message.h"
 #include "voreen/core/vis/properties/transferfuncproperty.h"
 #include "voreen/qt/widgets/transfunc/transfunceditorintensity.h"
 
@@ -51,7 +50,7 @@ namespace voreen {
 class NetworkEvaluator;
 class ThresholdWidget;
 
-class SegmentationPlugin : public WidgetPlugin, MessageReceiver, tgt::EventListener {
+class SegmentationPlugin : public WidgetPlugin, tgt::EventListener {
     Q_OBJECT
 public:
     SegmentationPlugin(QWidget* parent, NetworkEvaluator* evaluator);
@@ -59,8 +58,6 @@ public:
 
     void createWidgets();
     void createConnections();
-
-    void processMessage(Message* msg, const Identifier& dest);
 
     virtual void mousePressEvent(tgt::MouseEvent* e);
 

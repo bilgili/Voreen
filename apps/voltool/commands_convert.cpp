@@ -27,18 +27,22 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_WITH_DEVIL
 
 #include "commands_convert.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/volume/volumecollection.h"
 #include "tgt/vector.h"
 
+#ifdef VRN_WITH_DEVIL
 #include <IL/il.h>
 #include <IL/ilu.h>
+#endif
 
 namespace voreen {
+
+#ifdef VRN_WITH_DEVIL
 
 CommandStackImg::CommandStackImg() :
     Command("--stackimg", "", "Stack images given by sourceFilename(s) to create one volumedataset.")
@@ -128,13 +132,15 @@ bool CommandStackImg::execute(const std::vector<std::string>& parameters) {
 
     if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
-        VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+        const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), targetDataset_);
         delete serializer;
         delete targetDataset_;
     }
     return true;
 }
+
+#endif // VRN_WITH_DEVIL
 
 //-----------------------------------------------------------------------------
 
@@ -253,7 +259,7 @@ bool CommandStackRaw::execute(const std::vector<std::string>& parameters) {
         throw tgt::Exception("Unknown format!");
 
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
     serializer->save(parameters.back(), targetDataset_);
 
     delete targetDataset_;
@@ -279,10 +285,10 @@ bool CommandConvert::execute(const std::vector<std::string>& parameters) {
     Volume* targetDataset_;
 
     VolumeSerializerPopulator volLoadPop;
-    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+    const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
-    VolumeSet* volumeSet = serializer->load(parameters[1]);
-    Volume* sourceDataset_ = volumeSet->getFirstVolume();
+    VolumeCollection* volumeCollection = serializer->load(parameters[1]);
+    Volume* sourceDataset_ = volumeCollection->first()->getVolume();
 
     if (parameters[0] == "8") {
         targetDataset_ = new VolumeUInt8(sourceDataset_->getDimensions());
@@ -316,11 +322,9 @@ bool CommandConvert::execute(const std::vector<std::string>& parameters) {
 
     serializer->save(parameters.back(), targetDataset_);
 
-    delete volumeSet;
+    delete volumeCollection;
     delete targetDataset_;
     return true;
 }
 
 } // namespace voreen
-
-#endif // VRN_WITH_DEVIL

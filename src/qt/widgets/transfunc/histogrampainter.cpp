@@ -76,9 +76,9 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
         delete cache_;
         cache_ = new QPixmap(rect().size());
         cache_->fill(Qt::transparent);
-            
+
         QPainter paint(cache_);
-    
+
         // put origin in lower lefthand corner
         QMatrix m;
         m.translate(0.0, static_cast<float>(height())-1);
@@ -126,7 +126,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
                 needSplit = true;
                 count = 65536 - 2; // 2 points needed for closing the polygon
             }
-                
+
             if (count > 0) {
                 // move x coordinate of first and last points to prevent vertical holes caused
                 // by clipping
@@ -165,7 +165,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
                 if (count > 0) {
                     // move x coordinate of last point to prevent vertical holes caused by clipping
                     points[count - 1].rx() = wtos(tgt::vec2(xRange_[1], 0.f)).x;
-                
+
                     // needed for a closed polygon
                     p = wtos(tgt::vec2(0.f, yRange_[0]));
                     points[count].rx() = points[count - 1].rx();
@@ -184,7 +184,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
     }
 
     QPainter paint(this);
-    paint.drawPixmap(0, 0, *cache_);    
+    paint.drawPixmap(0, 0, *cache_);
 }
 
 tgt::vec2 HistogramPainter::wtos(const tgt::vec2& p) const {

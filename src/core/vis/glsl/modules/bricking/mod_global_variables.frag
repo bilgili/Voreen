@@ -29,16 +29,16 @@
 
 /**
 * This file contains a lot of variables that are needed at a lot of different
-* places and functions during the interpolation. Instead of passing them to each 
-* function as an argument (which wouldn't look very nice), they are declared 
-* globally (which is not elegant either, but better). 
+* places and functions during the interpolation. Instead of passing them to each
+* function as an argument (which wouldn't look very nice), they are declared
+* globally (which is not elegant either, but better).
 */
 
 /**
-* The coordinates of each brick in normal coordinates (i.e. € [0,1[^3). The 
+* The coordinates of each brick in normal coordinates (i.e. € [0,1[^3). The
 * coordinates indicate the lower-left-front corner of the bricks. (That's why
-* bricks can't start at 1.0, they would be outside the volume). 
-* Bricks are numbered as shown in the "picture" below. 
+* bricks can't start at 1.0, they would be outside the volume).
+* Bricks are numbered as shown in the "picture" below.
 *
 *   7 ---------8
 *  /|         /|
@@ -55,7 +55,7 @@ vec3 llfBlock,llbBlock,ulfBlock,ulbBlock,lrfBlock,lrbBlock,urfBlock,urbBlock;
 
 /**
 * The weight of each edge in interblock interpolation. "edge12" means
-* the edge between brick 1 and 2. 
+* the edge between brick 1 and 2.
 */
 float edge12,edge13,edge15,edge24,edge26,edge34,edge37;
 float edge48,edge56,edge57,edge68,edge78;
@@ -83,7 +83,7 @@ float lrfBlockBoundaryDistance,lrbBlockBoundaryDistance,urfBlockBoundaryDistance
 float llfBlockValid,llbBlockValid,ulfBlockValid,ulbBlockValid,lrfBlockValid,lrbBlockValid;
 float urfBlockValid,urbBlockValid;
 
-/**This is the scalefactor of the brick holding the current sample. It is needed when using adaptive 
-* sampling, as the number of samples that can be skipped depends on it. 
+/**This is the scalefactor of the brick holding the current sample. It is needed when using adaptive
+* sampling, as the number of samples that can be skipped depends on it.
 */
 float currentScaleFactor;

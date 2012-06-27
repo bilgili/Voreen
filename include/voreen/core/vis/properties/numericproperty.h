@@ -45,7 +45,7 @@ public:
 
     NumericProperty(const std::string& id, const std::string& guiText, const T& value,
                     const T& minValue, const T& maxValue, const T& stepping,
-                    bool invalidate = true, bool invalidateShader = false);
+                    Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
     virtual ~NumericProperty() {}
 
     const T& getMinValue() const { return minValue_; }
@@ -57,21 +57,30 @@ public:
     T getStepping() const { return stepping_; }
     void setStepping(const T stepping) { stepping_ = stepping; }
 
+    void decrease() { set(value_ - stepping_); }
+    void increase() { set(value_ + stepping_); }
+
     bool getInstantValueChange() const { return instantValueChange_; }
     void setInstantValueChange(const bool instantChange) { instantValueChange_ = instantChange; }
 
     size_t getNumDecimals() const { return numDecimals_; }
     void setNumDecimals(const size_t numDecimals) { numDecimals_ = numDecimals; }
 
-    void updateFromXml(TiXmlElement* propElem);
-    TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
 
-    virtual std::string toString() const { 
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
+    virtual std::string toString() const {
         return Property::valueToString(value_);
     }
 
 protected:
-    using TemplateProperty<T>::errors_;
     using TemplateProperty<T>::value_;
 
     T minValue_;
@@ -87,8 +96,8 @@ protected:
 template<typename T>
 NumericProperty<T>::NumericProperty(const std::string& id, const std::string& guiText, const T& value,
                                     const T& minValue, const T& maxValue, const T& stepping,
-                                    bool invalidate, bool invalidateShader)
-    : TemplateProperty<T>(id, guiText, value, invalidate, invalidateShader),
+                                    Processor::InvalidationLevel invalidationLevel)
+    : TemplateProperty<T>(id, guiText, value, invalidationLevel),
     minValue_(minValue),
     maxValue_(maxValue),
     stepping_(stepping),

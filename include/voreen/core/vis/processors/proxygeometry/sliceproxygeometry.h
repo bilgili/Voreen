@@ -50,23 +50,26 @@ public:
     SliceProxyGeometry();
     virtual ~SliceProxyGeometry();
 
-    static const Identifier setSlicePos_;
+    static const std::string setSlicePos_;
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.SliceProxyGeometry"; }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "SliceProxyGeometry"; }
+    virtual std::string getModuleName() const { return "core"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new SliceProxyGeometry();}
+    virtual Processor* create() const;
 
 protected:
     void revalidateSliceGeometry();
     virtual void render();
 
-    GLuint dl_;
-
-    FloatVec3Prop slicePos_;
-
     // methods for reaction on property changes
     //
     void changeSlicePos();
+
+    GLuint dl_;
+
+    FloatVec3Property slicePos_;
 };
 
 } // namespace voreen

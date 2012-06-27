@@ -61,11 +61,11 @@ public:
     /**
      * While using this constructor the class will automatically allocate
      * an appropiate chunk of memory. This memory will be deleted by this class.
-	 * If allocMem is false, no memory will be allocated. This can be used to create
-	 * volumes without any data, in case you just want to store its dimensions, spacing etc.
-	 * This is used for bricking for example, because the entry-exit point volume would
+     * If allocMem is false, no memory will be allocated. This can be used to create
+     * volumes without any data, in case you just want to store its dimensions, spacing etc.
+     * This is used for bricking for example, because the entry-exit point volume would
      * otherwise allocate an enormous amount of memory, although only its dimensions are
-     * required. 
+     * required.
      */
     VolumeAtomic(const tgt::ivec3& dimensions,
                  const tgt::vec3& spacing = tgt::vec3(1.f),
@@ -81,7 +81,7 @@ public:
                  int bitsStored = BITS_PER_VOXEL);
 
     /// Deletes the \a data_ array
-    ~VolumeAtomic();
+    virtual ~VolumeAtomic();
 
     virtual VolumeAtomic<T>* clone() const throw (std::bad_alloc);
     virtual VolumeAtomic<T>* clone(void* data) const throw (std::bad_alloc);
@@ -90,116 +90,50 @@ public:
      * getters and setters
      */
 
-    virtual int getBitsAllocated() const {
-        return BITS_PER_VOXEL;
-    }
+    virtual int getBitsAllocated() const;
 
-    virtual int getNumChannels() const {
-        return VolumeElement<T>::getNumChannels();
-    }
+    virtual int getNumChannels() const;
 
-    virtual int getBytesPerVoxel() const {
-        return BYTES_PER_VOXEL;
-    }
+    virtual int getBytesPerVoxel() const;
 
-    bool isSigned() {
-        return isSigned_;
-    }
+    bool isSigned();
 
-    virtual size_t getNumBytes() const {
-        return sizeof(T) * numVoxels_;
-    }
-
-    void setZeroPoint(T zeroPoint) {
-        isSigned_ = true;
-        zeroPoint_ = zeroPoint;
-    }
-
-    T getZeroPoint() {
-        tgtAssert(isSigned_, "this is not a signed volume");
-        return zeroPoint_;
-    }
+    virtual size_t getNumBytes() const;
 
     /*
-     * Helpers for calculating the position in 3d - inline for performance
+     * Helpers for calculating the position in 3d
      */
-    inline static size_t calcPos(const tgt::ivec3& dimensions, size_t x, size_t y, size_t z) {
-        return z*dimensions.x*dimensions.y + y*dimensions.x + x;
-    }
+    inline static size_t calcPos(const tgt::ivec3& dimensions, size_t x, size_t y, size_t z);
 
-    inline static size_t calcPos(const tgt::ivec3& dimensions, const tgt::ivec3& pos) {
-        return pos.z*dimensions.x*dimensions.y + pos.y*dimensions.x + pos.x;
-    }
+    inline static size_t calcPos(const tgt::ivec3& dimensions, const tgt::ivec3& pos);
 
     /*
-      Methods for accessing the voxels - inline for performance.
+      Methods for accessing the voxels
     */
 
     /// just get a proper pointer for read and write access
-    inline T* voxel() {
-        return data_;
-    }
+    inline T* voxel();
 
     /// just get a proper pointer for read access only
-    inline const T* voxel() const {
-        return data_;
-    }
+    inline const T* voxel() const;
 
     /// get or set voxel
-    inline T& voxel(size_t x, size_t y, size_t z) {
-        tgtAssert(x < size_t(dimensions_.x), "x index out of bounds");
-        tgtAssert(y < size_t(dimensions_.y), "y index out of bounds");
-        tgtAssert(z < size_t(dimensions_.z), "z index out of bounds");
-
-        return data_[calcPos(dimensions_, x, y, z)];
-    }
+    inline T& voxel(size_t x, size_t y, size_t z);
 
     /// get voxel
-    inline const T& voxel(size_t x, size_t y, size_t z) const {
-        tgtAssert(x < size_t(dimensions_.x), "x index out of bounds");
-        tgtAssert(y < size_t(dimensions_.y), "y index out of bounds");
-        tgtAssert(z < size_t(dimensions_.z), "z index out of bounds");
-
-        return data_[calcPos(dimensions_, x, y, z)];
-    }
+    inline const T& voxel(size_t x, size_t y, size_t z) const;
 
     /// get or set voxel
-    inline T& voxel(const tgt::ivec3& pos) {
-        tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
-        tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
-        tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
-        tgtAssert(pos.x >= 0, "x index out of bounds");
-        tgtAssert(pos.y >= 0, "y index out of bounds");
-        tgtAssert(pos.z >= 0, "z index out of bounds");
-
-        return data_[calcPos(dimensions_, pos)];
-    }
+    inline T& voxel(const tgt::ivec3& pos);
 
     /// get voxel
-    inline const T& voxel(const tgt::ivec3& pos) const {
-        tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
-        tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
-        tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
-        tgtAssert(pos.x >= 0, "x index out of bounds");
-        tgtAssert(pos.y >= 0, "y index out of bounds");
-        tgtAssert(pos.z >= 0, "z index out of bounds");
-
-        return data_[calcPos(dimensions_, pos)];
-    }
+    inline const T& voxel(const tgt::ivec3& pos) const;
 
     /// get or set voxel
-    inline T& voxel(size_t i) {
-        tgtAssert(i < numVoxels_, "index out of bounds");
-
-        return data_[i];
-    }
+    inline T& voxel(size_t i);
 
     /// get voxel
-    inline const T& voxel(size_t i) const {
-        tgtAssert(i < numVoxels_, "index out of bounds");
-
-        return data_[i];
-    }
+    inline const T& voxel(size_t i) const;
 
     /*
      * getVoxelFloat and setVoxelFloat
@@ -229,7 +163,7 @@ public:
 
     /**
     * Calculates the root mean square error between this volumeatomic and the volume
-    * passed as paramater. This is used in bricking for example. 
+    * passed as paramater. This is used in bricking for example.
     */
     virtual float calcError(Volume* volume);
 
@@ -246,7 +180,6 @@ protected:
     T* data_;
 
     bool isSigned_;
-    T zeroPoint_;
     mutable T maxValue_;
     mutable T minValue_;
     mutable bool minMaxValid_;
@@ -287,7 +220,7 @@ typedef VolumeAtomic<tgt::vec4>  Volume4xFloat;
 typedef VolumeAtomic<tgt::dvec4> Volume4xDouble;
 
 //------------------------------------------------------------------------------
-//  non inline implementation
+//  implementation
 //------------------------------------------------------------------------------
 
 /*
@@ -301,17 +234,16 @@ VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spa
     : Volume(dimensions, bitsStored, spacing),
       data_(0),
       isSigned_(false),
-      zeroPoint_(VolumeElement<T>::getZero()),
       minMaxValid_(false)
 {
-	if (allocMem) {
-		try {
-			data_ = new T[numVoxels_];
-		}
-		catch (std::bad_alloc) {
-			throw; // throw it to the caller
-		}
-	}
+    if (allocMem) {
+        try {
+            data_ = new T[numVoxels_];
+        }
+        catch (std::bad_alloc) {
+            throw; // throw it to the caller
+        }
+    }
 }
 
 template<class T>
@@ -322,7 +254,6 @@ VolumeAtomic<T>::VolumeAtomic(T* data,
     : Volume(dimensions, bitsStored, spacing),
       data_(data),
       isSigned_(false),
-      zeroPoint_(VolumeElement<T>::getZero()),
       minMaxValid_(false)
 {}
 
@@ -361,8 +292,7 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone(void* data) const
         }
     }
 
-    // copy over zero point and meta data
-    newVolume->setZeroPoint(zeroPoint_);
+    // copy over meta data
     newVolume->meta() = meta();
 
     return newVolume;
@@ -381,7 +311,6 @@ template<class T>
 float VolumeAtomic<T>::getVoxelFloat(const tgt::ivec3& pos, size_t channel) const {
     typedef typename VolumeElement<T>::BaseType Base;
     Base value = VolumeElement<T>::getChannel(voxel(pos), channel);
-    Base zero  = VolumeElement<T>::getChannel(zeroPoint_, channel);
 
     //TODO: do not calculate this on every voxel fetch!
     Base max;
@@ -390,7 +319,7 @@ float VolumeAtomic<T>::getVoxelFloat(const tgt::ivec3& pos, size_t channel) cons
     else
         max = static_cast<Base>((1ll << static_cast<unsigned long long>(bitsStored_)) - 1ll);
 
-    return float(value - zero) / float(max);
+    return float(value) / float(max);
 }
 
 template<class T>
@@ -401,7 +330,6 @@ float VolumeAtomic<T>::getVoxelFloat(size_t x, size_t y, size_t z, size_t channe
 template<class T>
 void VolumeAtomic<T>::setVoxelFloat(float value, const tgt::ivec3& pos, size_t channel) {
     typedef typename VolumeElement<T>::BaseType Base;
-    Base zero  = VolumeElement<T>::getChannel(zeroPoint_, channel);
 
     //TODO: do not calculate this on every voxel access!
     Base max;
@@ -410,12 +338,55 @@ void VolumeAtomic<T>::setVoxelFloat(float value, const tgt::ivec3& pos, size_t c
     else
         max = static_cast<Base>((1ll << static_cast<unsigned long long>(bitsStored_)) - 1ll);
 
-    VolumeElement<T>::setChannel(Base(value * float(max)) + zero, voxel(pos), channel);
+    VolumeElement<T>::setChannel(Base(value * float(max)), voxel(pos), channel);
 }
 
 template<class T>
-void  VolumeAtomic<T>::setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel) {
+void VolumeAtomic<T>::setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel) {
     setVoxelFloat(value, tgt::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel);
+}
+
+/*
+ * getters and setters
+ */
+
+template<class T>
+int VolumeAtomic<T>::getBitsAllocated() const {
+    return BITS_PER_VOXEL;
+}
+
+template<class T>
+int VolumeAtomic<T>::getNumChannels() const {
+    return VolumeElement<T>::getNumChannels();
+}
+
+template<class T>
+int VolumeAtomic<T>::getBytesPerVoxel() const {
+    return BYTES_PER_VOXEL;
+}
+
+template<class T>
+bool VolumeAtomic<T>::isSigned() {
+    return isSigned_;
+}
+
+template<class T>
+size_t VolumeAtomic<T>::getNumBytes() const {
+    return sizeof(T) * numVoxels_;
+}
+
+/*
+ * Helpers for calculating the position in 3d
+ */
+
+template<class T>
+inline size_t VolumeAtomic<T>::calcPos(const tgt::ivec3& dimensions, size_t x, size_t y, size_t z) {
+    return z*dimensions.x*dimensions.y + y*dimensions.x + x;
+}
+
+template<class T>
+inline size_t VolumeAtomic<T>::calcPos(const tgt::ivec3& dimensions, const tgt::ivec3& pos) {
+    return pos.z*dimensions.x*dimensions.y + pos.y*dimensions.x + pos.x;
 }
 
 /*
@@ -473,7 +444,6 @@ VolumeAtomic<T>* VolumeAtomic<T>::scale(const tgt::ivec3& newDims, Filter filter
         throw; // throw it to the caller
     }
 
-    v->setZeroPoint(zeroPoint_);
     v->meta() = meta();
 
     vec3 ratio = vec3(dimensions_) / vec3(newDims);
@@ -549,7 +519,6 @@ VolumeAtomic<T>* VolumeAtomic<T>::createSubset(const tgt::ivec3& pos, const tgt:
         throw; // throw it to the caller
     }
 
-    subset->setZeroPoint(zeroPoint_);
     subset->meta() = meta();
 
     // calculate new imageposition
@@ -591,20 +560,20 @@ VolumeAtomic<T>* VolumeAtomic<T>::mirrorZ() const
 
 template<class T>
 bool VolumeAtomic<T>::getAllVoxelsEqual() {
-	T firstVoxel = voxel(0);
-	bool allVoxelsEqual=true;
-	for (size_t i=1; i < numVoxels_; i++) {
-		T currentVoxel = voxel(i);
-		if (firstVoxel != currentVoxel) {
-			allVoxelsEqual = false;
-			break;
-		}
-	}
-	return allVoxelsEqual;
+    T firstVoxel = voxel(0);
+    bool allVoxelsEqual=true;
+    for (size_t i=1; i < numVoxels_; i++) {
+        T currentVoxel = voxel(i);
+        if (firstVoxel != currentVoxel) {
+            allVoxelsEqual = false;
+            break;
+        }
+    }
+    return allVoxelsEqual;
 }
 
 /**
-* Calculates to which position the given position relates in a smaller volume. This 
+* Calculates to which position the given position relates in a smaller volume. This
 * is used in the calcError function to determine to which position in the smaller volume
 * a voxel position corresponds, in order to compute the difference between the voxels.
 */
@@ -622,7 +591,7 @@ float VolumeAtomic<T>::calcError(Volume* volume) {
     VolumeAtomic<T>* secondVolume = dynamic_cast<VolumeAtomic<T>*>(volume);
     double errorSum = 0.0;
     tgt::ivec3 factor = dimensions_ / secondVolume->getDimensions();
-    
+
     for (int i=0; i<dimensions_.z; i++) {
         for (int j=0; j<dimensions_.y; j++) {
             for (int k=0; k<dimensions_.x; k++) {
@@ -630,7 +599,7 @@ float VolumeAtomic<T>::calcError(Volume* volume) {
                 tgt::ivec3 smallVolumePos = calcPosInSmallerVolume(currentPos, factor);
                 T origVoxel = voxel(currentPos);
                 T errVoxel = secondVolume->voxel(smallVolumePos);
-                
+
                 errorSum = errorSum + VolumeElement<T>::calcSquaredDifference(origVoxel, errVoxel);
             }
         }
@@ -639,7 +608,7 @@ float VolumeAtomic<T>::calcError(Volume* volume) {
     errorSum = errorSum / (float)(numVoxels_);
     errorSum = sqrt(errorSum);
     errorSum = errorSum / (double)VolumeElement<T>::maxElement();
-    
+
     return (float)errorSum;
 }
 
@@ -671,6 +640,84 @@ VolumeAtomic<T>* VolumeAtomic<T>::downsample() const
     }
 
     return newVolume;
+}
+
+/*
+  Methods for accessing the voxels
+*/
+
+/// just get a proper pointer for read and write access
+template<class T>
+inline T* VolumeAtomic<T>::voxel() {
+    return data_;
+}
+
+/// just get a proper pointer for read access only
+template<class T>
+inline const T* VolumeAtomic<T>::voxel() const {
+    return data_;
+}
+
+/// get or set voxel
+template<class T>
+inline T& VolumeAtomic<T>::voxel(size_t x, size_t y, size_t z) {
+    tgtAssert(x < size_t(dimensions_.x), "x index out of bounds");
+    tgtAssert(y < size_t(dimensions_.y), "y index out of bounds");
+    tgtAssert(z < size_t(dimensions_.z), "z index out of bounds");
+
+    return data_[calcPos(dimensions_, x, y, z)];
+}
+
+/// get voxel
+template<class T>
+inline const T& VolumeAtomic<T>::voxel(size_t x, size_t y, size_t z) const {
+    tgtAssert(x < size_t(dimensions_.x), "x index out of bounds");
+    tgtAssert(y < size_t(dimensions_.y), "y index out of bounds");
+    tgtAssert(z < size_t(dimensions_.z), "z index out of bounds");
+
+    return data_[calcPos(dimensions_, x, y, z)];
+}
+
+/// get or set voxel
+template<class T>
+inline T& VolumeAtomic<T>::voxel(const tgt::ivec3& pos) {
+    tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
+    tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
+    tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
+    tgtAssert(pos.x >= 0, "x index out of bounds");
+    tgtAssert(pos.y >= 0, "y index out of bounds");
+    tgtAssert(pos.z >= 0, "z index out of bounds");
+
+    return data_[calcPos(dimensions_, pos)];
+}
+
+/// get voxel
+template<class T>
+inline const T& VolumeAtomic<T>::voxel(const tgt::ivec3& pos) const {
+    tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
+    tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
+    tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
+    tgtAssert(pos.x >= 0, "x index out of bounds");
+    tgtAssert(pos.y >= 0, "y index out of bounds");
+    tgtAssert(pos.z >= 0, "z index out of bounds");
+
+    return data_[calcPos(dimensions_, pos)];
+}
+
+/// get or set voxel
+template<class T>
+inline T& VolumeAtomic<T>::voxel(size_t i) {
+    tgtAssert(i < numVoxels_, "index out of bounds");
+
+    return data_[i];
+}
+
+/// get voxel
+template<class T>
+inline const T& VolumeAtomic<T>::voxel(size_t i) const {
+    tgtAssert(i < numVoxels_, "index out of bounds");
+
+    return data_[i];
 }
 
 

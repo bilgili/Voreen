@@ -32,23 +32,25 @@
 
 #include "voreen/core/vis/processors/volume/datasetcreator.h"
 #include "voreen/core/io/visiblehumanreader.h"
+#include "voreen/core/vis/properties/allproperties.h"
+#include "voreen/core/vis/processors/ports/allports.h"
 
 namespace voreen {
 
     class VisibleHumanDatasetCreator : public DatasetCreator {
     public:
 
-        VisibleHumanDatasetCreator();
+    VisibleHumanDatasetCreator();
 
-        virtual const Identifier getClassName() const {return "Preprocessor.VisibleHumanDatasetCreator";}
-        virtual const std::string getProcessorInfo() const;
-                virtual Processor* create() const {return new VisibleHumanDatasetCreator();}
+    virtual std::string getCategory() const { return "Data Source"; }
+    virtual std::string getClassName() const { return "VisibleHumanDatasetCreator"; }
+    virtual CodeState getCodeState() const { return CODE_STATE_BROKEN; }
+    virtual const std::string getProcessorInfo() const;
+    virtual Processor* create() const {return new VisibleHumanDatasetCreator();}
 
         void createDataset();
 
-        void process(LocalPortMapping* portMapping);
-
-        void processMessage(Message* msg, const Identifier& dest=Message::all_);
+        void process();
 
         void setSlicePath(std::string path) {
             slicePath_ = path;
@@ -92,24 +94,26 @@ namespace voreen {
         int cropTop_;
         int cropBottom_;
 
-        IntProp* imageMatrixSizeXProp_;
-        IntProp* imageMatrixSizeYProp_;
-        FloatProp* thicknessXProp_;
-        FloatProp* thicknessYProp_;
-        FloatProp* thicknessZProp_;
-        EnumProp* formatProp_;
-        EnumProp* objectModelProp_;
-        IntProp* bitsStoredProp_;
-        IntProp* headerSizeProp_;
-        BoolProp* readInfosFromHeaderProp_;
-        FileDialogProp* datasetNameProp_;
-        StringVectorProp* sliceNamesProp_;
-        StringVectorProp* headerNamesProp_;
-        IntProp* cropBottomProp_;
-        IntProp* cropTopProp_;
-        IntProp* cropLeftProp_;
-        IntProp* cropRightProp_;
+        IntProperty imageMatrixSizeXProp_;
+        IntProperty imageMatrixSizeYProp_;
+        FloatProperty thicknessXProp_;
+        FloatProperty thicknessYProp_;
+        FloatProperty thicknessZProp_;
+//        EnumProperty* formatProp_;
+//        EnumProperty* objectModelProp_;
+        IntProperty bitsStoredProp_;
+        IntProperty headerSizeProp_;
+        BoolProperty readInfosFromHeaderProp_;
+        FileDialogProperty datasetNameProp_;
+/*       StringVectorProperty* sliceNamesProp_;
+        StringVectorProperty* headerNamesProp_; */
+        IntProperty cropBottomProp_;
+        IntProperty cropTopProp_;
+        IntProperty cropLeftProp_;
+        IntProperty cropRightProp_;
 
+
+        VolumePort outport_;
 
     };
 }

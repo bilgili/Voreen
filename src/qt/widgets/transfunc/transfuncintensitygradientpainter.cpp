@@ -100,7 +100,7 @@ void TransFuncIntensityGradientPainter::mouseMoveEvent(tgt::MouseEvent* event) {
 
     if (selectedPrimitive_) {
         if (!dragging_) {
-            emit switchInteractionMode(true);
+            emit toggleInteractionMode(true);
             dragging_ = true;
         }
         // test whether the movement is correct
@@ -127,7 +127,7 @@ void TransFuncIntensityGradientPainter::mouseReleaseEvent(tgt::MouseEvent* event
     event->accept();
     if (selectedPrimitive_ && dragging_) {
         dragging_ = false;
-        emit switchInteractionMode(false);
+        emit toggleInteractionMode(false);
     }
 }
 
@@ -360,6 +360,8 @@ void TransFuncIntensityGradientPainter::paint() {
 }
 
 void TransFuncIntensityGradientPainter::initialize() {
+    getCanvas()->getGLFocus();
+
     GLint buffer;
     glGetIntegerv(GL_DRAW_BUFFER, &buffer);
     glMatrixMode(GL_PROJECTION);
@@ -380,6 +382,8 @@ void TransFuncIntensityGradientPainter::updateTF() {
 }
 
 void TransFuncIntensityGradientPainter::sizeChanged(const tgt::ivec2& size) {
+    getCanvas()->getGLFocus();
+
     glViewport(0, 0, size.x, size.y);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -449,7 +453,7 @@ void TransFuncIntensityGradientPainter::createHistogram() {
         bucketsi = bucketsg;
     }
     else {
-        
+
         // calculate 8 bit gradients
         if (tgt::max(volume_->getDimensions()) <= 128) {
             intensityVolume = volume_;
@@ -460,7 +464,7 @@ void TransFuncIntensityGradientPainter::createHistogram() {
             intensityVolume = volume_->scale(newDims, Volume::LINEAR);
             gradientVolume = calcGradients<tgt::col3>(intensityVolume);
         }
-        
+
         gradientVolume = calcGradients<tgt::col3>(intensityVolume);
         bucketsg = 256;
         if ((intensityVolume->getBitsStored() / numChannels) > 8)
@@ -470,8 +474,9 @@ void TransFuncIntensityGradientPainter::createHistogram() {
     }
     // create histogram with scaling to the maximum gradientlength in the dataset
     histogram_ = new HistogramIntensityGradient(gradientVolume, intensityVolume, bucketsi, bucketsg, true);
-    scaleFactor_ = histogram_->getScaleFactor();
-    tf_->setScaleFactor(scaleFactor_);
+    // Todo: re-enable scaling (does currently break serialization)
+    //scaleFactor_ = histogram_->getScaleFactor();
+    //tf_->setScaleFactor(scaleFactor_);
 
     if (numChannels != 4)
         delete gradientVolume;
@@ -524,10 +529,6 @@ void TransFuncIntensityGradientPainter::volumeChanged(Volume* newVolume) {
 
 void TransFuncIntensityGradientPainter::toggleShowGrid(bool v) {
     showGrid_ = v;
-}
-
-float TransFuncIntensityGradientPainter::getScaleFactor() const {
-    return scaleFactor_;
 }
 
 } // namespace voreen

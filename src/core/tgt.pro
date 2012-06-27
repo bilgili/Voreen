@@ -36,6 +36,9 @@ contains(DEFINES, VRN_WITH_FFMPEG) {
   HEADERS += ../../ext/tgt/ffmpeg/videoencoder.h
 }
 
+contains(DEFINES, VRN_WITH_ZLIB) {
+	DEFINES += TGT_HAS_ZIP
+}
 
 SOURCES += \
     ../../ext/tgt/assert.cpp \
@@ -45,6 +48,7 @@ SOURCES += \
     ../../ext/tgt/exception.cpp \
     ../../ext/tgt/filesystem.cpp \
     ../../ext/tgt/font.cpp \
+    ../../ext/tgt/framebufferobject.cpp \
     ../../ext/tgt/frustum.cpp \
     ../../ext/tgt/glcanvas.cpp \
     ../../ext/tgt/gpucapabilities.cpp \
@@ -65,6 +69,7 @@ SOURCES += \
     ../../ext/tgt/texturereadertga.cpp \
     ../../ext/tgt/tgt_gl.cpp \
     ../../ext/tgt/timer.cpp \
+	../../ext/tgt/ziparchive.cpp \
     ../../ext/tgt/event/eventhandler.cpp \
     ../../ext/tgt/event/eventlistener.cpp \
     ../../ext/tgt/event/keyevent.cpp \
@@ -83,6 +88,7 @@ HEADERS += \
     ../../ext/tgt/exception.h \
     ../../ext/tgt/filesystem.h \
     ../../ext/tgt/font.h \
+    ../../ext/tgt/framebufferobject.h \
     ../../ext/tgt/framecounter.h \
     ../../ext/tgt/frustum.h \
     ../../ext/tgt/glcanvas.h \
@@ -119,6 +125,7 @@ HEADERS += \
     ../../ext/tgt/timer.h \
     ../../ext/tgt/vector.h \
     ../../ext/tgt/vertex.h \
+	../../ext/tgt/ziparchive.h \
     ../../ext/tgt/event/event.h \
     ../../ext/tgt/event/eventhandler.h \
     ../../ext/tgt/event/eventlistener.h \

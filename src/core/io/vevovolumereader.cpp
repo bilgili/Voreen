@@ -123,12 +123,11 @@ VevoVolumeReader::VevoVolumeReader()
     zspacing_(1.0),
     syncDataset_(false)
 {
-    name_ = "Vevo Volume Reader";
     extensions_.push_back("rdi");
     extensions_.push_back("rdm");
 }
 
-VolumeSet* VevoVolumeReader::read(const string &fname)
+VolumeCollection* VevoVolumeReader::read(const string &fname)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     tgt::ivec3 dimensions(0);
@@ -157,13 +156,11 @@ VolumeSet* VevoVolumeReader::read(const string &fname)
         volDS_ = new VolumeUInt8(tgt::vec3(8));
     }
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fname));
-    VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
-    volumeSet->addSeries(volumeSeries);
+    VolumeCollection* volumeCollection = new VolumeCollection();
     VolumeHandle* volumeHandle = new VolumeHandle(volDS_, 0.0f);
-    volumeHandle->setOrigin(fname, "unknown", 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
-    return volumeSet;
+    volumeCollection->add(volumeHandle);
+
+    return volumeCollection;
 }
 
 std::vector<string> VevoVolumeReader::splitLine(string s, const char *ch) {

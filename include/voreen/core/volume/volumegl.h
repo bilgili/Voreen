@@ -267,8 +267,6 @@ private:
     static int availableGpuMemory_;
 };
 
-typedef TemplateMessage<VolumeGL*> VolumeGLMsg;
-
 } // namespace voreen
 
 #endif // VRN_VOLUMEGL_H

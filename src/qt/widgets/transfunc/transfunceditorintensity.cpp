@@ -53,7 +53,7 @@ namespace voreen {
 
 const std::string TransFuncEditorIntensity::loggerCat_("voreen.qt.transfunceditorintensity");
 
-TransFuncEditorIntensity::TransFuncEditorIntensity(TransFuncProp* prop, QWidget* parent,
+TransFuncEditorIntensity::TransFuncEditorIntensity(TransFuncProperty* prop, QWidget* parent,
                                                    Qt::Orientation orientation)
     : TransFuncEditor(prop, parent)
     , transCanvas_(0)
@@ -143,7 +143,7 @@ QLayout* TransFuncEditorIntensity::createButtonLayout() {
         buttonLayout = new QVBoxLayout();
 
     clearButton_ = new QToolButton();
-    clearButton_->setIcon(QIcon(":/icons/eraser.png"));
+    clearButton_->setIcon(QIcon(":/icons/clear.png"));
     clearButton_->setToolTip(tr("Reset to default transfer function"));
 
     loadButton_ = new QToolButton();
@@ -154,18 +154,18 @@ QLayout* TransFuncEditorIntensity::createButtonLayout() {
     saveButton_->setIcon(QIcon(":/icons/save.png"));
     saveButton_->setToolTip(tr("Save transfer function"));
 
-    if (property_->getManualRepaint()) {
-        repaintButton_ = new QToolButton();
-        repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
-        repaintButton_->setToolTip(tr("Repaint the volume rendering"));
-    }
+    //if (property_->getManualRepaint()) {
+        //repaintButton_ = new QToolButton();
+        //repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
+        //repaintButton_->setToolTip(tr("Repaint the volume rendering"));
+    //}
 
     buttonLayout->setSpacing(0);
     buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
-    if (property_->getManualRepaint())
-        buttonLayout->addWidget(repaintButton_);
+    //if (property_->getManualRepaint())
+        //buttonLayout->addWidget(repaintButton_);
 
     buttonLayout->addStretch();
 
@@ -241,15 +241,13 @@ void TransFuncEditorIntensity::createConnections() {
     connect(clearButton_, SIGNAL(clicked()), this, SLOT(clearButtonClicked()));
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
-    if (property_->getManualRepaint())
-        connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
 
     // signals from transferMappingCanvas
     connect(transCanvas_, SIGNAL(changed()), this, SLOT(updateTransferFunction()));
     connect(transCanvas_, SIGNAL(loadTransferFunction()), this, SLOT(loadTransferFunction()));
     connect(transCanvas_, SIGNAL(saveTransferFunction()), this, SLOT(saveTransferFunction()));
     connect(transCanvas_, SIGNAL(resetTransferFunction()), this, SLOT(clearButtonClicked()));
-    connect(transCanvas_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(transCanvas_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // signals for colorPicker
     connect(transCanvas_, SIGNAL(colorChanged(const QColor&)),
@@ -260,12 +258,12 @@ void TransFuncEditorIntensity::createConnections() {
             colorLumPicker_, SLOT(setCol(int,int)));
     connect(colorLumPicker_, SIGNAL(newHsv(int,int,int)),
             this, SLOT(markerColorChanged(int,int,int)));
-    connect(colorPicker_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
-    connect(colorLumPicker_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(colorPicker_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
+    connect(colorLumPicker_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // doubleslider
     connect(doubleSlider_, SIGNAL(valuesChanged(float, float)), this, SLOT(thresholdChanged(float, float)));
-    connect(doubleSlider_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(doubleSlider_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // threshold spinboxes
     connect(lowerThresholdSpin_, SIGNAL(valueChanged(int)), this, SLOT(lowerThresholdSpinChanged(int)));
@@ -277,11 +275,8 @@ void TransFuncEditorIntensity::createConnections() {
 void TransFuncEditorIntensity::causeVolumeRenderingRepaint() {
     // this informs the owner about change in transfer function texture
     property_->notifyChange();
-
-    // this signal causes a repaint of the volume rendering
-    emit transferFunctionChanged();
-
     repaintAll();
+    emit transferFunctionChanged();    
 }
 
 void TransFuncEditorIntensity::clearButtonClicked() {
@@ -355,9 +350,8 @@ void TransFuncEditorIntensity::saveTransferFunction() {
 
 void TransFuncEditorIntensity::updateTransferFunction() {
     transferFuncIntensity_->textureUpdateNeeded();
-
-    if (!property_->getManualRepaint())
-        causeVolumeRenderingRepaint();
+    property_->notifyChange();
+    emit transferFunctionChanged();    
 }
 
 void TransFuncEditorIntensity::markerColorChanged(int h, int s, int v) {
@@ -445,9 +439,9 @@ void TransFuncEditorIntensity::applyThreshold() {
 
 void TransFuncEditorIntensity::update() {
     // check whether the volume associated with the TransFuncProperty has changed
-    Volume* newVol = property_->getVolume();
-    if (newVol != volume_) {
-        volume_ = newVol;
+    VolumeHandle* newHandle = property_->getVolumeHandle();
+    if (newHandle != volumeHandle_) {
+        volumeHandle_ = newHandle;
         volumeChanged();
     }
 
@@ -506,8 +500,8 @@ void TransFuncEditorIntensity::restoreThresholds() {
 }
 
 void TransFuncEditorIntensity::volumeChanged() {
-    if (volume_) {
-        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+    if (volumeHandle_ && volumeHandle_->getVolume()) {
+        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
         if (maxNew != maximumIntensity_) {
             float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
@@ -528,7 +522,7 @@ void TransFuncEditorIntensity::volumeChanged() {
     }
 
     // propagate new volume to transfuncMappingCanvas
-    transCanvas_->volumeChanged(volume_, maximumIntensity_+1);
+    transCanvas_->volumeChanged(volumeHandle_);
 }
 
 void TransFuncEditorIntensity::resetEditor() {
@@ -557,8 +551,8 @@ void TransFuncEditorIntensity::repaintAll() {
     textureCanvas_->update();
 }
 
-void TransFuncEditorIntensity::setTransFuncProp(TransFuncProp* prop) {
-    
+void TransFuncEditorIntensity::setTransFuncProp(TransFuncProperty* prop) {
+
     TransFuncEditor::setTransFuncProp(prop);
 
     // update widgets
@@ -566,6 +560,10 @@ void TransFuncEditorIntensity::setTransFuncProp(TransFuncProp* prop) {
     texturePainter_->setTransFunc(transferFuncIntensity_);
     transCanvas_->setTransFunc(transferFuncIntensity_);
     update();
+}
+
+const TransFuncProperty* TransFuncEditorIntensity::getTransFuncProp() const {
+    return property_;
 }
 
 } // namespace voreen

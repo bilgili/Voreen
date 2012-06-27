@@ -35,12 +35,12 @@ namespace voreen {
 
 Command::Command(const std::string& name, const std::string& shortName, const std::string& infoText,
                  const std::string& parameterList, const int argumentNum, const bool allowMultipleCalls)
-: name_(name)
-, shortName_(shortName)
-, infoText_(infoText)
-, parameterList_(parameterList)
-, argumentNum_(argumentNum)
-, allowMultipleCalls_(allowMultipleCalls)
+    : name_(name)
+    , shortName_(shortName)
+    , infoText_(infoText)
+    , parameterList_(parameterList)
+    , argumentNum_(argumentNum)
+    , allowMultipleCalls_(allowMultipleCalls)
 {}
 
 Command::~Command() {}
@@ -85,13 +85,13 @@ const std::string Command::usage() {
 }
 
 const std::string Command::help() {
-	std::string result;
-	if (getShortName() != "")
-		result = getShortName() + "|" + getName() + ": \t" + getInfoText();
-	else
-		result = getName() + ": \t" + getInfoText();
+    std::string result;
+    if (getShortName() != "")
+        result = getShortName() + "|" + getName() + ": \t" + getInfoText();
+    else
+        result = getName() + ": \t" + getInfoText();
 
-	return result;
+    return result;
 }
 
 bool Command::checkParameters(const std::vector<std::string>& parameters) {

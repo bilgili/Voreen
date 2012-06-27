@@ -30,8 +30,8 @@
 
 namespace voreen {
 
-    StandardBrickResolutionCalculator::StandardBrickResolutionCalculator(BrickingInformation &brickingInformation) 
-	    : BrickResolutionCalculator(brickingInformation) 
+    StandardBrickResolutionCalculator::StandardBrickResolutionCalculator(BrickingInformation &brickingInformation)
+        : BrickResolutionCalculator(brickingInformation)
     {
     }
 
@@ -48,10 +48,10 @@ namespace voreen {
         //Get the number of bricks we actually have to calculate lods for. Empty
         //bricks always get the lowest possible lod and therefor mustn't be considered
         //in the calculation.
-        int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded 
-					        - brickingInformation_.numberOfBricksWithEmptyVolumes;
+        int numberOfBricks = brickingInformation_.totalNumberOfBricksNeeded
+                            - brickingInformation_.numberOfBricksWithEmptyVolumes;
                             //- numBricksWithoutRegion;
-    	
+
         int lodFor64Voxels = brickingInformation_.totalNumberOfResolutions-3;
 
         int lod64BrickSizeInByte = brickingInformation_.originalVolumeVoxelSizeInByte * 64;
@@ -60,11 +60,11 @@ namespace voreen {
         int resolutionBrickSize = lod64BrickSizeInByte;
         int sixteenth = numberOfBricks/16;
 
-        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x * 
+        long double availableMemInByte = brickingInformation_.packedVolumeDimensions.x *
                                     brickingInformation_.packedVolumeDimensions.y *
                                     brickingInformation_.packedVolumeDimensions.z *
                                     brickingInformation_.originalVolumeBytesAllocated -
-                                    (brickingInformation_.numberOfBricksWithEmptyVolumes* 
+                                    (brickingInformation_.numberOfBricksWithEmptyVolumes*
                                     brickingInformation_.originalVolumeBytesAllocated);
 
         for (int i=lodFor64Voxels-1; i >=0; i--) {
@@ -84,7 +84,7 @@ namespace voreen {
 
        while(!done) {
 
-           if ( ( (numberOfHighBricks+1) * resolutionBrickSize) + 
+           if ( ( (numberOfHighBricks+1) * resolutionBrickSize) +
                ( (numberOfLowBricks-1) * lod64BrickSizeInByte) < availableMemInByte/*gpuMemorySizeInByte*/) {
 
                    if (numberOfHighBricks+1 > numberOfBricks || numberOfLowBricks-1 < 0) {
@@ -100,30 +100,31 @@ namespace voreen {
 
 
 
-	    //Write the calculated results in the result vector. The number at position 0 means
-	    //x bricks can have level of detail 0, the number at position 1 means y bricks can have
-	    //level of detail 1 and so on. 
-	    for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
-		    if (i == resolution)
-			    result.push_back(numberOfHighBricks);
-		    else if (i == lodFor64Voxels)
-			    result.push_back(numberOfLowBricks);
-		    else
-			    result.push_back(0);
-	    }
+        //Write the calculated results in the result vector. The number at position 0 means
+        //x bricks can have level of detail 0, the number at position 1 means y bricks can have
+        //level of detail 1 and so on.
+        for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
+            if (i == resolution)
+                result.push_back(numberOfHighBricks);
+            else if (i == lodFor64Voxels)
+                result.push_back(numberOfLowBricks);
+            else
+                result.push_back(0);
+        }
 
         //result.at(result.size()-1) +=numBricksWithoutRegion;
 
-	    //We also need to calculate how many voxels the packed volume needs to be able to store.
-	    //This is a simple calculation, one only has to remember to add 1 voxel for every brick with
-	    //an empty volume (because those always have lowest possible lod = 1 voxel)
-	    /*brickingInformation_.numberOfVoxelsNeededForPackedVolume = (numberOfHighBricks * resolutionBrickSize) +
-							    (numberOfLowBricks * lod64BrickSizeInByte) + 
-							    (brickingInformation_.numberOfBricksWithEmptyVolumes * 1) ;*/
+        //We also need to calculate how many voxels the packed volume needs to be able to store.
+        //This is a simple calculation, one only has to remember to add 1 voxel for every brick with
+        //an empty volume (because those always have lowest possible lod = 1 voxel)
+        /*brickingInformation_.numberOfVoxelsNeededForPackedVolume = (numberOfHighBricks * resolutionBrickSize) +
+                                (numberOfLowBricks * lod64BrickSizeInByte) +
+                                (brickingInformation_.numberOfBricksWithEmptyVolumes * 1) ;*/
 
-	    brickingInformation_.brickResolutions = result;
+        brickingInformation_.brickResolutions = result;
     }
 
-	
+
 
 } //namespace
+

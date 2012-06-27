@@ -59,18 +59,13 @@ public:
     SlicingProxyGeometry();
     ~SlicingProxyGeometry();
 
-    virtual const Identifier getClassName() const { return "ProxyGeometry.SlicingProxyGeometry"; }
     virtual Processor* create() const { return new SlicingProxyGeometry(); }
+    virtual std::string getCategory() const { return "ProxyGeometry"; }
+    virtual std::string getClassName() const { return "SlicingProxyGeometry"; }
+    virtual std::string getModuleName() const { return "core"; }
 
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process();
     virtual const std::string getProcessorInfo() const;
-
-    /**
-     * Called from somewhere in the evaluation step of the network and implements
-     * a kind of "call-back" mechanism. Used to call rendering method
-     * <code>renderDisplayList()</code>
-     */
-    virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
 
     /**
      * Performs rendering of the proxy geometry. If changes to volume or slice have been
@@ -136,8 +131,8 @@ protected:
     float sliceThickness_;      /** Thickness of the slice which shall be cut */
     int numSlices_;             /** Number of slices available according to thickness of one slice */
 
-    FloatVec4Prop* clipPlaneProp_;
-    FloatProp* sliceThicknessProp_;
+    FloatVec4Property* clipPlaneProp_;
+    FloatProperty* sliceThicknessProp_;
 
 private:
     /**

@@ -27,8 +27,10 @@
  *                                                                    *
  **********************************************************************/
 
-/*
- * Precompiled Header File for voreenlib_qt
+/**
+ * @file
+ *
+ * Precompiled Header File for voreenlib_qt.
  *
  * The precompiled header must contain code which is *stable* and *static*
  * throughout the project.

@@ -419,7 +419,10 @@ public:
     /// Sets the bitmap's data by providing the data array and
     /// its dimensions and channels count.
     void setData(T* data, int width, int height, int channels = 1){
-        delete[] data_;
+        if(data_) {
+            delete[] data_;
+            data_ = 0;
+        }
         data_ = data;
         width_ = width;
         height_ = height;

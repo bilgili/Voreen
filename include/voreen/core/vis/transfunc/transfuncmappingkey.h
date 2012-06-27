@@ -30,6 +30,8 @@
 #ifndef VRN_TRANSFUNCMAPPINGKEY_H
 #define VRN_TRANSFUNCMAPPINGKEY_H
 
+#include "voreen/core/io/serialization/serialization.h"
+
 #include "tgt/vector.h"
 
 namespace voreen {
@@ -39,7 +41,7 @@ namespace voreen {
  * Each key has an intensity at which it is located and a color.
  * Furthermore it can be split in two parts with two different colors.
  */
-class TransFuncMappingKey {
+class TransFuncMappingKey : public Serializable {
 public:
     /**
      * Constructor
@@ -174,7 +176,24 @@ public:
      */
     void setIntensity(float i);
 
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
 private:
+    friend class XmlDeserializer;
+    friend class TransFuncFactory;
+    /**
+     * Default constructor needed for serialization purposes.
+     */
+    TransFuncMappingKey();
+
     float intensity_;  ///< intensity at which the key is located
     tgt::col4 colorL_; ///< color of the left part of the key
     tgt::col4 colorR_; ///< color of the right part of the key

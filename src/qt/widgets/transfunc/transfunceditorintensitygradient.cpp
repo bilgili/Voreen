@@ -52,7 +52,7 @@ namespace voreen {
 
 const std::string TransFuncEditorIntensityGradient::loggerCat_("voreen.qt.transfunceditorintensitygradient");
 
-TransFuncEditorIntensityGradient::TransFuncEditorIntensityGradient(TransFuncProp* prop, QWidget* parent,
+TransFuncEditorIntensityGradient::TransFuncEditorIntensityGradient(TransFuncProperty* prop, QWidget* parent,
                                                                    Qt::Orientation orientation)
     : TransFuncEditor(prop, parent)
     , transCanvas_(0)
@@ -101,6 +101,10 @@ QLayout* TransFuncEditorIntensityGradient::createButtonLayout() {
     else
         buttonLayout = new QVBoxLayout();
 
+    clearButton_ = new QToolButton();
+    clearButton_->setIcon(QIcon(":/icons/clear.png"));
+    clearButton_->setToolTip(tr("Reset transfer function to default"));
+
     loadButton_ = new QToolButton();
     loadButton_->setIcon(QIcon(":/icons/open.png"));
     loadButton_->setToolTip(tr("Load transfer function"));
@@ -108,10 +112,6 @@ QLayout* TransFuncEditorIntensityGradient::createButtonLayout() {
     saveButton_ = new QToolButton();
     saveButton_->setIcon(QIcon(":/icons/save.png"));
     saveButton_->setToolTip(tr("Save transfer function"));
-
-    clearButton_ = new QToolButton();
-    clearButton_->setIcon(QIcon(":/icons/clear.png"));
-    clearButton_->setToolTip(tr("Reset transfer function to default"));
 
     gridEnabledButton_ = new QToolButton();
     gridEnabledButton_->setCheckable(true);
@@ -142,9 +142,9 @@ QLayout* TransFuncEditorIntensityGradient::createButtonLayout() {
     colorButton_->setIcon(QIcon(":/icons/colorize.png"));
     colorButton_->setToolTip(tr("Change the color of the selected primitive"));
 
+    buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
-    buttonLayout->addWidget(clearButton_);
     buttonLayout->addSpacing(7);
     buttonLayout->addWidget(gridEnabledButton_);
     buttonLayout->addWidget(histogramEnabledButton_);
@@ -267,7 +267,7 @@ void TransFuncEditorIntensityGradient::createConnections() {
     connect(painter_, SIGNAL(setTransparencySlider(int)), this, SLOT(setTransparency(int)));
     connect(painter_, SIGNAL(primitiveDeselected()), this, SLOT(primitiveDeselected()));
     connect(painter_, SIGNAL(primitiveSelected()), this, SLOT(primitiveSelected()));
-    connect(painter_, SIGNAL(switchInteractionMode(bool)), this, SLOT(switchInteractionMode(bool)));
+    connect(painter_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
     connect(painter_, SIGNAL(repaintSignal()), this, SLOT(repaintSignal()));
 
 }
@@ -349,28 +349,25 @@ void TransFuncEditorIntensityGradient::setTransparency(int trans) {
 }
 
 void TransFuncEditorIntensityGradient::startTracking() {
-    switchInteractionMode(true);
+    toggleInteractionMode(true);
 }
 
 void TransFuncEditorIntensityGradient::stopTracking() {
-    switchInteractionMode(false);
+    toggleInteractionMode(false);
 }
 
 void TransFuncEditorIntensityGradient::update() {
     if (!supported_)
         return;
 
-    Volume* newVolume = property_->getVolume();
-    if (newVolume != volume_) {
-        volume_ = newVolume;
+    VolumeHandle* newHandle = property_->getVolumeHandle();
+    if (newHandle != volumeHandle_) {
+        volumeHandle_ = newHandle;
         volumeChanged();
     }
 
-    if (volume_ && transFuncGradient_) {
-        transFuncGradient_->setScaleFactor(painter_->getScaleFactor());
-        painter_->updateTF();
+    if (transFuncGradient_)
         transCanvas_->update();
-    }
     else
         resetEditor();
 }
@@ -387,13 +384,16 @@ void TransFuncEditorIntensityGradient::volumeChanged() {
     histogramBrightness_->setValue(100);
     histogramBrightness_->blockSignals(false);
 
-    if (volume_) {
-        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+    if (volumeHandle_ && volumeHandle_->getVolume()) {
+        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
         maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
     }
 
     // propagate volume to painter where the histogram is calculated
-    painter_->volumeChanged(volume_);
+    if (volumeHandle_)
+        painter_->volumeChanged(volumeHandle_->getVolume());
+    else
+        painter_->volumeChanged(0);
 }
 
 void TransFuncEditorIntensityGradient::resetEditor() {

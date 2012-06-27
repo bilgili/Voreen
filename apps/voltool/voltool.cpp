@@ -84,9 +84,9 @@ int main(int argc, char** argv) {
 
 #ifdef VRN_WITH_DEVIL
     cmdparser.addCommand(new CommandStackImg());
+#endif
     cmdparser.addCommand(new CommandStackRaw());
     cmdparser.addCommand(new CommandConvert());
-#endif
 
     cmdparser.addCommand(new CommandCreate());
     cmdparser.addCommand(new CommandGenerateMask());
@@ -95,9 +95,9 @@ int main(int argc, char** argv) {
     cmdparser.addCommand(new CommandScale());
     cmdparser.addCommand(new CommandMirrorZ());
     cmdparser.addCommand(new CommandSubSet());
-	cmdparser.addCommand(new CommandBrick());
-    
-    
+    cmdparser.addCommand(new CommandBrick());
+
+
 #ifndef VRN_SNAPSHOT
     cmdparser.addCommand(new CommandCreateMotion());
 

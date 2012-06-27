@@ -5,7 +5,6 @@
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/volume/volumeset.h"
 
 #include <iostream>
 #include <queue>
@@ -18,7 +17,7 @@ namespace voreen {
 // Implementations for class CacheIndexSubEntry
 //
 
-CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(const std::string& processorState, 
+CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(const std::string& processorState,
                                                                     const std::string& processorInportConfig,
                                                                     const std::string& filename)
     : processorState_(processorState),
@@ -29,51 +28,18 @@ CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(const std::s
 {
 }
 
-CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(TiXmlElement* const xml)
+CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(TiXmlElement* const /*xml*/)
     : processorState_(""),
       processorInportConfig_(""),
       filename_(""),
       time_(0),
       refCounter_(0)
 {
-    updateFromXml(xml);
 }
 
 std::string CacheIndex::CacheIndexEntry::CacheIndexSubEntry::makeKey() const {
-    return std::string("InportConfig{" + processorInportConfig_ 
+    return std::string("InportConfig{" + processorInportConfig_
         + "}.State{" + processorState_ + "}");
-}
-
-void CacheIndex::CacheIndexEntry::CacheIndexSubEntry::updateFromXml(TiXmlElement* elem) {
-    if ((elem == 0) || (elem->Value() != getXmlElementName())) {
-        errors_.store(XmlElementException("Xml element is NULL or mismatiching!"));
-        return;
-    }
-
-    const char* attrib = elem->Attribute("processorState");
-    if (attrib != 0)
-        processorState_ = std::string(attrib);
-
-    attrib = elem->Attribute("processorInportConfig");
-    if (attrib != 0)
-        processorInportConfig_ = std::string(attrib);
-
-    attrib = elem->Attribute("filename");
-    if (attrib != 0)
-        filename_ = std::string(attrib);
-
-    int time = 0;
-    elem->Attribute("time", &time);
-    time_ = static_cast<unsigned long>(time);
-}
-
-TiXmlElement* CacheIndex::CacheIndexEntry::CacheIndexSubEntry::serializeToXml() const {
-    TiXmlElement* elem = new TiXmlElement(getXmlElementName());
-    elem->SetAttribute("processorState", processorState_);
-    elem->SetAttribute("processorInportConfig", processorInportConfig_);
-    elem->SetAttribute("filename", filename_);
-    elem->SetAttribute("time", time_);
-    return elem;
 }
 
 // ----------------------------------------------------------------------------
@@ -83,10 +49,9 @@ TiXmlElement* CacheIndex::CacheIndexEntry::CacheIndexSubEntry::serializeToXml() 
 
 const std::string CacheIndex::CacheIndexEntry::loggerCat_ = "CacheIndexEntry";
 
-CacheIndex::CacheIndexEntry::CacheIndexEntry(const CacheIndex::CacheIndexEntry& cie, 
+CacheIndex::CacheIndexEntry::CacheIndexEntry(const CacheIndex::CacheIndexEntry& cie,
                                              const std::vector<CacheIndexSubEntry>& sub)
-    : Serializable(),
-      processorClassName_(cie.processorClassName_),
+    : processorClassName_(cie.processorClassName_),
       processorName_(cie.processorName_),
       portName_(cie.portName_),
       objectClassName_(cie.objectClassName_),
@@ -98,10 +63,9 @@ CacheIndex::CacheIndexEntry::CacheIndexEntry(const CacheIndex::CacheIndexEntry& 
 }
 
 CacheIndex::CacheIndexEntry::CacheIndexEntry(const std::string& processorClassName,
-                                             const std::string& processorName, const std::string& portName, 
+                                             const std::string& processorName, const std::string& portName,
                                              const std::string& objectClassName)
-    : Serializable(),
-      processorClassName_(processorClassName),
+    : processorClassName_(processorClassName),
       processorName_(processorName),
       portName_(portName),
       objectClassName_(objectClassName),
@@ -110,16 +74,14 @@ CacheIndex::CacheIndexEntry::CacheIndexEntry(const std::string& processorClassNa
 {
 }
 
-CacheIndex::CacheIndexEntry::CacheIndexEntry(TiXmlElement* const xml) 
-    : Serializable(),
-      processorClassName_(""),
+CacheIndex::CacheIndexEntry::CacheIndexEntry(TiXmlElement* const /*xml*/)
+    : processorClassName_(""),
       processorName_(""),
       portName_(""),
       objectClassName_(""),
       refCounter_(0),
       sub_()
 {
-    updateFromXml(xml);
 }
 
 std::string CacheIndex::CacheIndexEntry::findFilename(const std::string& subKey) {
@@ -149,7 +111,7 @@ bool CacheIndex::CacheIndexEntry::insert(const CacheIndexSubEntry& cid) {
     return res.second;
 }
 
-std::string CacheIndex::CacheIndexEntry::insert(const std::string& processorState, 
+std::string CacheIndex::CacheIndexEntry::insert(const std::string& processorState,
                                     const std::string& processorInportConfig,
                                     const std::string& filename)
 {
@@ -179,46 +141,6 @@ bool CacheIndex::CacheIndexEntry::subEntryExists(const std::string& subKey) cons
     return (it != sub_.end());
 }
 
-TiXmlElement* CacheIndex::CacheIndexEntry::serializeToXml() const {
-    TiXmlElement* elem = new TiXmlElement(getXmlElementName());
-    elem->SetAttribute("processorClassName", processorClassName_);
-    elem->SetAttribute("processorName", processorName_);
-    elem->SetAttribute("portName", portName_);
-    elem->SetAttribute("objectClassName", objectClassName_);
-    
-    for (SubEntryMap::const_iterator it = sub_.begin(); it != sub_.end(); ++it)
-        elem->LinkEndChild((it->second).serializeToXml());
-
-    return elem;
-}
-
-void CacheIndex::CacheIndexEntry::updateFromXml(TiXmlElement* elem) {
-    if ((elem == 0) || (elem->Value() != getXmlElementName())) {
-        errors_.store(XmlElementException("Xml element is NULL or mismatiching!"));
-        return;
-    }
-
-    const size_t numAttributes = 4;
-    std::string* attributes[numAttributes] = {&processorClassName_,
-        &processorName_, &portName_, &objectClassName_};
-    std::string xmlAttributeNames[numAttributes] = {"processorClassName", 
-        "processorName", "portName", "objectClassName"};
-
-    for (size_t i = 0; i < numAttributes; ++i) {
-        const char* attrib = elem->Attribute(xmlAttributeNames[i]);
-        if (attrib != 0)
-            *(attributes[i]) = std::string(attrib);
-    }
-
-    sub_.clear();
-    for (TiXmlElement* dataElem = elem->FirstChildElement("CacheIndexSubEntry");
-        dataElem != 0; dataElem = dataElem->NextSiblingElement("CacheIndexSubEntry"))
-    {
-        CacheIndexSubEntry cid(dataElem);
-        sub_.insert(std::make_pair(cid.makeKey(), cid));
-    }
-}
-
 // private methods
 //
 
@@ -230,7 +152,7 @@ size_t CacheIndex::CacheIndexEntry::freeDataRefCount() {
     // Sort the subentries by their reference counter (or creation time, if reference
     // counters are equal) by inserting them into a priority queue.
     //
-    std::priority_queue<CacheIndexSubEntry*, std::vector<CacheIndexSubEntry*>, 
+    std::priority_queue<CacheIndexSubEntry*, std::vector<CacheIndexSubEntry*>,
         CacheIndexSubEntry::SubEntryComparator> subEntryQueue;
     for (SubEntryMap::iterator it = sub_.begin(); it != sub_.end(); ++it)
         subEntryQueue.push(&(it->second));
@@ -256,10 +178,11 @@ size_t CacheIndex::CacheIndexEntry::freeDataRefCount() {
 
 const std::string CacheIndex::loggerCat_("CacheIndex");
 const std::string CacheIndex::indexFilename_("cacheindex.xml");
-    
+
 CacheIndex::~CacheIndex() {
+    /*
     if (CacheBase::isCachingEnabled() == true)
-        writeIndexFile();
+        writeIndexFile(); */
 }
 
 std::vector<std::pair<std::string, std::string> > CacheIndex::cleanup() {
@@ -320,15 +243,15 @@ void CacheIndex::incrementRefCounter(const IndexKey& key) {
 
 std::string CacheIndex::insert(Processor* const processor, Port* const port,
                                            const std::string& objectClassName,
-                                           const std::string& inportConfig, 
+                                           const std::string& inportConfig,
                                            const std::string& filename)
 {
-    CacheIndex::CacheIndexEntry cie(processor->getClassName().getName(), processor->getName(), 
-        port->getTypeIdentifier().getName(), objectClassName);
+    CacheIndex::CacheIndexEntry cie(processor->getClassName(), processor->getName(),
+        port->getName(), objectClassName);
     std::string entryKey = cie.makeKey();
 
-    // If the key is a new one and needs to be inserted, check whether the threshold for 
-    // the maximal number of entries has not been reached yet and free entries otherwise 
+    // If the key is a new one and needs to be inserted, check whether the threshold for
+    // the maximal number of entries has not been reached yet and free entries otherwise
     // by using their reference counters.
     //
     if (entryExists(entryKey) == false)
@@ -341,12 +264,12 @@ std::string CacheIndex::insert(Processor* const processor, Port* const port,
     //
     std::pair<EntryMap::iterator, bool> result1 = entries_.insert(std::make_pair(entryKey, cie));
     CacheIndex::CacheIndexEntry& entry = (result1.first)->second;
-    std::string subKey = entry.insert(processor->getState(), inportConfig, 
+    std::string subKey = entry.insert(processor->getState(), inportConfig,
         filename);
 
     // Take eventually displaced subentries in the current entry, make a copy of that
     // entry without its not-displaced subentries and add the DISPLACED subentries.
-    // The copied entry containing its displaced subentries is then stored in 
+    // The copied entry containing its displaced subentries is then stored in
     // displacedEntries_.
     //
     if (entry.displacedSubEntries_.empty() == false) {
@@ -359,25 +282,25 @@ std::string CacheIndex::insert(Processor* const processor, Port* const port,
     // of this CacheIndex object.
     //
     if ((instantWrite_ == true) && (subKey.empty() == false)) {
-        if (writeIndexFile() == false)
-            LERROR("CacheIndex::insert(): failed to write index file!");
+        //if (writeIndexFile() == false)
+            //LERROR("CacheIndex::insert(): failed to write index file!");
     }
-    
+
     if (subKey.empty() == false)
         return std::string(entry.makeKey() + "." + subKey);
-    
+
     return "";
 }
 
 CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const processor,
-                                                       Port* const port,
-                                                       const std::string& inportConfig)
+                                                              Port* const port,
+                                                              const std::string& inportConfig)
 {
     if ((processor == 0) || (port == 0))
         return IndexKey("", "");
 
-    return IndexKey(std::string("Processor{" + processor->getClassName().getName() 
-        + "}.Outport{" + port->getTypeIdentifier().getName() + "}"),
+    return IndexKey(std::string("Processor{" + processor->getClassName()
+        + "}.Outport{" + port->getName() + "}"),
         std::string ("InportConfig{" + inportConfig
         + "}.State{" + processor->getState() + "}"));
 }
@@ -385,12 +308,12 @@ CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const processo
 // private methods
 //
 
-CacheIndex::CacheIndex() 
+CacheIndex::CacheIndex()
     : cacheFolder_(VoreenApplication::app()->getCachePath())
 {
     if (CacheBase::isCachingEnabled() == true) {
         if (prepareCacheFolder() == true)
-            readIndexFile();
+            ;//readIndexFile();
         else {
             LINFO("Failed to prepare the directory used for cached data. The cache will be disabled.");
             LINFO("Please check your rights to access the local file system.");
@@ -404,7 +327,7 @@ size_t CacheIndex::freeEntriesRefCount() {
     if (entries_.size() < CACHE_ENTRIES_LIMIT)
         return 0;
 
-    std::priority_queue<CacheIndex::CacheIndexEntry*, std::vector<CacheIndex::CacheIndexEntry*>, 
+    std::priority_queue<CacheIndex::CacheIndexEntry*, std::vector<CacheIndex::CacheIndexEntry*>,
         CacheIndex::CacheIndexEntry::EntryComparator> entriesQueue;
     for (EntryMap::iterator it = entries_.begin(); it != entries_.end(); ++it)
         entriesQueue.push(&(it->second));
@@ -430,52 +353,6 @@ bool CacheIndex::prepareCacheFolder() {
             LINFO("Directory '" << cacheFolder_ << "' created successfully!");
         return res;
     }
-}
-
-bool CacheIndex::readIndexFile() {
-    std::string indexFile(CacheIndex::cacheFolder_ + "/" + CacheIndex::indexFilename_);
-    if (FileSystem::fileExists(indexFile) == false) {
-        LINFO("readIndexFile(): index file does not exist!");
-        return false;
-    }
-
-    entries_.clear();
-
-    TiXmlDocument xmlDoc(indexFile);
-    if (xmlDoc.LoadFile() == false) {
-        LERROR("readIndexFile(): index file could not be parsed!");
-        return false;
-    }
-
-    TiXmlElement* root = xmlDoc.FirstChildElement();
-    for (TiXmlElement* elem = root->FirstChildElement(); elem != 0; 
-        elem = elem->NextSiblingElement())
-    {
-        try {
-            CacheIndex::CacheIndexEntry cie(elem);
-            LDEBUG("readIndexFile(): inserting key '" << cie.makeKey() << "'...");
-            entries_.insert(std::make_pair(cie.makeKey(), cie));
-        } catch (...) {}
-    }
-    return true;
-}
-
-bool CacheIndex::writeIndexFile() {
-    TiXmlDocument xmlDoc;
-    
-    TiXmlDeclaration* xmlDecl = new TiXmlDeclaration("1.0", "ANSI", "yes");
-    xmlDoc.LinkEndChild(xmlDecl);
-
-    TiXmlElement* root = new TiXmlElement("VoreenCacheIndex");
-    xmlDoc.LinkEndChild(root);
-
-    for (EntryMap::const_iterator it = entries_.begin(); it != entries_.end(); ++it) {
-        const CacheIndex::CacheIndexEntry& cie = it->second;
-        TiXmlElement* elem = cie.serializeToXml();
-        root->LinkEndChild(elem);
-    }
-
-    return xmlDoc.SaveFile(CacheIndex::cacheFolder_ + "/" + CacheIndex::indexFilename_);
 }
 
 } // namespace voreen

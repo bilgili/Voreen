@@ -21,28 +21,26 @@ def benchmark():
     t = 0.0
     tIncr = 1.0 / cycles
 
-    voreen.postIVec2Msg(width, height, "set.viewport", "mainview")
-    voreen.postMsg("set.cameraReset", "mainview")
-
-    voreen.postStringMsg("SimpleRaycaster", "processBenchmark.addProcessorName", "mainview")
-    voreen.postMsg("processBenchmark.startTiming", "mainview")
+    voreen.setViewport(width, height)
+    voreenqt.processEvents()
+    voreen.resetCamera()
+    voreenqt.repaintCanvas()
 
     print "clock started"
     start = time.time()
 
     # start loop for animation
     while (counter < cycles):
-        voreen.postCreateQuatMsg(angleIncr, 0.0, 1.0, 0.0, "set.cameraApplyQuat", "mainview")
+        voreen.rotateCamera(angleIncr, 0.0, 1.0, 0.0)
 
         # increment neccessary variables
         counter = counter + 1
         t = t + tIncr
         angle = angle + angleIncr
 
+        voreenqt.repaintCanvas()
     end = time.time()
     print "clock stopped"
-
-    voreen.postMsg("processBenchmark.stopTiming", "mainview")
 
     runtime = (end - start)
     if runtime > 0:

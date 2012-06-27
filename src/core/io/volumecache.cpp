@@ -31,72 +31,75 @@
 
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/volume/volumeset.h"
+#include "voreen/core/volume/volumecollection.h"
 
 #include <time.h>
 
 namespace voreen {
 
-VolumeCache::VolumeCache() 
-    : Cache<VolumeHandle*>("VolumeHandle", "volumehandle")
+VolumeCache::VolumeCache()
+    : Cache<VolumeHandle>("VolumeHandle", typeid(VolumePort))
 {
 }
 
-VolumeHandle* VolumeCache::getPortData(const Identifier& portType, 
-                                       LocalPortMapping* const localPortMapping) const
-{
-    if (portType.getSubString(0) == assignedPortType_)
-        return localPortMapping->getVolumeHandle(portType);
-    return 0;
-}
+//VolumeHandle* VolumeCache::getPortData(Port* const port) const
+//{
+    //if ((port == 0) || (port->getType() != assignedPortType_))
+        //return 0;
 
-std::string VolumeCache::portContentToString(const Identifier& portID, 
-                                             LocalPortMapping* const localPortMapping) const
+    //VolumePort* vp = dynamic_cast<VolumePort*>(port);
+
+    //if(vp)
+        //return vp->getData();
+    //else
+        //return 0;
+//}
+
+std::string VolumeCache::portContentToString(Port* const port) const
 {
-    const std::string type = portID.getSubString(0);
-    if (type != assignedPortType_)
+    if ((port == 0) || (typeid(*port) != assignedPortType_))
         return "";
-    
-    VolumeHandle* handle = localPortMapping->getVolumeHandle(portID);
+
+    VolumeHandle* handle = getPortData(port);
     if (handle != 0) {
-        const VolumeHandle::Origin& origin = handle->getOrigin();
+        const VolumeOrigin& origin = handle->getOrigin();
         std::stringstream oss;
-        oss << origin.filename << "(" << origin.timestep << ")";
+        oss << origin.getURL();
         return oss.str();;
     }
     return "";
 }
 
 VolumeHandle* VolumeCache::loadObject(const std::string& filename) const {
+
+    VolumeHandle* result = 0;
+
     VolumeSerializerPopulator populator;
-    VolumeSerializer* serializer = populator.getVolumeSerializer();
+    const VolumeSerializer* serializer = populator.getVolumeSerializer();
     try {
-        VolumeSet* volumeSet = serializer->load(filename);
-        if (volumeSet != 0) {
-            std::vector<VolumeHandle*> volumeHandles = volumeSet->getAllVolumeHandles();
-            if (volumeHandles.size() > 0)
-                return volumeHandles[0];
+        VolumeCollection* volumeCollection = serializer->load(filename);
+        if (volumeCollection && !volumeCollection->empty()) {
+            result = volumeCollection->first();
         }
     } catch(tgt::FileNotFoundException&) {}
-    return getInvalidValue();
+    return 0;
 }
 
-std::string VolumeCache::saveObject(VolumeHandle* const object, const std::string& directory,
+std::string VolumeCache::saveObject(VolumeHandle* object, const std::string& directory,
                                     const std::string& filename)
 {
     if ((object == 0) || (object->getVolume() == 0))
         return "";
 
     VolumeSerializerPopulator populator;
-    VolumeSerializer* serializer = populator.getVolumeSerializer();
+    const VolumeSerializer* serializer = populator.getVolumeSerializer();
     if (filename.empty() == true) {
         std::ostringstream oss;
         oss << time(0) << "_" << rand() << ".dat";
-        serializer->save(directory + "/" + oss.str(), object->getVolume());
+        serializer->save(directory + "/" + oss.str(), object);
         return oss.str();
     }
-    serializer->save(directory + "/" + filename, object->getVolume());
+    serializer->save(directory + "/" + filename, object);
     return filename;
 }
 

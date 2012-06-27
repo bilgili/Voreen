@@ -23,6 +23,7 @@
  **********************************************************************/
 
 #include "tgt/font.h"
+#include "tgt/logmanager.h"
 
 #ifdef TGT_HAS_FTGL
 #include <FTGL/ftgl.h>

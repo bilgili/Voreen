@@ -32,28 +32,28 @@
 
 namespace voreen {
 
-	/**
-	* This class calculates balanced resolutions for the bricks.
-	* That means that one of two resolutions next to each other are chosen
-	* for every brick, so that there are only small differences between the 
-	* resolutions. So all blocks have either resolution 4 or 5 for example. 
-	* As a result, depending on the graphics hardware, there might be 
-	* no blocks of highest resolution at all.
-	*/
-	class BalancedBrickResolutionCalculator : public BrickResolutionCalculator {
-	
-	public:
-		BalancedBrickResolutionCalculator(BrickingInformation& brickingInformation);
+    /**
+    * This class calculates balanced resolutions for the bricks.
+    * That means that one of two resolutions next to each other are chosen
+    * for every brick, so that there are only small differences between the
+    * resolutions. So all blocks have either resolution 4 or 5 for example.
+    * As a result, depending on the graphics hardware, there might be
+    * no blocks of highest resolution at all.
+    */
+    class BalancedBrickResolutionCalculator : public BrickResolutionCalculator {
 
-		virtual void calculateBrickResolutions();
+    public:
+        BalancedBrickResolutionCalculator(BrickingInformation& brickingInformation);
 
-	protected:
+        virtual void calculateBrickResolutions();
 
-	private:
+    protected:
+
+    private:
 
 
 
-	}; //end of class
+    }; //end of class
 
 
 

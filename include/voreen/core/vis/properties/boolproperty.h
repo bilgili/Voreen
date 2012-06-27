@@ -34,17 +34,24 @@
 
 namespace voreen {
 
-class BoolProp : public TemplateProperty<bool> {
+class BoolProperty : public TemplateProperty<bool> {
 public:
-    BoolProp(const std::string& id, const std::string& guiText, bool value = false,
-        bool invalidate = true, bool invalidateShader = false);
-    virtual ~BoolProp() {}
+    BoolProperty(const std::string& id, const std::string& guiText, bool value = false,
+        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
+    virtual ~BoolProperty() {}
 
-    void updateFromXml(TiXmlElement* propElem);
-    TiXmlElement* serializeToXml() const;
+    /**
+     * @see Property::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Property::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
-    virtual std::string toString() const { 
+    virtual std::string toString() const {
         return ((value_ == true) ? "true" : "false");
     }
 };

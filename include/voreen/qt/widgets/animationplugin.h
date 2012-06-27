@@ -27,52 +27,86 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef ANIMATIONPLUGIN_H
-#define ANIMATIONPLUGIN_H
+#ifndef VRN_ANIMATIONPLUGIN_H
+#define VRN_ANIMATIONPLUGIN_H
 
-#include "widgetplugin.h"
+#include "voreen/qt/widgets/widgetplugin.h"
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/network/processornetwork.h"
+#include "voreen/core/vis/properties/cameraproperty.h"
 
-#include "tgt/navigation/trackball.h"
+#include "tgt/animation/abstractanimation.h"
+#ifdef VRN_WITH_FFMPEG
+    #include "tgt/ffmpeg/videoencoder.h"
+#endif
+#include "tgt/qt/qtcanvas.h"
 
-#include <vector>
-#include <string>
+using tgt::KeyFrame;
 
-#include <QAction>
+#include <QBasicTimer>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QFileDialog>
+#include <QGridLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QPushButton>
 #include <QSpinBox>
+#include <QTabWidget>
+#include <QVBoxLayout>
 
-// forward declarations
-class QTabWidget;
-class QDoubleSpinBox;
-class QLabel;
-class QPushButton;
-class QBasicTimer;
-class QFileDialog;
-class QToolBox;
-class QMenu;
-class QCheckBox;
-class QGroupBox;
-class QString;
-
-namespace tgt{
-	class AbstractAnimation;
-	struct KeyFrame;
-	class Camera;
-	class QtCanvas;
-}
+#include <map>
 
 namespace voreen {
 
+class VoreenTrackball;
 
-class VideoResolutionSpinBox : public QSpinBox {
-public:
-    VideoResolutionSpinBox(QWidget * parent = 0);
-    ~VideoResolutionSpinBox();
-
-};
-
-class AnimationPlugin : public WidgetPlugin {
+class AnimationPlugin : public WidgetPlugin, public ProcessorNetworkObserver {
     Q_OBJECT
 public:
+    AnimationPlugin(QWidget* parent);
+
+    virtual ~AnimationPlugin();
+
+    /// Implementation of ProcessorNetworkObserver interface
+    virtual void networkChanged();
+
+    /// Called by VoreenVisualization
+    void setNetwork(ProcessorNetwork* processorNetwork);
+
+private slots:
+    void controlledCameraChanged(int index);
+    void controlledCanvasChanged(int index);
+
+    void clearAnimation();
+    void loadAnimation();
+    void pauseAnimation();
+    void recordAnimationVideo();
+    void recordAnimationFrameSeq();
+    void saveAnimation();
+    void startAnimation(const bool record = false);
+    void stopAnimation();
+
+    void selectFrame(QAction* action);
+    void selectFrame(int frameID, bool jumpToFrame = true);
+
+    void appendKeyframe();
+    void deleteKeyframe();
+    void insertKeyframe();
+    void updateKeyframe();
+
+    void setWidgetState();
+    void tabChanged(int);
+    void videoSetup();
+
+private:
+    enum AnimationState { Stopped, Running, Paused, Recording };
+
+    struct KeyFrameQt : KeyFrame {
+        QPixmap pic_;
+    };
+
     struct QExtAction : public QAction {
         QExtAction(const QString& text, QObject* parent, int num)
             : QAction(text, parent), num_(num) {}
@@ -80,116 +114,99 @@ public:
         int num_;
     };
 
-    AnimationPlugin(QWidget* parent, tgt::Camera* camera, tgt::QtCanvas* canvas = 0, tgt::Trackball* trackBall = 0);
-
-    virtual ~AnimationPlugin();
-
-    virtual void createWidgets();
-    virtual void createConnections();
-
-private slots:
-    void setWidgetState();
-
-    void appendKeyframe();
-    void updateKeyframe();
-    void startAnimation(bool record = false);
-    void stopAnimation();
-    void pauseAnimation();
-    void clearAnimation();
-    void recordAnimationVideo();
-    void recordAnimationFrameSeq();
-    void saveAnimation();
-    void loadAnimation();
-    void animationStep();
-    void selectFrame(int frameID, bool jumpToFrame = true);
-    void selectFrame(QAction* action);
-    void deleteKeyframe();
-    void insertKeyframe();
-    void updateFrameTime(double val);
+    typedef std::map<tgt::QtCanvas*, std::string> CanvasMap;
+    typedef std::map<CameraProperty*, std::string> CameraMap;
 
 private:
-    void recordAnimation(bool videoRecord = false);
+    QWidget* createAnimationFramesTab();
+    QWidget* createAnimationCircleTab();
+    QGroupBox* createAnimationPlayerBox(QWidget* parent);
+    QGroupBox* createAnimationRenderBox(QWidget* parent);
 
-    virtual void timerEvent(QTimerEvent *event);
-
-    bool isRenderingVideo() const;
-
+    void animationStep();
+    void createConnections();
+    void createWidgets();
+    void gotoFrame(int frameID);
+    std::vector<KeyFrame> keyFrameVec(const std::vector<AnimationPlugin::KeyFrameQt>& vec);
+    void recordAnimation(bool recordVideo);
+    void refreshComboBoxes();
     void refreshFrameMenu();
-    void gotoFrame(int num);
+    virtual void timerEvent(QTimerEvent* event);
+    void updateReadyState();
 
-    enum AnimationState {
-        Stopped,
-        Running,
-        Paused,
-        Recording
-    } animationState_;
+#ifdef VRN_WITH_FFMPEG
+    tgt::VideoEncoder ffmpegEncoder_;
 
-    tgt::Trackball* trackBall_;
-	tgt::Camera* camera_;
-	tgt::QtCanvas* canvas_;
+    QComboBox* preset_;
+    QSpinBox* bitrate_;
 
-    std::vector<tgt::KeyFrame> currentAnimation_;
-    int currentKeyframe_;
+    QDialog* createVideoSetupDialog(QWidget* parent, int curPreset, int curBitrate);
+#endif
 
-    /*
-     * in general animation-plugin's widget consists of four parts, playback-control, animation-edit, animation-load/save and rendering
-     */
-    QTabWidget* editBox_;
-    /*QGroupBox* playerBox_;
-    QGroupBox* recordBox_;
-    QGroupBox* renderBox_;*/// not of interest after init and signal-emiters are exported
+private:
+    ProcessorNetwork* processorNetwork_;
+    CameraProperty* camera_;
+    tgt::QtCanvas* canvas_;
+    VoreenPainter* painter_;
+    tgt::ivec2 canvasSize_;
 
-    /**
-     * <emph>animation-edit</emph> will be switched depending the chosen animType given by current animTabBar estate
-     */
-    QGroupBox *editCircle_;
-    QSpinBox *selectCircleAngle_;
-    QSpinBox *selectCircleSpeed_;
-
-    tgt::AbstractAnimation *animation_;
-
-    /*
-     * numAnimationFrames_/fps is playback speed-indicator
-     */
-    int numAnimationFrames_;
+    bool readyState_;
+    bool renderingVideo_;
+    AnimationState animationState_;
+    tgt::AbstractAnimation* animation_;
+    std::vector<KeyFrameQt> currentAnimation_;
     int currentAnimationFrame_;
-
-    QSpinBox *spinPlaybackFPS_;
-    QSpinBox *spinRecordingFPS_;
-
-    float timeOffset_;// TODO check if droppable
+    int currentKeyframe_;
+    int numAnimationFrames_;
+    float timeOffset_;
     std::string recordPathName_;
 
-    bool renderingVideo_;
+    CanvasMap allCanvases_; /** All canvas from all CanvasRenderers in the current network */
+    CameraMap allCameras_;  /** All cameras from all Processors in the current network */
 
-    QPushButton* saveAsVideoButton_; // will be disabled in case ffmpeg is not available
+    // Qt stuff
+    //
+    QBasicTimer* animationTimer_;
+
+    QComboBox* comboCanvases_;
+    QComboBox* comboCameras_;
+
+    QWidget* tabFrames_;
+    QWidget* tabCircle_;
+    QGroupBox* loadSaveBox_;
+    QGroupBox* playerBox_;
+    QGroupBox* renderBox_;
+    QTabWidget* editBox_;
+
+    QVBoxLayout* mainLayout_;
     QPushButton* saveAsFrameSequenceButton_;
+    QPushButton* saveAsVideoButton_; // will be disabled in case ffmpeg is not available
+    QPushButton* videoSetupButton_;
 
-    QGroupBox *editFrames_;
+    QPushButton* clearAnimation_;
+    QPushButton* loadAnimation_;
+    QPushButton* pauseAnimation_;
+    QPushButton* saveAnimation_;
+    QPushButton* startAnimation_;
+    QPushButton* stopAnimation_;
 
-    QPushButton *selectKeyframe_;
-    QPushButton *appendKeyframe_;
-    QPushButton *insertKeyframe_;
-    QPushButton *updateKeyframe_;
-    QPushButton *deleteKeyframe_;
-    QPushButton *clearAnimation_;
+    QPushButton* appendKeyframe_;
+    QPushButton* deleteKeyframe_;
+    QPushButton* insertKeyframe_;
+    QPushButton* selectKeyframe_;
+    QPushButton* updateKeyframe_;
 
-    QPushButton *startAnimation_;
-    QPushButton *stopAnimation_;
-    QPushButton *pauseAnimation_;
-    QPushButton *saveAnimation_;
-    QPushButton *loadAnimation_;
-
-    VideoResolutionSpinBox *spinWidth_;
-    VideoResolutionSpinBox *spinHeight_;
-    QCheckBox *checkLoop_;
-    QBasicTimer *animationTimer_;
-
-    QDoubleSpinBox *selectFrameTime_;
-    QMenu *frameMenu_;
-
+    QMenu* frameMenu_;
+    QSpinBox* selectCircleAngle_;
+    QSpinBox* selectCircleSpeed_;
+    QSpinBox* spinPlaybackFPS_;
+    QSpinBox* spinRecordingFPS_;
+    QSpinBox* spinWidth_;
+    QSpinBox* spinHeight_;
+    QCheckBox* checkLoop_;
+    QDoubleSpinBox* selectFrameTime_;
 };
 
-} // namespace
+}   // namespace voreen
 
-#endif // ANIMATIONPLUGIN_H
+#endif

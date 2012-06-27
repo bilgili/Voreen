@@ -31,40 +31,40 @@
 
 namespace voreen {
 
-	BrickedVolumeGL::BrickedVolumeGL(BrickedVolume* brickedVolume) 
-		: VolumeGL(brickedVolume->getEepVolume() ),
-		packedVolumeGL_(0),
-		indexVolumeGL_(0)
-	{
-		packedVolumeGL_ = new VolumeGL(brickedVolume->getPackedVolume() );
-		indexVolumeGL_ = new VolumeGL(brickedVolume->getIndexVolume() );
-	}
+    BrickedVolumeGL::BrickedVolumeGL(BrickedVolume* brickedVolume)
+        : VolumeGL(brickedVolume->getEepVolume() ),
+        packedVolumeGL_(0),
+        indexVolumeGL_(0)
+    {
+        packedVolumeGL_ = new VolumeGL(brickedVolume->getPackedVolume() );
+        indexVolumeGL_ = new VolumeGL(brickedVolume->getIndexVolume() );
+    }
 
-	BrickedVolumeGL::~BrickedVolumeGL() {
-		if (packedVolumeGL_) {
-			delete packedVolumeGL_;
-		}
+    BrickedVolumeGL::~BrickedVolumeGL() {
+        if (packedVolumeGL_) {
+            delete packedVolumeGL_;
+        }
 
-		if (indexVolumeGL_) {
-			delete indexVolumeGL_;
-		}
-	}
+        if (indexVolumeGL_) {
+            delete indexVolumeGL_;
+        }
+    }
 
-	VolumeGL* BrickedVolumeGL::getPackedVolumeGL() {
-		return packedVolumeGL_;
-	}
+    VolumeGL* BrickedVolumeGL::getPackedVolumeGL() {
+        return packedVolumeGL_;
+    }
 
-	VolumeGL* BrickedVolumeGL::getIndexVolumeGL() {
-		return indexVolumeGL_;
-	}
+    VolumeGL* BrickedVolumeGL::getIndexVolumeGL() {
+        return indexVolumeGL_;
+    }
 
-	void BrickedVolumeGL::setPackedVolumeGL(VolumeGL* packedVolumeGL) {
-		packedVolumeGL_ = packedVolumeGL;
-	}
+    void BrickedVolumeGL::setPackedVolumeGL(VolumeGL* packedVolumeGL) {
+        packedVolumeGL_ = packedVolumeGL;
+    }
 
-	void BrickedVolumeGL::setIndexVolumeGL(VolumeGL* indexVolumeGL) {
-		indexVolumeGL_ = indexVolumeGL;
-	}
+    void BrickedVolumeGL::setIndexVolumeGL(VolumeGL* indexVolumeGL) {
+        indexVolumeGL_ = indexVolumeGL;
+    }
 
 } //namespace
 

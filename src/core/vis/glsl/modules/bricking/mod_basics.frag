@@ -29,16 +29,16 @@
 
 /**
 * As mod_sampler3d.frag is usually not included if bricking is used,
-* these functions have to be defined elsewhere to be usable for bricking. 
-* Simply including it here won't work, as some aspects of the functions have 
-* to be different. 
+* these functions have to be defined elsewhere to be usable for bricking.
+* Simply including it here won't work, as some aspects of the functions have
+* to be different.
 */
 
 /*
  * This struct contains information about a volume, like
  * its dimensions and spacing. Additionally, the reciprocal
  * values of all parameters are available (suffix RCP) .
- * The values are set automatically by 
+ * The values are set automatically by
  * VolumeRenderer::bindVolumes() if necessary.
  */
 struct VOLUME_PARAMETERS {
@@ -50,23 +50,23 @@ struct VOLUME_PARAMETERS {
     vec3 volumeCubeSizeRCP_;
     vec3 texCoordScaleFactor_;      // scale factor for tex coords, if VRN_TEXTURE_3D_SCALED is used
     vec3 texCoordScaleFactorRCP_;
-	float bitDepthScale_;
+    float bitDepthScale_;
 };
 
 /*
- * Function for volume texture lookup. In addition to the volume and the texture coordinates 
- * the corresponding VOLUME_PARAMETERS struct has to be passed. 
+ * Function for volume texture lookup. In addition to the volume and the texture coordinates
+ * the corresponding VOLUME_PARAMETERS struct has to be passed.
  * Before returning the fetched value it is normalized to the interval [0,1], in order to deal
  * with 12 bit data sets.
  */
 vec4 textureLookup3D(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 texCoords) {
-	vec4 result;
+    vec4 result;
     #if defined(VRN_TEXTURE_3D)
         result = texture3D(volume, texCoords);
     #elif defined(VRN_TEXTURE_3D_SCALED)
         result = texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
     #endif
-	result *= volumeParameters.bitDepthScale_;
-	return result;
+    result *= volumeParameters.bitDepthScale_;
+    return result;
 }
 

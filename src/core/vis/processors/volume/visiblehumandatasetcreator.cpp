@@ -28,14 +28,8 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/volume/visiblehumandatasetcreator.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/volume/volumeset.h"
-#include "voreen/core/vis/processors/volumesetsourceprocessor.h"
 #include "voreen/core/io/volumeserializer.h"
 
-#ifndef VRN_VOLUMESELECTIONPROCESSOR_H
-#include "voreen/core/vis/processors/volumeselectionprocessor.h"
-#endif
 #ifndef VRN_VOLUMESERIALIZERPOPULATOR_H
 #include "voreen/core/io/volumeserializerpopulator.h"
 #endif
@@ -47,8 +41,23 @@
 
 namespace voreen {
 
-VisibleHumanDatasetCreator::VisibleHumanDatasetCreator() {
-    createOutport("volumeset.newdataset");
+VisibleHumanDatasetCreator::VisibleHumanDatasetCreator()
+    : imageMatrixSizeXProp_("image.matrix.size.x.changed","Image Matrix Size X",512,0,4096),
+    imageMatrixSizeYProp_("image.matrix.size.y.changed","Image Matrix Size Y",512,0,4096),
+    thicknessXProp_("thickness.x.changed","Slice Thickness X",1.0f,0.0f,20.0f),
+    thicknessYProp_("thickness.y.changed","Slice Thickness Y",1.0f,0.0f,20.0f),
+    thicknessZProp_("thickness.z.changed","Slice Thickness Z",1.0f,0.0f,20.0f),
+    bitsStoredProp_("bits.stored.changed","BitsStored",12,0,256),
+    headerSizeProp_("header.size.changed","Header Size",0,0,20000),
+    readInfosFromHeaderProp_("read.infos.from.header.changed","Read infos from header",false),
+    datasetNameProp_("dataset.name.changed","Dataset filename","Dataset filename", "", "*.*"),
+    cropBottomProp_("crop.bottom.changed","Crop Bottom",0,0,1216),
+    cropTopProp_("crop.top.changed","Crop Top",0,0,1216),
+    cropLeftProp_("crop.left.changed","Crop Left",0,0,2048),
+    cropRightProp_("crop.right.changed","Crop Right",0,0,2048),
+    outport_(Port::OUTPORT, "volumeset.newdataset", true)
+{
+    addPort(outport_);
 
     datasetReady_=false;
 
@@ -59,42 +68,29 @@ VisibleHumanDatasetCreator::VisibleHumanDatasetCreator() {
     models.push_back("I");
     models.push_back("RGB");
 
-    imageMatrixSizeXProp_ = new IntProp("image.matrix.size.x.changed","Image Matrix Size X",512,0,4096);
-    imageMatrixSizeYProp_ = new IntProp("image.matrix.size.y.changed","Image Matrix Size Y",512,0,4096);
-    thicknessXProp_ = new FloatProp("thickness.x.changed","Slice Thickness X",1.0f,0.0f,20.0f);
-    thicknessYProp_ = new FloatProp("thickness.y.changed","Slice Thickness Y",1.0f,0.0f,20.0f);
-    thicknessZProp_ = new FloatProp("thickness.z.changed","Slice Thickness Z",1.0f,0.0f,20.0f);
-    objectModelProp_ = new EnumProp("object.model.changed","Object Model",models,0);
-    formatProp_ = new EnumProp("format.changed","Data format",formats,1);
-    bitsStoredProp_ = new IntProp("bits.stored.changed","BitsStored",12,0,256);
-    headerSizeProp_ = new IntProp("header.size.changed","Header Size",0,0,20000);
-    readInfosFromHeaderProp_ = new BoolProp("read.infos.from.header.changed","Read infos from header",false);
-    datasetNameProp_ = new FileDialogProp("dataset.name.changed","Dataset filename","Dataset filename", "", "*.*");
+//    objectModelProp_ = new EnumProperty("object.model.changed","Object Model",models,0);
+//    formatProp_ = new EnumProperty("format.changed","Data format",formats,1);
     std::vector<std::string> emptyVector;
-    sliceNamesProp_ = new StringVectorProp("slice.names.changed","Slices",emptyVector);
-    headerNamesProp_ = new StringVectorProp("header.names.changed","Headers",emptyVector);
-    cropTopProp_ = new IntProp("crop.top.changed","Crop Top",0,0,1216);
-    cropBottomProp_ = new IntProp("crop.bottom.changed","Crop Bottom",0,0,1216);
-    cropLeftProp_ = new IntProp("crop.left.changed","Crop Left",0,0,2048);
-    cropRightProp_ = new IntProp("crop.right.changed","Crop Right",0,0,2048);
+/*    sliceNamesProp_ = new StringVectorProperty("slice.names.changed","Slices",emptyVector);
+    headerNamesProp_ = new StringVectorProperty("header.names.changed","Headers",emptyVector); */
 
-    props_.push_back(datasetNameProp_);
-    props_.push_back(sliceNamesProp_);
-    props_.push_back(headerNamesProp_);
-    props_.push_back(imageMatrixSizeXProp_);
-    props_.push_back(imageMatrixSizeYProp_);
-    props_.push_back(thicknessXProp_);
-    props_.push_back(thicknessYProp_);
-    props_.push_back(thicknessZProp_);
-    props_.push_back(formatProp_);
-    props_.push_back(objectModelProp_);
-    props_.push_back(bitsStoredProp_);
-    props_.push_back(headerSizeProp_);
-    props_.push_back(readInfosFromHeaderProp_);
-    props_.push_back(cropTopProp_);
-    props_.push_back(cropBottomProp_);
-    props_.push_back(cropLeftProp_);
-    props_.push_back(cropRightProp_);
+    addProperty(datasetNameProp_);
+//    addProperty(sliceNamesProp_);
+//    addProperty(headerNamesProp_);
+    addProperty(imageMatrixSizeXProp_);
+    addProperty(imageMatrixSizeYProp_);
+    addProperty(thicknessXProp_);
+    addProperty(thicknessYProp_);
+    addProperty(thicknessZProp_);
+//    addProperty(formatProp_);
+//    addProperty(objectModelProp_);
+    addProperty(bitsStoredProp_);
+    addProperty(headerSizeProp_);
+    addProperty(readInfosFromHeaderProp_);
+    addProperty(cropTopProp_);
+    addProperty(cropBottomProp_);
+    addProperty(cropLeftProp_);
+    addProperty(cropRightProp_);
 
     sliceThicknessX_ = 1.0f;
     sliceThicknessY_ = 1.0f;
@@ -143,14 +139,14 @@ void VisibleHumanDatasetCreator::createDataset() {
 
         datasetReady_=true;
 
-        VolumeSerializerPopulator* populator = new VolumeSerializerPopulator();
-        VolumeSerializer* serializer = populator->getVolumeSerializer();
+        //VolumeSerializerPopulator* populator = new VolumeSerializerPopulator();
+        //const VolumeSerializer* serializer = populator->getVolumeSerializer();
 
-        VolumeSet* volumeset = serializer->load(datFileName_);
+        //VolumeCollection* volumeCollection = serializer->load(datFileName_);
 
-        VolumeSelectionProcessor* vsp = dynamic_cast<VolumeSelectionProcessor*>(getOutports().at(0)->getConnected().at(0)->getProcessor());
-        if (vsp != 0)
-            vsp->setVolumeSet(volumeset);
+        //VolumeSelectionProcessor* vsp = dynamic_cast<VolumeSelectionProcessor*>(getOutports().at(0)->getConnected().at(0)->getProcessor());
+        /*if (vsp != 0)
+            vsp->setVolumeSet(volumeset); */
     }
 }
 
@@ -287,7 +283,7 @@ void VisibleHumanDatasetCreator::readHeaderInfos() {
 
 }
 
-void VisibleHumanDatasetCreator::process(LocalPortMapping* /*portMapping*/) {
+void VisibleHumanDatasetCreator::process() {
     if (!datasetReady_) {
         if (readInfosFromHeader_) {
             readHeaderInfos();
@@ -296,45 +292,4 @@ void VisibleHumanDatasetCreator::process(LocalPortMapping* /*portMapping*/) {
     }
 }
 
-void VisibleHumanDatasetCreator::processMessage(Message* msg, const Identifier& /*dest*/) {
-    if (msg->id_ == "thickness.x.changed") {
-        sliceThicknessX_ = msg->getValue<float>();
-    }
-    else if (msg->id_ == "thickness.y.changed") {
-        sliceThicknessY_ = msg->getValue<float>();
-    }
-    else if (msg->id_ == "thickness.z.changed") {
-        sliceThicknessZ_ = msg->getValue<float>();
-    }
-    else if (msg->id_ == "object.model.changed") {
-        objectModel_ = msg->getValue<std::string>();
-    }
-    else if (msg->id_ == "format.changed") {
-        format_ = msg->getValue<std::string>();
-    }
-    else if (msg->id_ == "bits.stored.changed") {
-        bitsStored_ = msg->getValue<int>();
-    }
-    else if (msg->id_ == "header.size.changed") {
-        headerSize_ = msg->getValue<int>();
-    }
-    else if (msg->id_ == "image.matrix.size.x.changed") {
-        imageMatrixSizeX_ = msg->getValue<int>();
-    }
-    else if (msg->id_ == "image.matrix.size.y.changed") {
-        imageMatrixSizeY_ = msg->getValue<int>();
-    }
-    else if (msg->id_ == "read.infos.from.header.changed") {
-        readInfosFromHeader_ = msg->getValue<bool>();
-    }
-    else if (msg->id_ == "dataset.name.changed") {
-        datasetName_ = msg->getValue<std::string>();
-    }
-    else if (msg->id_ == "slice.names.changed") {
-        sliceNames_ = msg->getValue<std::vector<std::string> >();
-    }
-    else if (msg->id_ == "header.names.changed") {
-        headerNames_ = msg->getValue<std::vector<std::string> >();
-    }
-}
 } //namespace voreen

@@ -29,10 +29,10 @@
 
 namespace voreen {
 
-	BrickResolutionCalculator::BrickResolutionCalculator(BrickingInformation& brickingInformation)
-		: brickingInformation_(brickingInformation) 
-	{
-	}
+    BrickResolutionCalculator::BrickResolutionCalculator(BrickingInformation& brickingInformation)
+        : brickingInformation_(brickingInformation)
+    {
+    }
 
 } //namespace
 

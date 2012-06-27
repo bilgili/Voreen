@@ -45,26 +45,11 @@ template<class T>
 class TemplateProperty : public Property {
 public:
     TemplateProperty(const std::string& id, const std::string& guiText,
-                     const T& value, bool invalidate = true, bool invalidateShader = false);
+                     const T& value, Processor::InvalidationLevel = Processor::INVALID_RESULT);
     virtual ~TemplateProperty();
-
-    /**
-     * Indicates whether this Property invalidate its owner.
-     * TODO: should be renamed, as this has nothing to do with validate()
-     */
-    bool invalidates() const { return invalidates_; }
-
-    /**
-     * Indicates whether this Property invalidate the shader of its owner.
-     */
-    bool invalidatesShader() const { return invalidatesShader_; }
 
     void set(const T& value, bool updateWidgets = true);
 
-    /**
-     * Sets the visibility of this property in the gui.
-     */
-    virtual void setVisible(bool state);
     const T& get() const { return value_; }
 
     // convenience methods for PropertyConditions - return Reference to the added Condition
@@ -140,8 +125,6 @@ protected:
     void validate(const T& value, bool restore = true);
 
     T value_;
-    const bool invalidates_;
-    const bool invalidatesShader_;
     std::vector<Condition*> conditions_;
     std::vector<Condition*> validations_;
 
@@ -153,19 +136,10 @@ private:
 
 template<class T>
 TemplateProperty<T>::TemplateProperty(const std::string& id, const std::string& guiText,
-                                      const T& value, bool invalidate, bool invalidateShader)
-  : Property(id, guiText),
-    value_(value),
-    invalidates_(invalidate),
-    invalidatesShader_(invalidateShader)
+                                      const T& value, Processor::InvalidationLevel invalidationLevel)
+  : Property(id, guiText, invalidationLevel),
+    value_(value)
 {
-    if (invalidates_ == true) {
-        onChange(InvalidateOwnerAction(this));
-    }
-
-    if (invalidatesShader_ == true) {
-        onChange(InvalidateOwnerShaderAction(this));
-    }
 }
 
 template<class T>
@@ -174,7 +148,7 @@ TemplateProperty<T>::~TemplateProperty() {
     // delete conditions
     for (i = 0; i < conditions_.size() ;++i)
         delete conditions_.at(i);
-    
+
     // delete validations
     for (i = 0; i < validations_.size(); ++i)
         delete validations_.at(i);
@@ -184,23 +158,28 @@ TemplateProperty<T>::~TemplateProperty() {
 }
 
 template<class T>
-void TemplateProperty<T>::setVisible(bool state) {
-    visible_ = state;
-    // display widgets
-    setWidgetsVisible(state);
-}
-
-template<class T>
 void TemplateProperty<T>::set(const T& value, bool updateWidgets) {
     if (value_ != value) {
+        ChangeData changeData;
+        changeData.setOldValue(BoxObject(value_));
         validate(value, false);
+
+        if (value_ != value)
+            return;
+
+        // invalidate owner:
+        invalidateOwner();
+
+        changeData.setNewValue(BoxObject(value_));
+        for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++)
+            (*it)->onChange(changeData);
 
         // notify widgets of updated values
         if (updateWidgets)
             this->updateWidgets();
 
         // check if conditions are met and exec actions
-        for(size_t j = 0; j < conditions_.size(); ++j)
+        for (size_t j = 0; j < conditions_.size(); ++j)
             conditions_[j]->exec();
     }
 }
@@ -210,15 +189,11 @@ void TemplateProperty<T>::validate(const T& value, bool restore) {
     // save value
     T temp(value_);
     value_ = value;
-    try {
-        // validate all validations
-        for (size_t j = 0; j < validations_.size(); ++j)
-            validations_[j]->validate();
-    } catch (Condition::ValidationFailed&) {
-        value_ = temp; // restore if invalid
-        throw;
-    }
-    if (restore) // everything validated ok, restore value if requested
+    bool valid = true;
+    for (size_t j = 0; j < validations_.size() && valid; ++j)
+        valid &= validations_[j]->validate();
+
+    if (!valid || restore) // restore if new value valid or requested
         value_ = temp;
 }
 

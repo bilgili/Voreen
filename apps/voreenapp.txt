@@ -47,16 +47,16 @@ win32 {
   }
 
   contains(DEFINES, VRN_WITH_DCMTK) {
-    LIBS += "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmimage.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmimgle.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmnet.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmdata.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmjpeg.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg8.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg12.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ijg16.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/ofstd.lib" \
-            "$${DCMTK_DIR}/lib/$(ConfigurationName)/dcmtls.lib"
+    LIBS += "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmimage.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmimgle.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmnet.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmdata.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmjpeg.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg8.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg12.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg16.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ofstd.lib" \
+            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmtls.lib"
   }
 
   contains(DEFINES, VRN_WITH_DEVIL) {
@@ -74,11 +74,9 @@ win32 {
     LIBS += "$${TIFF_DIR}/lib/libtiff.lib"
   }
 
-  contains(DEFINES, VRN_WITH_ZIP) {
-    win32-msvc2005: LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2005/ZipArchive.lib"
-    win32-msvc2008: LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2008/$${MSC_CONFIG}/ZipArchive.lib"
-    win32-g++:      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/mingw/libziparchive.lib"
-  }
+  contains(DEFINES, VRN_WITH_ZLIB) {
+    LIBS += "$${ZLIB_DIR}/lib/zdll.lib"
+  }	
 
   contains(DEFINES, VRN_WITH_PYTHON) {
     win32-msvc2005: LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/VS2005/python26.lib"
@@ -103,8 +101,8 @@ win32 {
   }
   
   contains(DEFINES, VRN_WITH_DCMTK) {
-    LIBS += "$${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkeay.lib"
-    LIBS += "$${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkssl.lib"
+    LIBS += "$${VRN_HOME}/ext/openssl/lib/$${MSC_CONFIG}/dcmtkeay.lib"
+    LIBS += "$${VRN_HOME}/ext/openssl/lib/$${MSC_CONFIG}/dcmtkssl.lib"
   }
 
   contains(DEFINES, VRN_WITH_BUGTRAP) {
@@ -132,11 +130,6 @@ win32 {
 unix {
   DEFINES += LINUX
 
-  contains(DEFINES, VRN_WITH_DCMTK) {
-    LIBS += -lz -lssl
-    !without_libwrap: LIBS += -lwrap
-  }
-
   !macx: LIBS += -lGL -lGLU
   LIBS += -lGLEW
   qt : LIBS += -lvoreen_qt
@@ -149,8 +142,8 @@ unix {
   contains(DEFINES, VRN_WITH_TIFF) {
     LIBS += -ltiff
   }
-  contains(DEFINES, VRN_WITH_ZIP) {
-    LIBS += -lziparch
+  contains(DEFINES, VRN_WITH_ZLIB) {
+	LIBS += -lz
   }
   contains(DEFINES, VRN_WITH_CLIBPDF) {
     LIBS += -lcpdf
@@ -159,10 +152,15 @@ unix {
     LIBS += -lfreetype -lftgl
   }
   contains(DEFINES, VRN_WITH_DCMTK) {
+
+    LIBS += -lz -lssl
+    !without_libwrap: LIBS += -lwrap
+
     LIBS += -ldcmimage -ldcmimgle -ldcmnet -ldcmdata \
             -ldcmjpeg -lijg8 -lijg12 -lijg16 -lofstd
 
     LIBS += -ldcmtls
+
     macx: LIBS += -lcrypto
   }
   

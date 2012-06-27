@@ -46,11 +46,10 @@ namespace voreen {
 class TUVVolumeReader : public VolumeReader {
 public:
     TUVVolumeReader() {
-         name_ = "TUV Reader";
          extensions_.push_back("tuv");
     }
 
-    virtual VolumeSet* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& fileName)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

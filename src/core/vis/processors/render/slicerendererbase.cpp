@@ -38,7 +38,6 @@
 #include "tgt/plane.h"
 #include "tgt/glmath.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/processors/render/slicerendererbase.h"
 #include "voreen/core/volume/modality.h"
 
@@ -50,28 +49,34 @@ using tgt::ivec3;
 
 namespace voreen {
 
-const Identifier SliceRendererBase::transFuncTexUnit_("transFuncTexUnit");
-const Identifier SliceRendererBase::volTexUnit_("volTexUnit");
+const std::string SliceRendererBase::transFuncTexUnit_("transFuncTexUnit");
+const std::string SliceRendererBase::volTexUnit_("volTexUnit");
 
 SliceRendererBase::SliceRendererBase()
     : VolumeRenderer(),
-    transferFunc_(setTransFunc_, "Transfer function"),
-    transferFuncShader_(0)
+    transferFunc_("transferFunction", "Transfer function"),
+    transferFuncShader_(0),
+    outport_(Port::OUTPORT, "image.outport"),
+    inport_(Port::INPORT, "volumehandle.volumehandle")
 {
-    std::vector<Identifier> units;
+    std::vector<std::string> units;
     units.push_back(transFuncTexUnit_);
     units.push_back(volTexUnit_);
     tm_.registerUnits(units);
 
-    addProperty(&transferFunc_);
+    addProperty(transferFunc_);
 
-    createInport("volumehandle.volumehandle");
-    createOutport("image.outport");
+    addPort(outport_);
+    addPort(inport_);
 }
 
 SliceRendererBase::~SliceRendererBase() {
     if (transferFuncShader_)
         ShdrMgr.dispose(transferFuncShader_);
+}
+
+void SliceRendererBase::initialize() throw (VoreenException) {
+    VolumeRenderer::initialize();
 }
 
 /*
@@ -96,8 +101,12 @@ void SliceRendererBase::deinit() {
 //
 
 bool SliceRendererBase::ready() const {
+
+    if (!inport_.isReady())
+        return false;
+
     // we need at least one texture
-    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
+    VolumeGL* volumeGL = inport_.getData()->getVolumeGL();
     if (volumeGL->getNumTextures() == 0)
         return false;
 

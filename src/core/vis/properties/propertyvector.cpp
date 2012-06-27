@@ -29,7 +29,7 @@
 
 #include "voreen/core/vis/properties/propertyvector.h"
 #include "voreen/core/vis/properties/condition.h"
-#include "voreen/core/vis/propertywidgetfactory.h"
+#include "voreen/core/vis/properties/propertywidgetfactory.h"
 #include <sstream>
 
 
@@ -66,60 +66,36 @@ void PropertyVector::addProperty(Property* prop) {
     properties_.push_back(prop);
 }
 
-void PropertyVector::updateFromXml(TiXmlElement* rootElem) {
+void PropertyVector::serialize(XmlSerializer& s) const {
+    Property::serialize(s);
 
-    Property::updateFromXml(rootElem);
+    // serialize the properties of the processor
+    typedef std::map<std::string, Property*> PropertyMapType;
 
-    TiXmlElement* propertyElementsElem = rootElem->FirstChildElement("ElementProperties");
-    if (propertyElementsElem) {
-        
-        // iterate over Property Elements and restore them
-        int propID = 0;
-        TiXmlElement* propElem;
-        for (propElem = propertyElementsElem->FirstChildElement("Property");
-             propElem;
-             propElem = propElem->NextSiblingElement("Property")) {
-            
-            if (propID < getNumProperties()) {
-                try {
-                    properties_[propID]->updateFromXml(propElem);
-                }
-                catch (XmlException& e){
-                    errors_.store(e);
-                }
-            }
-            else {
-                errors_.store(XmlElementException(getIdent().getName() + ": Number of stored property elements \
-                                                   exceeds number of properties in PropertyVector"));
-                break;
-            }
+    PropertyMapType propertyMap;
+    for (Properties::const_iterator it = properties_.begin(); it != properties_.end(); ++it)
+        propertyMap[(*it)->getId()] = *it;
 
-            propID++;
-        }
-
-        if (propID < getNumProperties()) 
-            errors_.store(XmlElementException(getIdent().getName() + ": Less stored property elements than \
-                                               properties in PropertyVector"));
-    }
-    else {
-        errors_.store(XmlElementException("Element 'ElementProperties' missing in " + getIdent().getName()));
-    }
-    
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
+    s.setUsePointerContentSerialization(true);
+    s.serialize("ElementProperties", propertyMap, "Property", "name");
+    s.setUsePointerContentSerialization(usePointerContentSerialization);
 }
 
-TiXmlElement* PropertyVector::serializeToXml() const {
+void PropertyVector::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
 
-    TiXmlElement* root = Property::serializeToXml();
-    
-    // serialize element properties
-    TiXmlElement* elementProp = new TiXmlElement("ElementProperties");
-    for (size_t i=0; i<properties_.size(); ++i) {
-        TiXmlElement* propXml = properties_[i]->serializeToXml();
-        elementProp->LinkEndChild(propXml);
-    }
-    root->LinkEndChild(elementProp);
+    // deserialize the properties of the processor
+    typedef std::map<std::string, Property*> PropertyMapType;
 
-    return root;
+    PropertyMapType propertyMap;
+    for (Properties::const_iterator it = properties_.begin(); it != properties_.end(); ++it)
+        propertyMap[(*it)->getId()] = *it;
+
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
+    s.setUsePointerContentSerialization(true);
+    s.deserialize("ElementProperties", propertyMap, "Property", "name");
+    s.setUsePointerContentSerialization(usePointerContentSerialization);
 }
 
 std::string PropertyVector::toString() const {
@@ -127,10 +103,10 @@ std::string PropertyVector::toString() const {
     for (size_t i=0; i<properties_.size(); ++i)
         str += Property::valueToString(properties_[i]) + "\n";
 
-    return str;    
+    return str;
 }
 
-int PropertyVector::getNumProperties() const {
+int PropertyVector::size() const {
     return static_cast<int>(properties_.size());
 }
 

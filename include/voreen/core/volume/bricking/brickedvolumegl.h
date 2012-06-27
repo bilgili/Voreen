@@ -35,36 +35,36 @@ namespace voreen {
     /**
     * BrickedVolumeGls are used when rendering large volumes with bricking.
     * A BrickedVolumeGL has the additional capacity to store two other VolumeGLs.
-    * This is basically a hack in order to use bricking in standard networks. 
+    * This is basically a hack in order to use bricking in standard networks.
     */
-	class BrickedVolumeGL : public VolumeGL {
+    class BrickedVolumeGL : public VolumeGL {
 
-	public:
+    public:
         /**
         * Creates three VolumeGLs. The eep volume in the brickedVolume is used to create
         * this VolumeGL, the other two volumes are used to create the packedVolumeGL and the
         * indexVolumeGL.
         */
-		BrickedVolumeGL(BrickedVolume* brickedVolume);
+        BrickedVolumeGL(BrickedVolume* brickedVolume);
 
-		~BrickedVolumeGL();
+        ~BrickedVolumeGL();
 
-		VolumeGL* getPackedVolumeGL();
+        VolumeGL* getPackedVolumeGL();
 
-		VolumeGL* getIndexVolumeGL();
+        VolumeGL* getIndexVolumeGL();
 
-		void setIndexVolumeGL(VolumeGL*);
+        void setIndexVolumeGL(VolumeGL*);
 
-		void setPackedVolumeGL(VolumeGL*);
+        void setPackedVolumeGL(VolumeGL*);
 
-	protected:
+    protected:
 
-		VolumeGL* packedVolumeGL_;
-		VolumeGL* indexVolumeGL_;
+        VolumeGL* packedVolumeGL_;
+        VolumeGL* indexVolumeGL_;
 
-	private:
+    private:
 
-	};
+    };
 
 
 
