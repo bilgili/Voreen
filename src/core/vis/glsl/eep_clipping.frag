@@ -46,9 +46,13 @@ void main() {
     vec4 exitCol = textureLookup2D(exitTex_, fragCoord);
     vec4 entryCol = textureLookup2D(entryTex_, fragCoord);
 
-    if (exitCol != vec4(0.0)) {
+    /*
+     * Check every vector component separately instead of the whole vector
+     * to prevent visualization errors concerning some ATI graphic card.
+     */
+	if (exitCol.r != 0 || exitCol.g != 0 || exitCol.b != 0 || exitCol.a != 0) {
 
-        if (entryCol != vec4(0.0)) {
+        if (entryCol.r != 0 || entryCol.g != 0 || entryCol.b != 0 || entryCol.a != 0) {
             // entry point is okay
             gl_FragColor = entryCol;
             gl_FragDepth = textureLookup2D(entryTexDepth_, fragCoord).z;

@@ -77,6 +77,9 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
     const VolumeUInt8*  v_ui8  = dynamic_cast<const VolumeUInt8*>(v);
     const VolumeUInt16* v_ui16 = dynamic_cast<const VolumeUInt16*>(v);
 
+    const VolumeFloat*  v_float  = dynamic_cast<const VolumeFloat*>(v);
+    const VolumeDouble* v_double = dynamic_cast<const VolumeDouble*>(v);
+    
     if (t_ui8 && v_ui16) {
         LINFO("using accelerated conversion from VolumeUInt16 -> VolumeUInt8 without smart convert");
 
@@ -94,6 +97,28 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
 
         for (size_t i = 0; i < t_ui16->getNumVoxels(); ++i)
             t_ui16->voxel(i) = uint16_t( v_ui8->voxel(i) ) << shift;
+    }
+    else if (v_float) {
+        float min = v_float->min();
+        float max = v_float->max();
+        float range = (max - min);
+
+        LINFO("Converting float volume with data range [" << min << "; " << max << "] to "
+              << getBitsAllocated() << " bit.");
+        
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
+            setVoxelFloat((v_float->voxel(i) - min) / range, i);
+    }
+    else if (v_double) {
+        double min = v_float->min();
+        double max = v_float->max();
+        double range = (max - min);
+
+        LINFO("Converting double volume with data range [" << min << "; " << max << "] to "
+              << getBitsAllocated() << " bit.");
+        
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
+            setVoxelFloat((v_float->voxel(i) - min) / range, i);
     }
     else {
         LINFO("using fallback with setVoxelFloat and getVoxelFloat and without smart convert");

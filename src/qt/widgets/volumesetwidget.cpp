@@ -625,10 +625,8 @@ void VolumeSetWidget::buttonAddDICOMClicked() {
     QString tmp = QFileDialog::getExistingDirectory(this, "Choose a Directory",
         QString(currentDir_.c_str()), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     if (tmp != "") {
-#ifdef WIN32
         if (!tmp.endsWith("/"))
             tmp += "/";
-#endif
         loadDicomFiles(tmp.toStdString());
     }
 #else

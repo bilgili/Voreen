@@ -74,7 +74,7 @@ const std::string VoreenVersion::getRevision() {
 #if defined(VRN_WITH_SVNVERSION)
     return VRN_SVN_REVISION;
 #elif defined(VRN_SNAPSHOT)
-    return "snapshot-25";
+    return "snapshot-28";
 #else
     return "";
 #endif

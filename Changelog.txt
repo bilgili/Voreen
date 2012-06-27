@@ -1,6 +1,16 @@
 Voreen Changelog
 ----------------
 
+2009-12-09: Snapshot r28 (voreen-8367)
+--------------------------------------
+   * Bug fixes:
+     o Workaround for a driver bug in some ATI drivers that would introduce
+	   graphics artifacts when "support camera inside the volume" is active
+       for an EntryExitPoints processors. Thanks to Fedor Chelnokov for pointing
+	   this out!
+     o Loading of all DICOM files in a directory was broken for Qt >= 4.5.
+     o Support loading of non-normalized float and double volume data.
+
 2009-11-20: Snapshot r25 (voreen-8050)
 --------------------------------------
 
@@ -20,7 +30,7 @@ Voreen Changelog
      o Log warning message when raycasting quality is chosen too high for the
        GPU (because MAX_PROGRAM_EXEC_INSTRUCTIONS is not large enough) and
        artifacts might appear (Nvidia only).
-     o UPDATE DevIL libs to version 1.7.8.
+     o Update DevIL libs to version 1.7.8.
 
    * General bugfixes:
      o Define "precision highp float" when using GLSL 1.30 as required by newer
