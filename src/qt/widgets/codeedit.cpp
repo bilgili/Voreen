@@ -39,7 +39,7 @@ CodeEdit::CodeEdit(QWidget* parent) : QPlainTextEdit(parent) {
     font.setStyleHint(QFont::TypeWriter);
     font.insertSubstitution("Courier New", "monospace");
     font.setFixedPitch(true);
-    font.setPointSize(10);
+    font.setPointSize(9);
     setFont(font);
     QFontMetrics metrics(font);
     setTabStopWidth(metrics.width(" ")*4);
@@ -89,7 +89,7 @@ void CodeEdit::resizeEvent(QResizeEvent* e) {
 void CodeEdit::highlightCurrentLine() {
     QList<QTextEdit::ExtraSelection> extraSelections;
 
-    if (!isReadOnly()) {
+    if (isEnabled() && !isReadOnly()) {
         QTextEdit::ExtraSelection selection;
 
         QColor lineColor = QColor(Qt::yellow).lighter(170);
@@ -126,4 +126,17 @@ void CodeEdit::statusAreaPaintEvent(QPaintEvent* event) {
         bottom = top + (int) blockBoundingRect(block).height();
         ++blockNumber;
     }
+}
+
+void CodeEdit::moveCursorToPosition(int line, int col) {
+    QTextCursor cursor = textCursor();
+    cursor.setPosition(0);
+    cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor, line);
+    if (col > 0)
+        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, col);
+    setTextCursor(cursor);
+}
+
+void CodeEdit::updateHighlight() {
+    highlightCurrentLine();
 }

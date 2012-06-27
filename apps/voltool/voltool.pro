@@ -8,7 +8,17 @@ LANGUAGE	= C++
 CONFIG += console
 CONFIG -= qt
 
-# Include local configuration
+# check qmake version
+QMAKE_VERS = $$[QMAKE_VERSION]
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+isEmpty(QMAKE_VERSION_CHECK) {
+   error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
+}
+
+# include config
+!exists(../../config.txt) {
+  error("config.txt not found! copy config-default.txt to config.txt and edit!")
+}
 include(../../config.txt)
 
 # Include common configuration
@@ -41,3 +51,4 @@ HEADERS +=  commands_grad.h \
             commands_modify.h \
             commands_registration.h
 
+exists(voltool-internal.pri) : include(voltool-internal.pri)

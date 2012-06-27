@@ -75,7 +75,7 @@ void VolumeGradientCL::initialize() throw(VoreenException) {
     VolumeProcessor::initialize();
 
     OpenCLModule::getInstance()->initCL();
-    if (!OpenCLModule::getInstance()->getCLContext()) 
+    if (!OpenCLModule::getInstance()->getCLContext())
         throw VoreenException("No OpenCL context created");
 
     opencl_ = OpenCLModule::getInstance()->getOpenCL();
@@ -87,7 +87,7 @@ void VolumeGradientCL::initialize() throw(VoreenException) {
     prog_ = new Program(OpenCLModule::getInstance()->getCLContext());
     prog_->loadSource(kernelFile);
     bool success = prog_->build(OpenCLModule::getInstance()->getCLDevice());
-    if (!success) 
+    if (!success)
         throw VoreenException("Unable to load program: " + kernelFile);
 
     if (!prog_->getKernel("gradient"))
@@ -99,7 +99,7 @@ void VolumeGradientCL::deinitialize() throw (VoreenException) {
     prog_ = 0;
 
     VolumeProcessor::deinitialize();
-}   
+}
 
 void VolumeGradientCL::process() {
 
@@ -108,16 +108,16 @@ void VolumeGradientCL::process() {
     Volume* inputVolume = inport_.getData()->getVolume();
     Volume* outputVolume = 0;
 
-    if (dynamic_cast<VolumeUInt8*>(inputVolume)) { 
+    if (dynamic_cast<VolumeUInt8*>(inputVolume)) {
 
         Kernel* kernel = prog_->getKernel("gradient");
         if (kernel) {
             glFinish();
 
             if (copyIntensityChannel_.get())
-                outputVolume = new Volume4xUInt8(inputVolume->getDimensions()); 
+                outputVolume = new Volume4xUInt8(inputVolume->getDimensions());
             else
-                outputVolume = new Volume3xUInt8(inputVolume->getDimensions()); 
+                outputVolume = new Volume3xUInt8(inputVolume->getDimensions());
 
             Buffer inputBuffer(context_, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, inputVolume->getNumBytes(), inputVolume->getData());
                 Buffer outputBuffer(context_, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, outputVolume->getNumBytes());

@@ -172,7 +172,7 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     recordButton->setToolTip(tr("Take Snapshot"));
 
     toolbar->addWidget(controlToolbar);
-   
+
     mainLayout->addWidget(toolbar);
 
     QHBoxLayout* topLayout = new QHBoxLayout;

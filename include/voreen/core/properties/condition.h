@@ -33,6 +33,9 @@
 #include "voreen/core/properties/allactions.h"
 
 namespace voreen {
+
+class OptionPropertyBase;
+
 /**
  * A Condition can check any Condition and trigger Actions
  * if the condition is met. The foremost purpose is to monitor the state of
@@ -92,13 +95,17 @@ public:
      * Returns whether the condition is met and logs a warning, if not.
      * This is used for validation of TemplateProperties and should not be abused.
      */
-    bool validate() const;
+    bool validate(std::string& errorMsg) const;
 
     /**
      * Returns a string describing the condition. This is added to the exception message when
      * validation failed.
      */
     virtual std::string description() const { return ""; }
+
+protected:
+    /// category used for logging
+    static const std::string loggerCat_;
 
 private:
     std::vector<Action*> actions_;
@@ -138,16 +145,14 @@ public:
 
 protected:
     NumericProperty<T>* observed_;
+    static const std::string loggerCat_;
 };
 
 // ----------------------------------------------------------------------------
 
-template<typename T> class OptionProperty;
-
-template<class T>
 class OptionPropertyValidation : public Condition {
 public:
-    OptionPropertyValidation(OptionProperty<T>* observed)
+    OptionPropertyValidation(OptionPropertyBase* observed)
         : Condition(NoAction(), NoAction()), observed_(observed)
     {}
 
@@ -155,18 +160,13 @@ public:
     virtual OptionPropertyValidation* clone() const { return new OptionPropertyValidation(*this); }
 
     virtual bool met() const throw();
+    virtual std::string description() const;
 
 protected:
-    OptionProperty<T>* observed_;
+    OptionPropertyBase* observed_;
+    static const std::string loggerCat_;
 };
 
-// ----------------------------------------------------------------------------
-
-template<typename T>
-bool OptionPropertyValidation<T>::met() const throw() {
-    std::vector<std::string> allowedValues = observed_->getKeys();
-    return (std::find(allowedValues.begin(), allowedValues.end(), observed_->get()) != allowedValues.end());
-}
 
 } // namespace voreen
 

@@ -41,7 +41,7 @@ void main() {
     vec4 mat = applyTF(transferFunc_, intensity.a);
 
     vec4 fragColor = mat;
-    gl_FragColor = fragColor;
+    FragData0 = fragColor;
 
     if (mat.a > 0.0)
         gl_FragDepth = gl_FragCoord.z;

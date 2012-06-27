@@ -29,12 +29,22 @@
 
 #include "voreen/core/plotting/plotpredicate.h"
 
-
+#include <limits>
 #include <sstream>
+#include <iomanip>
 #include <string>
 
-
 namespace voreen {
+
+namespace {
+    void setSmartPrecision(std::stringstream& ss, size_t precision, plot_t value) {
+        double base = log10(fabs(value));
+        if (base > 0)
+            ss << std::setprecision(static_cast<int>(ceil(base) + precision));
+        else if (base < 0)
+            ss << std::setprecision(precision);
+    }
+}
 
 // PlotPredicateLess methods -------------------------------------------------------
 
@@ -53,16 +63,34 @@ PlotPredicateLess::PlotPredicateLess(const PlotCellValue& threshold)
     : threshold_(threshold.isTag() ? PlotCellValue(threshold.getTag()) : PlotCellValue(threshold.getValue()))
     {}
 
+int PlotPredicateLess::getNumberOfThresholdValues() const {
+    return 1;
+}
+
+void PlotPredicateLess::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (! thresholds.empty())
+        threshold_ = thresholds[0];
+}
+
 std::vector<PlotCellValue> PlotPredicateLess::getThresholdValues() const {
     std::vector<PlotCellValue> erg;
     erg.push_back(threshold_);
     return erg;
 }
 
+std::vector<std::string> PlotPredicateLess::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Upper Threshold");
+    return erg;
+}
 
 bool PlotPredicateLess::check(const PlotCellValue& value) const {
     return ((value.isValue() && threshold_.isValue() && value.getValue() <  threshold_.getValue())
         || (value.isTag() && threshold_.isTag() && value.getTag() < threshold_.getTag()));
+}
+
+Interval<plot_t> PlotPredicateLess::getIntervalRepresentation() const {
+    return Interval<plot_t>(-std::numeric_limits<plot_t>::max(), threshold_.getValue(), false, true);
 }
 
 PlotPredicate* PlotPredicateLess::clone() const {
@@ -71,11 +99,13 @@ PlotPredicate* PlotPredicateLess::clone() const {
 
 std::string PlotPredicateLess::toString() const {
     std::stringstream ss;
-    ss << "Less Predicate, Threshold=";
+    ss << "< ";
     if (threshold_.isNull())
         ss << "NULL";
-    else if (threshold_.isValue())
+    else if (threshold_.isValue()) {
+        setSmartPrecision(ss, 3, threshold_.getValue());
         ss << threshold_.getValue();
+    }
     else
         ss << "\"" << threshold_.getTag() << "\"";
     return ss.str();
@@ -88,8 +118,6 @@ void PlotPredicateLess::serialize(XmlSerializer& s) const {
 void PlotPredicateLess::deserialize(XmlDeserializer& s) {
     s.deserialize("Threshold",threshold_);
 }
-
-
 
 // PlotPredicateEqual methods -------------------------------------------------------
 
@@ -109,9 +137,24 @@ PlotPredicateEqual::PlotPredicateEqual(const PlotCellValue& threshold)
     : threshold_(threshold.isTag() ? PlotCellValue(threshold.getTag()) : PlotCellValue(threshold.getValue()))
     {}
 
+int PlotPredicateEqual::getNumberOfThresholdValues() const {
+    return 1;
+}
+
+void PlotPredicateEqual::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (! thresholds.empty())
+        threshold_ = thresholds[0];
+}
+
 std::vector<PlotCellValue> PlotPredicateEqual::getThresholdValues() const {
     std::vector<PlotCellValue> erg;
     erg.push_back(threshold_);
+    return erg;
+}
+
+std::vector<std::string> PlotPredicateEqual::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Value");
     return erg;
 }
 
@@ -120,17 +163,23 @@ bool PlotPredicateEqual::check(const PlotCellValue& value) const {
         (value.isTag() && threshold_.isTag() && value.getTag() == threshold_.getTag()));
 }
 
+Interval<plot_t> PlotPredicateEqual::getIntervalRepresentation() const {
+    return Interval<plot_t>(threshold_.getValue(), threshold_.getValue(), false, false);
+}
+
 PlotPredicate* PlotPredicateEqual::clone() const {
     return new PlotPredicateEqual(threshold_);
 }
 
 std::string PlotPredicateEqual::toString() const {
     std::stringstream ss;
-    ss << "Equals Predicate, Value=";
+    ss << "= ";
     if (threshold_.isNull())
         ss << "NULL";
-    else if (threshold_.isValue())
+    else if (threshold_.isValue()) {
+        setSmartPrecision(ss, 3, threshold_.getValue());
         ss << threshold_.getValue();
+    }
     else
         ss << "\"" << threshold_.getTag() << "\"";
     return ss.str();
@@ -141,79 +190,6 @@ void PlotPredicateEqual::serialize(XmlSerializer& s) const {
 }
 
 void PlotPredicateEqual::deserialize(XmlDeserializer& s) {
-    s.deserialize("Threshold",threshold_);
-}
-
-// PlotPredicateEqual methods -------------------------------------------------------
-
-PlotPredicateEqualVector::PlotPredicateEqualVector()
-    : threshold_(std::vector<PlotCellValue>(0))
-    {}
-
-PlotPredicateEqualVector::PlotPredicateEqualVector(const std::vector<plot_t>& threshold) {
-    threshold_.clear();
-    for (size_t i = 0; i < threshold.size(); ++i) {
-        threshold_.push_back(PlotCellValue(threshold.at(i)));
-    }
-}
-
-PlotPredicateEqualVector::PlotPredicateEqualVector(const std::vector<std::string>& threshold) {
-    threshold_.clear();
-    for (size_t i = 0; i < threshold.size(); ++i) {
-        threshold_.push_back(PlotCellValue(threshold.at(i)));
-    }
-}
-
-PlotPredicateEqualVector::PlotPredicateEqualVector(const std::vector<PlotCellValue>& threshold) {
-    threshold_.clear();
-    for (size_t i = 0; i < threshold.size(); ++i) {
-        threshold_.push_back(threshold.at(i));
-    }
-}
-
-std::vector<PlotCellValue> PlotPredicateEqualVector::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    for (size_t i = 0; i < threshold_.size(); ++i) {
-        erg.push_back(threshold_.at(i));
-    }
-    return erg;
-}
-
-
-bool PlotPredicateEqualVector::check(const PlotCellValue& value) const {
-    bool erg = false;
-    for (size_t i = 0; i < threshold_.size(); ++i) {
-        erg = erg || ((value.isValue() && threshold_.at(i).isValue() && value.getValue() == threshold_.at(i).getValue()) ||
-        (value.isTag() && threshold_.at(i).isTag() && value.getTag() == threshold_.at(i).getTag()));
-    }
-     return erg;
-}
-
-PlotPredicate* PlotPredicateEqualVector::clone() const {
-    return new PlotPredicateEqualVector(threshold_);
-}
-
-
-std::string PlotPredicateEqualVector::toString() const {
-    std::stringstream ss;
-    ss << "Equals Predicate, ";
-    for (size_t i = 0; i < threshold_.size(); ++i) {
-        ss << "Value" << i << " ";
-        if (threshold_.at(i).isNull())
-          ss << "NULL";
-        else if (threshold_.at(i).isValue())
-            ss << threshold_.at(i).getValue();
-        else
-            ss << "\"" << threshold_.at(i).getTag() << "\"";
-    }
-        return ss.str();
-}
-
-void PlotPredicateEqualVector::serialize(XmlSerializer& s) const {
-    s.serialize("Threshold",threshold_);
-}
-
-void PlotPredicateEqualVector::deserialize(XmlDeserializer& s) {
     s.deserialize("Threshold",threshold_);
 }
 
@@ -235,16 +211,34 @@ PlotPredicateGreater::PlotPredicateGreater(const PlotCellValue& threshold)
     : threshold_(threshold.isTag() ? PlotCellValue(threshold.getTag()) : PlotCellValue(threshold.getValue()))
     {}
 
+int PlotPredicateGreater::getNumberOfThresholdValues() const {
+    return 1;
+}
+
+void PlotPredicateGreater::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (! thresholds.empty())
+        threshold_ = thresholds[0];
+}
+
 std::vector<PlotCellValue> PlotPredicateGreater::getThresholdValues() const {
     std::vector<PlotCellValue> erg;
     erg.push_back(threshold_);
     return erg;
 }
 
+std::vector<std::string> PlotPredicateGreater::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Upper Threshold");
+    return erg;
+}
 
 bool PlotPredicateGreater::check(const PlotCellValue& value) const {
     return ((value.isValue() && threshold_.isValue() && value.getValue() > threshold_.getValue()) ||
         (value.isTag() && threshold_.isTag() && value.getTag() > threshold_.getTag()));
+}
+
+Interval<plot_t> PlotPredicateGreater::getIntervalRepresentation() const {
+    return Interval<plot_t>(threshold_.getValue(), std::numeric_limits<plot_t>::max(), true, false);
 }
 
 PlotPredicate* PlotPredicateGreater::clone() const {
@@ -254,11 +248,13 @@ PlotPredicate* PlotPredicateGreater::clone() const {
 
 std::string PlotPredicateGreater::toString() const {
     std::stringstream ss;
-    ss << "Greater Predicate, Threshold=";
+    ss << "> ";
     if (threshold_.isNull())
         ss << "NULL";
-    else if (threshold_.isValue())
+    else if (threshold_.isValue()) {
+        setSmartPrecision(ss, 3, threshold_.getValue());
         ss << threshold_.getValue();
+    }
     else
         ss << "\"" << threshold_.getTag() << "\"";
     return ss.str();
@@ -272,141 +268,406 @@ void PlotPredicateGreater::deserialize(XmlDeserializer& s) {
     s.deserialize("Threshold",threshold_);
 }
 
-
-// PlotPredicateInterval methods -------------------------------------------------------
-
-PlotPredicateContains::PlotPredicateContains()
-    : interval_(Interval<PlotCellValue>())
-{}
-
-PlotPredicateContains::PlotPredicateContains(const Interval<PlotCellValue>& interval)
-    : interval_(interval)
-{}
-
-PlotPredicateContains::PlotPredicateContains(const Interval<plot_t>& interval)
-    : interval_(Interval<PlotCellValue>(PlotCellValue(interval.getLeft()),
-    PlotCellValue(interval.getRight()),interval.getLeftOpen(),interval.getRightOpen()))
-{
-}
-
-PlotPredicateContains::PlotPredicateContains(const Interval<std::string>& interval)
-    : interval_(Interval<PlotCellValue>(PlotCellValue(interval.getLeft()),
-    PlotCellValue(interval.getRight()),interval.getLeftOpen(),interval.getRightOpen()))
-    {}
-
-std::vector<PlotCellValue> PlotPredicateContains::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    erg.push_back(interval_.getLeft());
-    erg.push_back(interval_.getRight());
-    erg.push_back(PlotCellValue(interval_.getLeftOpen()));
-    erg.push_back(PlotCellValue(interval_.getRightOpen()));
-    return erg;
-}
-
-bool PlotPredicateContains::check(const PlotCellValue& value) const {
-    return interval_.contains(value);
-}
-
-PlotPredicate* PlotPredicateContains::clone() const {
-    return new PlotPredicateContains(interval_);
-}
-
-
-std::string PlotPredicateContains::toString() const {
-    std::stringstream ss;
-    ss << "Interval Predicate ";
-    if (interval_.getLeftOpen())
-        ss << "(";
-    else
-        ss << "[";
-    ss << interval_.getLeft() << " ; " << interval_.getRight();
-    if (interval_.getRightOpen())
-        ss << ")";
-    else
-        ss << "]";
-    return ss.str();
-}
-
-void PlotPredicateContains::serialize(XmlSerializer& s) const {
-    s.serialize("Interval",interval_);
-}
-
-void PlotPredicateContains::deserialize(XmlDeserializer& s) {
-    s.deserialize("Interval",interval_);
-}
-
-
-
 // PlotPredicateBetween methods -------------------------------------------------------
 
 PlotPredicateBetween::PlotPredicateBetween()
-    : smallThreshold_(PlotCellValue())
-    , greatThreshold_(PlotCellValue())
+    : lowerThreshold_(PlotCellValue())
+    , upperThreshold_(PlotCellValue())
     {}
 
-PlotPredicateBetween::PlotPredicateBetween(plot_t smallThreshold, plot_t greatThreshold)
-    : smallThreshold_(PlotCellValue(smallThreshold))
-    , greatThreshold_(PlotCellValue(greatThreshold))
+PlotPredicateBetween::PlotPredicateBetween(plot_t lowerThreshold, plot_t upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
     {}
 
-PlotPredicateBetween::PlotPredicateBetween(std::string smallThreshold, std::string greatThreshold)
-    : smallThreshold_(PlotCellValue(smallThreshold))
-    , greatThreshold_(PlotCellValue(greatThreshold))
+PlotPredicateBetween::PlotPredicateBetween(std::string lowerThreshold, std::string upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
     {}
 
-PlotPredicateBetween::PlotPredicateBetween(const PlotCellValue& smallThreshold, const PlotCellValue& greatThreshold)
-    : smallThreshold_(smallThreshold.isTag() ? PlotCellValue(smallThreshold.getTag()) : PlotCellValue(smallThreshold.getValue()))
-    , greatThreshold_(greatThreshold.isTag() ? PlotCellValue(greatThreshold.getTag()) : PlotCellValue(greatThreshold.getValue()))
+PlotPredicateBetween::PlotPredicateBetween(const PlotCellValue& lowerThreshold, const PlotCellValue& upperThreshold)
+    : lowerThreshold_(lowerThreshold.isTag() ? PlotCellValue(lowerThreshold.getTag()) : PlotCellValue(lowerThreshold.getValue()))
+    , upperThreshold_(upperThreshold.isTag() ? PlotCellValue(upperThreshold.getTag()) : PlotCellValue(upperThreshold.getValue()))
     {}
 
+int PlotPredicateBetween::getNumberOfThresholdValues() const {
+    return 2;
+}
+
+void PlotPredicateBetween::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (thresholds.size() == 2) {
+        lowerThreshold_ = thresholds[0];
+        upperThreshold_ = thresholds[1];
+    }
+}
 
 std::vector<PlotCellValue> PlotPredicateBetween::getThresholdValues() const {
     std::vector<PlotCellValue> erg;
-    erg.push_back(smallThreshold_);
-    erg.push_back(greatThreshold_);
+    erg.push_back(lowerThreshold_);
+    erg.push_back(upperThreshold_);
     return erg;
 }
 
+std::vector<std::string> PlotPredicateBetween::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Lower Threshold");
+    erg.push_back("Upper Threshold");
+    return erg;
+}
 
 bool PlotPredicateBetween::check(const PlotCellValue& value) const {
-    return ((value.isValue() && smallThreshold_.isValue() && greatThreshold_.isValue() &&
-        value.getValue() > smallThreshold_.getValue() && value.getValue() < greatThreshold_.getValue()) ||
-        (value.isTag() && smallThreshold_.isTag() && greatThreshold_.isTag() &&
-        value.getTag() > smallThreshold_.getTag() && value.getTag() < greatThreshold_.getTag()));
+    return ((value.isValue() && lowerThreshold_.isValue() && upperThreshold_.isValue() &&
+        value.getValue() > lowerThreshold_.getValue() && value.getValue() < upperThreshold_.getValue()) ||
+        (value.isTag() && lowerThreshold_.isTag() && upperThreshold_.isTag() &&
+        value.getTag() > lowerThreshold_.getTag() && value.getTag() < upperThreshold_.getTag()));
+}
+
+Interval<plot_t> PlotPredicateBetween::getIntervalRepresentation() const {
+    return Interval<plot_t>(lowerThreshold_.getValue(), upperThreshold_.getValue(), true, true);
 }
 
 PlotPredicate* PlotPredicateBetween::clone() const {
-    return new PlotPredicateBetween(smallThreshold_,greatThreshold_);
+    return new PlotPredicateBetween(lowerThreshold_,upperThreshold_);
 }
-
 
 std::string PlotPredicateBetween::toString() const {
     std::stringstream ss;
-    ss << "Between Predicate, lower Threshold=";
-    if (smallThreshold_.isNull())
+    ss << "in (";
+    if (lowerThreshold_.isNull())
         ss << "NULL";
-    else if (smallThreshold_.isValue())
-        ss << smallThreshold_.getValue();
+    else if (lowerThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, lowerThreshold_.getValue());
+        ss << lowerThreshold_.getValue();
+    }
     else
-        ss << "\"" << smallThreshold_.getTag() << "\"";
-    ss << ", upper Threshold=";
-    if (greatThreshold_.isNull())
+        ss << "\"" << lowerThreshold_.getTag() << "\"";
+    ss << ", ";
+    if (upperThreshold_.isNull())
         ss << "NULL";
-    else if (greatThreshold_.isValue())
-        ss << greatThreshold_.getValue();
+    else if (upperThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, upperThreshold_.getValue());
+        ss << upperThreshold_.getValue();
+    }
     else
-        ss << "\"" << greatThreshold_.getTag() << "\"";
+        ss << "\"" << upperThreshold_.getTag() << "\"";
+    ss << ")";
     return ss.str();
 }
 
 void PlotPredicateBetween::serialize(XmlSerializer& s) const {
-    s.serialize("smallThreshold",smallThreshold_);
-    s.serialize("greatThreshold",greatThreshold_);
+    s.serialize("lowerThreshold",lowerThreshold_);
+    s.serialize("upperThreshold",upperThreshold_);
 }
 
 void PlotPredicateBetween::deserialize(XmlDeserializer& s) {
-    s.deserialize("smallThreshold",smallThreshold_);
-    s.deserialize("greatThreshold",greatThreshold_);
+    s.deserialize("lowerThreshold",lowerThreshold_);
+    s.deserialize("upperThreshold",upperThreshold_);
+}
+
+// PlotPredicateNotBetween methods -------------------------------------------------------
+
+PlotPredicateNotBetween::PlotPredicateNotBetween()
+    : lowerThreshold_(PlotCellValue())
+    , upperThreshold_(PlotCellValue())
+    {}
+
+PlotPredicateNotBetween::PlotPredicateNotBetween(plot_t lowerThreshold, plot_t upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+    {}
+
+PlotPredicateNotBetween::PlotPredicateNotBetween(std::string lowerThreshold, std::string upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+    {}
+
+PlotPredicateNotBetween::PlotPredicateNotBetween(const PlotCellValue& lowerThreshold, const PlotCellValue& upperThreshold)
+    : lowerThreshold_(lowerThreshold.isTag() ? PlotCellValue(lowerThreshold.getTag()) : PlotCellValue(lowerThreshold.getValue()))
+    , upperThreshold_(upperThreshold.isTag() ? PlotCellValue(upperThreshold.getTag()) : PlotCellValue(upperThreshold.getValue()))
+    {}
+
+int PlotPredicateNotBetween::getNumberOfThresholdValues() const {
+    return 2;
+}
+
+void PlotPredicateNotBetween::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (thresholds.size() == 2) {
+        lowerThreshold_ = thresholds[0];
+        upperThreshold_ = thresholds[1];
+    }
+}
+
+std::vector<PlotCellValue> PlotPredicateNotBetween::getThresholdValues() const {
+    std::vector<PlotCellValue> erg;
+    erg.push_back(lowerThreshold_);
+    erg.push_back(upperThreshold_);
+    return erg;
+}
+
+std::vector<std::string> PlotPredicateNotBetween::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Lower Threshold");
+    erg.push_back("Upper Threshold");
+    return erg;
+}
+
+bool PlotPredicateNotBetween::check(const PlotCellValue& value) const {
+    return ((value.isValue() && lowerThreshold_.isValue() && upperThreshold_.isValue() &&
+        (value.getValue() <= lowerThreshold_.getValue() || value.getValue() >= upperThreshold_.getValue())) ||
+        (value.isTag() && lowerThreshold_.isTag() && upperThreshold_.isTag() &&
+        (value.getTag() <= lowerThreshold_.getTag() || value.getTag() >= upperThreshold_.getTag())));
+}
+
+Interval<plot_t> PlotPredicateNotBetween::getIntervalRepresentation() const {
+    return Interval<plot_t>(upperThreshold_.getValue(),lowerThreshold_.getValue(), false, false);
+}
+
+PlotPredicate* PlotPredicateNotBetween::clone() const {
+    return new PlotPredicateNotBetween(lowerThreshold_,upperThreshold_);
+}
+
+std::string PlotPredicateNotBetween::toString() const {
+    std::stringstream ss;
+    ss << "not in (";
+    if (lowerThreshold_.isNull())
+        ss << "NULL";
+    else if (lowerThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, lowerThreshold_.getValue());
+        ss << lowerThreshold_.getValue();
+    }
+    else
+        ss << "\"" << lowerThreshold_.getTag() << "\"";
+    ss << ", ";
+    if (upperThreshold_.isNull())
+        ss << "NULL";
+    else if (upperThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, upperThreshold_.getValue());
+        ss << upperThreshold_.getValue();
+    }
+    else
+        ss << "\"" << upperThreshold_.getTag() << "\"";
+    ss << ")";
+    return ss.str();
+}
+
+void PlotPredicateNotBetween::serialize(XmlSerializer& s) const {
+    s.serialize("lowerThreshold",lowerThreshold_);
+    s.serialize("upperThreshold",upperThreshold_);
+}
+
+void PlotPredicateNotBetween::deserialize(XmlDeserializer& s) {
+    s.deserialize("lowerThreshold",lowerThreshold_);
+    s.deserialize("upperThreshold",upperThreshold_);
+}
+
+// PlotPredicateBetweenOrEqual methods -------------------------------------------------------
+
+PlotPredicateBetweenOrEqual::PlotPredicateBetweenOrEqual()
+    : lowerThreshold_(PlotCellValue())
+    , upperThreshold_(PlotCellValue())
+{}
+
+PlotPredicateBetweenOrEqual::PlotPredicateBetweenOrEqual(plot_t lowerThreshold, plot_t upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+{}
+
+PlotPredicateBetweenOrEqual::PlotPredicateBetweenOrEqual(std::string lowerThreshold, std::string upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+{}
+
+PlotPredicateBetweenOrEqual::PlotPredicateBetweenOrEqual(const PlotCellValue& lowerThreshold, const PlotCellValue& upperThreshold)
+    : lowerThreshold_(lowerThreshold.isTag() ? PlotCellValue(lowerThreshold.getTag()) : PlotCellValue(lowerThreshold.getValue()))
+    , upperThreshold_(upperThreshold.isTag() ? PlotCellValue(upperThreshold.getTag()) : PlotCellValue(upperThreshold.getValue()))
+{}
+
+int PlotPredicateBetweenOrEqual::getNumberOfThresholdValues() const {
+    return 2;
+}
+
+void PlotPredicateBetweenOrEqual::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (thresholds.size() == 2) {
+        lowerThreshold_ = thresholds[0];
+        upperThreshold_ = thresholds[1];
+    }
+}
+
+std::vector<PlotCellValue> PlotPredicateBetweenOrEqual::getThresholdValues() const {
+    std::vector<PlotCellValue> erg;
+    erg.push_back(lowerThreshold_);
+    erg.push_back(upperThreshold_);
+    return erg;
+}
+
+std::vector<std::string> PlotPredicateBetweenOrEqual::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Lower Threshold");
+    erg.push_back("Upper Threshold");
+    return erg;
+}
+
+bool PlotPredicateBetweenOrEqual::check(const PlotCellValue& value) const {
+    if (value.isValue()) {
+        return (   lowerThreshold_.isValue()
+                && upperThreshold_.isValue()
+                && value.getValue() >= lowerThreshold_.getValue()
+                && value.getValue() <= upperThreshold_.getValue());
+    }
+    else if (value.isTag()) {
+        return (   lowerThreshold_.isTag()
+                && upperThreshold_.isTag()
+                && value.getTag() >= lowerThreshold_.getTag()
+                && value.getTag() <= upperThreshold_.getTag());
+    }
+    return false;
+}
+
+Interval<plot_t> PlotPredicateBetweenOrEqual::getIntervalRepresentation() const {
+    return Interval<plot_t>(lowerThreshold_.getValue(), upperThreshold_.getValue(), false, false);
+}
+
+PlotPredicate* PlotPredicateBetweenOrEqual::clone() const {
+    return new PlotPredicateBetweenOrEqual(lowerThreshold_,upperThreshold_);
+}
+
+std::string PlotPredicateBetweenOrEqual::toString() const {
+    std::stringstream ss;
+    ss << "in [";
+    if (lowerThreshold_.isNull())
+        ss << "NULL";
+    else if (lowerThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, lowerThreshold_.getValue());
+        ss << lowerThreshold_.getValue();
+    }
+    else
+        ss << "\"" << lowerThreshold_.getTag() << "\"";
+    ss << ", ";
+    if (upperThreshold_.isNull())
+        ss << "NULL";
+    else if (upperThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, upperThreshold_.getValue());
+        ss << upperThreshold_.getValue();
+    }
+    else
+        ss << "\"" << upperThreshold_.getTag() << "\"";
+    ss << "]";
+    return ss.str();
+}
+
+void PlotPredicateBetweenOrEqual::serialize(XmlSerializer& s) const {
+    s.serialize("lowerThreshold",lowerThreshold_);
+    s.serialize("upperThreshold",upperThreshold_);
+}
+
+void PlotPredicateBetweenOrEqual::deserialize(XmlDeserializer& s) {
+    s.deserialize("lowerThreshold",lowerThreshold_);
+    s.deserialize("upperThreshold",upperThreshold_);
+}
+
+// PlotPredicateNotBetweenOrEqual methods -------------------------------------------------------
+
+PlotPredicateNotBetweenOrEqual::PlotPredicateNotBetweenOrEqual()
+    : lowerThreshold_(PlotCellValue())
+    , upperThreshold_(PlotCellValue())
+{}
+
+PlotPredicateNotBetweenOrEqual::PlotPredicateNotBetweenOrEqual(plot_t lowerThreshold, plot_t upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+{}
+
+PlotPredicateNotBetweenOrEqual::PlotPredicateNotBetweenOrEqual(std::string lowerThreshold, std::string upperThreshold)
+    : lowerThreshold_(PlotCellValue(lowerThreshold))
+    , upperThreshold_(PlotCellValue(upperThreshold))
+{}
+
+PlotPredicateNotBetweenOrEqual::PlotPredicateNotBetweenOrEqual(const PlotCellValue& lowerThreshold, const PlotCellValue& upperThreshold)
+    : lowerThreshold_(lowerThreshold.isTag() ? PlotCellValue(lowerThreshold.getTag()) : PlotCellValue(lowerThreshold.getValue()))
+    , upperThreshold_(upperThreshold.isTag() ? PlotCellValue(upperThreshold.getTag()) : PlotCellValue(upperThreshold.getValue()))
+{}
+
+int PlotPredicateNotBetweenOrEqual::getNumberOfThresholdValues() const {
+    return 2;
+}
+
+void PlotPredicateNotBetweenOrEqual::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (thresholds.size() == 2) {
+        lowerThreshold_ = thresholds[0];
+        upperThreshold_ = thresholds[1];
+    }
+}
+
+std::vector<PlotCellValue> PlotPredicateNotBetweenOrEqual::getThresholdValues() const {
+    std::vector<PlotCellValue> erg;
+    erg.push_back(lowerThreshold_);
+    erg.push_back(upperThreshold_);
+    return erg;
+}
+
+std::vector<std::string> PlotPredicateNotBetweenOrEqual::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Lower Threshold");
+    erg.push_back("Upper Threshold");
+    return erg;
+}
+
+bool PlotPredicateNotBetweenOrEqual::check(const PlotCellValue& value) const {
+    if (value.isValue()) {
+        return (   lowerThreshold_.isValue()
+                && upperThreshold_.isValue()
+                && (value.getValue() < lowerThreshold_.getValue()
+                || value.getValue() > upperThreshold_.getValue()));
+    }
+    else if (value.isTag()) {
+        return (   lowerThreshold_.isTag()
+                && upperThreshold_.isTag()
+                && (value.getTag() < lowerThreshold_.getTag()
+                || value.getTag() > upperThreshold_.getTag()));
+    }
+    return false;
+}
+
+Interval<plot_t> PlotPredicateNotBetweenOrEqual::getIntervalRepresentation() const {
+    return Interval<plot_t>(upperThreshold_.getValue(),lowerThreshold_.getValue(), true, true);
+}
+
+PlotPredicate* PlotPredicateNotBetweenOrEqual::clone() const {
+    return new PlotPredicateNotBetweenOrEqual(lowerThreshold_,upperThreshold_);
+}
+
+std::string PlotPredicateNotBetweenOrEqual::toString() const {
+    std::stringstream ss;
+    ss << "not in [";
+    if (lowerThreshold_.isNull())
+        ss << "NULL";
+    else if (lowerThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, lowerThreshold_.getValue());
+        ss << lowerThreshold_.getValue();
+    }
+    else
+        ss << "\"" << lowerThreshold_.getTag() << "\"";
+    ss << ", ";
+    if (upperThreshold_.isNull())
+        ss << "NULL";
+    else if (upperThreshold_.isValue()) {
+        setSmartPrecision(ss, 3, upperThreshold_.getValue());
+        ss << upperThreshold_.getValue();
+    }
+    else
+        ss << "\"" << upperThreshold_.getTag() << "\"";
+    ss << "]";
+    return ss.str();
+}
+
+void PlotPredicateNotBetweenOrEqual::serialize(XmlSerializer& s) const {
+    s.serialize("lowerThreshold",lowerThreshold_);
+    s.serialize("upperThreshold",upperThreshold_);
+}
+
+void PlotPredicateNotBetweenOrEqual::deserialize(XmlDeserializer& s) {
+    s.deserialize("lowerThreshold",lowerThreshold_);
+    s.deserialize("upperThreshold",upperThreshold_);
 }
 
 // PlotPredicateIsSubStr methods -------------------------------------------------------
@@ -424,22 +685,38 @@ bool PlotPredicateIsSubStr::check(const PlotCellValue& value) const {
 }
 
 
+int PlotPredicateIsSubStr::getNumberOfThresholdValues() const {
+    return 1;
+}
+
+void PlotPredicateIsSubStr::setThresholdValues(const std::vector<PlotCellValue>& thresholds) {
+    if (! thresholds.empty())
+        threshold_ = thresholds[0].getTag();
+}
+
 std::vector<PlotCellValue> PlotPredicateIsSubStr::getThresholdValues() const {
     std::vector<PlotCellValue> erg;
     erg.push_back(PlotCellValue(threshold_));
     return erg;
 }
 
+std::vector<std::string> PlotPredicateIsSubStr::getThresholdTitles() const {
+    std::vector<std::string> erg;
+    erg.push_back("Substring");
+    return erg;
+}
+
+Interval<plot_t> PlotPredicateIsSubStr::getIntervalRepresentation() const {
+    return Interval<plot_t>();
+}
+
 PlotPredicate* PlotPredicateIsSubStr::clone() const {
     return new PlotPredicateIsSubStr(threshold_);
 }
 
-
-
 std::string PlotPredicateIsSubStr::toString() const {
     std::stringstream ss;
-    ss << "Substring Predicate, Threshold=";
-    ss << "\"" << threshold_ << "\"";
+    ss << "Substring: " << "\"" << threshold_ << "\"";
     return ss.str();
 }
 
@@ -450,9 +727,6 @@ void PlotPredicateIsSubStr::serialize(XmlSerializer& s) const {
 void PlotPredicateIsSubStr::deserialize(XmlDeserializer& s) {
     s.deserialize("threshold",threshold_);
 }
-
-
-
 
 // PlotPredicateNotAlphaNumeric methods -------------------------------------------------------
 
@@ -479,23 +753,31 @@ bool PlotPredicateNotAlphaNumeric::check(const PlotCellValue& value) const {
     return true;
 }
 
+Interval<plot_t> PlotPredicateNotAlphaNumeric::getIntervalRepresentation() const {
+    return Interval<plot_t>();
+}
+
 PlotPredicate* PlotPredicateNotAlphaNumeric::clone() const {
     return new PlotPredicateNotAlphaNumeric();
 }
 
-
-
-std::vector<PlotCellValue> PlotPredicateNotAlphaNumeric::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    return erg;
+int PlotPredicateNotAlphaNumeric::getNumberOfThresholdValues() const {
+    return 0;
 }
 
+void PlotPredicateNotAlphaNumeric::setThresholdValues(const std::vector<PlotCellValue>& /*thresholds*/) {
+}
+
+std::vector<PlotCellValue> PlotPredicateNotAlphaNumeric::getThresholdValues() const {
+    return std::vector<PlotCellValue>();
+}
+
+std::vector<std::string> PlotPredicateNotAlphaNumeric::getThresholdTitles() const {
+    return std::vector<std::string>();
+}
 
 std::string PlotPredicateNotAlphaNumeric::toString() const {
-    std::stringstream ss;
-    ss << "Not Alpha-Numeric Predicate";
-    //ss << "\"" << threshold_ << "\"";
-    return ss.str();
+    return "Not Alpha-Numeric";
 }
 
 void PlotPredicateNotAlphaNumeric::serialize(XmlSerializer& /*s*/) const {
@@ -503,10 +785,6 @@ void PlotPredicateNotAlphaNumeric::serialize(XmlSerializer& /*s*/) const {
 
 void PlotPredicateNotAlphaNumeric::deserialize(XmlDeserializer& /*s*/) {
 }
-
-
-
-
 
 // PlotPredicateAlphaNumeric methods -------------------------------------------------------
 
@@ -533,23 +811,31 @@ bool PlotPredicateAlphaNumeric::check(const PlotCellValue& value) const {
     return false;
 }
 
+Interval<plot_t> PlotPredicateAlphaNumeric::getIntervalRepresentation() const {
+    return Interval<plot_t>();
+}
+
 PlotPredicate* PlotPredicateAlphaNumeric::clone() const {
     return new PlotPredicateAlphaNumeric();
 }
 
-
-
-std::vector<PlotCellValue> PlotPredicateAlphaNumeric::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    return erg;
+int PlotPredicateAlphaNumeric::getNumberOfThresholdValues() const {
+    return 0;
 }
 
+void PlotPredicateAlphaNumeric::setThresholdValues(const std::vector<PlotCellValue>& /*thresholds*/) {
+}
+
+std::vector<PlotCellValue> PlotPredicateAlphaNumeric::getThresholdValues() const {
+    return std::vector<PlotCellValue>();
+}
+
+std::vector<std::string> PlotPredicateAlphaNumeric::getThresholdTitles() const {
+    return std::vector<std::string>();
+}
 
 std::string PlotPredicateAlphaNumeric::toString() const {
-    std::stringstream ss;
-    ss << "Alpha Numeric Predicate";
-    //ss << "\"" << threshold_ << "\"";
-    return ss.str();
+    return "Alpha Numeric";
 }
 
 void PlotPredicateAlphaNumeric::serialize(XmlSerializer& /*s*/) const {
@@ -558,33 +844,37 @@ void PlotPredicateAlphaNumeric::serialize(XmlSerializer& /*s*/) const {
 void PlotPredicateAlphaNumeric::deserialize(XmlDeserializer& /*s*/) {
 }
 
-
-
-
-
 // PlotPredicateEmpty methods -------------------------------------------------------
 
 bool PlotPredicateEmpty::check(const PlotCellValue& value) const {
     return (value.isNull());
 }
 
+Interval<plot_t> PlotPredicateEmpty::getIntervalRepresentation() const {
+    return Interval<plot_t>();
+}
+
 PlotPredicate* PlotPredicateEmpty::clone() const {
     return new PlotPredicateEmpty();
 }
 
-
-
-std::vector<PlotCellValue> PlotPredicateEmpty::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    return erg;
+int PlotPredicateEmpty::getNumberOfThresholdValues() const {
+    return 0;
 }
 
+void PlotPredicateEmpty::setThresholdValues(const std::vector<PlotCellValue>& /*thresholds*/) {
+}
+
+std::vector<PlotCellValue> PlotPredicateEmpty::getThresholdValues() const {
+    return std::vector<PlotCellValue>();
+}
+
+std::vector<std::string> PlotPredicateEmpty::getThresholdTitles() const {
+    return std::vector<std::string>();
+}
 
 std::string PlotPredicateEmpty::toString() const {
-    std::stringstream ss;
-    ss << "Empty Predicate";
-    //ss << "\"" << threshold_ << "\"";
-    return ss.str();
+    return "Is Empty";
 }
 
 void PlotPredicateEmpty::serialize(XmlSerializer& /*s*/) const {
@@ -593,33 +883,37 @@ void PlotPredicateEmpty::serialize(XmlSerializer& /*s*/) const {
 void PlotPredicateEmpty::deserialize(XmlDeserializer& /*s*/) {
 }
 
-
-
-
-
 // PlotPredicateNotEmpty methods -------------------------------------------------------
 
 bool PlotPredicateNotEmpty::check(const PlotCellValue& value) const {
     return (!value.isNull());
 }
 
+Interval<plot_t> PlotPredicateNotEmpty::getIntervalRepresentation() const {
+    return Interval<plot_t>(-std::numeric_limits<plot_t>::max(), std::numeric_limits<plot_t>::max(), false, false);
+}
+
 PlotPredicate* PlotPredicateNotEmpty::clone() const {
     return new PlotPredicateNotEmpty();
 }
 
-
-
-std::vector<PlotCellValue> PlotPredicateNotEmpty::getThresholdValues() const {
-    std::vector<PlotCellValue> erg;
-    return erg;
+int PlotPredicateNotEmpty::getNumberOfThresholdValues() const {
+    return 0;
 }
 
+void PlotPredicateNotEmpty::setThresholdValues(const std::vector<PlotCellValue>& /*thresholds*/) {
+}
+
+std::vector<PlotCellValue> PlotPredicateNotEmpty::getThresholdValues() const {
+    return std::vector<PlotCellValue>();
+}
+
+std::vector<std::string> PlotPredicateNotEmpty::getThresholdTitles() const {
+    return std::vector<std::string>();
+}
 
 std::string PlotPredicateNotEmpty::toString() const {
-    std::stringstream ss;
-    ss << "Not Empty Predicate";
-    //ss << "\"" << threshold_ << "\"";
-    return ss.str();
+    return "Is Not Empty";
 }
 
 void PlotPredicateNotEmpty::serialize(XmlSerializer& /*s*/) const {

@@ -172,8 +172,8 @@ void ConnectedComponents2D::process() {
     }
 
     // render label texture
-    TextureUnit shadeUnit, depthUnit;
-    shadeUnit.activate();
+    TextureUnit colorUnit, depthUnit;
+    colorUnit.activate();
     tgt::Texture* labelTex = new tgt::Texture(reinterpret_cast<GLubyte*>(labels), tgt::ivec3(inport_.getSize(), 1),
         GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_SHORT, tgt::Texture::NEAREST, !GpuCaps.isNpotSupported());
     labelTex->uploadTexture();
@@ -183,7 +183,7 @@ void ConnectedComponents2D::process() {
     inport_.setTextureParameters(program_, "texParams_");
 
     setGlobalShaderParameters(program_);
-    program_->setUniform("colorTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
 
     // render screen aligned quad:

@@ -45,4 +45,7 @@
 // only taking QWidget is faster than including QtGui here
 #include <QWidget>
 
+#include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/processor/qprocessorwidget.h"
+
 #endif

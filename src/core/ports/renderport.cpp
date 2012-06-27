@@ -37,6 +37,8 @@
 
 namespace voreen {
 
+using namespace tgt;
+
 const std::string RenderPort::loggerCat_("voreen.RenderPort");
 
 RenderPort::RenderPort(PortDirection direction, const std::string& name,
@@ -109,12 +111,20 @@ void RenderPort::activateTarget(const std::string& debugLabel) {
             validateResult();
         }
         else
-            LERROR("Trying to activate RenderPort without RenderTarget (" << 
+            LERROR("Trying to activate RenderPort without RenderTarget (" <<
             processor_->getName() << ":" << getName() << ")");
     }
     else {
-        LERROR("activateTarget() called on inport (" << 
+        if (getRenderTarget()) {
+            getRenderTarget()->activateTarget(processor_->getName()+ ":" + getName()
+                + (debugLabel.empty() ? "" : ": " + debugLabel));
+            //validateResult();
+        }
+        else
+            LERROR("Trying to activate RenderPort without RenderTarget (" <<
             processor_->getName() << ":" << getName() << ")");
+        //LERROR("activateTarget() called on inport (" <<
+            //processor_->getName() << ":" << getName() << ")");
     }
 }
 
@@ -448,63 +458,19 @@ tgt::col4* RenderPort::readColorBuffer() throw (VoreenException) {
         throw VoreenException("RenderPort::readColorBuffer() called on an empty render port");
     }
 
-    if (getColorTexture()->getFormat() != GL_RGBA) {
-        throw VoreenException("RenderPort::readColorBuffer(): Saving render port to file currently only supported for GL_RGBA format");
-    }
-
-    // read pixel data in original data format
     GLubyte* pixels = 0;
     try {
-        pixels = getColorTexture()->downloadTextureToBuffer();
+        pixels = getColorTexture()->downloadTextureToBuffer(GL_RGBA, GL_UNSIGNED_BYTE);
     }
     catch (std::bad_alloc&) {
         throw VoreenException("RenderPort::readColorBuffer(): bad allocation");
     }
+    LGL_ERROR;
 
-    // convert pixel data to bytes for image output
-    tgt::ivec2 size = getSize();
-    tgt::col4* pixels_b = 0;
-    if (getColorTexture()->getDataType() == GL_UNSIGNED_BYTE) {
-        // data type matches
-        pixels_b = reinterpret_cast<tgt::col4*>(pixels);
-    }
-    else if (getColorTexture()->getDataType() == GL_UNSIGNED_SHORT) {
-        // convert 16 bit integer to 8 bit integer
-        try {
-            pixels_b = new tgt::col4[size.x * size.y];
-        }
-        catch (std::bad_alloc&) {
-            delete[] pixels;
-            throw VoreenException("RenderPort::readColorBuffer(): bad allocation");
-        }
-        for (int i=0; i < size.x * size.y; i++) {
-            pixels_b[i].x = reinterpret_cast<tgt::Vector4<GLushort>*>(pixels)[i].x >> 8;
-            pixels_b[i].y = reinterpret_cast<tgt::Vector4<GLushort>*>(pixels)[i].y >> 8;
-            pixels_b[i].z = reinterpret_cast<tgt::Vector4<GLushort>*>(pixels)[i].z >> 8;
-            pixels_b[i].a = reinterpret_cast<tgt::Vector4<GLushort>*>(pixels)[i].a >> 8;
-        }
-        delete[] pixels;
-    }
-    else if (getColorTexture()->getDataType() == GL_FLOAT) {
-        // convert float to 8 bit integer
-        try {
-            pixels_b = new tgt::col4[size.x * size.y];
-        }
-        catch (std::bad_alloc&) {
-            delete[] pixels;
-            throw VoreenException("RenderPort::readColorBuffer(): bad allocation");
-        }
-        for (int i=0; i < size.x * size.y; i++)
-            pixels_b[i] = tgt::clamp(reinterpret_cast<tgt::Color*>(pixels)[i], 0.f, 1.f) * 255.f;
-        delete[] pixels;
-    }
-    else {
-        delete[] pixels;
-        throw VoreenException("RenderPort::readColorBuffer(): unknown data type");
-    }
-    tgtAssert(pixels_b, "Pixel buffer empty");
-
-    return pixels_b;
+    if (pixels)
+        return reinterpret_cast<tgt::col4*>(pixels);
+    else
+        throw VoreenException("RenderPort::readColorBuffer(): failed to download texture");
 }
 
 void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
@@ -585,10 +551,22 @@ void PortGroup::deinitialize() {
     fbo_ = 0;
 }
 
-//void PortGroup::removePort(RenderPort* [>rp<]) {
-    ////TODO: implement
-    ////reattachTargets();
-//}
+void PortGroup::removePort(RenderPort* rp) {
+    ports_.erase(std::find(ports_.begin(), ports_.end(), rp));
+    reattachTargets();
+}
+
+void PortGroup::removePort(RenderPort& rp) {
+    removePort(&rp);
+}
+
+bool PortGroup::containsPort(RenderPort* rp) {
+    return (std::find(ports_.begin(), ports_.end(), rp) != ports_.end());
+}
+
+bool PortGroup::containsPort(RenderPort& rp) {
+    return containsPort(&rp);
+}
 
 void PortGroup::activateTargets(const std::string& debugLabel) {
     fbo_->activate();
@@ -659,19 +637,29 @@ void PortGroup::resize(const tgt::ivec2& newsize) {
     }
 }
 
-std::string PortGroup::generateHeader() {
+std::string PortGroup::generateHeader(tgt::Shader* shader) {
     // map ports to render targets
     std::string headerSource;
     int targetidx = 0;
     for (size_t i=0; i<ports_.size(); ++i) {
-        std::ostringstream op, num;
+        std::ostringstream op, num, out;
         op << i;
         num << targetidx;
-
+        out << "FragData" << targetidx;
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
             headerSource += "#define OP" + op.str() + " " + num.str() + "\n";
-            targetidx++;
+            if (tgt::Singleton<tgt::GpuCapabilities>::isInited() && GpuCaps.getShaderVersion() >= tgt::GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+                if (targetidx > 0)
+                    headerSource += "out vec4 " + out.str() + ";\n";
+                if (shader)
+                    shader->bindFragDataLocation(static_cast<GLuint>(targetidx), out.str());
+                LGL_ERROR;
+            } else {
+                if (targetidx > 0)
+                    headerSource += "#define FragData" + num.str() + " gl_FragData[" + num.str() + "]\n";
+            }
         }
+        targetidx++;
     }
 
     return headerSource;

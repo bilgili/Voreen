@@ -194,9 +194,12 @@ ParserAction* ParserTable::findAction(const int state, GrammarSymbol* const symb
 }
 
 void ParserTable::generateActionCode(std::ostream& oss, const std::string& stateVar,
-                                     const std::string& symbolVar) const
+                                     const std::string& symbolVar, const std::string& className) const
 {
-    oss << "ParserAction* action(const int " << stateVar << ", const int " << symbolVar <<") {\n";
+    oss << "ParserAction* ";
+    if (className.size() > 0)
+        oss << className << "::";
+    oss << "action(const int " << stateVar << ", const int " << symbolVar <<") const {\n";
     oss << "    switch (" << stateVar << ") {\n";
 
     for (int i = 0; i < numStates_; ++i) {
@@ -227,9 +230,12 @@ void ParserTable::generateActionCode(std::ostream& oss, const std::string& state
 }
 
 void ParserTable::generateGotoCode(std::ostream& oss, const std::string& stateVar,
-                                   const std::string& symbolVar) const
+                                   const std::string& symbolVar, const std::string& className) const
 {
-    oss << "int gotoState(const int " << stateVar << ", const int " << symbolVar <<") {\n";
+    oss << "int ";
+    if (className.size() > 0)
+        oss << className << "::";
+    oss << "gotoState(const int " << stateVar << ", const int " << symbolVar <<") const {\n";
     oss << "    switch (" << stateVar << ") {\n";
 
     for (int i = 0; i < numStates_; ++i) {
@@ -258,8 +264,12 @@ void ParserTable::generateGotoCode(std::ostream& oss, const std::string& stateVa
     oss << "}\n";
 }
 
-void ParserTable::generateProductionsCode(std::ostream& oss, const std::string& prodVar) const {
-    oss << "ProductionStub* findProduction(const int " << prodVar << ") {\n";
+void ParserTable::generateProductionsCode(std::ostream& oss, const std::string& prodVar,
+                                          const std::string& className) const {
+    oss << "ProductionStub* ";
+    if (className.size() > 0)
+        oss << className << "::";
+    oss << "findProduction(const int " << prodVar << ") const {\n";
     oss << "    switch (" << prodVar << ") {\n";
 
     for (size_t i = 0; i < productions_.size(); ++i) {
@@ -287,8 +297,12 @@ void ParserTable::generateProductionsCode(std::ostream& oss, const std::string& 
     oss << "}\n";
 }
 
-void ParserTable::generateSymbolsCode(std::ostream& oss, const std::string& symbolVar) const {
-    oss << "std::string symbolID2String(const int " << symbolVar << ") {\n";
+void ParserTable::generateSymbolsCode(std::ostream& oss, const std::string& symbolVar,
+                                      const std::string& className) const {
+    oss << "std::string ";
+    if (className.size() > 0)
+        oss << className << "::";
+    oss << "symbolID2String(const int " << symbolVar << ") const {\n";
     oss << "    switch (" << symbolVar << ") {\n";
 
     for (size_t i = 0; i < symbols_.size(); ++i) {

@@ -48,22 +48,25 @@ public:
 
     /// copy constructor
     PlotCellValue(const PlotCellValue& value);
-
+    /// creates a PlotCellValue from a plot_t
     PlotCellValue(plot_t value);
-
+    /// creates a PlotCellValue from a string
     PlotCellValue(const std::string& tag);
 
     ~PlotCellValue();
 
-    // assignment operator which correctly handles the pointers
+    /// assignment operator which correctly handles the pointers
     PlotCellValue& operator=(PlotCellValue rhs);
-
+    /// comparison = operator
     bool operator==(const PlotCellValue& rhs) const;
 
+    /**
+     * Comparison operator. Values are smaller than strings.
+     */
     bool operator<(const PlotCellValue& rhs) const;
-
+    /// comparison > operator
     bool operator>(const PlotCellValue& rhs) const;
-
+    /// stream operator
     friend std::ostream& operator<<(std::ostream& ostr, const PlotCellValue& rhs);
 
     /// checks whether a String is stored in this PlotCell
@@ -75,8 +78,6 @@ public:
     bool isValue() const {
         return isValue_;
     };
-
-
 
     /// checks if there is no data in this PlotCell
     bool isNull() const {
@@ -90,7 +91,6 @@ public:
 
     /// sets the highlighted state
     void setHighlighted(bool highlightedState);
-
 
     /// gets the value stored in this PlotCell
     plot_t getValue() const;

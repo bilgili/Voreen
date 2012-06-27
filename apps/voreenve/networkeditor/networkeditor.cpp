@@ -51,7 +51,7 @@
 #include "voreen/core/ports/port.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/propertyowner.h"
-#include "voreen/core/properties/link/dependencylinkevaluator.h"
+#include "voreen/core/properties/link/dependancylinkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/network/workspace.h"
 #include "voreen/core/io/serialization/xmlserializer.h"
@@ -274,7 +274,7 @@ NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, Network
     , currentLayer_(NetworkEditorLayerUndefined)
 {
     tgtAssert(evaluator_ != 0, "passed null pointer");
-    tgtAssert(getProcessorNetwork() != 0, "no network available");
+    //tgtAssert(getProcessorNetwork() != 0, "no network available");
 
     setScene(new QGraphicsScene(this));
 
@@ -297,8 +297,8 @@ NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, Network
 
 NetworkEditor::~NetworkEditor() {
     //clearClipboard();
-    hideTooltip();
-    delete ttimer_;
+    //hideTooltip();
+    //delete ttimer_;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -306,6 +306,10 @@ NetworkEditor::~NetworkEditor() {
 // ------------------------------------------------------------------------------------------------
 
 void NetworkEditor::generateGraphicsItems() {
+
+    if (!getProcessorNetwork())
+        return;
+
     foreach (Processor* proc, getProcessorNetwork()->getProcessors())
         createProcessorGraphicsItem(proc);
 
@@ -341,7 +345,7 @@ void NetworkEditor::createContextMenuActions() {
     editLinkAction_ = new QAction(tr("Edit"), this);
     aggregateAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Aggregate"), this);
     deaggregateAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Deaggregate"), this);  // this action will be added to the menus on demand
-    clearDependencyHistoryAction_ = new QAction(QIcon(":/voreenve/icons/clear_dependency.png"), tr("Clear dependency history"), this); // this action will be added to the menus on demand
+    clearDependancyHistoryAction_ = new QAction(QIcon(":/voreenve/icons/clear_dependancy.png"), tr("Clear dependancy history"), this); // this action will be added to the menus on demand
 
     connect(copyAction_, SIGNAL(triggered()), this, SLOT(copyActionSlot()));
     connect(pasteAction_, SIGNAL(triggered()), this, SLOT(pasteActionSlot()));
@@ -352,7 +356,7 @@ void NetworkEditor::createContextMenuActions() {
     connect(editLinkAction_, SIGNAL(triggered()), this, SLOT(editPropertyLinkSlot()));
     connect(aggregateAction_, SIGNAL(triggered()), this, SLOT(aggregateActionSlot()));
     connect(deaggregateAction_, SIGNAL(triggered()), this, SLOT(deaggregateActionSlot()));
-    connect(clearDependencyHistoryAction_, SIGNAL(triggered()), this, SLOT(clearDependencyHistory()));
+    connect(clearDependancyHistoryAction_, SIGNAL(triggered()), this, SLOT(clearDependancyHistory()));
 }
 
 void NetworkEditor::createTimer() {
@@ -478,7 +482,8 @@ void NetworkEditor::resetScene() {
 }
 
 void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
-    tgtAssert(network, "passed null pointer");
+
+    hideTooltip();
 
     // a locked evaluator leads to a crash if a new network is loaded
     evaluator_->unlock();
@@ -487,12 +492,16 @@ void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
     stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
     stopNetworkEvaluatorButton_->setChecked(false);
 
+    if (processorNetwork_)
+        processorNetwork_->removeObserver(this);
+
     processorNetwork_ = network;
+
+    if (processorNetwork_)
+        processorNetwork_->addObserver(this);
 
     resetScene();
     linkMap_.clear();
-
-    processorNetwork_->addObserver(this);
 
     generateGraphicsItems();
 
@@ -502,13 +511,15 @@ void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
     foreach (AggregationGraphicsItem* aggregationItem, aggregationItems_)
         aggregationItem->removeAllAggregationPrefixes();
 
-    AggregationMetaDataContainer* aggregationMetaDataContainer = dynamic_cast<AggregationMetaDataContainer*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Aggregation"));
-    if (aggregationMetaDataContainer) {
-        std::vector<AggregationMetaData*> aggregations = aggregationMetaDataContainer->getAggregations();
-        aggregationMetaDataContainer->clearAggregations();
+    if (getProcessorNetwork()) {
+        AggregationMetaDataContainer* aggregationMetaDataContainer = dynamic_cast<AggregationMetaDataContainer*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Aggregation"));
+        if (aggregationMetaDataContainer) {
+            std::vector<AggregationMetaData*> aggregations = aggregationMetaDataContainer->getAggregations();
+            aggregationMetaDataContainer->clearAggregations();
 
-        foreach (AggregationMetaData* metaData, aggregations)
-            createAggregationGraphicsItem(metaData);
+            foreach (AggregationMetaData* metaData, aggregations)
+                createAggregationGraphicsItem(metaData);
+        }
     }
 
     resetMatrix();
@@ -527,16 +538,21 @@ void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
     setLayer(NetworkEditorLayerDataflow);
 
     // set state of cam auto-linking button according to stored meta data, if present
-    BoolMetaData* cameraLinkMeta = dynamic_cast<BoolMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkCameras"));
+    BoolMetaData* cameraLinkMeta = 0;
+    if (getProcessorNetwork()) {
+        cameraLinkMeta = dynamic_cast<BoolMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkCameras"));
+    }
     if (cameraLinkMeta)
         linkCamerasAutoButton_->setChecked(cameraLinkMeta->getValue());
     else
         linkCamerasAutoButton_->setChecked(true);
-
-//    selectPreviouslySelectedProcessors();
 }
 
 void NetworkEditor::selectPreviouslySelectedProcessors() {
+
+    if (!getProcessorNetwork())
+        return;
+
     SelectionMetaData<Processor*>* selectionMetaData = dynamic_cast<SelectionMetaData<Processor*>*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("ProcessorSelection"));
     if (selectionMetaData) {
         QList<Processor*> selectedProcessors = stdVectorToQList(selectionMetaData->getValues());
@@ -593,6 +609,10 @@ QSize NetworkEditor::sizeHint() const {
 }
 
 void NetworkEditor::updateSelectedItems() {
+
+    if (!getProcessorNetwork())
+        return;
+
     QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
 
     QList<Processor*> selectedProcessors;
@@ -617,6 +637,10 @@ void NetworkEditor::updateSelectedItems() {
 }
 
 void NetworkEditor::scaleView() {
+
+    if (!getProcessorNetwork())
+        return;
+
     QRectF sceneRect;
     // scene()->itemsBoundingRect() will consider all invisible (i.e. properties) as well, so we have to to it by ourselves
     foreach (QGraphicsItem* item, scene()->items()) {
@@ -642,10 +666,11 @@ void NetworkEditor::scaleView() {
     //scene()->setSceneRect(sceneRect);
 
 
-    ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(processorNetwork_->getMetaDataContainer().getMetaData("Zoom"));
+    ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom"));
     if (meta) {
         setTransform(Mat3ToQTransform(meta->getTransform()));
-    } else {
+    }
+    else {
         QPointF center = QPointF(sceneRect.x() + sceneRect.width() / 2.f, sceneRect.y() + sceneRect.height() / 2.f);
         centerOn(center);
 
@@ -665,29 +690,34 @@ void NetworkEditor::scaleView() {
 }
 
 void NetworkEditor::scale(qreal sx, qreal sy) {
-    QTransform transformMatrix = transform();
 
-    if (transformMatrix.isIdentity())
-        getProcessorNetwork()->getMetaDataContainer().removeMetaData("Zoom");
-    else {
-        tgtAssert(sx == sy, "no rectangular zoom performed");
-        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
-            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
-            ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
-            meta->setTransform(QTransformToMat3(transformMatrix));
-        } else
-            getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transformMatrix)));
+    if (getProcessorNetwork()) {
+        QTransform transformMatrix = transform();
+        if (transformMatrix.isIdentity())
+            getProcessorNetwork()->getMetaDataContainer().removeMetaData("Zoom");
+        else {
+            tgtAssert(sx == sy, "no rectangular zoom performed");
+            if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
+                MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
+                ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
+                meta->setTransform(QTransformToMat3(transformMatrix));
+            } else
+                getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transformMatrix)));
+        }
     }
     QGraphicsView::scale(sx, sy);
 }
 
 void NetworkEditor::translate(qreal dx, qreal dy) {
-    if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
-        MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
-        ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
-        meta->setTransform(QTransformToMat3(transform()));
-    } else {
-        getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transform())));
+    if (getProcessorNetwork()) {
+        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
+            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
+            ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
+            meta->setTransform(QTransformToMat3(transform()));
+        }
+        else {
+            getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transform())));
+        }
     }
 
     QGraphicsView::translate(dx, dy);
@@ -781,6 +811,9 @@ void NetworkEditor::copyActionSlot() {
 }
 
 void NetworkEditor::pasteActionSlot() {
+    if (!getProcessorNetwork())
+        return;
+
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
         QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so pasting is not allowed"));
         return;
@@ -834,6 +867,10 @@ void NetworkEditor::pasteActionSlot() {
 }
 
 void NetworkEditor::replaceActionSlot() {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
         QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so replacing is not allowed"));
         return;
@@ -924,11 +961,11 @@ void NetworkEditor::toggleNetworkEvaluator() {
     }
 }
 
-void NetworkEditor::clearDependencyHistory() {
+void NetworkEditor::clearDependancyHistory() {
     const ArrowLinkInformation& info = linkMap_[selectedLinkArrow_];
     LinkEvaluatorBase* eval = info.first->getLinkEvaluator();
-    DependencyLinkEvaluator* depEva = dynamic_cast<DependencyLinkEvaluator*>(eval);
-    depEva->clearDependencyMap();
+    DependancyLinkEvaluatorBase* depEva = dynamic_cast<DependancyLinkEvaluatorBase*>(eval);
+    depEva->clearDependancyMap();
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1084,9 +1121,9 @@ void NetworkEditor::contextMenuEvent(QContextMenuEvent* event) {
 
                 tgtAssert(linkMap_.contains(selectedLinkArrow_), "linkMap didn't contain the selected link");
                 const ArrowLinkInformation& info = linkMap_[selectedLinkArrow_];
-                if (dynamic_cast<DependencyLinkEvaluator*>(info.first->getLinkEvaluator())) {
-                    tgtAssert(info.second == 0, "a dependency link arrow shouldn't contain two PropertyLinks");
-                    currentMenu.addAction(clearDependencyHistoryAction_);
+                if (dynamic_cast<DependancyLinkEvaluatorBase*>(info.first->getLinkEvaluator())) {
+                    tgtAssert(info.second == 0, "a dependancy link arrow shouldn't contain two PropertyLinks");
+                    currentMenu.addAction(clearDependancyHistoryAction_);
                 }
                 break;
             }
@@ -1177,6 +1214,10 @@ void NetworkEditor::dragMoveEvent(QDragMoveEvent* event) {
 void NetworkEditor::dragLeaveEvent(QDragLeaveEvent*) {}
 
 void NetworkEditor::dropEvent(QDropEvent* event) {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
         QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so dropping processors is not allowed"));
         return;
@@ -1282,6 +1323,10 @@ void NetworkEditor::disableTooltips() {
 }
 
 void NetworkEditor::linkCamerasAutoChanged() {
+
+    if (!getProcessorNetwork())
+        return;
+
     tgtAssert(getProcessorNetwork(), "No processor network");
     if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("autoLinkCameras")) {
         MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkCameras");
@@ -1361,6 +1406,10 @@ void NetworkEditor::removeItems(QList<QGraphicsItem*> items) {
 }
 
 void NetworkEditor::removeRootGraphicsItem(RootGraphicsItem* rootItem) {
+
+    if (!getProcessorNetwork())
+        return;
+
     foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
         if ((arrow->getSourceItem()->getRootGraphicsItem() == rootItem) || (arrow->getDestinationItem()->getRootGraphicsItem() == rootItem))
             removeArrowItem(arrow);
@@ -1386,6 +1435,9 @@ void NetworkEditor::removeArrowItem(LinkArrowGraphicsItem* arrow) {
     //if (!linkMap_.contains(arrow))
     //    return;
 
+    if (!getProcessorNetwork())
+        return;
+
     ArrowLinkInformation links = linkMap_[arrow];
     linkMap_.remove(arrow);
     getProcessorNetwork()->removePropertyLink(const_cast<PropertyLink*>(links.first));
@@ -1407,6 +1459,10 @@ void NetworkEditor::removeArrowItem(LinkArrowGraphicsItem* arrow) {
 }
 
 void NetworkEditor::removeArrowItem(PortArrowGraphicsItem* arrow) {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (arrow->getDestinationItem() != 0) {
         getProcessorNetwork()->disconnectPorts(arrow->getSourceItem()->getPort(), arrow->getDestinationItem()->getPort());
     }
@@ -1455,6 +1511,10 @@ void NetworkEditor::editPropertyLink(const Property* sourceProp, const Property*
 }
 
 void NetworkEditor::createLink(RootGraphicsItem* src, RootGraphicsItem* dest) {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
         QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so creating links is not allowed"));
         return;
@@ -1484,6 +1544,10 @@ void NetworkEditor::createLink(RootGraphicsItem* src, RootGraphicsItem* dest) {
 }
 
 void NetworkEditor::createNewLink(const Property* sourceProp, const Property* destinationProp, LinkEvaluatorBase* linkEvaluator) {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (sourceProp && destinationProp && linkEvaluator) {
         if (!getProcessorNetwork()->containsLink(sourceProp, destinationProp, linkEvaluator)) {
             // the callback from the observer will go to NetworkEditor::propertyLinkAdded which will cause the arrow to be created
@@ -1499,6 +1563,10 @@ void NetworkEditor::createNewLink(const Property* sourceProp, const Property* de
 }
 
 void NetworkEditor::removePropertyLink(PropertyLink* propertyLink) {
+
+    if (!getProcessorNetwork())
+        return;
+
     getProcessorNetwork()->removePropertyLink(propertyLink);
 }
 
@@ -1557,10 +1625,10 @@ LinkArrowGraphicsItem* NetworkEditor::createLinkArrowForPropertyLink(const Prope
     }
 
     LinkArrowGraphicsItem* result = new LinkArrowGraphicsItem(sourceProp, destinationProp);
-    std::string functionname = LinkEvaluatorFactory::getInstance()->getFunctionName(link->getLinkEvaluator());
+    std::string functionname = link->getLinkEvaluator()->name();
     result->setToolTip(QString::fromStdString(functionname));
 
-    if (dynamic_cast<DependencyLinkEvaluator*>(link->getLinkEvaluator()))
+    if (dynamic_cast<DependancyLinkEvaluatorBase*>(link->getLinkEvaluator()))
         result->setNormalColor(Qt::cyan);
 
     ArrowLinkInformation l = std::make_pair(link, static_cast<const PropertyLink*>(0));
@@ -1576,6 +1644,10 @@ LinkArrowGraphicsItem* NetworkEditor::createLinkArrowForPropertyLink(const Prope
 }
 
 void NetworkEditor::linkCameras() {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (QMessageBox::question(this, tr("VoreenVE"), tr("Link all cameras in the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
         int numLinks = getProcessorNetwork()->linkProperties<CameraProperty>(std::vector<Processor*>(), std::vector<std::string>());
 
@@ -1585,6 +1657,10 @@ void NetworkEditor::linkCameras() {
 }
 
 void NetworkEditor::linkCamerasOfProcessor(const Processor* processor) {
+
+    if (!getProcessorNetwork())
+        return;
+
     // get camera properties of processor to link
     std::vector<CameraProperty*> camPropsProcessor = processor->getPropertiesByType<CameraProperty>();
     if (camPropsProcessor.empty())
@@ -1643,6 +1719,10 @@ void NetworkEditor::linkCamerasOfProcessor(const Processor* processor) {
 }
 
 void NetworkEditor::removePropertyLinks() {
+
+    if (!getProcessorNetwork())
+        return;
+
     if (QMessageBox::question(this, tr("VoreenVE"), tr("Remove all property links from the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
         size_t numLinks = getProcessorNetwork()->getPropertyLinks().size();
         if (numLinks > 0) {
@@ -1808,6 +1888,10 @@ void exchangePortsInConnection(PortGraphicsItem* originalPort, PortGraphicsItem*
 }
 
 AggregationGraphicsItem* NetworkEditor::aggregateItems(const QList<RootGraphicsItem*>& items) {
+
+    if (!getProcessorNetwork())
+        return 0;
+
     AggregationGraphicsItem* newAggregation = new AggregationGraphicsItem(items, this);
 
     foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
@@ -1961,6 +2045,10 @@ AggregationGraphicsItem* NetworkEditor::aggregateItems(const QList<RootGraphicsI
 }
 
 void NetworkEditor::deaggregateItems(const QList<AggregationGraphicsItem*>& aggregationItems) {
+
+    if (!getProcessorNetwork())
+        return;
+
     foreach (AggregationGraphicsItem* aggregationItem, aggregationItems) {
         MetaDataContainer& container = getProcessorNetwork()->getMetaDataContainer();
         tgtAssert(container.hasMetaData("Aggregation"), "MetaDataContainer didn't have \"Aggregation\"");
@@ -2113,6 +2201,7 @@ void NetworkEditor::deaggregateItems(const QList<AggregationGraphicsItem*>& aggr
 }
 
 PortGraphicsItem* NetworkEditor::getPortGraphicsItem(const Port* port) const {
+
     tgtAssert(port, "null pointer passed");
 
     PortGraphicsItem* portItem = 0;

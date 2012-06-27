@@ -30,7 +30,7 @@
 #ifndef VRN_PLOTDATASOURCE_H
 #define VRN_PLOTDATASOURCE_H
 
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/plotport.h"
 #include "voreen/core/processors/processor.h"
 
 #include "voreen/core/properties/intproperty.h"
@@ -52,7 +52,8 @@ public:
 
     virtual std::string getCategory() const  { return "Data Source"; }
     virtual std::string getClassName() const { return "PlotDataSource"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_EXPERIMENTAL; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
+    //virtual bool usesExpensiveComputation() const { return true; }
     virtual std::string getProcessorInfo() const;
 
 protected:

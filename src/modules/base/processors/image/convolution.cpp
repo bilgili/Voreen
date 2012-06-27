@@ -32,7 +32,7 @@
 namespace voreen {
 
 Convolution::Convolution()
-    : ImageProcessor("pp_convolution"),
+    : ImageProcessor("image/convolution"),
       filterSize_("filtersize", "Filter Size (NxN)", 7),
       inport_(Port::INPORT, "inport"),
       filterPort_(Port::INPORT, "filterport"),
@@ -68,7 +68,7 @@ void Convolution::process() {
     program_->activate();
     setGlobalShaderParameters(program_);
     LGL_ERROR;
-    program_->setUniform("shadeTex_", 0);
+    program_->setUniform("colorTex_", 0);
     program_->setUniform("depthTex_", 1);
     inport_.setTextureParameters(program_, "textureParameters_");
     LGL_ERROR;

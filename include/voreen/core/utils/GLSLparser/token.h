@@ -102,6 +102,8 @@ typedef GenericToken<std::string> Word;
 typedef GenericToken<std::string> IdentifierToken;
 typedef GenericToken<std::string> StringToken;
 
+
+
 // ============================================================================
 
 class ConstantToken : public GenericToken<std::string> {

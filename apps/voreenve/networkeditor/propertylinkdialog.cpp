@@ -27,11 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_WITH_PYTHON
-// Python header must be included before other system headers
-#include <Python.h>
-#endif
-
 #include "propertylinkdialog.h"
 
 #include "linkdialogarrowgraphicsitem.h"
@@ -43,7 +38,7 @@
 #include "rootgraphicsitem.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/propertyvector.h"
-#include "voreen/core/properties/link/dependencylinkevaluator.h"
+#include "voreen/core/properties/link/dependancylinkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/properties/link/propertylink.h"
 #include "voreen/qt/widgets/enterexitpushbutton.h"
@@ -73,7 +68,7 @@ namespace {
     const QSize buttonSize = QSize(23, 23);
 
     const QColor arrowColorNormal = Qt::black;
-    const QColor arrowColorDependency = Qt::cyan;
+    const QColor arrowColorDependancy = Qt::cyan;
 
     qreal positionForColumnPosition(ColumnPosition position) {
         switch (position) {
@@ -89,8 +84,8 @@ namespace {
         }
     }
 
-    bool evaluatorIsDependencyLinkEvaluator(LinkEvaluatorBase* evaluator) {
-        DependencyLinkEvaluator* depLinkEva = dynamic_cast<DependencyLinkEvaluator*>(evaluator);
+    bool evaluatorIsDependancyLinkEvaluator(LinkEvaluatorBase* evaluator) {
+        DependancyLinkEvaluatorBase* depLinkEva = dynamic_cast<DependancyLinkEvaluatorBase*>(evaluator);
         return (depLinkEva  != 0);
     }
 }
@@ -103,7 +98,7 @@ PropertyLinkDialog::PropertyLinkDialog(QWidget* parent, RootGraphicsItem* source
     , sourcePropertyItem_(0)
     , destinationPropertyItem_(0)
     , propertyLinkModeButton_(0)
-    , dependencyLinkModeButton_(0)
+    , dependancyLinkModeButton_(0)
     , leftArrowButton_(0)
     , bidirectionalArrowButton_(0)
     , rightArrowButton_(0)
@@ -155,8 +150,8 @@ PropertyLinkDialog::PropertyLinkDialog(QWidget* parent, PropertyGraphicsItem* so
         createdArrow(arrow, false);
         connectionMap_[arrow].evaluator = link->getLinkEvaluator();
 
-        if (evaluatorIsDependencyLinkEvaluator(link->getLinkEvaluator()))
-            arrow->setNormalColor(arrowColorDependency);
+        if (evaluatorIsDependancyLinkEvaluator(link->getLinkEvaluator()))
+            arrow->setNormalColor(arrowColorDependancy);
     }
     if ((selectedButton == PropertyLinkDirectionToLeft) || (selectedButton == PropertyLinkDirectionBidirectional)) {
         arrow = new LinkDialogArrowGraphicsItem(destinationPropertyItem_);
@@ -166,8 +161,8 @@ PropertyLinkDialog::PropertyLinkDialog(QWidget* parent, PropertyGraphicsItem* so
         if (connectionMap_.contains(arrow))
             connectionMap_[arrow].evaluator = link->getLinkEvaluator();
 
-        if (evaluatorIsDependencyLinkEvaluator(link->getLinkEvaluator()))
-            arrow->setNormalColor(arrowColorDependency);
+        if (evaluatorIsDependancyLinkEvaluator(link->getLinkEvaluator()))
+            arrow->setNormalColor(arrowColorDependancy);
     }
 
     sceneSelectionChanged();
@@ -190,16 +185,16 @@ void PropertyLinkDialog::init() {
     propertyLinkModeButton_->setFocusPolicy(Qt::NoFocus);
     modeLayout->addWidget(propertyLinkModeButton_);
 
-    dependencyLinkModeButton_ = new QPushButton(tr("Dependency Link Mode"));
-    dependencyLinkModeButton_->setCheckable(true);
-    dependencyLinkModeButton_->setFlat(true);
-    dependencyLinkModeButton_->setFocusPolicy(Qt::NoFocus);
-    modeLayout->addWidget(dependencyLinkModeButton_);
+    dependancyLinkModeButton_ = new QPushButton(tr("Dependancy Link Mode"));
+    dependancyLinkModeButton_->setCheckable(true);
+    dependancyLinkModeButton_->setFlat(true);
+    dependancyLinkModeButton_->setFocusPolicy(Qt::NoFocus);
+    modeLayout->addWidget(dependancyLinkModeButton_);
     layout->addWidget(modeContainer);
 
     QButtonGroup* modeGroup = new QButtonGroup(modeContainer);
     modeGroup->addButton(propertyLinkModeButton_);
-    modeGroup->addButton(dependencyLinkModeButton_);
+    modeGroup->addButton(dependancyLinkModeButton_);
     connect(modeGroup, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(modeButtonClicked(QAbstractButton*)));
 
     // GraphicsView
@@ -218,20 +213,20 @@ void PropertyLinkDialog::init() {
     connect(functionCB_, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(comboBoxSelectionChanged(const QString&)));
     controlLayout->addWidget(functionCB_);
 
-    dependencyLinkHistoryContainer_ = new QWidget;
-    QBoxLayout* dependencyHistoryLayout = new QHBoxLayout(dependencyLinkHistoryContainer_);
-    QLabel* dependencyTextLabel = new QLabel(tr("History Size:"));
-    dependencyHistoryLayout->addWidget(dependencyTextLabel);
-    dependencyHistoryLengthLabel_ = new QLabel;
-    dependencyHistoryLayout->addWidget(dependencyHistoryLengthLabel_);
+    dependancyLinkHistoryContainer_ = new QWidget;
+    QBoxLayout* dependancyHistoryLayout = new QHBoxLayout(dependancyLinkHistoryContainer_);
+    QLabel* dependancyTextLabel = new QLabel(tr("History Size:"));
+    dependancyHistoryLayout->addWidget(dependancyTextLabel);
+    dependancyHistoryLengthLabel_ = new QLabel;
+    dependancyHistoryLayout->addWidget(dependancyHistoryLengthLabel_);
     controlLayout->addSpacing(5);
-    dependencyHistoryLengthSlider_ = new QSlider(Qt::Horizontal, this);
-    dependencyHistoryLengthSlider_->setMinimumWidth(140);
-    dependencyHistoryLengthSlider_->setMinimum(-1);
-    dependencyHistoryLengthSlider_->setMaximum(50);
-    dependencyHistoryLayout->addWidget(dependencyHistoryLengthSlider_);
-    connect(dependencyHistoryLengthSlider_, SIGNAL(valueChanged(int)), this, SLOT(setDependencyHistoryLengthLabel(int)));
-    controlLayout->addWidget(dependencyLinkHistoryContainer_);
+    dependancyHistoryLengthSlider_ = new QSlider(Qt::Horizontal, this);
+    dependancyHistoryLengthSlider_->setMinimumWidth(140);
+    dependancyHistoryLengthSlider_->setMinimum(-1);
+    dependancyHistoryLengthSlider_->setMaximum(50);
+    dependancyHistoryLayout->addWidget(dependancyHistoryLengthSlider_);
+    connect(dependancyHistoryLengthSlider_, SIGNAL(valueChanged(int)), this, SLOT(setDependancyHistoryLengthLabel(int)));
+    controlLayout->addWidget(dependancyLinkHistoryContainer_);
 
     controlLayout->addStretch(1);
 
@@ -411,14 +406,26 @@ void PropertyLinkDialog::initPropertyItems(PropertyGraphicsItem* sourceItem, Pro
 }
 
 void PropertyLinkDialog::initCombobox() {
-    std::vector<std::string> availableFunctions = LinkEvaluatorFactory::getInstance()->listFunctionNames();
-    foreach (std::string function, availableFunctions) {
-        if (function != "DependencyLink")
-            functionCB_->addItem(QString::fromStdString(function));
+    //std::vector<std::string> availableFunctions = LinkEvaluatorFactory::getInstance()->listFunctionNames();
+    //foreach (std::string function, availableFunctions) {
+        ////if (function != "DependancyLink")
+            //functionCB_->addItem(QString::fromStdString(function));
+    //}
+
+    //int index = functionCB_->findText("id");
+    //functionCB_->setCurrentIndex(index);
+}
+
+void PropertyLinkDialog::updateCombobox(LinkDialogPropertyGraphicsItem* source, LinkDialogPropertyGraphicsItem* destination) {
+    functionCB_->clear();
+    std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorFactory::getInstance()->getCompatibleLinkEvaluators(source->getProperty(), destination->getProperty());
+    for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
+        //if (function != "DependancyLink")
+            functionCB_->addItem(QString::fromStdString(i->first));
     }
 
-    int index = functionCB_->findText("id");
-    functionCB_->setCurrentIndex(index);
+    //int index = functionCB_->findText("id");
+    //functionCB_->setCurrentIndex(index);
 }
 
 LinkDialogArrowGraphicsItem* PropertyLinkDialog::getCurrentlySelectedArrow() const {
@@ -482,9 +489,10 @@ void PropertyLinkDialog::sceneSelectionChanged() {
     if (arrow == 0) {
         arrowButtonGroup_->setExclusive(false);
         functionCB_->setEnabled(false);
-        dependencyHistoryLengthSlider_->setEnabled(false);
-        dependencyHistoryLengthSlider_->setValue(-1);
-        dependencyHistoryLengthLabel_->setHidden(true);
+        functionCB_->clear();
+        dependancyHistoryLengthSlider_->setEnabled(false);
+        dependancyHistoryLengthSlider_->setValue(-1);
+        dependancyHistoryLengthLabel_->setHidden(true);
         leftArrowButton_->setChecked(false);
         leftArrowButton_->setEnabled(false);
         bidirectionalArrowButton_->setChecked(false);
@@ -502,23 +510,24 @@ void PropertyLinkDialog::sceneSelectionChanged() {
         const ConnectionInfo& info = connectionMap_[arrow];
 
         if (info.evaluator) {
-            if (evaluatorIsDependencyLinkEvaluator(info.evaluator)) {
-                if (!dependencyLinkModeButton_->isChecked())
-                    dependencyLinkModeButton_->click();
+            if (evaluatorIsDependancyLinkEvaluator(info.evaluator)) {
+                if (!dependancyLinkModeButton_->isChecked())
+                    dependancyLinkModeButton_->click();
 
-                dependencyHistoryLengthSlider_->setEnabled(true);
+                dependancyHistoryLengthSlider_->setEnabled(true);
 
-                DependencyLinkEvaluator* depEval = dynamic_cast<DependencyLinkEvaluator*>(info.evaluator);
+                DependancyLinkEvaluatorBase* depEval = dynamic_cast<DependancyLinkEvaluatorBase*>(info.evaluator);
                 int length = depEval->getHistoryLength();
-                dependencyHistoryLengthSlider_->setValue(length);
-                setDependencyHistoryLengthLabel(length);
+                dependancyHistoryLengthSlider_->setValue(length);
+                setDependancyHistoryLengthLabel(length);
             } else {
                 if (!propertyLinkModeButton_->isChecked())
                     propertyLinkModeButton_->click();
                 functionCB_->setEnabled(true);
                 bidirectionalArrowButton_->setEnabled(true);
+                updateCombobox(info.source, info.destination);
 
-                std::string functionName = info.evaluator->name();
+                std::string functionName = info.evaluator->getClassName();
                 int index = functionCB_->findText(QString::fromStdString(functionName));
                 functionCB_->setCurrentIndex(index);
             }
@@ -539,13 +548,15 @@ void PropertyLinkDialog::sceneSelectionChanged() {
 }
 
 void PropertyLinkDialog::comboBoxSelectionChanged(const QString& text) {
-    tgtAssert(text.toStdString() != "", "null string arrived");
+    //tgtAssert(text.toStdString() != "", "null string arrived");
 
     LinkDialogArrowGraphicsItem* arrow = getCurrentlySelectedArrow();
-    tgtAssert(arrow, "no arrow has been selected but the combobox was active");
+    //tgtAssert(arrow, "no arrow has been selected but the combobox was active");
 
-    ConnectionInfo& info = connectionMap_[arrow];
-    info.evaluator = LinkEvaluatorFactory::getInstance()->createLinkEvaluator(text.toStdString());
+    if(arrow) {
+        ConnectionInfo& info = connectionMap_[arrow];
+        info.evaluator = LinkEvaluatorFactory::getInstance()->create(text.toStdString());
+    }
 }
 
 void PropertyLinkDialog::controlButtonClicked(QAbstractButton* button) {
@@ -604,56 +615,56 @@ void PropertyLinkDialog::controlButtonClicked(QAbstractButton* button) {
 
 void PropertyLinkDialog::modeButtonClicked(QAbstractButton* button) {
     if (button == propertyLinkModeButton_) {
-        dependencyLinkHistoryContainer_->setVisible(false);
+        dependancyLinkHistoryContainer_->setVisible(false);
         functionCB_->setVisible(true);
         autolinkName_->setEnabled(true);
 
-        LinkDialogArrowGraphicsItem* arrow = getCurrentlySelectedArrow();
-        if (arrow) {
-            bidirectionalArrowButton_->setEnabled(true);
-            functionCB_->setEnabled(true);
-            ConnectionInfo& info = connectionMap_[arrow];
-            if (evaluatorIsDependencyLinkEvaluator(info.evaluator)) {
-                info.evaluator = LinkEvaluatorFactory::getInstance()->createLinkEvaluator("id");
-                arrow->setNormalColor(Qt::black);
-            }
-        }
+        //LinkDialogArrowGraphicsItem* arrow = getCurrentlySelectedArrow();
+        //if (arrow) {
+            //bidirectionalArrowButton_->setEnabled(true);
+            //functionCB_->setEnabled(true);
+            //ConnectionInfo& info = connectionMap_[arrow];
+            //if (evaluatorIsDependancyLinkEvaluator(info.evaluator)) {
+                //info.evaluator = LinkEvaluatorFactory::getInstance()->create("LinkEvaluatorId");
+                //arrow->setNormalColor(Qt::black);
+            //}
+        //}
     }
     else {
         functionCB_->setVisible(false);
-        dependencyLinkHistoryContainer_->setVisible(true);
+        dependancyLinkHistoryContainer_->setVisible(true);
         bidirectionalArrowButton_->setEnabled(false);
         autolinkName_->setEnabled(false);
 
-        LinkDialogArrowGraphicsItem* arrow = getCurrentlySelectedArrow();
-        if (arrow) {
-            dependencyHistoryLengthSlider_->setEnabled(true);
-            ConnectionInfo& info = connectionMap_[arrow];
-            if (!evaluatorIsDependencyLinkEvaluator(info.evaluator)) {
-                info.evaluator = LinkEvaluatorFactory::getInstance()->createLinkEvaluator("DependencyLink");
-            }
-            int length = dynamic_cast<DependencyLinkEvaluator*>(info.evaluator)->getHistoryLength();
-            dependencyHistoryLengthSlider_->setValue(length);
-            setDependencyHistoryLengthLabel(length);
-            arrow->setNormalColor(Qt::cyan);
-            rightArrowButton_->click();
-        }
+        //LinkDialogArrowGraphicsItem* arrow = getCurrentlySelectedArrow();
+        //if (arrow) {
+            //dependancyHistoryLengthSlider_->setEnabled(true);
+            //ConnectionInfo& info = connectionMap_[arrow];
+            //if (!evaluatorIsDependancyLinkEvaluator(info.evaluator)) {
+                //info.evaluator = LinkEvaluatorFactory::getInstance()->create("DependancyLink");
+            //}
+            //int length = dynamic_cast<DependancyLinkEvaluatorBase*>(info.evaluator)->getHistoryLength();
+            //dependancyHistoryLengthSlider_->setValue(length);
+            //setDependancyHistoryLengthLabel(length);
+            //arrow->setNormalColor(Qt::cyan);
+            //rightArrowButton_->click();
+        //}
     }
 }
 
-void PropertyLinkDialog::setDependencyHistoryLengthLabel(int newValue) {
+void PropertyLinkDialog::setDependancyHistoryLengthLabel(int newValue) {
     LinkDialogArrowGraphicsItem* currentArrow = getCurrentlySelectedArrow();
     if (currentArrow) {
-        tgtAssert(evaluatorIsDependencyLinkEvaluator(connectionMap_[currentArrow].evaluator), "this method should not be called if the selected arrow is no DependencyLink");
-        DependencyLinkEvaluator* depEval = dynamic_cast<DependencyLinkEvaluator*>(connectionMap_[currentArrow].evaluator);
+        tgtAssert(evaluatorIsDependancyLinkEvaluator(connectionMap_[currentArrow].evaluator), "this method should not be called if the selected arrow is no DependancyLink");
+        DependancyLinkEvaluatorBase* depEval = dynamic_cast<DependancyLinkEvaluatorBase*>(connectionMap_[currentArrow].evaluator);
         depEval->setHistoryLength(newValue);
     }
 
-    dependencyHistoryLengthLabel_->setVisible(true);
+    dependancyHistoryLengthLabel_->setVisible(true);
     if (newValue >= 0)
-        dependencyHistoryLengthLabel_->setNum(newValue);
+        dependancyHistoryLengthLabel_->setNum(newValue);
     else
-        dependencyHistoryLengthLabel_->setText("inf");
+        dependancyHistoryLengthLabel_->setText("inf");
 }
 
 LinkDialogArrowGraphicsItem* PropertyLinkDialog::createdArrow(LinkDialogArrowGraphicsItem* arrow, bool bidirectional) {
@@ -662,11 +673,11 @@ LinkDialogArrowGraphicsItem* PropertyLinkDialog::createdArrow(LinkDialogArrowGra
     foreach (LinkDialogArrowGraphicsItem* item, connectionMap_.keys()) {
         if ((item->getSourceItem() == arrow->getDestinationItem()) && (item->getDestinationItem() == arrow->getSourceItem())) {
             // a reverse arrow already exists
-            // => make that arrow bidirectional as long as it isn't a DependencyLink
+            // => make that arrow bidirectional as long as it isn't a DependancyLink
             ConnectionInfo& info = connectionMap_[item];
 
-            if (evaluatorIsDependencyLinkEvaluator(info.evaluator)) {
-                // no bidirectional arrows with DependencyLinks
+            if (evaluatorIsDependancyLinkEvaluator(info.evaluator)) {
+                // no bidirectional arrows with DependancyLinks
                 view_->scene()->removeItem(arrow);
                 delete arrow;
                 return 0;
@@ -695,11 +706,32 @@ LinkDialogArrowGraphicsItem* PropertyLinkDialog::createdArrow(LinkDialogArrowGra
 
     if (propertyLinkModeButton_->isChecked()) {
         arrow->setNormalColor(Qt::black);
-        info.evaluator = LinkEvaluatorFactory::getInstance()->createLinkEvaluator("id");
+        std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorFactory::getInstance()->getCompatibleLinkEvaluators(info.source->getProperty(), info.destination->getProperty());
+        std::string evalType;
+        for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
+            if(evalType == "")
+                evalType = i->first;
+            else {
+               if(i->second == "id")
+                   evalType = i->first;
+            }
+        }
+        info.evaluator = LinkEvaluatorFactory::getInstance()->create(evalType);
+        if(info.evaluator->arePropertiesLinkable(info.destination->getProperty(), info.source->getProperty()))
+            bidirectional = true;
+        else
+            bidirectional = false;
+
     }
-    else if (dependencyLinkModeButton_->isChecked()) {
-        arrow->setNormalColor(arrowColorDependency);
-        info.evaluator = LinkEvaluatorFactory::getInstance()->createLinkEvaluator("DependencyLink");
+    else if (dependancyLinkModeButton_->isChecked()) {
+        arrow->setNormalColor(arrowColorDependancy);
+        std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorFactory::getInstance()->getCompatibleLinkEvaluators(info.source->getProperty(), info.destination->getProperty());
+        std::string evalType;
+        for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
+            if(i->second == "DependancyLink")
+                evalType = i->first;
+        }
+        info.evaluator = LinkEvaluatorFactory::getInstance()->create("");
         bidirectional = false;
     }
     info.bidirectional = bidirectional;
@@ -785,7 +817,7 @@ void PropertyLinkDialog::createArrowFromPropertyLink(PropertyLink* link) {
     tgtAssert(destItem, "no destination property item found");
 
     LinkDialogArrowGraphicsItem* arrow = new LinkDialogArrowGraphicsItem(srcItem, destItem, false);
-    if (!PropertyLink::arePropertiesLinkable(srcItem->getProperty(), destItem->getProperty()))
+    if (!LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(srcItem->getProperty(), destItem->getProperty()))
         arrow->setNormalColor(Qt::yellow);
     view_->scene()->addItem(arrow);
     arrow = createdArrow(arrow, false);
@@ -794,8 +826,8 @@ void PropertyLinkDialog::createArrowFromPropertyLink(PropertyLink* link) {
     if (connectionMap_.contains(arrow))
         connectionMap_[arrow].evaluator = link->getLinkEvaluator();
 
-    if (evaluatorIsDependencyLinkEvaluator(link->getLinkEvaluator()))
-        arrow->setNormalColor(arrowColorDependency);
+    if (evaluatorIsDependancyLinkEvaluator(link->getLinkEvaluator()))
+        arrow->setNormalColor(arrowColorDependancy);
     else
         arrow->setNormalColor(Qt::black);
 
@@ -836,9 +868,23 @@ void PropertyLinkDialog::showAutoLinksByName() {
 
                 if (leftItem && rightItem) {
                     ConnectionInfo info;
-                    info.source = leftItem;
-                    info.destination = rightItem;
-                    info.bidirectional = true;
+                    if(LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(leftProp, rightProp)
+                      && LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(rightProp, leftProp)) {
+                        info.source = leftItem;
+                        info.destination = rightItem;
+                        info.bidirectional = true;
+                    }
+                    else if(LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(leftProp, rightProp)) {
+                        info.source = leftItem;
+                        info.destination = rightItem;
+                        info.bidirectional = false;
+                    }
+                    else if(LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(rightProp, leftProp)) {
+                        info.source = rightItem;
+                        info.destination = leftItem;
+                        info.bidirectional = false;
+                    }
+
                     addProbationalConnection(info);
                 }
             }
@@ -878,17 +924,11 @@ bool PropertyLinkDialog::getNewArrowIsBirectional() const {
         return false;
 }
 
-#ifdef VRN_WITH_PYTHON
-bool PropertyLinkDialog::allowConnectionBetweenProperties(const Property* /*p1*/, const Property* /*p2*/) const {
-    return true;
-#else
 bool PropertyLinkDialog::allowConnectionBetweenProperties(const Property* p1, const Property* p2) const {
     if (propertyLinkModeButton_->isChecked())
-        return PropertyLink::arePropertiesLinkable(p1, p2);
+        return LinkEvaluatorFactory::getInstance()->arePropertiesLinkable(p1, p2);
     else
         return true;
-
-#endif
 }
 
 } // namespace

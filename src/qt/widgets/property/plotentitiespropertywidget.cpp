@@ -28,7 +28,7 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/property/plotentitiespropertywidget.h"
-#include "voreen/qt/widgets/property/plotentitysettingswidget.h"
+#include "voreen/qt/widgets/plotting/plotentitysettingsdialog.h"
 #include "voreen/qt/widgets/voreentoolwindow.h"
 
 #include "voreen/core/properties/plotentitiesproperty.h"
@@ -37,11 +37,13 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QLabel>
+#include <QListWidget>
+#include <QComboBox>
 
 namespace voreen {
 
 PlotEntitiesPropertyWidget::PlotEntitiesPropertyWidget(PlotEntitiesProperty* prop, QWidget* parent)
-    : QPropertyWidgetWithEditorWindow(prop, parent, true, false)
+    : QPropertyWidget(prop, parent)
     , btAdd_(new QPushButton(tr("Add")))
     , btAddAll_(new QPushButton(tr("Add All")))
     , btDelete_(new QPushButton(tr("Delete")))
@@ -50,17 +52,15 @@ PlotEntitiesPropertyWidget::PlotEntitiesPropertyWidget(PlotEntitiesProperty* pro
     , cbXAxis_(new QComboBox())
     , cbYAxis_(new QComboBox())
     , cbColormap_(new QComboBox())
-    , plotEntitySettingsWidget_(0)
     , property_(prop)
 {
     QWidget* mainWidget = new QWidget();
 
     QGridLayout* layout = new QGridLayout();
-    createEditorWindow(Qt::LeftDockWidgetArea);
     layout->addWidget(new QLabel(tr("x Axis:")), 0, 0);
     layout->addWidget(cbXAxis_, 0, 1, 1, 2);
 
-    //rows of the grid
+    //row counter
     int row = 1;
 
     if (property_->getEntities() == PlotEntitySettings::SURFACE || property_->getEntities() == PlotEntitySettings::SCATTER) {
@@ -76,9 +76,6 @@ PlotEntitiesPropertyWidget::PlotEntitiesPropertyWidget(PlotEntitiesProperty* pro
         cbColormap_->addItem(QString::fromStdString(colorMapLabels.at(i)));
 
     layout->addWidget(btApplyColormap_, row, 2);
-    ++row;
-
-    layout->addWidget(new QLabel(tr("Selected Lines:")), row, 0, 1, 3);
     ++row;
     layout->addWidget(lwEntities_, row, 0, 1, 3);
     ++row;
@@ -98,8 +95,6 @@ PlotEntitiesPropertyWidget::PlotEntitiesPropertyWidget(PlotEntitiesProperty* pro
     addWidget(mainWidget);
     addVisibilityControls();
 
-    QFontInfo fontInfo(font());
-    btAdd_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
     updateFromProperty();
 }
 
@@ -116,16 +111,16 @@ void PlotEntitiesPropertyWidget::updateFromProperty() {
             QListWidgetItem* item;
             if (plotEntitySettings.at(i).getEntity() == PlotEntitySettings::LINE && plotEntitySettings.at(i).getCandleStickFlag())
                 item = new QListWidgetItem(QString::fromStdString(
-                property_->getPlotData()->getColumnLabel(plotEntitySettings.at(i).getCandleTopColumnIndex())));
+                "Candle Stick: " + property_->getPlotData()->getColumnLabel(plotEntitySettings.at(i).getCandleTopColumnIndex())
+                + ", " + property_->getPlotData()->getColumnLabel(plotEntitySettings.at(i).getCandleBottomColumnIndex())));
             else
                 item = new QListWidgetItem(QString::fromStdString(
                 property_->getPlotData()->getColumnLabel(plotEntitySettings.at(i).getMainColumnIndex())));
-            item->setForeground(QBrush(plotEntitySettingsWidget_->toQColor(plotEntitySettings.at(i).getFirstColor())));
+            item->setForeground(QBrush(toQColor(plotEntitySettings.at(i).getFirstColor())));
             lwEntities_->addItem(item);
         }
         if (property_->getEntities() == PlotEntitySettings::SURFACE || property_->getEntities() == PlotEntitySettings::SCATTER)
             cbYAxis_->setCurrentIndex(cbYAxis_->findData(property_->getYColumnIndex()));
-        plotEntitySettingsWidget_->updateWidgets();
     }
 }
 
@@ -160,55 +155,27 @@ void PlotEntitiesPropertyWidget::reCreateWidgets() {
     }
 }
 
-void PlotEntitiesPropertyWidget::toggleWidgetVisibility() {
-    tgtAssert(editorWindow_, "No editor window");
-    editorWindow_->setVisible(!editorWindow_->isVisible());
-}
-
-void PlotEntitiesPropertyWidget::customizeEditorWindow() {
-    editorWindow_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea);
-    editorWindow_->setFloating(true);
-    editorWindow_->adjustSize();
-    editorWindow_->setFixedHeight(editorWindow_->height());
-}
-
-QWidget* PlotEntitiesPropertyWidget::createEditorWindowWidget() {
-    plotEntitySettingsWidget_ = new PlotEntitySettingsWidget(property_);
-    plotEntitySettingsWidget_->createWidgets();
-    return plotEntitySettingsWidget_;
-}
-
-Property* PlotEntitiesPropertyWidget::getProperty() {
-    return property_;
-}
-
 void PlotEntitiesPropertyWidget::buttonAddClicked() {
     if (property_->dataValid()) {
-        PlotEntitySettings es = property_->createEntitySettings();
-        int index = property_->get().size();
-        property_->setPlotEntitySettings(es, index);
-        plotEntitySettingsWidget_->setEntity(es, index);
-        editorWindow_->setVisible(true);
+        PlotEntitySettingsDialog dialog(property_->createEntitySettings(), property_->getPlotData(), property_);
+        if (dialog.exec() == QDialog::Accepted)
+            property_->setPlotEntitySettings(dialog.getEntitySettings(), property_->get().size());
     }
 }
 
 void PlotEntitiesPropertyWidget::buttonAddAllClicked() {
     if (property_->dataValid()) {
         std::vector<PlotEntitySettings> all = property_->createAllEntitySettings();
-        for (size_t i = 0; i < all.size(); ++i) {
-            int index = property_->get().size();
-            property_->setPlotEntitySettings(all.at(i), index);
-            plotEntitySettingsWidget_->setEntity(all.at(i), index);
-        }
+        for (size_t i = 0; i < all.size(); ++i)
+            property_->setPlotEntitySettings(all.at(i), property_->get().size());
     }
 }
 
 void PlotEntitiesPropertyWidget::buttonDeleteClicked() {
     if (property_->dataValid()) {
         int idx = lwEntities_->row(lwEntities_->currentItem());
-        if (idx > -1 && idx < static_cast<int>(lwEntities_->count())) {
+        if (idx > -1 && idx < static_cast<int>(lwEntities_->count()))
             property_->deletePlotEntitySettings(idx);
-        }
     }
 }
 
@@ -238,9 +205,18 @@ void PlotEntitiesPropertyWidget::updateColormap(int index) {
 
 void PlotEntitiesPropertyWidget::listViewDoubleClicked(QListWidgetItem*  item) {
     int row = lwEntities_->row(item);
-    plotEntitySettingsWidget_->setEntity(property_->get().at(row), row);
-    plotEntitySettingsWidget_->updateWidgets();
-    editorWindow_->setVisible(true);
+    PlotEntitySettingsDialog dialog(property_->get().at(row), property_->getPlotData(), property_);
+    if (dialog.exec() == QDialog::Accepted)
+        property_->setPlotEntitySettings(dialog.getEntitySettings(), row);
+}
+
+tgt::Color PlotEntitiesPropertyWidget::toTgtColor(QColor color) {
+    return tgt::Color(color.redF(),color.greenF(),color.blueF(), color.alphaF());
+}
+
+QColor PlotEntitiesPropertyWidget::toQColor(tgt::Color color) {
+    return QColor(static_cast<int>(color.r * 255), static_cast<int>(color.g * 255),
+                  static_cast<int>(color.b * 255), static_cast<int>(color.a * 255));
 }
 
 } // namespace

@@ -52,10 +52,12 @@ class InteractionHandler;
 
 class ProcessorWidget;
 
-class ProcessorObserver : public Observer {
+class ProcessorObserver : public PropertyOwnerObserver {
 public:
     virtual void processorWidgetCreated(const Processor* processor) = 0;
     virtual void processorWidgetDeleted(const Processor* processor) = 0;
+
+    virtual void portsAndPropertiesChanged(const Processor* processor) = 0;
 };
 
 /**
@@ -283,8 +285,8 @@ public:
     ProcessorWidget* getProcessorWidget() const;
 
     /**
-     * A derived class should return true, if its process() method 
-     * is time-consuming, i.e., causes noticable delay. 
+     * A derived class should return true, if its process() method
+     * is time-consuming, i.e., causes noticable delay.
      *
      * Normal renderers without expensive data processing should return false (default).
      */
@@ -295,7 +297,7 @@ public:
      *
      * @param progress The overall progress of the operations
      *  performed in process(). Range: [0.0, 1.0]
-     * 
+     *
      * @see usesExpensiveComputation
      */
     void setProgress(float progress);
@@ -390,6 +392,14 @@ protected:
     /// @overload
     void addPort(Port& port);
 
+    /**
+     * Unregister a port.
+     */
+    void removePort(Port* port);
+
+    /// @overload
+    void removePort(Port& port);
+
     /// Adds an event property to this processor.
     void addEventProperty(EventPropertyBase* prop);
 
@@ -445,7 +455,7 @@ protected:
      * Used by the processor for indicating progress
      * of time-consuming operations.
      *
-     * @see setProgress  
+     * @see setProgress
      */
     ProgressBar* progressBar_;
 

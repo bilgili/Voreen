@@ -152,12 +152,7 @@ VolumeHandle* TransFuncProperty::getVolumeHandle() const {
 }
 
 void TransFuncProperty::notifyChange() {
-
-    // execute property links for TransFuncIntensity
-    TransFuncIntensity* tfi = dynamic_cast<TransFuncIntensity*>(value_);
-    if (tfi) {
-        executeLinks(tfi, tfi);
-    }
+    executeLinks();
 
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)

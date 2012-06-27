@@ -32,9 +32,8 @@
 
 #include "voreen/core/utils/exception.h"
 #include "voreen/core/plotting/colormap.h"
-#include "voreen/core/plotting/plotzoomstate.h"
 #include "voreen/core/plotting/plotentitysettings.h"
-#include "voreen/core/plotting/plotpredicate.h"
+#include "voreen/core/plotting/plotselection.h"
 #include "tgt/camera.h"
 
 #include <vector>
@@ -68,7 +67,6 @@ public:
         DOUBLE,
         FLOAT,
         INTEGER,
-        PLOTENTITYSETTINGSVEC,
         LONG,
         SHADER,
         STRING,
@@ -76,8 +74,9 @@ public:
         IVEC2,
         IVEC3,
         IVEC4,
-        PLOTPREDICATEVECTOR,
-        PLOTZOOM,
+        PLOTENTITYSETTINGSVEC,
+        PLOTPREDICATEVEC,
+        PLOTSELECTIONENTRYVEC,
         TRANSFUNC,
         VEC2,
         VEC3,
@@ -117,7 +116,7 @@ public:
     explicit BoxObject(const ColorMap& value);
     explicit BoxObject(const std::vector<PlotEntitySettings>& value);
     explicit BoxObject(const std::vector<std::pair<int, PlotPredicate*> >& value);
-    explicit BoxObject(const std::vector< PlotZoomState >& value);
+    explicit BoxObject(const std::vector< PlotSelectionEntry >& value);
 
     /**
      * Constructs a BoxObject from a transfer function.
@@ -129,7 +128,7 @@ public:
      * Constructs a BoxObject from a camera.
      * The passed object is not copied, but stored directly.
      */
-    explicit BoxObject(const tgt::Camera* value);
+    explicit BoxObject(const tgt::Camera value);
 
     /**
      * Constructs a BoxObject from a volume handle.
@@ -344,15 +343,15 @@ public:
     *
     * @throw VoreenException, if the stored value cannot be converted
     */
-    std::vector<std::pair<int, PlotPredicate*> > getPlotPredicateVector() const throw (VoreenException);
+    std::vector<std::pair<int, PlotPredicate*> > getPlotPredicateVec() const throw (VoreenException);
 
     /**
     * Converts the current value regardless of type of the BoxObject
-    * to std::vector< PlotZoomState > if needed and/or possible and returns it.
+    * to std::vector< PlotSelectionEntry > if needed and/or possible and returns it.
     *
     * @throw VoreenException, if the stored value cannot be converted
     */
-    std::vector< PlotZoomState > getPlotZoom() const throw (VoreenException);
+    std::vector< PlotSelectionEntry > getPlotSelectionEntryVec() const throw (VoreenException);
 
     /**
      * Converts the current value regardless of type of the BoxObject
@@ -427,8 +426,8 @@ public:
     void setMat2(const tgt::mat2& value);
     void setMat3(const tgt::mat3& value);
     void setMat4(const tgt::mat4& value);
-    void setPlotZoom(const std::vector< PlotZoomState >& value);
-    void setPlotPredicateVector(const std::vector<std::pair<int, PlotPredicate*> >& value);
+    void setPlotSelectionEntryVec(const std::vector< PlotSelectionEntry >& value);
+    void setPlotPredicateVec(const std::vector<std::pair<int, PlotPredicate*> >& value);
     void setShader(const ShaderSource* value);
     /// Assigns a transfer function. The passed object is not copied.
     void setTransFunc(const TransFunc* value);
@@ -466,7 +465,7 @@ public:
     BoxObject& operator= (const tgt::mat3& rhs);
     BoxObject& operator= (const tgt::mat4& rhs);
     BoxObject& operator= (const std::vector<std::pair<int, PlotPredicate*> >& rhs);
-    BoxObject& operator= (const std::vector< PlotZoomState >& rhs);
+    BoxObject& operator= (const std::vector< PlotSelectionEntry >& rhs);
     BoxObject& operator= (const ShaderSource& rhs);
     BoxObject& operator= (const TransFunc* rhs);
     BoxObject& operator= (const tgt::Camera* rhs);

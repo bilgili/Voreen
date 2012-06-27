@@ -50,7 +50,6 @@ class RenderProcessor : public Processor {
 public:
 
     RenderProcessor();
-    virtual ~RenderProcessor();
 
     /**
      * In addition to the invalidations performed by the Processor base class,
@@ -93,9 +92,6 @@ public:
     const std::vector<RenderPort*>& getPrivateRenderPorts() const;
 
 protected:
-    /// This method is called when the processor should be processed.
-    virtual void process() = 0;
-
     /**
      * Initializes all private RenderPorts.
      */
@@ -124,17 +120,9 @@ protected:
      */
     void manageRenderTargets();
 
-    static const std::string loggerCat_; ///< category used in logging
-
     /// @todo documentation
     void addPrivateRenderPort(RenderPort* port);
     void addPrivateRenderPort(RenderPort& port);
-
-    //---------------------------------------------------------
-    //Some deprecated stuff:
-
-    /// Renders a screen aligned quad.
-    void renderQuad();
 
     /**
      * This generates the header that will be used at the beginning of the shaders. It includes the necessary #defines that
@@ -154,10 +142,15 @@ protected:
      *      the dimensions of the first outport is chosen.
      */
     virtual void setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera = 0, tgt::ivec2 screenDim = tgt::ivec2(-1));
-    //---------------------------------------------------------
+
+    /// Renders a screen-aligned quad with depth func GL_ALWAYS.
+    void renderQuad();
 
     /// used for cycle prevention during render port size propagation
     bool portResizeVisited_;
+
+    static const std::string loggerCat_; ///< category used in logging
+
 private:
     /// The private render ports this processor has. Private ports
     /// are mapped to rendertargets no other processor has access to.
@@ -165,7 +158,6 @@ private:
 
     /// used for cycle prevention during size origin test
     mutable bool testSizeOriginVisited_;
-
 };
 
 } // namespace voreen

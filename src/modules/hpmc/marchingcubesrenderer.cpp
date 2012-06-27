@@ -245,18 +245,6 @@ std::string MarchingCubesRenderer::generateRenderHeader() {
     return headerSource;
 }
 
-void MarchingCubesRenderer::setLightingParameters() {
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient_.get().elem);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse_.get().elem);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular_.get().elem);
-
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, surfaceColor_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, surfaceColor_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, surfaceColor_.get().elem);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialShininess_.get());
-    LGL_ERROR;
-}
-
 void MarchingCubesRenderer::process() {
 
     tgtAssert(mcExtractPrg_ && hpmcTraversalHandle_, "No shader or hpmc handle");
@@ -306,20 +294,23 @@ void MarchingCubesRenderer::render() {
 
     // setup shader
     mcRenderPrg_->activate();
-    setGlobalShaderParameters(mcRenderPrg_, camera_);
+    setGlobalShaderParameters(mcRenderPrg_, &camera_);
 
     mcRenderPrg_->setUniform("surfaceColor_", tgt::vec4(surfaceColor_.get().xyz(), surfaceAlpha_.get()));
     if (useLighting_.get()) {
-        setLightingParameters();
         if (lightPosRelativeToViewer_.get()) {
             // move light source with viewer
-            tgtAssert(camera_, "No camera");
-            mcRenderPrg_->setUniform("lightPosition_", camera_->getViewMatrixInverse()*lightPosition_.get().xyz());
+            //tgtAssert(camera_, "No camera");
+            mcRenderPrg_->setUniform("lightSource_.position_", camera_.getViewMatrixInverse()*lightPosition_.get().xyz());
         }
         else {
             // set light position in world coordinates
-            mcRenderPrg_->setUniform("lightPosition_", lightPosition_.get().xyz());
+            mcRenderPrg_->setUniform("lightSource_.position_", lightPosition_.get().xyz());
         }
+        mcRenderPrg_->setUniform("lightSource_.ambientColor_", lightAmbient_.get().xyz());
+        mcRenderPrg_->setUniform("lightSource_.diffuseColor_", lightDiffuse_.get().xyz());
+        mcRenderPrg_->setUniform("lightSource_.specularColor_", lightSpecular_.get().xyz());
+        mcRenderPrg_->setUniform("shininess_", materialShininess_.get());
     }
 
     // render from buffermulti

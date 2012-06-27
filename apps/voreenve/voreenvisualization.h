@@ -113,8 +113,8 @@ signals:
     void modified();
 
 private:
-    void propagateNetwork();
-    void propagateVolumeContainer();
+    void propagateNetwork(ProcessorNetwork* network);
+    void propagateVolumeContainer(VolumeContainer* container);
 
     /**
      * Deletes all tmpFiles located in tmpPath.

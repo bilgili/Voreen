@@ -90,7 +90,6 @@ bool PlotEntitiesProperty::setXColumnIndex(int index) {
     }
 }
 
-
 int PlotEntitiesProperty::getYColumnIndex() const {
     if (entities_ == PlotEntitySettings::SCATTER || entities_ == PlotEntitySettings::SURFACE)
         return yColumnIndex_;
@@ -110,6 +109,21 @@ bool PlotEntitiesProperty::setYColumnIndex(int index) {
     }
 }
 
+std::vector<int> PlotEntitiesProperty::getDataColumnIndices() const {
+    std::vector<int> toReturn;
+    for (std::vector<PlotEntitySettings>::const_iterator it = value_.begin(); it != value_.end(); ++it) {
+        if (it->getCandleStickFlag()) {
+            toReturn.push_back(it->getCandleBottomColumnIndex());
+            toReturn.push_back(it->getCandleTopColumnIndex());
+            toReturn.push_back(it->getStickBottomColumnIndex());
+            toReturn.push_back(it->getStickTopColumnIndex());
+        }
+        else
+            toReturn.push_back(it->getMainColumnIndex());
+    }
+    return toReturn;
+}
+
 const ColorMap& PlotEntitiesProperty::getColorMap() const {
     return colorMap_;
 }
@@ -119,11 +133,11 @@ void PlotEntitiesProperty::setColorMap(ColorMap cm) {
     notifyAll();
 }
 
-PlotData* PlotEntitiesProperty::getPlotData() const {
+const PlotData* PlotEntitiesProperty::getPlotData() const {
     return data_;
 }
 
-void PlotEntitiesProperty::setPlotData(PlotData* data) {
+void PlotEntitiesProperty::setPlotData(const PlotData* data) {
     data_ = data;
     //set emptydataflag_
     dataEmptyFlag_ = true;
@@ -258,7 +272,7 @@ void PlotEntitiesProperty::applyColormap() {
             ++cmit;
             if (es.getEntity() == PlotEntitySettings::LINE) {
                 es.setSecondColor(*cmit);
-                ++cmit;
+                //++cmit;
             }
             else if (es.getEntity() == PlotEntitySettings::SURFACE) {
                 es.setSecondColor(tgt::Color::black);
@@ -267,7 +281,6 @@ void PlotEntitiesProperty::applyColormap() {
         }
     }
 }
-
 
 PlotEntitySettings PlotEntitiesProperty::createEntitySettings() const {
     if (!dataValidFlag_) {
@@ -347,10 +360,12 @@ std::vector<PlotEntitySettings> PlotEntitiesProperty::createAllEntitySettings() 
 
 void PlotEntitiesProperty::notifyAll() {
     Property::invalidate();
-
+    executeLinks();
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)
         conditions_[j]->exec();
+    updateWidgets();
+    invalidateOwner();
 }
 
 bool PlotEntitiesProperty::possibleXAxis(int index) {
@@ -395,5 +410,33 @@ bool PlotEntitiesProperty::possibleYAxis(int index) {
 std::string PlotEntitiesProperty::getTypeString() const {
     return "PlotEntities";
 }
+
+/*
+up to now, we do not support linking of this property. If it will be implemented, this method must check
+whether the structure of the PlotData match. This is the reason why we need to overwrite this
+method. To implement the linking, one has to create a new class storing vector<PlotEntitySettings> and
+x axis column index etc.
+void PlotEntitiesProperty::executeLinks(const std::vector<PlotEntitySettings>& prevValue, const std::vector<PlotEntitySettings>& curValue) {
+
+    if (links_.empty())
+        return;
+
+    // check if all properties work with the same PlotData
+    for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); ++it) {
+        PlotEntitiesProperty* pep = dynamic_cast<PlotEntitiesProperty*>((*it)->getDestinationProperty());
+        if (!pep || !dataValidFlag_ || !pep->dataValid() || !data_->compareStructure(pep->getPlotData()))
+            return;
+    }
+
+    // pass change data object to links
+    for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++) {
+        try {
+            (*it)->onChange();
+        }
+        catch (const VoreenException& e) {
+            LERRORC("voreen.TemplateProperty", "executeLinks(): " << e.what());
+        }
+    }
+}*/
 
 } // namespace voreen

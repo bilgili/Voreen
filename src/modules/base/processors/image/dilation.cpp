@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Dilation::Dilation()
-    : ImageProcessorDepth("pp_dilation"),
+    : ImageProcessorDepth("image/dilation"),
       inport_(Port::INPORT, "image.inport"),
       outport_(Port::OUTPORT, "image.outport")
 {
@@ -56,13 +56,13 @@ void Dilation::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit, depthUnit);
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit, depthUnit);
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "textureParameters_");
 

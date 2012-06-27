@@ -102,9 +102,9 @@ void AnimatedProcessor::addTemplatePropertyTimeline(Property* prop) {
         properties_.push_back(new TemplatePropertyTimeline<tgt::vec4>(myprop9));
         return;
     }
-    TemplateProperty<tgt::Camera*>* myprop10 = dynamic_cast<TemplateProperty<tgt::Camera*>*>(prop);
+    TemplateProperty<tgt::Camera>* myprop10 = dynamic_cast<TemplateProperty<tgt::Camera>*>(prop);
     if (myprop10 !=0) {
-        properties_.push_back(new TemplatePropertyTimeline<tgt::Camera*>(myprop10));
+        properties_.push_back(new TemplatePropertyTimeline<tgt::Camera>(myprop10));
         return;
     }
     TemplateProperty<std::string>* myprop11 = dynamic_cast<TemplateProperty<std::string>*>(prop);

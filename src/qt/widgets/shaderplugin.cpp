@@ -53,7 +53,7 @@ void ShaderPlugin::createWidgets() {
     updateBt_->setIcon(QIcon(":/icons/rebuild.png"));
     updateBt_->setIconSize(QSize(24, 24));
     updateBt_->setShortcut(QKeySequence("Ctrl+R"));
-    updateBt_->setToolTip("Update shader");
+    updateBt_->setToolTip("Update shader (Ctrl+R)");
     undoBt_ = new QToolButton();
     undoBt_->setIcon(QIcon(":/icons/revert.png"));
     undoBt_->setIconSize(QSize(24, 24));
@@ -216,7 +216,11 @@ void ShaderPlugin::updateFromProperty() {
     if(property_->get().fragmentModified_)
         mod = "original source: ";
 
-    window()->setWindowTitle(QString::fromStdString(property_->getOwner()->getName() + " - " + property_->getGuiName() + " (" + mod + property_->get().fragmentFilename_ + ")"));
+    std::string windowTitle = "";
+    if (property_->getOwner())
+        windowTitle += property_->getOwner()->getName() + " - ";
+    windowTitle += property_->getGuiName() + " (" + mod + property_->get().fragmentFilename_ + ")";
+    window()->setWindowTitle(QString::fromStdString(windowTitle));
 }
 
 } // namespace voreen

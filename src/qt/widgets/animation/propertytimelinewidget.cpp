@@ -129,11 +129,11 @@ PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimelin
     else
         activateTimelineButton_->setIcon(QIcon(":/icons/apply.png"));
 
-    
+
     connect(activateTimelineButton_, SIGNAL(toggled(bool)), this, SLOT(activateTimeline(bool)));
-    
+
     setFps(30.0f);
-    
+
     mainLayout_->addWidget(propertyTimelineView_);
     mainLayout_->addWidget(activateTimelineButton_);
     QLabel* nameLabel = new QLabel(this);

@@ -69,11 +69,7 @@ PropertyListWidget::PropertyListWidget(QWidget* parent, ProcessorNetwork* proces
 }
 
 PropertyListWidget::~PropertyListWidget() {
-    // delete all widgets
-    for (std::map<const Processor*, ProcessorPropertiesWidget*>::iterator it = processorWidgetMap_.begin(); it != processorWidgetMap_.end(); ++it)
-        delete it->second;
-
-    processorWidgetMap_.clear();
+    clear();
 }
 
 void PropertyListWidget::setProcessorNetwork(ProcessorNetwork* network) {
@@ -179,6 +175,9 @@ void PropertyListWidget::processorsSelected(const QList<Processor*>& selectedPro
 }
 
 void PropertyListWidget::clear() {
+
+    if (processorWidgetMap_.empty() && previouslySelectedProcessors_.empty())
+        return;
 
     setUpdatesEnabled(false);
 

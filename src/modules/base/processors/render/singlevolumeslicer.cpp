@@ -113,7 +113,7 @@ void SingleVolumeSlicer::process() {
     // compute front index needed for clipping
     int frontIdx = 0; // index of the vertex closest to the camera
     float minCameraDistance = 1000.0;//std::numeric_limits<float>::max(); // distance between camera and closest vertex
-    tgt::vec3 camPos = camera_.get()->getPosition();
+    tgt::vec3 camPos = camera_.get().getPosition();
     for (unsigned int i=0;i<8;i++) {
         float cameraDistance = length(camPos-cubeVertices_[i]);
         if (cameraDistance < minCameraDistance) {
@@ -159,9 +159,9 @@ void SingleVolumeSlicer::process() {
     slicingPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
     //clipping uniforms
     slicingPrg_->setUniform("frontIdx_", frontIdx);
-    slicingPrg_->setUniform("vecView_", camera_.get()->getLook()-camera_.get()->getPosition());
-    //slicingPrg_->setUniform("vecView_", camera_.get()->getFocus()-camera_.get()->getPosition());
-    slicingPrg_->setUniform("camDistance_", length(camera_.get()->getPosition()-cubeVertices_[frontIdx]));
+    slicingPrg_->setUniform("vecView_", camera_.get().getLook()-camera_.get().getPosition());
+    //slicingPrg_->setUniform("vecView_", camera_.get().getFocus()-camera_.get().getPosition());
+    slicingPrg_->setUniform("camDistance_", length(camera_.get().getPosition()-cubeVertices_[frontIdx]));
     slicingPrg_->setUniform("dPlaneIncr_", sliceDistance);
     slicingPrg_->setUniform("nSequence_", nSeq_, 64);
     slicingPrg_->setUniform("vecVertices_", cubeVertices_, 8);
@@ -169,19 +169,20 @@ void SingleVolumeSlicer::process() {
     slicingPrg_->setUniform("v2_", v2_, 24);
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(slicingPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(slicingPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(slicingPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(slicingPrg_, volumeTextures, &cam, lightPosition_.get());
 
     glDisable(GL_DEPTH_TEST);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    tgt::loadMatrix(camera_.get().getViewMatrix());
 
     unsigned int numSlices = static_cast<unsigned int>(1.0f / sliceDistance);
 

@@ -54,7 +54,6 @@ public:
 
 public slots:
     virtual void createWidgets();
-    virtual void createConnections();
 
 private:
     PlotDataProperty* property_;                ///< property holding the PLotData to show

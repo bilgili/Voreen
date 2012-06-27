@@ -43,7 +43,7 @@ public:
     virtual Processor* create() const;
 
     virtual std::string getClassName() const { return "LinePlot"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_EXPERIMENTAL; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
     virtual std::string getProcessorInfo() const;
 
 protected:
@@ -59,33 +59,20 @@ private:
     virtual void readFromInport();
     virtual void calcDomains();
     virtual void toggleProperties();
-    virtual void zoomPropChanged();
-    virtual void entitiesPropChanged();
+    virtual void createPlotLabels();
 
-    // functions called by mouse events
-    virtual void leftClickEvent(tgt::MouseEvent* e);
+    /// create line labels
+    void createLineLabels();
 
     // properties
     FloatProperty lineWidth_;
     FloatProperty pointSize_;
-    FloatProperty axesWidth_;
-    StringProperty xLabel_;
-    StringProperty yLabel_;
-    IntProperty xScaleStep_;
-    IntProperty yScaleStep_;
     BoolProperty logXAxis_;
     BoolProperty logYAxis_;
     BoolProperty renderLineLabel_;
-    BoolProperty renderAxes_;
-    BoolProperty renderScales_;
-    BoolProperty renderXHelperLines_;
-    BoolProperty renderYHelperLines_;
-    BoolProperty fixZoom_;
 
     static const std::string loggerCat_;
 
-    bool regenDataList_;      ///< true if the display list of the data must be regenerated
-    bool regenPickingList_;   ///< true if the display list of the picking data must be regenerated
     GLuint dataList_;         ///< display list of the data
     GLuint pickingList_;      ///< display list of the picking data
 };

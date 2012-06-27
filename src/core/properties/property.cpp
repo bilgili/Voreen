@@ -30,7 +30,6 @@
 #include "voreen/core/properties/property.h"
 #include "voreen/core/properties/propertywidgetfactory.h"
 #include "voreen/core/properties/propertywidget.h"
-#include "voreen/core/properties/link/changeaction.h"
 
 namespace voreen {
 
@@ -45,6 +44,7 @@ Property::Property(const std::string& id, const std::string& guiText, Processor:
     , views_(1)
     , groupId_("")
     , interactionModeVisited_(false)
+    , serializeValue_(false)
     , linkCheckVisited_(false)
     , initialGuiName_(guiText)
 {
@@ -53,6 +53,9 @@ Property::Property(const std::string& id, const std::string& guiText, Processor:
 
 Property::~Property() {
     disconnectWidgets();
+    std::set<PropertyWidget*>::iterator it = widgets_.begin();
+    for ( ; it != widgets_.end(); ++it)
+        delete (*it);
 }
 
 Processor::InvalidationLevel Property::getInvalidationLevel() {
@@ -166,6 +169,9 @@ PropertyWidget* Property::createWidget(PropertyWidgetFactory*) {
 }
 
 void Property::serialize(XmlSerializer& s) const {
+    if(serializeValue_)
+        return;
+
     if (guiName_ != initialGuiName_)
         s.serialize("guiName", guiName_);
 
@@ -181,6 +187,9 @@ void Property::serialize(XmlSerializer& s) const {
 }
 
 void Property::deserialize(XmlDeserializer& s) {
+    if(serializeValue_)
+        return;
+
     // deserialize level-of-detail, if available
     try {
         int lod;
@@ -203,6 +212,18 @@ void Property::deserialize(XmlDeserializer& s) {
     }
 
     metaDataContainer_.deserialize(s);
+}
+
+void Property::serializeValue(XmlSerializer& s) {
+    serializeValue_ = true;
+    serialize(s);
+    serializeValue_ = false;
+}
+
+void Property::deserializeValue(XmlDeserializer& s) {
+    serializeValue_ = true;
+    deserialize(s);
+    serializeValue_ = false;
 }
 
 MetaDataContainer& Property::getMetaDataContainer() const {

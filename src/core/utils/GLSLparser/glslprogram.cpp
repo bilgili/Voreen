@@ -34,9 +34,21 @@
 #include "voreen/core/utils/GLSLparser/preprocessor/ppparser.h"
 #include "voreen/core/utils/GLSLparser/preprocessor/ppvisitor.h"
 
+#include "voreen/core/voreenapplication.h"
+
 namespace voreen {
 
 namespace glslparser {
+
+const std::string GLSLProgram::loggerCat_("voreen.GLSLProgram");
+
+GLSLProgram::GLSLProgram(std::istream* is)
+    : fileName_(""),
+    is_(is),
+    shaderHeader_(""),
+    log_(std::ios_base::out | std::ios_base::binary)
+{
+}
 
 GLSLProgram::GLSLProgram(const std::string& fileName)
     : fileName_(fileName),
@@ -65,7 +77,7 @@ bool GLSLProgram::parse() {
 
     PreprocessorVisitor preprocessor;
     preprocessor.setShaderHeader(shaderHeader_);
-    std::ostringstream& program = preprocessor.translate(fileName_);
+    std::ostringstream& program = preprocessor.translate(is_, VoreenApplication::app()->getShaderPath());
 
     log_ << "parsing GLSL program in file '" << fileName_ << "'...\n\n";
     log_ << "Preprocessor:\n================\n";
@@ -90,8 +102,9 @@ bool GLSLProgram::parse() {
         GLSLVisitor glsl;
         glsl.visitAll(root);
         uniformDecls_ = glsl.getUniforms(false);
+        outDecls_ = glsl.getOuts(false);
     } else
-        std::cout << glslParser.getLog().str();
+        LINFO(glslParser.getLog().str());
     delete root;
 
     return res;

@@ -8,10 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -66,6 +63,8 @@
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="3.5" />
                         <Property name="shading" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -134,6 +133,7 @@
                         <Property name="canvasSize">
                             <value x="256" y="256" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -308,12 +308,12 @@
                 <PropertyLink>
                     <SourceProperty ref="ref9" />
                     <DestinationProperty ref="ref10" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref10" />
                     <DestinationProperty ref="ref9" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

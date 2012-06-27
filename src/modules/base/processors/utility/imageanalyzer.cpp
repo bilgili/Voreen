@@ -296,6 +296,89 @@ ImageAnalyzer::ImageAnalyzer():
     addPort(&image_);
     addPort(&outport_);
     addPort(&histogramOutPort_);
+
+    setPropertyGroupGuiName("Calculation Parameter","Calculation Parameter");
+    setPropertyGroupGuiName("Generic Information","Generic Information");
+    setPropertyGroupGuiName("RGBA-Values","RGBA-Values");
+    setPropertyGroupGuiName("CYMK-Values","CYMK-Values");
+    setPropertyGroupGuiName("HSV-Values","HSV-Values");
+    setPropertyGroupGuiName("Histogramselection","Histogramselection");
+
+    computeButton_.setGroupID("Calculation Parameter");
+    allOutPutZeroOne_.setGroupID("Calculation Parameter");
+    interAction_.setGroupID("Calculation Parameter");
+    calculateStep_.setGroupID("Calculation Parameter");
+    histogramSteps_.setGroupID("Calculation Parameter");
+
+    bytePerPixel_.setGroupID("Generic Information");
+    height_.setGroupID("Generic Information");
+    width_.setGroupID("Generic Information");
+    stepPerChannel_.setGroupID("Generic Information");
+
+    minRed_.setGroupID("RGBA-Values");
+    maxRed_.setGroupID("RGBA-Values");
+    medianRed_.setGroupID("RGBA-Values");
+    minGreen_.setGroupID("RGBA-Values");
+    maxGreen_.setGroupID("RGBA-Values");
+    medianGreen_.setGroupID("RGBA-Values");
+    minBlue_.setGroupID("RGBA-Values");
+    maxBlue_.setGroupID("RGBA-Values");
+    medianBlue_.setGroupID("RGBA-Values");
+    minAlpha_.setGroupID("RGBA-Values");
+    maxAlpha_.setGroupID("RGBA-Values");
+    medianAlpha_.setGroupID("RGBA-Values");
+
+    minGrey_.setGroupID("RGBA-Values");
+    maxGrey_.setGroupID("RGBA-Values");
+    medianGrey_.setGroupID("RGBA-Values");
+    minLuminance_.setGroupID("RGBA-Values");
+    maxLuminance_.setGroupID("RGBA-Values");
+    medianLuminance_.setGroupID("RGBA-Values");
+
+    minDepth_.setGroupID("RGBA-Values");
+    maxDepth_.setGroupID("RGBA-Values");
+    medianDepth_.setGroupID("RGBA-Values");
+
+    minC_.setGroupID("CYMK-Values");
+    maxC_.setGroupID("CYMK-Values");
+    medianC_.setGroupID("CYMK-Values");
+    minM_.setGroupID("CYMK-Values");
+    maxM_.setGroupID("CYMK-Values");
+    medianM_.setGroupID("CYMK-Values");
+    minY_.setGroupID("CYMK-Values");
+    maxY_.setGroupID("CYMK-Values");
+    medianY_.setGroupID("CYMK-Values");
+    minK_.setGroupID("CYMK-Values");
+    maxK_.setGroupID("CYMK-Values");
+    medianK_.setGroupID("CYMK-Values");
+
+    minH_.setGroupID("HSV-Values");
+    maxH_.setGroupID("HSV-Values");
+    medianH_.setGroupID("HSV-Values");
+    minS_.setGroupID("HSV-Values");
+    maxS_.setGroupID("HSV-Values");
+    medianS_.setGroupID("HSV-Values");
+    minV_.setGroupID("HSV-Values");
+    maxV_.setGroupID("HSV-Values");
+    medianV_.setGroupID("HSV-Values");
+
+    toHistoRed_.setGroupID("Histogramselection");
+    toHistoGreen_.setGroupID("Histogramselection");
+    toHistoBlue_.setGroupID("Histogramselection");
+    toHistoAlpha_.setGroupID("Histogramselection");
+    toHistoGrey_.setGroupID("Histogramselection");
+    toHistoLuminance_.setGroupID("Histogramselection");
+    toHistoDepth_.setGroupID("Histogramselection");
+
+    toHistoC_.setGroupID("Histogramselection");
+    toHistoY_.setGroupID("Histogramselection");
+    toHistoM_.setGroupID("Histogramselection");
+    toHistoK_.setGroupID("Histogramselection");
+
+    toHistoH_.setGroupID("Histogramselection");
+    toHistoS_.setGroupID("Histogramselection");
+    toHistoV_.setGroupID("Histogramselection");
+    Processor::setProgress(1.f);
 }
 
 ImageAnalyzer::~ImageAnalyzer()
@@ -420,7 +503,7 @@ float ImageAnalyzer::luminance(tgt::Color* colorVector){
 void ImageAnalyzer::activateComputeButton() {
     computeButton_.setWidgetsEnabled(true);
     histoSteps_ = histogramSteps_.get();
-    if (getProcessorWidget()){
+    if (getProcessorWidget() && getProcessorWidget()->isVisible()){
         getProcessorWidget()->updateFromProcessor();
     }
 }
@@ -545,7 +628,47 @@ void ImageAnalyzer::setOutPortData(){
         pDataHistogramAll->insert(cells);
         cells.clear();
     }
+    Processor::setProgress(0.96);
     pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new AggregationFunctionMinHistogram());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new AggregationFunctionMaxHistogram());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new  AggregationFunctionCountHistogram());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new  AggregationFunctionSumHistogram());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new  AggregationFunctionAverage());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (int i = 1; i <= 14; ++i){
+        function = std::pair<int, AggregationFunction*>(i, new  AggregationFunctionMode());
+        delete implizitcells[i-1].second;
+        implizitcells[i-1] = function;
+    }
+    pDataHistogramAll->insertImplicit(implizitcells);
+    for (size_t i = 0; i < implizitcells.size(); ++i) {
+        delete implizitcells[i].second;
+    }
     medianRedValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(1).getValue()/(histoSteps_ - 1.0f));
     medianGreenValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(2).getValue()/(histoSteps_ - 1.0f));
     medianBlueValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(3).getValue()/(histoSteps_ - 1.0f));
@@ -560,6 +683,7 @@ void ImageAnalyzer::setOutPortData(){
     medianHValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(12).getValue()/(histoSteps_ - 1.0f));
     medianSValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(13).getValue()/(histoSteps_ - 1.0f));
     medianVValue_ = static_cast<float>(pDataHistogramAll->getImplicitRow(0).getCellAt(14).getValue()/(histoSteps_ - 1.0f));
+    Processor::setProgress(0.97);
     if (outport_.isConnected()){
         pData_->reset(1,4);
         pData_->setColumnLabel(0,"Index");
@@ -700,6 +824,7 @@ void ImageAnalyzer::setOutPortData(){
         cells.push_back((PlotCellValue(medianVValue_)));
         pData_->insert(cells);
         cells.clear();
+        Processor::setProgress(0.98);
 
         outport_.setData(pData_);
     }
@@ -776,11 +901,13 @@ void ImageAnalyzer::setOutPortData(){
         else {
             pDataHistogram_ = pDataHistogramAll;
         }
+        Processor::setProgress(0.99);
         histogramOutPort_.setData(pDataHistogram_);
         delete old;
     }
     setPropertyValues();
-    if (getProcessorWidget()){
+    Processor::setProgress(1.f);
+    if (getProcessorWidget() && getProcessorWidget()->isVisible()){
         getProcessorWidget()->updateFromProcessor();
     }
     if (pDataHistogram_ != pDataHistogramAll) {
@@ -986,6 +1113,7 @@ void ImageAnalyzer::calculate(){
 //    buffer = textureBuffer;
     colorVectorInt.resize(14);
     for (int x = 0; x < image_.getSize().x; ++x) {
+        Processor::setProgress(x*0.9f/(image_.getSize().x*1.f));
         for (int y = 0; y < image_.getSize().y; ++y) {
 
             if (((x*image_.getSize().y + y) % calculateStep_.get()) == 0){

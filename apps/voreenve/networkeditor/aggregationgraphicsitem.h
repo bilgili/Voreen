@@ -180,6 +180,8 @@ public:
      */
     void processorWidgetDeleted(const Processor* processor);
 
+    void portsAndPropertiesChanged(const Processor*);
+
     /**
      * This method returns QActions for every ProcessorWidget contained in this Aggregation
      */

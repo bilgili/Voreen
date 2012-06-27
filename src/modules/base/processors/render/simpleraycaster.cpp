@@ -43,9 +43,10 @@ SimpleRaycaster::SimpleRaycaster()
     , entryPort_(Port::INPORT, "image.entrypoints")
     , exitPort_(Port::INPORT, "image.exitpoints")
     , outport_(Port::OUTPORT, "image.output", true)
+    , raycastPrg_(0)
     , transferFunc_("transferFunction", "Transfer Function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY | TransFuncProperty::INTENSITY_RAMP))
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
 
     addPort(volumePort_);
@@ -72,13 +73,22 @@ void SimpleRaycaster::initialize() throw (VoreenException) {
     // load shader
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_simple.frag",
         generateHeader(), false);
+
     if (!raycastPrg_)
         throw VoreenException("Failed to load shaders");
+}
 
-    // note: shader is disposed by VolumeRaycaster::deinitialize
+void SimpleRaycaster::deinitialize() throw (VoreenException) {
+    ShdrMgr.dispose(raycastPrg_);
+    raycastPrg_ = 0;
+    LGL_ERROR;
+
+    VolumeRaycaster::deinitialize();
 }
 
 void SimpleRaycaster::beforeProcess() {
+    VolumeRaycaster::beforeProcess();
+
     // assign volume to transfer function
     transferFunc_.setVolumeHandle(volumePort_.getData());
     LGL_ERROR;
@@ -91,7 +101,8 @@ void SimpleRaycaster::process() {
 
     // activate shader and set common uniforms
     raycastPrg_->activate();
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
 
     // bind entry and exit params and pass texture units to the shader
     TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
@@ -115,7 +126,7 @@ void SimpleRaycaster::process() {
         "volumeParameters_",
         true)
     );
-    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(raycastPrg_, volumeTextures, &cam, lightPosition_.get());
 
     // bind transfer function and pass it to the shader
     TextureUnit transferUnit;
@@ -141,5 +152,6 @@ std::string SimpleRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     header += transferFunc_.get()->getShaderDefines();
     return header;
 }
+
 
 } // namespace voreen

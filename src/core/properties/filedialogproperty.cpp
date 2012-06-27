@@ -39,7 +39,7 @@ FileDialogProperty::FileDialogProperty(const std::string& id, const std::string&
                                const std::string& dialogCaption, const std::string& directory,
                                const std::string& fileFilter, FileDialogProperty::FileMode fileMode,
                                Processor::InvalidationLevel invalidationLevel)
-    : TemplateProperty<std::string>(id, guiText, "", invalidationLevel),
+    : StringProperty(id, guiText, "", invalidationLevel),
       dialogCaption_(dialogCaption),
       directory_(directory),
       fileMode_(fileMode),

@@ -31,23 +31,40 @@
 #define VRN_PLOTPREDICATEFACTORY_H
 
 #include "voreen/core/io/serialization/serialization.h"
+#include <string>
+#include <vector>
 
 namespace voreen {
 
 /**
- * The @c TransFuncFactory class is responsible for transfer function creation
+ * The @c PlotPredicateFactory class is responsible for PlotPredicate creation
  * during serialization process.
  *
  * @see SerializableFactory
  */
 class PlotPredicateFactory : public SerializableFactory {
 public:
+    enum PredicateClasses {
+        ALL_PREDICATES,         ///< all predicates
+        SIMPLE_VALUE_PREDICATES_ONLY,  ///< only predicates suitable for numeric values (this predicates are representable by one interval)
+        ALL_VALUE_PREDICATES_ONLY,  ///< only predicates suitable for numeric values
+        SIMPLE_TAG_PREDICATES_ONLY,     ///< only predicates suitable for tags (strings) (this predicates are representable by one interval)
+        ALL_TAG_PREDICATES_ONLY     ///< only predicates suitable for tags (strings)
+    };
+
     /**
      * Returns the singleton instance of the tranfer function factory.
      *
      * @returns the instance.
      */
     static PlotPredicateFactory* getInstance();
+
+    /**
+     * Returns a vector of type strings of all predicates suitable for \a predicateClasses.
+     *
+     * \param   predicateClasses    class of predicates to filter
+     **/
+    static std::vector<std::string> getAllTypeStrings(PredicateClasses predicateClasses);
 
     /**
      * @see SerializableFactory::getTypeString

@@ -50,7 +50,8 @@ using tgt::TextureUnit;
 
 SegmentationRaycaster::SegmentationRaycaster()
     : VolumeRaycaster()
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , raycastPrg_(0)
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , transferFunc_("SegmentationRaycaster.TransFunc", "Transfer function")
     , segmentTransFuncs_(0)
     , segmentationTransFuncTex_(0)
@@ -161,14 +162,8 @@ void SegmentationRaycaster::initialize() throw (VoreenException) {
 
     loadShader();
 
-    if (!raycastPrg_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
-        throw VoreenException(getClassName() + ": Failed to load shaders!");
-    }
-    initialized_ = true;
-
-    setLightingParameters();
+    if (!raycastPrg_)
+        throw VoreenException("Failed to load shaders");
 
     portGroup_.initialize();
     portGroup_.addPort(outport1_);
@@ -185,6 +180,10 @@ void SegmentationRaycaster::deinitialize() throw (VoreenException) {
     delete segmentationTransFuncTex_;
     segmentationTransFuncTex_ = 0;
     portGroup_.deinitialize();
+
+    ShdrMgr.dispose(raycastPrg_);
+    raycastPrg_ = 0;
+    LGL_ERROR;
 
     VolumeRaycaster::deinitialize();
 
@@ -315,9 +314,10 @@ void SegmentationRaycaster::process() {
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(raycastPrg_, volumeTextures, &cam, lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -333,8 +333,7 @@ void SegmentationRaycaster::process() {
     else
         raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
 
-    setBrickedVolumeUniforms(volumeInport_.getData());
-    setLightingParameters();
+    setBrickedVolumeUniforms(raycastPrg_, volumeInport_.getData());
 
     renderQuad();
 
@@ -391,7 +390,7 @@ std::string SegmentationRaycaster::generateHeader(VolumeHandle* volumeHandle) {
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader();
+    headerSource += portGroup_.generateHeader(raycastPrg_);
     return headerSource;
 }
 

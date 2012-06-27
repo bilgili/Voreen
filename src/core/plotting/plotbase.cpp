@@ -30,6 +30,7 @@
 #include "voreen/core/plotting/plotbase.h"
 #include "voreen/core/utils/exception.h"
 #include "tgt/assert.h"
+#include "tgt/logmanager.h"
 #include <algorithm>
 
 
@@ -39,6 +40,7 @@ PlotBase::PlotBase(int keyColumnCount, int dataColumnCount)
     : keyColumnCount_(keyColumnCount)
     , dataColumnCount_(dataColumnCount)
 {
+    tgtAssert((keyColumnCount_ >= 0 && dataColumnCount_ >= 0), "PlotBase: negativ ColumnCounts are not allowed!!");
     int columnCount = keyColumnCount + dataColumnCount;
     if (columnCount > 0) {
         columnLabels_ = new std::string[columnCount];
@@ -78,26 +80,47 @@ PlotBase::~PlotBase() {
     delete [] columnTypes_;
 }
 
-PlotBase& PlotBase::operator=(PlotBase rhs) {
-    std::swap(keyColumnCount_, rhs.keyColumnCount_);
-    std::swap(dataColumnCount_, rhs.dataColumnCount_);
+PlotBase& PlotBase::operator=(const PlotBase& rhs) {
+    // prevent self assignment
+    if (this == &rhs)
+        return *this;
 
-    delete [] columnLabels_;
-    delete [] columnTypes_;
+    std::string* newColumnLabels = 0;
+    ColumnType* newColumnTypes = 0;
 
-    int sum = keyColumnCount_+dataColumnCount_;
-    if (sum > 0) {
-        columnLabels_ = new std::string[sum];
-        columnTypes_ = new ColumnType[sum];
+    // copy array data to new arrays
+    // (exception safety: if anything fails the old data is still intact and the object in a valid state)
+    try {
+        int sum = rhs.keyColumnCount_ + rhs.dataColumnCount_;
+        if (sum > 0) {
+            newColumnLabels = new std::string[sum];
+            newColumnTypes = new ColumnType[sum];
+        }
+        for (int i=0; i<sum; ++i) {
+            newColumnLabels[i] = rhs.columnLabels_[i];
+            newColumnTypes[i] = rhs.columnTypes_[i];
+        }
     }
-    else {
-        columnLabels_ = NULL;
-        columnTypes_ = NULL;
+    catch (std::bad_alloc&) {
+        // nothing has been destroyed yet, current state is valid
+        LERRORC("PlotBase::operator=()", "bad_alloc occured, object was not changed!");
+        return *this;
     }
-    for (int i=0; i<sum; ++i) {
-        std::swap(columnLabels_[i], rhs.columnLabels_[i]);
-        std::swap(columnTypes_[i], rhs.columnTypes_[i]);
+    catch (...) {
+        // nothing has been destroyed yet, current state is valid
+        LERRORC("PlotBase::operator=()", "unknown exception occured, object was not changed!");
+        return *this;
     }
+
+    // everything here is exception safe:
+    keyColumnCount_ = rhs.keyColumnCount_;
+    dataColumnCount_ = rhs.dataColumnCount_;
+    // exchange pointers via swap (exception safe) and delete old arrays
+    std::swap(columnLabels_, newColumnLabels);
+    std::swap(columnTypes_, newColumnTypes);
+    delete [] newColumnLabels;
+    delete [] newColumnTypes;
+
     return *this;
 }
 
@@ -152,6 +175,21 @@ void PlotBase::reset(int keyColumnCount, int dataColumnCount) {
         columnLabels_ = NULL;
         columnTypes_ = NULL;
     }
+}
+
+bool PlotBase::compareStructure(const PlotBase* other) const {
+    if (!other)
+        return false;
+
+    if (keyColumnCount_ != other->getKeyColumnCount() || dataColumnCount_ != other->getDataColumnCount())
+        return false;
+
+    for (int i=0; i< keyColumnCount_ * dataColumnCount_; ++i) {
+        if (columnLabels_[i] != other->getColumnLabel(i) || columnTypes_[i] != other->getColumnType(i))
+            return false;
+    }
+
+    return true;
 }
 
 }

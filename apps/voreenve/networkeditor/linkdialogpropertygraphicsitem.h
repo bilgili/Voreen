@@ -52,10 +52,7 @@ enum ColumnPosition {
  * this arrow is pulled over another LinkDialogPropertyGraphicsItem,
  * it will determine if the associated \sa Propertys are linkable.
  * If so, the arrow will be drawn in green color, if not the red color
- * is used. However, if Voreen was compiled with Python support,
- * yellow is used instead of red to show that this connection might
- * be possible because Python scripts can change the type of data
- * transferred.</br>
+ * is used.</br>
  * If a valid arrow is created, this arrow will be published via the
  * <code>createdArrow(LinkDialogArrowGraphicsItem*)</code> signal.
  */

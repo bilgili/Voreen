@@ -8,7 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -63,6 +63,8 @@
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="3.5" />
                         <Property name="shading" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -114,12 +116,13 @@
                 <Processor type="Canvas" name="Canvas" id="ref2">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-473" y="198" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="328" y="91" width="321" height="319" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="308" y="92" width="321" height="319" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="321" y="319" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -201,7 +204,7 @@
                         <Property name="resetClipPlanes" />
                         <Property name="rightClippingPlane" value="0" />
                         <Property name="topClippingPlane" value="40" />
-                        <Property name="useClipping" value="false" />
+                        <Property name="useClipping" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -269,12 +272,12 @@
                 <PropertyLink>
                     <SourceProperty ref="ref7" />
                     <DestinationProperty ref="ref8" />
-                    <Evaluator type="LinkEvaluatorId" id="ref9" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref8" />
                     <DestinationProperty ref="ref7" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

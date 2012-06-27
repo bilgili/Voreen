@@ -27,7 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_STREAMLINERENDERER3D_H
 #define VRN_STREAMLINERENDERER3D_H
 
@@ -85,6 +84,8 @@ private:
 
     void setPropertyVisibilities();
 
+    virtual std::string generateShaderHeader();
+
     bool setupShader(const Flow3D& flow, const tgt::vec2& thresholds);
 
 private:
@@ -119,4 +120,3 @@ private:
 }   // namespace
 
 #endif  // VRN_STREAMLINERENDERER3D_H
-#endif  // VRN_MODULE_FLOWREEN

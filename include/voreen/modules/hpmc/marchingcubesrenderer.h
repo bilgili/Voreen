@@ -67,8 +67,6 @@ protected:
     virtual std::string generateRenderHeader();
     virtual void compile(VolumeHandle* volumeHandle);
 
-    void setLightingParameters();
-
     void releaseHPMCResources();
 
     VolumePort volumeInport_;

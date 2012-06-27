@@ -37,7 +37,7 @@ void main() {
     vec4 texColor = textureLookup2Dnormalized(colorTex_, texParams_, fragCoord);
     vec4 frontColor = gl_Color;
 
-    gl_FragColor.rgb = frontColor.a * frontColor.rgb + (1.0 - frontColor.a) * texColor.rgb;
-    gl_FragColor.a = frontColor.a + (1.0 - frontColor.a) * texColor.a;
+    FragData0.rgb = frontColor.a * frontColor.rgb + (1.0 - frontColor.a) * texColor.rgb;
+    FragData0.a = frontColor.a + (1.0 - frontColor.a) * texColor.a;
     gl_FragDepth = gl_FragCoord.z;
 }

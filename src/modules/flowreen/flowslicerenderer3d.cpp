@@ -27,8 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
-
 #include "voreen/modules/flowreen/flowslicerenderer3d.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
 
@@ -42,7 +40,7 @@ FlowSliceRenderer3D::FlowSliceRenderer3D()
     sliceNoXYProp_("sliceNoXYProp", "xy-slice number:", 1, 1, 100),
     sliceNoXZProp_("sliceNoXZProp", "xz-slice number:", 1, 1, 100),
     sliceNoZYProp_("sliceNoZYProp", "zy-slice number:", 1, 1, 100),
-    camProp_("camera", "Camera", new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
+    camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
     cameraHandler_(0),
     textureXY_(0),
     textureXZ_(0),
@@ -122,7 +120,7 @@ void FlowSliceRenderer3D::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.get()->look();
+    camProp_.look();
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -163,7 +161,7 @@ void FlowSliceRenderer3D::process() {
 // protected methods
 //
 
-std::string FlowSliceRenderer3D::generateShaderHeader() const {
+std::string FlowSliceRenderer3D::generateShaderHeader() {
     std::ostringstream oss;
     oss << FlowSliceRenderer::generateShaderHeader();
     oss << "#define PLANE " << static_cast<size_t>(alignment_) << std::endl;
@@ -332,5 +330,3 @@ inline tgt::vec3 FlowSliceRenderer3D::permuteComponents(const tgt::vec3& input, 
 }
 
 }   // namespace
-
-#endif

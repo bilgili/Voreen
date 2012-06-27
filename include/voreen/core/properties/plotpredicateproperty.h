@@ -93,7 +93,12 @@ public:
     /// Returns the number of PlotPredicates in this property.
     int size() const;
 
-    /// TODO: Doku!
+    /**
+     * \brief   change the Order of the Predicates and delete not selected predicates
+     *
+     * \param columns the values in the vector are the old column Position and the position
+     *          in this vector is the new position.
+     **/
     void select(const std::vector<int>& columns);
 
     /**

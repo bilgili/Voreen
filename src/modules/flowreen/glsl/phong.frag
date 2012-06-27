@@ -36,7 +36,7 @@ void main()
 
     if (usePhongShading_ == true) {
         vec3 phongTerms = (useForLines_ == false) ? phongShading() : phongShadingForLines();
-        gl_FragColor = vec4((color * ka_) + (color * kd_ * phongTerms.y) + (color * ks_ * phongTerms.z), alpha);
+        FragData0 = vec4((color * ka_) + (color * kd_ * phongTerms.y) + (color * ks_ * phongTerms.z), alpha);
     } else
-        gl_FragColor = vec4(color, alpha);
+        FragData0 = vec4(color, alpha);
 }

@@ -48,7 +48,7 @@ public:
 
     virtual std::string getClassName() const    { return "QuadricRenderer";  }
     virtual std::string getCategory() const     { return "Geometry";         }
-    virtual CodeState getCodeState() const      { return CODE_STATE_TESTING; }
+    virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
     virtual void render();
@@ -61,7 +61,7 @@ private:
 
     BoolProperty enabled_;
     StringOptionProperty quadricType_;
-    
+
     FloatVec3Property position_;
     FloatVec3Property start_;
     FloatVec3Property end_;

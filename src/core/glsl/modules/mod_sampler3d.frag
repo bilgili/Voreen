@@ -63,7 +63,11 @@ struct VOLUME_PARAMETERS {
 vec4 textureLookup3D(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 texCoords) {
     vec4 result;
     #if defined(VRN_TEXTURE_3D)
-        result = texture3D(volume, texCoords);
+        #if defined(GLSL_VERSION_130)
+            result = texture(volume, texCoords);
+        #else
+            result = texture3D(volume, texCoords);
+        #endif
     #elif defined(VRN_TEXTURE_3D_SCALED)
         result = texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
     #endif
@@ -80,7 +84,11 @@ vec4 textureLookup3D(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
  */
 vec4 textureLookup3DUnnormalized(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 texCoords) {
     #if defined(VRN_TEXTURE_3D)
-        return texture3D(volume, texCoords);
+        #if defined(GLSL_VERSION_130)
+            return texture(volume, texCoords);
+        #else
+            return texture3D(volume, texCoords);
+        #endif
     #elif defined(VRN_TEXTURE_3D_SCALED)
         return texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
     #else

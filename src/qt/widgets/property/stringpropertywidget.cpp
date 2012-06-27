@@ -48,10 +48,7 @@ StringPropertyWidget::StringPropertyWidget(StringProperty* prop, QWidget* parent
 
 void StringPropertyWidget::updateFromProperty() {
     lineEdit_->blockSignals(true);
-    if(!textChangeSource_) {
-        lineEdit_->setText(QString(property_->get().c_str()));
-        textChangeSource_ = false;
-    }
+    lineEdit_->setText(QString::fromStdString(property_->get()));
     lineEdit_->blockSignals(false);
 }
 
@@ -62,7 +59,6 @@ void StringPropertyWidget::setProperty(const QString& text) {
     }
     else
         updateFromProperty();
-    textChangeSource_ = true;
 }
 
 } // namespace

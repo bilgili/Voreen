@@ -27,7 +27,11 @@
  *                                                                    *
  **********************************************************************/
 
-#include "../modules/mod_sampler2d.frag"
+#version 130
+
+#include "modules/mod_sampler2d.frag"
+
+out vec4 FragData0;
 
 uniform SAMPLER2D_TYPE backTex_;
 uniform SAMPLER2D_TYPE frontTex_;
@@ -48,6 +52,6 @@ void main() {
     backInv.g += (backInv.g >= 0.5 ? 1.0 : -1.0) * threshold_;
     backInv.b += (backInv.b >= 0.5 ? 1.0 : -1.0) * threshold_;
 
-    gl_FragColor = mix(back, backInv, front.r); // do not use alpha component, as FTGL does not
+    FragData0 = mix(back, backInv, front.r); // do not use alpha component, as FTGL does not
                                                 // generate correct transparency
 }

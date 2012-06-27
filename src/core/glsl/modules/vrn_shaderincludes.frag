@@ -44,7 +44,6 @@
 
 #include "modules/mod_curvature.frag"
 #include "modules/mod_raysetup.frag"
-#include "modules/mod_masking.frag"
 #include "modules/mod_transfunc.frag"
 #include "modules/mod_gradients.frag"
 #include "modules/mod_shading.frag"

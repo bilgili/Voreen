@@ -287,6 +287,7 @@ VolumeHandle::VolumeHandle(Volume* const volume, const float time)
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
 #endif
+
 }
 
 VolumeHandle::VolumeHandle()

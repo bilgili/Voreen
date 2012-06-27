@@ -33,6 +33,7 @@
 
 #include "tgt/glmath.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/framebufferobject.h"
 
 #ifdef VRN_WITH_DEVIL
     #include <IL/il.h>
@@ -48,6 +49,7 @@ const std::string TransFuncIntensityGradient::loggerCat_("voreen.TransFuncIntens
 
 TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height)
     : TransFunc(width, height, 1, GL_RGBA, GL_FLOAT, Texture::LINEAR)
+    , fbo_(0)
 {
     loadFileFormats_.push_back("tfig");
 
@@ -59,6 +61,10 @@ TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height)
 }
 
 TransFuncIntensityGradient::~TransFuncIntensityGradient() {
+    delete fbo_;
+    fbo_ = 0;
+    LGL_ERROR;
+
     std::vector<TransFuncPrimitive*>::iterator it;
     while (!primitives_.empty()) {
         it = primitives_.begin();
@@ -260,13 +266,29 @@ void TransFuncIntensityGradient::clear() {
 
 void TransFuncIntensityGradient::updateTexture() {
 
-    if (!tex_ || (tex_->getDimensions() != dimensions_))
+    // (re-)create tf texture and fbo, if necessary
+    if (!fbo_ || !tex_ || (tex_->getDimensions() != dimensions_))
         createTex();
-    tgtAssert(tex_, "No texture");
+    if (!tex_) {
+        LERROR("Failed to create texture");
+        return;
+    }
+    // FBO should have been created by createTex()
+    if (!fbo_) {
+        LERROR("No framebuffer object");
+        return;
+    }
 
-    // save current viewport, e.g. size of mapping canvas and current drawbuffer
-    glPushAttrib(GL_VIEWPORT_BIT);
-    // set viewport to the dimensions of the texture
+    // activate FBO
+    fbo_->activate();
+    if (!fbo_->isComplete()) {
+        LERROR("Invalid framebuffer object");
+        fbo_->deactivate();
+        return;
+    }
+    LGL_ERROR;
+
+    // render primitives to fbo
     glViewport(0, 0, tex_->getWidth(), tex_->getHeight());
 
     // clear previous content
@@ -281,6 +303,7 @@ void TransFuncIntensityGradient::updateTexture() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
+
     // paint primitives
     paint();
 
@@ -289,15 +312,9 @@ void TransFuncIntensityGradient::updateTexture() {
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 
-    // restore viewport
-    glPopAttrib();
+    fbo_->deactivate();
+    LGL_ERROR;
 
-    // read tf data from framebuffer and copy it into tf texture
-    GLfloat* pixels = new GLfloat[tgt::hmul(dimensions_)*4];
-    glReadPixels(0, 0, dimensions_.x, dimensions_.y, GL_RGBA, GL_FLOAT, pixels);
-    setPixelData(reinterpret_cast<GLubyte*>(pixels));
-
-    tex_->uploadTexture();
     textureInvalid_ = false;
 }
 
@@ -375,6 +392,45 @@ TransFunc* TransFuncIntensityGradient::clone() const {
     func->textureInvalid_ = true;
 
     return func;
+}
+
+void TransFuncIntensityGradient::createTex() {
+
+    // create or clear FBO
+    if (!fbo_) {
+        LDEBUG("Creating FBO...");
+        fbo_ = new tgt::FramebufferObject();
+        LGL_ERROR;
+        if (!fbo_) {
+            LERROR("Failed to initialize framebuffer object");
+            delete fbo_;
+            fbo_ = 0;
+            return;
+        }
+    }
+    else {
+        LDEBUG("Clearing FBO...");
+        fbo_->activate();
+        fbo_->detachAll();
+        fbo_->deactivate();
+        LGL_ERROR;
+    }
+
+    // create tf texture
+    TransFunc::createTex();
+    if (!tex_) {
+        LERROR("Failed to create texture");
+        return;
+    }
+    tex_->uploadTexture();
+    LGL_ERROR;
+
+    // attach texture to fbo
+    fbo_->activate();
+    fbo_->attachTexture(tex_);
+    fbo_->isComplete();
+    fbo_->deactivate();
+    LGL_ERROR;
 }
 
 } // namespace voreen

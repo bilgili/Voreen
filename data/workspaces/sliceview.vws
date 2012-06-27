@@ -8,10 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -104,6 +101,7 @@
                         <Property name="canvasSize">
                             <value x="450" y="365" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

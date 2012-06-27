@@ -89,6 +89,16 @@ void VoreenPainter::sizeChanged(const tgt::ivec2& size) {
 }
 
 void VoreenPainter::paint() {
+    if (!getCanvas()) {
+        LWARNING("No canvas assigned");
+        return;
+    }
+
+    if (!evaluator_) {
+        LWARNING("No network evaluator assigned");
+        return;
+    }
+
     if (stereoMode_ == VRN_STEREOSCOPIC) { // TODO: resupport stereo
 //         glDrawBuffer(GL_BACK_LEFT);
 // //         camera->setStereo(true); <- TODO doesn't exist anymore, FL
@@ -115,10 +125,9 @@ void VoreenPainter::paint() {
 //         camera->setEye(tgt::Camera::EYE_MIDDLE);
     }
     else {
-        if (getCanvas())
+        if (!evaluator_->isLocked())
             getCanvas()->getGLFocus();
-        if (evaluator_ && !evaluator_->isLocked())
-            evaluator_->process();
+        evaluator_->process();
     }
 }
 

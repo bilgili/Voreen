@@ -70,7 +70,7 @@ __kernel void gradient(__global const uchar* inputVolume, __global uchar* output
     int4 dim = (int4)(get_global_size(0), get_global_size(1), get_global_size(2), 1);
 
     int index = getIndex(tidX, tidY, tidZ, dim);
-    
+
     int numChannels = (copyIntensityChannel == 1) ? 4 : 3;
 
     if (border(tidX, tidY, tidZ, dim)) {

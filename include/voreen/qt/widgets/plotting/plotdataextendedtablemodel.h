@@ -44,15 +44,23 @@ class PlotDataExtendedTableModel : public PlotDataSimpleTableModel {
 public:
     PlotDataExtendedTableModel(PlotData* data,
         const std::vector<std::pair<int, std::string> >& StringVector,  QObject* parent=0,
-         const QColor& keyColumnColor = QColor(200,200,200),
-         const QColor& dataColumnColor = QColor(240,240,240));
-
+         const QColor& keyColumnColor = QColor(200,200,200,255),
+         const QColor& dataColumnColor = QColor(240,240,240,255),
+         const QColor& selectColumnColor = QColor(255,180,142,255),
+         int selectedColumn = -1);
+    /// set what is able to show in the widget
     void setFunctionType(FunctionLibrary::ProcessorFunctionalityType type, bool showColumnType = false);
+    /// how many additional lines will be shown above the datalines
     int getAddLines() const;
+    /// @see PlotDataSimpleTableModel
     int rowCount(const QModelIndex &parent) const;
+    /// @see PlotDataSimpleTableModel
     QVariant data(const QModelIndex &index, int role) const;
+    /// @see PlotDataSimpleTableModel
     Qt::ItemFlags flags(const QModelIndex &index) const;
+    /// @see PlotDataSimpleTableModel
     QVariant getCellAt(int row, int column) const;
+    /// @see PlotDataSimpleTableModel
     PlotCellValue getPlotCellAt(int row, int column) const;
 
 private:

@@ -1,28 +1,18 @@
-# Since this is python be sure to configure your text editor properly.
-# Do NOT use tabs and replace 1 tab with 4 spaces.
-
-import math
-import time
+# Sample script for taking canvas snapshots. 
+# Writes a snapshot of each canvas to disc.
 import voreen
 import voreenqt
+import time
 
-width  = 512
-height = 512
-filename = "snapshot-%d.png"
+filename = voreen.getBasePath() + "/data/snapshots/snapshot-%d.png"
 
-print 'starting script'
 start = time.time()
-
-#voreen.setViewport(width, height)
 count = voreen.canvasCount()
-print "canvas count is %d" % count
+print "canvas count is %d:" % count
 for i in range(0, count):
     voreen.snapshotCanvas(i, filename % (i+1))
+    print " * saved snapshot to file %s" % (filename % (i+1))
 
 end = time.time()
 runtime = (end - start)
-print 'total runtime: ' + str(runtime) + 's'
-
-print 'finished script'
-
-#voreenqt.quit()
+print 'total runtime: %fs' % runtime

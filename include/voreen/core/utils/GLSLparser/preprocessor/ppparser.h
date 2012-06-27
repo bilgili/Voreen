@@ -41,7 +41,7 @@ namespace glslparser {
 
 class PreprocessorParser : public Parser {
 public:
-    PreprocessorParser(std::istream* const is) throw (std::bad_alloc);
+    PreprocessorParser(std::istream* is) throw (std::bad_alloc);
     PreprocessorParser(const std::string& fileName) throw (std::bad_alloc);
     PreprocessorParser(const std::list<Token*>& tokens);
 

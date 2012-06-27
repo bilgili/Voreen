@@ -78,6 +78,30 @@ std::vector<GLSLVariableSymbol*> GLSLVisitor::getUniforms(const bool keepInTable
     return uniforms;
 }
 
+std::vector<GLSLVariableSymbol*> GLSLVisitor::getOuts(const bool keepInTable) {
+    typedef std::map<std::string, GLSLSymbol*> SymbolMap;
+    const SymbolMap& symbols = symbols_.getSymbolsMap();
+
+    std::vector<GLSLVariableSymbol*> outs;
+    for (SymbolMap::const_iterator it = symbols.begin(); it != symbols.end(); ) {
+        GLSLVariableSymbol* const varSymbol = dynamic_cast<GLSLVariableSymbol* const>(it->second);
+        if (varSymbol == 0)
+            continue;
+
+        if (varSymbol->getStorageQualifier() == GLSLVariableSymbol::SQ_OUT) {
+            outs.push_back(varSymbol);
+            if (keepInTable)
+                ++it;
+            else
+                symbols_.removeSymbol((it++)->second);
+
+        } else
+            ++it;
+    }
+
+    return outs;
+}
+
 bool GLSLVisitor::visit(ParseTreeNode* const node) {
     if (node == 0)
         return false;
@@ -345,6 +369,56 @@ GLSLVariableSymbol GLSLVisitor::visitNode(GLSLTypeSpecifier* const typeSpec) {
         case GLSLTerminals::ID_MAT4:
         case GLSLTerminals::ID_MAT4X4:
             numElements = 16;
+            break;
+
+        case GLSLTerminals::ID_SAMPLER1D:
+        case GLSLTerminals::ID_SAMPLER1DSHADOW:
+        case GLSLTerminals::ID_SAMPLER1DARRAY:
+        case GLSLTerminals::ID_SAMPLER1DARRAYSHADOW:
+        case GLSLTerminals::ID_ISAMPLER1D:
+        case GLSLTerminals::ID_ISAMPLER1DARRAY:
+        case GLSLTerminals::ID_USAMPLER1D:
+        case GLSLTerminals::ID_USAMPLER1DARRAY:
+            numElements = 1;
+            break;
+
+        case GLSLTerminals::ID_SAMPLER2D:
+        case GLSLTerminals::ID_SAMPLER2DSHADOW:
+        case GLSLTerminals::ID_SAMPLER2DARRAY:
+        case GLSLTerminals::ID_SAMPLER2DARRAYSHADOW:
+        case GLSLTerminals::ID_ISAMPLER2D:
+        case GLSLTerminals::ID_ISAMPLER2DARRAY:
+        case GLSLTerminals::ID_USAMPLER2D:
+        case GLSLTerminals::ID_USAMPLER2DARRAY:
+        case GLSLTerminals::ID_SAMPLER2DRECT:
+        case GLSLTerminals::ID_SAMPLER2DRECTSHADOW:
+        case GLSLTerminals::ID_ISAMPLER2DRECT:
+        case GLSLTerminals::ID_USAMPLER2DRECT:
+        case GLSLTerminals::ID_SAMPLER2DMS:
+        case GLSLTerminals::ID_ISAMPLER2DMS:
+        case GLSLTerminals::ID_USAMPLER2DMS:
+        case GLSLTerminals::ID_SAMPLER2DMSARRY:
+        case GLSLTerminals::ID_ISAMPLER2DMSARRAY:
+        case GLSLTerminals::ID_USAMPLER2DMSARRAY:
+            numElements = 2;
+            break;
+
+        case GLSLTerminals::ID_SAMPLER3D:
+        case GLSLTerminals::ID_ISAMPLER3D:
+        case GLSLTerminals::ID_USAMPLER3D:
+            numElements = 3;
+            break;
+
+        case GLSLTerminals::ID_SAMPLERCUBE:
+        case GLSLTerminals::ID_ISAMPLERCUBE:
+        case GLSLTerminals::ID_USAMPLERCUBE:
+            numElements = 6;
+            break;
+
+        case GLSLTerminals::ID_SAMPLERBUFFER:
+        case GLSLTerminals::ID_ISAMPLERBUFFER:
+        case GLSLTerminals::ID_USAMPLEBUFFER:
+            numElements = 0;
             break;
     }
 

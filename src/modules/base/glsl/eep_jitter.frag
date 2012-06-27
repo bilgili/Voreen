@@ -71,6 +71,6 @@ void main() {
         }
     }
 
-    gl_FragColor = fragColor;
+    FragData0 = fragColor;
     gl_FragDepth = fragDepth;
 }

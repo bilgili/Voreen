@@ -144,6 +144,6 @@ void main() {
         discard;
     } else {
         //fragCoords are lying inside the boundingbox
-        gl_FragColor = directRendering(frontPos, backPos, p);
+        FragData0 = directRendering(frontPos, backPos, p);
     }
 }

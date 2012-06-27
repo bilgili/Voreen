@@ -8,10 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -23,12 +20,13 @@
                 <Processor type="Canvas" name="Canvas" id="ref2">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-247" y="234" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="110" y="247" width="481" height="454" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="47" y="109" width="481" height="454" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="481" y="454" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -37,7 +35,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-271" y="42" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref14">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref13">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
@@ -87,7 +85,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-426" y="-38" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
                         <Property name="boundingBoxWidth" value="1" />
@@ -114,28 +111,40 @@
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="ClippingPlaneWidget" name="ClippingPlaneWidget" id="ref6">
+                <Processor type="PlaneWidgetProcessor" name="PlaneWidgetProcessor" id="ref6">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="41" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
-                        <Property name="backClipPlane" value="40" id="ref19" />
-                        <Property name="bottomClipPlane" value="0" id="ref25" />
-                        <Property name="frontClipPlane" value="0" id="ref21" />
+                        <Property name="backClipPlane" value="40" id="ref17" />
+                        <Property name="bottomClipPlane" value="0" id="ref23" />
+                        <Property name="enableBackZ" value="true" />
+                        <Property name="enableBottomY" value="true" />
+                        <Property name="enableFrontZ" value="true" />
+                        <Property name="enableLeftX" value="true" />
+                        <Property name="enableRightX" value="true" />
+                        <Property name="enableTopY" value="true" />
+                        <Property name="frontClipPlane" value="0" id="ref19" />
                         <Property name="innerColor">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="leftClipPlane" value="40" id="ref29" />
+                        <Property name="leftClipPlane" value="40" id="ref27" />
                         <Property name="lightPosition">
                             <value x="2.29999995" y="1.5" z="1.5" w="1" />
                         </Property>
                         <Property name="lineWidth" value="1" />
+                        <Property name="manipulatorScaling" value="1" />
                         <Property name="mouseEvent.clipplaneMovement" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.synchronizedMovement" enabled="false" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="rightClipPlane" value="19" id="ref27" />
+                        <Property name="rightClipPlane" value="19" id="ref25" />
                         <Property name="showInnerBB" value="false" />
-                        <Property name="topClipPlane" value="40" id="ref23" />
+                        <Property name="topClipPlane" value="40" id="ref21" />
+                        <Property name="useSphereManipulatorBackY" value="false" />
+                        <Property name="useSphereManipulatorBottomZ" value="false" />
+                        <Property name="useSphereManipulatorFrontY" value="false" />
+                        <Property name="useSphereManipulatorLeftX" value="false" />
+                        <Property name="useSphereManipulatorRightX" value="false" />
+                        <Property name="useSphereManipulatorTopZ" value="false" />
                         <Property name="xColor">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
@@ -158,7 +167,7 @@
                         <Property name="brickLodSelector" value="error-based" />
                         <Property name="bricking.strategy.mode" value="balanced" />
                         <Property name="bricking.update.strategy" value="never" />
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref15">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref14">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="46" y="122" />
                             </MetaData>
@@ -191,15 +200,14 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="5" />
-                        <Property name="setSegment" value="0" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="transferFunction">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="587" height="321" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0.16470601" upper="1">
                                 <Keys>
@@ -246,15 +254,14 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-219" y="-264" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClippingPlane" value="40" id="ref22" />
-                        <Property name="bottomClippingPlane" value="0" id="ref20" />
-                        <Property name="frontClippingPlane" value="0" id="ref24" />
-                        <Property name="leftClippingPlane" value="40" id="ref28" />
+                        <Property name="backClippingPlane" value="40" id="ref20" />
+                        <Property name="bottomClippingPlane" value="0" id="ref18" />
+                        <Property name="frontClippingPlane" value="0" id="ref22" />
+                        <Property name="leftClippingPlane" value="40" id="ref26" />
                         <Property name="resetClipPlanes" />
-                        <Property name="rightClippingPlane" value="19" id="ref26" />
-                        <Property name="topClippingPlane" value="40" id="ref18" />
+                        <Property name="rightClippingPlane" value="19" id="ref24" />
+                        <Property name="topClippingPlane" value="40" id="ref16" />
                         <Property name="useClipping" value="true" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -263,7 +270,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-205" y="-174" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref16">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref15">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-955" y="376" />
                             </MetaData>
@@ -342,7 +349,7 @@
                         <Processor type="VolumeSource" ref="ref4" />
                     </Outport>
                     <Inport name="volume">
-                        <Processor type="ClippingPlaneWidget" ref="ref6" />
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
                     </Inport>
                 </Connection>
                 <Connection>
@@ -397,7 +404,7 @@
                 </CoProcessorConnection>
                 <CoProcessorConnection>
                     <Outport name="coprocessor.geometryrenderer">
-                        <Processor type="ClippingPlaneWidget" ref="ref6" />
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
                     </Outport>
                     <Inport name="coprocessor.geometryrenderers">
                         <Processor type="GeometryProcessor" ref="ref0" />
@@ -408,92 +415,92 @@
                 <PropertyLink>
                     <SourceProperty ref="ref11" />
                     <DestinationProperty ref="ref12" />
-                    <Evaluator type="LinkEvaluatorId" id="ref13" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref12" />
                     <DestinationProperty ref="ref11" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref13" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref14" />
                     <DestinationProperty ref="ref15" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref15" />
                     <DestinationProperty ref="ref14" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref15" />
-                    <DestinationProperty ref="ref16" />
-                    <Evaluator type="LinkEvaluatorId" id="ref17" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref16" />
-                    <DestinationProperty ref="ref15" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref16" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref18" />
                     <DestinationProperty ref="ref19" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref19" />
                     <DestinationProperty ref="ref18" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref20" />
                     <DestinationProperty ref="ref21" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref21" />
                     <DestinationProperty ref="ref20" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref22" />
                     <DestinationProperty ref="ref23" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref23" />
                     <DestinationProperty ref="ref22" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref24" />
                     <DestinationProperty ref="ref25" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref25" />
                     <DestinationProperty ref="ref24" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref26" />
                     <DestinationProperty ref="ref27" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref27" />
                     <DestinationProperty ref="ref26" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref28" />
-                    <DestinationProperty ref="ref29" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref29" />
-                    <DestinationProperty ref="ref28" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>
@@ -502,7 +509,7 @@
                 <Processor>
                     <processor type="Canvas" ref="ref2" />
                     <properties>
-                        <Property type="TemplatePropertyTimeline_ivec2" activeOnRendering="true" propertyId="canvasSize" duration="20" tlchanged="false">
+                        <Property type="TemplatePropertyTimeline_ivec2" activeOnRendering="false" propertyId="canvasSize" duration="20" tlchanged="false">
                             <propertyOwner type="Canvas" ref="ref2" />
                             <timeline type="TemplatePropertyTimelineState_ivec2">
                                 <values>
@@ -525,7 +532,7 @@
                                 <values>
                                     <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref30">
+                                        <after type="default linear: linear interpolation" id="ref28">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
@@ -533,8 +540,8 @@
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
                                     <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref30" />
-                                        <after type="default linear: linear interpolation" id="ref31">
+                                        <before type="default linear: linear interpolation" ref="ref28" />
+                                        <after type="default linear: linear interpolation" id="ref29">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
@@ -542,7 +549,7 @@
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
                                     <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref31" />
+                                        <before type="default linear: linear interpolation" ref="ref29" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
@@ -629,17 +636,6 @@
                 <Processor>
                     <processor type="BoundingBox" ref="ref5" />
                     <properties>
-                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="applyDatasetTrafoMatrix" duration="20" tlchanged="false">
-                            <propertyOwner type="BoundingBox" ref="ref5" />
-                            <timeline type="TemplatePropertyTimelineState_bool">
-                                <values>
-                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="boundingBoxWidth" duration="20" tlchanged="false">
                             <propertyOwner type="BoundingBox" ref="ref5" />
                             <timeline type="TemplatePropertyTimelineState_float">
@@ -731,13 +727,13 @@
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
                                         <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref32">
+                                        <after type="default linear: linear interpolation" id="ref30">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
                                         <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
-                                        <before type="default linear: linear interpolation" ref="ref32" />
+                                        <before type="default linear: linear interpolation" ref="ref30" />
                                         <after />
                                     </value>
                                 </values>
@@ -746,21 +742,10 @@
                     </properties>
                 </Processor>
                 <Processor>
-                    <processor type="ClippingPlaneWidget" ref="ref6" />
+                    <processor type="PlaneWidgetProcessor" ref="ref6" />
                     <properties>
-                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="applyDatasetTrafoMatrix" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_bool">
-                                <values>
-                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="lineWidth" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_float">
                                 <values>
                                     <value key="0" type="KeyValue_float" time="0" value="1" smooth="true">
@@ -770,42 +755,8 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="rightClipPlane" duration="20" tlchanged="true">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="19" smooth="true">
-                                        <before />
-                                        <after type="default linear: linear interpolation" id="ref33">
-                                            <properties />
-                                        </after>
-                                    </value>
-                                    <value key="3.43330002" type="KeyValue_int" time="3.43330002" value="8" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref33" />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="leftClipPlane" duration="20" tlchanged="true">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="40" smooth="true">
-                                        <before />
-                                        <after type="default linear: linear interpolation" id="ref34">
-                                            <properties />
-                                        </after>
-                                    </value>
-                                    <value key="15.89999962" type="KeyValue_int" time="15.89999962" value="20" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref34" />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="xColor" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_vec4">
                                 <values>
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
@@ -816,30 +767,8 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="bottomClipPlane" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="0" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="topClipPlane" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="40" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="yColor" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_vec4">
                                 <values>
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
@@ -850,30 +779,8 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="frontClipPlane" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="0" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="backClipPlane" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="40" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="zColor" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_vec4">
                                 <values>
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
@@ -885,7 +792,7 @@
                             </timeline>
                         </Property>
                         <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="showInnerBB" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_bool">
                                 <values>
                                     <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
@@ -896,7 +803,7 @@
                             </timeline>
                         </Property>
                         <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="innerColor" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_vec4">
                                 <values>
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
@@ -908,7 +815,7 @@
                             </timeline>
                         </Property>
                         <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightPosition" duration="20" tlchanged="false">
-                            <propertyOwner type="ClippingPlaneWidget" ref="ref6" />
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
                             <timeline type="TemplatePropertyTimelineState_vec4">
                                 <values>
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
@@ -1023,28 +930,6 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="switchSegmentation" duration="20" tlchanged="false">
-                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
-                            <timeline type="TemplatePropertyTimelineState_bool">
-                                <values>
-                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
-                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="setSegment" duration="20" tlchanged="false">
-                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
-                            <timeline type="TemplatePropertyTimelineState_int">
-                                <values>
-                                    <value key="0" type="KeyValue_int" time="0" value="0" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="isoValue" duration="20" tlchanged="false">
                             <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
                             <timeline type="TemplatePropertyTimelineState_float">
@@ -1087,7 +972,7 @@
                                             </Keys>
                                         </value>
                                         <before />
-                                        <after type="default linear (keywise if possible): linear interpolation" id="ref35">
+                                        <after type="default linear (keywise if possible): linear interpolation" id="ref31">
                                             <properties />
                                         </after>
                                     </value>
@@ -1117,7 +1002,7 @@
                                                 </key>
                                             </Keys>
                                         </value>
-                                        <before type="default linear (keywise if possible): linear interpolation" ref="ref35" />
+                                        <before type="default linear (keywise if possible): linear interpolation" ref="ref31" />
                                         <after />
                                     </value>
                                 </values>
@@ -1129,7 +1014,7 @@
                                 <values>
                                     <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref36">
+                                        <after type="default linear: linear interpolation" id="ref32">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
@@ -1137,8 +1022,8 @@
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
                                     <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref36" />
-                                        <after type="default linear: linear interpolation" id="ref37">
+                                        <before type="default linear: linear interpolation" ref="ref32" />
+                                        <after type="default linear: linear interpolation" id="ref33">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
@@ -1146,22 +1031,11 @@
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
                                     <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref37" />
+                                        <before type="default linear: linear interpolation" ref="ref33" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="-0.50496364" y="0.84156919" z="-0.19176304" />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
-                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="masking" duration="20" tlchanged="false">
-                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
-                            <timeline type="TemplatePropertyTimelineState_string">
-                                <values>
-                                    <value key="0" type="KeyValue_string" time="0" value="none" smooth="true">
-                                        <before />
-                                        <after />
                                     </value>
                                 </values>
                             </timeline>
@@ -1239,13 +1113,13 @@
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
                                         <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref38">
+                                        <after type="default linear: linear interpolation" id="ref34">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
                                         <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
-                                        <before type="default linear: linear interpolation" ref="ref38" />
+                                        <before type="default linear: linear interpolation" ref="ref34" />
                                         <after />
                                     </value>
                                 </values>
@@ -1330,17 +1204,6 @@
                 <Processor>
                     <processor type="CubeMeshProxyGeometry" ref="ref7" />
                     <properties>
-                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="useDatasetTrafoMatrix" duration="20" tlchanged="false">
-                            <propertyOwner type="CubeMeshProxyGeometry" ref="ref7" />
-                            <timeline type="TemplatePropertyTimelineState_bool">
-                                <values>
-                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
-                                        <before />
-                                        <after />
-                                    </value>
-                                </values>
-                            </timeline>
-                        </Property>
                         <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="useClipping" duration="20" tlchanged="false">
                             <propertyOwner type="CubeMeshProxyGeometry" ref="ref7" />
                             <timeline type="TemplatePropertyTimelineState_bool">
@@ -1358,12 +1221,12 @@
                                 <values>
                                     <value key="0" type="KeyValue_float" time="0" value="19" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref39">
+                                        <after type="default linear: linear interpolation" id="ref35">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="3.43330002" type="KeyValue_float" time="3.43330002" value="8" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref39" />
+                                        <before type="default linear: linear interpolation" ref="ref35" />
                                         <after />
                                     </value>
                                 </values>
@@ -1375,12 +1238,12 @@
                                 <values>
                                     <value key="0" type="KeyValue_float" time="0" value="40" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref40">
+                                        <after type="default linear: linear interpolation" id="ref36">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="15.89999962" type="KeyValue_float" time="15.89999962" value="20" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref40" />
+                                        <before type="default linear: linear interpolation" ref="ref36" />
                                         <after />
                                     </value>
                                 </values>
@@ -1496,7 +1359,7 @@
                                 <values>
                                     <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref41">
+                                        <after type="default linear: linear interpolation" id="ref37">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
@@ -1504,8 +1367,8 @@
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
                                     <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref41" />
-                                        <after type="default linear: linear interpolation" id="ref42">
+                                        <before type="default linear: linear interpolation" ref="ref37" />
+                                        <after type="default linear: linear interpolation" id="ref38">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
@@ -1513,7 +1376,7 @@
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
                                     <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref42" />
+                                        <before type="default linear: linear interpolation" ref="ref38" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />

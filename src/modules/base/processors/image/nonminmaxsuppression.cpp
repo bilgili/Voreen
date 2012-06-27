@@ -32,7 +32,7 @@
 namespace voreen {
 
 NonMinMaxSuppression::NonMinMaxSuppression()
-    : ImageProcessorDepth("pp_nonminmax"),
+    : ImageProcessorDepth("image/nonminmax"),
       inportImage_(Port::INPORT, "image.inport"),
       inportSobel_(Port::INPORT, "image.sobel"),
       outport_(Port::OUTPORT, "image.outport"),
@@ -77,7 +77,7 @@ void NonMinMaxSuppression::process() {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", 0);
+    program_->setUniform("colorTex_", 0);
     program_->setUniform("depthTex_", 1);
     inportImage_.setTextureParameters(program_, "textureParameters_");
     if (!isotropic_.get()) {

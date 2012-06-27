@@ -49,6 +49,7 @@ TransFunc::TransFunc(int width, int height, int depth,
 
 TransFunc::~TransFunc() {
     delete tex_;
+    LGL_ERROR;
 }
 
 const std::vector<std::string>& TransFunc::getLoadFileFormats() const {
@@ -79,7 +80,11 @@ void TransFunc::updateTexture() {
 
     if (!tex_ || (tex_->getDimensions() != dimensions_))
         createTex();
-    tgtAssert(tex_, "No texture");
+
+    if (!tex_) {
+        LERROR("Failed to create texture");
+        return;
+    }
 
     tex_->uploadTexture();
     textureInvalid_ = false;
@@ -90,13 +95,13 @@ void TransFunc::createTex() {
 
     tex_ = new tgt::Texture(dimensions_, format_, dataType_, filter_, false);
     tex_->setWrapping(tgt::Texture::CLAMP);
+    LGL_ERROR;
 }
 
 tgt::Texture* TransFunc::getTexture() {
     if (textureInvalid_)
         updateTexture();
 
-    tgtAssert(tex_, "No texture");
     return tex_;
 }
 

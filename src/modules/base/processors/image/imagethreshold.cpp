@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ImageThreshold::ImageThreshold()
-    : ImageProcessor("pp_imagethreshold"),
+    : ImageProcessor("image/imagethreshold"),
     inport_(Port::INPORT, "image.inport"),
     outport_(Port::OUTPORT, "image.outport"),
     lowerThreshold_("lowerThreshold", "Lower Threshold", 0.f, 0.0f, 1.f),
@@ -70,13 +70,13 @@ void ImageThreshold::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit, depthUnit);
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit, depthUnit);
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("lowerThreshold_", lowerThreshold_.get());

@@ -127,21 +127,18 @@ PropertyKeyValue<ShaderSource>* PropertyKeyValue<ShaderSource>::clone() const {
 }
 
 template <>
-PropertyKeyValue<Camera*>* PropertyKeyValue<Camera*>::clone() const {
-    PropertyKeyValue<Camera*>* keyvalue = new PropertyKeyValue<Camera*>();
+PropertyKeyValue<Camera>* PropertyKeyValue<Camera>::clone() const {
+    PropertyKeyValue<Camera>* keyvalue = new PropertyKeyValue<Camera>();
     keyvalue->after_ = after_;
     keyvalue->before_ = before_;
-    if (value_)
-        keyvalue->value_ = value_->clone();
-    else
-        LERRORC("voreen.PropertyKeyValue<Camera>", "No value");
+    keyvalue->value_ = value_;
     keyvalue->time_ = time_;
     keyvalue->smooth_ = smooth_;
     return keyvalue;
 }
 
 template <>
-void PropertyKeyValue<Camera*>::serialize(XmlSerializer& s) const {
+void PropertyKeyValue<Camera>::serialize(XmlSerializer& s) const {
     // base class props
     s.serialize("time", time_);
     s.serialize("smooth", smooth_);
@@ -149,13 +146,13 @@ void PropertyKeyValue<Camera*>::serialize(XmlSerializer& s) const {
     s.serialize("after", after_);
 
     // camera
-    s.serialize("position", value_->getPosition());
-    s.serialize("focus", value_->getFocus());
-    s.serialize("upVector", value_->getUpVector());
+    s.serialize("position", value_.getPosition());
+    s.serialize("focus", value_.getFocus());
+    s.serialize("upVector", value_.getUpVector());
 }
 
 template <>
-void PropertyKeyValue<Camera*>::deserialize(XmlDeserializer& s) {
+void PropertyKeyValue<Camera>::deserialize(XmlDeserializer& s) {
     // base class props
     s.deserialize("time", time_);
     s.deserialize("smooth", smooth_);
@@ -165,11 +162,11 @@ void PropertyKeyValue<Camera*>::deserialize(XmlDeserializer& s) {
     // camera
     tgt::vec3 vector;
     s.deserialize("position", vector);
-    value_->setPosition(vector);
+    value_.setPosition(vector);
     s.deserialize("focus", vector);
-    value_->setFocus(vector);
+    value_.setFocus(vector);
     s.deserialize("upVector", vector);
-    value_->setUpVector(vector);
+    value_.setUpVector(vector);
 }
 
 template <class T>
@@ -256,7 +253,7 @@ template class PropertyKeyValue<tgt::vec4>;
 template class PropertyKeyValue<tgt::mat2>;
 template class PropertyKeyValue<tgt::mat3>;
 template class PropertyKeyValue<tgt::mat4>;
-template class PropertyKeyValue<tgt::Camera*>;
+template class PropertyKeyValue<tgt::Camera>;
 template class PropertyKeyValue<std::string>;
 template class PropertyKeyValue<ShaderSource>;
 template class PropertyKeyValue<TransFunc*>;

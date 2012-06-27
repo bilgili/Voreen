@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ExplosionCompositor::ExplosionCompositor()
-    : ImageProcessor("pp_compositor")
+    : ImageProcessor("image/compositor")
     , compositingMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM)
     , weightingFactor_("weightingFactor", "Weighting factor", 0.5f, 0.0f, 1.0f)
     , inport0_(Port::INPORT, "image.inport0")
@@ -96,18 +96,18 @@ void ExplosionCompositor::process() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    TextureUnit shadeUnit0, depthUnit0, shadeUnit1, depthUnit1;
+    TextureUnit colorUnit0, depthUnit0, colorUnit1, depthUnit1;
     if ((loopOutport_.getLoopIteration() % 2) == 0) {
         // outport <-- inport + internal
         outport_.activateTarget();
-        inport0_.bindTextures(shadeUnit0.getEnum(), depthUnit0.getEnum());
-        interalPort_.bindTextures(shadeUnit1.getEnum(), depthUnit1.getEnum());
+        inport0_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+        interalPort_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
     }
     else {
         // internal <-- inport + outport
         interalPort_.activateTarget();
-        inport0_.bindTextures(shadeUnit0.getEnum(), depthUnit0.getEnum());
-        outport_.bindTextures(shadeUnit1.getEnum(), depthUnit1.getEnum());
+        inport0_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+        outport_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
     }
 
 
@@ -122,13 +122,13 @@ void ExplosionCompositor::process() {
     program_->activate();
     setGlobalShaderParameters(program_);
     if (compositingMode_.get() != "take-second") {
-        program_->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
+        program_->setUniform("colorTex0_", colorUnit0.getUnitNumber());
         program_->setUniform("depthTex0_", depthUnit0.getUnitNumber());
         //inport0_.setTextureParameters(program_, "textureParameters0_");
         outport_.setTextureParameters(program_, "textureParameters0_");
     }
     if (compositingMode_.get() != "take-first") {
-        program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
+        program_->setUniform("colorTex1_", colorUnit1.getUnitNumber());
         program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
         //interalPort_.setTextureParameters(program_, "textureParameters1_");
         outport_.setTextureParameters(program_, "textureParameters1_");

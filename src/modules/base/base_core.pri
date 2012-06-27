@@ -7,6 +7,7 @@ SOURCES += \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/imagesequencesource.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/imagesource.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/plotdatasource.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/datasource/plotfunctionsource.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/textsource.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/volumecollectionsource.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/datasource/volumeseriessource.cpp \
@@ -57,8 +58,17 @@ SOURCES += \
     $${VRN_MODULE_SRC_DIR}/base/processors/image/quadview.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/image/regionofinterest2d.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/image/unaryimageprocessor.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/barplot.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/plotting/lineplot.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotdatafitfunction.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotdatagroup.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotdataexport.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotdataselect.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotdatamerge.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotfunctiondiscret.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/plotting/plotprocessor.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/surfaceplot.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/plotting/scatterplot.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/cubemeshproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/cubeproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/explosionproxygeometry.cpp \
@@ -66,6 +76,7 @@ SOURCES += \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/proxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/cpuraycaster.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/curvatureraycaster.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/render/dynamicglslprocessor.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/glslraycaster.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/halfangleslicer.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/idraycaster.cpp \
@@ -141,6 +152,7 @@ HEADERS += \
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/imagesequencesource.h \
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/imagesource.h \
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/plotdatasource.h \    
+    $${VRN_MODULE_INC_DIR}/base/processors/datasource/plotfunctionsource.h \    
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/textsource.h \
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/volumecollectionsource.h \
     $${VRN_MODULE_INC_DIR}/base/processors/datasource/volumeseriessource.h \
@@ -191,8 +203,17 @@ HEADERS += \
     $${VRN_MODULE_INC_DIR}/base/processors/image/quadview.h \
     $${VRN_MODULE_INC_DIR}/base/processors/image/regionofinterest2d.h \
     $${VRN_MODULE_INC_DIR}/base/processors/image/unaryimageprocessor.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/barplot.h \
     $${VRN_MODULE_INC_DIR}/base/processors/plotting/lineplot.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotdatafitfunction.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotdatagroup.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotdataexport.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotdataselect.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotdatamerge.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotfunctiondiscret.h \
     $${VRN_MODULE_INC_DIR}/base/processors/plotting/plotprocessor.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/surfaceplot.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/plotting/scatterplot.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/cubemeshproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/cubeproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/explosionproxygeometry.h \
@@ -200,6 +221,7 @@ HEADERS += \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/proxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/cpuraycaster.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/curvatureraycaster.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/render/dynamicglslprocessor.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/glslraycaster.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/halfangleslicer.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/idraycaster.h \
@@ -281,31 +303,31 @@ SHADER_SOURCES += \
     $${VRN_MODULE_SRC_DIR}/base/glsl/eep_texcoord.vert \
     $${VRN_MODULE_SRC_DIR}/base/glsl/eep_vertex.vert \
     $${VRN_MODULE_SRC_DIR}/base/glsl/gabor.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_background.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_binary.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_canny.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_colordepth.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_compositor.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_convolution.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_depthdarkening.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_depthpeeling.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_depthpeeling.vert \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_dilation.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_distance.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_edgedetect.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_erosion.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_fade.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_gaussian.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_grayscale.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_imagethreshold.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_labeling.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_mask.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_mean.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_median.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_nonminmax.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_orientationoverlay.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_scale.frag \
-    $${VRN_MODULE_SRC_DIR}/base/glsl/pp_unary.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/background.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/binary.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/canny.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/colordepth.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/compositor.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/convolution.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/depthdarkening.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/depthpeeling.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/depthpeeling.vert \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/dilation.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/distance.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/edgedetect.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/erosion.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/fade.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/gaussian.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/grayscale.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/imagethreshold.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/labeling.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/mask.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/mean.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/median.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/nonminmax.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/orientationoverlay.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/scale.frag \
+    $${VRN_MODULE_SRC_DIR}/base/glsl/image/unary.frag \
     $${VRN_MODULE_SRC_DIR}/base/glsl/rc_curvature.frag \
     $${VRN_MODULE_SRC_DIR}/base/glsl/rc_firsthit.frag \
     $${VRN_MODULE_SRC_DIR}/base/glsl/rc_hitpoints.frag \

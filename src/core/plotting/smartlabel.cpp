@@ -240,7 +240,7 @@ void SmartLabelGroupVerticalMoving::performLayout() {
     for (it = labels_.begin(); it < labels_.end() && (it+1) < labels_.end(); ++it) {
         tgt::Bounds bottom = it->boundingBox_;
         tgt::Bounds top = (it+1)->boundingBox_;
-        float diff = bottom.getURB().y - top.getLLF().y;
+        float diff = bottom.getURB().y - top.getLLF().y + padding_;
         if (diff > 0) {
             (it+1)->position_.y += diff;
             calculateBoundingBox(*(it+1));
@@ -249,14 +249,14 @@ void SmartLabelGroupVerticalMoving::performLayout() {
 
     // some labels may have been pushed out of bounds_, we try to fix this:
     tgt::Bounds top = labels_.rbegin()->boundingBox_;
-    float diff = top.getURB().y - bounds_.getURB().y;
+    float diff = top.getURB().y - bounds_.getURB().y + padding_;
     if (diff > 0) {
         labels_.rbegin()->position_.y -= diff;
         calculateBoundingBox(*(labels_.rbegin()));
         for (std::vector<SmartLabel>::reverse_iterator rit = labels_.rbegin(); rit < labels_.rend() && (rit+1) < labels_.rend(); ++rit) {
             tgt::Bounds top = rit->boundingBox_;
             tgt::Bounds bottom = (rit+1)->boundingBox_;
-            diff = bottom.getURB().y - top.getLLF().y;
+            diff = bottom.getURB().y - top.getLLF().y + padding_;
             if (diff <= 0) {
                 break;
             }

@@ -41,9 +41,15 @@ namespace voreen {
 class LinkEvaluatorIdNormalized : public LinkEvaluatorBase {
 public:
 
-    virtual BoxObject eval(const BoxObject& sourceOld, const BoxObject& sourceNew, const BoxObject& targetOld, Property* src, Property* dest);
+    virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
     virtual std::string name() const;
+
+    virtual std::string getClassName() const { return "LinkEvaluatorIdNormalized"; }
+
+    virtual LinkEvaluatorBase* create() const { return new LinkEvaluatorIdNormalized(); }
+
+    virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
 
 } // namespace

@@ -38,6 +38,7 @@
 #include "voreen/modules/base/processors/datasource/imagesequencesource.h"
 #include "voreen/modules/base/processors/datasource/imagesource.h"
 #include "voreen/modules/base/processors/datasource/plotdatasource.h"
+#include "voreen/modules/base/processors/datasource/plotfunctionsource.h"
 #include "voreen/modules/base/processors/datasource/textsource.h"
 #include "voreen/modules/base/processors/datasource/volumecollectionsource.h"
 #include "voreen/modules/base/processors/datasource/volumeseriessource.h"
@@ -96,6 +97,15 @@
 
 // plotting
 #include "voreen/modules/base/processors/plotting/lineplot.h"
+#include "voreen/modules/base/processors/plotting/barplot.h"
+#include "voreen/modules/base/processors/plotting/scatterplot.h"
+#include "voreen/modules/base/processors/plotting/surfaceplot.h"
+#include "voreen/modules/base/processors/plotting/plotdataselect.h"
+#include "voreen/modules/base/processors/plotting/plotdatagroup.h"
+#include "voreen/modules/base/processors/plotting/plotdataexport.h"
+#include "voreen/modules/base/processors/plotting/plotdatafitfunction.h"
+#include "voreen/modules/base/processors/plotting/plotdatamerge.h"
+#include "voreen/modules/base/processors/plotting/plotfunctiondiscret.h"
 
 // proxy geometry
 #include "voreen/modules/base/processors/proxygeometry/cubeproxygeometry.h"
@@ -107,6 +117,7 @@
 // render
 #include "voreen/modules/base/processors/render/cpuraycaster.h"
 #include "voreen/modules/base/processors/render/curvatureraycaster.h"
+#include "voreen/modules/base/processors/render/dynamicglslprocessor.h"
 #include "voreen/modules/base/processors/render/glslraycaster.h"
 #include "voreen/modules/base/processors/render/halfangleslicer.h"
 #include "voreen/modules/base/processors/render/idraycaster.h"
@@ -191,6 +202,7 @@ BaseModule::BaseModule()
     addProcessor(new ImageSequenceSource());
     addProcessor(new ImageSource());
     addProcessor(new PlotDataSource());
+    addProcessor(new PlotFunctionSource());
     addProcessor(new TextSource());
     addProcessor(new VolumeCollectionSource());
     addProcessor(new VolumeSeriesSource());
@@ -250,6 +262,15 @@ BaseModule::BaseModule()
 
     // plotting
     addProcessor(new LinePlot());
+    addProcessor(new BarPlot());
+    addProcessor(new ScatterPlot());
+    addProcessor(new SurfacePlot());
+    addProcessor(new PlotDataSelect());
+    addProcessor(new PlotDataGroup());
+    addProcessor(new PlotDataExport());
+    addProcessor(new PlotDataFitFunction());
+    addProcessor(new PlotFunctionDiscret());
+    addProcessor(new PlotDataMerge());
 
     // proxy geometry
     addProcessor(new CubeProxyGeometry());
@@ -260,6 +281,7 @@ BaseModule::BaseModule()
     // render
     addProcessor(new CPURaycaster());
     addProcessor(new CurvatureRaycaster());
+    addProcessor(new DynamicGLSLProcessor());
     addProcessor(new GLSLRaycaster());
     addProcessor(new HalfAngleSlicer());
     addProcessor(new SingleVolumeSlicer());

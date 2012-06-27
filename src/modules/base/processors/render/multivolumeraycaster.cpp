@@ -49,6 +49,7 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
     , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
     , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
+    , raycastPrg_(0)
     , shadeMode1_("shading1", "Shading 1", Processor::INVALID_PROGRAM)
     , shadeMode2_("shading2", "Shading 2", Processor::INVALID_PROGRAM)
     , shadeMode3_("shading3", "Shading 3", Processor::INVALID_PROGRAM)
@@ -57,7 +58,12 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , transferFunc2_("transferFunction2", "Transfer Function 2")
     , transferFunc3_("transferFunction3", "Transfer Function 3")
     , transferFunc4_("transferFunction4", "Transfer Function 4")
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , texClampMode1_("textureClampMode1_", "Texture Clamp 1")
+    , texClampMode2_("textureClampMode2_", "Texture Clamp 2")
+    , texClampMode3_("textureClampMode3_", "Texture Clamp 3")
+    , texClampMode4_("textureClampMode4_", "Texture Clamp 4")
+    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
 {
@@ -116,15 +122,38 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     shadeMode4_.addOption("toon", "Toon");
     shadeMode4_.select("phong");
     addProperty(shadeMode4_);
-    addProperty(compositingMode_);
 
+    // volume texture clamping
+    texClampMode1_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode1_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode1_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode1_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode1_);
+    texClampMode2_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode2_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode2_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode2_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode2_);
+    texClampMode3_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode3_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode3_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode3_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode3_);
+    texClampMode4_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode4_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode4_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode4_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode4_);
+    addProperty(texBorderIntensity_);
+
+    // compositing modes
+    addProperty(compositingMode_);
     compositingMode1_.addOption("dvr", "DVR");
     compositingMode1_.addOption("mip", "MIP");
     compositingMode1_.addOption("iso", "ISO");
     compositingMode1_.addOption("fhp", "W-FHP");
     //compositingMode1_.addOption("fhn", "FHN");
     addProperty(compositingMode1_);
-
     compositingMode2_.addOption("dvr", "DVR");
     compositingMode2_.addOption("mip", "MIP");
     compositingMode2_.addOption("iso", "ISO");
@@ -171,12 +200,8 @@ void MultiVolumeRaycaster::initialize() throw (VoreenException) {
 
     loadShader();
 
-    if (!raycastPrg_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
+    if (!raycastPrg_)
         throw VoreenException(getClassName() + ": Failed to load shaders!");
-    }
-    initialized_ = true;
 
     portGroup_.initialize();
     portGroup_.addPort(outport_);
@@ -186,6 +211,10 @@ void MultiVolumeRaycaster::initialize() throw (VoreenException) {
 
 void MultiVolumeRaycaster::deinitialize() throw (VoreenException) {
     portGroup_.deinitialize();
+
+    ShdrMgr.dispose(raycastPrg_);
+    raycastPrg_ = 0;
+    LGL_ERROR;
 
     VolumeRaycaster::deinitialize();
 }
@@ -265,9 +294,10 @@ void MultiVolumeRaycaster::process() {
                     &volUnit1,
                     "volume1_",
                     "volumeParameters1_",
-                    true)
+                    true,
+                    texClampMode1_.getValue(),
+                    tgt::vec4(texBorderIntensity_.get()))
                 );
-        volumeInport1_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
     if(volumeInport2_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
@@ -275,9 +305,10 @@ void MultiVolumeRaycaster::process() {
                     &volUnit2,
                     "volume2_",
                     "volumeParameters2_",
-                    true)
+                    true,
+                    texClampMode2_.getValue(),
+                    tgt::vec4(texBorderIntensity_.get()))
                 );
-        volumeInport2_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
     if(volumeInport3_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
@@ -285,9 +316,10 @@ void MultiVolumeRaycaster::process() {
                     &volUnit3,
                     "volume3_",
                     "volumeParameters3_",
-                    true)
+                    true,
+                    texClampMode3_.getValue(),
+                    tgt::vec4(texBorderIntensity_.get()))
                 );
-        volumeInport3_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
     if(volumeInport4_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
@@ -295,18 +327,20 @@ void MultiVolumeRaycaster::process() {
                     &volUnit4,
                     "volume4_",
                     "volumeParameters4_",
-                    true)
+                    true,
+                    texClampMode4_.getValue(),
+                    tgt::vec4(texBorderIntensity_.get()))
                 );
-        volumeInport4_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
 
     // initialize shader
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(raycastPrg_, volumeTextures, &cam, lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -330,55 +364,44 @@ void MultiVolumeRaycaster::process() {
     if(volumeInport4_.isReady())
         raycastPrg_->setUniform("transferFunc4_", transferUnit4.getUnitNumber());
 
+    // determine ray step length in world coords
     if (volumeTextures.size() > 0) {
-        float samplingStepSize = 999.0f;
+        float voxelSizeWorld = 999.f;
+        float voxelSizeTexture = 999.f;
         for(size_t i=0; i<volumeTextures.size(); ++i) {
-            tgt::ivec3 dim = volumeTextures[i].volume_->getTexture()->getDimensions();
-            tgt::vec3 cubeSize = volumeTextures[i].volume_->getVolume()->getCubeSize();
+            const Volume* volume = volumeTextures[i].volume_->getVolume();
+            tgtAssert(volume, "No volume");
+            tgt::ivec3 volDim = volume->getDimensions();
+            tgt::vec3 cubeSizeWorld = volume->getCubeSize() * volume->getTransformation().getScalingPart();
 
-            float sss;
-            sss = cubeSize.x / (float)dim.x;
-            samplingStepSize = std::min(samplingStepSize, sss);
-            sss = cubeSize.y / (float)dim.y;
-            samplingStepSize = std::min(samplingStepSize, sss);
-            sss = cubeSize.z / (float)dim.z;
-            samplingStepSize = std::min(samplingStepSize, sss);
+            float tVoxelSizeWorld = tgt::max(cubeSizeWorld / tgt::vec3(volDim));
+            if (tVoxelSizeWorld < voxelSizeWorld) {
+                voxelSizeWorld = tVoxelSizeWorld;
+                voxelSizeTexture = tgt::max(1.f / tgt::vec3(volDim));
+            }
         }
 
-        samplingStepSize /= samplingRate_.get();
+        float samplingStepSizeWorld = voxelSizeWorld / samplingRate_.get();
+        float samplingStepSizeTexture = voxelSizeTexture / samplingRate_.get();
 
-        if (interactionMode())
-            samplingStepSize /= interactionQuality_.get();
+        if (interactionMode()) {
+            samplingStepSizeWorld /= interactionQuality_.get();
+            samplingStepSizeTexture /= interactionQuality_.get();
+        }
 
-        raycastPrg_->setUniform("samplingStepSize_", samplingStepSize);
-        raycastPrg_->setUniform("samplingStepSizeComposite_", samplingStepSize * 200.f);
+        raycastPrg_->setUniform("samplingStepSize_", samplingStepSizeWorld);
+        raycastPrg_->setUniform("samplingStepSizeComposite_", samplingStepSizeTexture * 200.f);
         LGL_ERROR;
     }
     LGL_ERROR;
 
-    glPushAttrib(GL_LIGHTING_BIT);
-    setLightingParameters();
-
     renderQuad();
 
-    glPopAttrib();
     raycastPrg_->deactivate();
     portGroup_.deactivateTargets();
 
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
-    if(volumeInport1_.isReady()) {
-        volumeInport1_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
-    }
-    if(volumeInport2_.isReady()) {
-        volumeInport2_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
-    }
-    if(volumeInport3_.isReady()) {
-        volumeInport3_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
-    }
-    if(volumeInport4_.isReady()) {
-        volumeInport4_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
-    }
 }
 
 std::string MultiVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
@@ -490,7 +513,7 @@ std::string MultiVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader();
+    headerSource += portGroup_.generateHeader(raycastPrg_);
     return headerSource;
 }
 

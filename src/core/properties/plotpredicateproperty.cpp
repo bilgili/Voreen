@@ -108,9 +108,6 @@ void PlotPredicateProperty::select(const std::vector<int>& columns){
 void PlotPredicateProperty::notifyAll() {
     std::vector<std::pair<int, PlotPredicate*> > cpy = value_;
 
-    // execute links
-    executeLinks(cpy, cpy);
-
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)
         conditions_[j]->exec();

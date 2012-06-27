@@ -36,6 +36,7 @@
 #include "voreen/qt/widgets/eventpropertywidget.h"
 #include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/customlabel.h"
 
 #include <QComboBox>
 #include <QLabel>
@@ -86,7 +87,7 @@ void InputMappingDialog::setProcessorNetwork(ProcessorNetwork* network) {
     setEnabled(true);
 
     // only rebuild widgets immediately, if network is empty or the widget is visible
-    if (processorNetwork_->empty() || isVisible())
+    if (!processorNetwork_ || processorNetwork_->empty() || isVisible())
         rebuildWidgets();
     else
         widgetsValid_ = false;
@@ -102,21 +103,21 @@ void InputMappingDialog::rebuildWidgets() {
     scrollLayout_ = new QVBoxLayout(widget);
 
     createWidgets();
-    widgetsValid_ = true;
 }
 
 void InputMappingDialog::createWidgets() {
 
-    if (!processorNetwork_)
-        return;
-
-    const std::vector<Processor*> processors = processorNetwork_->getProcessors();
-    for (size_t i=0; i<processors.size(); i++) {
-        addProcessorToLayout(processors[i]);
+    if (processorNetwork_) {
+        const std::vector<Processor*> processors = processorNetwork_->getProcessors();
+        for (size_t i=0; i<processors.size(); i++) {
+            addProcessorToLayout(processors[i]);
+        }
     }
 
     scrollStretchItem_ = new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding);
     scrollLayout_->addSpacerItem(scrollStretchItem_);
+
+    widgetsValid_ = true;
 }
 
 void InputMappingDialog::addProcessorToLayout(const Processor* processor) {
@@ -158,7 +159,7 @@ void InputMappingDialog::addProcessorToLayout(const Processor* processor) {
         if (QPropertyWidget* qPropWidget = dynamic_cast<QPropertyWidget*>(propWidget)) {
             QHBoxLayout* layoutTemp = new QHBoxLayout();
             layoutTemp->setContentsMargins(2,2,2,2);
-            QLabel* nameLabel = const_cast<QLabel*>(qPropWidget->getNameLabel());
+            CustomLabel* nameLabel = qPropWidget->getNameLabel();
             nameLabel->setMinimumWidth(0);
             layoutTemp->addWidget(nameLabel);
             layoutTemp->addSpacing(5);

@@ -45,7 +45,7 @@ EEPGeometryIntegrator::EEPGeometryIntegrator()
     , exitPort_(Port::OUTPORT, "image.postexit", true, Processor::INVALID_PROGRAM)
     , tmpPort_(Port::OUTPORT, "image.tmp", false)
     , useFloatRenderTargets_("useFloatRenderTargets", "Use float rendertargets", false)
-    , camera_("camera", "Camera", new tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
 {
     addPort(inport0_);
     addPort(inport1_);
@@ -98,28 +98,29 @@ void EEPGeometryIntegrator::process() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1, shadeUnit2, shadeUnitDepth2;
+    TextureUnit colorUnit0, depthUnit0, colorUnit1, depthUnit1, colorUnit2, depthUnit2;
 
-    inport0_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
-    inport1_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
-    geometryPort_.bindTextures(shadeUnit2.getEnum(), shadeUnitDepth2.getEnum());
+    inport0_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+    inport1_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
+    geometryPort_.bindTextures(colorUnit2.getEnum(), depthUnit2.getEnum());
 
     // initialize shader
     program_->activate();
-    setGlobalShaderParameters(program_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(program_, &cam);
     program_->setIgnoreUniformLocationError(true);
-    program_->setUniform("entryParams_", shadeUnit0.getUnitNumber());
-    program_->setUniform("entryParamsDepth_", shadeUnitDepth0.getUnitNumber());
-    program_->setUniform("exitParams_", shadeUnit1.getUnitNumber());
-    program_->setUniform("exitParamsDepth_", shadeUnitDepth1.getUnitNumber());
-    program_->setUniform("geometryTex_", shadeUnit2.getUnitNumber());
-    program_->setUniform("geometryTexDepth_", shadeUnitDepth2.getUnitNumber());
+    program_->setUniform("entryParams_", colorUnit0.getUnitNumber());
+    program_->setUniform("entryParamsDepth_", depthUnit0.getUnitNumber());
+    program_->setUniform("exitParams_", colorUnit1.getUnitNumber());
+    program_->setUniform("exitParamsDepth_", depthUnit1.getUnitNumber());
+    program_->setUniform("geometryTex_", colorUnit2.getUnitNumber());
+    program_->setUniform("geometryTexDepth_", depthUnit2.getUnitNumber());
 
     // assume cube-formed dataset if the port is not connected
     if(volumeInport_.isReady())
         program_->setUniform("volumeSize_", volumeInport_.getData()->getVolume()->getCubeSize());
     else {
-        LWARNING("Volume inport not connected: assuming cubic volume");    
+        LWARNING("Volume inport not connected: assuming cubic volume");
         program_->setUniform("volumeSize_", tgt::vec3(2.f));
     }
 
@@ -139,8 +140,8 @@ void EEPGeometryIntegrator::process() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     program_->setUniform("entry_", false);
-    program_->setUniform("near_", camera_.get()->getNearDist());
-    program_->setUniform("far_", camera_.get()->getFarDist());
+    program_->setUniform("near_", camera_.get().getNearDist());
+    program_->setUniform("far_", camera_.get().getFarDist());
     program_->setUniform("useFloatTarget_", useFloatRenderTargets_.get());
 
     glDepthFunc(GL_ALWAYS);

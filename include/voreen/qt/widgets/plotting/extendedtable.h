@@ -46,10 +46,8 @@ public:
     std::vector<int> selectedColumns() const;
     /// Gives back the selected Rows.
     std::vector<int> selectedRows() const;
-
-private:
-
-
+    /// @see: QTableView::selectedIndexes();
+    virtual QModelIndexList selectedIndexes() const;
 };
 
 }

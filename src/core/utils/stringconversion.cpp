@@ -39,13 +39,7 @@ std::string itos(int i) {
     return s.str();
 }
 
-std::string ftos(float f) {
-    std::stringstream s;
-    s << f;
-    return s.str();
-}
-
-int stoi(std::string s) {
+int stoi(const std::string& s) {
     int result = 0;
     std::istringstream isst;
     isst.str(s);
@@ -53,12 +47,56 @@ int stoi(std::string s) {
     return result;
 }
 
-float stof(std::string s) {
+std::string ftos(float f) {
+    std::stringstream s;
+    s << f;
+    return s.str();
+}
+
+float stof(const std::string& s) {
     float result = 0.f;
     std::istringstream isst;
     isst.str(s);
     isst >> result;
     return result;
+}
+
+std::string dtos(double d) {
+    std::stringstream s;
+    s << d;
+    return s.str();
+}
+
+double stod(const std::string& s) {
+    double result = 0.0;
+    std::istringstream isst;
+    isst.str(s);
+    isst >> result;
+    return result;
+}
+
+char* strtochr(const std::string& s){
+    char* result = new char[s.size()+1];
+#ifdef WIN32
+#pragma warning(disable:4996)
+#endif
+    s.copy(result, s.size());
+#ifdef WIN32
+#pragma warning(default:4996)
+#endif
+    result[s.size()] = '\0';
+    return result;
+}
+
+std::string strReplaceAll(const std::string& str, const std::string& from, const std::string& to) {
+    std::string strConv(str);
+    size_t lookHere = 0;
+    size_t foundHere;
+    while((foundHere = strConv.find(from, lookHere)) != std::string::npos) {
+        strConv.replace(foundHere, from.size(), to);
+        lookHere = foundHere + to.size();
+    }
+    return strConv;
 }
 
 } // namespace

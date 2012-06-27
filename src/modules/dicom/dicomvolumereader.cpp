@@ -258,6 +258,9 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                                           bool skipBroken)
     throw (tgt::FileException, std::bad_alloc)
 {
+    if (!fileNames.empty())
+        LINFO("Loading DICOM data set: " << tgt::FileSystem::dirName(*fileNames.begin()));
+
     // register JPEG codec
     DJDecoderRegistration::registerCodecs(EDC_photometricInterpretation, EUC_default, EPC_default, OFFalse);
 
@@ -279,9 +282,14 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     bool found_first = false;
     vector<string>::const_iterator it_files = fileNames.begin();
     int i = 0;
+    if (getProgressBar() && !fileNames.empty())
+        getProgressBar()->setTitle("Loading DICOM Data Set");
+
     while (it_files != fileNames.end()) {
-        if (getProgressBar())
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(fileNames.size()));
+        }
         i++;
 
         DcmFileFormat fileformat;
@@ -477,14 +485,18 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     std::vector<std::pair<string, tgt::vec3> >::iterator it_slices = slices.begin();
     i = 0;
     while (it_slices != slices.end()) {
-        if (getProgressBar())
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Loading slice '" + tgt::FileSystem::fileName((*it_slices).first) + "' ...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
+        }
         i++;
 
         int slicesize = loadSlice((*it_slices).first, posScalar);
         posScalar += slicesize;
         it_slices++;
     }
+    if (getProgressBar())
+        getProgressBar()->hide();
 
     // deregister global decompression codecs
     DJDecoderRegistration::cleanup();
@@ -567,54 +579,12 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
 }
 
 vector<string> DicomVolumeReader::getFileNamesInDir(const string& dirName) {
-    vector<string> files;
 
-#ifdef WIN32
+    std::vector<std::string> fileNames = tgt::FileSystem::readDirectory(dirName);
+    for (size_t i=0; i<fileNames.size(); i++)
+        fileNames[i] = dirName + "/" + fileNames[i];
 
-    // Windows-specific directory listing
-    bool            finished = false;
-    HANDLE          hList;
-    TCHAR           szDir[MAX_PATH+1];
-    WIN32_FIND_DATA FileData;
-
-    // Setup file spec (contains wildcard)
-    sprintf(szDir, "%s*", dirName.c_str());
-
-    hList = FindFirstFile(szDir, &FileData);
-    if (hList != INVALID_HANDLE_VALUE) {
-        while (!finished) {
-            if (!(FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                files.push_back(dirName + FileData.cFileName);
-            }
-
-            if (!FindNextFile(hList, &FileData))
-                finished = true;
-        }
-    }
-
-    FindClose(hList);
-
-#else
-
-    // POSIX directory listing
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir(dirName.c_str())) == NULL) {
-        LERROR("Can't list directory: " << dirName);
-        return files;
-    }
-    std::string name;
-    while ((ent = readdir(dir))) {
-        name = ent->d_name;
-        if ((ent->d_type != DT_DIR) && (name != ".") && (name != "..")) {
-            files.push_back(dirName + ent->d_name);
-        }
-    }
-    closedir(dir);
-
-#endif
-
-    return files;
+    return fileNames;
 }
 
 
@@ -844,7 +814,7 @@ VolumeCollection* DicomVolumeReader::read(const string &url)
     dx_ = dy_ = dz_ = 0;
     Volume* volume;
 
-    if (pathIsDir(fileName)) {
+    if (tgt::FileSystem::dirExists(fileName)) {
         // Handle reading of entire directories
         if (fileName.find("dicom://") == 0)
             volume = readDicomFiles(getFileNamesInDir(fileName.substr(8)), "", true);
@@ -924,7 +894,7 @@ DicomImage* DicomVolumeReader::readDicomImage(const std::string& fileName, int s
 
     // load dicom file
     try {
-        LINFO("Reading dicom file " << fileName << " ...");
+        LINFO("Reading DICOM file " << fileName << " ...");
         unsigned int flags = 0;
 #ifdef VRN_DCMTK_VERSION_355
         flags = CIF_UsePartialAccessToPixelData;

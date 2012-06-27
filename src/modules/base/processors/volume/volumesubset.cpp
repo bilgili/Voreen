@@ -84,6 +84,8 @@ VolumeSubSet::VolumeSubSet()
 
     croppedDimensions_.setWidgetsEnabled(false);
     croppedSize_.setWidgetsEnabled(false);
+
+    oldVolumeDimensions_ = tgt::ivec3(0,0,0);
 }
 
 VolumeSubSet::~VolumeSubSet() {}
@@ -98,6 +100,9 @@ std::string VolumeSubSet::getProcessorInfo() const {
 
 void VolumeSubSet::process() {
     tgtAssert(inport_.getData()->getVolume(), "no input volume");
+
+    if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
+        oldVolumeDimensions_ = inport_.getData()->getVolume()->getDimensions();
 
     // adapt clipping plane properties on volume change
     if (inport_.hasChanged()) {
@@ -212,26 +217,34 @@ void VolumeSubSet::adjustClipPropertiesRanges() {
     tgt::ivec3 numSlices = inport_.getData()->getVolume()->getDimensions();
 
     // adapt clipping plane properties to volume dimensions
-    clipRight_.setMaxValue(numSlices.x-2);
+    clipRight_.setMaxValue(numSlices.x-1);
     clipLeft_.setMaxValue(numSlices.x-1);
 
-    clipFront_.setMaxValue(numSlices.y-2);
+    clipFront_.setMaxValue(numSlices.y-1);
     clipBack_.setMaxValue(numSlices.y-1);
 
-    clipBottom_.setMaxValue(numSlices.z-2);
+    clipBottom_.setMaxValue(numSlices.z-1);
     clipTop_.setMaxValue(numSlices.z-1);
 
-    if ((clipRight_.get() == 0)
-        && (clipLeft_.get() == 0)
-        && (clipFront_.get() == 0)
-        && (clipBack_.get() == 0)
-        && (clipBottom_.get() == 0)
-        && (clipTop_.get() == 0))
-    {
-        clipLeft_.set(numSlices.x-1);
-        clipBack_.set(numSlices.y-1);
-        clipTop_.set(numSlices.z-1);
-    }
+    // assign new clipping values while taking care that the right>left validation
+    // does not alter the assigned values
+    float rightVal = clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
+    float leftVal = clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
+    clipLeft_.set(clipLeft_.getMaxValue());
+    clipRight_.set(tgt::ifloor(rightVal));
+    clipLeft_.set(tgt::ifloor(leftVal));
+
+    float frontVal = clipFront_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
+    float backVal = clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
+    clipBack_.set(clipBack_.getMaxValue());
+    clipFront_.set(tgt::ifloor(frontVal));
+    clipBack_.set(tgt::ifloor(backVal));
+
+    float bottomVal = clipBottom_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
+    float topVal = clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
+    clipTop_.set(clipTop_.getMaxValue());
+    clipBottom_.set(tgt::ifloor(bottomVal));
+    clipTop_.set(tgt::ifloor(topVal));
 
     if (clipRight_.get() > clipRight_.getMaxValue())
         clipRight_.set(clipRight_.getMaxValue());
@@ -251,6 +264,7 @@ void VolumeSubSet::adjustClipPropertiesRanges() {
     if (clipTop_.get() > clipTop_.getMaxValue())
         clipTop_.set(clipTop_.getMaxValue());
 
+    oldVolumeDimensions_ = numSlices;
 }
 
 }   // namespace

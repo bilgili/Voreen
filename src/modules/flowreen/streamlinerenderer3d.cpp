@@ -27,8 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
-
 #include "voreen/modules/flowreen/flowmath.h"
 #include "voreen/modules/flowreen/streamlinerenderer3d.h"
 #include "voreen/modules/flowreen/volumeflow3d.h"
@@ -45,7 +43,7 @@ StreamlineRenderer3D::StreamlineRenderer3D()
     geometrySpacingProp_("geometrySpacing", "spacing for geometry: ", 4, 1),
     geometrySizeProp_("geometrySizeProp", "geometry size: ", 1, 1),
     useAlphaBlendingProp_("useAlphaBlendingProp", "fade off distant objects: ", true),
-    camProp_("camera", "Camera", new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f),
+    camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f),
         tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
     cameraHandler_(0),
     currentStyle_(STYLE_LINES),
@@ -178,7 +176,7 @@ void StreamlineRenderer3D::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.get()->look();
+    camProp_.look();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -191,12 +189,12 @@ void StreamlineRenderer3D::process() {
     setupShader(volFlow->getFlow3D(), thresholds);
 
     if ((shader_ != 0) && (shader_->isActivated() == true)) {
-        shader_->setUniform("lightDir_", camProp_.get()->getLook());
-        shader_->setUniform("camPos_", camProp_.get()->getPosition());
+        shader_->setUniform("lightDir_", camProp_.get().getLook());
+        shader_->setUniform("camPos_", camProp_.get().getPosition());
 
         if (useAlphaBlendingProp_.get() == true) {
-            shader_->setUniform("clippingPlanes_", tgt::vec2(camProp_.get()->getNearDist(),
-                camProp_.get()->getFarDist()));
+            shader_->setUniform("clippingPlanes_", tgt::vec2(camProp_.get().getNearDist(),
+                camProp_.get().getFarDist()));
         } else
             shader_->setUniform("clippingPlanes_", tgt::vec2(0.0f));
     }
@@ -496,11 +494,16 @@ void StreamlineRenderer3D::setPropertyVisibilities() {
         numStreamlinesProp_.setVisible(true);
     }
 }
+std::string StreamlineRenderer3D::generateShaderHeader() {
+    std::string header = RenderProcessor::generateHeader();
+    header += colorCoding_.getShaderDefines();
+    return header;
+}
 
 bool StreamlineRenderer3D::setupShader(const Flow3D& flow, const tgt::vec2& thresholds) {
     if (shader_ == 0) {
         shader_ = ShdrMgr.loadSeparate("phong.vert", "streamlinerenderer3d.frag",
-            colorCoding_.getShaderDefines(), false);
+            generateShaderHeader(), false);
     }
 
     // activate the shader if everything went fine and set the needed uniforms
@@ -535,5 +538,3 @@ bool StreamlineRenderer3D::setupShader(const Flow3D& flow, const tgt::vec2& thre
 //
 
 }   // namespace
-
-#endif  // VRN_MODULE_FLOWREEN

@@ -27,8 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
-
 #include "voreen/modules/flowreen/flowslicerenderer2d.h"
 
 namespace voreen {
@@ -210,7 +208,7 @@ void FlowSliceRenderer2D::process() {
 // protected methods
 //
 
-std::string FlowSliceRenderer2D::generateShaderHeader() const {
+std::string FlowSliceRenderer2D::generateShaderHeader() {
     std::ostringstream oss;
     oss << FlowSliceRenderer::generateShaderHeader();
     oss << "#define PLANE " << static_cast<size_t>(alignment_) << std::endl;
@@ -265,5 +263,3 @@ void FlowSliceRenderer2D::updateNumSlices() {
 }
 
 }   // namespace
-
-#endif

@@ -572,6 +572,7 @@ bool TransFuncIntensity::loadTfi(const std::string& filename) {
     else
         LWARNING("Loading transfer function failed.");
 
+    invalidateTexture();
     return success;
 }
 
@@ -686,7 +687,7 @@ bool TransFuncIntensity::loadOsirixCLUT(const std::string& filename) {
 
             if (blueNode == 0 || greenNode == 0 || redNode == 0)
                 continue;
-            
+
             blueElement = blueNode->ToElement();
             greenElement = greenNode->ToElement();
             redElement = redNode->ToElement();
@@ -772,26 +773,19 @@ int TransFuncIntensity::openImageJBinary(std::ifstream& fileStream, bool raw) {
 
     // The colors in a binary table are saved in succession so
     // first load the reds, then greens and at last blues
-    char* redColors;
-    char* greenColors;
-    char* blueColors;
+    char redColors[256];
+    char greenColors[256];
+    char blueColors[256];
     try {
-        redColors = new char[256];
-        greenColors = new char[256];
-        blueColors = new char[256];
-
-        fileStream.read(redColors, numColors);
-        fileStream.read(greenColors, numColors);
-        fileStream.read(blueColors, numColors);
+        fileStream.read(&redColors[0], numColors);
+        fileStream.read(&greenColors[0], numColors);
+        fileStream.read(&blueColors[0], numColors);
     }
     catch (...) {
-        delete[] redColors;
-        delete[] greenColors;
-        delete[] blueColors;
         throw;
     }
 
-    unsigned char* data = new unsigned char[256*4];
+    unsigned char data[256*4];
 
     for (int i = 0; i < 256; ++i) {
         data[i*4 + 0] = redColors[i];
@@ -801,8 +795,7 @@ int TransFuncIntensity::openImageJBinary(std::ifstream& fileStream, bool raw) {
     }
 
     dimensions_ = tgt::ivec3(256, 1, 1);
-    generateKeys(data);
-    delete[] data;
+    generateKeys(&data[0]);
 
     return 256;
 }

@@ -45,6 +45,36 @@ PlotPredicateFactory* PlotPredicateFactory::getInstance() {
     return instance_;
 }
 
+std::vector<std::string> PlotPredicateFactory::getAllTypeStrings(PredicateClasses predicateClasses) {
+    std::vector<std::string> toReturn;
+
+    toReturn.push_back("PlotPredicateLess");
+    toReturn.push_back("PlotPredicateEqual");
+    toReturn.push_back("PlotPredicateGreater");
+    if (predicateClasses == ALL_PREDICATES ||
+        predicateClasses == ALL_VALUE_PREDICATES_ONLY ||
+        predicateClasses == ALL_TAG_PREDICATES_ONLY)
+        toReturn.push_back("PlotPredicateNotBetween");
+    toReturn.push_back("PlotPredicateBetween");
+    if (predicateClasses == ALL_PREDICATES ||
+        predicateClasses == ALL_VALUE_PREDICATES_ONLY ||
+        predicateClasses == ALL_TAG_PREDICATES_ONLY)
+        toReturn.push_back("PlotPredicateNotBetweenOrEqual");
+    toReturn.push_back("PlotPredicateBetweenOrEqual");
+    toReturn.push_back("PlotPredicateEmpty");
+    toReturn.push_back("PlotPredicateNotEmpty");
+
+    if (predicateClasses == ALL_PREDICATES ||
+        predicateClasses == ALL_TAG_PREDICATES_ONLY ||
+        predicateClasses == SIMPLE_TAG_PREDICATES_ONLY) {
+        toReturn.push_back("PlotPredicateIsSubStr");
+        toReturn.push_back("PlotPredicateAlphaNumeric");
+        toReturn.push_back("PlotPredicateNotAlphaNumeric");
+    }
+
+    return toReturn;
+}
+
 const std::string PlotPredicateFactory::getTypeString(const std::type_info& type) const {
     if (type == typeid(PlotPredicateLess))
         return "PlotPredicateLess";
@@ -52,10 +82,14 @@ const std::string PlotPredicateFactory::getTypeString(const std::type_info& type
         return "PlotPredicateEqual";
     else if (type == typeid(PlotPredicateGreater))
         return "PlotPredicateGreater";
-    else if (type == typeid(PlotPredicateContains))
-        return "PlotPredicateContains";
     else if (type == typeid(PlotPredicateBetween))
         return "PlotPredicateBetween";
+    else if (type == typeid(PlotPredicateNotBetween))
+        return "PlotPredicateNotBetween";
+    else if (type == typeid(PlotPredicateBetweenOrEqual))
+        return "PlotPredicateBetweenOrEqual";
+    else if (type == typeid(PlotPredicateNotBetweenOrEqual))
+        return "PlotPredicateNotBetweenOrEqual";
     else if (type == typeid(PlotPredicateEmpty))
         return "PlotPredicateEmpty";
     else if (type == typeid(PlotPredicateNotEmpty))
@@ -77,10 +111,14 @@ Serializable* PlotPredicateFactory::createType(const std::string& typeString) {
         return new PlotPredicateEqual();
     else if (typeString == "PlotPredicateGreater")
         return new PlotPredicateGreater();
-    else if (typeString == "PlotPredicateContains")
-        return new PlotPredicateContains();
     else if (typeString == "PlotPredicateBetween")
         return new PlotPredicateBetween();
+    else if (typeString == "PlotPredicateNotBetween")
+        return new PlotPredicateNotBetween();
+    else if (typeString == "PlotPredicateBetweenOrEqual")
+        return new PlotPredicateBetweenOrEqual();
+    else if (typeString == "PlotPredicateNotBetweenOrEqual")
+        return new PlotPredicateNotBetweenOrEqual();
     else if (typeString == "PlotPredicateEmpty")
         return new PlotPredicateEmpty();
     else if (typeString == "PlotPredicateNotEmpty")

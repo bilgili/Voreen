@@ -29,16 +29,16 @@
 
  #include "modules/mod_shading.frag"
 
-varying vec3 position;
-varying vec3 normal;
+in vec3 position;
+in vec3 normal;
 
 uniform vec4 surfaceColor_;
 
 void main() {
 #ifdef APPLY_SURFACE_LIGHTING
-    gl_FragColor = vec4(phongShading(position, normal), surfaceColor_.a);
+    FragData0 = vec4(phongShading(position, normal, surfaceColor_.rgb, surfaceColor_.rgb, vec3(1.0)), surfaceColor_.a);
 #else
-    gl_FragColor = surfaceColor_;
+    FragData0 = surfaceColor_;
 #endif
 
 }

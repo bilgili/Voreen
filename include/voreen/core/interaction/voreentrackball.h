@@ -37,6 +37,8 @@
 
 namespace voreen {
 
+class CameraProperty;
+
 /**
  *  This class implements a Trackball which can be used to freely rotate an object
  *  around a given center.
@@ -45,7 +47,7 @@ class VoreenTrackball {
 
 public:
 
-    VoreenTrackball(tgt::Camera* camera);
+    VoreenTrackball(CameraProperty* camera);
 
     /// Destructor
     virtual ~VoreenTrackball();
@@ -54,10 +56,10 @@ public:
     //void reset();
 
     /// Returns the camera this trackball operates on.
-    tgt::Camera* getCamera() const;
+    CameraProperty* getCamera() const;
 
     /// Assigns the camera to be modified by the trackball.
-    void setCamera(tgt::Camera* camera);
+    void setCamera(CameraProperty* camera);
 
     /// Rotate the trackball according to Quaternion quat.
     /// @param quat Quaternion represention rotation.
@@ -120,7 +122,7 @@ public:
 
 protected:
 
-    tgt::Camera* camera_;
+    CameraProperty* camera_;
 
     /// this holds the center around which the camera will be rotated
     tgt::vec3 center_;

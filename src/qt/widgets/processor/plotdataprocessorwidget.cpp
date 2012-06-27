@@ -53,17 +53,11 @@ PlotDataProcessorWidget::~PlotDataProcessorWidget() {
 void PlotDataProcessorWidget::initialize() {
     plotDataWidget_ = new PlotDataWidget(data_, parentWidget());
     plotDataWidget_->createWidgets();
-    plotDataWidget_->createConnections();
 }
 
 void PlotDataProcessorWidget::updateFromProcessor() {
     if (plotDataWidget_)
         plotDataWidget_->updateFromPlotData();
 }
-/*
-void PlotDataProcessorWidget::customizeEditorWindow() {
-    editorWindow_->setAllowedAreas(Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea);
-    editorWindow_->setFloating(true);
-}*/
 
 } // namespace

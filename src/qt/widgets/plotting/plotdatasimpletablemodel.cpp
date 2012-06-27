@@ -35,15 +35,16 @@
 namespace voreen {
 
 PlotDataSimpleTableModel::PlotDataSimpleTableModel(const voreen::PlotData* data, QObject* parent,
-                const QColor& keyColumnColor, const QColor& dataColumnColor, const QColor& highlightedColor)
+        const QColor& keyColumnColor, const QColor& dataColumnColor, const QColor& highlightedColor,
+        const QColor& selectColumnColor, int selectedColumn)
     : QAbstractTableModel(parent)
     , pData_(data)
     , keyColumnColor_(keyColumnColor)
     , dataColumnColor_(dataColumnColor)
     , highlightedColor_(highlightedColor)
+    , selectColumnColor_(selectColumnColor)
+    , selectedColumn_(selectedColumn)
 {
-    if (pData_)
-        tgtAssert(pData_, "no PlotData");
 }
 
 int PlotDataSimpleTableModel::rowCount(const QModelIndex& /*parent*/) const {
@@ -54,7 +55,6 @@ int PlotDataSimpleTableModel::rowCount(const QModelIndex& /*parent*/) const {
 }
 
 int PlotDataSimpleTableModel::columnCount(const QModelIndex& /*parent*/) const {
-
     if (! pData_)
         return 0;
 
@@ -86,6 +86,9 @@ QVariant PlotDataSimpleTableModel::data(const QModelIndex &index, int role) cons
     if (role == Qt::BackgroundColorRole && getPlotCellAt(index.row(),index.column()).isHighlighted()) {
         return highlightedColor_;
     }
+    else if (role == Qt::BackgroundColorRole && selectedColumn_ == index.column()) {
+        return selectColumnColor_;
+    }
     else if (role == Qt::BackgroundColorRole && pData_->getKeyColumnCount() > index.column()) {
         return keyColumnColor_;
     }
@@ -97,7 +100,7 @@ QVariant PlotDataSimpleTableModel::data(const QModelIndex &index, int role) cons
 }
 
 QVariant PlotDataSimpleTableModel::getCellAt(int row, int column) const {
-    if (pData_->getRowsCount() == 0)
+    if (!pData_ || pData_->getRowsCount() == 0)
         return QVariant();
     std::vector<PlotRowValue>::const_iterator it = pData_->getRowsBegin();
     it += row;
@@ -107,7 +110,7 @@ QVariant PlotDataSimpleTableModel::getCellAt(int row, int column) const {
 }
 
 PlotCellValue PlotDataSimpleTableModel::getPlotCellAt(int row, int column) const {
-    if (pData_->getRowsCount() == 0)
+    if (!pData_ || pData_->getRowsCount() == 0)
         return PlotCellValue();
     std::vector<PlotRowValue>::const_iterator it = pData_->getRowsBegin();
     it += row;
@@ -134,9 +137,6 @@ Qt::ItemFlags PlotDataSimpleTableModel::flags(const QModelIndex &index) const {
         return Qt::ItemIsEnabled;
 
     return QAbstractTableModel::flags(index) | Qt::ItemIsSelectable | Qt::ItemIsEnabled ;
-}
-
-void PlotDataSimpleTableModel::onPlotDataChanged() {
 }
 
 void PlotDataSimpleTableModel::setKeyColumnColor(const QColor &keyColumnColor) {

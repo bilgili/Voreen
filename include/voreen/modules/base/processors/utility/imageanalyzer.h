@@ -31,7 +31,8 @@
 #define VRN_IMAGEANALYZER_H
 
 #include "voreen/core/processors/imageprocessor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/plotport.h"
+#include "voreen/core/ports/renderport.h"
 
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
@@ -55,6 +56,7 @@ public:
     virtual std::string getClassName() const { return "ImageAnalyzer"; }
     virtual CodeState getCodeState() const   { return CODE_STATE_EXPERIMENTAL; }
     virtual bool isUtility() const           { return true; }
+    //virtual bool usesExpensiveComputation() const { return true; }
     virtual std::string getProcessorInfo() const;
     virtual bool isEndProcessor() const;
     virtual bool isReady() const;

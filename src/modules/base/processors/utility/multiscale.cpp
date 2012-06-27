@@ -118,12 +118,12 @@ void MultiScale::process() {
 
     // initialize shader
     program_->activate();
-    program_->setUniform("shadeTex_", 0);
+    program_->setUniform("colorTex_", 0);
     program_->setUniform("depthTex_", 1);
     program_->setIgnoreUniformLocationError(true);
-    program_->setUniform("shadeTexParameters_.dimensions_", tgt::vec2(inport_.getSize()));
-    program_->setUniform("shadeTexParameters_.dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(inport_.getSize()));
-    program_->setUniform("shadeTexParameters_.matrix_", tgt::mat4::identity);
+    program_->setUniform("colorTexParameters_.dimensions_", tgt::vec2(inport_.getSize()));
+    program_->setUniform("colorTexParameters_.dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(inport_.getSize()));
+    program_->setUniform("colorTexParameters_.matrix_", tgt::mat4::identity);
     program_->setUniform("depthTexParameters_.dimensions_", tgt::vec2(inport_.getSize()));
     program_->setUniform("depthTexParameters_.dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(inport_.getSize()));
     program_->setUniform("depthTexParameters_.matrix_", tgt::mat4::identity);

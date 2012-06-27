@@ -43,21 +43,26 @@ PreprocessorVisitor::PreprocessorVisitor()
     // expanded or invoked.
     //
     TokenList* fileMacro = new TokenList();
-    fileMacro->addToken(new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "0", ConstantToken::TYPE_INT));
+    ConstantToken * fileToken = new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "0", ConstantToken::TYPE_INT);
+    fileMacro->addToken(fileToken);
     symbols_.insertSymbol(new PreprocessorSymbol("__FILE__", false, fileMacro));
+    delete fileToken;
 
     // TODO: replace the value returned by this macro with the correct one when it is
     // expanded or invoked.
     //
     TokenList* lineMacro = new TokenList();
-    lineMacro->addToken(new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "0", ConstantToken::TYPE_INT));
+    ConstantToken* lineToken = new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "0", ConstantToken::TYPE_INT);
+    lineMacro->addToken(lineToken);
     symbols_.insertSymbol(new PreprocessorSymbol("__LINE__", false, lineMacro));
+    delete lineToken;
 
     TokenList* versionMacro = new TokenList();
-    versionMacro->addToken(new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "150",
-        ConstantToken::TYPE_INT));
+    ConstantToken* versionToken = new ConstantToken(PreprocessorTerminals::ID_CONSTANT, "150",
+        ConstantToken::TYPE_INT);
+    versionMacro->addToken(versionToken);
     symbols_.insertSymbol(new PreprocessorSymbol("__VERSION__", false, versionMacro));
-
+    delete versionToken;
 }
 
 PreprocessorVisitor::~PreprocessorVisitor() {
@@ -67,7 +72,7 @@ void PreprocessorVisitor::setIncludePath(const std::string& includePath) {
     includePath_ = tgt::FileSystem::absolutePath(includePath);
 }
 
-std::ostringstream& PreprocessorVisitor::translate(const std::string& fileName) {
+std::ostringstream& PreprocessorVisitor::translate(std::istream* is, const std::string& directory) {
 
     // First attempt to parser a present additional shader header
     //
@@ -85,15 +90,17 @@ std::ostringstream& PreprocessorVisitor::translate(const std::string& fileName) 
     }
 
     try {
-        setIncludePath(tgt::FileSystem::dirName(fileName));
-        PreprocessorParser parser(fileName);
+        setIncludePath(directory);
+        PreprocessorParser parser(is);
         ParseTreeNode* root = parser.parse();
 
-        if ((headerNode != 0) && (root != 0)) {
+        if (headerNode && root) {
             headerNode->addChild(root);
             root = headerNode;
-        } else {
-            log_ << "preprocessor parser log for '" << fileName << "':\n";
+        }
+        else {
+            if (headerNode)
+                root = headerNode;
             log_ << parser.getLog().str() << "\n";
         }
 

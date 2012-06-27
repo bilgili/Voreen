@@ -39,6 +39,7 @@
 #include "voreen/core/datastructures/volume/volumegl.h"
 #endif
 
+
 #include "voreen/core/io/serialization/serialization.h"
 
 #include <set>
@@ -293,6 +294,7 @@ public:
     VolumeGL* getVolumeGL();
 #endif
 
+
 protected:
 
     /**
@@ -322,6 +324,7 @@ protected:
 #ifndef VRN_NO_OPENGL
     VolumeGL* volumeGL_;
 #endif
+
 
     static const std::string loggerCat_;
 

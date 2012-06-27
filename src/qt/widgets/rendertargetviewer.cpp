@@ -212,8 +212,7 @@ RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
 }
 
 RenderTargetViewer::~RenderTargetViewer() {
-    ShdrMgr.dispose(colorProgram_);
-    ShdrMgr.dispose(inversecolorProgram_);
+    deinit();
 }
 
 void RenderTargetViewer::processorsSelected(const QList<Processor*>& processors) {
@@ -587,6 +586,19 @@ void RenderTargetViewer::initializeGL() {
     fontTex_->setWrapping(tgt::Texture::CLAMP_TO_EDGE);
 }
 
+void RenderTargetViewer::deinit() {
+    if (evaluator_)
+        evaluator_->removeProcessWrapper(this);
+
+    delete fbo_;
+    ShdrMgr.dispose(colorProgram_);
+    ShdrMgr.dispose(inversecolorProgram_);
+
+    fbo_ = 0;
+    colorProgram_ = 0;
+    inversecolorProgram_ = 0;
+}
+
 void RenderTargetViewer::resizeGL(int width, int height) {
     glViewport(0,0, width, height);
     if (evaluator_ && dimX_ > 0 && dimY_ > 0) {
@@ -803,6 +815,11 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
 }
 
 void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int showType, tgt::Texture* texture) {
+
+    tgt::Shader* shaderProgram = colorProgram_;
+    if (!shaderProgram)
+        return;
+
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     tgt::ivec3 size(currentWidth_, currentHeight_, 1);
@@ -825,15 +842,12 @@ void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int sh
 
     tgtAssert(rt, "No render target");
 
-    tgt::Shader* shaderProgram;
-
     if((showType & Depth) == Depth) {
         rt->bindDepthTexture();
     } else {
         rt->bindColorTexture();
     }
 
-    shaderProgram = colorProgram_;
     tgtAssert(shaderProgram, "No shader");
     shaderProgram->activate();
     shaderProgram->setUniform("tex_", 0);
@@ -1004,6 +1018,11 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
 }
 
 void RenderTargetViewer::paintCombinedTextures() {
+
+    tgt::Shader* shaderProgram = inversecolorProgram_;
+    if (!shaderProgram)
+        return;
+
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glActiveTexture(GL_TEXTURE0);
@@ -1016,7 +1035,7 @@ void RenderTargetViewer::paintCombinedTextures() {
     LGL_ERROR;
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
-    tgt::Shader* shaderProgram = inversecolorProgram_;
+
     tgtAssert(shaderProgram, "No shader");
     shaderProgram->activate();
     LGL_ERROR;
@@ -1191,5 +1210,6 @@ tgt::vec3 RenderTargetViewer::rgbToHsv(tgt::vec3 rgb) {
     hsv[2] = max;
     return hsv;
 }
+
 
 } // namespace voreen

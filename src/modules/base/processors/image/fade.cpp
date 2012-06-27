@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Fade::Fade()
-    : ImageProcessorDepth("pp_fade"),
+    : ImageProcessorDepth("image/fade"),
       fading_("fading", "Fade factor", 0.0f),
       color_("color", "Color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
       inport_(Port::INPORT, "image.inport"),
@@ -59,13 +59,13 @@ void Fade::process() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // intialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("fading_", 1-fading_.get());

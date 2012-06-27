@@ -29,6 +29,7 @@
 
 #include "voreen/modules/base/processors/datasource/plotdatasource.h"
 #include "voreen/core/voreenapplication.h"
+#include "voreen/core/plotting/plotdata.h"
 
 #include <limits>
 #include <math.h>
@@ -43,23 +44,36 @@ const std::string PlotDataSource::loggerCat_("voreen.PlotDataSource");
 PlotDataSource::PlotDataSource():
     Processor()
     , outPort_(Port::OUTPORT,"PlotDataOutPort")
-    , inputFile_("inputFile", "CSV File", "Open CSV input file", VoreenApplication::app()->getDataPath())
-    , separator_("Separator","CSV Separator",";")
+    , inputFile_("inputFile", "CSV File", "Open CSV input file", VoreenApplication::app()->getDataPath(),
+        "Commaseparated Files(*.csv);;Textfile (*.txt);;All TextFiles (*.csv *.txt)",
+        FileDialogProperty::OPEN_FILE,Processor::VALID)
+    , separator_("Separator","CSV Separator",";",Processor::VALID)
     , pData_(0)
     , countLine_("countLine","Set Header Lines",1,0,200,Processor::VALID)
     , countKeyColumn_("countKeyColumn","Set Key Columns",1,1,200,Processor::VALID)
     , constantOrder_("constantOrder","Constant Data Order",Processor::VALID)
-    , recalculate_("reCalculate","Reload CSV File")
+    , recalculate_("recalculate","Reload CSV File")
 {
     inputFile_.onChange(CallMemberAction<PlotDataSource>(this, &PlotDataSource::recalculate));
     recalculate_.onChange(CallMemberAction<PlotDataSource>(this, &PlotDataSource::recalculate));
-    addProperty(&inputFile_);
-    addProperty(&recalculate_);
     addProperty(&separator_);
     addProperty(&countLine_);
     addProperty(&countKeyColumn_);
     addProperty(&constantOrder_);
+    addProperty(&inputFile_);
+    addProperty(&recalculate_);
     addPort(&outPort_);
+
+    setPropertyGroupGuiName("FileSelection", "File Selection");
+    setPropertyGroupGuiName("FileParams", "File Parameter");
+
+    inputFile_.setGroupID("FileSelection");
+    recalculate_.setGroupID("FileSelection");
+
+    separator_.setGroupID("Fileparams");
+    countLine_.setGroupID("Fileparams");
+    countKeyColumn_.setGroupID("Fileparams");
+    constantOrder_.setGroupID("Fileparams");
 }
 
 PlotDataSource::~PlotDataSource() {
@@ -71,23 +85,22 @@ Processor* PlotDataSource::create() const {
 }
 
 std::string PlotDataSource::getProcessorInfo() const {
-    return std::string("This processor loads a CSV File and provides this file through the outport.");
+    return std::string("This processor loads a CSV File and provides its contents as plot data table.");
 }
 
 void PlotDataSource::process() {
     tgtAssert(pData_, "no plotdata object");
-    // activate and clear output render target
+
     if (pData_->getColumnCount() == 0)
         recalculate();
+    Processor::setProgress(1.f);
 }
 
 void PlotDataSource::initialize() throw (VoreenException) {
     Processor::initialize();
 
     pData_ = new PlotData(0,0);
-    if (!inputFile_.get().empty()) {
-        readCSVData();
-    }
+    Processor::setProgress(1.f);
 }
 
 void PlotDataSource::deinitialize() throw (VoreenException) {
@@ -98,9 +111,11 @@ void PlotDataSource::deinitialize() throw (VoreenException) {
 }
 
 void PlotDataSource::recalculate() {
+    Processor::setProgress(0.f);
     PlotData* newData = readCSVData();
     PlotData* oldData = pData_;
     pData_ = newData;
+    Processor::setProgress(1.f);
     outPort_.setData(pData_);
     delete oldData;
 }
@@ -111,22 +126,34 @@ PlotData* PlotDataSource::readCSVData() {
         return newData;
 
     std::string filename = inputFile_.get();
-    if (filename.empty())
-        return newData;
-
-    std::ifstream inFile;
-    inFile.open(filename.c_str());
-    if (inFile.fail()) {
-        LERROR("Unable to open data file: " << filename);
+    if (filename.empty()) {
+        LERROR("        Filename ist empty.");
         return newData;
     }
-    // start parsing
+
+    std::ifstream inFile;
+    LINFO("        Open file: " <<  filename);
+    inFile.open(filename.c_str(), std::ios::in);
+    if (inFile.fail()) {
+        LERROR("        Unable to open data file: " << filename);
+        return newData;
+    }
+    // ProgressBar Position
+    inFile.seekg(0, std::ios::end);
+    long size = std::streamoff(inFile.tellg());
+    inFile.seekg(0);
+    float position = 0;
+    //char* buffer = new char [size];
+    //inFile.read(buffer,size);
+    //std::stringstream selfFile(buffer);
     std::string line;
     std::vector<std::string> myvector (0);
     size_t mass = 0;
+    inFile.seekg(0);
     int k = 0;
     for(int j=0; j< countLine_.get(); j++){
         std::getline(inFile, line);
+        position += (line.size()*1.f)/(size*1.f);
         if (j == countLine_.get() - 1){
             csvline_populate(myvector, line);
             if (!constantOrder_.get()){
@@ -138,10 +165,10 @@ PlotData* PlotDataSource::readCSVData() {
                 newData->setColumnLabel(0,"Index");
                 k = 1;
             }
-            for(size_t i=0; i<myvector.size(); ++i){
+            for (size_t i = 0; i < myvector.size(); ++i) {
                 newData->setColumnLabel(i+k,myvector[i]);
             }
-            mass= myvector.size();
+            mass = myvector.size();
         }
         myvector.clear();
     }
@@ -155,6 +182,7 @@ PlotData* PlotDataSource::readCSVData() {
     ssLine.imbue(std::locale::classic());
     while(inFile.good()&& std::getline(inFile, line)){
         csvline_populate(myvector, line);
+        position += line.size()*1.f/(size*1.f);
         if (mass == 0) {
             mass = myvector.size();
             if (!constantOrder_.get()){
@@ -173,7 +201,7 @@ PlotData* PlotDataSource::readCSVData() {
             }
         }
         if (constantOrder_.get()){
-            pCellVector_.push_back(PlotCellValue(counter+1));
+            pCellVector_.push_back(PlotCellValue(counter));
         }
         size_t found = 0;
         for(size_t i=0; i<mass; ++i){
@@ -241,8 +269,10 @@ PlotData* PlotDataSource::readCSVData() {
         pCellVector_.clear();
         myvector.clear();
         ++counter;
+        Processor::setProgress(position);
     }
     inFile.close();
+//    delete[] buffer;
     return newData;
 }
 

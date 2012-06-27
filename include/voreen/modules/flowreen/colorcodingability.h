@@ -27,7 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_COLORCODINGABILITY_H
 #define VRN_COLORCODINGABILITY_H
 
@@ -67,4 +66,3 @@ private:
 }   // namespace
 
 #endif
-#endif  // VRN_MODULE_FLOWREEN

@@ -64,10 +64,10 @@ void TransFuncPlugin::createEditors(QWidget* parent, Qt::Orientation orientation
         tfEditor = new TransFuncEditorIntensityRamp(property_, parent, orientation);
         editors_.push_back(tfEditor);
     }
-    if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_PET)) {
+/*    if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_PET)) {
         tfEditor = new TransFuncEditorIntensityPet(property_, parent);
         editors_.push_back(tfEditor);
-    }
+    } */
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_GRADIENT)) {
         tfEditor = new TransFuncEditorIntensityGradient(property_, parent, orientation);
         editors_.push_back(tfEditor);

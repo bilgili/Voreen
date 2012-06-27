@@ -121,14 +121,18 @@ ConsolePlugin::ConsolePlugin(QWidget* parent, bool autoScroll)
     vboxLayout->addWidget(consoleText_);
     setLayout(vboxLayout);
 
-    log_ = new ConsoleLogQt(this, "", "", "color: brown; font-weight: bold", "color: red; font-weight: bold");
-    log_->addCat("", true, tgt::Info);
-    LogMgr.addLog(log_);
+    if (tgt::Singleton<tgt::LogManager>::isInited()) {
+        log_ = new ConsoleLogQt(this, "", "", "color: brown; font-weight: bold", "color: red; font-weight: bold");
+        log_->addCat("", true, tgt::Info);
+        LogMgr.addLog(log_);
+    }
 }
 
 ConsolePlugin::~ConsolePlugin() {
-    LogMgr.removeLog(log_);
-    delete log_;
+    if (tgt::Singleton<tgt::LogManager>::isInited()) {
+        LogMgr.removeLog(log_);
+        delete log_;
+    }
 }
 
 void ConsolePlugin::log(const std::string& msg) {

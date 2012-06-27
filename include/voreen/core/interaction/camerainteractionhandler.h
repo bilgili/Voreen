@@ -34,6 +34,8 @@
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
+#include "tgt/event/eventhandler.h"
+
 #include <bitset>
 
 namespace voreen {

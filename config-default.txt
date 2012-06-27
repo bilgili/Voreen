@@ -11,27 +11,29 @@
 # We definitely need this.
 VRN_MODULES += base
 
-# We add most Voreen modules here, i.e., those which do not depend on
-# non-standard external libraries. 
-VRN_MODULES += most
+# We add default Voreen modules here, i.e., those which do not depend on
+# non-standard external libraries (see src/modules/default.pri).
+VRN_MODULES += default
 
 # DICOM volume reader and writer, requires the DCMTK library.
 #VRN_MODULES += dicom 
+
+# Python bindings, allowing scripts to access Voreen API.
+#VRN_MODULES += python
+
+# Volume reader for multi-image TIFF files, requires the libtiff library.
+#VRN_MODULES += tiff
 
 # GPU-based isosurface extraction and rendering, requires the HPMC library.
 #VRN_MODULES += hpmc 
 
 # OpenCL wrapper and OpenCL-based processors.
-#VRN_MODULES += opencl 
+#VRN_MODULES += opencl
 
-
-###################
-# Projects to build
-###################
-VRN_PROJECTS = core qt voreenve
-
-# Also build the voltool application?
-#VRN_PROJECTS += voltool
+# Disables generation of module registration header 'include/voreen/modules/gen_moduleregistration.h'
+# and uses static 'include/voreen/modules/moduleregistration.h' instead.
+# The registration header is included by the VoreenApplication for autoloading of modules.
+#DEFINES += VRN_NO_REGISTRATION_HEADER_GENERATION
 
 
 ####################
@@ -39,30 +41,27 @@ VRN_PROJECTS = core qt voreenve
 ####################
 # You may adjust the paths in the section "Paths" at the bottom of this file.
 
-# We activate some libraries by default on Windows, as they are
-# included in the distribution.
-win32 {
-  DEFINES += VRN_WITH_DEVIL VRN_WITH_TIFF VRN_WITH_FONTRENDERING
-  !win32-g++ : DEFINES += VRN_WITH_PYTHON
-} 
-
 # Do we have the devil library for image processing?
-#DEFINES += VRN_WITH_DEVIL
+DEFINES += VRN_WITH_DEVIL
 
 # Do we have the ffmpeg library for video output?
 #DEFINES += VRN_WITH_FFMPEG
 
-# Do we have the libtiff?
-#DEFINES += VRN_WITH_TIFF
-
 # Do we support fonts via the freetype/ftgl libraries?
 #DEFINES += VRN_WITH_FONTRENDERING
 
-# Python scripting support
-#DEFINES += VRN_WITH_PYTHON
-
 # Do we use the zlib library?
 DEFINES += VRN_WITH_ZLIB
+
+
+###################
+# Projects to build
+###################
+# Only for unix, not considered by qmake-default.bat on Windows.
+VRN_PROJECTS = core qt voreenve
+
+# Also build the voltool application?
+#VRN_PROJECTS += voltool
 
 
 #####################
@@ -73,16 +72,16 @@ DEFINES += VRN_WITH_ZLIB
 CONFIG += warn_on
 
 # Disable this line in case of problems with PCH
-CONFIG += precompile_header
+DEFINES += VRN_PRECOMPILE_HEADER
 
 # Activate additional debug code in Voreen (also sets TGT_DEBUG and activates assertions)
-#DEFINES += VRN_DEBUG
+DEFINES += VRN_DEBUG
 
 # Write log output into a HTML file
 DEFINES += VRN_ADD_FILE_LOGGER
 
-# Compile Voreen for distribution
-#DEFINES += VRN_DISTRIBUTION
+# Compile Voreen for deployment (adjusts resource paths)
+#DEFINES += VRN_DEPLOYMENT
 
 # Extract SVN revision from working copy into svnversion.h
 #DEFINES += VRN_WITH_SVNVERSION
@@ -91,7 +90,7 @@ DEFINES += VRN_ADD_FILE_LOGGER
 DEFINES += VRN_SPLASHSCREEN
 
 # Do not use stylesheet in VoreenVE
-# DEFINES += VRN_NO_STYLESHEET
+#DEFINES += VRN_NO_STYLESHEET
 
 # Add additional include paths
 INCLUDEPATH +=
@@ -116,13 +115,16 @@ LIBDIR +=
 # Platform-specific settings
 ############################
 unix {
-#  CONFIG -= release
-#  CONFIG += debug
+  CONFIG -= release
+  CONFIG += debug
 
   # For installation with 'make install' specify the installation prefix
   # here. When this is set, the applications cannot be started from the
   # build directory, they need to be installed first.
 #  INSTALL_PREFIX = /usr/local
+
+  # Disable usage of libwrap, sometimes needed with DCMTK
+  #CONFIG += without_libwrap
 }
 
 unix: !macx {
@@ -130,9 +132,6 @@ unix: !macx {
   CONFIG -= staticlib
   CONFIG += dll
 }
-
-# Disable usage of libwrap, sometimes needed with DCMTK
-#CONFIG += without_libwrap
 
 # Use Windows Management Instrumentation (WMI) for hardware detection
 # on Windows? (Not supported for MinGW)
@@ -152,7 +151,6 @@ win32 {
   FREETYPE_DIR = $${VRN_HOME}/ext/freetype
   FTGL_DIR     = $${VRN_HOME}/ext/ftgl
   PYTHON_DIR   = $${VRN_HOME}/ext/python
-  TIFF_DIR     = $${VRN_HOME}/ext/tiff
   ZLIB_DIR     = $${VRN_HOME}/ext/zlib
 }
 
@@ -167,8 +165,6 @@ macx {
   GLEW_DIR = 
   GLEW_LIBS = 
 }
-
-DEFINES += VRN_SNAPSHOT
 
 ### Local Variables:
 ### mode:conf-unix

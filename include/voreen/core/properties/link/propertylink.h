@@ -31,14 +31,13 @@
 #define VRN_PROPERTYLINK_H
 
 #include "voreen/core/io/serialization/serialization.h"
-#include "voreen/core/properties/link/changedata.h"
-#include "voreen/core/properties/link/linkevaluatorbase.h"
 #include <vector>
 #include <map>
 
 namespace voreen {
 
 class Property;
+class LinkEvaluatorBase;
 
 /**
  * This class establishes a link between two properties.
@@ -72,8 +71,7 @@ public:
      * @throws VoreenException, if link execution failed. This usually
      *      because of incompatible data types.
      */
-    void onChange(ChangeData& data)
-        throw (VoreenException);
+    void onChange() throw (VoreenException);
 
     /**
      * Forces the propagation with the current value thus testing functionality.
@@ -116,16 +114,6 @@ public:
      * @see Serializable::deserialize
      */
     virtual void deserialize(XmlDeserializer& s);
-
-    /**
-     * Checks if the properties p1 and p2 are linkable. If a property is not linkable,
-     * the most likely explanation will be that there is no conversion implemented in
-     * \sa BoxObject.
-     * \param p1 a property
-     * \param p2 a property
-     * \return true, if p1 and p2 are compatible, false otherwise
-     */
-    static bool arePropertiesLinkable(const Property* p1, const Property* p2);
 
 private:
     /// Default constructor needed for serialization.

@@ -33,6 +33,9 @@
 #include "voreen/core/properties/templateproperty.h"
 #include "voreen/core/properties/condition.h"
 #include "voreen/core/properties/propertywidgetfactory.h"
+
+#include "tgt/tgt_gl.h"
+
 #include <map>
 
 namespace voreen {
@@ -52,6 +55,7 @@ public:
     virtual void select(const std::string& key) = 0;
     virtual const std::string& getKey() const = 0;
     virtual bool isSelected(const std::string& key) const = 0;
+    virtual bool hasKey(const std::string& key) const = 0;
 
     virtual std::vector<std::string> getKeys() const = 0;
     virtual std::vector<std::string> getDescriptions() const = 0;
@@ -106,6 +110,7 @@ public:
     const std::vector<Option<T> >& getOptions() const { return options_; }
     void setOptions(const std::vector<Option<T> >& options) { options_ = options; }
     virtual std::vector<std::string> getKeys() const;
+    virtual bool hasKey(const std::string& key) const;
     virtual std::vector<T> getValues() const;
     virtual std::vector<std::string> getDescriptions() const;
 
@@ -118,11 +123,6 @@ protected:
     std::vector<Option<T> > options_;
 };
 
-template<class T>
-std::string voreen::OptionProperty<T>::getTypeString() const {
-    return "OptionProperty";
-}
-
 // ----------------------------------------------------------------------------
 // template implementations
 
@@ -131,7 +131,11 @@ OptionProperty<T>::OptionProperty(const std::string& id, const std::string& guiT
                                   Processor::InvalidationLevel invalidationLevel)
     : OptionPropertyBase(id, guiText, invalidationLevel)
 {
-    addValidation(OptionPropertyValidation<T>(this)); // is at position 0 in the validations_ vector
+    addValidation(OptionPropertyValidation(this)); // is at position 0 in the validations_ vector
+}
+template<class T>
+std::string voreen::OptionProperty<T>::getTypeString() const {
+    return "OptionProperty";
 }
 
 template<class T>
@@ -212,6 +216,12 @@ std::vector<std::string> OptionProperty<T>::getKeys() const {
         keys.push_back(options_[i].key_);
 
     return keys;
+}
+
+template<class T>
+bool OptionProperty<T>::hasKey(const std::string& key) const {
+    std::vector<std::string> keys = getKeys();
+    return (std::find(keys.begin(), keys.end(), key) != keys.end());
 }
 
 template<class T>

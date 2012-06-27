@@ -53,7 +53,7 @@ DepthPeelingProcessor::DepthPeelingProcessor()
     , tempPort_(Port::OUTPORT, "image.temp")
     , cpPort_(Port::INPORT, "coprocessor.geometryrenderers", true)
     , shaderPrg_(0)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
 
     addProperty(camera_);
@@ -95,7 +95,7 @@ bool DepthPeelingProcessor::isReady() const {
 void DepthPeelingProcessor::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
-    shaderPrg_ = ShdrMgr.loadSeparate("pp_depthpeeling.vert", "pp_depthpeeling.frag",
+    shaderPrg_ = ShdrMgr.loadSeparate("image/depthpeeling.vert", "image/depthpeeling.frag",
         generateHeader(), false);
 
     if (!shaderPrg_) {
@@ -122,9 +122,9 @@ void DepthPeelingProcessor::process() {
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
-    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    tgt::loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     TextureUnit depthTexUnit;
@@ -135,7 +135,8 @@ void DepthPeelingProcessor::process() {
     shaderPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(shaderPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderPrg_, &cam);
 
     // pass the remaining uniforms to the shader
     shaderPrg_->setUniform("depthTex_", depthTexUnit.getUnitNumber());

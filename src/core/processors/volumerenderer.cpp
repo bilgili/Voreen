@@ -52,7 +52,6 @@ VolumeRenderer::VolumeRenderer()
     , materialAmbient_("materialAmbient", "Ambient material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
     , materialDiffuse_("materialDiffuse", "Diffuse material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
     , materialSpecular_("materialSpecular", "Specular material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
-    , materialEmission_("materialEmission", "Emissive material color", tgt::vec4(0.f, 0.f, 0.f, 1.f))
     , materialShininess_("materialShininess", "Shininess", 60.f, 0.1f, 128.f)
 {
     lightPosition_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
@@ -61,16 +60,12 @@ VolumeRenderer::VolumeRenderer()
     lightSpecular_.setViews(Property::COLOR);
     materialAmbient_.setViews(Property::COLOR);
     materialDiffuse_.setViews(Property::COLOR);
-    materialEmission_.setViews(Property::COLOR);
-}
-
-VolumeRenderer::~VolumeRenderer() {
 }
 
 std::string VolumeRenderer::generateHeader(VolumeHandle* /*volumehandle*/) {
     std::string header = RenderProcessor::generateHeader();
 
-    if (GpuCaps.isNpotSupported())
+    if (isInitialized() && GpuCaps.isNpotSupported())
         header += "#define VRN_TEXTURE_3D\n";
     else
         header += "#define VRN_TEXTURE_3D_SCALED\n";
@@ -84,7 +79,13 @@ void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::C
     shader->setIgnoreUniformLocationError(true);
 
     // light source position in world coordinates
-    shader->setUniform("lightPosition_", lightPosition_.get().xyz());
+    shader->setUniform("lightSource_.position_", lightPosition_.get().xyz());
+    shader->setUniform("lightSource_.attenuation_", lightAttenuation_.get());
+    shader->setUniform("lightSource_.ambientColor_", lightAmbient_.get().xyz());
+    shader->setUniform("lightSource_.diffuseColor_", lightDiffuse_.get().xyz());
+    shader->setUniform("lightSource_.specularColor_", lightSpecular_.get().xyz());
+
+    shader->setUniform("shininess_", materialShininess_.get());
 
     shader->setIgnoreUniformLocationError(false);
 }
@@ -130,6 +131,12 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
             shader->setUniform(loc, texUnit->getUnitNumber());
 
             LGL_ERROR;
+
+            // texture wrapping
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, volumeStruct.wrapMode_);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, volumeStruct.wrapMode_);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, volumeStruct.wrapMode_);
+            glTexParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, volumeStruct.borderColor_.elem);
         }
 
         // set volume meta-data
@@ -189,22 +196,6 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
     LGL_ERROR;
 }
 
-void VolumeRenderer::setLightingParameters() {
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient_.get().elem);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse_.get().elem);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular_.get().elem);
-    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, lightAttenuation_.get().x);
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, lightAttenuation_.get().y);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, lightAttenuation_.get().z);
-
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialAmbient_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialDiffuse_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, materialSpecular_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, materialEmission_.get().elem);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialShininess_.get());
-    LGL_ERROR;
-}
-
 VolumeRenderer::VolumeStruct::VolumeStruct()
     : volume_(0)
 {}
@@ -212,9 +203,12 @@ VolumeRenderer::VolumeStruct::VolumeStruct()
 VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeGL* volume, tgt::TextureUnit* texUnit,
                                            const std::string& samplerIdentifier,
                                            const std::string& volumeParametersIdentifier,
-                                           bool applyDatasetTrafoMatrix)
+                                           bool applyDatasetTrafoMatrix, GLenum wrapMode,
+                                           tgt::vec4 borderColor)
     : volume_(volume),
       texUnit_(texUnit),
+      wrapMode_(wrapMode),
+      borderColor_(borderColor),
       samplerIdentifier_(samplerIdentifier),
       volumeParametersIdentifier_(volumeParametersIdentifier),
       applyDatasetTrafoMatrix_(applyDatasetTrafoMatrix)

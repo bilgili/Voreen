@@ -47,7 +47,7 @@ public:
      * Singleton\<TextureManager\>::init(new TextureManager());
      */
     static void init(T* singletonClass) {
-        tgtAssert( !singletonClass_, "singletonClass_ has already been intitialized." );
+        tgtAssert( !singletonClass_, "singletonClass_ has already been initialized." );
         singletonClass_ = singletonClass;
     }
 
@@ -56,7 +56,7 @@ public:
      * Must be done at last.
      */
     static void deinit() {
-        tgtAssert( singletonClass_ != 0, "singletonClass_ has already been deintitialized." );
+        tgtAssert( singletonClass_ != 0, "singletonClass_ has already been deinitialized." );
         delete singletonClass_;
         singletonClass_ = 0;
     }

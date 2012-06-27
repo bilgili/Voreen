@@ -128,19 +128,19 @@ public:
     void resetFragmentShader();
     void resetFragmentFilename();
     void setFragmentFilename(const std::string& fragmentFilename);
-    const tgt::ShaderObject* getFragmentObject() { return frag_; }
+    tgt::ShaderObject* getFragmentObject() { return frag_; }
     //Vertex Shader:
     void setVertexSource(const std::string& vertexSource);
     void resetVertexShader();
     void resetVertexFilename();
     void setVertexFilename(const std::string& vertexFilename);
-    const tgt::ShaderObject* getVertexObject() { return vert_; }
+    tgt::ShaderObject* getVertexObject() { return vert_; }
     //Geometry Shader:
     void setGeometrySource(const std::string& geometrySource);
     void resetGeometryShader();
     void resetGeometryFilename();
     void setGeometryFilename(const std::string& geometryFilename);
-    const tgt::ShaderObject* getGeometryObject() { return geom_; }
+    tgt::ShaderObject* getGeometryObject() { return geom_; }
 private:
     std::string getShaderAsString(std::string filename);
 

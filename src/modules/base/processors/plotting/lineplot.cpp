@@ -29,6 +29,10 @@
 
 #include "voreen/modules/base/processors/plotting/lineplot.h"
 
+#include "voreen/core/plotting/plotrow.h"
+
+#include <iomanip>
+
 namespace voreen {
 
 const std::string LinePlot::loggerCat_("voreen.LinePlot");
@@ -37,67 +41,54 @@ LinePlot::LinePlot()
     : PlotProcessor(PlotEntitySettings::LINE, false)
     , lineWidth_("lineWidth", "Line Width", 2.f, 1.f, 5.f)
     , pointSize_("pointSize", "Point Size", 2.f, 1.f, 9.f)
-    , axesWidth_("axesWidth", "Axes Width", 1.f, 1.f, 5.f)
-    , xLabel_("xLabel", "x Axis Label", "x axis")
-    , yLabel_("yLabel", "y Axis Label", "y axis")
-    , xScaleStep_("xScaleStep", "Minimum x Scale Step (pixels)", 40, 32, 256)
-    , yScaleStep_("yScaleStep", "Minimum y Scale Step (pixels)", 40, 32, 256)
     , logXAxis_("logXAxes", "Logarithmic x Axis", false)
     , logYAxis_("logYAxes", "Logarithmic y Axis", false)
     , renderLineLabel_("renderLineLabel", "Line Labels", false)
-    , renderAxes_("renderAxes", "Render Axes", true)
-    , renderScales_("renderScales", "Render Scales", false)
-    , renderXHelperLines_("renderXHelperLines", "Show x Helper Lines", true)
-    , renderYHelperLines_("renderYHelperLines", "Show y Helper Lines", false)
-    , fixZoom_("fixZoom", "Fix Zoom", false)
-    , regenDataList_(true)
-    , regenPickingList_(true)
     , dataList_(0)
     , pickingList_(0)
 {
-    plotEntitiesProp_.setGuiName("Line Selection");
-    addProperty(dataProp_);
-    addProperty(plotEntitiesProp_);
-    addProperty(plotLabel_);
-    addProperty(xLabel_);
-    addProperty(yLabel_);
-    addProperty(renderAxes_);
-    addProperty(renderScales_);
+    plotEntitiesProp_.setGuiName("Line Data");
+    addProperty(selectionPlaneColor_);
+    addProperty(renderMousePosition_);
+    addProperty(discreteStep_);
     addProperty(renderXHelperLines_);
     addProperty(renderYHelperLines_);
-    addProperty(enablePicking_);
     addProperty(logXAxis_);
     addProperty(logYAxis_);
     addProperty(renderLineLabel_);
-    addProperty(renderMousePosition_);
     addProperty(lineWidth_);
     addProperty(pointSize_);
-    addProperty(axesWidth_);
     addProperty(xScaleStep_);
     addProperty(yScaleStep_);
     addProperty(marginLeft_);
     addProperty(marginRight_);
     addProperty(marginBottom_);
     addProperty(marginTop_);
-    addProperty(discreteStep_);
-    addProperty(fixZoom_);
-    addProperty(zoomProp_);
-    addProperty(zoomPlaneColor_);
 
-    addEventProperty(mouseEventClickLeft_);
-    addEventProperty(mouseEventClickLeftCtrl_);
-    addEventProperty(eventZoomOut_);
-    addEventProperty(mouseEventMoveLeft_);
-    addEventProperty(mouseEventMoveRight_);
+    // group properties
+    renderLineLabel_.setGroupID("line");
+    lineWidth_.setGroupID("line");
+    pointSize_.setGroupID("line");
+    setPropertyGroupGuiName("line", "Line Settings");
+
+    logXAxis_.setGroupID("axis");
+    logYAxis_.setGroupID("axis");
+
+    addEventProperty(eventHighlight_);
+    addEventProperty(eventLabel_);
+    addEventProperty(eventZoom_);
+    addEventProperty(eventHighlightAdditive_);
+    addEventProperty(eventLabelAdditive_);
+    addEventProperty(eventZoomAdditive_);
     addEventProperty(mousePositionUpdateEvent_);
     addEventProperty(mouseEventEnterExit_);
 
     //if one of the following properties is changed we handle it like plot entities property is changed
-    logXAxis_.onChange       (CallMemberAction<LinePlot>(this, &LinePlot::entitiesPropChanged));
-    logYAxis_.onChange       (CallMemberAction<LinePlot>(this, &LinePlot::entitiesPropChanged));
-    renderLineLabel_.onChange(CallMemberAction<LinePlot>(this, &LinePlot::entitiesPropChanged));
-    lineWidth_.onChange      (CallMemberAction<LinePlot>(this, &LinePlot::entitiesPropChanged));
-    pointSize_.onChange      (CallMemberAction<LinePlot>(this, &LinePlot::entitiesPropChanged));
+    logXAxis_.onChange       (CallMemberAction<LinePlot>(this, &LinePlot::regenDisplayLists));
+    logYAxis_.onChange       (CallMemberAction<LinePlot>(this, &LinePlot::regenDisplayLists));
+    renderLineLabel_.onChange(CallMemberAction<LinePlot>(this, &LinePlot::regenDisplayLists));
+    lineWidth_.onChange      (CallMemberAction<LinePlot>(this, &LinePlot::regenDisplayLists));
+    pointSize_.onChange      (CallMemberAction<LinePlot>(this, &LinePlot::regenDisplayLists));
 }
 
 Processor* LinePlot::create() const {
@@ -127,34 +118,10 @@ void LinePlot::deinitialize() throw (VoreenException) {
     PlotProcessor::deinitialize();
 }
 
-void LinePlot::leftClickEvent(tgt::MouseEvent* e) {
-    mousePosition_ = tgt::ivec2(e->x(),e->viewport().y-e->y());
-    if (e->action() == tgt::MouseEvent::PRESSED) {
-        mousePressedPosition_ = mousePosition_;
-        leftMousePressed_ = true;
-    }
-    else if (e->action() == tgt::MouseEvent::RELEASED) {
-        leftMousePressed_ = false;
-        if (!(e->modifiers() & tgt::Event::CTRL))
-            zoomIn2D(mousePressedPosition_, mousePosition_);
-        if (pickingBuffer_.hasRenderTarget() && tgt::length(mousePosition_ - mousePressedPosition_) < 4) {
-            // handle PlotCell selection
-            tgt::ivec2 cell = plotPickingManager_.getCellAtPos(tgt::ivec2(e->x(), e->viewport().y-e->y()));
-            data_.toggleHighlight(cell, e->modifiers() & tgt::Event::CTRL);
-            regenDataList_ = true;
-            regenPickingList_ = true;
-        }
-    }
-    e->accept();
-    invalidate(INVALID_RESULT);
-}
-
 void LinePlot::render() {
     outport_.activateTarget();
     plotLib_.setUsePlotPickingManager(false);
     setPlotStatus();
-    plotLib_.resetLineLabels();
-    plotLib_.resetPlotLabels();
     if (plotLib_.setOpenGLStatus()) {
         renderAxes();
         if (regenDataList_) {
@@ -164,13 +131,15 @@ void LinePlot::render() {
             regenDataList_ = false;
         }
         glCallList(dataList_);
+        createLineLabels();
         plotLib_.renderLineLabels();
+        createPlotLabels();
         plotLib_.renderPlotLabels();
         renderPlotLabel();
         renderMousePosition();
     }
     plotLib_.resetOpenGLStatus();
-    renderSelectedRegion(mousePressedPosition_, mousePosition_);
+    renderSelectedRegion();
     outport_.deactivateTarget();
     plotPickingManager_.activateTarget();
     plotPickingManager_.clearTarget();
@@ -192,7 +161,6 @@ void LinePlot::setPlotStatus() {
     plotLib_.setWindowSize(outport_.getSize());
     plotLib_.setLogarithmicAxis(logXAxis_.get(), PlotLibrary::X_AXIS);
     plotLib_.setLogarithmicAxis(logYAxis_.get(), PlotLibrary::Y_AXIS);
-    plotLib_.setRenderDataLabelFlag(renderLineLabel_.get());
     plotLib_.setAxesWidth(axesWidth_.get());
     plotLib_.setDrawingColor(tgt::Color::black);
     plotLib_.setLineWidth(lineWidth_.get());
@@ -203,13 +171,12 @@ void LinePlot::setPlotStatus() {
     plotLib_.setMarginRight(marginRight_.get());
     plotLib_.setMinimumScaleStep(xScaleStep_.get(), PlotLibrary::X_AXIS);
     plotLib_.setMinimumScaleStep(yScaleStep_.get(), PlotLibrary::Y_AXIS);
-    plotLib_.setDomain(zoomProp_.top().xZoom_, PlotLibrary::X_AXIS);
-    plotLib_.setDomain(zoomProp_.top().yZoom_, PlotLibrary::Y_AXIS);
+    plotLib_.setDomain(selectionProp_.getZoom().xZoom_, PlotLibrary::X_AXIS);
+    plotLib_.setDomain(selectionProp_.getZoom().yZoom_, PlotLibrary::Y_AXIS);
 }
 
 void LinePlot::renderData() {
-    // set font size for line labels
-    plotLib_.setFontSize(12);
+    plotLib_.setHighlightColor(highlightColor_.get());
     // iterate through plot entity settings
     std::vector<PlotEntitySettings>::const_iterator it = plotEntitiesProp_.get().begin();
     for (; it < plotEntitiesProp_.get().end(); ++it) {
@@ -217,6 +184,7 @@ void LinePlot::renderData() {
         if (it->getCandleStickFlag()) {
             plotLib_.setDrawingColor(it->getFirstColor());
             plotLib_.setFillColor(it->getSecondColor());
+            plotLib_.setFontColor(it->getFirstColor());
             plotLib_.renderCandlesticks(data_, plotEntitiesProp_.getXColumnIndex(), it->getStickTopColumnIndex(),
                 it->getStickBottomColumnIndex(), it->getCandleTopColumnIndex(), it->getCandleBottomColumnIndex());
         }
@@ -276,37 +244,34 @@ void LinePlot::readFromInport() {
     // create local copy of data and assign it to property
     if (dynamic_cast<PlotData*>(inport_.getData())) {
         data_ = *dynamic_cast<PlotData*>(inport_.getData());
+        if (!data_.sorted())
+            data_.sortRows();
         dataProp_.set(&data_);
         plotEntitiesProp_.setPlotData(&data_);
+        selectionProp_.setPlotData(&data_);
         plotPickingManager_.setColumnCount(data_.getColumnCount());
-        if (zoomProp_.isDeserialized_)
-            zoomProp_.isDeserialized_ = false;
         inportHasPlotFunction_ = false;
         discreteStep_.setVisible(false);
-        fixZoom_.setVisible(true);
     }
-    else if (dynamic_cast<PlotFunction*>(inport_.getData())) {
-        //check if it is a function R->R
-        if (inport_.getData()->getKeyColumnCount() == 1)  {
-            function_ = *dynamic_cast<PlotFunction*>(inport_.getData());
-            inportHasPlotFunction_ = true;
-            //if a function is set, the zoom must be fixed i.e. totally controlled by the property
-            //(we do -not- want to call calcDomains for functions)
-            fixZoom_.set(true);
-            fixZoom_.setVisible(false);
-            selectDataFromFunction();
-            discreteStep_.setVisible(true);
-        }
+    else if (dynamic_cast<PlotFunction*>(inport_.getData()) && inport_.getData()->getKeyColumnCount() == 1) {
+        function_ = *dynamic_cast<PlotFunction*>(inport_.getData());
+        inportHasPlotFunction_ = true;
+        selectDataFromFunction();
+        createSimpleZoomState();
+        discreteStep_.setVisible(true);
     }
     else {
+        LWARNINGC("LinePlot", "LinePlot can only handle PlotData objects and PlotFunction objects with one key column");
         data_ = PlotData(0,0);
         dataProp_.set(&data_);
         plotEntitiesProp_.setPlotData(&data_);
+        selectionProp_.setPlotData(&data_);
+        plotPickingManager_.setColumnCount(data_.getColumnCount());
     }
 }
 
 void LinePlot::calcDomains() {
-    if (plotEntitiesProp_.dataValid() && !fixZoom_.get()) {
+    if (plotEntitiesProp_.dataValid() && !inportHasPlotFunction_) {
         Interval<plot_t> xDomain = data_.getInterval(plotEntitiesProp_.getXColumnIndex());
         Interval<plot_t> yDomain = Interval<plot_t>();
         std::vector<PlotEntitySettings>::const_iterator it = plotEntitiesProp_.get().begin();
@@ -318,33 +283,20 @@ void LinePlot::calcDomains() {
                     plot_t error = std::max(abs(errorDomain.getLeft()), abs(errorDomain.getRight()));
                     lineDomain = Interval<plot_t>(lineDomain.getLeft()-error, lineDomain.getRight()+error);
                 }
-                yDomain = yDomain.unionWith(lineDomain);
+                yDomain.unionWith(lineDomain);
             }
             else {
-                yDomain = yDomain.unionWith(data_.getInterval(it->getStickTopColumnIndex()));
-                yDomain = yDomain.unionWith(data_.getInterval(it->getStickBottomColumnIndex()));
-                yDomain = yDomain.unionWith(data_.getInterval(it->getCandleTopColumnIndex()));
-                yDomain = yDomain.unionWith(data_.getInterval(it->getCandleBottomColumnIndex()));
+                yDomain.unionWith(data_.getInterval(it->getStickTopColumnIndex()));
+                yDomain.unionWith(data_.getInterval(it->getStickBottomColumnIndex()));
+                yDomain.unionWith(data_.getInterval(it->getCandleTopColumnIndex()));
+                yDomain.unionWith(data_.getInterval(it->getCandleBottomColumnIndex()));
             }
         }
-        yDomain = yDomain.enlarge(1.1);
-        //if there is a new domain
-        if (! zoomProp_.isDeserialized_) {
-            zoomProp_.clear();
-            zoomProp_.push(PlotZoomState(xDomain, yDomain));
-        }
+        yDomain.enlarge(1.1);
+        selectionProp_.setBaseZoomState(PlotZoomState(xDomain, yDomain));
     }
 }
 
-void LinePlot::zoomPropChanged() {
-    regenDataList_ = true;
-    regenPickingList_ = true;
-}
-
-void LinePlot::entitiesPropChanged() {
-    regenDataList_ = true;
-    regenPickingList_ = true;
-}
 void LinePlot::toggleProperties() {
     if (plotEntitiesProp_.dataValid()) {
         if (data_.getColumnType(plotEntitiesProp_.getXColumnIndex()) == PlotBase::STRING) {
@@ -359,5 +311,125 @@ void LinePlot::toggleProperties() {
     }
 }
 
+void LinePlot::createLineLabels() {
+    plotLib_.resetLineLabels();
+    if (!renderLineLabel_.get())
+        return;
+    plot_t xr = selectionProp_.getZoom().xZoom_.getRight();
+    // we have to find last rendered x value
+    int row = data_.getRowsCount() - 1;
+    bool xAxisIsString = (data_.getColumnType(plotEntitiesProp_.getXColumnIndex()) == PlotBase::STRING);
+    if (xAxisIsString)
+        row = static_cast<int>(floor(xr));
+    else {
+        while(row > 0 && data_.getRow(row - 1).getValueAt(plotEntitiesProp_.getXColumnIndex()) > xr)
+            --row;
+    }
+    if (row < 1)
+        return;
+    for (std::vector<PlotEntitySettings>::const_iterator it = plotEntitiesProp_.get().begin();
+            it < plotEntitiesProp_.get().end(); ++it) {
+        if (it->getCandleStickFlag()) {
+            plot_t stickTop = data_.getRow(row).getValueAt(it->getStickTopColumnIndex());
+            plot_t stickBottom = data_.getRow(row).getValueAt(it->getStickBottomColumnIndex());
+            plot_t candleTop = data_.getRow(row).getValueAt(it->getCandleTopColumnIndex());
+            plot_t candleBottom = data_.getRow(row).getValueAt(it->getCandleBottomColumnIndex());
+            if (selectionProp_.getZoom().yZoom_.contains(stickTop))
+                plotLib_.addLineLabel(data_.getColumnLabel(it->getStickTopColumnIndex()),
+                                         tgt::dvec3(10, 0, 0) + plotLib_.convertPlotCoordinatesToViewport3(
+                                         tgt::dvec3(xr, stickTop, 0)),
+                                         it->getFirstColor(), 12, SmartLabel::MIDDLELEFT);
+            if (selectionProp_.getZoom().yZoom_.contains(stickBottom))
+                plotLib_.addLineLabel(data_.getColumnLabel(it->getStickBottomColumnIndex()),
+                                         tgt::dvec3(10, 0, 0) + plotLib_.convertPlotCoordinatesToViewport3(
+                                         tgt::dvec3(xr, stickBottom, 0)),
+                                         it->getFirstColor(), 12, SmartLabel::MIDDLELEFT);
+            if (selectionProp_.getZoom().yZoom_.contains(candleTop))
+                plotLib_.addLineLabel(data_.getColumnLabel(it->getCandleTopColumnIndex()),
+                                         tgt::dvec3(10, 0, 0) + plotLib_.convertPlotCoordinatesToViewport3(
+                                         tgt::dvec3(xr, candleTop, 0)),
+                                         it->getSecondColor(), 12, SmartLabel::MIDDLELEFT);
+            if (selectionProp_.getZoom().yZoom_.contains(candleBottom))
+                plotLib_.addLineLabel(data_.getColumnLabel(it->getCandleBottomColumnIndex()),
+                                         tgt::dvec3(10, 0, 0) + plotLib_.convertPlotCoordinatesToViewport3(
+                                         tgt::dvec3(xr, candleBottom, 0)),
+                                         it->getSecondColor(), 12, SmartLabel::MIDDLELEFT);
+        }
+        else {
+            tgt::dvec2 last(xAxisIsString ? static_cast<double>(row) :
+                                            data_.getRow(row).getValueAt(plotEntitiesProp_.getXColumnIndex()),
+                                            data_.getRow(row).getValueAt(it->getMainColumnIndex()));
+            tgt::dvec2 lastButOne(xAxisIsString ? static_cast<double>(row) - 1 :
+                                                  data_.getRow(row-1).getValueAt(plotEntitiesProp_.getXColumnIndex()),
+                                 data_.getRow(row-1).getValueAt(it->getMainColumnIndex()));
+            double dydx = (last.y-lastButOne.y)/(last.x-lastButOne.x);
+            last.y = dydx * (xr-last.x) + last.y;
+            if (selectionProp_.getZoom().yZoom_.contains(last.y)) {
+                plotLib_.addLineLabel(data_.getColumnLabel(it->getMainColumnIndex()),
+                                         tgt::dvec3(10, 0, 0) + plotLib_.convertPlotCoordinatesToViewport3(
+                                         tgt::dvec3(xr, last.y, 0)),
+                                         it->getFirstColor(), 12, SmartLabel::MIDDLELEFT);
+            }
+        }
+    }
+}
+
+void LinePlot::createPlotLabels() {
+    plotLib_.resetPlotLabels();
+    PlotSelectionProperty::LabelSelectionIterator lit = selectionProp_.getLabelsBegin();
+    if (lit == selectionProp_.getLabelsEnd()) // no labels
+        return;
+    std::stringstream ss;
+    // iterate label selection
+    for (; lit != selectionProp_.getLabelsEnd(); ++lit) {
+        if (lit->isTablePosition()) {
+            tgt::ivec2 cell = lit->getTablePosition();
+            if (cell.x >= -1 && cell.x < data_.getRowsCount() && cell.y >= 0 && cell.y < data_.getColumnCount()) {
+                int start = 0;
+                int end = data_.getRowsCount();
+                if (cell.x != -1) {
+                    start = cell.x;
+                    end = cell.x+1;
+                }
+                for (int i = start; i < end; ++i) {
+                    // check if line or error is labeled
+                    std::vector<PlotEntitySettings>::const_iterator eit;
+                    for (eit = plotEntitiesProp_.get().begin(); eit < plotEntitiesProp_.get().end(); ++eit) {
+                        if (eit->getMainColumnIndex() == lit->getTablePosition().y
+                            || eit->getStickTopColumnIndex() == lit->getTablePosition().y
+                            || eit->getCandleBottomColumnIndex() == lit->getTablePosition().y
+                            || eit->getCandleTopColumnIndex() == lit->getTablePosition().y
+                            || eit->getStickBottomColumnIndex() == lit->getTablePosition().y) {
+                            const PlotRowValue& row = data_.getRow(i);
+                            plot_t x = (data_.getColumnType(plotEntitiesProp_.getXColumnIndex()) == PlotBase::STRING ?
+                                            i : row.getValueAt(plotEntitiesProp_.getXColumnIndex()));
+                            plot_t y = row.getValueAt(lit->getTablePosition().y);
+                            if (selectionProp_.getZoom().xZoom_.contains(x) && selectionProp_.getZoom().yZoom_.contains(y)) {
+                                tgt::dvec3 viewportCoords = plotLib_.convertPlotCoordinatesToViewport3(tgt::dvec3(x, y, 0));
+                                ss.str("");
+                                ss.clear();
+                                ss << std::fixed << std::setprecision(4) << "x: " << x << std::endl << "y: " << y;
+                                plotLib_.addPlotLabel(ss.str(), viewportCoords, tgt::Color::black, 10, SmartLabel::CENTERED);
+                            }
+                        }
+                        else if (eit->getOptionalColumnIndex() == lit->getTablePosition().y && eit->getErrorbarFlag()) {
+                            const PlotRowValue& row = data_.getRow(i);
+                            plot_t x = row.getValueAt(plotEntitiesProp_.getXColumnIndex());
+                            plot_t y = row.getValueAt(eit->getMainColumnIndex());
+                            plot_t error = row.getValueAt(lit->getTablePosition().y);
+                            if (selectionProp_.getZoom().xZoom_.contains(x) && selectionProp_.getZoom().yZoom_.contains(y)) {
+                                tgt::dvec3 viewportCoords = plotLib_.convertPlotCoordinatesToViewport3(tgt::dvec3(x, y, 0));
+                                ss.str("");
+                                ss.clear();
+                                ss << std::fixed << std::setprecision(4) << "Error: " << error;
+                                plotLib_.addPlotLabel(ss.str(), viewportCoords, tgt::Color::black, 10, SmartLabel::CENTERED);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 } // namespace voreen

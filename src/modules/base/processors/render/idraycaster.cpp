@@ -46,7 +46,8 @@ IDRaycaster::IDRaycaster()
     , exitPort_(Port::INPORT, "image.exitpoints")
     , firstHitpointsPort_(Port::INPORT, "image.firsthitpoints")
     , idMapPort_(Port::OUTPORT, "image.idmap", true)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , raycastPrg_(0)
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , penetrationDepth_("penetrationDepth", "Penetration Depth", 0.05f, 0.f, 0.5f)
 {
     addPort(volumePort_);
@@ -71,6 +72,13 @@ Processor* IDRaycaster::create() const {
 void IDRaycaster::initialize() throw (VoreenException) {
     VolumeRaycaster::initialize();
     loadShader();
+}
+
+void IDRaycaster::deinitialize() throw (VoreenException) {
+    ShdrMgr.dispose(raycastPrg_);
+    raycastPrg_ = 0;
+
+    VolumeRaycaster::deinitialize();
 }
 
 /**
@@ -146,8 +154,9 @@ void IDRaycaster::process() {
 
     // initialize shader
     raycastPrg_->activate();
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
-    bindVolumes(raycastPrg_, volumes, camera_.get(), lightPosition_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
+    bindVolumes(raycastPrg_, volumes, &cam, lightPosition_.get());
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
     raycastPrg_->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
     entryPort_.setTextureParameters(raycastPrg_, "entryParameters_");
@@ -165,5 +174,6 @@ void IDRaycaster::process() {
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
+
 
 } // namespace voreen

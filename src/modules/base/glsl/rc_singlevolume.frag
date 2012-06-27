@@ -34,7 +34,6 @@ vec4 result = vec4(0.0);
 vec4 result1 = vec4(0.0);
 vec4 result2 = vec4(0.0);
 
-
 // declare entry and exit parameters
 uniform SAMPLER2D_TYPE entryPoints_;            // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_;       // ray entry points depth
@@ -64,26 +63,22 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos = first + t * rayDirection;
         vec4 voxel = getVoxel(volume_, volumeParameters_, samplePos);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos, voxel.a)) {
-            // calculate gradients
-            voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_, entryParameters_);
+        // calculate gradients
+        voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, samplePos, volume_, volumeParameters_, t, rayDirection, entryPoints_, entryParameters_);
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
+        // apply classification
+        vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
 
-            // apply shading
-            color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+        // apply shading
+        color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
 
-            // if opacity greater zero, apply compositing
-            if (color.a > 0.0) {
-                RC_BEGIN_COMPOSITING
-                result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, tDepth);
-                result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, tDepth);
-                result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, tDepth);
-                RC_END_COMPOSITING
-            }
-
+        // if opacity greater zero, apply compositing
+        if (color.a > 0.0) {
+            RC_BEGIN_COMPOSITING
+            result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, tDepth);
+            result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, tDepth);
+            result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, tDepth);
+            RC_END_COMPOSITING
         }
     } RC_END_LOOP(result);
 }
@@ -96,9 +91,6 @@ void main() {
     vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
     vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
 
-    // initialize light and material parameters
-    matParams = gl_FrontMaterial;
-
     // determine whether the ray has to be casted
     if (frontPos == backPos)
         // background needs no raycasting
@@ -107,21 +99,13 @@ void main() {
         // fragCoords are lying inside the bounding box
         rayTraversal(frontPos, backPos);
 
-    /*
-    #ifdef TONE_MAPPING_ENABLED
-        result.r = 1.0 - exp(-result.r * TONE_MAPPING_VALUE);
-        result.g = 1.0 - exp(-result.g * TONE_MAPPING_VALUE);
-        result.b = 1.0 - exp(-result.b * TONE_MAPPING_VALUE);
-    #endif
-    */
-
     #ifdef OP0
-        gl_FragData[OP0] = result;
+        FragData0 = result;
     #endif
     #ifdef OP1
-        gl_FragData[OP1] = result1;
+        FragData1 = result1;
     #endif
     #ifdef OP2
-        gl_FragData[OP2] = result2;
+        FragData2 = result2;
     #endif
 }

@@ -215,31 +215,24 @@ protected:
  * because of the fact that the template-variable is a pointer.
  * For a description of the functions see further above in superclass.
  */
-class CameraPropertyTimelineState : public TemplatePropertyTimelineState<tgt::Camera*> {
+class CameraPropertyTimelineState : public TemplatePropertyTimelineState<tgt::Camera> {
 public:
-    /**
-    * the constructors
-    */
-    CameraPropertyTimelineState(PropertyKeyValue<tgt::Camera*>* kv);
-    CameraPropertyTimelineState(std::map<float,PropertyKeyValue<tgt::Camera*>*> values);
+    CameraPropertyTimelineState(PropertyKeyValue<tgt::Camera>* kv);
+    CameraPropertyTimelineState(std::map<float,PropertyKeyValue<tgt::Camera>*> values);
 
-    /**
-    * the destructor
-    */
     ~CameraPropertyTimelineState();
-
 protected:
-    friend class TemplatePropertyTimeline<tgt::Camera*>;
+    friend class TemplatePropertyTimeline<tgt::Camera>;
     friend class XmlDeserializer;
     friend class TemplatePropertyTimelineStateFactory;
 
     CameraPropertyTimelineState();
 
-    const PropertyKeyValue<tgt::Camera*>* newKeyValue(float time);
-    bool changeValueOfKeyValue(tgt::Camera* value, const PropertyKeyValue<tgt::Camera*>* keyvalue);
-    DeleteKeyValueReturn deleteKeyValue(const PropertyKeyValue<tgt::Camera*>* keyvalue);
-    const tgt::Camera* getPropertyAt(float time);
-    TemplatePropertyTimelineState<tgt::Camera*>* clone();
+    const PropertyKeyValue<tgt::Camera>* newKeyValue(float time);
+    bool changeValueOfKeyValue(tgt::Camera value, const PropertyKeyValue<tgt::Camera>* keyvalue);
+    DeleteKeyValueReturn deleteKeyValue(const PropertyKeyValue<tgt::Camera>* keyvalue);
+    const tgt::Camera getPropertyAt(float time);
+    TemplatePropertyTimelineState<tgt::Camera>* clone();
 
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);

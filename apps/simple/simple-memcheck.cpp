@@ -33,20 +33,14 @@
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/processors/processorfactory.h"
-#include "voreen/modules/moduleregistration.h"
-#include "tgt/init.h"
 
 using namespace voreen;
 
 int main(int argc, char** argv) {
-    VoreenApplication app("simple-memcheck", "simple-memcheck", argc, argv,
-                          (VoreenApplication::ApplicationType)
-                          (VoreenApplication::APP_DEFAULT & ~VoreenApplication::APP_PYTHON));
+    VoreenApplication app("simple-memcheck", "simple-memcheck", argc, argv, VoreenApplication::APP_ALL);
     app.init();
-    addAllModules(&app);
-
     ProcessorFactory::getInstance();
     ProcessorFactory::destroy();
-    tgt::deinit();
+    app.deinit();
     return 0;
 }

@@ -693,7 +693,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
 
             int numIterations = loopType.getNumIterations(validLoops[i].second);
 
-            LINFO("Unrolling loop \"" << loopSrc->getName() << "\" -> \"" << loopDest->getName() << "\" (" << numIterations << " iterations)");
+            LDEBUG("Unrolling loop \"" << loopSrc->getName() << "\" -> \"" << loopDest->getName() << "\" (" << numIterations << " iterations)");
             validLoops.erase(validLoops.begin() + i);
 
             // detect path nodes

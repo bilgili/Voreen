@@ -40,13 +40,17 @@ class QMainWindow;
 
 namespace voreen {
 
+class PyVoreenQt;
+
 class VoreenApplicationQt : public VoreenApplication {
 public:
     VoreenApplicationQt(const std::string& name, const std::string& displayName,
                         int argc, char** argv, ApplicationType appType = APP_DEFAULT);
+    ~VoreenApplicationQt();
+
     virtual void init();
 
-    virtual void initGL();
+    virtual void initGL() throw (VoreenException);
 
     /**
      * Allows access to the global instance of this class.
@@ -76,10 +80,15 @@ public:
      */
     virtual std::string getShaderPathQt(const std::string& filename = "") const;
 
+
 private:
     static VoreenApplicationQt* qtApp_;
     QMainWindow* mainWindow_;
     std::string shaderPathQt_;
+
+#ifdef VRN_MODULE_PYTHON
+    PyVoreenQt* pythonQt_;
+#endif
 };
 
 } // namespace

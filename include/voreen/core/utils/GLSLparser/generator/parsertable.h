@@ -72,11 +72,13 @@ public:
     ParserAction* findAction(const int state, GrammarSymbol* const symbol) const;
 
     void generateActionCode(std::ostream& oss, const std::string& stateVar,
-        const std::string& symbolVar) const;
+        const std::string& symbolVar, const std::string& className = "") const;
     void generateGotoCode(std::ostream& oss, const std::string& stateVar,
-        const std::string& symbolVar) const;
-    void generateProductionsCode(std::ostream& oss, const std::string& prodVar) const;
-    void generateSymbolsCode(std::ostream& oss, const std::string& symbolVar) const;
+        const std::string& symbolVar, const std::string& className = "") const;
+    void generateProductionsCode(std::ostream& oss, const std::string& prodVar,
+        const std::string& className = "") const;
+    void generateSymbolsCode(std::ostream& oss, const std::string& symbolVar,
+        const std::string& className = "") const;
 
     void htmlOutput(const std::string& fileName) const;
 

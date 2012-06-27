@@ -29,13 +29,12 @@
 
 #include "voreen/core/properties/link/propertylink.h"
 
-#include "voreen/core/properties/link/dependencylinkevaluator.h"
 #include "voreen/core/properties/link/linkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
-#include "voreen/core/properties/link/linkevaluatorpython.h"
 #include "voreen/core/properties/allproperties.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
 #include <vector>
 #include <map>
 #include <typeinfo>
@@ -56,8 +55,22 @@ PropertyLink::PropertyLink(Property* src, Property* dest, LinkEvaluatorBase* lin
 
     if (linkEvaluator)
         evaluator_ = linkEvaluator;
-    else
-        evaluator_ = LinkEvaluatorFactory::getInstance()->createLinkEvaluator("id");
+    else {
+        std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorFactory::getInstance()->getCompatibleLinkEvaluators(src, dest);
+        std::string evalType;
+        for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
+            if(evalType == "")
+                evalType = i->first;
+            else {
+                if(i->second == "id")
+                    evalType = i->first;
+            }
+        }
+        evaluator_ = LinkEvaluatorFactory::getInstance()->create(evalType);
+        //evaluator_ = LinkEvaluatorFactory::getInstance()->create("LinkEvaluatorId");
+    }
+
+    evaluator_->propertiesChanged(src_, dest_);
 }
 
 PropertyLink::PropertyLink()
@@ -79,109 +92,7 @@ bool PropertyLink::testPropertyLink() {
     tgtAssert(dest_, "No destination property");
 
     try {
-        ChangeData changeData = ChangeData();
-        if (BoolProperty* srcCast = dynamic_cast<BoolProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FileDialogProperty* srcCast = dynamic_cast<FileDialogProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatProperty* srcCast = dynamic_cast<FloatProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (IntProperty* srcCast = dynamic_cast<IntProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (StringProperty* srcCast = dynamic_cast<StringProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatVec2Property* srcCast = dynamic_cast<FloatVec2Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatVec3Property* srcCast = dynamic_cast<FloatVec3Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatVec4Property* srcCast = dynamic_cast<FloatVec4Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatMat2Property* srcCast = dynamic_cast<FloatMat2Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatMat3Property* srcCast = dynamic_cast<FloatMat3Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (FloatMat4Property* srcCast = dynamic_cast<FloatMat4Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (IntVec2Property* srcCast = dynamic_cast<IntVec2Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (IntVec3Property* srcCast = dynamic_cast<IntVec3Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (IntVec4Property* srcCast = dynamic_cast<IntVec4Property*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (CameraProperty* srcCast = dynamic_cast<CameraProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (TransFuncProperty* srcCast = dynamic_cast<TransFuncProperty*>(src_)) {
-            TransFunc* tf = srcCast->get();
-            TransFuncIntensity* tfi = dynamic_cast<TransFuncIntensity*>(tf);
-            if (tfi) {
-                changeData.setOldValue(BoxObject(tfi));
-                changeData.setNewValue(BoxObject(tfi));
-            }
-            else {
-                throw VoreenException("PropertyLink: TransferFuncProperty supports only TransFuncIntensity");
-            }
-        }
-        else if (OptionPropertyBase* srcCast = dynamic_cast<OptionPropertyBase*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (ShaderProperty* srcCast = dynamic_cast<ShaderProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (VolumeHandleProperty* srcCast = dynamic_cast<VolumeHandleProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (/*VolumeCollectionProperty* srcCast = */dynamic_cast<VolumeCollectionProperty*>(src_)) {
-            throw VoreenException("PropertyLink execution failed: Linking of VolumeCollections is currently not supported");
-        }
-        else if (dynamic_cast<ButtonProperty*>(src_)) {
-        }
-
-        else if (PlotPredicateProperty* srcCast = dynamic_cast<PlotPredicateProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (PlotSelectionProperty* srcCast = dynamic_cast<PlotSelectionProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-
-        else {
-            throw VoreenException("PropertyLink: Unsupported property type (" + src_->getFullyQualifiedID() + ")");
-        }
-        onChange(changeData);
+        onChange();
     }
     catch (...) {
         return false;
@@ -190,7 +101,7 @@ bool PropertyLink::testPropertyLink() {
 }
 
 
-void PropertyLink::onChange(ChangeData& data)
+void PropertyLink::onChange()
     throw (VoreenException) {
 
     tgtAssert(src_, "No source property");
@@ -216,118 +127,7 @@ void PropertyLink::onChange(ChangeData& data)
     }
 
     try {
-        if (BoolProperty* destCast = dynamic_cast<BoolProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getBool());
-        }
-        else if (FileDialogProperty* destCast = dynamic_cast<FileDialogProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getString());
-        }
-        else if (FloatProperty* destCast = dynamic_cast<FloatProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getFloat());
-        }
-        else if (IntProperty* destCast = dynamic_cast<IntProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getInt());
-        }
-        else if (StringProperty* destCast = dynamic_cast<StringProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getString());
-        }
-        else if (FloatVec2Property* destCast = dynamic_cast<FloatVec2Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getVec2());
-        }
-        else if (FloatVec3Property* destCast = dynamic_cast<FloatVec3Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getVec3());
-        }
-        else if (FloatVec4Property* destCast = dynamic_cast<FloatVec4Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getVec4());
-        }
-        else if (FloatMat2Property* destCast = dynamic_cast<FloatMat2Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getMat2());
-        }
-        else if (FloatMat3Property* destCast = dynamic_cast<FloatMat3Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getMat3());
-        }
-        else if (FloatMat4Property* destCast = dynamic_cast<FloatMat4Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getMat4());
-        }
-        else if (IntVec2Property* destCast = dynamic_cast<IntVec2Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getIVec2());
-        }
-        else if (IntVec3Property* destCast = dynamic_cast<IntVec3Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getIVec3());
-        }
-        else if (IntVec4Property* destCast = dynamic_cast<IntVec4Property*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getIVec4());
-        }
-        else if (CameraProperty* destCast = dynamic_cast<CameraProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(*newValue.getCamera());
-        }
-        else if (TransFuncProperty* destCast = dynamic_cast<TransFuncProperty*>(dest_)) {
-            TransFunc* tf = destCast->get();
-            TransFuncIntensity* tfi = dynamic_cast<TransFuncIntensity*>(tf);
-            if (tfi) {
-                const BoxObject& oldSrcValue = data.getOldValue();
-                const BoxObject& newSrcValue = data.getNewValue();
-                BoxObject targetOld = BoxObject(tfi);
-                BoxObject newValue = evaluator_->eval(oldSrcValue, newSrcValue, targetOld, src_, dest_);
-                const TransFuncIntensity* newTF = dynamic_cast<const TransFuncIntensity*>(newValue.getTransFunc());
-                if (newTF) {
-                    tfi->updateFrom(*newTF);
-                    destCast->notifyChange();
-                }
-                else {
-                    throw VoreenException("PropertyLink execution failed: TransFuncIntensity expected as return type");
-                }
-            }
-            else {
-                throw VoreenException("PropertyLink execution failed: Transfer function linking currently only supported for TransFuncIntensity");
-            }
-        }
-        else if (OptionPropertyBase* destCast = dynamic_cast<OptionPropertyBase*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getString());
-        }
-        else if (ShaderProperty* destCast = dynamic_cast<ShaderProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getShader());
-            destCast->invalidate();
-        }
-        else if (ButtonProperty* destCast = dynamic_cast<ButtonProperty*>(dest_) ) {
-            destCast->clicked();
-        }
-        else if (VolumeHandleProperty* destCast = dynamic_cast<VolumeHandleProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(const_cast<VolumeHandle*>(newValue.getVolumeHandle()));
-        }
-        else if (dynamic_cast<VolumeCollectionProperty*>(dest_)) {
-            throw VoreenException("PropertyLink execution failed: Linking of VolumeCollections not supported");
-        }
-        else if (PlotPredicateProperty* destCast = dynamic_cast<PlotPredicateProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getPlotPredicateVector());
-        }
-        else if (PlotSelectionProperty* destCast = dynamic_cast<PlotSelectionProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getPlotZoom());
-        }
-        else {
-            visitedProperties_.clear();
-            throw VoreenException("PropertyLink execution failed: Unsupported property type.");
-        }
+        evaluator_->eval(src_, dest_);
     }
     catch (const VoreenException& e) {
         if (isInitiator) {
@@ -347,6 +147,10 @@ void PropertyLink::onChange(ChangeData& data)
 void PropertyLink::setLinkEvaluator(LinkEvaluatorBase* evaluator) {
     tgtAssert(evaluator, "Null pointer passed");
     evaluator_ = evaluator;
+
+    if(evaluator_) {
+        evaluator_->propertiesChanged(src_, dest_);
+    }
 }
 
 LinkEvaluatorBase* PropertyLink::getLinkEvaluator() const {
@@ -402,61 +206,29 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
     // Deserialize link evaluator...
     s.deserialize("Evaluator", evaluator_);
 
-#ifdef VRN_WITH_PYTHON
-    // Is a python evaluator?
-    if (typeid(LinkEvaluatorPython*) == typeid(evaluator_)) {
-        LinkEvaluatorPython* pythonEvaluator = dynamic_cast<LinkEvaluatorPython*>(evaluator_);
-        // Register python evaluator in factory...
-        LinkEvaluatorFactory::getInstance()->registerLinkEvaluatorPython(pythonEvaluator);
-        // Get the python evaluator instance which was created during registration...
-        evaluator_ = LinkEvaluatorFactory::getInstance()->createLinkEvaluator(pythonEvaluator->getFunctionName());
-        // Free allocated memory for our dummy python evaluator...
-        delete pythonEvaluator;
+    if(evaluator_) {
+        // auto-convert old LinkEvaluatorId:
+        if(evaluator_->getClassName() == "LinkEvaluatorId") {
+            std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorFactory::getInstance()->getCompatibleLinkEvaluators(src_, dest_);
+            std::string evalType = "";
+            for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
+                if(i->second == "id")
+                    evalType = i->first;
+            }
+            if(!evalType.empty()) {
+                //delete evaluator_;
+                evaluator_ = LinkEvaluatorFactory::getInstance()->create(evalType);
+                LINFO("Replaced deprecated link evaluator with " << evaluator_->getClassName());
+            }
+            else {
+                LERROR("Could not find and alternative for old LinkEvaluatorId between " << src_->getTypeString() << " and " << dest_->getTypeString());
+            }
+        }
+        // --------------------------------
+
+        evaluator_->propertiesChanged(src_, dest_);
     }
-#endif // VRN_WITH_PYTHON
 }
 
-bool PropertyLink::arePropertiesLinkable(const Property* p1, const Property* p2) {
-    tgtAssert(p1, "null pointer");
-    tgtAssert(p2, "null pointer");
-
-    if (typeid(*p1) == typeid(*p2))
-        return true;
-
-    if (dynamic_cast<const BoolProperty*>(p1) || dynamic_cast<const FloatProperty*>(p1) ||
-        dynamic_cast<const IntProperty*>(p1)  || dynamic_cast<const StringProperty*>(p1) )
-    {
-        if (dynamic_cast<const BoolProperty*>(p2))
-            return true;
-        else if (dynamic_cast<const IntProperty*>(p2))
-            return true;
-        else if (dynamic_cast<const FloatProperty*>(p2))
-            return true;
-        else if (dynamic_cast<const StringProperty*>(p2))
-            return true;
-        else
-            return false;
-    }
-    else if (dynamic_cast<const IntVec2Property*>(p1)   || dynamic_cast<const IntVec3Property*>(p1)   || dynamic_cast<const IntVec4Property*>(p1)   ||
-             dynamic_cast<const FloatVec2Property*>(p1) || dynamic_cast<const FloatVec3Property*>(p1) || dynamic_cast<const FloatVec4Property*>(p1) )
-    {
-        if (dynamic_cast<const IntVec2Property*>(p2))
-            return true;
-        else if (dynamic_cast<const IntVec3Property*>(p2))
-            return true;
-        else if (dynamic_cast<const IntVec4Property*>(p2))
-            return true;
-        else if (dynamic_cast<const FloatVec2Property*>(p2))
-            return true;
-        else if (dynamic_cast<const FloatVec3Property*>(p2))
-            return true;
-        else if (dynamic_cast<const FloatVec4Property*>(p2))
-            return true;
-        else
-            return false;
-    }
-
-    return false;
-}
 
 } // namespace

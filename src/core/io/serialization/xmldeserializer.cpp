@@ -29,6 +29,7 @@
 
 #include "voreen/core/io/serialization/xmldeserializer.h"
 #include "voreen/core/plotting/plotbase.h"
+#include "voreen/core/plotting/plotselection.h"
 
 namespace voreen {
 
@@ -305,6 +306,17 @@ void XmlDeserializer::deserialize(const std::string& key, PlotCellValue& data)
 
     // finally set highlighted flag
     data.setHighlighted(isHighlighted);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, PlotSelectionEntry& data)
+    throw (SerializationException)
+{
+    TemporaryNodeChanger nodeChanger(*this, getNextXmlElement(key));
+
+    deserialize("selection", data.selection_);
+    deserializeSimpleTypes("highlight", data.highlight_);
+    deserializeSimpleTypes("renderLabel", data.renderLabel_);
+    deserializeSimpleTypes("zoomTo", data.zoomTo_);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, Serializable& data)

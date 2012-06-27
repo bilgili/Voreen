@@ -46,12 +46,11 @@ OpenCLModule::OpenCLModule()
     , device_(0)
 {
     setName("OpenCL");
+    instance_ = this;
 
     addProcessor(new GrayscaleCL());
     addProcessor(new RaytracingEntryExitPoints());
     addProcessor(new VolumeGradientCL());
-
-    instance_ = this;
 }
 
 void OpenCLModule::deinitialize() throw (VoreenException) {
@@ -92,7 +91,7 @@ void OpenCLModule::initCL() throw (VoreenException) {
 }
 
 cl::OpenCL* OpenCLModule::getOpenCL() const {
-    if (!opencl_) 
+    if (!opencl_)
         LERRORC("voreen.OpenCLModule", "No OpenCL wrapper. Call initCL first!");
     return opencl_;
 }
@@ -104,21 +103,18 @@ cl::Context* OpenCLModule::getCLContext() const {
 }
 
 cl::CommandQueue* OpenCLModule::getCLCommandQueue() const {
-    if (!queue_) 
+    if (!queue_)
         LERRORC("voreen.OpenCLModule", "No OpenCL queue. Call initCL first!");
     return queue_;
 }
 
 cl::Device* OpenCLModule::getCLDevice() const {
-    if (!device_) 
+    if (!device_)
         LERRORC("voreen.OpenCLModule", "No OpenCL device. Call initCL first!");
     return device_;
 }
 
 OpenCLModule* OpenCLModule::getInstance() {
-    if (!instance_) 
-        LERRORC("voreen.OpenCLModule", "not instantiated");
-
     return instance_;
 }
 

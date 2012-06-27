@@ -39,10 +39,13 @@ namespace voreen {
  */
 class LinkEvaluatorBoolInvert : public LinkEvaluatorBase {
 public:
-
-    virtual BoxObject eval(const BoxObject& sourceOld, const BoxObject& sourceNew, const BoxObject& targetOld, Property* src, Property* dest);
+    virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
     virtual std::string name() const;
+    virtual std::string getClassName() const { return "LinkEvaluatorBoolInvert"; }
+    virtual LinkEvaluatorBase* create() const { return new LinkEvaluatorBoolInvert(); }
+
+    virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
 
 } // namespace

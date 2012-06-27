@@ -68,17 +68,12 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor, NetworkEditor
 {
     tgtAssert(processor_ != 0, "passed null pointer");
 
-    inports_ = stdVectorToQList<Port*>(processor_->getInports());
-    outports_ = stdVectorToQList<Port*>(processor_->getOutports());
-    coInports_ = stdVectorToQList<CoProcessorPort*>(processor_->getCoProcessorInports());
-    coOutports_ = stdVectorToQList<CoProcessorPort*>(processor_->getCoProcessorOutports());
-
     setName(QString::fromStdString(processor_->getName()));
 
     if (processor_->isUtility())
         setOpacity(utilityOpacityValue);
 
-    createChildItems();
+    initializePorts();
 
     QPointF center(boundingRect().x() + boundingRect().width() / 2.0, boundingRect().y() + boundingRect().height() * 0.775);
     qreal width = boundingRect().width() * 0.8;
@@ -89,7 +84,16 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor, NetworkEditor
         processor_->setProgressBar(progressBar_);
     }
 
-    processor_->addObserver(this);
+    dynamic_cast<Observable<ProcessorObserver>* >(processor_)->addObserver(this);
+}
+
+void ProcessorGraphicsItem::initializePorts() {
+    inports_ = stdVectorToQList<Port*>(processor_->getInports());
+    outports_ = stdVectorToQList<Port*>(processor_->getOutports());
+    coInports_ = stdVectorToQList<CoProcessorPort*>(processor_->getCoProcessorInports());
+    coOutports_ = stdVectorToQList<CoProcessorPort*>(processor_->getCoProcessorOutports());
+
+    createChildItems();
 }
 
 QList<Port*> ProcessorGraphicsItem::getInports() const {
@@ -213,6 +217,70 @@ void ProcessorGraphicsItem::processorWidgetCreated(const Processor* processor) {
 void ProcessorGraphicsItem::processorWidgetDeleted(const Processor*) {
     widgetIndicatorButton_.hide();
     widgetIndicatorButton_.setProcessorWidget(0);
+}
+
+void ProcessorGraphicsItem::portsAndPropertiesChanged(const Processor*) {
+    std::vector<std::pair<std::string,PortGraphicsItem*> > connections;
+    foreach (PortGraphicsItem* ownPort, portGraphicsItems_) {
+        const QList<PortGraphicsItem*> connectedPorts = ownPort->getConnectedPorts();
+        foreach (PortGraphicsItem* externalPort, connectedPorts) {
+            connections.push_back(std::pair<std::string,PortGraphicsItem*>(ownPort->getPort()->getName(), externalPort));
+            if (ownPort->getPort()->isOutport())
+                disconnect(ownPort, externalPort);
+            else
+                disconnect(externalPort, ownPort);
+        }
+    }
+
+#ifdef TZRT
+
+    const std::vector<Processor*> processors = networkEditor_->getProcessorNetwork()->getProcessors();
+    for (unsigned int i=0; i<processors.size(); i++) {
+        std::cout << "processor: " << processors[i]->getName() << " has " << processors[i]->getProperties().size() << " props" << std::endl;
+        const std::vector<Property*> properties = processors[i]->getProperties();
+        for (unsigned int j=0; j<properties.size(); j++) {
+            std::cout << "property: " << properties[j]->getID() << std::endl;
+            std::vector<PropertyLink*> curLinks = properties[j]->getLinks();
+            for (unsigned int k=0; k<curLinks.size(); k++) {
+                //std:: cout << "dstowner: " << curLinks[k]->getDestinationProperty()->getOwner()->getName() << std::endl;
+                //std:: cout << "srcowner: " << curLinks[k]->getSourceProperty()->getOwner()->getName() << std::endl;
+                /*
+                if (!curLinks[k]->getDestinationProperty()->getOwner() ||
+                    !curLinks[k]->getSourceProperty()->getOwner()) {
+                    */
+                std::cout << "removing link "+curLinks[k]->getSourceProperty()->getID() + "->" +curLinks[k]->getDestinationProperty()->getID() << std::endl;
+                //links.push_back(new PropertyLink(curLinks[k]->getSourceProperty(), curLinks[k]->getDestinationProperty(), curLinks[k]->getLinkEvaluator()));
+                       /*
+                       networkEditor_->removePropertyLink(curLinks[k]);
+
+networkEditor_->getProcessorNetwork()->notifyPropertyLinkRemoved(curLinks[k]);
+                       //delete curLinks[k];
+                       */
+
+                networkEditor_->getProcessorNetwork()->removePropertyLink(curLinks[k]);
+               //}
+           }
+       }
+   }
+
+#endif
+
+    deleteChildItems();
+    initializePorts();
+    RootGraphicsItem::portsAndPropertiesChanged();
+    for (unsigned int i=0; i<connections.size(); i++) {
+        foreach (PortGraphicsItem* p, portGraphicsItems_) {
+            if (p->getPort()->getName() == connections[i].first) {
+                if (p->getPort()->isOutport()) {
+                    if (connect(p, connections[i].second, true))
+                        connect(p, connections[i].second);
+                } else {
+                    if (connect(connections[i].second, p, true))
+                        connect(connections[i].second, p);
+                }
+            }
+        }
+    }
 }
 
 void ProcessorGraphicsItem::toggleProcessorWidget() {

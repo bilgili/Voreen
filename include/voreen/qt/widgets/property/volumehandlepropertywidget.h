@@ -65,7 +65,7 @@ public:
     void volumeChanged(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
 
     /// Returns the null pointer, since this widget does not need a separate label.
-    virtual const QLabel* getNameLabel() const;
+    virtual CustomLabel* getNameLabel() const;
 
 protected:
     void updateFromContainer();

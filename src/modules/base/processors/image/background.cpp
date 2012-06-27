@@ -100,7 +100,7 @@ GLubyte* tile(GLubyte* image, int size) {
 } // namespace
 
 Background::Background()
-    : ImageProcessor("pp_background")
+    : ImageProcessor("image/background")
     , firstcolor_("color1", "First Color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , secondcolor_("color2", "Second Color", tgt::vec4(0.2f, 0.2f, 0.2f, 1.0f))
     , angle_("angle", "Angle", 0, 0, 359)
@@ -216,17 +216,17 @@ void Background::process() {
         // use the shader to to blend the original picture over the background and to keep the
         // depth values
 
-        TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1;
-        privatePort_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
-        inport_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
+        TextureUnit colorUnit0, depthUnit0, colorUnit1, depthUnit1;
+        privatePort_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+        inport_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
 
         // initialize shader
         program_->activate();
         setGlobalShaderParameters(program_);
-        program_->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
-        program_->setUniform("depthTex0_", shadeUnitDepth0.getUnitNumber());
-        program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
-        program_->setUniform("depthTex1_", shadeUnitDepth1.getUnitNumber());
+        program_->setUniform("colorTex0_", colorUnit0.getUnitNumber());
+        program_->setUniform("depthTex0_", depthUnit0.getUnitNumber());
+        program_->setUniform("colorTex1_", colorUnit1.getUnitNumber());
+        program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
         privatePort_.setTextureParameters(program_, "textureParameters0_");
         inport_.setTextureParameters(program_, "textureParameters1_");
 

@@ -36,6 +36,10 @@
 #include "voreen/core/animation/serializationfactories.h"
 #include "voreen/core/animation/interpolationfunctionfactory.h"
 
+#include "voreen/core/datastructures/transfunc/transfunc.h"
+#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "tgt/camera.h"
+
 namespace voreen {
 
 const std::string Animation::loggerCat_("voreen.Animation");
@@ -338,7 +342,7 @@ void Animation::serialize(XmlSerializer& s) const {
         s.registerFactory(InterpolationFunctionFactory<tgt::mat2>::getInstance());
         s.registerFactory(InterpolationFunctionFactory<tgt::mat3>::getInstance());
         s.registerFactory(InterpolationFunctionFactory<tgt::mat4>::getInstance());
-        s.registerFactory(InterpolationFunctionFactory<tgt::Camera*>::getInstance());
+        s.registerFactory(InterpolationFunctionFactory<tgt::Camera>::getInstance());
         s.registerFactory(InterpolationFunctionFactory<ShaderSource>::getInstance());
         s.registerFactory(InterpolationFunctionFactory<std::string>::getInstance());
         s.registerFactory(InterpolationFunctionFactory<TransFunc*>::getInstance());
@@ -372,7 +376,7 @@ void Animation::deserialize(XmlDeserializer& s) {
     s.registerFactory(InterpolationFunctionFactory<tgt::mat2>::getInstance());
     s.registerFactory(InterpolationFunctionFactory<tgt::mat3>::getInstance());
     s.registerFactory(InterpolationFunctionFactory<tgt::mat4>::getInstance());
-    s.registerFactory(InterpolationFunctionFactory<tgt::Camera*>::getInstance());
+    s.registerFactory(InterpolationFunctionFactory<tgt::Camera>::getInstance());
     s.registerFactory(InterpolationFunctionFactory<ShaderSource>::getInstance());
     s.registerFactory(InterpolationFunctionFactory<std::string>::getInstance());
     s.registerFactory(InterpolationFunctionFactory<TransFunc*>::getInstance());

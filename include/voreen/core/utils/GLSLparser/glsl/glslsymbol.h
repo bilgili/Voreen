@@ -63,6 +63,9 @@ public:
     virtual ~GLSLSymbol() = 0;
 
     const std::vector<GLSLAnnotation*>& getAnnotations() const { return annotations_; }
+    const GLSLAnnotation* getAnnotation(std::string name) const;
+    const std::string getAnnotationValueString(std::string name) const;
+
     InternalType getInternalType() const { return internalType_; }
     int getNumInternalElements() const { return elementCount_; }
     PrecisionQualifier getPrecision() const { return precision_; }

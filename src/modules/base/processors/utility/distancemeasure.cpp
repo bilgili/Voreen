@@ -41,12 +41,12 @@ namespace voreen {
 
 
 DistanceMeasure::DistanceMeasure()
-    : ImageProcessor("pp_distance")
+    : ImageProcessor("image/distance")
     , imgInport_(Port::INPORT, "image.input0")
     , fhpInport_(Port::INPORT, "image.input1", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
     , outport_(Port::OUTPORT, "image.output")
     , volumePort_(Port::INPORT, "volume.input")
-    , camera_("camera", "Camera", new tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
     , unit_("unit", "Display unit", "mm")
     , unitFactor_("unitFactor", "Scale factor", 1.0f, 0.0f, 1000.0f)
     , numDigits_("numDigits", "Number of digits", 2, 1, 12)
@@ -161,13 +161,13 @@ void DistanceMeasure::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    TextureUnit shadeUnit, depthUnit;
-    imgInport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    imgInport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     imgInport_.setTextureParameters(program_, "textureParameters_");
 
@@ -227,11 +227,11 @@ void DistanceMeasure::process() {
         // set modelview and projection matrices
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+        tgt::loadMatrix(camera_.get().getProjectionMatrix());
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
-        tgt::loadMatrix(camera_.get()->getViewMatrix());
+        tgt::loadMatrix(camera_.get().getViewMatrix());
 
         glPushMatrix();
             glTranslatef(mouseStartPos3D_.x, mouseStartPos3D_.y, mouseStartPos3D_.z);

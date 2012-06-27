@@ -28,15 +28,23 @@
  **********************************************************************/
 
 #include "voreen/core/properties/link/linkevaluatorboolinvert.h"
+#include "voreen/core/properties/boolproperty.h"
 
 namespace voreen {
 
-BoxObject LinkEvaluatorBoolInvert::eval(const BoxObject& /*sourceOld*/, const BoxObject& sourceNew, const BoxObject& /*targetOld*/, Property* /*src*/, Property* /*dest*/) {
-    return BoxObject(!sourceNew.getBool());
+void LinkEvaluatorBoolInvert::eval(Property* src, Property* dst) throw (VoreenException) {
+    static_cast<BoolProperty*>(dst)->set(!static_cast<BoolProperty*>(src)->get());
 }
 
 std::string LinkEvaluatorBoolInvert::name() const {
     return "boolInvert";
+}
+
+bool LinkEvaluatorBoolInvert::arePropertiesLinkable(const Property* p1, const Property* p2) const {
+    tgtAssert(p1, "null pointer");
+    tgtAssert(p2, "null pointer");
+
+    return (dynamic_cast<const BoolProperty*>(p1) && dynamic_cast<const BoolProperty*>(p2));
 }
 
 } // namespace

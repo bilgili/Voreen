@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/io/serialization/xmlserializer.h"
+#include "voreen/core/plotting/plotselection.h"
 
 namespace voreen {
 
@@ -429,6 +430,21 @@ void XmlSerializer::serialize(const std::string& key, const PlotCellValue& data)
         serializeSimpleTypes("tag", data.getTag());
     if (data.isValue())
         serializeSimpleTypes("value", data.getValue());
+}
+
+void XmlSerializer::serialize(const std::string& key, const PlotSelectionEntry& data)
+    throw (SerializationException)
+{
+    // first create new node for this cell
+    TiXmlNode* newNode = new TiXmlElement(key);
+    node_->LinkEndChild(newNode);
+    TemporaryNodeChanger nodeChanger(*this, newNode);
+
+    // then add subnodes withs cell flags and values
+    serialize("selection", data.selection_);
+    serializeSimpleTypes("highlight", data.highlight_);
+    serializeSimpleTypes("renderLabel", data.renderLabel_);
+    serializeSimpleTypes("zoomTo", data.zoomTo_);
 }
 
 void XmlSerializer::serialize(const std::string& key, const Serializable& data)

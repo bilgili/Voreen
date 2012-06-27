@@ -42,6 +42,7 @@ namespace voreen {
 
 CanvasRendererWidget::CanvasRendererWidget(QWidget* parent, CanvasRenderer* canvasRenderer, NetworkEvaluator* evaluator)
     : QProcessorWidget(canvasRenderer, parent)
+    , canvasWidget_(0)
     , evaluator_(evaluator)
     , snapshotTool_(0)
 {
@@ -126,6 +127,22 @@ void CanvasRendererWidget::showSnapshotTool() {
         createSnapshotTool();
     snapshotTool_->show();
     snapshotTool_->raise();
+}
+
+void CanvasRendererWidget::updateFromProcessor() {
+    if (canvasWidget_ && processor_) {
+        Property* prop = processor_->getProperty("showCursor");
+        if(prop) {
+            BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);
+            if(bp) {
+                if(bp->get())
+                    canvasWidget_->setCursor(Qt::ArrowCursor);
+                else
+                    canvasWidget_->setCursor(Qt::BlankCursor);
+            }
+        }
+    }
+    QProcessorWidget::updateFromProcessor();
 }
 
 } //namespace voreen

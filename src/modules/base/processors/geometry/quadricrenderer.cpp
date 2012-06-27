@@ -54,7 +54,7 @@ QuadricRenderer::QuadricRenderer()
 {
     quadricType_.addOption("cylinder", "Cylinder");
     quadricType_.addOption("sphere",   "Sphere");
-    
+
     addProperty(enabled_);
     addProperty(quadricType_);
     addProperty(start_);
@@ -62,7 +62,7 @@ QuadricRenderer::QuadricRenderer()
     addProperty(position_);
     addProperty(radius_);
     addProperty(color_);
-    
+
     addProperty(applyLighting_);
     addProperty(lightPosition_);
     addProperty(lightAmbient_);
@@ -102,8 +102,8 @@ void QuadricRenderer::initialize() throw (VoreenException) {
 }
 
 void QuadricRenderer::render() {
-    
-    if (!enabled_.get()) 
+
+    if (!enabled_.get())
         return;
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);

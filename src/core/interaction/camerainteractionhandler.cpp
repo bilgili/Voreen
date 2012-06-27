@@ -58,7 +58,6 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     , navigationMetaphor_(id + ".interactionMetaphor", guiName + " Interaction", Processor::VALID)
 {
     tgtAssert(cameraProp, "No camera property");
-    tgtAssert(cameraProp->get(), "No camera");
     cameraProp_ = cameraProp;
 
     navigationMetaphor_.addOption("trackball",     "Trackball",     TRACKBALL);
@@ -68,10 +67,10 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     addProperty(navigationMetaphor_);
 
     // navigations
-    rotateNavi_ = new TrackballNavigation(cameraProp_->get(), TrackballNavigation::ROTATE_MODE, 0.05f, 15.f);
-    zoomNavi_ = new TrackballNavigation(cameraProp_->get(),   TrackballNavigation::ZOOM_MODE, 0.05f, 15.f);
-    shiftNavi_ = new TrackballNavigation(cameraProp_->get(),  TrackballNavigation::SHIFT_MODE, 0.05f, 15.f);
-    fpNavi_ = new FirstPersonNavigation(cameraProp_->get());
+    rotateNavi_ = new TrackballNavigation(cameraProp_, TrackballNavigation::ROTATE_MODE, 0.05f, 15.f);
+    zoomNavi_ = new TrackballNavigation(cameraProp_,   TrackballNavigation::ZOOM_MODE, 0.05f, 15.f);
+    shiftNavi_ = new TrackballNavigation(cameraProp_,  TrackballNavigation::SHIFT_MODE, 0.05f, 15.f);
+    fpNavi_ = new FirstPersonNavigation(cameraProp_);
 
     // event properties trackball
     rotateEvent_ = new EventProperty<CameraInteractionHandler>(id + ".rotate", guiName + " Rotate", this,
@@ -172,10 +171,11 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(rotateNavi_, "No trackball navigation");
 
-        // assign new camera object to navigation, if it has changed
-        if (rotateNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            rotateNavi_->getTrackball()->setCamera(cameraProp_->get());
-        }
+        //TODO: remove if it works (stefan)
+        //// assign new camera object to navigation, if it has changed
+        //if (rotateNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //rotateNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //}
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
@@ -227,10 +227,11 @@ void CameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(zoomNavi_, "No trackball navigation");
 
+        //TODO: remove if it works (stefan)
         // assign new camera object to navigation, if it has changed
-        if (zoomNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            zoomNavi_->getTrackball()->setCamera(cameraProp_->get());
-        }
+        //if (zoomNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //zoomNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //}
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
@@ -279,10 +280,11 @@ void CameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(shiftNavi_, "No trackball navigation");
 
+        //TODO: remove if it works (stefan)
         // assign new camera object to navigation, if it has changed
-        if (shiftNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            shiftNavi_->getTrackball()->setCamera(cameraProp_->get());
-        }
+        //if (shiftNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //shiftNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //}
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
@@ -316,9 +318,6 @@ void CameraInteractionHandler::keyEvent(tgt::KeyEvent* e){
 
     tgtAssert(fpNavi_, "No first person Navigation");
 
-    if (fpNavi_->getCamera() != cameraProp_->get())
-        fpNavi_->setCamera(cameraProp_->get());
-
     if (navigationMetaphor_.isSelected("first-person")){
         fpNavi_->keyEvent(e);
 
@@ -344,9 +343,6 @@ void CameraInteractionHandler::keyEvent(tgt::KeyEvent* e){
 void CameraInteractionHandler::onEvent(Event* eve) {
     tgtAssert(cameraProp_, "No camera property");
     tgtAssert(fpNavi_, "No first person Navigation");
-
-    if (fpNavi_->getCamera() != cameraProp_->get())
-        fpNavi_->setCamera(cameraProp_->get());
 
     if (navigationMetaphor_.isSelected("first-person")){
         if (tgt::TimeEvent* timeEve = dynamic_cast<tgt::TimeEvent*>(eve)){

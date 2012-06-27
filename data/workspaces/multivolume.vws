@@ -11,10 +11,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -37,6 +34,7 @@
                         <Property name="canvasSize">
                             <value x="362" y="317" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -154,6 +152,11 @@
                         <Property name="shading2" value="phong" />
                         <Property name="shading3" value="phong" />
                         <Property name="shading4" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode1_" value="clamp-to-edge" />
+                        <Property name="textureClampMode2_" value="clamp-to-edge" />
+                        <Property name="textureClampMode3_" value="clamp-to-edge" />
+                        <Property name="textureClampMode4_" value="clamp-to-edge" />
                         <Property name="transferFunction1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="20" y="95" width="554" height="326" />
@@ -348,12 +351,12 @@
                 <PropertyLink>
                     <SourceProperty ref="ref9" />
                     <DestinationProperty ref="ref10" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref10" />
                     <DestinationProperty ref="ref9" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

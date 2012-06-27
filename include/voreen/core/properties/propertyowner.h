@@ -30,6 +30,7 @@
 #ifndef VRN_PROPERTYOWNER_H
 #define VRN_PROPERTYOWNER_H
 
+#include "voreen/core/utils/observer.h"
 #include "voreen/core/io/serialization/serialization.h"
 
 namespace voreen {
@@ -37,7 +38,12 @@ namespace voreen {
 class Property;
 class PropertyWidget;
 
-class PropertyOwner : public AbstractSerializable {
+class PropertyOwnerObserver : public Observer {
+public:
+    virtual void preparePropertyRemoval(Property* property);
+};
+
+class PropertyOwner : public AbstractSerializable, public Observable<PropertyOwnerObserver>  {
 
     friend class Property;
 
@@ -156,6 +162,14 @@ protected:
 
     /// \overload
     virtual void addProperty(Property& prop);
+
+    /**
+     * Unregisters a property at the owner.
+     */
+    virtual void removeProperty(Property* prop);
+
+    /// \overload
+    virtual void removeProperty(Property& prop);
 
     /**
      * This method is called if the owner is switched into or out of interaction mode.

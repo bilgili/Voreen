@@ -43,7 +43,7 @@ HalfAngleSlicer::HalfAngleSlicer()
     , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_RESULT, GL_RGBA16F_ARB)
     , lightport_(Port::OUTPORT, "image.lightport", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
     , cameraHandler_("cameraHandler", "Camera Handler", &camera_)
-    , lightCamera_("light_camera", "Light Camera", new tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
+    , lightCamera_("light_camera", "Light Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
     , halfLight_("halfLight", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f), tgt::vec4(-15), tgt::vec4(15))
 {
 
@@ -58,7 +58,7 @@ HalfAngleSlicer::HalfAngleSlicer()
 }
 
 Processor* HalfAngleSlicer::create() const {
-    return new HalfAngleSlicer(); 
+    return new HalfAngleSlicer();
 }
 
 std::string HalfAngleSlicer::getProcessorInfo() const {
@@ -162,10 +162,12 @@ void HalfAngleSlicer::process() {
     slicingPrg_->setUniform("v1_", v1_, 24);
     slicingPrg_->setUniform("v2_", v2_, 24);
 
-    lightCamera_.get()->setPosition(halfLight_.get().xyz());
+    tgt::Camera lightCam = lightCamera_.get();
+    lightCam.setPosition(halfLight_.get().xyz());
+    lightCamera_.set(lightCam);
     //lightCamera_.get()->setUpVector(cross(-normalize(halfLight_.get().xyz()), normalize(lightCamera_.get()->getStrafe())));
-    tgt::vec3 camView = camera_.get()->getLook();
-    tgt::vec3 lightView = -1.f * normalize(lightCamera_.get()->getPosition());
+    tgt::vec3 camView = camera_.get().getLook();
+    tgt::vec3 lightView = -1.f * normalize(lightCamera_.get().getPosition());
 
     tgt::vec3 halfAngleVec;
     bool invert;
@@ -181,7 +183,7 @@ void HalfAngleSlicer::process() {
     // compute front index needed for clipping
     int frontIdx = 0; // index of the vertex closest to the camera
     float minCameraDistance = 1000.0;//std::numeric_limits<float>::max(); // distance between camera and closest vertex
-    tgt::vec3 camPos = -halfAngleVec * (length(camera_.get()->getPosition()) + length(lightCamera_.get()->getPosition())) * 0.5f;
+    tgt::vec3 camPos = -halfAngleVec * (length(camera_.get().getPosition()) + length(lightCamera_.get().getPosition())) * 0.5f;
     for (unsigned int i=0;i<8;i++) {
         float cameraDistance = length(camPos-cubeVertices_[i]);
         if (cameraDistance < minCameraDistance) {
@@ -201,15 +203,16 @@ void HalfAngleSlicer::process() {
     slicingPrg_->setUniform("dPlaneIncr_", sliceDistance);
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(slicingPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(slicingPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(slicingPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(slicingPrg_, volumeTextures, &cam, lightPosition_.get());
 
     glDisable(GL_DEPTH_TEST);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -230,16 +233,17 @@ void HalfAngleSlicer::process() {
         else
             glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
-        tgt::loadMatrix(camera_.get()->getViewMatrix());
+        tgt::loadMatrix(camera_.get().getViewMatrix());
 
         lightBufferUnit.activate();
         glEnable(GL_TEXTURE_2D);
         lightport_.bindColorTexture();
 
-        setGlobalShaderParameters(slicingPrg_, camera_.get());
+        tgt::Camera cam = camera_.get();
+        setGlobalShaderParameters(slicingPrg_, &cam);
         slicingPrg_->setUniform("secondPass_", false);
         slicingPrg_->setUniform("lightBuf_", lightBufferUnit.getUnitNumber());
-        slicingPrg_->setUniform("lightMat_", lightCamera_.get()->getViewMatrix());
+        slicingPrg_->setUniform("lightMat_", lightCamera_.get().getViewMatrix());
         lightport_.setTextureParameters(slicingPrg_, "lightBufParameters_");
 
         glBegin(GL_POLYGON);
@@ -251,9 +255,9 @@ void HalfAngleSlicer::process() {
         lightport_.activateTarget();
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        tgt::loadMatrix(lightCamera_.get()->getViewMatrix());
-
-        setGlobalShaderParameters(slicingPrg_, lightCamera_.get());
+        tgt::loadMatrix(lightCamera_.get().getViewMatrix());
+        tgt::Camera lightCam = lightCamera_.get();
+        setGlobalShaderParameters(slicingPrg_, &lightCam);
         slicingPrg_->setUniform("secondPass_", true);
 
         glBegin(GL_POLYGON);

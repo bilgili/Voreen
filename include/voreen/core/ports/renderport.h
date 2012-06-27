@@ -33,6 +33,7 @@
 #include "voreen/core/ports/port.h"
 #include "tgt/textureunit.h"
 #include "tgt/tgt_gl.h"
+#include "tgt/gpucapabilities.h"
 
 namespace tgt {
     class FramebufferObject;
@@ -48,6 +49,7 @@ class RenderPort : public Port {
 
     friend class RenderProcessor;
     friend class NetworkEvaluator;
+    friend class DynamicGLSLProcessor;
 
 public:
     RenderPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
@@ -348,10 +350,14 @@ public:
     /// Deinitializes the FBO
     void deinitialize();
 
-    ///Add a port to the group.
+    ///Add or remove a port to/from the group.
     void addPort(RenderPort* rp);
     void addPort(RenderPort& rp);
-    //void removePort(RenderPort* rp);
+    void removePort(RenderPort* rp);
+    void removePort(RenderPort& rp);
+    // Check if the group contains the specified port.
+    bool containsPort(RenderPort* rp);
+    bool containsPort(RenderPort& rp);
 
     /**
      * @brief Start rendering to all attached ports.
@@ -374,30 +380,25 @@ public:
     void resize(const tgt::ivec2& newsize);
 
     /**
-     * @brief Defines OP0, OP1, ... OPn to adress targets in shader.
+     * @brief Defines OP0, OP1, ... OPn to address targets in shader.
      *
      * Example:
      * CPP:
      * addPort(p1); addPort(p2); addPort(p3);
      *
      * glsl:
-     * gl_FragData[OP0] = vec4(1.0); //write to p1
-     * gl_FragData[OP1] = vec4(1.0); //write to p2
-     * gl_FragData[OP2] = vec4(1.0); //write to p3
-     *
-     * using the following code would not work if some ports are disconnected and ignoreConnectivity is false.
-     * gl_FragData[0] = vec4(1.0); //write to p1
-     * //do not write to p2 because it is disconnected
-     * gl_FragData[2] = vec4(1.0); //write to p3 (would not work)
+     * FragData0 = vec4(1.0); //write to p1
+     * FragData1 = vec4(1.0); //write to p2
+     * FragData2 = vec4(1.0); //write to p3
      *
      * The defines can also be used to test if a port is connected:
      * #ifdef OP0
-     *    gl_FragData[OP0] = result;
+     *    FragData0 = result;
      * #endif
      *
      * @return A string containing the defines.
      */
-    std::string generateHeader();
+    std::string generateHeader(tgt::Shader* shader);
 
     /**
      * Re-attach all rendertargets to the FBO.

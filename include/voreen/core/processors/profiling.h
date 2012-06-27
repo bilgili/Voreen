@@ -30,6 +30,11 @@
 #ifndef VRN_PROFILING_H
 #define VRN_PROFILING_H
 
+#ifdef WIN32
+#include <windows.h>
+#include <winbase.h>
+#endif
+
 #include <string>
 #include <vector>
 #include <stack>

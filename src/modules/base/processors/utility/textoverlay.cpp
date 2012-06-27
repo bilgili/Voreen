@@ -190,15 +190,15 @@ void TextOverlay::process() {
         outport_.activateTarget();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        TextureUnit shadeUnit0, shadeUnit1, depthUnit0, depthUnit1;
-        privatePort_.bindTextures(shadeUnit0.getEnum(), depthUnit0.getEnum());
-        inport_.bindTextures(shadeUnit1.getEnum(), depthUnit1.getEnum());
+        TextureUnit colorUnit0, colorUnit1, depthUnit0, depthUnit1;
+        privatePort_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+        inport_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
 
         // initialize shader
         program_->activate();
         setGlobalShaderParameters(program_);
-        program_->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
-        program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
+        program_->setUniform("colorTex0_", colorUnit0.getUnitNumber());
+        program_->setUniform("colorTex1_", colorUnit1.getUnitNumber());
         program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
         privatePort_.setTextureParameters(program_, "textureParameters0_");
         inport_.setTextureParameters(program_, "textureParameters1_");

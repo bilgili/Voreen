@@ -624,6 +624,12 @@ void Shader::setHeaders(const string& customHeader) {
     }
 }
 
+void Shader::bindFragDataLocation(GLuint colorNumber, std::string name) {
+    if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+        glBindFragDataLocationEXT(id_, colorNumber, name.c_str());
+    }
+}
+
 bool Shader::load(const string& filename, const string& customHeader) {
     return loadSeparate(filename + ".vert", "", filename + ".frag", customHeader);
 }
@@ -695,7 +701,11 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
             delete geom;
             delete vert;
             return false;
-        } else {
+        } 
+        else {
+            if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130)
+                bindFragDataLocation(0, "FragData0");
+
 			frag->uploadSource();
 
             if (!frag->compileShader()) {
@@ -766,7 +776,7 @@ GLint Shader::getUniformLocation(const string& name) {
     GLint l;
     l = glGetUniformLocation(id_, name.c_str());
     if (l == -1 && !ignoreError_)
-        LERROR("Failed to locate uniform Location: " << name);
+        LWARNING("Failed to locate uniform Location: " << name);
     return l;
 }
 

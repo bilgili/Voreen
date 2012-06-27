@@ -56,6 +56,7 @@ public:
 protected:
     virtual void process();
     virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     virtual void loadShader();
     virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
@@ -66,6 +67,8 @@ private:
     RenderPort entryPort_;      ///< entry points texture
     RenderPort exitPort_;       ///< exit points texture
     RenderPort outport_;        ///< output rendering
+
+    tgt::Shader* raycastPrg_;            ///< The shader program used by this raycaster.
 
     TransFuncProperty transferFunc_;     ///< the property that controls the transfer-function
     BoolProperty applyColorModulation_;

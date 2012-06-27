@@ -22,11 +22,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef TGT_USE_PYTHON
-// Init python at very first
-#include "tgt/scriptmanager.h"
-#endif // TGT_USE_PYTHON
-
 #include "tgt/init.h"
 
 #include "tgt/tgt_gl.h"
@@ -76,19 +71,9 @@ void init(InitFeature::Features featureset) {
 
     if (featureset & InitFeature::FILE_SYSTEM)
         Singleton<FileSystem>::init(new FileSystem());
-
-#ifdef TGT_USE_PYTHON
-    if (featureset & InitFeature::SCRIPT_MANAGER)
-        Singleton<ScriptManager>::init(new ScriptManager());
-#endif
 }
 
 void deinit() {
-#ifdef TGT_USE_PYTHON
-    if (Singleton<ScriptManager> ::isInited())
-        Singleton<ScriptManager> ::deinit();
-#endif
-
     if (Singleton<FileSystem>    ::isInited())
         Singleton<FileSystem>    ::deinit();
 

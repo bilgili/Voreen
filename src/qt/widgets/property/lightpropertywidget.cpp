@@ -64,24 +64,23 @@ LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* paren
         std::vector<Property*>::iterator it = props.begin();
         while(it != props.end()){
             if(dynamic_cast<CameraProperty*>(*it)) {
-                camera_ = dynamic_cast<tgt::Camera*>((dynamic_cast<CameraProperty*>(*it)->get()));
+                camera_ = (dynamic_cast<CameraProperty*>(*it)->get());
                 dynamic_cast<CameraProperty*>(*it)->onChange(CallMemberAction<LightPropertyWidget>(this, &LightPropertyWidget::cameraUpdate));
             }
             ++it;
         }
-
     }
 }
-tgt::Camera* LightPropertyWidget::getCamera() {
+tgt::Camera LightPropertyWidget::getCamera() {
     PropertyOwner* propOwner = property_->getOwner();       // this should not be done on any change but for some reason the roation matrix is invalid when the camera is moved!
-    tgt::Camera* camera = 0;
+    tgt::Camera camera;
     if(dynamic_cast<VolumeRenderer*>(propOwner)) {
         VolumeRenderer* vol = dynamic_cast<VolumeRenderer*>(propOwner);
         std::vector<Property*> props = vol->getProperties();
         std::vector<Property*>::iterator it = props.begin();
         while(it != props.end()){
             if(dynamic_cast<CameraProperty*>(*it)) {
-                camera = dynamic_cast<tgt::Camera*>((dynamic_cast<CameraProperty*>(*it)->get()));
+                camera = (dynamic_cast<CameraProperty*>(*it)->get());
             }
             ++it;
         }
@@ -90,18 +89,14 @@ tgt::Camera* LightPropertyWidget::getCamera() {
 }
 
 void LightPropertyWidget::changeWidgetLight(tgt::vec4 lightPos) {
-    tgt::Camera* camera = getCamera();
-    if (!camera)
-        return;
+    tgt::Camera camera = getCamera();
 
-    tgt::mat4 matrix = camera->getViewMatrix();
-    //viewMatrix_ = camera->getViewMatrix();
-    tgt::mat4 projectionMatrix;
-    matrix.invert(projectionMatrix);
+    viewMatrix_ = camera.getViewMatrix();
+    tgt::mat4 viewMatrix = camera.getViewMatrixInverse();
 
-    float x = projectionMatrix.t00 * lightPos.x - projectionMatrix.t01 * lightPos.y + projectionMatrix.t02 * lightPos.z;
-    float y = projectionMatrix.t10 * lightPos.x - projectionMatrix.t11 * lightPos.y + projectionMatrix.t12 * lightPos.z;
-    float z = projectionMatrix.t20 * lightPos.x - projectionMatrix.t21 * lightPos.y + projectionMatrix.t22 * lightPos.z;
+    float x = viewMatrix.t00 * lightPos.x - viewMatrix.t01 * lightPos.y + viewMatrix.t02 * lightPos.z;
+    float y = viewMatrix.t10 * lightPos.x - viewMatrix.t11 * lightPos.y + viewMatrix.t12 * lightPos.z;
+    float z = viewMatrix.t20 * lightPos.x - viewMatrix.t21 * lightPos.y + viewMatrix.t22 * lightPos.z;
     vector_[0] = x;
     vector_[1] = y;
     vector_[2] = z;
@@ -110,17 +105,17 @@ void LightPropertyWidget::changeWidgetLight(tgt::vec4 lightPos) {
 
 void LightPropertyWidget::cameraUpdate() {
     /*tgt::vec4 position;
-    tgt::Camera* camera = getCamera();
+    tgt::Camera camera = getCamera();
     if (!camera_)
-        return;*/
-    /*tgt::mat4 mat = camera->getViewMatrix() - viewMatrix_;
-    tgt::vec4 pos;
-    pos.x = widgets_[0]->getValue() * 6;
-    pos.y = widgets_[1]->getValue() * 6;
-    pos.z = widgets_[2]->getValue();
-    pos.w = 0;
+        return;
+    tgt::mat4 mat = camera->getViewMatrix() - viewMatrix_;
+    tgt::vec4 pos;*/
+    //pos.x = widgets_[0]->getValue() * 6;
+    //pos.y = widgets_[1]->getValue() * 6;
+    //pos.z = widgets_[2]->getValue();
+    //pos.w = 0;
 
-    light_->setLightPosition(pos);*/
+    //light_->setLightPosition(pos);
 }
 
 void LightPropertyWidget::updateFromProperty() {

@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 DepthDarkening::DepthDarkening()
-    : ImageProcessorDepth("pp_depthdarkening")
+    : ImageProcessorDepth("image/depthdarkening")
     , sigma_("sigma", "Sigma", 2.0f, 0.1f, 10.0f)
     , lambda_("lambda", "Lambda", 10.0f, 0.0f, 20.0f)
     , inport_(Port::INPORT, "image.inport")
@@ -70,13 +70,13 @@ void DepthDarkening::process() {
     // since the blurring is implemented as a separable filter,
     // two rendering passes are needed
     // first horizontal pass
-    TextureUnit shadeUnit, depthUnit0, depthUnit1;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit0.getEnum());
+    TextureUnit colorUnit, depthUnit0, depthUnit1;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit0.getEnum());
     inport_.bindDepthTexture(depthUnit1.getEnum());
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex0_", depthUnit0.getUnitNumber());
     program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");
@@ -94,13 +94,13 @@ void DepthDarkening::process() {
     // second vertical pass
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    inport_.bindColorTexture(shadeUnit.getEnum());
+    inport_.bindColorTexture(colorUnit.getEnum());
     privatePort_.bindDepthTexture(depthUnit0.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex0_", depthUnit0.getUnitNumber());
     program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");

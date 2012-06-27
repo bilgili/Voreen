@@ -92,7 +92,7 @@ private slots:
      void hideAutoLinks();
      void confirmAutoLinks();
      void deleteAllLinks();
-     void setDependencyHistoryLengthLabel(int newValue);
+     void setDependancyHistoryLengthLabel(int newValue);
 
 private:
     struct ConnectionInfo {
@@ -104,6 +104,7 @@ private:
 
     void init();
     void initCombobox();
+    void updateCombobox(LinkDialogPropertyGraphicsItem* source, LinkDialogPropertyGraphicsItem* destination);
     void initGraphicsItem(RootGraphicsItem* item, ColumnPosition position);
     void initPropertyItems(PropertyGraphicsItem* sourceItem, PropertyGraphicsItem* destinationItem);
 
@@ -121,7 +122,7 @@ private:
     LinkDialogPropertyGraphicsItem* destinationPropertyItem_;
 
     QPushButton* propertyLinkModeButton_;
-    QPushButton* dependencyLinkModeButton_;
+    QPushButton* dependancyLinkModeButton_;
     LinkDialogGraphicsView* view_;
     QButtonGroup* arrowButtonGroup_;
     QPushButton* deleteArrowButton_;
@@ -129,9 +130,9 @@ private:
     QPushButton* bidirectionalArrowButton_;
     QPushButton* rightArrowButton_;
 
-    QWidget* dependencyLinkHistoryContainer_;
-    QLabel* dependencyHistoryLengthLabel_;
-    QSlider* dependencyHistoryLengthSlider_;
+    QWidget* dependancyLinkHistoryContainer_;
+    QLabel* dependancyHistoryLengthLabel_;
+    QSlider* dependancyHistoryLengthSlider_;
 
     QPushButton* autolinkName_;
 

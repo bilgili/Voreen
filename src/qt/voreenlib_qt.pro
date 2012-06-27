@@ -12,23 +12,29 @@ QT += network
 CONFIG += static thread
 CONFIG -= dll
 
-# Check Qt version:
-# Use a regex that matches all invalid version numbers, namely X.*.*
-# with X <= 3 and 4.Y.* with Y <= 3.
-VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[123])\..*$")
-!isEmpty(VERSION_CHECK) {
-   error("Your Qt version is $$QT_VERSION but at least 4.4.0 is required!")
+# check qmake version
+QMAKE_VERS = $$[QMAKE_VERSION]
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+isEmpty(QMAKE_VERSION_CHECK) {
+   error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }
 
-# Include local configuration
-!include(../../config.txt) {
-  warning("config.txt not found! Using config-default.txt instead.")
-  warning("For custom behavior, copy config-default.txt to config.txt and edit!")
-  include(../../config-default.txt)
+# include config
+!exists(../../config.txt) {
+  error("config.txt not found! copy config-default.txt to config.txt and edit!")
 }
+include(../../config.txt)
 
 # Include common configuration
 include(../../commonconf.pri)
+
+contains(DEFINES, VRN_PRECOMPILE_HEADER) {
+  PRECOMPILED_HEADER = pch_qt.h
+  CONFIG += precompile_header
+}
+else {
+  CONFIG -= precompile_header
+}
 
 # Destination directory for the library
 macx: DESTDIR = ../..
@@ -60,7 +66,6 @@ SOURCES += \
     aboutbox.cpp \
     helpbrowser.cpp \
     progressdialog.cpp \
-    pyvoreenqt.cpp \
     versionqt.cpp \
     voreenapplicationqt.cpp
 SOURCES += \
@@ -78,8 +83,6 @@ SOURCES += \
     widgets/labelingwidgetqt.cpp \
     widgets/lightwidget.cpp \
     widgets/lineeditresetwidget.cpp \
-    widgets/linkingscriptmanager.cpp \
-    widgets/pythonhighlighter.cpp \
     widgets/rawvolumewidget.cpp \
     widgets/rendertargetviewer.cpp \
     widgets/shaderplugin.cpp \
@@ -95,7 +98,11 @@ SOURCES += \
     widgets/plotting/extendedtable.cpp \
     widgets/plotting/plotdataextendedtablemodel.cpp \
     widgets/plotting/plotdatawidget.cpp \
-    widgets/plotting/plotpredicatedialog.cpp 
+    widgets/plotting/plotentitysettingsdialog.cpp \	
+    widgets/plotting/plotpredicatedialog.cpp \
+    widgets/plotting/plotselectionentrytablemodel.cpp \
+    widgets/plotting/plotselectiontablemodel.cpp \
+    widgets/plotting/plotselectiondialog.cpp	
 SOURCES += \
     widgets/animation/animationeditor.cpp \
     widgets/animation/animationexportwidget.cpp \
@@ -127,14 +134,13 @@ SOURCES += \
     widgets/property/intvec2propertywidget.cpp \
     widgets/property/intvec3propertywidget.cpp \
     widgets/property/intvec4propertywidget.cpp \
-    widgets/property/plotentitiespropertywidget.cpp \
-    widgets/property/plotentitysettingswidget.cpp \
     widgets/property/lightpropertywidget.cpp \
     widgets/property/matrixpropertywidget.cpp \
     widgets/property/optionpropertywidget.cpp \
     widgets/property/plotdatapropertywidget.cpp \
+    widgets/property/plotentitiespropertywidget.cpp \
     widgets/property/plotpredicatepropertywidget.cpp \
-    widgets/property/plotzoompropertywidget.cpp \
+    widgets/property/plotselectionpropertywidget.cpp \
     widgets/property/processorpropertieswidget.cpp \
     widgets/property/propertyvectorwidget.cpp \
     widgets/property/qpropertywidget.cpp \
@@ -153,13 +159,19 @@ SOURCES += \
     widgets/propertylistwidget.cpp
 SOURCES += \
     widgets/processor/canvasrendererwidget.cpp \
-    widgets/processor/qprocessorwidget.cpp \
-    widgets/processor/qprocessorwidgetfactory.cpp \
     widgets/processor/imageanalyzerwidget.cpp \
-    widgets/processor/plotdataprocessorwidget.cpp
+    widgets/processor/plotdatamergewidget.cpp \
+    widgets/processor/plotdatafitfunctionwidget.cpp \
+    widgets/processor/plotdataselectwidget.cpp \
+    widgets/processor/plotdatagroupwidget.cpp \
+    widgets/processor/plotdataprocessorwidget.cpp \
+    widgets/processor/qprocessorwidget.cpp \
+    widgets/processor/qprocessorwidgetfactory.cpp
 SOURCES += \
     widgets/property/camerawidget.cpp 
 
+contains(VRN_MODULES, base) : SOURCES += widgets/processor/dynamicglslwidget.cpp
+        
 SOURCES += \
     widgets/transfunc/colorluminancepicker.cpp \
     widgets/transfunc/colorpicker.cpp \
@@ -196,7 +208,6 @@ HEADERS += \
     ../../include/voreen/qt/aboutbox.h \
     ../../include/voreen/qt/helpbrowser.h \
     ../../include/voreen/qt/progressdialog.h \
-    ../../include/voreen/qt/pyvoreenqt.h \
     ../../include/voreen/qt/versionqt.h \
     ../../include/voreen/qt/voreenapplicationqt.h
 HEADERS += \
@@ -215,8 +226,6 @@ HEADERS += \
     ../../include/voreen/qt/widgets/labelingwidgetqt.h \
     ../../include/voreen/qt/widgets/lightwidget.h \
     ../../include/voreen/qt/widgets/lineeditresetwidget.h \
-    ../../include/voreen/qt/widgets/linkingscriptmanager.h \
-    ../../include/voreen/qt/widgets/pythonhighlighter.h \
     ../../include/voreen/qt/widgets/rawvolumewidget.h \
     ../../include/voreen/qt/widgets/rendertargetviewer.h \
     ../../include/voreen/qt/widgets/shaderplugin.h \
@@ -232,7 +241,11 @@ HEADERS += \
     ../../include/voreen/qt/widgets/plotting/extendedtable.h \
     ../../include/voreen/qt/widgets/plotting/plotdataextendedtablemodel.h \
     ../../include/voreen/qt/widgets/plotting/plotdatawidget.h \
-    ../../include/voreen/qt/widgets/plotting/plotpredicatedialog.h 
+    ../../include/voreen/qt/widgets/plotting/plotentitysettingsdialog.h \
+    ../../include/voreen/qt/widgets/plotting/plotpredicatedialog.h \
+    ../../include/voreen/qt/widgets/plotting/plotselectionentrytablemodel.h \
+    ../../include/voreen/qt/widgets/plotting/plotselectiontablemodel.h \
+    ../../include/voreen/qt/widgets/plotting/plotselectiondialog.h
 HEADERS +=  \
     ../../include/voreen/qt/widgets/animation/animationeditor.h \
     ../../include/voreen/qt/widgets/animation/currentframegraphicsitem.h \
@@ -263,14 +276,13 @@ HEADERS += \
     ../../include/voreen/qt/widgets/property/intvec2propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec3propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec4propertywidget.h \
-    ../../include/voreen/qt/widgets/property/plotentitiespropertywidget.h \
-    ../../include/voreen/qt/widgets/property/plotentitysettingswidget.h \
     ../../include/voreen/qt/widgets/property/lightpropertywidget.h \
     ../../include/voreen/qt/widgets/property/matrixpropertywidget.h \
     ../../include/voreen/qt/widgets/property/optionpropertywidget.h \
     ../../include/voreen/qt/widgets/property/plotdatapropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotentitiespropertywidget.h \
     ../../include/voreen/qt/widgets/property/plotpredicatepropertywidget.h \
-    ../../include/voreen/qt/widgets/property/plotzoompropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotselectionpropertywidget.h \
     ../../include/voreen/qt/widgets/property/processorpropertieswidget.h \
     ../../include/voreen/qt/widgets/property/propertyvectorwidget.h \
     ../../include/voreen/qt/widgets/property/qpropertywidget.h \
@@ -289,12 +301,18 @@ HEADERS += \
     ../../include/voreen/qt/widgets/propertylistwidget.h
 HEADERS += \
     ../../include/voreen/qt/widgets/processor/canvasrendererwidget.h \
-    ../../include/voreen/qt/widgets/processor/qprocessorwidget.h \
-    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h \
     ../../include/voreen/qt/widgets/processor/imageanalyzerwidget.h \
-    ../../include/voreen/qt/widgets/processor/plotdataprocessorwidget.h 
+    ../../include/voreen/qt/widgets/processor/plotdatafitfunctionwidget.h \
+    ../../include/voreen/qt/widgets/processor/plotdatamergewidget.h \
+    ../../include/voreen/qt/widgets/processor/plotdataselectwidget.h \
+    ../../include/voreen/qt/widgets/processor/plotdatagroupwidget.h \
+    ../../include/voreen/qt/widgets/processor/plotdataprocessorwidget.h \
+    ../../include/voreen/qt/widgets/processor/qprocessorwidget.h \
+    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h
 HEADERS += \
     ../../include/voreen/qt/widgets/property/camerawidget.h 
+
+contains(VRN_MODULES, base) : HEADERS += ../../include/voreen/qt/widgets/processor/dynamicglslwidget.h 
 
 HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/colorluminancepicker.h \

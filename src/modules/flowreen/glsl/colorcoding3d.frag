@@ -144,15 +144,15 @@ void main() {
     // look up the flow at the position and calculate the color
     //
 #if COLOR_MODE == COLOR_MODE_DIRECTION
-    gl_FragColor = getColorFromFlowDirection(r0);
+    FragData0 = getColorFromFlowDirection(r0);
 #elif COLOR_MODE == COLOR_MODE_MONOCHROME
-    gl_FragColor = clamp(color_, vec4(0.0), vec4(1.0));
+    FragData0 = clamp(color_, vec4(0.0), vec4(1.0));
 #else
     if (useBilinearInterpolation_ == true)
-        gl_FragColor = bilinearInterpolation(r0);
+        FragData0 = bilinearInterpolation(r0);
     else {
         float magnitude = getFlowMagnitude(r0);
-        gl_FragColor = getColorFromFlowMagnitude(magnitude);
+        FragData0 = getColorFromFlowMagnitude(magnitude);
     }
 #endif
 }

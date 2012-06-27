@@ -57,6 +57,12 @@ CustomLabel::CustomLabel(QPropertyWidget* pw, QWidget* parent, Qt::WindowFlags f
     init();
 }
 
+CustomLabel::~CustomLabel() {
+    // disconnect from widget
+    if (propertyWidget_)
+        propertyWidget_->nameLabel_ = 0;
+}
+
 void CustomLabel::init() {
     initFont();
     processText();

@@ -46,7 +46,7 @@ const std::string VolumeRaycaster::loggerCat_("voreen.VolumeRaycaster");
 
 VolumeRaycaster::VolumeRaycaster()
     : VolumeRenderer()
-    , raycastPrg_(0)
+    //, raycastPrg_(0)
     , samplingRate_("samplingRate", "Sampling Rate", 4.f, 0.01f, 20.f)
     , isoValue_("isoValue", "Iso Value", 0.5f, 0.0f, 1.0f)
     , maskingMode_("masking", "Masking", Processor::INVALID_PROGRAM)
@@ -54,16 +54,14 @@ VolumeRaycaster::VolumeRaycaster()
     , classificationMode_("classification", "Classification", Processor::INVALID_PROGRAM)
     , shadeMode_("shading", "Shading", Processor::INVALID_PROGRAM)
     , compositingMode_("compositing", "Compositing", Processor::INVALID_PROGRAM)
+    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 4, 1, 16, Processor::VALID)
+    , interactionQuality_("interactionQuality","Interaction Quality", 1.0f, 0.01f, 1.0f, Processor::VALID)
+    , useInterpolationCoarseness_("interpolation.coarseness","Use Interpolation Coarseness", false, Processor::INVALID_PROGRAM)
     , brickingInterpolationMode_("interpolationMode","Interpolation", Processor::INVALID_PROGRAM)
     , brickingStrategyMode_("bricking.strategy.mode", "Bricking Strategy")
     , brickingUpdateStrategy_("bricking.update.strategy", "Update Bricks")
     , brickLodSelector_("brickLodSelector", "Brick LOD Selection")
     , useAdaptiveSampling_("adaptive.sampling", "Use Adaptive Sampling", false, Processor::INVALID_PROGRAM)
-    , segment_("setSegment", "Active Segment", 0)
-    , useSegmentation_("switchSegmentation", "Use Segmentation", false, Processor::INVALID_PROGRAM)
-    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 4, 1, 16, Processor::VALID)
-    , interactionQuality_("interactionQuality","Interaction Quality", 1.0f, 0.01f, 1.0f, Processor::VALID)
-    , useInterpolationCoarseness_("interpolation.coarseness","Use Interpolation Coarseness", false, Processor::INVALID_PROGRAM)
     , size_(128, 128)
     , switchToInteractionMode_(false)
     , brickingParametersChanged_(false)
@@ -71,32 +69,11 @@ VolumeRaycaster::VolumeRaycaster()
     initProperties();
 }
 
-VolumeRaycaster::~VolumeRaycaster() {
-}
-
-void VolumeRaycaster::deinitialize() throw (VoreenException) {
-    ShdrMgr.dispose(raycastPrg_);
-    raycastPrg_ = 0;
-    LGL_ERROR;
-
-    VolumeRenderer::deinitialize();
-}
-
 /*
     further methods
 */
 std::string VolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     std::string headerSource = VolumeRenderer::generateHeader();
-
-    if (maskingMode_.get() == "Segmentation")
-         headerSource += "#define USE_SEGMENTATION\n";
-
-    // configure masking
-    headerSource += "#define RC_NOT_MASKED(samplePos, intensity) ";
-    if (maskingMode_.get() == "none")
-        headerSource += "true\n";
-    else if (maskingMode_.get() == "Segmentation")
-        headerSource += "inSegmentation(samplePos)\n";
 
     // configure gradient calculation
     headerSource += "#define RC_CALC_GRADIENTS(voxel, samplePos, volume, volumeParameters, t, rayDirection, entryPoints, entryParameters) ";
@@ -331,7 +308,9 @@ void VolumeRaycaster::showBrickingProperties(bool b) {
     }
 }
 
-void VolumeRaycaster::setBrickedVolumeUniforms(VolumeHandle* volumeHandle) {
+void VolumeRaycaster::setBrickedVolumeUniforms(tgt::Shader* shader, VolumeHandle* volumeHandle) {
+
+    tgtAssert(shader, "no shader passed");
 
     Volume* eepVolume;
     Volume* packedVolume;
@@ -368,38 +347,38 @@ void VolumeRaycaster::setBrickedVolumeUniforms(VolumeHandle* volumeHandle) {
 
     LGL_ERROR;
     if (brickingInterpolationMode_.get() == "interblock") {
-        raycastPrg_->setUniform("brickSizeX_",brickSizeX);
-        raycastPrg_->setUniform("brickSizeY_",brickSizeY);
-        raycastPrg_->setUniform("brickSizeZ_",brickSizeZ);
+        shader->setUniform("brickSizeX_",brickSizeX);
+        shader->setUniform("brickSizeY_",brickSizeY);
+        shader->setUniform("brickSizeZ_",brickSizeZ);
     }
 
-    raycastPrg_->setUniform("numbricksX_",numbricksX);
-    raycastPrg_->setUniform("numbricksY_",numbricksY);
-    raycastPrg_->setUniform("numbricksZ_",numbricksZ);
+    shader->setUniform("numbricksX_",numbricksX);
+    shader->setUniform("numbricksY_",numbricksY);
+    shader->setUniform("numbricksZ_",numbricksZ);
     float temp1 = 1.0f / (2.0f * numbricksX);
     float temp2 = 1.0f / (2.0f * numbricksY);
     float temp3 = 1.0f / (2.0f * numbricksZ);
-    raycastPrg_->setUniform("temp1",temp1);
-    raycastPrg_->setUniform("temp2",temp2);
-    raycastPrg_->setUniform("temp3",temp3);
+    shader->setUniform("temp1",temp1);
+    shader->setUniform("temp2",temp2);
+    shader->setUniform("temp3",temp3);
 
     float temp4 = 1.0f / (2.0f * bricksize);
-    raycastPrg_->setUniform("temp4",temp4);
+    shader->setUniform("temp4",temp4);
 
     float temp5 = 1.0f / numbricksX;
     float temp6 = 1.0f / numbricksY;
     float temp7 = 1.0f / numbricksZ;
-    raycastPrg_->setUniform("temp5",temp5);
-    raycastPrg_->setUniform("temp6",temp6);
-    raycastPrg_->setUniform("temp7",temp7);
+    shader->setUniform("temp5",temp5);
+    shader->setUniform("temp6",temp6);
+    shader->setUniform("temp7",temp7);
 
     float boundaryX = 1.0f - (1.0f / numbricksX);
     float boundaryY = 1.0f - (1.0f / numbricksY);
     float boundaryZ = 1.0f - (1.0f / numbricksZ);
 
-    raycastPrg_->setUniform("boundaryX_",boundaryX);
-    raycastPrg_->setUniform("boundaryY_",boundaryY);
-    raycastPrg_->setUniform("boundaryZ_",boundaryZ);
+    shader->setUniform("boundaryX_",boundaryX);
+    shader->setUniform("boundaryY_",boundaryY);
+    shader->setUniform("boundaryZ_",boundaryZ);
 
     LGL_ERROR;
 
@@ -409,17 +388,17 @@ void VolumeRaycaster::setBrickedVolumeUniforms(VolumeHandle* volumeHandle) {
     float offsetFactorY = (float)eepDimensions.y / (float)brickedDimensions.y;
     float offsetFactorZ = (float)eepDimensions.z / (float)brickedDimensions.z;
 
-    raycastPrg_->setUniform("offsetFactorX_",offsetFactorX);
-    raycastPrg_->setUniform("offsetFactorY_",offsetFactorY);
-    raycastPrg_->setUniform("offsetFactorZ_",offsetFactorZ);
+    shader->setUniform("offsetFactorX_",offsetFactorX);
+    shader->setUniform("offsetFactorY_",offsetFactorY);
+    shader->setUniform("offsetFactorZ_",offsetFactorZ);
     LGL_ERROR;
     float indexVolumeFactorX = 65535.0f / brickedDimensions.x;
     float indexVolumeFactorY = 65535.0f / brickedDimensions.y;
     float indexVolumeFactorZ = 65535.0f / brickedDimensions.z;
 
-    raycastPrg_->setUniform("indexVolumeFactorX_",indexVolumeFactorX);
-    raycastPrg_->setUniform("indexVolumeFactorY_",indexVolumeFactorY);
-    raycastPrg_->setUniform("indexVolumeFactorZ_",indexVolumeFactorZ);
+    shader->setUniform("indexVolumeFactorX_",indexVolumeFactorX);
+    shader->setUniform("indexVolumeFactorY_",indexVolumeFactorY);
+    shader->setUniform("indexVolumeFactorZ_",indexVolumeFactorZ);
     LGL_ERROR;
 
 }

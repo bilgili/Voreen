@@ -53,7 +53,7 @@ class PropertyGraphicsItem;
  * This class acts as an abstract base class for any object in the \sa NetworkEditor
  * which contains a \sa Processor. Currently this holds for \sa ProcessorGraphicsItem
  * with only one contained Processor and \sa AggregationGraphicsItem which may hold
- * multiple AggregationGraphicsItems and ProcessorGraphicsItem. Both cases should behave
+ * multiple AggregationGraphicsItems and ProcessorGraphicsItems. Both cases should behave
  * similiarly and therefore most of the code is combined here.</br>
  * The RootGraphicsItem has only ownership over the \sa PortGraphicsItems, not the contained
  * Processors because those are owned by the \sa ProcessorNetwork.
@@ -310,6 +310,8 @@ public slots:
      */
     virtual void nameChanged();
 
+    virtual void portsAndPropertiesChanged();
+
     /**
      * This slot should be called if the renaming is finished and subclasses need to save their
      * new name to its storage location
@@ -363,6 +365,8 @@ protected:
      * afterwards.
      */
     void createChildItems();
+
+    void deleteChildItems();
 
     /**
      * Sets the opacity with which this RootGraphicsItem should paint itself

@@ -67,14 +67,14 @@ uniform TF_SAMPLER_TYPE_4 transferFunc4_;
 
 
 bool inUnitCube(vec3 sample) {
-    //return (all(lessThanEqual(sample, vec3(1.0))) && (all(greaterThanEqual(sample, vec3(0.0)))));
+    /*return (all(lessThanEqual(sample, vec3(1.0))) && (all(greaterThanEqual(sample, vec3(0.0)))));
 
-    //if(any(greaterThan(sample, vec3(1.0))))
-        //return false;
-    //if(any(lessThan(sample, vec3(0.0))))
-        //return false;
+    if(any(greaterThan(sample, vec3(1.0))))
+        return false;
+    if(any(lessThan(sample, vec3(0.0))))
+        return false;
 
-    //return !(any(greaterThan(sample, vec3(1.0))) || any(lessThan(sample, vec3(0.0))));
+    return !(any(greaterThan(sample, vec3(1.0))) || any(lessThan(sample, vec3(0.0)))); */
 
     if(any(greaterThan(sample, vec3(1.0))) || any(lessThan(sample, vec3(0.0))))
         return false;
@@ -128,32 +128,29 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos1 = vol1first + realT * vol1dir;
 
         vec4 voxel1;
-        //if(inUnitCube(samplePos1))
+        if(inUnitCube(samplePos1))
             voxel1 = getVoxel(volume1_, volumeParameters1_, samplePos1);
-        //else
-            //voxel1 = vec4(0.0);
+        else
+            voxel1 = vec4(0.0);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos1, voxel1.a)) {
-            // calculate gradients
-            //TODO: adapt t, rayDirection, entryPoints_, entryParameters_ ?
-            voxel1.xyz = RC_CALC_GRADIENTS(voxel1.xyz, samplePos1, volume1_, volumeParameters1_, t, rayDirection, entryPoints_, entryParameters_);
+        // calculate gradients
+        //TODO: adapt t, rayDirection, entryPoints_, entryParameters_ ?
+        voxel1.xyz = RC_CALC_GRADIENTS(voxel1.xyz, samplePos1, volume1_, volumeParameters1_, t, rayDirection, entryPoints_, entryParameters_);
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel1);
+        // apply classification
+        vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel1);
 
-            // apply shading
-            color.rgb = RC_APPLY_SHADING_1(voxel1.xyz, samplePos1, volumeParameters1_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+        // apply shading
+        color.rgb = RC_APPLY_SHADING_1(voxel1.xyz, samplePos1, volumeParameters1_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
 
-            // if opacity greater zero, apply compositing
-            if (color.a > 0.0) {
-                RC_BEGIN_COMPOSITING
-                //TODO: adapt t, tDepth ?
-                result = RC_APPLY_COMPOSITING(result, color, worldSamplePos, voxel1.xyz, t, tDepth);
-                result1 = RC_APPLY_COMPOSITING_1(result1, color, worldSamplePos, voxel1.xyz, t, tDepth);
-                result2 = RC_APPLY_COMPOSITING_2(result2, color, worldSamplePos, voxel1.xyz, t, tDepth);
-                RC_END_COMPOSITING
-            }
+        // if opacity greater zero, apply compositing
+        if (color.a > 0.0) {
+            RC_BEGIN_COMPOSITING
+            //TODO: adapt t, tDepth ?
+            result = RC_APPLY_COMPOSITING(result, color, worldSamplePos, voxel1.xyz, t, tDepth);
+            result1 = RC_APPLY_COMPOSITING_1(result1, color, worldSamplePos, voxel1.xyz, t, tDepth);
+            result2 = RC_APPLY_COMPOSITING_2(result2, color, worldSamplePos, voxel1.xyz, t, tDepth);
+            RC_END_COMPOSITING
         }
 
 #ifdef VOLUME_2_ACTIVE
@@ -162,30 +159,27 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos2 = vol2first + realT * vol2dir;
 
         vec4 voxel2;
-        //if(inUnitCube(samplePos2))
+        if(inUnitCube(samplePos2))
             voxel2 = getVoxel(volume2_, volumeParameters2_, samplePos2);
-        //else
-            //voxel2 = vec4(0.0);
+        else
+            voxel2 = vec4(0.0);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos2, voxel2.a)) {
-            // calculate gradients
-            voxel2.xyz = RC_CALC_GRADIENTS(voxel2.xyz, samplePos2, volume2_, volumeParameters2_, t, rayDirection, entryPoints_, entryParameters_);
+        // calculate gradients
+        voxel2.xyz = RC_CALC_GRADIENTS(voxel2.xyz, samplePos2, volume2_, volumeParameters2_, t, rayDirection, entryPoints_, entryParameters_);
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc2_, voxel2);
+        // apply classification
+        vec4 color2 = RC_APPLY_CLASSIFICATION(transferFunc2_, voxel2);
 
-            // apply shading
-            color.rgb = RC_APPLY_SHADING_2(voxel2.xyz, samplePos2, volumeParameters2_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+        // apply shading
+        color2.rgb = RC_APPLY_SHADING_2(voxel2.xyz, samplePos2, volumeParameters2_, color2.rgb, color2.rgb, vec3(1.0,1.0,1.0));
 
-            // if opacity greater zero, apply compositing
-            if (color.a > 0.0) {
-                RC_BEGIN_COMPOSITING
-                result = RC_APPLY_COMPOSITING(result, color, worldSamplePos, voxel2.xyz, t, tDepth);
-                result1 = RC_APPLY_COMPOSITING_1(result1, color, worldSamplePos, voxel2.xyz, t, tDepth);
-                result2 = RC_APPLY_COMPOSITING_2(result2, color, worldSamplePos, voxel2.xyz, t, tDepth);
-                RC_END_COMPOSITING
-            }
+        // if opacity greater zero, apply compositing
+        if (color2.a > 0.0) {
+            RC_BEGIN_COMPOSITING
+            result = RC_APPLY_COMPOSITING(result, color2, worldSamplePos, voxel2.xyz, t, tDepth);
+            result1 = RC_APPLY_COMPOSITING_1(result1, color2, worldSamplePos, voxel2.xyz, t, tDepth);
+            result2 = RC_APPLY_COMPOSITING_2(result2, color2, worldSamplePos, voxel2.xyz, t, tDepth);
+            RC_END_COMPOSITING
         }
 #endif
 
@@ -195,30 +189,27 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos3 = vol3first + realT * vol3dir;
 
         vec4 voxel3;
-        //if(inUnitCube(samplePos3))
+        if(inUnitCube(samplePos3))
             voxel3 = getVoxel(volume3_, volumeParameters3_, samplePos3);
-        //else
-            //voxel3 = vec4(0.0);
+        else
+            voxel3 = vec4(0.0);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos3, voxel3.a)) {
-            // calculate gradients
-            voxel3.xyz = RC_CALC_GRADIENTS(voxel3.xyz, samplePos3, volume3_, volumeParameters3_, t, rayDirection, entryPoints_, entryParameters_);
+        // calculate gradients
+        voxel3.xyz = RC_CALC_GRADIENTS(voxel3.xyz, samplePos3, volume3_, volumeParameters3_, t, rayDirection, entryPoints_, entryParameters_);
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc3_, voxel3);
+        // apply classification
+        vec4 color3 = RC_APPLY_CLASSIFICATION(transferFunc3_, voxel3);
 
-            // apply shading
-            color.rgb = RC_APPLY_SHADING_3(voxel3.xyz, samplePos3, volumeParameters3_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+        // apply shading
+        color3.rgb = RC_APPLY_SHADING_3(voxel3.xyz, samplePos3, volumeParameters3_, color3.rgb, color3.rgb, vec3(1.0,1.0,1.0));
 
-            // if opacity greater zero, apply compositing
-            if (color.a > 0.0) {
-                RC_BEGIN_COMPOSITING
-                result = RC_APPLY_COMPOSITING(result, color, worldSamplePos, voxel3.xyz, t, tDepth);
-                result1 = RC_APPLY_COMPOSITING_1(result1, color, worldSamplePos, voxel3.xyz, t, tDepth);
-                result2 = RC_APPLY_COMPOSITING_2(result2, color, worldSamplePos, voxel3.xyz, t, tDepth);
-                RC_END_COMPOSITING
-            }
+        // if opacity greater zero, apply compositing
+        if (color3.a > 0.0) {
+            RC_BEGIN_COMPOSITING
+            result = RC_APPLY_COMPOSITING(result, color3, worldSamplePos, voxel3.xyz, t, tDepth);
+            result1 = RC_APPLY_COMPOSITING_1(result1, color3, worldSamplePos, voxel3.xyz, t, tDepth);
+            result2 = RC_APPLY_COMPOSITING_2(result2, color3, worldSamplePos, voxel3.xyz, t, tDepth);
+            RC_END_COMPOSITING
         }
 #endif
 
@@ -228,30 +219,27 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos4 = vol4first + realT * vol4dir;
 
         vec4 voxel4;
-        //if(inUnitCube(samplePos4))
+        if(inUnitCube(samplePos4))
             voxel4 = getVoxel(volume4_, volumeParameters4_, samplePos4);
-        //else
-            //voxel4 = vec4(0.0);
+        else
+            voxel4 = vec4(0.0);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos4, voxel4.a)) {
-            // calculate gradients
-            voxel4.xyz = RC_CALC_GRADIENTS(voxel4.xyz, samplePos4, volume4_, volumeParameters4_, t, rayDirection, entryPoints_, entryParameters_);
+        // calculate gradients
+        voxel4.xyz = RC_CALC_GRADIENTS(voxel4.xyz, samplePos4, volume4_, volumeParameters4_, t, rayDirection, entryPoints_, entryParameters_);
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc4_, voxel4);
+        // apply classification
+        vec4 color4 = RC_APPLY_CLASSIFICATION(transferFunc4_, voxel4);
 
-            // apply shading
-            color.rgb = RC_APPLY_SHADING_4(voxel4.xyz, samplePos4, volumeParameters4_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+        // apply shading
+        color4.rgb = RC_APPLY_SHADING_4(voxel4.xyz, samplePos4, volumeParameters4_, color4.rgb, color4.rgb, vec3(1.0,1.0,1.0));
 
-            // if opacity greater zero, apply compositing
-            if (color.a > 0.0) {
-                RC_BEGIN_COMPOSITING
-                result = RC_APPLY_COMPOSITING(result, color, worldSamplePos, voxel4.xyz, t, tDepth);
-                result1 = RC_APPLY_COMPOSITING_1(result1, color, worldSamplePos, voxel4.xyz, t, tDepth);
-                result2 = RC_APPLY_COMPOSITING_2(result2, color, worldSamplePos, voxel4.xyz, t, tDepth);
-                RC_END_COMPOSITING
-            }
+        // if opacity greater zero, apply compositing
+        if (color4.a > 0.0) {
+            RC_BEGIN_COMPOSITING
+            result = RC_APPLY_COMPOSITING(result, color4, worldSamplePos, voxel4.xyz, t, tDepth);
+            result1 = RC_APPLY_COMPOSITING_1(result1, color4, worldSamplePos, voxel4.xyz, t, tDepth);
+            result2 = RC_APPLY_COMPOSITING_2(result2, color4, worldSamplePos, voxel4.xyz, t, tDepth);
+            RC_END_COMPOSITING
         }
 #endif
     } RC_END_LOOP(result);
@@ -265,9 +253,6 @@ void main() {
     vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
     vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
 
-    // initialize light and material parameters
-    matParams = gl_FrontMaterial;
-
     // determine whether the ray has to be casted
     if (frontPos == backPos)
         // background needs no raycasting
@@ -277,21 +262,13 @@ void main() {
         rayTraversal(frontPos, backPos);
     }
 
-    /*
-    #ifdef TONE_MAPPING_ENABLED
-        result.r = 1.0 - exp(-result.r * TONE_MAPPING_VALUE);
-        result.g = 1.0 - exp(-result.g * TONE_MAPPING_VALUE);
-        result.b = 1.0 - exp(-result.b * TONE_MAPPING_VALUE);
-    #endif
-    */
-
     #ifdef OP0
-        gl_FragData[OP0] = result;
+        FragData0 = result;
     #endif
     #ifdef OP1
-        gl_FragData[OP1] = result1;
+        FragData1 = result1;
     #endif
     #ifdef OP2
-        gl_FragData[OP2] = result2;
+        FragData2 = result2;
     #endif
 }

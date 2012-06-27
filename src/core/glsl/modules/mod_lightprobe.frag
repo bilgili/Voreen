@@ -36,5 +36,5 @@ vec3 fetchLightProbe(in sampler2D lightProbe, in vec3 gradient) {
     texCoord += 1.0;
     texCoord /= 2.0;
     texCoord.y *= -1.0;
-    return texture2D(lightProbe, texCoord).rgb;
+    return texture(lightProbe, texCoord).rgb;
 }

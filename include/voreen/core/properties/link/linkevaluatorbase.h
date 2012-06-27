@@ -34,7 +34,6 @@
  * ATTENTION: Do not include voreen/core/properties/property.h due to circular
  *            header-file inclusion. Keep the Property forward declaration instead.
  */
-#include "voreen/core/properties/link/boxobject.h"
 #include "voreen/core/io/serialization/serialization.h"
 
 namespace voreen {
@@ -47,16 +46,27 @@ class Property;
  */
 class LinkEvaluatorBase : public AbstractSerializable {
 public:
+    ///Called by PropertyLink for executing the link.
+    virtual void eval(Property* src, Property* dst) throw (VoreenException) = 0;
 
-    /**
-     * Called by PropertyLink for executing the link.
-     */
-    virtual BoxObject eval(const BoxObject& sourceOld, const BoxObject& sourceNew, const BoxObject& targetOld, Property* src, Property* dest) = 0;
+    virtual void propertiesChanged(Property* src, Property* dst);
 
-    /**
-     * Returns the evaluator's identifier.
-     */
+    ///Returns the evaluator's GUI name.
     virtual std::string name() const = 0;
+
+    /**
+     * Returns the name of this class as a string.
+     * Necessary due to the lack of code reflection in C++.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     */
+    virtual std::string getClassName() const = 0;
+
+    //Returns true if the LinkEvaluator can link the two properties.
+    virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const = 0;
+
+    ///Virtual constructor: supposed to return an instance of the concrete LinkEvaluator class.
+    virtual LinkEvaluatorBase* create() const = 0;
 
     /// @see Serializable::serialize
     virtual void serialize(XmlSerializer&) const {}

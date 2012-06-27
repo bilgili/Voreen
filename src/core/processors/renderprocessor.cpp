@@ -55,9 +55,6 @@ RenderProcessor::RenderProcessor()
     , testSizeOriginVisited_(false)
 {}
 
-RenderProcessor::~RenderProcessor() {
-}
-
 void RenderProcessor::initialize() throw (VoreenException) {
 
     Processor::initialize();
@@ -356,50 +353,59 @@ void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader, const tgt::
 
 std::string RenderProcessor::generateHeader() {
 
-    if (!isInitialized()) {
-        LWARNING("generateHeader() called on an uninitialized processor");
-    }
-
     std::string header;
 
     // use highest available shading language version up to version 1.30
     using tgt::GpuCapabilities;
-    if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
-        header += "#version 130\n";
-        header += "precision highp float;\n";
+    if (isInitialized()) {
+        if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+            header += "#version 130\n";
+            header += "#define GLSL_VERSION_130\n";
+            header += "precision highp float;\n";
+        }
+        else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_120)
+            header += "#version 120\n";
+        else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_110)
+            header += "#version 110\n";
     }
-    else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_120)
-        header += "#version 120\n";
-    else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_110)
-        header += "#version 110\n";
 
     //HACK:
-    if (!GpuCaps.isNpotSupported())
+    if (isInitialized() && !GpuCaps.isNpotSupported())
         header += "#define VRN_TEXTURE_RECTANGLE\n";
     else
         header += "#define VRN_TEXTURE_2D\n";
 
-    if (GLEW_NV_fragment_program2) {
-        GLint i = -1;
-        glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
-        if (i > 0) {
-            std::ostringstream o;
-            o << i;
-            header += "#define VRN_MAX_PROGRAM_LOOP_COUNT " + o.str() + "\n";
+    if (isInitialized()) {
+        if (GLEW_NV_fragment_program2) {
+            GLint i = -1;
+            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
+            if (i > 0) {
+                std::ostringstream o;
+                o << i;
+                header += "#define VRN_MAX_PROGRAM_LOOP_COUNT " + o.str() + "\n";
+            }
         }
+
+        //
+        // add some defines needed for workarounds in the shader code
+        //
+        if (GLEW_ARB_draw_buffers)
+            header += "#define VRN_GLEW_ARB_draw_buffers\n";
+
+    #ifdef __APPLE__
+        header += "#define VRN_OS_APPLE\n";
+        if (GpuCaps.getVendor() == GpuCaps.GPU_VENDOR_ATI)
+            header += "#define VRN_VENDOR_ATI\n";
+    #endif
     }
 
-    //
-    // add some defines needed for workarounds in the shader code
-    //
-    if (GLEW_ARB_draw_buffers)
-        header += "#define VRN_GLEW_ARB_draw_buffers\n";
-
-#ifdef __APPLE__
-    header += "#define VRN_OS_APPLE\n";
-    if (GpuCaps.getVendor() == GpuCaps.GPU_VENDOR_ATI)
-        header += "#define VRN_VENDOR_ATI\n";
-#endif
+    if (tgt::Singleton<tgt::GpuCapabilities>::isInited() && GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+        // define output for single render target
+        header += "//$ @name = \"outport0\"\n";
+        header += "out vec4 FragData0;\n";
+    } else {
+        header += "#define FragData0 gl_FragData[0]\n";
+    }
 
     return header;
 }

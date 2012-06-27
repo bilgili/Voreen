@@ -40,9 +40,9 @@ void main() {
     vec2 fragCoord = gl_FragCoord.xy * screenDimRCP_;
     vec4 fragColor = textureLookup2Dnormalized(colorTex_, texParams_, fragCoord);
 #ifdef LUMINANCE_TEXTURE
-    gl_FragColor = vec4(fragColor.rgb, fragColor.r > 0.0 ? 1.0 : 0.0);
+    FragData0 = vec4(fragColor.rgb, fragColor.r > 0.0 ? 1.0 : 0.0);
 #else
-    gl_FragColor = fragColor;
+    FragData0 = fragColor;
 #endif
 
 #ifndef NO_DEPTH_TEX

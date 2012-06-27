@@ -32,6 +32,7 @@
 
 #include "voreen/core/plotting/plotbase.h"
 #include "voreen/core/plotting/plotcell.h"
+#include "voreen/core/plotting/plotpredicatefactory.h"
 
 #include <QDialog>
 #include <QComboBox>
@@ -39,50 +40,71 @@
 #include <QGridLayout>
 #include <QObject>
 #include <QLabel>
-
+#include <QDoubleSpinBox>
 
 namespace voreen {
 
+class PlotPredicate;
+
+/**
+ * Dialog for editing a PlotPredicate
+ **/
 class PlotPredicateDialog : public QDialog {
     Q_OBJECT
 
 public:
-    PlotPredicateDialog(const std::vector<std::pair<std::string,int> >& comboBoxText,
-                 const PlotBase::ColumnType valueType, const int selected,
-                 const std::vector<PlotCellValue>& values, const std::vector<int>& comboboxValues,
-                 QWidget* parent=0);
+    /**
+     * Constructs a new PlotPredicateDialog.
+     *
+     * \param   predicate               initial PlotPredicate of the dialog, may be NULL if no Predicate to preselect
+     * \param   tagsOnly                if false only numeric predicates and parameters, if true only tag predicates and
+     *                                  parameters in this dialog
+     * \param   simplePredicatesOnly    if true, only simple predicates are selectable
+     * \param   parent                  parent widget
+     *
+     * \note    This dialog makes a deep copy of \a predicate, so it is safe to delete it at any time after this method returns.
+     **/
+    PlotPredicateDialog(const PlotPredicate* predicate, bool tagsOnly, bool simplePredicatesOnly = true, QWidget* parent = 0);
+
+    /**
+     * Destructor
+     **/
     ~PlotPredicateDialog();
 
-    /// Gives back the Stringvalues in the edit Field in the Windows
-    std::vector<std::string> getStringValues() const;
-    /// Gives back the selected Number in the QComboBox
-    int getSelected() const;
-    /// Gives back the Value of the selected Line in the QComboBox
-    int getSelectedValue() const;
+    /**
+     * Returns the currently selected PlotPredicate.
+     *
+     * \note    The returned PlotPredicate will be deleted on dialog destruction so make sure to perform
+     *          deep copies of it.
+     **/
+    const PlotPredicate* getPlotPredicate() const;
 
 private:
+    /// creates all widgets (includes calling updateInnerWidgets())
+    void createWidgets();
 
-    void initialize(const std::vector<std::pair<std::string,int> >& comboBoxText,
-                 const PlotBase::ColumnType valueType, const int selected,
-                 const std::vector<PlotCellValue>& values, const std::vector<int>& comboboxValues);
+    /// updates all inner widgets for setting up selected PlotPredicate
+    void updateInnerWidgets();
 
-    QComboBox* choice_;
-    QPushButton* okButton_;
-    QPushButton* cancelButton_;
-    QGridLayout* mainLayout;
+    PlotPredicate* predicate_;              ///< current PlotPredicate
+    bool tagsOnly_;                         ///< flag whether to display only predicates for tags or not
+    bool simplePredicatesOnly_;             ///< flag whether to display only simple predicates
 
-    std::vector<std::pair<std::string,int> > comboBoxText_;
-    PlotBase::ColumnType valueType_;
+    QGridLayout* mainLayout_;               ///< main layout of the dialog
+    QComboBox* cbPredicates_;               ///< ComboBox with the predicates
 
-    std::vector<QLineEdit*> editVector_;
-    std::vector<PlotCellValue> values_;
-    std::vector<QLabel*> labelVector_;
+    std::vector<QLabel*> labelVector_;      ///< vector of the labels for the edit fields
+    std::vector<QLineEdit*> editVector_;    ///< vector of the edit fields
+    std::vector<QDoubleSpinBox*> sbVector_; ///< vector of the SpinBoxes
 
+    QPushButton* btnOK_;                    ///< OK button
+    QPushButton* btnCancel_;                ///< Cancel button
 
 private slots:
     void clickedOk();
     void clickedCancel();
     void choiceChange(int index);
+    void updatePredicate();
 
 };
 

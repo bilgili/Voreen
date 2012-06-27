@@ -31,7 +31,7 @@
 
 uniform VOLUME_PARAMETERS volumeParameters_;    // additional information about the volume the eep are generated for
 
-varying vec4 eep_;
+out vec4 eep_;
 
 uniform vec3 volSize_;
 

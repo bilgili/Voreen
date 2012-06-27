@@ -44,10 +44,11 @@ RGBRaycaster::RGBRaycaster()
     , entryPort_(Port::INPORT, "image.entrypoints")
     , exitPort_(Port::INPORT, "image.exitpoints")
     , outport_(Port::OUTPORT, "image.output", true)
+    , raycastPrg_(0)
     , transferFunc_("transferFunction", "Transfer function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY))
     , applyColorModulation_("applyColorModulation", "Apply color modulation", false)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
     addPort(volumePort_);
     addPort(entryPort_);
@@ -73,13 +74,16 @@ void RGBRaycaster::initialize() throw (VoreenException) {
     VolumeRaycaster::initialize();
 
     loadShader();
-    if (!raycastPrg_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
+    if (!raycastPrg_)
         throw VoreenException(getClassName() + ": Failed to load shaders!");
-    }
+}
 
-    initialized_ = true;
+void RGBRaycaster::deinitialize() throw (VoreenException) {
+    ShdrMgr.dispose(raycastPrg_);
+    raycastPrg_ = 0;
+    LGL_ERROR;
+
+    VolumeRaycaster::deinitialize();
 }
 
 void RGBRaycaster::loadShader() {
@@ -145,9 +149,10 @@ void RGBRaycaster::process() {
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(raycastPrg_, volumeTextures, &cam, lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -159,7 +164,7 @@ void RGBRaycaster::process() {
     raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
     raycastPrg_->setUniform("applyColorModulation_", applyColorModulation_.get());
 
-    setBrickedVolumeUniforms(volumePort_.getData());
+    setBrickedVolumeUniforms(raycastPrg_, volumePort_.getData());
 
     renderQuad();
 
@@ -177,5 +182,6 @@ std::string RGBRaycaster::generateHeader(VolumeHandle* volumeHandle) {
 
     return header;
 }
+
 
 } // namespace voreen

@@ -42,10 +42,16 @@ namespace voreen {
 const std::string VoreenModule::loggerCat_("voreen.VoreenModule");
 
 VoreenModule::VoreenModule() :
-    name_("undefined") {
-}
+    name_("undefined"),
+    initialized_(false)
+{}
 
 VoreenModule::~VoreenModule() {
+
+    if (isInitialized()) {
+        LWARNING("Module '" << getName() << "' has not been deinitialized before destruction");
+    }
+
     // free resources
     for (size_t i=0; i<processors_.size(); i++)
         delete processors_[i];
@@ -146,6 +152,10 @@ std::string VoreenModule::getModulesPath(const std::string& suffix) const {
         return "";
     }
     return VoreenApplication::app()->getModulePath(suffix);
+}
+
+bool VoreenModule::isInitialized() const {
+    return initialized_;
 }
 
 } // namespace

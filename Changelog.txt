@@ -1,8 +1,56 @@
 Voreen Changelog
 ----------------
 
+2010-10-18: Voreen 2.6 (r38, internal r12585)
+----------------------------------------------
+
+   * Framework changes:
+     o GLSL shaders do no longer use deprecated functions and context uniforms.
+       Most of this happened under the hood, except that shader authors should
+       now use "FragData0" instead of "gl_FragColor" for fragment shader output.
+     o The shader member has been removed from the VolumeRaycaster base class.
+       Shader loading and disposing is now completely up to the concrete subclasses.
+   
+   * Features:
+     o We have added a plotting toolbox including processors for line, bar, 
+       surface and 2D/3D scatter plots as well as function fitting. 
+     o The Python interface (module "python") has been revised and now provides: 
+       o Read/write access to almost all types of processor properties, incl. cameras
+       o Loading volume data and transfer functions
+       o Saving canvas snapshots to file
+       Please have a look at the Python script editor in VoreenVE as well as 
+       the samples in data/scripts.
+     o To further support rapid prototyping we have added the "DynamicGLSLProcessor"
+       that dynamically adds/removes ports and properties according to the uniforms
+       declared in its fragment shader.
+     o Camera vectors are accessible through the camera property widget.
+          
+   * Bug fixes:
+     o Generation of module registration file with spaces in path.
+     o "QGLWidget::makecurrent(): GetDC() failed" errors with multiple canvases 
+       on Windows 7.
+     o Set environment variable "XLIB_SKIP_ARGB_VISUALS=1" on Linux to work around 
+       Qt bug that breaks Voreen tool windows.
+     o Instability of 2D transfer functions during TF modifications (flickering).
+      
+   * Minor changes:
+     o Default modules are included by "VRN_MODULES += default" instead of 
+       "VRN_MODULES += most" in config.txt.
+     o Pre-compiled headers:
+       o now activated by "DEFINES += VRN_PRECOMPILE_HEADER" in config.txt
+       o enabled pre-compiled headers for the Voreen Qt library
+       o included more framework headers in pch.h
+     o RenderPort::readColorBuffer/saveToImage and network editor tooltips
+       support RenderTarget textures of arbitrary formats and data types.
+     o TIFF volume reader has been encapsulated in the new 'tiff' module.  
+     o Module description is shown in processor info box.
+     o Segmentation masking has been removed from VolumeRaycaster base class.
+     o Removed Python linking
+     
+   
 2010-09-16: Voreen 2.55 (r37, internal r12039)
 ----------------------------------------------
+
    * Architectural/infrastructure changes:
      o The module registration file is now auto-generated; therefore manual registration of 
        custom modules is no longer necessary.
@@ -21,7 +69,7 @@ Voreen Changelog
        - Centralized OpenCL initialization in OpenCLModule class (see GrayscaleCL processor).
        - Moved OpenCL wrapper from core to OpenCL module.
 
-   * Features improvements:
+   * Feature improvements:
      o NetworkEditor:
        - Processors may utilize a progress bar for indicating progress of time-consuming operations.
          See VolumeResample or VolumeCombine processor.
@@ -56,14 +104,14 @@ Voreen Changelog
      o Volume::convert/resize/resample/createSubset have been converted into VolumeOperators.
      o ImageOverlay retrieves overlay image through inport instead of loading it directly.     
      o Serializer supports std::pair.
-     o Renamed VolumeConvert to VolumeBitScale .
+     o Renamed VolumeConvert to VolumeBitScale.
      o Renamed ClippingPlaneWidget to PlaneWidgetProcessor.
 
    * Bug fixes:
      o Volume lighting routines consider volume transformation matrix.
      o 2D transfer function transparency bug after reloading.
      o Invalid camera state after certain trackball interactions.
-     o Incorrect results of EEPGeometryIntegrator for non-cubic volumes.
+     o Incorrect results from EEPGeometryIntegrator for non-cubic volumes.
      o Invalid state of RenderTargetViewer after changing network topology.
      o Broken rendering after loading of workspace archives.
      o Unintended reloading of the assigned data set on copy&paste of a VolumeSource processor.

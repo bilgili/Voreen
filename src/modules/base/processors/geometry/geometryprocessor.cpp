@@ -45,7 +45,7 @@ namespace voreen {
 GeometryProcessor::GeometryProcessor()
     : RenderProcessor()
     , shaderPrg_(0)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , inport_(Port::INPORT, "image.input")
     , outport_(Port::OUTPORT, "image.output")
     , tempPort_(Port::OUTPORT, "image.temp")
@@ -79,7 +79,7 @@ void GeometryProcessor::initialize() throw (VoreenException) {
     idManager_.setRenderTarget(pickingPort_.getRenderTarget());
     idManager_.initializeTarget();
 
-    shaderPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "pp_compositor.frag",
+    shaderPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "image/compositor.frag",
         generateHeader(), false);
 
     if (!shaderPrg_) {
@@ -111,9 +111,9 @@ void GeometryProcessor::process() {
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
-    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    tgt::loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     //
@@ -183,12 +183,13 @@ void GeometryProcessor::process() {
 
         shaderPrg_->activate();
 
-        setGlobalShaderParameters(shaderPrg_, camera_.get());
-        shaderPrg_->setUniform("shadeTex0_", 0);
+        tgt::Camera cam = camera_.get();
+        setGlobalShaderParameters(shaderPrg_, &cam);
+        shaderPrg_->setUniform("colorTex0_", 0);
         shaderPrg_->setUniform("depthTex0_", 1);
         inport_.setTextureParameters(shaderPrg_, "textureParameters0_");
 
-        shaderPrg_->setUniform("shadeTex1_", 2);
+        shaderPrg_->setUniform("colorTex1_", 2);
         shaderPrg_->setUniform("depthTex1_", 3);
         tempPort_.setTextureParameters(shaderPrg_, "textureParameters1_");
 

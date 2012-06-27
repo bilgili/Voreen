@@ -85,7 +85,7 @@ const std::string Labeling::setSegmentDescriptionFile_("segmentDescriptionFile")
 const std::string Labeling::loggerCat_("voreen.Labeling");
 
 Labeling::Labeling()
-    : ImageProcessor("pp_labeling")
+    : ImageProcessor("image/labeling")
     , labelingWidget_(0)
     , pg_(0)
     , labelShader_(0)
@@ -119,7 +119,7 @@ Labeling::Labeling()
     , pickedLabel_(0)
     , drag_(false)
     , labelingPort_(Port::OUTPORT, "image.labeling", true)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , currentVolumeHandle_(0)
 
 #ifdef labelDEBUG
@@ -276,7 +276,7 @@ void Labeling::initialize() throw (VoreenException) {
 #endif
 
     ImageProcessor::initialize();  //< loads the shader
-    //labelShader_ = ShdrMgr.loadSeparate("", "pp_labeling.frag", generateHeader(), false, false);
+    //labelShader_ = ShdrMgr.loadSeparate("", "image/labeling.frag", generateHeader(), false, false);
     labelShader_ = program_;
     if(!labelShader_) {
         LERROR("Failed to load shaders!");
@@ -1481,7 +1481,8 @@ void Labeling::renderLabels() {
                     LGL_ERROR;
 
                     labelShader_->activate();
-                    setGlobalShaderParameters(labelShader_, camera_.get());
+                    tgt::Camera cam = camera_.get();
+                    setGlobalShaderParameters(labelShader_, &cam);
 
                     LGL_ERROR;
 
@@ -1565,16 +1566,17 @@ void Labeling::renderLabels() {
                     // -> load projection and camera view matrix
                     if ( shape3D_.get() ) {
                         glMatrixMode(GL_PROJECTION);
-                        tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+                        tgt::loadMatrix(camera_.get().getProjectionMatrix());
                         glMatrixMode(GL_MODELVIEW);
-                        tgt::loadMatrix(camera_.get()->getViewMatrix());
+                        tgt::loadMatrix(camera_.get().getViewMatrix());
                     }
 
                     for (size_t i=0; i<labels_.size(); ++i) {
                         if (labels_[i].intern) {
 
                             labelShader_->activate();
-                            setGlobalShaderParameters(labelShader_, camera_.get());
+                            tgt::Camera cam = camera_.get();
+                            setGlobalShaderParameters(labelShader_, &cam);
 
                             vec2 texCoordScale = (GpuCaps.isNpotSupported() ?
                                 static_cast<vec2>(labelingPort_.getSize()) :
@@ -3148,8 +3150,8 @@ void Labeling::readImage() {
     image_.firstHitPositions.setData(positionBuffer, image_.width, image_.height, 3);
   //  image_.firstHitPositions.setVolumeSize(pg_->getVolumeSize());
     image_.firstHitPositions.setVolumeSize(currentVolumeHandle_->getVolume()->getCubeSize() / 2.f);
-    image_.firstHitPositions.calcTransformationMatrix(camera_.get()->getViewMatrix(),
-        camera_.get()->getProjectionMatrix(),
+    image_.firstHitPositions.calcTransformationMatrix(camera_.get().getViewMatrix(),
+        camera_.get().getProjectionMatrix(),
         ivec2(image_.width, image_.height));
 
     idMapPort_.getColorTexture()->destroy();

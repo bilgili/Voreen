@@ -37,7 +37,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ColorDepth::ColorDepth()
-    : ImageProcessorDepth("pp_colordepth")
+    : ImageProcessorDepth("image/colordepth")
     , chromaDepthTex_(0)
     , colorMode_("mode", "Choose mode", INVALID_PROGRAM)
     , factor_("factor", "Factor", 1.0f, 0.0f, 10.0f)
@@ -83,8 +83,8 @@ void ColorDepth::process() {
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // bind chroma depth texture
     TextureUnit chromaDepthUnit;
@@ -96,7 +96,7 @@ void ColorDepth::process() {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("chromadepthTex_", chromaDepthUnit.getUnitNumber());

@@ -28,14 +28,10 @@
  **********************************************************************/
 
 #include "voreen/core/plotting/functionlibrary.h"
-#include "voreen/core/plotting/expression.h"
+#include "voreen/core/plotting/plotexpression.h"
 #include "tgt/logmanager.h"
 
-// please do not delete read last lines!
-#include "voreen/core/plotting/plotfunctiongrammar.h"
-#include "voreen/core/utils/GLSLparser/generator/parsertable.h"
-
-#include <fstream>
+#include <limits>
 
 namespace voreen {
 
@@ -48,10 +44,10 @@ FunctionLibrary::FunctionLibrary()
 FunctionLibrary::~FunctionLibrary(){
 }
 
-std::pair<plot_t,plot_t> FunctionLibrary::linearRegression(const std::vector<std::pair<plot_t,plot_t> >& points) throw (VoreenException) {
+std::pair<plot_t,plot_t> FunctionLibrary::linearRegression(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<plot_t> result;
     if (points.size() <= 0)
-        throw VoreenException ("Nothing to Fit");
+        return std::pair<plot_t,plot_t>(std::numeric_limits<plot_t>::quiet_NaN(),std::numeric_limits<plot_t>::quiet_NaN());
 
     plot_t sumx = 0;
     for (size_t i = 0; i < points.size(); ++i) {
@@ -83,223 +79,516 @@ std::pair<plot_t,plot_t> FunctionLibrary::linearRegression(const std::vector<std
     return std::pair<plot_t,plot_t>(a,b);
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingLinear(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingLinear(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::pair<plot_t,plot_t> result =  FunctionLibrary::linearRegression(points);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
     Str << result.first << " + " << result.second << "*x";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*points.at(i).first-points.at(i).second,2);
+        MSE += std::pow(result.first + result.second*points.at(i).first-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingSquare(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingSqrt(const std::vector<std::pair<plot_t,plot_t> > &points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(pow(points.at(i).first,2),points.at(i).second));
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::sqrt(points.at(i).first),points.at(i).second));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    std::stringstream Str("");
+    Str.imbue(std::locale::classic());
+    Str << result.first << " + " << result.second << "*sqrt(x)";
+    plot_t MSE = 0;
+    for (size_t i = 0; i < points.size(); ++i) {
+        MSE += std::pow(result.first + result.second*std::sqrt(points.at(i).first)-points.at(i).second,2);
+    }
+    MSE = MSE/points.size();
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+}
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingSquare(const std::vector<std::pair<plot_t,plot_t> >& points) {
+    std::vector<std::pair<plot_t,plot_t> > logPoints;
+    for (size_t i = 0; i < points.size(); ++i) {
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::pow(points.at(i).first,2),points.at(i).second));
+    }
+    std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
     Str << result.first << " + " << result.second << "*x^2";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*pow(points.at(i).first,2)-points.at(i).second,2);
+        MSE += std::pow(result.first + result.second*std::pow(points.at(i).first,2)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingCubic(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingCubic(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(pow(points.at(i).first,3),points.at(i).second));
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::pow(points.at(i).first,3),points.at(i).second));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
     Str << result.first << " + " << result.second << "*x^3";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*pow(points.at(i).first,3)-points.at(i).second,2);
+        MSE += std::pow(result.first + result.second*std::pow(points.at(i).first,3)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
-std::pair<Expression,plot_t> FunctionLibrary::fittingMulti(int dimension,const std::vector<std::pair<plot_t,plot_t> >& points) {
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingMulti(int dimension,const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(pow(points.at(i).first,dimension),points.at(i).second));
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::pow(points.at(i).first,dimension),points.at(i).second));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
     Str << result.first << " + " << result.second << "*x^" << dimension;
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*pow(points.at(i).first,dimension)-points.at(i).second,2);
+        MSE += std::pow(result.first + result.second*std::pow(points.at(i).first,dimension)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-Expression FunctionLibrary::simpleSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::constantSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+    std::stringstream str("");
+    str.imbue(std::locale::classic());
+    for (size_t i = 0; i < points.size()-1; ++i) {
+        str << points[i].second << ":[" << points[i].first << "," << points[i+1].first << "]";
+        if (i != points.size()-2)
+            str << ";";
+    }
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(str.str()),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+}
 
-    std::stringstream Str("");
-    Str.imbue(std::locale::classic());
-    //Str << result.first << " + " << result.second << "*x^" ;
+std::pair<PlotExpression,plot_t> FunctionLibrary::simpleSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+
+    std::stringstream str("");
+    str.imbue(std::locale::classic());
     plot_t m;
     plot_t b;
     for (size_t i=0; i<points.size()-1; ++i) {
         m = (points.at(i+1).second - points.at(i).second) / (points.at(i+1).first - points.at(i).first);
         b = points.at(i).second - m*points.at(i).first;
-        Str << m << " * x + " << b << ":[" << points.at(i).first << ";" << points.at(i+1).first << "];";
+        str << m << " * x + " << b << ":[" << points.at(i).first << "," << points.at(i+1).first << "]";
+        if (i != points.size()-2)
+            str << ";";
     }
-    std::string expr = Str.str();
-    return Expression(expr);
+    std::string expr = str.str();
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(expr),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
-Expression FunctionLibrary::bSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
 
-    std::stringstream Str("");
-    Str.imbue(std::locale::classic());
-    //Str << result.first << " + " << result.second << "*x^" ;
-    plot_t m = 0.0;
-    plot_t b;
+
+std::string FunctionLibrary::bSplineN(int i, int p, const std::vector<std::pair<plot_t,plot_t> >& points) {
+    std::stringstream str;
+    std::string value1;
+    std::string value2;
+    if (p == 1) {
+        str << "sgx(x-" << points[i].first << ")*sgx(-x+" << points[i+1].first << ")";
+        return str.str();
+    }
+    else {
+        value1 = bSplineN(i,p-1,points);
+        value2 = bSplineN(i+1,p-1,points);
+        plot_t a = points[i+p-1].first - points[i].first;
+        plot_t b = points[i+p].first - points[i+1].first;
+        if (points[i].first == 0.0 && a != 1)
+            str << "(x/" << a << ")*";
+        else if (points[i].first == 0.0 && a == 1)
+            str << "x*";
+        else if (points[i].first != 0.0 && a == 1)
+            str << "(x-" << points[i].first << ")*";
+        else
+            str << "((x-" << points[i].first << ")/" << a << ")*";
+        str << value1 << "+";
+        if (points[i+p].first == 0 && b != 1)
+            str << "(-x/" << b << ")*";
+        else if (points[i+p].first == 0 && b == 1)
+            str << "(-x)*";
+        else if (points[i+p].first != 0 && b == 1)
+            str << "(" << points[i+p].first << "-x)*";
+        else
+            str << "((" << points[i+p].first << "-x)/" << b << ")*";
+        str << value2;
+        return str.str();
+    }
+}
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::bSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+
+    std::stringstream str("");
+    str.imbue(std::locale::classic());
     plot_t k;
-    for (size_t i=0; i<points.size()-1; ++i) {
+    plot_t m = 1;
     std::vector<plot_t> z;
-      z.resize(points.size()+1);
-      z[i+1] = -z[i] + 2 * (m);
+    z.resize(points.size()+1);
+    z.front() = 0.5;
+    z.back() = 0.5;
+    for (size_t i =0; i < points.size()-1; ++i) {
         m = (points.at(i+1).second - points.at(i).second) / (points.at(i+1).first - points.at(i).first);
-        b = points.at(i).second - m*points.at(i).first;
-        k = (z[i+1] - z[i]) / (2*(points.at(i+1).first - points.at(i).first));
-        Str << points.at(i).second << " + " << z[i] << " * (x - " << points.at(i).first << ") + " << k << " * ( x-" << pow(points.at(i).first,2);
+        z[i+1] = -z[i] + 2 * (m);
     }
-    std::string expr = Str.str();
-    return Expression(expr);
-}
 
-Expression FunctionLibrary::cubicSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
-
-    std::stringstream Str("");
-    Str.imbue(std::locale::classic());
-    //Str << result.first << " + " << result.second << "*x^" ;
-    plot_t m;
-    plot_t b;
     for (size_t i=0; i<points.size()-1; ++i) {
-        m = (points.at(i+1).second - points.at(i).second) / (points.at(i+1).first - points.at(i).first);
-        b = points.at(i).second - m*points.at(i).first;
-        Str << m << " * x + " << b << ":[" << points.at(i).first << ";" << points.at(i+1).first << "];";
+        k = (z[i+1] - z[i]) / (2*(points.at(i+1).first - points.at(i).first));
+        str << points.at(i).second << " + " << z[i] << " * (x - " << points.at(i).first << ") + " << k << " * ( x-" << points.at(i).first << ")^2";
+        str << ":[" << points.at(i).first << "," << points.at(i+1).first << "]";
+        if (i != points.size()-2)
+            str << ";";
     }
-    std::string expr = Str.str();
-    return Expression(expr);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(str.str()),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingLogarithmus(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::squareSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+
+    std::stringstream str("");
+    str.imbue(std::locale::classic());
+    plot_t k;
+    plot_t m = 1;
+    std::vector<plot_t> z;
+    z.resize(points.size()+1);
+    z.front() = 0.5;
+    z.back() = 0.5;
+    for (size_t i =0; i < points.size()-1; ++i) {
+        m = (points.at(i+1).second - points.at(i).second) / (points.at(i+1).first - points.at(i).first);
+        z[i+1] = -z[i] + 2 * (m);
+    }
+    for (size_t i=0; i<points.size()-1; ++i) {
+        k = (z[i+1] - z[i]) / (2*(points.at(i+1).first - points.at(i).first));
+        str << points.at(i).second << " + " << z[i] << " * (x - " << points.at(i).first << ") + " << k << " * ( x-" << points.at(i).first << ")^2";
+        str << ":[" << points.at(i).first << "," << points.at(i+1).first << "]";
+        if (i != points.size()-2)
+            str << ";";
+    }
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(str.str()),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+}
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::cubicSpline(const std::vector<std::pair<plot_t,plot_t> >& points) {
+
+    std::stringstream str("");
+    str.imbue(std::locale::classic());
+    std::vector<plot_t> xi;
+    std::vector<plot_t> z;
+    std::vector<plot_t> h;
+    std::vector<plot_t> y;
+    std::vector<plot_t> a;
+    std::vector<plot_t> b;
+    std::vector<plot_t> c;
+    xi.resize(points.size());
+    y.resize(points.size());
+    a.resize(points.size()-1);
+    b.resize(points.size()-1);
+    c.resize(points.size()-1);
+    z.resize(points.size());
+    h.resize(points.size());
+    h.back() = 0;
+    for (size_t i=0; i < points.size(); ++i) {
+        if (i < points.size()-1)
+            h[i] = points[i+1].first - points[i].first;
+        xi[i] = points[i].first;
+    }
+    for (size_t i = 1; i < a.size(); ++i) {
+        y[i] = 6*((points[i+1].second-points[i].second)/h[i] - (points[i].second- points[i-1].second)/h[i-1]);
+        a[i] = h[i-1];
+        b[i] = 2*(h[i-1]+h[i]);
+        c[i] = h[i];
+    }
+    c[0] = h[0];
+    b[0] = 2*h[0];
+    b.back() = 2*(h[a.size()-2]+h[a.size()-1]);
+    a.back() = h[a.size()-1];
+    TridiagonalSolve(a,b,c,y,xi);
+    z = xi;
+    plot_t k1;
+    plot_t k2;
+    for (size_t i=0; i < points.size()-1; ++i) {
+        k1 = points[i+1].second/h[i] - h[i]*z[i+1]/6;
+        k2 = points[i].second/h[i] - h[i]*z[i]/6;
+        str << "(" << z[i+1] << "*(x-" << points[i].first << ")^3+" << z[i] << "*("
+            << points[i+1].first << "-x)^3)/" << 6*h[i];
+        if (k1-k2 <0)
+            str << "-x*" << k2-k1;
+        else
+            str << "+x*" << k1-k2;
+        str << " + " << -points[i].first*k1 + points[i+1].first*k2 << "";
+        str << ":[" << points.at(i).first << "," << points.at(i+1).first << "]";
+        if (i < points.size()-2)
+            str << ";";
+    }
+    std::string expr = str.str();
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(expr),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+}
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingLogarithmus(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(log(points.at(i).first)/ log(10.0f),points.at(i).second));
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::log10(points.at(i).first),points.at(i).second));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
     Str << result.first << " + " << result.second << "*log(x)";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*log(points.at(i).first)/ log(10.0f)-points.at(i).second,2);
+        MSE += std::pow(result.first + result.second*std::log10(points.at(i).first)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingPower(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingPower(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(log(points.at(i).first)/ log(10.0f),log(points.at(i).second)/ log(10.0f)));
+        logPoints.push_back(std::pair<plot_t,plot_t>(std::log10(points.at(i).first),std::log10(points.at(i).second)));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
-    Str << exp(result.first) << " * x^" << result.second;
+    Str << exp(result.first) << " * x^";
+    if (result.second >= 0)
+        Str << result.second;
+    else
+        Str << "(" << result.second << ")";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(exp(result.first) * exp(result.second*(log(points.at(i).first)/ log(10.0f)))-points.at(i).second,2);
+        MSE += std::pow(std::exp(result.first) * std::pow(points.at(i).first,result.second)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingExponential(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingExponential(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(points.at(i).first,log(points.at(i).second)/log(10.0f)));
+        logPoints.push_back(std::pair<plot_t,plot_t>(points.at(i).first,std::log10(points.at(i).second)));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
-    Str << exp(result.first) << " * " << result.second << "^x";
+    Str << exp(result.first) << " * (" << result.second << ")^x";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + result.second*points.at(i).first-points.at(i).second,2);
+        MSE += std::pow(std::exp(result.first) * std::pow(result.second,points.at(i).first)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingSin(const std::vector<std::pair<plot_t,plot_t> >& points) {
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingSin(const std::vector<std::pair<plot_t,plot_t> >& points) {
+    std::vector<std::pair<plot_t,plot_t> > logPoints;
+    for (size_t i = 0; i < points.size(); ++i) {
+        logPoints.push_back(std::pair<plot_t,plot_t>(points.at(i).first,std::asin(points.at(i).second)));
+    }
+    std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    std::stringstream Str("");
+    Str.imbue(std::locale::classic());
+    Str << result.first << " + " << std::asin(result.second) << "*sin(x)";
+    plot_t MSE = 0;
+    for (size_t i = 0; i < points.size(); ++i) {
+        MSE += std::pow(result.first + std::asin(result.second)*std::sin(points.at(i).first)-points.at(i).second,2);
+    }
+    MSE = MSE/points.size();
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+}
+
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingCos(const std::vector<std::pair<plot_t,plot_t> >& points) {
     std::vector<std::pair<plot_t,plot_t> > logPoints;
     for (size_t i = 0; i < points.size(); ++i) {
         logPoints.push_back(std::pair<plot_t,plot_t>(points.at(i).first,points.at(i).second));
     }
     std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
+    if (result.first != result.first && result.second != result.second)
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
     std::stringstream Str("");
     Str.imbue(std::locale::classic());
-    Str << result.first << " + " << asin(result.second) << "*x";
+    Str << result.first << " + " << std::acos(result.second) << "*cos(x)";
     plot_t MSE = 0;
     for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + asin(result.second)*points.at(i).first-points.at(i).second,2);
+        MSE += std::pow(result.first + std::acos(result.second)*std::cos(points.at(i).first)-points.at(i).second,2);
     }
     MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(Str.str()),MSE);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
 }
 
-std::pair<Expression,plot_t> FunctionLibrary::fittingCos(const std::vector<std::pair<plot_t,plot_t> >& points) {
-    std::vector<std::pair<plot_t,plot_t> > logPoints;
-    for (size_t i = 0; i < points.size(); ++i) {
-        logPoints.push_back(std::pair<plot_t,plot_t>(points.at(i).first,points.at(i).second));
-    }
-    std::pair<plot_t,plot_t> result = FunctionLibrary::linearRegression(logPoints);
-    std::stringstream Str("");
-    Str.imbue(std::locale::classic());
-    Str << result.first << " + " << acos(result.second) << "*x";
-    plot_t MSE = 0;
-    for (size_t i = 0; i < points.size(); ++i) {
-        MSE += pow(result.first + acos(result.second)*points.at(i).first-points.at(i).second,2);
-    }
-    MSE = MSE/points.size();
-    return std::pair<Expression,plot_t>(Expression(Str.str()),MSE);
-}
-
-plot_t FunctionLibrary::fittingInterpol(const std::vector<std::pair<plot_t,plot_t> >& interpolPoints, plot_t x) {
-    plot_t mult;
-    plot_t result = 0;
+std::pair<PlotExpression,plot_t> FunctionLibrary::fittingInterpol(const std::vector<std::pair<plot_t,plot_t> >& interpolPoints) {
+    std::stringstream result;
+    std::stringstream partresult;
+    result.imbue(std::locale::classic());
+    partresult.imbue(std::locale::classic());
     for ( size_t i=0; i<interpolPoints.size(); ++i) {
-        mult = 1;
+        partresult.clear();
+        partresult.str("");
         for( size_t k=0; k<interpolPoints.size(); ++k) {
             if (k != i) {
-            mult *= (x-interpolPoints.at(k).first) / (interpolPoints.at(i).first - interpolPoints.at(k).first);
+                partresult << "((x-" << interpolPoints.at(k).first << ") / (" << interpolPoints.at(i).first
+                    << " - " << interpolPoints.at(k).first << "))*";
+            }
         }
-        result += mult * interpolPoints.at(i).second;
+        if (partresult.str().size() > 0) {
+            if (result.str().size() > 0)
+                result << "+";
+            result << partresult.str()  << "(" << interpolPoints.at(i).second << ")";
+        }
     }
-        }
-    return result;
+    try {
+        return std::pair<PlotExpression,plot_t>(PlotExpression(result.str()),-1);
+    }
+    catch (VoreenException& ve) {
+        LERROR("Exception: " << ve.what());
+        return std::pair<PlotExpression,plot_t>(PlotExpression(),-2);
+    }
+
 
 }
 
-
+void FunctionLibrary::TridiagonalSolve(const std::vector<plot_t>& a1, const std::vector<plot_t>& a2,
+                                       const std::vector<plot_t>& a3, const std::vector<plot_t>& y,
+                                       std::vector<plot_t>& z)
+{
+    std::vector<plot_t> a;
+    std::vector<plot_t> b;
+    std::vector<plot_t> c;
+    std::vector<plot_t> d;
+    for (size_t j = 0; j < a1.size(); ++j) {
+        a.push_back(a1[j]);
+        b.push_back(a2[j]);
+        c.push_back(a3[j]);
+        d.push_back(y[j]);
+    }
+    if (b[0] == 0)
+        return;
+    /* Modify the coefficients. */
+    c[0] /= b[0];    /* Division by zero risk. */
+    d[0] /= b[0];    /* Division by zero would imply a singular matrix. */
+    for (size_t i = 1; i < a.size(); ++i){
+        plot_t id = 1.0 / (b[i] - c[i-1] * a[i]);  /* Division by zero risk. */
+        c[i] *= id;                             /* Last value calculated is redundant. */
+        d[i] = (d[i] - d[i-1] * a[i]) * id;
+    }
+    /* Now back substitute. */
+    z[a.size() - 1] = d[a.size() - 1];
+    for (int k = a.size() - 2; k >= 0; --k) {
+        z[k] = d[k] - c[k] * z[k + 1];
+    }
+}
 
 
 
@@ -383,56 +672,6 @@ plot_t FunctionLibrary::fittingInterpol(const std::vector<std::pair<plot_t,plot_
 //
 //    }
 //}
-
-
-
-
-
-
-
-
-
-/////////////////////////////////////FUNCTION FOR THE PARSERGENERATOR///////////////////
-//
-//       DO NOT DELETE THE LINE AFTER THIS UNTIL THE PARSER IS READY
-//
-////////////////////////////////////////////////////////////////////////////////////////
-
-void FunctionLibrary::createPlotFunctionParser() {
-    glslparser::PlotFunctionGrammar g;
-
-    // Print the grammar
-    //
-    std::ofstream ofs("\\temp\\grammar.txt");
-    ofs << "Terminals:\n";
-    std::set<glslparser::GrammarSymbol*> terms = g.getTerminals();
-    for (std::set<glslparser::GrammarSymbol*>::const_iterator it = terms.begin(); it != terms.end(); ++it)
-        ofs << "ID " << (*it)->getSymbolID() << ":\t" << (*it)->toString() << "\n";
-
-    ofs << "\nProductions:\n";
-    std::vector<glslparser::Production> productions = g.getProductions();
-    for (size_t i = 0; i < productions.size(); ++i)
-        ofs << "ID  " << productions[i].getProductionID() << ":\t" << productions[i].toString() << "\n";
-    ofs.close();
-
-    glslparser::ParserTable* table = g.createParserTable(true);
-    if (table != 0) {
-        table->htmlOutput("\\temp\\table.html");
-
-        std::ofstream ofs("\\temp\\code.cpp");
-        table->generateActionCode(ofs, "stateID", "symbolID");
-        ofs << "\n";
-        table->generateGotoCode(ofs, "stateID", "symbolID");
-        ofs << "\n";
-        table->generateProductionsCode(ofs, "productionID");
-        ofs << "\n";
-        table->generateSymbolsCode(ofs, "symbolID");
-        ofs.close();
-    }
-    delete table;
-}
-
-
 
 
 } // namespace voreen

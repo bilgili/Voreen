@@ -37,8 +37,8 @@ using tgt::TextureUnit;
 namespace voreen {
 
 UnaryImageProcessor::UnaryImageProcessor()
-    : ImageProcessorDepth("pp_unary")
-    , shader_("shader", "Fragment shader", "pp_unary.frag")
+    : ImageProcessorDepth("image/unary")
+    , shader_("shader", "Fragment shader", "image/unary.frag")
     , inport_(Port::INPORT, "image.inport")
     , outport_(Port::OUTPORT, "image.outport", true)
 {
@@ -60,9 +60,11 @@ void UnaryImageProcessor::initialize() throw (VoreenException) {
     // assign header before initializing the shader property
     initialized_ = true;
     shader_.setHeader(generateHeader());
-    initialized_ = false;           //< prevents warning
+    shader_.rebuild();
+    initialized_ = false;
     ImageProcessorDepth::initialize();  // initializes the shader property
     loadShader();
+    initialized_ = true;
 }
 
 void UnaryImageProcessor::loadShader() {
@@ -89,14 +91,14 @@ void UnaryImageProcessor::process() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     sh->activate();
     setGlobalShaderParameters(sh);
 
     sh->setIgnoreUniformLocationError(true);
-    sh->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    sh->setUniform("colorTex_", colorUnit.getUnitNumber());
     sh->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(sh, "texParams_");
     sh->setIgnoreUniformLocationError(false);

@@ -98,42 +98,35 @@ void TemplatePropertyTimeline<TransFunc*>::renderAt(float time) {
 
 ////////////////// special case Camera*
 template <>
-TemplatePropertyTimeline<Camera*>::TemplatePropertyTimeline(TemplateProperty<Camera*>* prop)
+TemplatePropertyTimeline<Camera>::TemplatePropertyTimeline(TemplateProperty<Camera>* prop)
     : property_(prop)
     , activeOnRendering_(true)
     , timelineChanged_(false)
 {
     duration_ = 60.f * 15.f;
 
-    tgt::Camera* cam = property_->get();
-    if (!cam) {
-        cam = new tgt::Camera();
-        property_->set(cam);
-    }
+    tgt::Camera cam = property_->get();
+
 //    Camera* node0 = new Camera(cam->getPosition(), cam->getFocus(), cam->getUpVector(), cam->getStrafe());
 //    node0->setNodeIdentifier("Node 0");
 //    node0->setDirection(node0->getStrafe());
-    Camera* node0 = new Camera(cam->getPosition(), cam->getFocus(), cam->getUpVector());
-    timeline_ = new CameraPropertyTimelineState(new PropertyKeyValue<Camera*>(node0, 0.f));
+    Camera node0 = Camera(cam.getPosition(), cam.getFocus(), cam.getUpVector());
+    timeline_ = new CameraPropertyTimelineState(new PropertyKeyValue<Camera>(node0, 0.f));
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::resetTimeline() {
+void TemplatePropertyTimeline<Camera>::resetTimeline() {
     timelineChanged_ = true;
     lastChanges_.push_back(timeline_);
     undoObserver_->animationChanged(this);
 
-    tgt::Camera* cam = property_->get();
-    if (!cam) {
-        cam = new tgt::Camera();
-        property_->set(cam);
-    }
+    tgt::Camera cam = property_->get();
 
 /*    Camera* node0 = new Camera(cam->getPosition(), cam->getFocus(), cam->getUpVector(), cam->getStrafe());
     node0->setNodeIdentifier("Node 0");
     node0->setDirection(node0->getStrafe()); */
-    Camera* node0 = new Camera(cam->getPosition(), cam->getFocus(), cam->getUpVector());
-    timeline_ = new CameraPropertyTimelineState(new PropertyKeyValue<Camera*>(node0,0));
+    Camera node0 = Camera(cam.getPosition(), cam.getFocus(), cam.getUpVector());
+    timeline_ = new CameraPropertyTimelineState(new PropertyKeyValue<Camera>(node0,0));
 
     const std::vector<TimelineObserver*> timelineObservers = getObservers();
     std::vector<TimelineObserver*>::const_iterator it;
@@ -143,7 +136,7 @@ void TemplatePropertyTimeline<Camera*>::resetTimeline() {
 }
 
 template <>
-const PropertyKeyValue<Camera*>* TemplatePropertyTimeline<Camera*>::newKeyValue(float time) {
+const PropertyKeyValue<Camera>* TemplatePropertyTimeline<Camera>::newKeyValue(float time) {
     time = floor(time * 10000.f) / 10000.f;
 
     if (time > duration_) {
@@ -153,7 +146,7 @@ const PropertyKeyValue<Camera*>* TemplatePropertyTimeline<Camera*>::newKeyValue(
     lastChanges_.push_back(timeline_->clone());
     undoObserver_->animationChanged(this);
 
-    const PropertyKeyValue<Camera*>* kv = timeline_->newKeyValue(time);
+    const PropertyKeyValue<Camera>* kv = timeline_->newKeyValue(time);
 
     const std::vector<TimelineObserver*> timelineObservers = getObservers();
     std::vector<TimelineObserver*>::const_iterator it;
@@ -165,27 +158,29 @@ return kv;
 }
 
 template <>
-Camera* TemplatePropertyTimeline<Camera*>::privateGetPropertyAt(float time) {
+Camera TemplatePropertyTimeline<Camera>::privateGetPropertyAt(float time) {
     CameraPropertyTimelineState* tl = dynamic_cast<CameraPropertyTimelineState*>(timeline_);
     tgtAssert(tl, "No CameraPropertyTimelineState");
-    Camera* cam = const_cast<Camera*>(tl->getPropertyAt(time));
+    //Camera cam = const_cast<Camera>(tl->getPropertyAt(time));
+    Camera cam = tl->getPropertyAt(time);
     return cam;
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::renderAt(float time) {
+void TemplatePropertyTimeline<Camera>::renderAt(float time) {
     if (!activeOnRendering_)
         return;
 
-    Camera* camera = getPropertyAt(time);
-    static_cast<CameraProperty*>(property_)->set(*camera);
+    Camera camera = getPropertyAt(time);
+    static_cast<CameraProperty*>(property_)->set(camera);
 }
 
 template <>
-bool TemplatePropertyTimeline<Camera*>::changeValueOfKeyValue(Camera* value, const PropertyKeyValue<Camera*>* keyvalue){
+bool TemplatePropertyTimeline<Camera>::changeValueOfKeyValue(Camera value, const PropertyKeyValue<Camera>* keyvalue){
     tgtAssert(property_, "No property");
     timelineChanged_ = true;
-    if (!property_->isValidValue(value))
+    std::string errorMsg;
+    if (!property_->isValidValue(value, errorMsg))
         return false;
     bool temp = timeline_->changeValueOfKeyValue(value, keyvalue);
 
@@ -207,24 +202,24 @@ bool TemplatePropertyTimeline<Camera*>::changeValueOfKeyValue(Camera* value, con
 //}
 
 template <>
-const TemplateProperty<Camera*>* TemplatePropertyTimeline<Camera*>::getCorrespondingProperty() const {
+const TemplateProperty<Camera>* TemplatePropertyTimeline<Camera>::getCorrespondingProperty() const {
     return 0;
 }
 
 template <>
-std::string TemplatePropertyTimeline<Camera*>::getPropertyName() const {
+std::string TemplatePropertyTimeline<Camera>::getPropertyName() const {
     tgtAssert(property_, "No property");
     return property_->getGuiName();
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::setInteractionMode(bool interactionmode, void* source) {
+void TemplatePropertyTimeline<Camera>::setInteractionMode(bool interactionmode, void* source) {
     tgtAssert(property_, "No property");
     property_->toggleInteractionMode(interactionmode, source);
 }
 
 template <>
-DeleteKeyValueReturn TemplatePropertyTimeline<Camera*>::deleteKeyValue(const PropertyKeyValue<Camera*>* keyvalue) {
+DeleteKeyValueReturn TemplatePropertyTimeline<Camera>::deleteKeyValue(const PropertyKeyValue<Camera>* keyvalue) {
     timelineChanged_ = true;
     lastChanges_.push_back(timeline_->clone());
     undoObserver_->animationChanged(this);
@@ -240,7 +235,7 @@ DeleteKeyValueReturn TemplatePropertyTimeline<Camera*>::deleteKeyValue(const Pro
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::serialize(XmlSerializer& s) const {
+void TemplatePropertyTimeline<Camera>::serialize(XmlSerializer& s) const {
     tgtAssert(property_, "No property");
     s.serialize("activeOnRendering", activeOnRendering_);
     s.serialize("propertyOwner", property_->getOwner());
@@ -250,7 +245,7 @@ void TemplatePropertyTimeline<Camera*>::serialize(XmlSerializer& s) const {
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::deserialize(XmlDeserializer& s) {
+void TemplatePropertyTimeline<Camera>::deserialize(XmlDeserializer& s) {
     s.deserialize("activeOnRendering", activeOnRendering_);
     PropertyOwner* propertyOwner = 0;
     s.deserialize("propertyOwner", propertyOwner);
@@ -259,13 +254,13 @@ void TemplatePropertyTimeline<Camera*>::deserialize(XmlDeserializer& s) {
     if (propertyOwner)
         property_ = dynamic_cast<CameraProperty*>(propertyOwner->getProperty(propertyId));
     else
-        LERRORC("TemplatePropertyTimeline<Camera*>", "deserialize(): no property owner");
+        LERRORC("TemplatePropertyTimeline<Camera>", "deserialize(): no property owner");
     s.deserialize("duration", duration_);
     s.deserialize("timeline", timeline_);
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::undo() {
+void TemplatePropertyTimeline<Camera>::undo() {
     lastUndos_.push_back(timeline_);
     timeline_ = new CameraPropertyTimelineState(lastChanges_.back()->getKeyValues());
     lastChanges_.pop_back();
@@ -277,7 +272,7 @@ void TemplatePropertyTimeline<Camera*>::undo() {
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::redo() {
+void TemplatePropertyTimeline<Camera>::redo() {
     lastChanges_.push_back(timeline_);
     timeline_ = new CameraPropertyTimelineState(lastUndos_.back()->getKeyValues());
     lastUndos_.pop_back();
@@ -410,7 +405,8 @@ const PropertyKeyValue<T>* TemplatePropertyTimeline<T>::newKeyValue(float time) 
 template <class T>
 bool TemplatePropertyTimeline<T>::changeValueOfKeyValue(T value, const PropertyKeyValue<T>* keyvalue) {
     timelineChanged_ = true;
-    if (!(property_->isValidValue(value)))
+    std::string errorMsg;
+    if (!(property_->isValidValue(value, errorMsg)))
         return false;
     bool temp = timeline_->changeValueOfKeyValue(value, keyvalue);
 
@@ -917,23 +913,23 @@ void TemplatePropertyTimeline<ShaderSource>::setCurrentSettingAsKeyvalue(float t
 }
 
 template <>
-void TemplatePropertyTimeline<Camera*>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue) {
+void TemplatePropertyTimeline<Camera>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue) {
 
     time = floor(time*10000)/10000;
 
-    tgt::Camera* cam = property_->get();
+    tgt::Camera cam = property_->get();
 /*    Camera* value = new CameraNode(cam->getPosition(), cam->getFocus(), cam->getUpVector(), cam->getStrafe());
     CameraNode* animatedValue = getPropertyAt(time); */
-    Camera* value = new Camera(cam->getPosition(), cam->getFocus(), cam->getUpVector());
-    Camera* animatedValue = getPropertyAt(time);
+    Camera value = cam;
+    Camera animatedValue = getPropertyAt(time);
 
-    if ((value->getPosition() != animatedValue->getPosition())
-        ||(value->getFocus() != animatedValue->getFocus())
-        ||(value->getUpVector() != animatedValue->getUpVector()))
+    if ((value.getPosition() != animatedValue.getPosition())
+        ||(value.getFocus() != animatedValue.getFocus())
+        ||(value.getUpVector() != animatedValue.getUpVector()))
     {
-        const PropertyKeyValue<Camera*>* kv = timeline_->newKeyValue(time);
+        const PropertyKeyValue<Camera>* kv = timeline_->newKeyValue(time);
         if (!kv) {
-            kv = new PropertyKeyValue<Camera*>(value,time);
+            kv = new PropertyKeyValue<Camera>(value,time);
         }
         this->changeValueOfKeyValue(value,kv);
     }
@@ -1079,7 +1075,7 @@ template class TemplatePropertyTimeline<tgt::vec4>;
 template class TemplatePropertyTimeline<tgt::mat2>;
 template class TemplatePropertyTimeline<tgt::mat3>;
 template class TemplatePropertyTimeline<tgt::mat4>;
-template class TemplatePropertyTimeline<tgt::Camera*>;
+template class TemplatePropertyTimeline<tgt::Camera>;
 template class TemplatePropertyTimeline<std::string>;
 template class TemplatePropertyTimeline<ShaderSource>;
 template class TemplatePropertyTimeline<TransFunc*>;

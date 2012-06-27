@@ -30,10 +30,13 @@
 #include "voreen/core/properties/action.h"
 #include "voreen/core/properties/condition.h"
 #include "voreen/core/properties/numericproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 
 #include "tgt/logmanager.h"
 
 namespace voreen {
+
+const std::string Condition::loggerCat_("voreen.Condition");
 
 Condition::Condition(const Action& action, const Action& elseaction) {
     addAction(action);
@@ -83,14 +86,12 @@ void Condition::exec() {
     }
 }
 
-bool Condition::validate() const {
+bool Condition::validate(std::string& errorMsg) const {
 
     bool valid = met();
     if (!valid) {
-        std::string msg = "Property validation failed";
-        if (!description().empty())
-            msg += ": " + description();
-        LWARNINGC("voreen.core.Condition", msg);
+        errorMsg = "Property validation failed" + description();
+        //LWARNING(msg);
     }
     return met();
 }
@@ -110,6 +111,9 @@ const char* Condition::ValidationFailed::what() const throw() {
 }
 
 // ============================================================================
+
+template<typename T>
+const std::string NumericPropertyValidation<T>::loggerCat_("voreen.NumericPropertyValidation");
 
 template<typename T>
 bool NumericPropertyValidation<T>::met() const throw() {
@@ -169,14 +173,35 @@ bool NumericPropertyValidation<double>::met() const throw() {
 template<class T>
 std::string voreen::NumericPropertyValidation<T>::description() const{
     std::stringstream stream;
-    stream << observed_->value_ << " out of valid range ["
-           << observed_->minValue_ << "," << observed_->maxValue_ << "] for '" << observed_->getGuiName() << "'";
-    if (observed_->getOwner())
-        stream << "  (" << observed_->getOwner()->getName() << ")";
+    stream << " for '" << observed_->getFullyQualifiedID() << "': "
+           << observed_->value_ << " out of valid range [" << observed_->minValue_ << "," << observed_->maxValue_ << "]";
     return stream.str();
 }
 
+// ----------------------------------------------------------------------------
 
+const std::string OptionPropertyValidation::loggerCat_("voreen.OptionPropertyValidation");
+
+bool OptionPropertyValidation::met() const throw() {
+    std::vector<std::string> allowedValues = observed_->getKeys();
+    return (std::find(allowedValues.begin(), allowedValues.end(), observed_->get()) != allowedValues.end());
+}
+
+std::string voreen::OptionPropertyValidation::description() const {
+    std::string keyStr;
+    std::vector<std::string> allowedValues = observed_->getKeys();
+    if (!allowedValues.empty()) {
+        keyStr = allowedValues[0];
+        for (size_t i=1; i<allowedValues.size(); i++)
+            keyStr += ", " + allowedValues[i];
+    }
+
+    std::string desc = " for '" + observed_->getFullyQualifiedID() + "': " + "Unknown option key '" + observed_->get() + "'. "
+        + "Accepted values: " + keyStr;
+    return desc;
+}
+
+// ----------------------------------------------------------------------------
 // explicit template instantiation to enable distribution of
 // implementation of template class methods over .h and .cpp files
 //

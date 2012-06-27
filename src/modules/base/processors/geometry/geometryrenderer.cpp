@@ -65,7 +65,7 @@ GeometryRenderer::GeometryRenderer()
     addProperty(textureMode_);
 
     enableLighting_.onChange(CallMemberAction<GeometryRenderer>(this, &GeometryRenderer::updatePropertyVisibilities));
-    
+
     //lightPosition_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
     lightAmbient_.setViews(Property::COLOR);
     lightDiffuse_.setViews(Property::COLOR);

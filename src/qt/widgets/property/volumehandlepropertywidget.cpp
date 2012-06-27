@@ -351,7 +351,7 @@ void VolumeHandlePropertyWidget::showNameLabel(bool) {
         nameLabel_->hide();
 }
 
-const QLabel* VolumeHandlePropertyWidget::getNameLabel() const {
+CustomLabel* VolumeHandlePropertyWidget::getNameLabel() const {
     return 0;
 }
 

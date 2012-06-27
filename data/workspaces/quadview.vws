@@ -8,7 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <Processors>
                 <Processor type="EntryExitPoints" name="EntryExitPoints" id="ref0">
                     <MetaData>
@@ -21,7 +21,7 @@
                             </MetaData>
                             <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
                             <focus x="-0.050576" y="0.128565" z="-0.26432699" />
-                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
+                            <upVector x="0.29123011" y="0.37554321" z="0.87985939" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" lod="1" value="false" />
@@ -100,7 +100,7 @@
                         <Property name="lightDiffuse">
                             <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
                         </Property>
-                        <Property name="lightPosition" id="ref19">
+                        <Property name="lightPosition" id="ref18">
                             <value x="-1.62018895" y="-0.57210797" z="1.24078703" w="1" />
                         </Property>
                         <Property name="lightSpecular">
@@ -109,6 +109,8 @@
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="9.75609779" />
                         <Property name="shading" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -142,6 +144,7 @@
                         <Property name="canvasSize">
                             <value x="845" y="643" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -201,7 +204,7 @@
                             </MetaData>
                             <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
                             <focus x="-0.050576" y="0.128565" z="-0.26432699" />
-                            <upVector x="0.29123011" y="0.37554321" z="0.87985939" />
+                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>
@@ -230,18 +233,18 @@
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
                         <Property name="boundingBoxWidth" value="1" />
-                        <Property name="xColor" lod="1" id="ref29">
+                        <Property name="xColor" lod="1" id="ref28">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="xSliceIndex" lod="1" value="61" id="ref27" />
-                        <Property name="yColor" lod="1" id="ref25">
+                        <Property name="xSliceIndex" lod="1" value="61" id="ref26" />
+                        <Property name="yColor" lod="1" id="ref24">
                             <value x="0" y="1" z="0" w="1" />
                         </Property>
-                        <Property name="ySliceIndex" lod="1" value="41" id="ref23" />
-                        <Property name="zColor" lod="1" id="ref31">
+                        <Property name="ySliceIndex" lod="1" value="41" id="ref22" />
+                        <Property name="zColor" lod="1" id="ref30">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
-                        <Property name="zSliceIndex" lod="1" value="62" id="ref21" />
+                        <Property name="zSliceIndex" lod="1" value="62" id="ref20" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -250,7 +253,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-394" y="166" />
                     </MetaData>
                     <Properties>
-                        <Property name="boundaryColor" id="ref30">
+                        <Property name="boundaryColor" id="ref29">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
                         <Property name="filterTexture" value="true" />
@@ -270,8 +273,8 @@
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
-                        <Property name="sliceIndex" value="62" id="ref20" />
-                        <Property name="transferFunction" id="ref32">
+                        <Property name="sliceIndex" value="62" id="ref19" />
+                        <Property name="transferFunction" id="ref31">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -309,7 +312,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-162" y="167" />
                     </MetaData>
                     <Properties>
-                        <Property name="boundaryColor" id="ref28">
+                        <Property name="boundaryColor" id="ref27">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
                         <Property name="filterTexture" value="true" />
@@ -329,8 +332,8 @@
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="yz-plane" />
-                        <Property name="sliceIndex" value="61" id="ref26" />
-                        <Property name="transferFunction" id="ref34">
+                        <Property name="sliceIndex" value="61" id="ref25" />
+                        <Property name="transferFunction" id="ref33">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -368,7 +371,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-284" y="166" />
                     </MetaData>
                     <Properties>
-                        <Property name="boundaryColor" id="ref24">
+                        <Property name="boundaryColor" id="ref23">
                             <value x="0" y="1" z="0" w="1" />
                         </Property>
                         <Property name="filterTexture" value="true" />
@@ -388,8 +391,8 @@
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xz-plane" />
-                        <Property name="sliceIndex" value="41" id="ref22" />
-                        <Property name="transferFunction" id="ref33">
+                        <Property name="sliceIndex" value="41" id="ref21" />
+                        <Property name="transferFunction" id="ref32">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -427,7 +430,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-707" y="252" />
                     </MetaData>
                     <Properties>
-                        <Property name="lightPosition" id="ref18">
+                        <Property name="lightPosition" id="ref17">
                             <value x="-1.62018895" y="-0.57210797" z="1.24078703" w="1" />
                         </Property>
                         <Property name="mouseEvent.moveSphere" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
@@ -630,72 +633,72 @@
                 <PropertyLink>
                     <SourceProperty ref="ref15" />
                     <DestinationProperty ref="ref16" />
-                    <Evaluator type="LinkEvaluatorId" id="ref17" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref16" />
                     <DestinationProperty ref="ref15" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref18" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref18" />
-                    <DestinationProperty ref="ref19" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref19" />
-                    <DestinationProperty ref="ref18" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <DestinationProperty ref="ref20" />
+                    <Evaluator type="LinkEvaluatorIntId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref20" />
-                    <DestinationProperty ref="ref21" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <SourceProperty ref="ref21" />
+                    <DestinationProperty ref="ref22" />
+                    <Evaluator type="LinkEvaluatorIntId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref22" />
-                    <DestinationProperty ref="ref23" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <SourceProperty ref="ref23" />
+                    <DestinationProperty ref="ref24" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref24" />
-                    <DestinationProperty ref="ref25" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <SourceProperty ref="ref25" />
+                    <DestinationProperty ref="ref26" />
+                    <Evaluator type="LinkEvaluatorIntId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref26" />
-                    <DestinationProperty ref="ref27" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <SourceProperty ref="ref27" />
+                    <DestinationProperty ref="ref28" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref28" />
-                    <DestinationProperty ref="ref29" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <SourceProperty ref="ref29" />
+                    <DestinationProperty ref="ref30" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref30" />
+                    <SourceProperty ref="ref31" />
+                    <DestinationProperty ref="ref32" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref32" />
                     <DestinationProperty ref="ref31" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref32" />
                     <DestinationProperty ref="ref33" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref33" />
                     <DestinationProperty ref="ref32" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref33" />
-                    <DestinationProperty ref="ref34" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref34" />
-                    <DestinationProperty ref="ref33" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

@@ -39,19 +39,35 @@
 #endif
 
 vec4 applyTF(sampler1D transfunc, float intensity) {
-    return texture1D(transfunc, intensity);
+    #if defined(GLSL_VERSION_130)
+        return texture(transfunc, intensity);
+    #else
+        return texture1D(transfunc, intensity);
+    #endif
 }
 
 vec4 applyTF(sampler1D transfunc, vec4 intensity) {
-    return texture1D(transfunc, intensity.a);
+    #if defined(GLSL_VERSION_130)
+        return texture(transfunc, intensity.a);
+    #else
+        return texture1D(transfunc, intensity.a);
+    #endif
 }
 
 vec4 applyTF(sampler2D transfunc, float intensity, float gradientMagnitude) {
-    return texture2D(transfunc, vec2(intensity, gradientMagnitude));
+    #if defined(GLSL_VERSION_130)
+        return texture(transfunc, vec2(intensity, gradientMagnitude));
+    #else
+        return texture2D(transfunc, vec2(intensity, gradientMagnitude));
+    #endif
 }
 
 vec4 applyTF(sampler2D transfunc, vec4 intensityGradient) {
-    return texture2D(transfunc, vec2(intensityGradient.a, length(intensityGradient.rgb)));
+    #if defined(GLSL_VERSION_130)
+        return texture(transfunc, vec2(intensityGradient.a, length(intensityGradient.rgb)));
+    #else
+        return texture2D(transfunc, vec2(intensityGradient.a, length(intensityGradient.rgb)));
+    #endif
 }
 
 

@@ -35,6 +35,7 @@
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
 
@@ -88,16 +89,25 @@ private:
     RenderPort outport2_;
     PortGroup portGroup_;
 
-    StringOptionProperty shadeMode1_;  ///< the property that controls the shading mode
-    StringOptionProperty shadeMode2_;  ///< the property that controls the shading mode
-    StringOptionProperty shadeMode3_;  ///< the property that controls the shading mode
-    StringOptionProperty shadeMode4_;  ///< the property that controls the shading mode
+    tgt::Shader* raycastPrg_;               ///< shader program used by this raycaster (rc_multivolume.frag)
 
-    TransFuncProperty transferFunc1_;  ///< the property that controls the transfer-function
-    TransFuncProperty transferFunc2_;  ///< the property that controls the transfer-function
-    TransFuncProperty transferFunc3_;  ///< the property that controls the transfer-function
-    TransFuncProperty transferFunc4_;  ///< the property that controls the transfer-function
-    CameraProperty camera_;           ///< the camera used for lighting calculations
+    StringOptionProperty shadeMode1_;       ///< shading mode to use for volume 1
+    StringOptionProperty shadeMode2_;       ///< shading mode to use for volume 2
+    StringOptionProperty shadeMode3_;       ///< shading mode to use for volume 3
+    StringOptionProperty shadeMode4_;       ///< shading mode to use for volume 4
+
+    TransFuncProperty transferFunc1_;       ///< transfer function to apply to volume 1
+    TransFuncProperty transferFunc2_;       ///< transfer function to apply to volume 2
+    TransFuncProperty transferFunc3_;       ///< transfer function to apply to volume 3
+    TransFuncProperty transferFunc4_;       ///< transfer function to apply to volume 4
+
+    GLEnumOptionProperty texClampMode1_;    ///< clamp mode for volume 1
+    GLEnumOptionProperty texClampMode2_;    ///< clamp mode for volume 2
+    GLEnumOptionProperty texClampMode3_;    ///< clamp mode for volume 3
+    GLEnumOptionProperty texClampMode4_;    ///< clamp mode for volume 4
+    FloatProperty texBorderIntensity_;      ///< border intensity for all volumes
+
+    CameraProperty camera_;                 ///< the camera used for lighting calculations
 
     StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
     StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport

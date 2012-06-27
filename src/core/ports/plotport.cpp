@@ -70,8 +70,8 @@ void PlotPort::setData(PlotBase* handle, bool deletePrevious) {
     }
 }
 
-void PlotPort::deletePlotData() {
-    tgtAssert(isOutport(), "deletePlotData called on inport!");
+void PlotPort::deleteData() {
+    tgtAssert(isOutport(), "deletePlotBase called on inport!");
     PlotBase* tempVol = portData_;
     if (tempVol) {
         setData(0);

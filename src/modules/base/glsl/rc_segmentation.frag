@@ -51,6 +51,31 @@ uniform sampler3D segmentation_;                    // segmentation volume
 uniform VOLUME_PARAMETERS segmentationParameters_;  // texture lookup parameters for segmentation_
 
 
+#ifdef MOD_APPLY_SEGMENTATION
+
+uniform sampler2D segmentationTransferFunc_;
+
+vec4 applySegmentationClassification(vec3 sample, vec4 voxel, sampler3D segmentation, VOLUME_PARAMETERS segmentationParameters) {
+
+    // Determine segment id and perform transfer function lookup within corresponding segmentation transfer function.
+    // The 1D transfer function of a segment is stored in the 2D segmentation tf texture as a 3-row wide stripe which is centered around the row 3*i+1.
+
+    float segmentScaleFactor = 255.0;
+    if (segmentationParameters.bitDepth_ == 12)
+        segmentScaleFactor = 4095.0;
+    else if (segmentationParameters.bitDepth_ == 16)
+        segmentScaleFactor = 65535.0;
+
+    float segValue = getVoxel(segmentation, segmentationParameters, sample).a;
+    float segment = segValue * segmentScaleFactor;
+
+    return texture(segmentationTransferFunc_, vec2(voxel.a, (segment*3.0+1.0)/float(SEGMENTATION_TRANSFUNC_HEIGHT)) );
+
+}
+
+#endif
+
+
 /***
  * Performs the ray traversal
  * returns the final fragment color.
@@ -100,9 +125,6 @@ void main() {
     vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
     vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
 
-    // initialize light and material parameters
-    matParams = gl_FrontMaterial;
-
     // determine whether the ray has to be casted
     if (frontPos == backPos)
         // background needs no raycasting
@@ -111,21 +133,13 @@ void main() {
         // fragCoords are lying inside the bounding box
         rayTraversal(frontPos, backPos);
 
-    /*
-    #ifdef TONE_MAPPING_ENABLED
-        result.r = 1.0 - exp(-result.r * TONE_MAPPING_VALUE);
-        result.g = 1.0 - exp(-result.g * TONE_MAPPING_VALUE);
-        result.b = 1.0 - exp(-result.b * TONE_MAPPING_VALUE);
-    #endif
-    */
-
     #ifdef OP0
-        gl_FragData[OP0] = result;
+        FragData0 = result;
     #endif
     #ifdef OP1
-        gl_FragData[OP1] = result1;
+        fragData1 = result1;
     #endif
     #ifdef OP2
-        gl_FragData[OP2] = result2;
+        fragData2 = result2;
     #endif
 }

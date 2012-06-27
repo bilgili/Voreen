@@ -39,10 +39,6 @@
 #include "voreen/core/io/brickedvolumereader.h"
 #include "voreen/core/io/progressbar.h"
 
-#ifdef VRN_WITH_TIFF
-    #include "voreen/core/io/tiffvolumereader.h"
-#endif
-
 #ifdef VRN_WITH_ZLIB
     #include "voreen/core/io/zipvolumereader.h"
 #endif
@@ -83,10 +79,6 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
     readers_.push_back(new DatVolumeReader(progressDialog_));
     readers_.push_back(new RawVolumeReader(progressDialog_));
     readers_.push_back(new BrickedVolumeReader(progressDialog_) );
-
-#ifdef VRN_WITH_TIFF
-    readers_.push_back(new TiffVolumeReader(progressDialog_));
-#endif
 
 #ifdef VRN_WITH_ZLIB
     readers_.push_back(new ZipVolumeReader(this, progressDialog_));

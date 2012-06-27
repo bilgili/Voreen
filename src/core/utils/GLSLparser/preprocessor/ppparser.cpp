@@ -37,7 +37,7 @@ namespace voreen {
 
 namespace glslparser {
 
-PreprocessorParser::PreprocessorParser(std::istream* const is) throw (std::bad_alloc)
+PreprocessorParser::PreprocessorParser(std::istream* is) throw (std::bad_alloc)
     : Parser(new PreprocessorLexer(is, PreprocessorTerminals().getKeywords()), true),
     tokens_(),
     parseExpression_(false)

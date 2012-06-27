@@ -49,7 +49,7 @@ public:
     virtual void render() = 0;
     virtual void renderPicking() {}
 
-    virtual void setCamera(tgt::Camera* c) { camera_ = c; }
+    virtual void setCamera(const tgt::Camera& c) { camera_ = c; }
     virtual void setViewport(tgt::ivec2 viewport) { viewport_ = viewport; }
     virtual void setIDManager(IDManager* idm) { idManager_ = idm; }
 
@@ -72,7 +72,7 @@ protected:
     tgt::vec3 getWindowPos(tgt::vec3 pos, tgt::mat4 modelview = tgt::mat4::identity,
         tgt::mat4 projection = tgt::mat4::identity) const;
 
-    tgt::Camera* camera_;
+    tgt::Camera camera_;
     tgt::ivec2 viewport_;
     GenericCoProcessorPort<GeometryRendererBase> outPort_;
     IDManager* idManager_;

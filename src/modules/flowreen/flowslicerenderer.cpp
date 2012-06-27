@@ -27,8 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
-
 #include "tgt/glmath.h"
 #include "tgt/texture.h"
 
@@ -517,8 +515,10 @@ tgt::vec2 FlowSliceRenderer::reseedRandomPosition(const size_t validPositions) {
     return tgt::clamp((randomPositions_[index] + randVec), tgt::vec2::zero, tgt::vec2(1.0f));
 }
 
-std::string FlowSliceRenderer::generateShaderHeader() const {
-    return colorCoding_.getShaderDefines();
+std::string FlowSliceRenderer::generateShaderHeader() {
+    std::string header = RenderProcessor::generateHeader();
+    header += colorCoding_.getShaderDefines();
+    return header;
 }
 
 bool FlowSliceRenderer::loadShader(const std::string& vertexShaderName,
@@ -526,7 +526,7 @@ bool FlowSliceRenderer::loadShader(const std::string& vertexShaderName,
 {
     if (shader_ == 0) {
         shader_ = ShdrMgr.loadSeparate(vertexShaderName.c_str(), fragmentShaderName.c_str(),
-            "", false);
+            generateShaderHeader(), false);
         if (shader_ == 0) {
             LERROR("Failed to load shaders '" <<  vertexShaderName << "' & '"
                 << fragmentShaderName << "'!");
@@ -1137,5 +1137,3 @@ void FlowSliceRenderer::toggleProperties() {
 }
 
 }   // namespace
-
-#endif

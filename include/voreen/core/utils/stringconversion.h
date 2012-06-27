@@ -37,14 +37,31 @@ namespace voreen {
 /// Converts an int to a string using stringstreams
 std::string itos(int i);
 
-/// Converts an float to a string using stringstreams
+/// Converts a string to an int using stringstreams
+int stoi(const std::string& s);
+
+/// Converts a float to a string using stringstreams
 std::string ftos(float f);
 
-/// Converts a string to an int using stringstreams
-int stoi(std::string s);
+/// Converts a string to a float using stringstreams
+float stof(const std::string& s);
 
-/// Converts a string to an float using stringstreams
-float stof(std::string s);
+/// Converts a double to a string using stringstreams
+std::string dtos(double d);
+
+/// Converts a string to a double using stringstreams
+double stod(const std::string& s);
+
+/**
+ * Converts the string to a null-terminated char array with length s.size()+1.
+ * Deleting the allocated memory is up to the caller.
+ */
+char* strtochr(const std::string& s);
+
+/**
+ * Returns a copy of \p str where all occurrences of \p from have been replaced by \p to.
+ */
+std::string strReplaceAll(const std::string& str, const std::string& from, const std::string& to);
 
 } // namespace
 

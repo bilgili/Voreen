@@ -378,10 +378,7 @@ void TransFuncIntensityGradientPainter::initialize() {
 }
 
 void TransFuncIntensityGradientPainter::updateTF() {
-    getCanvas()->getGLFocus();
-
-    tf_->updateTexture();
-
+    tf_->invalidateTexture();
     emit repaintSignal();
 }
 

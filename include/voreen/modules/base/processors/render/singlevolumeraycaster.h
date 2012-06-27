@@ -35,6 +35,7 @@
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
 
@@ -51,17 +52,21 @@ namespace voreen {
 class SingleVolumeRaycaster : public VolumeRaycaster {
 public:
     SingleVolumeRaycaster();
-    virtual ~SingleVolumeRaycaster();
+    virtual Processor* create() const;
 
     virtual std::string getClassName() const    { return "SingleVolumeRaycaster"; }
     virtual std::string getCategory() const     { return "Raycasting"; }
     virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
-    virtual Processor* create() const;
     virtual bool isReady() const;
 
 protected:
+    /**
+     * Recompiles the shader, if the invalidation level >= Processor::INVALID_PROGRAM.
+     */
+    virtual void beforeProcess();
+
     /**
      * Performs the raycasting.
      *
@@ -77,26 +82,33 @@ protected:
     virtual void initialize() throw (VoreenException);
 
     /**
-     * Deinitializes the port group.
+     * Deinitializes the port group and disposes the shader.
      */
     virtual void deinitialize() throw (VoreenException);
 
     /**
-     * Load the needed shader.
+     * Adds compositing macros for the additional outports.
+     *
+     * @see VolumeRaycaster::generateHeader
      */
-    virtual void loadShader();
-
     virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
+
+    /// Rebuilds the loaded shader.
     virtual void compile(VolumeHandle* volumeHandle);
 
 private:
     void adjustPropertyVisibilities();
+
+    tgt::Shader* raycastPrg_;         ///< The shader program used by this raycaster.
 
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
     CameraProperty camera_;           ///< the camera used for lighting calculations
 
     StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
     StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport
+
+    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
+    FloatProperty texBorderIntensity_;        ///< clamp border intensity
 
     VolumePort volumeInport_;
     RenderPort entryPort_;

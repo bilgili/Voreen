@@ -73,6 +73,7 @@ protected:
     virtual void compile(VolumeHandle* volumeHandle);
 
 private:
+    tgt::Shader* raycastPrg_;          ///< The shader program used by this raycaster.
 
     // callbacks for gui changes
     void applySegmentationChanged();

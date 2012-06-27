@@ -91,7 +91,7 @@ void ImageAnalyzerWidget::initialize() {
     label1 = new QLabel("Median",this);
     label1->setFont(font1);
     layout->addWidget(label1,10,4);
-    label1 = new QLabel("Add to Histogramm",this);
+    label1 = new QLabel("Add to Histogram",this);
     label1->setFont(font1);
     layout->addWidget(label1,10,5);
     size_t j = 0;

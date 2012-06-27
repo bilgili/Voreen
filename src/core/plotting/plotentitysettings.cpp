@@ -445,4 +445,56 @@ void PlotEntitySettings::setUseTextureFlag(bool value) {
     useTextureFlag_ = value;
 }
 
+bool PlotEntitySettings::operator==(const PlotEntitySettings& rhs) const {
+    if (entity_ != rhs.getEntity())
+        return false;
+
+    if (entity_ == NONE)
+        return true;
+    else if (entity_ == LINE) {
+        if (mainColumnIndex_ == rhs.getMainColumnIndex() &&
+            candleTopColumnIndex_ == rhs.getCandleTopColumnIndex() &&
+            candleBottomColumnIndex_ == rhs.getCandleBottomColumnIndex() &&
+            stickTopColumnIndex_ == rhs.getStickTopColumnIndex() &&
+            stickBottomColumnIndex_ == rhs.getStickBottomColumnIndex() &&
+            firstColor_ == rhs.getFirstColor() &&
+            secondColor_ == rhs.getSecondColor() &&
+            lineStyle_ == rhs.getLineStyle() &&
+            splineFlag_ == rhs.getSplineFlag() &&
+            errorbarFlag_ == rhs.getErrorbarFlag() &&
+            candleStickFlag_ == rhs.getCandleStickFlag())
+            return true;
+    }
+    else if (entity_ == BAR) {
+        if (mainColumnIndex_ == rhs.getMainColumnIndex() &&
+            firstColor_ == rhs.getFirstColor())
+            return true;
+    }
+    else if (entity_ == SURFACE) {
+        if (mainColumnIndex_ == rhs.getMainColumnIndex() &&
+            optionalColumnIndex_ == rhs.getOptionalColumnIndex() &&
+            firstColor_ == rhs.getFirstColor() &&
+            secondColor_ == rhs.getSecondColor() &&
+            wireOnlyFlag_ == rhs.getWireOnlyFlag() &&
+            heightmapFlag_ == rhs.getHeightmapFlag() &&
+            colorMap_ == rhs.getColorMap())
+            return true;
+    }
+    else if (entity_ == SCATTER) {
+        if (mainColumnIndex_ == rhs.getMainColumnIndex() &&
+            optionalColumnIndex_ == rhs.getOptionalColumnIndex() &&
+            secondOptionalColumnIndex_ == rhs.getSecondOptionalColumnIndex() &&
+            firstColor_ == rhs.getFirstColor() &&
+            colorMap_ == rhs.getColorMap() &&
+            minGlyphSize_ == rhs.getMinGlyphSize() &&
+            maxGlyphSize_ == rhs.getMaxGlyphSize() &&
+            glyphStyle_ == rhs.getGlyphStyle() &&
+            texturePath_ == rhs.getTexturePath() &&
+            useTextureFlag_ == rhs.getUseTextureFlag())
+            return true;
+    }
+    return false;
+
+}
+
 } // namespace voreen

@@ -47,7 +47,7 @@ GLSLRaycaster::GLSLRaycaster()
     , outport_(Port::OUTPORT, "image.output", true)
     , transferFunc_("transferFunction", "Transfer function")
     , shader_("shader", "Fragment shader", "rc_simple.frag")
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
     addPort(volumePort_);
     addPort(entryPort_);
@@ -76,8 +76,9 @@ void GLSLRaycaster::initialize() throw (VoreenException) {
 
     // assign header and create shader
     //Add definition of sampler type to allow shader compilation:
-    initialized_ = true; //< prevent warning
+    initialized_ = true;
     shader_.setHeader(generateHeader() + "\n #define TF_SAMPLER_TYPE sampler1D\n");
+    shader_.rebuild();
     initialized_ = false;
     VolumeRaycaster::initialize();  // initializes the shader and transfunc properties
 
@@ -145,31 +146,6 @@ void GLSLRaycaster::process() {
     updateBrickingParameters(volumePort_.getData());
     addBrickedVolumeModalities(volumePort_.getData(), volumeTextures);
 
-    // segmentation volume
-    // TODO: fetch from inport
-    //VolumeGL* volumeSeg = volumePort_.getData()->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
-    VolumeGL* volumeSeg = 0;
-
-    TextureUnit segUnit;
-    if (useSegmentation_.get() && (volumeSeg != 0) ) {
-        volumeTextures.push_back(VolumeStruct(
-            volumeSeg,
-            &segUnit,
-            "segmentation_",
-            "segmentationParameters_",
-            true)
-        );
-
-        segUnit.activate();
-
-        // set texture filters for this texture
-        //FIXME: this does NOTHING! is this the right place to set filtering for segmentation?
-        glPushAttrib(GL_TEXTURE_BIT);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glPopAttrib();
-    }
-
     // bind transfer function
     TextureUnit transferUnit;
     transferUnit.activate();
@@ -180,9 +156,10 @@ void GLSLRaycaster::process() {
     sh->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(sh, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(sh, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(sh, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(sh, volumeTextures, &cam, lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     sh->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -192,10 +169,8 @@ void GLSLRaycaster::process() {
     sh->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(sh, "exitParameters_");
     sh->setUniform("transferFunc_", transferUnit.getUnitNumber());
-    if (useSegmentation_.get() && volumeSeg)
-        sh->setUniform("segment_" , static_cast<float>(segment_.get()));
 
-    setBrickedVolumeUniforms(volumePort_.getData());
+    setBrickedVolumeUniforms(sh, volumePort_.getData());
 
     renderQuad();
 

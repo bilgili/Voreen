@@ -68,19 +68,19 @@ void main() {
         discard;
     }
     else{
-        gl_FragColor = gl_TexCoord[0];
+        FragData0 = gl_TexCoord[0];
         bool b;
         if(firstLayer_){
-                gl_FragColor.a=exp2(id_)/256.0;
+                FragData0.a=exp2(id_)/256.0;
         }
         else{
             b=checkBitValue(id_,(previousAlpha));
             if(b){
-                gl_FragColor.a=previousAlpha-(exp2(id_)/256.0);
+                FragData0.a=previousAlpha-(exp2(id_)/256.0);
 
             }
             else{
-                gl_FragColor.a=previousAlpha+(exp2(id_)/256.0);
+                FragData0.a=previousAlpha+(exp2(id_)/256.0);
             }
         }
 

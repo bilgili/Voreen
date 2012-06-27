@@ -77,8 +77,10 @@ private:
     RenderPort outport2_;
     PortGroup portGroup_;
 
-    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
-    CameraProperty camera_;           ///< the camera used for lighting calculations
+    tgt::Shader* raycastPrg_;          ///< The shader program used by this raycaster.
+
+    TransFuncProperty transferFunc_;   ///< the property that controls the transfer-function
+    CameraProperty camera_;            ///< the camera used for lighting calculations
 
     StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
     StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport

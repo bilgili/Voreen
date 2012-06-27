@@ -29,9 +29,9 @@
 
 #include "modules/mod_sampler2d.frag"
 
-uniform SAMPLER2D_TYPE shadeTex0_;
+uniform SAMPLER2D_TYPE colorTex0_;
 uniform TEXTURE_PARAMETERS textureParameters0_;
-uniform SAMPLER2D_TYPE shadeTex1_;
+uniform SAMPLER2D_TYPE colorTex1_;
 uniform SAMPLER2D_TYPE depthTex1_;
 uniform TEXTURE_PARAMETERS textureParameters1_;
 uniform float threshold_ = 0.2;
@@ -40,12 +40,12 @@ void main() {
     vec2 fragCoord = gl_FragCoord.xy;
 
     // fetch input textures
-    vec4 shadeCol0 = textureLookup2Dscreen(shadeTex0_, textureParameters0_, fragCoord);
-    vec4 shadeCol1 = textureLookup2Dscreen(shadeTex1_, textureParameters1_, fragCoord);
+    vec4 color0 = textureLookup2Dscreen(colorTex0_, textureParameters0_, fragCoord);
+    vec4 color1 = textureLookup2Dscreen(colorTex1_, textureParameters1_, fragCoord);
     float fragDepth = textureLookup2Dscreen(depthTex1_, textureParameters1_, fragCoord).z;
 
-    vec4 back = shadeCol1;
-    vec4 front = shadeCol0;
+    vec4 back = color1;
+    vec4 front = color0;
 
     vec4 backInv = vec4(1.0-back.r, 1.0-back.g, 1.0-back.b, 1.0);
     backInv.r = backInv.r >= 0.5
@@ -59,6 +59,6 @@ void main() {
         : min(backInv.b, backInv.b - threshold_);
     backInv = mix(back, backInv, front.a);
 
-    gl_FragColor = backInv;
+    FragData0 = backInv;
     gl_FragDepth = fragDepth;
 }

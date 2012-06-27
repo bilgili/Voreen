@@ -29,7 +29,7 @@
 
 #include "modules/mod_sampler2d.frag"
 
-uniform SAMPLER2D_TYPE shadeTex_;
+uniform SAMPLER2D_TYPE colorTex_;
 uniform SAMPLER2D_TYPE depthTex_;
 uniform TEXTURE_PARAMETERS texParams_;
 
@@ -53,6 +53,6 @@ void main() {
     float g = gabor(p.x, p.y, wavelength_, orientation_, offset_, sigma_, aRatio_);
     g += 1.0;
     g /= 2.0;
-    gl_FragColor = vec4(vec3(g), 1.0);
+    FragData0 = vec4(vec3(g), 1.0);
     gl_FragDepth = textureLookup2Dnormalized(depthTex_, texParams_, p).z;
 }

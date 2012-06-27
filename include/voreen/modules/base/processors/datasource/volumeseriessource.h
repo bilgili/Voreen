@@ -51,7 +51,7 @@ public:
 
     virtual std::string getCategory() const  { return "Data Source";        }
     virtual std::string getClassName() const { return "VolumeSeriesSource"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING;   }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE;   }
     virtual std::string getProcessorInfo() const;
 
 protected:

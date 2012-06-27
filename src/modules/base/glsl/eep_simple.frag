@@ -28,5 +28,5 @@
  **********************************************************************/
 
 void main() {
-    gl_FragColor = gl_TexCoord[0];
+    FragData0 = gl_TexCoord[0];
 }

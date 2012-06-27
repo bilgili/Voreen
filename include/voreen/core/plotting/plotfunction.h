@@ -30,7 +30,7 @@
 #ifndef VRN_PLOTFUNCTION_H
 #define VRN_PLOTFUNCTION_H
 
-#include "voreen/core/plotting/expression.h"
+#include "voreen/core/plotting/plotexpression.h"
 #include "voreen/core/plotting/interval.h"
 #include "voreen/core/plotting/plotbase.h"
 
@@ -44,14 +44,22 @@ class PlotData;
  */
 class PlotFunction : public PlotBase {
 public:
+    /// type description how to handle with long Expressions
+    enum ExpressionDescriptionLengthType {
+        FULL = 0,
+        MAXLENGTH = 1,
+        CUSTOM = 2,
+        ONLYNAME = 3
+    };
+
     /// default constructor
     PlotFunction();
 
     /// initialises keyColumnCount, dataColumnCount by the dimensions of the expression
-    PlotFunction(const std::string& expressionString);
+    PlotFunction(const std::string& expressionString, const std::string& expressionName = "f");
 
     /// initialises keyColumnCount, dataColumnCount by the dimensions of the expression
-    PlotFunction(const Expression& expr);
+    PlotFunction(const PlotExpression& expr);
 
     /// copy constructor
     PlotFunction(const PlotFunction& rhs);
@@ -59,7 +67,7 @@ public:
     /// default destructor
     virtual ~PlotFunction();
 
-    PlotFunction& operator=(PlotFunction rhs);
+    PlotFunction& operator=(const PlotFunction& rhs);
 
     /// Evaluates the function
     plot_t evaluateAt(const std::vector<plot_t>& value);
@@ -79,12 +87,16 @@ public:
 
     /// select for functions with many variables
     bool select(Interval<plot_t>* interval, plot_t* step, int count, PlotData& target);
+    /// return the Plotexpression
+    PlotExpression& getPlotExpression();
+    /// setting the length of the output column string how represents the Expression
+    void setExpressionLength(ExpressionDescriptionLengthType expressionType, int maxLength = 100, const std::string& customText = "function");
 
 private:
 
     //! An expression with variables
-    Expression expr_;
-
+    PlotExpression expr_;
+    static const std::string loggerCat_;
 };
 
 } // namespace voreen

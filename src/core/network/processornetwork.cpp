@@ -50,7 +50,7 @@ const std::string ProcessorNetwork::loggerCat_("voreen.ProcessorNetwork");
 namespace {
 
 // Increase this counter when incompatible changes are introduced into the serialization format
-const int NETWORK_VERSION = 6;
+const int NETWORK_VERSION = 7;
 
 } // namespace
 
@@ -79,6 +79,8 @@ void ProcessorNetwork::addProcessor(Processor* processor, const std::string& nam
     // everything fine => rename and add processor
     processor->setName(processorName);
     processors_.push_back(processor);
+
+    static_cast<Observable<PropertyOwnerObserver>* >(processor)->addObserver(this);
 
     // notify observers
     notifyProcessorAdded(processor);
@@ -637,6 +639,8 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
 
     // deserialize Processors
     s.deserialize("Processors", processors_, "Processor");
+    for (size_t i=0; i<processors_.size(); i++)
+        static_cast<Observable<PropertyOwnerObserver>* >(processors_[i])->addObserver(this);
 
     // deserialize port connections...
     std::vector<PortConnection> portConnections;
@@ -793,6 +797,10 @@ std::vector<Property*> ProcessorNetwork::getPropertiesByID(const std::string& id
             result.push_back(processors_[i]->getProperty(id));
     }
     return result;
+}
+
+void ProcessorNetwork::preparePropertyRemoval(Property* property) {
+    removePropertyLinks(property);
 }
 
 // -----------------------------------------------------------------------------------

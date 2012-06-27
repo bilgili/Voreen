@@ -45,6 +45,8 @@ public:
     CustomLabel(const char* text, QPropertyWidget* pw = 0, QWidget* parent = 0,
                 Qt::WindowFlags f = 0, bool disallowWordwrap = false, bool editable = false);
     CustomLabel(QPropertyWidget* pw = 0, QWidget* parent = 0, Qt::WindowFlags f = 0, bool editable = false);
+    ~CustomLabel();
+
     void init();
 
 protected slots:

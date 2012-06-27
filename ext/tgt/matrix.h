@@ -343,6 +343,15 @@ struct Matrix3 {
      */
     static Matrix3<T> createRotation(T angle, Vector3<T> axis);
 
+    /**
+     * inverts the matrix.
+     * @return true - if successful -- otherwise false
+    */
+    bool invert(Matrix3<T>& result) const;
+
+    float det() {
+        return elem[0]*elem[4]*elem[8] + elem[1]*elem[5]*elem[6] + elem[2]*elem[3]*elem[7] - elem[0]*elem[5]*elem[7] - elem[1]*elem[3]*elem[8] - elem[2]*elem[4]*elem[6];
+    }
 /*
     index operator
 */
@@ -386,6 +395,33 @@ const Matrix3<T> Matrix3<T>::identity = Matrix3<T>
     T(0), T(0), T(1)
 );
 
+template<class T>
+bool Matrix3<T>::invert(Matrix3<T>& result) const {
+    using std::abs; // use overloaded abs
+    result = Matrix3<T>::identity;
+
+    float z = elem[0]*(elem[4]*elem[8] - elem[5]*elem[7]) + elem[1]*(elem[5]*elem[6] - elem[3]*elem[8]) + elem[2]*(elem[3]*elem[7] - elem[4]*elem[6]);
+
+    if(abs(z) < 0.00001f)
+        return false;
+
+    //we have a row-matrix:
+    result.elem[0] = (elem[4]*elem[8] - elem[5]*elem[7]);
+    result.elem[1] = (elem[2]*elem[7] - elem[1]*elem[8]);
+    result.elem[2] = (elem[1]*elem[5] - elem[2]*elem[4]);
+
+    result.elem[3] = (elem[5]*elem[6] - elem[3]*elem[8]);
+    result.elem[4] = (elem[0]*elem[8] - elem[2]*elem[6]);
+    result.elem[5] = (elem[2]*elem[3] - elem[0]*elem[5]);
+
+    result.elem[6] = (elem[3]*elem[7] - elem[4]*elem[6]);
+    result.elem[7] = (elem[1]*elem[6] - elem[0]*elem[7]);
+    result.elem[8] = (elem[0]*elem[4] - elem[1]*elem[3]);
+
+    result /= z;
+
+    return true;
+}
 //------------------------------------------------------------------------------
 
 /**

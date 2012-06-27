@@ -76,5 +76,5 @@ vec4 renderSlice() {
 void main() {
 
     vec4 currentRes = renderSlice();
-    gl_FragColor = currentRes;
+    FragData0 = currentRes;
 }

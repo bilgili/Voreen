@@ -47,23 +47,31 @@ class PlotDataSimpleTableModel : public QAbstractTableModel {
 
 public:
     PlotDataSimpleTableModel(const PlotData* data, QObject *parent=0,
-        const QColor& keyColumnColor = QColor(200,200,200),
-        const QColor& dataColumnColor = QColor(240,240,240),
-        const QColor& highlightedColor_ = QColor(200,240,240));
+        const QColor& keyColumnColor = QColor(200,200,200,255),
+        const QColor& dataColumnColor = QColor(240,240,240,255),
+        const QColor& highlightedColor_ = QColor(200,240,240,255),
+        const QColor& selectColumnColor = QColor(245,245,245,255),
+        int selectedColumn = -1);
 
-
+    /// @see QAbstractTableModel
     int rowCount(const QModelIndex &parent) const;
+    /// @see QAbstractTableModel
     int columnCount(const QModelIndex &parent) const;
+    /// @see QAbstractTableModel
     QVariant data(const QModelIndex &index, int role) const;
+    /// @see QAbstractTableModel
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+    /// @see QAbstractTableModel
     Qt::ItemFlags flags(const QModelIndex &index) const;
+    /// change the KeyColumnColor
     void setKeyColumnColor(const QColor& keyColumnColor);
+    /// change the DataColumnColor
     void setDataColumnColor(const QColor& dataColumnColor);
 
-    void onPlotDataChanged();
-
 protected:
+    // override the functions, if you want to show more lines above the datatable
     virtual QVariant getCellAt(int row, int column) const;
+    // override the functions, if you want to show more lines above the datatable
     virtual PlotCellValue getPlotCellAt(int row, int column) const;
 
 private:
@@ -71,6 +79,8 @@ private:
     QColor keyColumnColor_;
     QColor dataColumnColor_;
     QColor highlightedColor_;
+    QColor selectColumnColor_;
+    int selectedColumn_;
 };
 
 }

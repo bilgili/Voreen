@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/interaction/voreentrackball.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include <cmath>
 
@@ -47,7 +48,7 @@ using tgt::mat4;
 using tgt::quat;
 
 
-VoreenTrackball::VoreenTrackball(Camera* camera)
+VoreenTrackball::VoreenTrackball(CameraProperty* camera)
     : camera_(camera),
       moveCenter_(true),
       size_(1.f)
@@ -55,7 +56,7 @@ VoreenTrackball::VoreenTrackball(Camera* camera)
 
     tgtAssert(camera, "No camera");
 
-    center_ = camera_->getFocus();
+    center_ = camera_->get().getFocus();
 
     //saveCameraParameters();
 
@@ -96,30 +97,32 @@ vec3 VoreenTrackball::projectToSphere(const vec2& xy) const {
 
 vec3 VoreenTrackball::coordTransform(const vec3& axis) const {
     mat4 rotation;
-    camera_->getRotateMatrix().invert(rotation);
+    camera_->get().getRotateMatrix().invert(rotation);
     return rotation * axis;
 }
 
 void VoreenTrackball::rotate(Quaternion<float> quat) {
-    vec3 position = camera_->getPosition();
+    vec3 position = camera_->get().getPosition();
     position -= center_;
     position = quat::rotate(position, quat);
     position += center_;
 
-    vec3 focus = camera_->getFocus();
+    vec3 focus = camera_->get().getFocus();
     focus -= center_;
     // Usually focus - center == 0, so no need to rotate. But if we combine trackball
     // with some other navigations, this might be useful.
     focus = quat::rotate(focus, quat);
     focus += center_;
 
-    vec3 upVector = camera_->getUpVector();
+    vec3 upVector = camera_->get().getUpVector();
     upVector = quat::rotate(upVector, quat);
 
-    camera_->positionCamera(position, focus, upVector);
+    tgt::Camera cam = camera_->get();
+    cam.positionCamera(position, focus, upVector);
+
+    camera_->set(cam);
 
     lastOrientationChange_ = quat;
-
 }
 
 
@@ -172,11 +175,11 @@ void VoreenTrackball::move(float length, vec3 axis) {
     if (length == 0.f || tgt::length(axis) == 0.f)
         return;
 
-    float frustFactor = camera_->getFocalLength() / camera_->getFrustum().getNearDist();
-    float frustWidth  = ( camera_->getFrustum().getRight()
-                          - camera_->getFrustum().getLeft() );
-    float frustHeight = ( camera_->getFrustum().getTop()
-                          - camera_->getFrustum().getBottom() );
+    float frustFactor = camera_->get().getFocalLength() / camera_->get().getFrustum().getNearDist();
+    float frustWidth  = ( camera_->get().getFrustum().getRight()
+                          - camera_->get().getFrustum().getLeft() );
+    float frustHeight = ( camera_->get().getFrustum().getTop()
+                          - camera_->get().getFrustum().getBottom() );
     axis = normalize(axis) * length * frustFactor;
     axis.x *= frustWidth;
     axis.y *= frustHeight;
@@ -202,16 +205,17 @@ void VoreenTrackball::move(const vec2& newMouse, const vec2& lastMouse) {
 }
 
 void VoreenTrackball::moveCamera(const vec3& motionvector) {
-    camera_->setPosition(camera_->getPosition() + motionvector);
-    camera_->setFocus(camera_->getFocus() + motionvector);
+    tgt::Camera cam = camera_->get();
+    camera_->setPosition(cam.getPosition() + motionvector);
+    camera_->setFocus(cam.getFocus() + motionvector);
 }
 
 void VoreenTrackball::zoom(float factor) {
     // zoom factor is inverse proportional to scaling of the look vector, so invert:
     factor = 1.f / factor;
-    camera_->setPosition( (1.f-factor) * camera_->getFocus()
-                              + factor * camera_->getPosition());
-    //camera_->update();
+    tgt::Camera cam = camera_->get();
+    camera_->setPosition( (1.f-factor) * cam.getFocus()
+                              + factor * cam.getPosition());
 }
 
 void VoreenTrackball::zoom(const tgt::vec2& newMouse, const tgt::vec2& lastMouse, const vec2& mouseZoomInDirection) {
@@ -219,11 +223,12 @@ void VoreenTrackball::zoom(const tgt::vec2& newMouse, const tgt::vec2& lastMouse
 }
 
 void VoreenTrackball::zoomAbsolute(float focallength) {
-   camera_->setPosition( camera_->getFocus() - focallength * camera_->getLook());
+    tgt::Camera cam = camera_->get();
+    camera_->setPosition( cam.getFocus() - focallength * cam.getLook());
 }
 
 float VoreenTrackball::getCenterDistance() {
-    return dot( center_ - camera_->getPosition(), camera_->getLook() );
+    return dot( center_ - camera_->get().getPosition(), camera_->get().getLook() );
 }
 /*
 void VoreenTrackball::saveCameraParameters() {
@@ -266,14 +271,14 @@ float VoreenTrackball::getRollAngle(float acuteness, bool left) const {
     }
 }
 
-tgt::Camera* VoreenTrackball::getCamera() const {
+CameraProperty* VoreenTrackball::getCamera() const {
     return camera_;
 }
 
-void VoreenTrackball::setCamera(tgt::Camera* camera) {
+void VoreenTrackball::setCamera(CameraProperty* camera) {
     tgtAssert(camera, "No camera");
     camera_ = camera;
-    center_ = camera_->getFocus();
+    center_ = camera_->get().getFocus();
 }
 
 } // namespace

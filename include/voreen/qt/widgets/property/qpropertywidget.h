@@ -41,8 +41,13 @@ class QLabel;
 
 namespace voreen {
 
+class CustomLabel;
+
 class QPropertyWidget : public QWidget, public PropertyWidget {
     Q_OBJECT;
+
+    friend class CustomLabel;
+
 public:
     QPropertyWidget(Property* prop, QWidget* parent = 0, bool showNameLabel = true);
     virtual ~QPropertyWidget();
@@ -57,7 +62,7 @@ public:
     void showLODControls();
     std::string getPropertyGuiName();
     void setPropertyGuiName(std::string);
-    virtual const QLabel* getNameLabel() const;
+    virtual CustomLabel* getNameLabel() const;
 
     // this is a static variable for the font size used in all propertywidgets
     static const int fontSize_;
@@ -85,7 +90,7 @@ protected:
     Property* prop_;
     QToolButton* lodControl_;
 
-    mutable QLabel* nameLabel_;
+    mutable CustomLabel* nameLabel_;
     bool showNameLabel_;
 };
 

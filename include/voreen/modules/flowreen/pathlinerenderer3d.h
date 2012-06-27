@@ -27,7 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_PATHLINERENDERER3D_H
 
 #include <string>
@@ -178,4 +177,4 @@ private:
 }   // namespace
 
 #endif  // VRN_PATHLINERENDERER3D_H
-#endif  // VRN_MODULE_FLOWREEN
+

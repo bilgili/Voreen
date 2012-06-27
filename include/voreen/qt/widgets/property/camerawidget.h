@@ -45,10 +45,13 @@
 
 #include <fstream>
 
+#include "voreen/core/properties/vectorproperty.h"
+
 namespace voreen {
 
 class VoreenTrackball;
 class CameraProperty;
+class FloatVec3PropertyWidget;
 
 class CameraWidget : public QWidget {
     Q_OBJECT
@@ -67,6 +70,9 @@ public slots:
     void toRight();
     void updateDistance();
     void orientationChanged(int);
+    void positionChange(FloatVec3Property::ElemType);
+    void focusChange(FloatVec3Property::ElemType);
+    void upChange(FloatVec3Property::ElemType);
     void distanceSliderChanged(int);
     void distanceSliderPressed();
     void distanceSliderReleased();
@@ -145,6 +151,9 @@ private:
     const tgt::vec3 AXIAL_INV_VIEW;
     const tgt::vec3 CORONAL_INV_VIEW;
     const tgt::vec3 SAGITTAL_INV_VIEW;
+    FloatVec3Property* cameraPosition_;
+    FloatVec3Property* focusVector_;
+    FloatVec3Property* upVector_;
 
     QGroupBox* orientationBox_;
     QGroupBox* motionBox_;

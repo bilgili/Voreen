@@ -45,7 +45,7 @@ public:
     void updateFromProperty() {}
 
     /// Returns an empty label.
-    virtual const QLabel* getNameLabel() const;
+    virtual CustomLabel* getNameLabel() const;
 
 public slots:
     void clicked();

@@ -97,7 +97,7 @@ GLSLTerminals::GLSLTerminals() {
     insertSymbol("noperspective", ID_NONPERSPECTIVE, true);
     insertSymbol("smooth", ID_SMOOTH, true);
 
-    // precision qulifiers
+    // precision qualifiers
     //
     insertSymbol("highp", ID_HIGHP, true);
     insertSymbol("lowp", ID_LOWP, true);

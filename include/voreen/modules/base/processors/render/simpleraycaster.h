@@ -54,6 +54,7 @@ protected:
     virtual void beforeProcess();
     virtual void process();
     virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
 
@@ -62,6 +63,8 @@ private:
     RenderPort entryPort_;
     RenderPort exitPort_;
     RenderPort outport_;
+
+    tgt::Shader* raycastPrg_;         ///< The shader program used by this raycaster.
 
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
     CameraProperty camera_;           ///< necessary for depth value calculation

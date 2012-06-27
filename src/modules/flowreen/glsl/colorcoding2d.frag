@@ -32,7 +32,7 @@
 uniform sampler2D vectorField2D_;
 
 float getFlowMagnitude(const vec2 r) {
-    vec2 v = texture2D(vectorField2D_, r).xy;
+    vec2 v = texture(vectorField2D_, r).xy;
     if (v != vec2(0.0)) {
         v = (v * (maxValue_ - minValue_)) + minValue_;
         return length(v);
@@ -41,7 +41,7 @@ float getFlowMagnitude(const vec2 r) {
 }
 
 vec4 getColorFromFlowDirection(const vec2 r) {
-    vec2 v = texture2D(vectorField2D_, r).xy;
+    vec2 v = texture(vectorField2D_, r).xy;
     if (v != vec2(0.0))
         v = normalize((v * (maxValue_ - minValue_)) + minValue_);
     return vec4(abs(v.x), 0.0, abs(v.y), 1.0);
@@ -53,10 +53,10 @@ void main() {
     float magnitude = getFlowMagnitude(gl_TexCoord[0].st);
 
 #if COLOR_MODE == COLOR_MODE_DIRECTION
-    gl_FragColor = getColorFromFlowDirection(gl_TexCoord[0].st);
+    FragData0 = getColorFromFlowDirection(gl_TexCoord[0].st);
 #elif COLOR_MODE == COLOR_MODE_MONOCHROME
-    gl_FragColor = clamp(color_, vec4(0.0), vec4(1.0));
+    FragData0 = clamp(color_, vec4(0.0), vec4(1.0));
 #else
-    gl_FragColor = getColorFromFlowMagnitude(magnitude);
+    FragData0 = getColorFromFlowMagnitude(magnitude);
 #endif
 }

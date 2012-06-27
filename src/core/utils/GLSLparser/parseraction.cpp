@@ -142,7 +142,7 @@ std::string ParserActionError::getError() const {
     if ((lineNumber_ > 0) && (posCharInLine_ > 0))
         oss << "Error in line " << lineNumber_ << " near position " << posCharInLine_ << ":\n";
 
-    oss << errorMsg_ << "\n";
+    oss << errorMsg_;
     return oss.str();
 }
 

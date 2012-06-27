@@ -47,8 +47,9 @@ CurvatureRaycaster::CurvatureRaycaster()
     , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM)
     , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM)
     , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM)
+    , raycastPrg_(0)
     , transferFunc_("transferFunction", "Transfer function")
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
     , curvatureType_("curvatureType", "Curvature type")
@@ -66,8 +67,6 @@ CurvatureRaycaster::CurvatureRaycaster()
     addPort(outport2_);
 
     // VolumeRaycaster Props
-    addProperty(useSegmentation_);
-    addProperty(segment_);
     addProperty(isoValue_);
 
     addProperty(transferFunc_);
@@ -128,12 +127,13 @@ void CurvatureRaycaster::initialize() throw (VoreenException) {
         initialized_ = false;
         throw VoreenException(getClassName() + ": Failed to load shaders!");
     }
-    initialized_ = true;
 
     portGroup_.initialize();
     portGroup_.addPort(outport_);
     portGroup_.addPort(outport1_);
     portGroup_.addPort(outport2_);
+
+    initialized_ = true;
 }
 
 void CurvatureRaycaster::deinitialize() throw (VoreenException) {
@@ -241,9 +241,10 @@ void CurvatureRaycaster::process() {
     raycastPrg_->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg_, &cam);
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
+    bindVolumes(raycastPrg_, volumeTextures, &cam, lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -261,11 +262,6 @@ void CurvatureRaycaster::process() {
     if (classificationMode_.get() == "transfer-function")
         raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
 
-    if (usingSegmentation) {
-        GLfloat seg = segment_.get() / 255.f;
-        raycastPrg_->setUniform("segment_", seg);
-    }
-
     // curvature uniforms
     GLint curvatureType = -1;
     if (curvatureType_.get() == "first") curvatureType = 0;
@@ -277,15 +273,11 @@ void CurvatureRaycaster::process() {
     raycastPrg_->setUniform("silhouetteWidth_", silhouetteWidth_.get());
     raycastPrg_->setUniform("minGradientLength_", minGradientLength_.get());
 
-    setBrickedVolumeUniforms(volumeInport_.getData());
+    setBrickedVolumeUniforms(raycastPrg_, volumeInport_.getData());
     LGL_ERROR;
-
-    glPushAttrib(GL_LIGHTING_BIT);
-    setLightingParameters();
 
     renderQuad();
 
-    glPopAttrib();
     raycastPrg_->deactivate();
 
     if (usingSegmentation) {
@@ -330,7 +322,7 @@ std::string CurvatureRaycaster::generateHeader(VolumeHandle* volumeHandle) {
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader();
+    headerSource += portGroup_.generateHeader(raycastPrg_);
     return headerSource;
 }
 

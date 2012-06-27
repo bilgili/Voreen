@@ -27,7 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_FLOWSLICERENDERER_H
 #define VRN_FLOWSLICERENDERER_H
 
@@ -258,7 +257,7 @@ protected:
      */
     tgt::vec2 reseedRandomPosition(const size_t validPositions = 0);
 
-    virtual std::string generateShaderHeader() const;
+    virtual std::string generateShaderHeader();
 
     bool loadShader(const std::string& vertexShaderName, const std::string& fragmentShaderName);
 
@@ -398,4 +397,3 @@ protected:
 }   // namespace
 
 #endif  // VRN_FLOWSLICERENDERER_H
-#endif  // VRN_MODULE_FLOWREEN

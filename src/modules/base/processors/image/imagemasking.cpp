@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ImageMasking::ImageMasking()
-    : ImageProcessorDepth("pp_mask")
+    : ImageProcessorDepth("image/mask")
     , inport_(Port::INPORT, "image.input")
     , inportMask_(Port::INPORT, "image.mask")
     , outport_(Port::OUTPORT, "image.output", true)

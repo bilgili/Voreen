@@ -190,7 +190,7 @@ void PlaneWidgetProcessor::initialize() throw (VoreenException) {
 }
 
 void PlaneWidgetProcessor::deinitialize() throw (VoreenException) {
-    
+
     if (arrowDisplayList_) {
         glDeleteLists(arrowDisplayList_, 1);
         arrowDisplayList_ = 0;

@@ -31,8 +31,18 @@
 #define VRN_INTERVAL_H
 
 #include "voreen/core/io/serialization/serialization.h"
+#include <limits>
 
 namespace voreen {
+
+namespace {
+
+template<typename T>
+bool isNan(const T& value) {
+    return (value != value);
+};
+
+}
 
 class VoreenException;
 /**
@@ -77,22 +87,27 @@ public:
     bool contains(const Interval<T>& interval) const;
 
 
-    /// returns the intersection of this interval with \a rhs
-    Interval<T> intersectWith(const Interval<T>& rhs) const;
+    /// intersects this interval with \a rhs
+    void intersectWith(const Interval<T>& rhs);
 
-    /// returns the smallest interval containing both intervals *this and \a rhs
+    /// builds the smallest interval containing both intervals *this and \a rhs
     /// if one of these intervals is empty, the other is returned
-    Interval<T> unionWith(const Interval<T>& rhs) const;
+    void unionWith(const Interval<T>& rhs);
+
+    /// sets all infinite, NaN or std::numeric_limits<T>::max() values to according values in rhs
+    void clampInfinitesTo(const Interval<T>& rhs);
 
 
-    /// returns a new interval which is the current interval enlarged by factor
-    Interval<T> enlarge(const T& factor) const;
+    /// enlarges the current interval by factor \a factor
+    void enlarge(const T& factor);
 
-    /// returns a new interval which is the current interval enlarged as much as it contains \a value
-    Interval<T> nibble(const T& value) const;
+    /// enlarges current interval as much as it contains \a value
+    void nibble(const T& value);
 
     /// returns \a value clamped to current interval
     T clampValue(const T& value) const;
+
+    std::string toString() const;
 
 
     /**
@@ -216,78 +231,96 @@ bool Interval<T>::contains(const Interval<T>& rhs) const {
 }
 
 template<typename T>
-Interval<T> Interval<T>::intersectWith(const Interval<T>& rhs) const {
-    T nl, nr;
-    bool nlo, nro;
+void Interval<T>::intersectWith(const Interval<T>& rhs) {
+    if (rhs.empty())
+        return;
+    if (empty()) {
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
+        return;
+    }
 
     if (left_ < rhs.left_) {
-        nl = rhs.left_;
-        nlo = rhs.leftOpen_;
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
     }
     else if (left_ == rhs.left_) {
-        nl = left_;
-        nlo = leftOpen_ || rhs.leftOpen_;
+        leftOpen_ = leftOpen_ || rhs.leftOpen_;
     }
     else {
-        nl = left_;
-        nlo = leftOpen_;
+        // do nothing, keep values
     }
 
     if (right_ > rhs.right_) {
-        nr = rhs.right_;
-        nro = rhs.rightOpen_;
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
     }
     else if (right_ == rhs.right_) {
-        nr = right_;
-        nro = rightOpen_ || rhs.rightOpen_;
+        rightOpen_ = rightOpen_ || rhs.rightOpen_;
     }
     else {
-        nr = right_;
-        nro = rightOpen_;
+        // do nothing, keep values
     }
-
-    return Interval<T>(nl, nr, nlo, nro);
 }
 
-
 template<typename T>
-Interval<T> Interval<T>::unionWith(const Interval<T>& rhs) const{
+void Interval<T>::unionWith(const Interval<T>& rhs) {
     // check if one of the intervals is empty
-    if (empty())
-        return Interval<T>(rhs);
+    if (empty()) {
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
+        return;
+    }
     if (rhs.empty())
-        return Interval<T>(*this);
-
-    T nl, nr;
-    bool nlo, nro;
+        return;
 
     if (left_ < rhs.left_) {
-        nl = left_;
-        nlo = leftOpen_;
+        // do nothing, keep values
     }
     else if (left_ == rhs.left_) {
-        nl = left_;
-        nlo = leftOpen_ && rhs.leftOpen_;
+        leftOpen_ = leftOpen_ && rhs.leftOpen_;
     }
     else {
-        nl = rhs.left_;
-        nlo = rhs.leftOpen_;
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
     }
 
     if (right_ > rhs.right_) {
-        nr = right_;
-        nro = rightOpen_;
+        // do nothing, keep values
     }
     else if (right_ == rhs.right_) {
-        nr = right_;
-        nro = rightOpen_ && rhs.rightOpen_;
+        rightOpen_ = rightOpen_ && rhs.rightOpen_;
     }
     else {
-        nr = rhs.right_;
-        nro = rhs.rightOpen_;
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
+    }
+}
+
+template<typename T>
+void Interval<T>::clampInfinitesTo(const Interval<T>& rhs) {
+    if (rhs.empty())
+        return;
+    if (empty()) {
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
+        return;
     }
 
-    return Interval<T>(nl, nr, nlo, nro);
+    if (isNan(left_) || left_ == std::numeric_limits<T>::infinity() || left_ == -std::numeric_limits<T>::max()) {
+        left_ = rhs.left_;
+        leftOpen_ = rhs.leftOpen_;
+    }
+    if (isNan(right_) || right_ == std::numeric_limits<T>::infinity() || right_ == std::numeric_limits<T>::max()) {
+        right_ = rhs.right_;
+        rightOpen_ = rhs.rightOpen_;
+    }
 }
 
 template<typename T>
@@ -330,26 +363,33 @@ Interval<T> Interval<T>::operator/(const T& rhs) const throw (VoreenException) {
 }
 
 template<typename T>
-Interval<T> Interval<T>::enlarge(const T& factor) const {
+void Interval<T>::enlarge(const T& factor) {
     T length = right_-left_;
     T offset = length*(factor-1.0)/2.0;
-    return Interval(left_-offset,right_+offset,leftOpen_,rightOpen_);
+    left_ -= offset;
+    right_ += offset;
 }
 
 template<typename T>
-Interval<T> Interval<T>::nibble(const T& value) const {
-    if (empty())
-        return Interval(value, value, false, false);
-    else if (contains(value))
-        return *this;
+void Interval<T>::nibble(const T& value) {
+    if (empty()) {
+        left_ = value;
+        right_ = value;
+        leftOpen_ = false;
+        rightOpen_ = false;
+    }
     else if (leftOpen_ && left_ == value)
-        return Interval(left_, right_, false, rightOpen_);
+        leftOpen_ = false;
     else if (rightOpen_ && right_ == value)
-        return Interval(left_, right_, leftOpen_, false);
-    else if (left_ > value)
-        return Interval(value, right_, false,rightOpen_);
-    else // (right_ < value)
-        return Interval(left_, value, leftOpen_,false);
+        rightOpen_ = false;
+    else if (left_ > value) {
+        left_ = value;
+        leftOpen_ = false;
+    }
+    else if (right_ < value) {
+        right_ = value;
+        rightOpen_ = false;
+    }
 }
 
 template<typename T>
@@ -360,6 +400,13 @@ T Interval<T>::clampValue(const T& value) const {
         return right_;
     else // contains(value)
         return value;
+}
+
+template<typename T>
+std::string Interval<T>::toString() const {
+    std::stringstream result;
+    result << "Left: " << left_ << ", Right: " << right_ << ", LeftOpen: " << leftOpen_<< ", RightOpen: " << rightOpen_;
+    return result.str();
 }
 
 template<typename T>

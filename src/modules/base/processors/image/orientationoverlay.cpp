@@ -44,7 +44,7 @@ namespace voreen {
 const std::string OrientationOverlay::loggerCat_("voreen.OrientationOverlay");
 
 OrientationOverlay::OrientationOverlay()
-    : ImageProcessor("pp_orientationoverlay")
+    : ImageProcessor("image/orientationoverlay")
     , inport_(Port::INPORT, "image.input")
     , outport_(Port::OUTPORT, "image.output")
     , privatePort_(Port::OUTPORT, "image.tmp", false)
@@ -74,7 +74,7 @@ OrientationOverlay::OrientationOverlay()
     , shiftY_("shiftY", "Vertical Position", 0.15f, 0.0f, 1.0f)
     , cubeSize_("cubeSize", "Cube Size", 0.15f, 0.05, 1)
     , axisLength_("axisLength", "Axes Length", 0.5f, 0.1, 4.f)
-    , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , frontTex_(0)
     , backTex_(0)
     , topTex_(0)
@@ -179,7 +179,7 @@ void OrientationOverlay::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glTranslatef(shiftX_.get()*2.0f-1.0f, shiftY_.get()*2.0f-1.0f, 0);
-    tgt::mat4 view = camera_.get()->getViewMatrix().getRotationalPart();
+    tgt::mat4 view = camera_.get().getViewMatrix().getRotationalPart();
 
     glScalef((float)outport_.getSize().y / (float)outport_.getSize().x, 1, 1);
 
@@ -220,17 +220,17 @@ void OrientationOverlay::process() {
 
         // use the shader to draw cube and axis over inport render data
         // therefore bind rgba and depth values of both to textures
-        TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1;
-        privatePort_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
-        inport_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
+        TextureUnit colorUnit0, depthUnit0, colorUnit1, depthUnit1;
+        privatePort_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+        inport_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
 
         // initialize shader
         program_->activate();
         setGlobalShaderParameters(program_);
-        program_->setUniform("shadeTexMe_", shadeUnit0.getUnitNumber());
-        program_->setUniform("depthTexMe_", shadeUnitDepth0.getUnitNumber());
-        program_->setUniform("shadeTexIn_", shadeUnit1.getUnitNumber());
-        program_->setUniform("depthTexIn_", shadeUnitDepth1.getUnitNumber());
+        program_->setUniform("colorTexMe_", colorUnit0.getUnitNumber());
+        program_->setUniform("depthTexMe_", depthUnit0.getUnitNumber());
+        program_->setUniform("colorTexIn_", colorUnit1.getUnitNumber());
+        program_->setUniform("depthTexIn_", depthUnit1.getUnitNumber());
         privatePort_.setTextureParameters(program_, "textureParametersMe_");
         inport_.setTextureParameters(program_, "textureParametersIn_");
 

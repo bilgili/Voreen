@@ -63,7 +63,7 @@ Processor* VolumeCollectionSource::create() const {
 }
 
 std::string VolumeCollectionSource::getProcessorInfo() const {
-    return "Loads multiple volumes and provides them as VolumeCollection through its outport. " 
+    return "Loads multiple volumes and provides them as VolumeCollection. "
            "<p>See VolumeSeriesSource for dealing with large data series.</p>";
 }
 

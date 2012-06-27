@@ -60,7 +60,7 @@ MeshEntryExitPoints::MeshEntryExitPoints()
       jitterStepLength_("jitterStepLength", "Jitter step length",
                         0.005f, 0.0005f, 0.025f),
       jitterTexture_(0),
-      camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
+      camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
       entryPort_(Port::OUTPORT, "image.entrypoints"),
       exitPort_(Port::OUTPORT, "image.exitpoints"),
       inport_(Port::INPORT, "proxgeometry.geometry"),
@@ -179,18 +179,19 @@ void MeshEntryExitPoints::process() {
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    tgt::loadMatrix(camera_.get().getViewMatrix());
 
     // enable culling
     glEnable(GL_CULL_FACE);
 
     // activate shader program
     shaderProgram_->activate();
-    setGlobalShaderParameters(shaderProgram_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgram_, &cam);
     LGL_ERROR;
 
     //
@@ -230,13 +231,13 @@ void MeshEntryExitPoints::process() {
 
         if (supportCameraInsideVolume_.get()) {
             // clip proxy geometry against near-plane
-            float nearPlaneDistToOrigin = tgt::dot(camera_.get()->getPosition(), -camera_.get()->getLook()) - camera_.get()->getNearDist() - 0.0001f;
-            MeshListGeometry closingFaces = geometry_.clip(tgt::vec4(-camera_.get()->getLook(), nearPlaneDistToOrigin));
+            float nearPlaneDistToOrigin = tgt::dot(camera_.get().getPosition(), -camera_.get().getLook()) - camera_.get().getNearDist() - 0.0001f;
+            MeshListGeometry closingFaces = geometry_.clip(tgt::vec4(-camera_.get().getLook(), nearPlaneDistToOrigin));
 
             // render closing face separately, if not empty
             if (!closingFaces.empty()) {
                 // project closing faces onto near-plane
-                tgt::mat4 trafoMatrix = camera_.get()->getProjectionMatrix() * camera_.get()->getViewMatrix();
+                tgt::mat4 trafoMatrix = camera_.get().getProjectionMatrix() * camera_.get().getViewMatrix();
                 closingFaces.transform(trafoMatrix);
                 // set z-coord of closing face vertices to 0.0 in order to avoid near-plane clipping
                 tgt::mat4 zTrafo = tgt::mat4::createIdentity();
@@ -293,7 +294,8 @@ void MeshEntryExitPoints::jitterEntryPoints() {
     }
 
     shaderProgramJitter_->activate();
-    setGlobalShaderParameters(shaderProgramJitter_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgramJitter_, &cam);
 
     // bind jitter texture
     TextureUnit jitterUnit, entryUnit, entryDepthUnit, exitUnit;

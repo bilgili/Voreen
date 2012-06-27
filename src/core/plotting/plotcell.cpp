@@ -96,21 +96,30 @@ PlotCellValue& PlotCellValue::operator=(PlotCellValue rhs) {
 }
 
 bool PlotCellValue::operator==(const PlotCellValue& rhs) const {
-    return (isValue() == rhs.isValue() && getValue() == rhs.getValue())
-        || (isTag() == rhs.isTag() && getTag() == rhs.getTag())
-        || (isHighlighted() == rhs.isHighlighted());
+    if (isValue()) {
+        return rhs.isValue() && (getValue() == rhs.getValue())
+            && (isHighlighted() == rhs.isHighlighted());
+    }
+    else {
+        return rhs.isTag() && (getTag() == rhs.getTag())
+            && (isHighlighted() == rhs.isHighlighted());
+    }
 }
 
 bool PlotCellValue::operator<(const PlotCellValue& rhs) const {
-    return (isValue() == rhs.isValue() && getValue() < rhs.getValue())
-        || (isTag() == rhs.isTag() && getTag() < rhs.getTag())
-        || (isHighlighted() < rhs.isHighlighted());
+    if (isValue()) {
+        return rhs.isTag()
+            || getValue() < rhs.getValue()
+            || (getValue() == rhs.getValue() && isHighlighted() < rhs.isHighlighted());
+    }
+    else {
+        return rhs.isTag()
+            && (getTag() < rhs.getTag() || (getTag() == rhs.getTag() && isHighlighted() < rhs.isHighlighted()));
+    }
 }
 
 bool PlotCellValue::operator>(const PlotCellValue& rhs) const {
-    return (isValue() == rhs.isValue() && getValue() > rhs.getValue())
-        || (isTag() == rhs.isTag() && getTag() > rhs.getTag())
-        || (isHighlighted() > rhs.isHighlighted());
+    return !(*this < rhs || *this == rhs);
 }
 
 std::ostream& operator<<(std::ostream& ostr, const PlotCellValue& rhs) {
@@ -124,7 +133,7 @@ std::ostream& operator<<(std::ostream& ostr, const PlotCellValue& rhs) {
 }
 
 plot_t PlotCellValue::getValue() const {
-    return (isValue() ? value_ : std::numeric_limits<double>::quiet_NaN());
+    return (isValue() ? value_ : std::numeric_limits<plot_t>::quiet_NaN());
 }
 
 std::string PlotCellValue::getTag() const {
@@ -198,7 +207,10 @@ plot_t PlotCellImplicit::getValue() const {
         tgtAssert(false, "PlotCellImplicit::getValue: column out of bounds.");
         return 0;
     }
-    return plotData_->aggregate(column_, aggregationFunction_);
+    else if (aggregationFunction_)
+        return plotData_->aggregate(column_, aggregationFunction_);
+    else
+        return 0;
 }
 
 bool PlotCellImplicit::isNull() const {

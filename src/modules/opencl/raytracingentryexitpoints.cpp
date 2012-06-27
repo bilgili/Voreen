@@ -49,7 +49,7 @@ const std::string RaytracingEntryExitPoints::loggerCat_("voreen.RaytracingEntryE
 RaytracingEntryExitPoints::RaytracingEntryExitPoints()
     : RenderProcessor(),
       useFloatRenderTargets_("useFloatRenderTargets", "Use float rendertargets", false),
-      camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
+      camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
       opencl_(0),
       context_(0),
       queue_(0),
@@ -213,18 +213,18 @@ void RaytracingEntryExitPoints::process() {
             Buffer inBuffer(context_, CL_MEM_READ_ONLY, sizeof(triangle) * triangles.size());
 
             float ratio = (float)entryPort_.getSize().x / (float)entryPort_.getSize().y;
-            float h = tan((camera_.get()->getFovy() * 0.5f / 360.0f) * 2.0f * tgt::PIf);
+            float h = tan((camera_.get().getFovy() * 0.5f / 360.0f) * 2.0f * tgt::PIf);
             float w = h * ratio;
-            vec3 up = camera_.get()->getUpVector() * h;
-            vec3 strafe = camera_.get()->getStrafe() * w;
+            vec3 up = camera_.get().getUpVector() * h;
+            vec3 strafe = camera_.get().getStrafe() * w;
 
             k->setArg(0, entry);
             k->setArg(1, exit);
             k->setArg(2, inBuffer);
             k->setArg(3, static_cast<int>(triangles.size()));
-            k->setArg(4, camera_.get()->getPosition());
+            k->setArg(4, camera_.get().getPosition());
             k->setArg(5, up);
-            k->setArg(6, camera_.get()->getLook());
+            k->setArg(6, camera_.get().getLook());
             k->setArg(7, strafe);
 
             queue_->enqueueWrite(&inBuffer, &triangles[0]);

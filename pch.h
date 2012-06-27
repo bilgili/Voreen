@@ -10,9 +10,9 @@
 
 /* Add C includes here */
 
-#ifdef VRN_WITH_PYTHON
-/* include this at very first */
-#include <Python.h>
+#ifdef VRN_MODULE_PYTHON
+/* include this at very first or will break with some versions of Python */ 
+#include <Python.h> 
 #endif
 
 #ifdef WIN32
@@ -44,5 +44,25 @@
 #include "tgt/texturemanager.h"
 #include "tgt/types.h"
 #include "tgt/vector.h"
+#include "tgt/assert.h"
+
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
+
+#include "voreen/core/processors/processor.h"
+
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/matrixproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/eventproperty.h"
+
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/genericport.h"
+#include "voreen/core/ports/textport.h"
 
 #endif

@@ -69,7 +69,8 @@ public:
     virtual PropertyWidget* createWidget(TransFuncProperty* p) = 0;
     virtual PropertyWidget* createWidget(VolumeCollectionProperty* p) = 0;
     virtual PropertyWidget* createWidget(VolumeHandleProperty* p) = 0;
-    
+
+
     // deprecated
     virtual PropertyWidget* createWidget(ColorProperty* p) = 0;
     virtual PropertyWidget* createWidget(LightProperty* p) = 0;

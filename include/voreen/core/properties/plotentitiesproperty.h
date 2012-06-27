@@ -30,7 +30,6 @@
 #ifndef VRN_PLOTENTITIESPROPERTY_H
 #define VRN_PLOTENTITIESPROPERTY_H
 
-
 #include "voreen/core/properties/templateproperty.h"
 #include "voreen/core/plotting/colormap.h"
 #include "voreen/core/plotting/plotdata.h"
@@ -44,11 +43,6 @@ namespace voreen {
  */
 class PlotEntitiesProperty : public TemplateProperty<std::vector<PlotEntitySettings> > {
 public:
-
-    /**
-     * Constructor.
-     *
-     */
     PlotEntitiesProperty(const std::string& id, const std::string& guiText, PlotEntitySettings::Entity entities,
        std::vector<PlotEntitySettings> value = std::vector<PlotEntitySettings>(), Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
@@ -85,11 +79,16 @@ public:
     int getYColumnIndex() const;
     bool setYColumnIndex(int index);
 
+    /**
+     * Returns a vector of the main indices of all held PlotEntities
+     **/
+    std::vector<int> getDataColumnIndices() const;
+
     const ColorMap& getColorMap() const;
     void setColorMap(ColorMap cm);
 
-    PlotData* getPlotData() const;
-    void setPlotData(PlotData* data);
+    const PlotData* getPlotData() const;
+    void setPlotData(const PlotData* data);
 
     void setPlotEntitySettings(PlotEntitySettings settings, int index);
     void deletePlotEntitySettings(int index);
@@ -110,7 +109,10 @@ public:
     std::vector<PlotEntitySettings> createAllEntitySettings() const;
 
 private:
-    void notifyAll();
+    void notifyAll();       ///< invalidates every owner and executes links
+
+    /// executes links if all properties use the same PlotData
+    //virtual void executeLinks(const std::vector<PlotEntitySettings>& prevValue, const std::vector<PlotEntitySettings>& curValue);
 
     ///returns true, if the column of data_ with index index can represent a x axis
     bool possibleXAxis(int index);
@@ -127,7 +129,7 @@ private:
     bool dataEmptyFlag_;  ///< true if the data is empty
     bool dataValidFlag_;  ///< false if there is not enough data to plot something
 
-    PlotData* data_;      ///< pointer to plotdata
+    const PlotData* data_;      ///< pointer to plotdata
 
 };
 

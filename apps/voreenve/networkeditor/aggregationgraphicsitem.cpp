@@ -71,7 +71,7 @@ AggregationGraphicsItem::AggregationGraphicsItem(QList<RootGraphicsItem*> items,
 
     QList<ProcessorWidget*> widgets;
     foreach (Processor* proc, getProcessors()) {
-        proc->addObserver(this);
+        dynamic_cast<Observable<ProcessorObserver>* >(proc)->addObserver(this);
         if (proc->getProcessorWidget())
             widgets.push_back(proc->getProcessorWidget());
     }
@@ -329,6 +329,8 @@ void AggregationGraphicsItem::processorWidgetDeleted(const Processor*) {
         widgetIndicatorButton_.show();
     }
 }
+
+void AggregationGraphicsItem::portsAndPropertiesChanged(const Processor*) {}
 
 QList<QAction*> AggregationGraphicsItem::getProcessorWidgetContextMenuActions() {
     QList<QAction*> result;

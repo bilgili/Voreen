@@ -52,6 +52,7 @@
 #include "voreen/qt/widgets/property/optionpropertywidget.h"
 #include "voreen/qt/widgets/property/plotdatapropertywidget.h"
 #include "voreen/qt/widgets/property/plotpredicatepropertywidget.h"
+#include "voreen/qt/widgets/property/plotselectionpropertywidget.h"
 #include "voreen/qt/widgets/property/plotzoompropertywidget.h"
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/shaderpropertywidget.h"
@@ -164,7 +165,7 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotDataProperty* p) {
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotSelectionProperty* p) {
-    return new PlotZoomPropertyWidget (p, 0);
+    return new PlotSelectionPropertyWidget(p, 0);
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(PropertyVector* p) {

@@ -30,22 +30,18 @@
 #ifndef VRN_PLOTENTITIESPROPERTYWIDGET_H
 #define VRN_PLOTENTITIESPROPERTYWIDGET_H
 
-#include "voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h"
-
-#include <QListWidget>
-#include <QComboBox>
+#include "voreen/qt/widgets/property/qpropertywidget.h"
 
 class QPushButton;
-class QListView;
+class QListWidget;
+class QComboBox;
+class QListWidgetItem;
 
 namespace voreen {
 
-// some forward declarations
 class PlotEntitiesProperty;
-class VoreenToolWindow;
-class PlotEntitySettingsWidget;
 
-class PlotEntitiesPropertyWidget : public QPropertyWidgetWithEditorWindow {
+class PlotEntitiesPropertyWidget : public QPropertyWidget {
     Q_OBJECT
 public:
     PlotEntitiesPropertyWidget(PlotEntitiesProperty* prop, QWidget* parent = 0);
@@ -62,12 +58,11 @@ private slots:
     void updateColormap(int index);
     void listViewDoubleClicked(QListWidgetItem* item);
     void updateFromProperty();
-    void toggleWidgetVisibility();
 
 protected:
-    virtual QWidget* createEditorWindowWidget();
-    virtual void customizeEditorWindow();
-    virtual Property* getProperty();
+
+    tgt::Color toTgtColor(QColor color);
+    QColor toQColor(tgt::Color color);
 
     // if plotentityproperty::setdata is called, we have to recreate the widgets
     void reCreateWidgets();
@@ -82,7 +77,6 @@ protected:
     QComboBox* cbYAxis_;
     QComboBox* cbColormap_;
 
-    PlotEntitySettingsWidget* plotEntitySettingsWidget_;
     PlotEntitiesProperty* property_;
 
 };

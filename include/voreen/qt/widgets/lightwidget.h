@@ -31,6 +31,7 @@
 #define VRN_LIGHTWIDGET_H
 
 #include <QWidget>
+#include <QPushButton>
 #include <math.h>
 #include <tgt/vector.h>
 #include "voreen/qt/widgets/property/floatvec4propertywidget.h"
@@ -63,7 +64,7 @@ private:
     float y_;
 
 private slots:
-    void setHemisphere(bool); //true is open sphere, false is closed sphere
+    void setHemisphere(bool); //true is an open sphere, false is a closed sphere
     void updateDistance(double);
 
 signals:

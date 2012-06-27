@@ -27,6 +27,12 @@
  *                                                                    *
  **********************************************************************/
 
+#ifdef VRN_MODULE_PYTHON
+// include this at first
+#include "voreen/modules/python/pythonmodule.h"
+#include "voreen/modules/python/qt/pyvoreenqt.h"
+#endif
+
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/versionqt.h"
 #include "voreen/qt/progressdialog.h"
@@ -34,10 +40,6 @@
 #include "tgt/qt/qttimer.h"
 #include "tgt/filesystem.h"
 #include "tgt/shadermanager.h"
-
-#ifdef VRN_WITH_PYTHON
-#include "voreen/qt/pyvoreenqt.h"
-#endif
 
 #include <QApplication>
 #include <QMainWindow>
@@ -58,6 +60,9 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
                                          int argc, char** argv, ApplicationType appType)
     : VoreenApplication(name, displayName, argc, argv, appType)
     , mainWindow_(0)
+#ifdef VRN_MODULE_PYTHON
+    , pythonQt_(0)
+#endif
 {
     QCoreApplication::setOrganizationName("Voreen");
     QCoreApplication::setOrganizationDomain("voreen.org");
@@ -66,17 +71,22 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
     qtApp_ = this;
 }
 
+VoreenApplicationQt::~VoreenApplicationQt() {
+#ifdef VRN_MODULE_PYTHON
+    delete pythonQt_;
+    pythonQt_ = 0;
+#endif
+}
+
 void VoreenApplicationQt::init() {
     VoreenApplication::init();
+    if (!initialized_)
+        return;
 
     VoreenVersionQt::logAll(name_ + "." + displayName_);
 
     // Set the path for temporary files
     temporaryPath_ = QDir::tempPath().toStdString();
-
-#ifdef VRN_WITH_PYTHON
-    tgt::Singleton<VoreenPythonQt>::init(new VoreenPythonQt());
-#endif
 
     //
     // Path detection
@@ -87,8 +97,10 @@ void VoreenApplicationQt::init() {
 #ifdef VRN_INSTALL_PREFIX
         shaderPathQt_ = basePath_ + "/share/voreen/shaders";
 #else
-    #if defined(__APPLE__) && defined(VRN_DISTRIBUTION)
+    #if defined(__APPLE__) && defined(VRN_DEPLOYMENT)
         shaderPathQt_ = appBundleResourcesPath_ + "/glsl/qt";
+    #elif defined(VRN_DEPLOYMENT)
+        shaderPathQt_ = basePath_ + "/glsl";
     #else
         shaderPathQt_ = basePath_ + "/src/qt/glsl";
     #endif
@@ -96,9 +108,17 @@ void VoreenApplicationQt::init() {
     }
 }
 
-void VoreenApplicationQt::initGL() {
+void VoreenApplicationQt::initGL() throw (VoreenException) {
     VoreenApplication::initGL();
+
     ShdrMgr.addPath(getShaderPathQt());
+
+#ifdef VRN_MODULE_PYTHON
+    if (PythonModule::getInstance() && PythonModule::getInstance()->isInitialized())
+        pythonQt_ = new PyVoreenQt();
+    else
+        LWARNING("Skipped instantiation of VoreenPythonQt: Python module not initialized");
+#endif
 }
 
 void VoreenApplicationQt::setMainWindow(QMainWindow* mainWindow) {

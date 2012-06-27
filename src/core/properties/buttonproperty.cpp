@@ -58,11 +58,12 @@ void ButtonProperty::onClick(const Action& action) {
 
 void ButtonProperty::clicked() {
     invalidateOwner();
+
     for (size_t i = 0; i < actions_.size(); ++i)
         actions_[i]->exec();
-    ChangeData data;
+
     for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++)
-        (*it)->onChange(data);
+        (*it)->onChange();
 }
 
 std::string ButtonProperty::getTypeString() const {

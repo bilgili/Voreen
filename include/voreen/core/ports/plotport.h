@@ -38,7 +38,7 @@ namespace voreen {
 class PlotBase;
 
 /**
- * \brief This class describes the Plort who transports PlotBase Objects
+ * \brief This class describes the Port who transports PlotBase Objects
  */
 class PlotPort : public GenericPort<PlotBase> {
 public:
@@ -50,21 +50,21 @@ public:
 
 
     /**
-     * Assigns the passed PlotData handle to the port and
+     * Assigns the passed PlotBase handle to the port and
      * deletes the currently assigned one, if deletePrevious
      * is specified.
      */
     void setData(PlotBase* handle, bool deletePrevious = false);
 
     /**
-     * Deletes the assigned PlotData handle and
+     * Deletes the assigned PlotBase handle and
      * assigns the null pointer to itself.
      */
-    void deletePlotData();
+    void deleteData();
 
     /**
-     * Returns true, if the port contains a PlotDataHandle object
-     * and the PlotDataHandle has a valid PlotData.
+     * Returns true, if the port contains a PlotBaseHandle object
+     * and the PlotBaseHandle has a valid PlotBase.
      */
      virtual bool isReady() const;
 

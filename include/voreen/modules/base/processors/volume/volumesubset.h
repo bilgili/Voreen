@@ -101,6 +101,8 @@ private:
     /// Read-only property displaying the data size of the cropped volume in MB.
     IntProperty croppedSize_;
 
+    tgt::ivec3 oldVolumeDimensions_;
+
     static const std::string loggerCat_; ///< category used in logging
 };
 

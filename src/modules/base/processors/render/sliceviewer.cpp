@@ -139,8 +139,8 @@ Processor* SliceViewer::create() const {
 }
 
 std::string SliceViewer::getProcessorInfo() const {
-    return "Performs slice rendering of a single or multiple slices "
-           "along one of the three main axis of the volume. ";
+    return "Displays 2D slices along one of the three main axis of the volume. "
+           "Multiple slices can be viewed simultaneously.";
 }
 
 void SliceViewer::updateSliceProperties() {

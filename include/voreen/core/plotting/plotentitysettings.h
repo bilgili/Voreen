@@ -163,12 +163,13 @@ public:
     bool getUseTextureFlag() const;
     void setUseTextureFlag(bool value);
 
+    bool operator==(const PlotEntitySettings& rhs) const;
+
 private:
 
     /// type of the entity
     Entity entity_;
 
-    // universal settings:
     // an entity stores one or more column indices and labels
     int mainColumnIndex_;           ///< column index for main axis
     int candleTopColumnIndex_;      ///< column index for top of candle

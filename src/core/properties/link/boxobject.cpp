@@ -188,11 +188,11 @@ BoxObject::BoxObject(const BoxObject& obj)
     case MAT4:
         set<mat4>(obj.getMat4(), MAT4);
         break;
-    case PLOTPREDICATEVECTOR:
-        set<std::vector<std::pair<int, PlotPredicate*> > >(obj.getPlotPredicateVector(), PLOTPREDICATEVECTOR);
+    case PLOTPREDICATEVEC:
+        set<std::vector<std::pair<int, PlotPredicate*> > >(obj.getPlotPredicateVec(), PLOTPREDICATEVEC);
         break;
-    case PLOTZOOM:
-        set< std::vector< PlotZoomState > >(obj.getPlotZoom(), PLOTZOOM);
+    case PLOTSELECTIONENTRYVEC:
+        set< std::vector< PlotSelectionEntry > >(obj.getPlotSelectionEntryVec(), PLOTSELECTIONENTRYVEC);
         break;
     case SHADER:
         set<ShaderSource>(obj.getShader(), SHADER);
@@ -201,7 +201,7 @@ BoxObject::BoxObject(const BoxObject& obj)
         set(*obj.getTransFunc(), TRANSFUNC);
         break;
     case CAMERA:
-        set(*obj.getCamera(), CAMERA);
+        set(obj.getCamera(), CAMERA);
         break;
     case VOLUMEHANDLE:
         set(*obj.getVolumeHandle(), VOLUMEHANDLE);
@@ -306,8 +306,8 @@ BoxObject::BoxObject(const TransFunc* value) : value_(0), currentType_(TRANSFUNC
     set(*value, TRANSFUNC);
 }
 
-BoxObject::BoxObject(const Camera* value) : value_(0), currentType_(CAMERA) {
-    set(*value, CAMERA);
+BoxObject::BoxObject(const Camera value) : value_(0), currentType_(CAMERA) {
+    set(value, CAMERA);
 }
 
 BoxObject::BoxObject(const VolumeHandle* value) : value_(0), currentType_(VOLUMEHANDLE) {
@@ -318,12 +318,12 @@ BoxObject::BoxObject(const VolumeCollection* value) : value_(0), currentType_(VO
     set(*value, VOLUMECOLLECTION);
 }
 
-BoxObject::BoxObject(const std::vector< std::pair< int, voreen::PlotPredicate* > >& value) : value_(0), currentType_(PLOTPREDICATEVECTOR) {
-    set(value, PLOTPREDICATEVECTOR);
+BoxObject::BoxObject(const std::vector< std::pair< int, voreen::PlotPredicate* > >& value) : value_(0), currentType_(PLOTPREDICATEVEC) {
+    set(value, PLOTPREDICATEVEC);
 }
 
-BoxObject::BoxObject(const std::vector< PlotZoomState >& value) : value_(0), currentType_(PLOTZOOM) {
-    set(value, PLOTZOOM);
+BoxObject::BoxObject(const std::vector< PlotSelectionEntry >& value) : value_(0), currentType_(PLOTSELECTIONENTRYVEC) {
+    set(value, PLOTSELECTIONENTRYVEC);
 }
 
 BoxObject BoxObject::deepCopy() const {
@@ -444,10 +444,10 @@ void BoxObject::deleteValue() {
         case MAT4:
             delete static_cast<mat4*>(value_);
             break;
-        case PLOTPREDICATEVECTOR:
-            delete static_cast<std::vector<std::pair<int, PlotPredicate* > >* >(value_);
-        case PLOTZOOM:
-            delete static_cast<std::vector< PlotZoomState >* >(value_);
+        case PLOTPREDICATEVEC:
+            delete static_cast<vector<pair<int, PlotPredicate* > >* >(value_);
+        case PLOTSELECTIONENTRYVEC:
+            delete static_cast<vector< PlotSelectionEntry >* >(value_);
         case TRANSFUNC:
             //delete static_cast<TransFuncIntensity*>(value_);
             break;
@@ -542,11 +542,11 @@ std::string BoxObject::getTypeName(BoxObjectType type) {
     case MAT4:
         return "mat4";
         break;
-    case PLOTPREDICATEVECTOR:
+    case PLOTPREDICATEVEC:
         return "plot predicate vector";
         break;
-    case PLOTZOOM:
-        return "plot zoom";
+    case PLOTSELECTIONENTRYVEC:
+        return "plot selection entry vector";
         break;
     case SHADER:
         return "shader";
@@ -614,9 +614,9 @@ BoxObject::BoxObjectType BoxObject::getType(const std::string& typeName) {
     else if (typeName == "mat4")
         return MAT4;
     else if (typeName == "plot predicate vector")
-        return PLOTPREDICATEVECTOR;
+        return PLOTPREDICATEVEC;
     else if (typeName == "plot zoom")
-        return PLOTZOOM;
+        return PLOTSELECTIONENTRYVEC;
     else if (typeName == "shader")
         return SHADER;
     else if (typeName == "transfer function")
@@ -1225,11 +1225,11 @@ mat4 BoxObject::getMat4() const throw (VoreenException) {
     }
 }
 
-std::vector<std::pair<int, PlotPredicate*> > BoxObject::getPlotPredicateVector() const throw (VoreenException) {
+vector<pair<int, PlotPredicate*> > BoxObject::getPlotPredicateVec() const throw (VoreenException) {
     switch (currentType_) {
-        case PLOTPREDICATEVECTOR:
+        case PLOTPREDICATEVEC:
             // don't use VP macro here because of comma in template arguments
-            return (*(std::vector<std::pair<int, PlotPredicate*> >*)value_);
+            return (*(vector<pair<int, PlotPredicate*> >*)value_);
             break;
         case NIL:
             throw VoreenException("Conversion tried on empty boxobject");
@@ -1238,11 +1238,11 @@ std::vector<std::pair<int, PlotPredicate*> > BoxObject::getPlotPredicateVector()
     }
 }
 
-std::vector< PlotZoomState > BoxObject::getPlotZoom() const throw (VoreenException) {
+vector< PlotSelectionEntry > BoxObject::getPlotSelectionEntryVec() const throw (VoreenException) {
     switch (currentType_) {
-        case PLOTZOOM:
+        case PLOTSELECTIONENTRYVEC:
             // don't use VP macro here because of comma in template arguments
-            return VP(std::vector< PlotZoomState >);
+            return VP(vector< PlotSelectionEntry >);
             break;
         case NIL:
             throw VoreenException("Conversion tried on empty boxobject");
@@ -1395,12 +1395,12 @@ void BoxObject::setMat4(const tgt::mat4& value) {
     set<tgt::mat4>(value, MAT4);
 }
 
-void BoxObject::setPlotPredicateVector(const std::vector<std::pair<int, PlotPredicate*> >& value) {
-    set<std::vector<std::pair<int, PlotPredicate*> > >(value, PLOTPREDICATEVECTOR);
+void BoxObject::setPlotPredicateVec(const vector<pair<int, PlotPredicate*> >& value) {
+    set<vector<pair<int, PlotPredicate*> > >(value, PLOTPREDICATEVEC);
 }
 
-void BoxObject::setPlotZoom(const std::vector< PlotZoomState >& value) {
-    set<std::vector< PlotZoomState > >(value, PLOTZOOM);
+void BoxObject::setPlotSelectionEntryVec(const vector< PlotSelectionEntry >& value) {
+    set<vector< PlotSelectionEntry > >(value, PLOTSELECTIONENTRYVEC);
 }
 
 void BoxObject::setShader(const ShaderSource* value) {
@@ -1490,11 +1490,11 @@ void BoxObject::serialize(XmlSerializer& s) const {
     case MAT4:
         s.serialize("value", getMat4());
         break;
-    case PLOTPREDICATEVECTOR:
+    case PLOTPREDICATEVEC:
         //s.serialize("value", getPlotPredicateVector());
         break;
-    case PLOTZOOM:
-        s.serialize("value", getPlotZoom());
+    case PLOTSELECTIONENTRYVEC:
+        s.serialize("value", getPlotSelectionEntryVec());
         break;
     case SHADER:
         s.serialize("value", getShader());
@@ -1670,19 +1670,19 @@ void BoxObject::deserialize(XmlDeserializer& d) {
             setMat4(value);
             break;
         }
-    case PLOTPREDICATEVECTOR:
+    case PLOTPREDICATEVEC:
         {
             tgtAssert(false, "tried to deserialize PlotPredicateVector, but it isn't serializable");
-            std::vector<std::pair<int, PlotPredicate*> > value;
+            vector<pair<int, PlotPredicate*> > value;
             //d.deserialize("value", value);
-            setPlotPredicateVector(value);
+            setPlotPredicateVec(value);
             break;
         }
-    case PLOTZOOM:
+    case PLOTSELECTIONENTRYVEC:
         {
-            std::vector< PlotZoomState > value;
+            vector< PlotSelectionEntry > value;
             d.deserialize("value", value);
-            setPlotZoom(value);
+            setPlotSelectionEntryVec(value);
             break;
         }
     case SHADER:
@@ -1694,7 +1694,7 @@ void BoxObject::deserialize(XmlDeserializer& d) {
         }
     case TRANSFUNC:
         {
-            TransFunc* value = new TransFunc;
+            TransFuncIntensity* value = new TransFuncIntensity;
             d.deserialize("value", *value);
             setTransFunc(value);
             break;
@@ -1790,11 +1790,11 @@ BoxObject& BoxObject::operator= (const BoxObject& rhs) {
         case MAT4:
             set<mat4>(rhs.getMat4(), MAT4);
             break;
-        case PLOTPREDICATEVECTOR:
-            set<std::vector<std::pair<int, PlotPredicate*> > >(rhs.getPlotPredicateVector(), PLOTPREDICATEVECTOR);
+        case PLOTPREDICATEVEC:
+            set<vector<pair<int, PlotPredicate*> > >(rhs.getPlotPredicateVec(), PLOTPREDICATEVEC);
             break;
-        case PLOTZOOM:
-            set<std::vector< PlotZoomState > >(rhs.getPlotZoom(), PLOTZOOM);
+        case PLOTSELECTIONENTRYVEC:
+            set<vector< PlotSelectionEntry > >(rhs.getPlotSelectionEntryVec(), PLOTSELECTIONENTRYVEC);
             break;
         case TRANSFUNC:
             set(*rhs.getTransFunc(), TRANSFUNC);
@@ -1908,13 +1908,13 @@ BoxObject& BoxObject::operator= (const mat4& rhs) {
     return *this;
 }
 
-BoxObject& BoxObject::operator= (const std::vector<std::pair<int, PlotPredicate*> >& rhs) {
-    set<std::vector<std::pair<int, PlotPredicate*> > >(rhs, PLOTPREDICATEVECTOR);
+BoxObject& BoxObject::operator= (const vector<pair<int, PlotPredicate*> >& rhs) {
+    set<vector<pair<int, PlotPredicate*> > >(rhs, PLOTPREDICATEVEC);
     return *this;
 }
 
-BoxObject& BoxObject::operator= (const std::vector< PlotZoomState >& rhs) {
-    set<std::vector< PlotZoomState > >(rhs, PLOTZOOM);
+BoxObject& BoxObject::operator= (const vector< PlotSelectionEntry >& rhs) {
+    set<vector< PlotSelectionEntry > >(rhs, PLOTSELECTIONENTRYVEC);
     return *this;
 }
 
@@ -1991,11 +1991,11 @@ bool BoxObject::operator== (const BoxObject& rhs) const {
         case MAT4:
             return (getMat4() == rhs.getMat4());
         case PLOTENTITYSETTINGSVEC:
+            return (getPlotEntitySettingsVec() == rhs.getPlotEntitySettingsVec());
+        case PLOTPREDICATEVEC:
             break; // omit warning
-        case PLOTPREDICATEVECTOR:
-            break; // omit warning
-        case PLOTZOOM:
-            return (getPlotZoom() == rhs.getPlotZoom());
+        case PLOTSELECTIONENTRYVEC:
+            return (getPlotSelectionEntryVec() == rhs.getPlotSelectionEntryVec());
         case TRANSFUNC:
             {
                 const TransFuncIntensity* lhsCast = dynamic_cast<const TransFuncIntensity*>(getTransFunc());
@@ -2025,6 +2025,5 @@ bool BoxObject::operator== (const BoxObject& rhs) const {
 bool BoxObject::operator!= (const BoxObject& rhs) const {
     return !(*this == rhs);
 }
-
 
 } // namespace

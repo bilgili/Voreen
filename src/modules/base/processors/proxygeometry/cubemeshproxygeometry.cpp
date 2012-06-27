@@ -39,12 +39,12 @@ CubeMeshProxyGeometry::CubeMeshProxyGeometry()
     , inport_(Port::INPORT, "volumehandle.volumehandle")
     , outport_(Port::OUTPORT, "proxygeometry.geometry")
     , enableClipping_("useClipping", "Enable Clipping", true)
-    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0.0f, 0.0f, 100000.0f)
-    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 0.0f, 0.0f, 100000.0f)
-    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0.0f, 0.0f, 100000.0f)
-    , clipBack_("backClippingPlane", "Back clipping plane (y)", 0.0f, 0.0f, 100000.0f)
-    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0.0f, 0.0f, 100000.0f)
-    , clipTop_("topClippingPlane", "Top clipping plane (z)", 0.0f, 0.0f, 100000.0f)
+    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0.f, 0.f, 1e5f)
+    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 1e5f, 0.f, 1e5f)
+    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0.f, 0.f, 1e5f)
+    , clipBack_("backClippingPlane", "Back clipping plane (y)", 1e5f, 0.f, 1e5f)
+    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0.f, 0.f, 1e5f)
+    , clipTop_("topClippingPlane", "Top clipping plane (z)", 1e5f, 0.f, 1e5f)
     , resetClipPlanes_("resetClipPlanes", "Reset Planes")
     , geometry_(new MeshListGeometry())
 {
@@ -101,16 +101,14 @@ Processor* CubeMeshProxyGeometry::create() const {
 void CubeMeshProxyGeometry::process() {
     tgtAssert(inport_.getData()->getVolume(), "no input volume");
 
-    Volume* inputVolume = inport_.getData()->getVolume();
-    tgt::vec3 volumeSize = inputVolume->getCubeSize();
-    tgt::ivec3 numSlices = inputVolume->getDimensions();
-    if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
-        oldVolumeDimensions_ = inputVolume->getDimensions();
-
     // adapt clipping plane properties on volume change
     if (inport_.hasChanged()) {
         adjustClipPropertiesRanges();
     }
+
+    Volume* inputVolume = inport_.getData()->getVolume();
+    tgt::vec3 volumeSize = inputVolume->getCubeSize();
+    tgt::ivec3 numSlices = inputVolume->getDimensions();
 
     // vertex and tex coords of bounding box without clipping
     tgt::vec3 coordLlf = inputVolume->getLLF();
@@ -191,6 +189,10 @@ void CubeMeshProxyGeometry::resetClipPlanes() {
 
 void CubeMeshProxyGeometry::adjustClipPropertiesRanges() {
     tgtAssert(inport_.getData() && inport_.getData()->getVolume(), "No input volume");
+
+    if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
+        oldVolumeDimensions_ = inport_.getData()->getVolume()->getDimensions();
+
     tgt::ivec3 numSlices = inport_.getData()->getVolume()->getDimensions();
 
     // adapt clipping plane properties to volume dimensions
@@ -205,20 +207,26 @@ void CubeMeshProxyGeometry::adjustClipPropertiesRanges() {
 
     // assign new clipping values while taking care that the right>left validation
     // does not alter the assigned values
-    float rightVal = clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
-    float leftVal = clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
+    float scaleRight = tgt::clamp(clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1), 0.f, 1.f);
+    float scaleLeft =  tgt::clamp(clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1), 0.f, 1.f);
+    float rightVal = scaleRight * (numSlices.x-1);
+    float leftVal = scaleLeft * (numSlices.x-1);
     clipLeft_.set(clipLeft_.getMaxValue());
     clipRight_.set(rightVal);
     clipLeft_.set(leftVal);
 
-    float frontVal = clipFront_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
-    float backVal = clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
+    float scaleFront = tgt::clamp(clipFront_.get()/static_cast<float>(oldVolumeDimensions_.y-1), 0.f, 1.f);
+    float scaleBack =  tgt::clamp(clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1), 0.f, 1.f);
+    float frontVal = scaleFront * (numSlices.y-1);
+    float backVal = scaleBack * (numSlices.y-1);
     clipBack_.set(clipBack_.getMaxValue());
     clipFront_.set(frontVal);
     clipBack_.set(backVal);
 
-    float bottomVal = clipBottom_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
-    float topVal = clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
+    float scaleBottom = tgt::clamp(clipBottom_.get()/static_cast<float>(oldVolumeDimensions_.z-1), 0.f, 1.f);
+    float scaleTop =  tgt::clamp(clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1), 0.f, 1.f);
+    float bottomVal = scaleBottom * (numSlices.z-1);
+    float topVal = scaleTop * (numSlices.z-1);
     clipTop_.set(clipTop_.getMaxValue());
     clipBottom_.set(bottomVal);
     clipTop_.set(topVal);

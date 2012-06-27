@@ -163,6 +163,7 @@ protected:
  * Usage:
  * Define "static const std::string loggerCat_;" in every class that logs messages and use the macros defined below:
  * LWARNING("Warning!");
+ * Alternatively, LWARNINGC("Cat", "Warning!") may be used, which does not require the definition of loggerCat_.
  *
  * LDEBUG statements are removed if TGT_DEBUG is not defined!
  * @author Stefan Diepenbrock
@@ -264,12 +265,12 @@ protected:
         } while (0)
 
         #define LWARNINGC(cat, msg) \
-        { \
+        do { \
             std::ostringstream _tmp, _tmp2; \
             _tmp2 << __PRETTY_FUNCTION__  << " File: " << __FILE__ << "@" << __LINE__;\
             _tmp << msg; \
             LogMgr.log(cat, tgt::Warning, _tmp.str(), _tmp2.str()); \
-        }
+        } while (0)
 
         #define LERRORC(cat, msg) \
         do { \

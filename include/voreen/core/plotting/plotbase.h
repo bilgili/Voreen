@@ -39,7 +39,7 @@ typedef double plot_t;
 
 class PlotBase {
 public:
-
+    /// type for the columns of a plotdata
     enum ColumnType {
         EMPTY = 0,
         STRING = 1,
@@ -51,6 +51,7 @@ public:
      *
      * \param keyColumnCount   count of key columns for this PlotBase
      * \param dataColumnCount  count of data columns for this PlotBase
+     * \note    Be sure the parameter bounds are (>= 0) or this function might crash!
      **/
     PlotBase(int keyColumnCount, int dataColumnCount);
 
@@ -91,7 +92,15 @@ public:
      **/
     PlotBase::ColumnType getColumnType(int column) const;
 
-    PlotBase& operator=(PlotBase rhs);
+    /// assignment operator which correctly handles the pointers
+    PlotBase& operator=(const PlotBase& rhs);
+
+    /**
+     * \brief   Compares the structure with \a other.
+     *
+     * \param   other   PlotBase to compare with.
+     **/
+    bool compareStructure(const PlotBase* other) const;
 
 protected:
     /// clears all data and resets key- and data column count

@@ -27,10 +27,20 @@
  *                                                                    *
  **********************************************************************/
 
+#ifdef VRN_MODULE_BASE
+#include "voreen/modules/base/processors/render/dynamicglslprocessor.h"
+#include "voreen/qt/widgets/processor/dynamicglslwidget.h"
+#endif
 #include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
 #include "voreen/qt/widgets/processor/qprocessorwidget.h"
 #include "voreen/qt/widgets/processor/canvasrendererwidget.h"
+#include "voreen/qt/widgets/processor/plotdataprocessorwidget.h"
 #include "voreen/qt/widgets/processor/imageanalyzerwidget.h"
+#include "voreen/qt/widgets/processor/plotdataselectwidget.h"
+#include "voreen/qt/widgets/processor/plotdatagroupwidget.h"
+#include "voreen/qt/widgets/processor/plotdatafitfunctionwidget.h"
+#include "voreen/qt/widgets/processor/plotdatamergewidget.h"
+
 
 namespace voreen {
 
@@ -42,8 +52,20 @@ ProcessorWidget* QProcessorWidgetFactory::createWidget(Processor* processor) con
 
     if (dynamic_cast<CanvasRenderer*>(processor))
         return new CanvasRendererWidget(parent_, static_cast<CanvasRenderer*>(processor), nwe_);
+#ifdef VRN_MODULE_BASE
+    else if (dynamic_cast<DynamicGLSLProcessor*>(processor))
+        return new DynamicGLSLWidget(parent_, static_cast<DynamicGLSLProcessor*>(processor));
+#endif
     else if (dynamic_cast<ImageAnalyzer*>(processor))
-       return new ImageAnalyzerWidget(parent_, static_cast<ImageAnalyzer*>(processor));
+        return new ImageAnalyzerWidget(parent_, static_cast<ImageAnalyzer*>(processor));
+    else if (dynamic_cast<PlotDataSelect*>(processor))
+       return new PlotDataSelectWidget(parent_, static_cast<PlotDataSelect*>(processor));
+    else if (dynamic_cast<PlotDataGroup*>(processor))
+       return new PlotDataGroupWidget(parent_, static_cast<PlotDataGroup*>(processor));
+    else if (dynamic_cast<PlotDataFitFunction*>(processor))
+       return new PlotDataFitFunctionWidget(parent_, static_cast<PlotDataFitFunction*>(processor));
+    else if (dynamic_cast<PlotDataMerge*>(processor))
+       return new PlotDataMergeWidget(parent_, static_cast<PlotDataMerge*>(processor));
     else
         return 0;
 }

@@ -8,7 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -44,6 +44,7 @@
                         <Property name="canvasSize">
                             <value x="256" y="256" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -62,7 +63,7 @@
                             </MetaData>
                             <position x="-0.65858716" y="-1.53531396" z="1.51366723" />
                             <focus x="-0.05053886" y="0.00771163" z="-0.01233993" />
-                            <upVector x="0.76553178" y="0.27403465" z="0.58212203" />
+                            <upVector x="0.7655319" y="0.27403468" z="0.58212209" />
                         </Property>
                         <Property name="interactionCoarseness" value="2" />
                         <Property name="interactionQuality" value="1" />
@@ -125,7 +126,7 @@
                             </MetaData>
                             <position x="-0.65858716" y="-1.53531396" z="1.51366723" />
                             <focus x="-0.05053886" y="0.00771163" z="-0.01233993" />
-                            <upVector x="0.7655319" y="0.27403468" z="0.58212209" />
+                            <upVector x="0.76553178" y="0.27403465" z="0.58212203" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" value="false" />
@@ -215,12 +216,12 @@
                 <PropertyLink>
                     <SourceProperty ref="ref7" />
                     <DestinationProperty ref="ref8" />
-                    <Evaluator type="LinkEvaluatorId" id="ref9" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref8" />
                     <DestinationProperty ref="ref7" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

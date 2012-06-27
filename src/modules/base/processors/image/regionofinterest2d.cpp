@@ -526,21 +526,21 @@ void RegionOfInterest2D::process() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // copy input image to output buffer
-        TextureUnit shadeUnit, depthUnit;
-        inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+        TextureUnit colorUnit, depthUnit;
+        inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
         program_->activate();
         setGlobalShaderParameters(program_);
-        program_->setUniform("colorTex_", shadeUnit.getUnitNumber());
+        program_->setUniform("colorTex_", colorUnit.getUnitNumber());
         program_->setUniform("depthTex_", depthUnit.getUnitNumber());
         inport_.setTextureParameters(program_, "texParams_");
         renderQuad();
         program_->deactivate();
 
         // render ROIs with ROI color and blend them over the input image
-        inport_.bindColorTexture(shadeUnit.getEnum());
+        inport_.bindColorTexture(colorUnit.getEnum());
         blendShader_->activate();
         setGlobalShaderParameters(blendShader_);
-        program_->setUniform("colorTex_", shadeUnit.getUnitNumber());
+        program_->setUniform("colorTex_", colorUnit.getUnitNumber());
         inport_.setTextureParameters(blendShader_, "textureParameters_");
         renderROIs(COLOR_MODE);
         blendShader_->deactivate();

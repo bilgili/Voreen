@@ -91,9 +91,10 @@ public:
      * \note    Outer projected means that this edge is part of the convex hull of all
      *          projected axis edges.
      **/
-    struct ZoomEdge {
+    struct SelectionEdge {
     public:
-        ZoomEdge(Axis axis = X_AXIS, const tgt::dvec2& startVertex = tgt::dvec2(0,0), const tgt::dvec2& endVertex = tgt::dvec2(0,0), bool ascOrientation = true)
+        SelectionEdge(Axis axis = X_AXIS, const tgt::dvec2& startVertex = tgt::dvec2(0,0), const tgt::dvec2& endVertex = tgt::dvec2(0,0),
+                bool ascOrientation = true)
             : axis_(axis)
             , startVertex_(startVertex)
             , endVertex_(endVertex)
@@ -144,7 +145,7 @@ public:
     void renderSpline(const PlotData& data, int indexX, int indexY) const;
 
     /**
-     * \brief   Renders a filled area behind the line visualising the inaccurateness of the data using current fill color.
+     * \brief   Renders a filled area behind the line visualizing the inaccurateness of the data using current fill color.
      * \a indexX specifies the column containing x coordinates, \a indexY specifies the column
      * containing y coordinates, \a indexError specifies the column containing the error data
      * which will be mapped to heigth of the error area.
@@ -205,7 +206,8 @@ public:
      * \param   indexZ                  column index of z coordinates
      * \param   indexCM                 column index of color data (default = -1 means current drawing color shall be used instead of current colormap)
      **/
-    void renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire, int indexX, int indexY, int indexZ, int indexCM = -1) const;
+    void renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire, int indexX, int indexY,
+            int indexZ, int indexCM = -1) const;
 
     /**
      * \brief   Renders a heightmap into the plot using the data in \a data.
@@ -224,7 +226,8 @@ public:
      * \param   indexZ              column index of z coordinates
      * \param   indexCM             column index of color data (-1 if current drawing color shall be used instead of current colormap )
      **/
-    void renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions, bool wire, int indexX, int indexY, int indexZ, int indexCM = -1) const;
+    void renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions, bool wire,
+            int indexZ, int indexCM = -1) const;
 
     /**
      * \brief   Renders a candle stick from data.
@@ -266,6 +269,12 @@ public:
      * \param   indexesY        column indexes of y coordinates of the bars (for each bar one index)
      **/
     void renderBars(const PlotData& data, std::vector<int> indicesY) const;
+
+
+    /**
+     * \brief   Renders a node graph of the nodes and connections in \a graph.
+     */
+    void renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY) const;
 
     /**
      * \brief   Renders a legend for the current color map with given interval in the top right edge
@@ -325,7 +334,8 @@ public:
      * \param   viewCoordinates indicates if pos is already in view coordinates
      * \param   padding         additional space in pixels (viewport coordinates) around label
      **/
-    void renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text, bool viewCoordinates = false, int padding = 10) const;
+    void renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text, bool viewCoordinates = false,
+            int padding = 10) const;
 
     /**
      * \brief   Renders the label \a text aligned around the viewport coordinates \a pos using current font size and color.
@@ -368,11 +378,11 @@ public:
     void setDimension(Dimension dim);
     void setDomain(const Interval<plot_t>& interval, Axis axis);
     void setPolarCoordinateFlag(bool polar);
-    void setRenderDataLabelFlag(bool value);
     void setLogarithmicAxis(bool polar, Axis axis);
     void setDrawingColor(tgt::Color color);
     void setFillColor(tgt::Color color);
     void setFontColor(tgt::Color color);
+    void setHighlightColor(tgt::Color color);
     void setColorMap(ColorMap cm);
     void setMinGlyphSize(float value);
     void setMaxGlyphSize(float value);
@@ -389,7 +399,7 @@ public:
     void setWindowSize(const tgt::ivec2 windowSize);
     void setBarGroupingMode(BarGroupingMode mode);
     void setMinimumScaleStep(int value, Axis axis);
-    void setCamera(tgt::Camera* camera);
+    void setCamera(const tgt::Camera& camera);
     void setShear(tgt::vec2 shear);
     void setSqueezeFactor(double sf);
     void setLightingFlag(bool value);
@@ -398,31 +408,35 @@ public:
     void setPlotPickingManager(PlotPickingManager* ppm);
     void setUsePlotPickingManager(bool value);
 
-    /// Calculates the outer eges for each axis and saves them in according zoomEdges member.
-    void calculateZoomEdges();
+    /// Calculates the outer eges for each axis and saves them in according selectionEdges member.
+    void calculateSelectionEdges();
 
-    const std::vector<ZoomEdge>& getZoomEdgesX() const;
-    const std::vector<ZoomEdge>& getZoomEdgesY() const;
-    const std::vector<ZoomEdge>& getZoomEdgesZ() const;
-
-    /// Renders the zoom edges using current color and line width.
-    void renderZoomEdges();
-
+    const std::vector<SelectionEdge>& getSelectionEdgesX() const;
+    const std::vector<SelectionEdge>& getSelectionEdgesY() const;
+    const std::vector<SelectionEdge>& getSelectionEdgesZ() const;
 
     /// checks whether the polyline a-b-c is a left turn in the xy-plane
     static bool leftTurn(const tgt::dvec2& a, const tgt::dvec2& b, const tgt::dvec2& c);
     /// checks whether the polyline a-b-c is a right turn in the xy-plane
     static bool rightTurn(const tgt::dvec2& a, const tgt::dvec2& b, const tgt::dvec2& c);
 
+    /// add a label to the plotLabelGroup_
+    void addPlotLabel(std::string text, tgt::vec3 position, tgt::Color color, int size, SmartLabel::Alignment align);
+
+    /// add a label to the lineLabelGroup_
+    void addLineLabel(std::string text, tgt::vec3 position, tgt::Color color, int size, SmartLabel::Alignment align);
+
+    /// converts the value from the PlotCells to plot coordinates
+    tgt::dvec2 convertPlotCoordinatesToViewport(const tgt::dvec3& plotCoordinates) const;
+    tgt::dvec3 convertPlotCoordinatesToViewport3(const tgt::dvec3& plotCoordinates) const;
+
+    plot_t convertToLogCoordinates(plot_t value, Axis axis) const;
+
 private:
     /// orientation predicate for the polyline a-b-c is a left turn in the xy-plane
     inline static double orientation(const tgt::dvec2& a, const tgt::dvec2& b, const tgt::dvec2& c);
 
-    /// converts the value from the PlotCells to plot coordinates
-    inline plot_t convertToLogCoordinates(plot_t value, Axis axis) const;
     inline plot_t convertFromLogCoordinates(plot_t value, Axis axis) const;
-    inline tgt::dvec2 convertPlotCoordinatesToViewport(const tgt::dvec3& plotCoordinates) const;
-    inline tgt::dvec3 convertPlotCoordinatesToViewport3(const tgt::dvec3& plotCoordinates) const;
     inline plot_t round(plot_t value, plot_t roundingParameter) const;
 
     void renewPlotToViewportScale();
@@ -444,34 +458,32 @@ private:
     void renderSmartLabelGroup(SmartLabelGroupBase* smg) const;
 
     /**
-     * \brief helper function for \see PlotLibrary::calculateZoomEdges()
+     * \brief helper function for \see PlotLibrary::calculateSelectionEdges()
      *
      * Finds all outer edges given by indices \a indices encoding vertices in \a vertices.
      * Outer edges will be written to \a out.
      **/
-    void findEdges(const tgt::dvec2* vertices, const std::vector< std::valarray< int > > indices, std::vector< ZoomEdge >& out, Axis axis) const;
-
+    void findEdges(const tgt::dvec2* vertices, const std::vector< std::valarray< int > > indices, std::vector< SelectionEdge >& out, Axis axis) const;
 
     mutable tgt::Font labelFont_;
     tgt::ivec2 windowSize_;
     tgt::dvec2 plotToViewportScale_;
 
-    mutable SmartLabelGroupNoLayoutWithBackground   plotLabelGroup_;    ///< smartlabelgroup of plot labels
-    mutable SmartLabelGroupVerticalMoving           lineLabelGroup_;    ///< smartlabelgroup of linelabels
-    mutable SmartLabelGroupHorizontalMoving         xAxisLabelGroup_;   ///< smartlabelgroup of x axis labels
-    mutable SmartLabelGroupNoLayout                 axisLabelGroup_;    ///< smartlabelgroup of 3d axis labels
+    mutable SmartLabelGroupNoLayoutWithBackground plotLabelGroup_;    ///< smartlabelgroup of plot labels
+    mutable SmartLabelGroupVerticalMoving         lineLabelGroup_;    ///< smartlabelgroup of linelabels
+    mutable SmartLabelGroupHorizontalMoving       xAxisLabelGroup_;   ///< smartlabelgroup of x axis labels
+    mutable SmartLabelGroupNoLayout               axisLabelGroup_;    ///< smartlabelgroup of 3d axis labels
 
-    Dimension dimension_;           ///< dimensionality of the Plotdata (2, 3 or fake3d)
+    Dimension dimension_;           ///< dimensionality of the plot (2, 3 or fake3d)
     Interval<plot_t> domain_[3];    ///< array of domain intervals for each axis
-    bool polarCoordinateFlag_;      ///< flag whether polarcooordinate System or cartesian
-    bool renderDataLabelFlag_;        ///< on true glyphs and bars are automatically with their value
     bool logarithmicAxisFlags_[3];  ///< array of flags indicating if axis are logarithmic or not
     tgt::Color drawingColor_;       ///< current drawing color
     tgt::Color fillColor_;          ///< current filling color
     tgt::Color fontColor_;          ///< current font color
+    tgt::Color highlightColor_;     ///< current drawing color for highlighted objects
     ColorMap colorMap_;             ///< current color map
-    float minGlyphSize_;               ///< current min glyph size
-    float maxGlyphSize_;               ///< current max glyph size
+    float minGlyphSize_;            ///< current min glyph size
+    float maxGlyphSize_;            ///< current max glyph size
     float lineWidth_;               ///< current line width in pixel
     double  barWidth_;              ///< current bar width relative to maximal bar width
     float axesWidth_;               ///< current axes width in pixel
@@ -485,18 +497,18 @@ private:
     int marginBottom_;              ///< bottom margin
     int marginTop_;                 ///< top margin
     int minimumScaleStep_[3];       ///< minimum scale step for each axis in viewport coordinates
-    tgt::Camera* camera_;           ///< camera object for 3d plots
-    tgt::vec2 shear_;               ///<shear used for fake 3d in bar plots
-    bool lightingFlag_;             ///<flag whether lighting is enabled
-    bool orthographicCameraFlag_;   ///<flag whether the camera uses orthographic projection
-    tgt::Texture* texture_;         ///<texture used for glyphs
-    PlotPickingManager* ppm_;       ///<used to render pickable objects
-    bool usePlotPickingManager_;    ///<if true, the color is set by PlotPickingManager if the render method is able to render pickable objects
+    tgt::Camera camera_;            ///< camera object for 3d plots
+    tgt::vec2 shear_;               ///< shear used for fake 3d in bar plots
+    bool lightingFlag_;             ///< flag whether lighting is enabled
+    bool orthographicCameraFlag_;   ///< flag whether the camera uses orthographic projection
+    tgt::Texture* texture_;         ///< texture used for glyphs
+    PlotPickingManager* ppm_;       ///< used to render pickable objects
+    bool usePlotPickingManager_;    ///< if true, the color is set by PlotPickingManager if the render method is able to render pickable objects
 
     // things for 3D zooming:
-    std::vector<ZoomEdge> zoomEdgesX_;
-    std::vector<ZoomEdge> zoomEdgesY_;
-    std::vector<ZoomEdge> zoomEdgesZ_;
+    std::vector<SelectionEdge> selectionEdgesX_;
+    std::vector<SelectionEdge> selectionEdgesY_;
+    std::vector<SelectionEdge> selectionEdgesZ_;
 
     static const std::string loggerCat_;
 };

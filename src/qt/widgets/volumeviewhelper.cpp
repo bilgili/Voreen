@@ -70,37 +70,57 @@ QPixmap VolumeViewHelper::generatePreview(Volume* volume, int height) {
 }
 
 QPixmap VolumeViewHelper::generateBorderedPreview(Volume* volume, int height, int border) {
+    float xSpacing = volume->getSpacing()[0];
+    float ySpacing = volume->getSpacing()[1];
+
     float xDimension = volume->getDimensions()[0];
     float yDimension = volume->getDimensions()[1];
     int zDimension = volume->getDimensions()[2]/2;
-    float step;
-    if (yDimension > xDimension) {
-        step = (float)yDimension/height;
+    float step = (float)xDimension / height;
+    float xStretch = 1.0f;
+    float yStretch = 1.0f;
+    float max = xDimension * xSpacing;
+    float yBorder = 0;
+    float xBorder = 0;
+
+    if(xDimension * xSpacing > yDimension * ySpacing) {
+        step = (float)xDimension * xSpacing / height;
+        max = xDimension * xSpacing;
+        yBorder = ((xDimension * xSpacing) - (yDimension * ySpacing)) / 2 * height / max;
     }
-    else {
-        step = (float)xDimension/height;
+    else if(xDimension * xSpacing < yDimension * ySpacing) {
+        step = (float)yDimension * ySpacing / height;
+        max = yDimension * ySpacing;
+        yStretch = xSpacing / ySpacing;
+        xBorder = ((yDimension * ySpacing) - (xDimension * xSpacing)) / 2 * height / max;
     }
+    if(xSpacing != 1 && xSpacing != ySpacing)
+        xStretch = 1 / xSpacing;
+    if(ySpacing != 1 && ySpacing != xSpacing)
+        yStretch = 1 / ySpacing;
+
     QImage* preview = new QImage(height , height, QImage::Format_ARGB32);
     QRgb pixelValue;
     int greyInt;
 
     for(float y = .0f; y < height; y++){
-        for(float x = .0f; x < height; x++){
-            tgt::vec3 position;
-            position.x = x*step;
-            position.y = y*step;
-            position.z = zDimension;
-            if(position.x < xDimension && position.y < yDimension) {
-                greyInt = static_cast<int>(255.f * volume->getVoxelFloatLinear(position));
-                pixelValue = qRgb(greyInt, greyInt, greyInt);
+            for(float x = .0f; x < height; x++){
+                tgt::vec3 position;
+                position.x = x * step * xStretch - xBorder * xStretch;
+                position.y = y * step * yStretch - yBorder * yStretch;
+                position.z = zDimension;
+                if(position.x >= 0 && position.y >= 0 && position.x < xDimension && position.y < yDimension) {
+                    greyInt = static_cast<int>(255.f * volume->getVoxelFloatLinear(position));
+                    pixelValue = qRgb(greyInt, greyInt, greyInt);
+                }
+                else {
+                    pixelValue = qRgb(0, 0, 0);
+                }
+                preview->setPixel(static_cast<int>(x), static_cast<int>(y), pixelValue);
             }
-            else {
-                pixelValue = qRgb(0, 0, 0);
-            }
-            preview->setPixel(static_cast<int>(x), static_cast<int>(y), pixelValue);
         }
-    }
-    QImage previewScaled = preview->scaledToHeight(height);
+
+    QImage previewScaled = preview->scaled(64, 64);
 
     //histogram equalization
     uint minGrey = previewScaled.pixel(0, 0);
@@ -123,7 +143,7 @@ QPixmap VolumeViewHelper::generateBorderedPreview(Volume* volume, int height, in
     }
     //draw border
     for(int y = 0; y < previewScaled.height(); y++){
-        for(int x =0; x < border ; x++){
+        for(int x = 0; x < border ; x++){
                previewScaled.setPixel(previewScaled.width()-x-1, y, qRgb(255, 255, 255));
         }
     }

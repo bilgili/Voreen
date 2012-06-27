@@ -63,5 +63,5 @@ void main() {
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
 
     vec4 currentRes = renderSlice();
-    gl_FragColor = currentRes;
+    FragData0 = currentRes;
 }

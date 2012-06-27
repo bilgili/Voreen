@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Canny::Canny()
-    : ImageProcessorDepth("pp_canny")
+    : ImageProcessorDepth("image/canny")
     , startThreshold_("startThreshold", "Start threshold", 1.0f, 0.0f, 10.0f)
     , runThreshold_("runThreshold", "Run threshold", 0.5f, 0.0f, 10.0f)
     , edgeColor_("edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
@@ -67,14 +67,14 @@ void Canny::process() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     analyzeDepthBuffer(&inport_);
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     // the shader performs the non-maximum suppression
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("startThreshold_", startThreshold_.get());

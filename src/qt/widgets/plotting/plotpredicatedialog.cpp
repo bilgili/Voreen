@@ -27,107 +27,168 @@
  *                                                                    *
  **********************************************************************/
 
+#include "voreen/core/plotting/plotpredicate.h"
+#include "voreen/core/plotting/plotpredicatefactory.h"
 #include "voreen/qt/widgets/plotting/plotpredicatedialog.h"
 
 #include <QDialogButtonBox>
 #include <QLineEdit>
 #include <QAction>
-#include <qvalidator.h>
-
+#include <limits>
 
 namespace voreen {
 
-PlotPredicateDialog::PlotPredicateDialog(
-                 const std::vector<std::pair<std::string,int> >& comboBoxText,
-                 const PlotBase::ColumnType valueType, const int selected,
-                 const std::vector<PlotCellValue>& values, const std::vector<int>& comboboxValues,
-                 QWidget* parent)
+PlotPredicateDialog::PlotPredicateDialog(const PlotPredicate* predicate, bool tagsOnly, bool simplePredicatesOnly, QWidget* parent)
     : QDialog(parent)
-    , comboBoxText_(0)
-    , editVector_(0)
-    , values_(0)
-    , labelVector_(0)
+    , predicate_(0)
+    , tagsOnly_(tagsOnly)
+    , simplePredicatesOnly_(simplePredicatesOnly)
+    , mainLayout_(0)
+    , cbPredicates_(0)
+    , btnOK_(0)
+    , btnCancel_(0)
 {
     setWindowTitle(QString(tr("Select Predicates",0)));
-    resize(256,256);
     setModal(true);
-    valueType_ = PlotBase::EMPTY;
-    choice_ = new QComboBox(this);
-    QObject::connect(choice_,SIGNAL(currentIndexChanged(int)),this,SLOT(choiceChange(int)));
-    mainLayout = new QGridLayout(this);
-    mainLayout->addWidget(choice_,0,1,Qt::AlignCenter);
-    QDialogButtonBox* buttons = new QDialogButtonBox(this);
-    okButton_ = new QPushButton(tr("OK"));
-    okButton_->setDefault(true);
-    cancelButton_ = new QPushButton(tr("Cancel"));
-    QObject::connect(buttons,SIGNAL(accepted()),this,SLOT(clickedOk()));
-    QObject::connect(buttons,SIGNAL(rejected()),this,SLOT(clickedCancel()));
-    buttons->addButton(okButton_, QDialogButtonBox::AcceptRole);
-    buttons->addButton(cancelButton_,QDialogButtonBox::RejectRole);
-    mainLayout->addWidget(buttons,9,1,Qt::AlignCenter);
-    setLayout(mainLayout);
-    initialize(comboBoxText,valueType,selected,values,comboboxValues);
-}
 
+    if (predicate != 0)
+        predicate_ = predicate->clone();
+
+    createWidgets();
+}
 
 PlotPredicateDialog::~PlotPredicateDialog() {
-    comboBoxText_.clear();
+    delete predicate_;
 }
 
-void PlotPredicateDialog::initialize(const std::vector<std::pair<std::string,int> >& comboBoxText,
-                                  const PlotBase::ColumnType valueType, const int selected,
-                                  const std::vector<PlotCellValue>& values, const std::vector<int>& comboboxValues) {
-    comboBoxText_ = comboBoxText;
-    choice_->clear();
-    valueType_ = valueType;
-    int index = 0;
-    for (size_t i = 0; i < comboBoxText_.size(); ++i) {
-        choice_->addItem(QString::fromStdString(comboBoxText_.at(i).first),QVariant(comboboxValues.at(i)));
-        if (selected == comboboxValues.at(i))
-            index = i;
+void PlotPredicateDialog::createWidgets() {
+    mainLayout_ = new QGridLayout();
+    QLabel* lblPredicates = new QLabel(tr("Select a Predicate:"));
+    mainLayout_->addWidget(lblPredicates, 0, 0);
+
+    std::vector<std::string> typeStrings;
+    if (tagsOnly_ && simplePredicatesOnly_)
+        typeStrings = PlotPredicateFactory::getAllTypeStrings(PlotPredicateFactory::SIMPLE_TAG_PREDICATES_ONLY);
+    else if (tagsOnly_ && !simplePredicatesOnly_)
+        typeStrings = PlotPredicateFactory::getAllTypeStrings(PlotPredicateFactory::ALL_TAG_PREDICATES_ONLY);
+    else if (!tagsOnly_ && simplePredicatesOnly_)
+        typeStrings = PlotPredicateFactory::getAllTypeStrings(PlotPredicateFactory::SIMPLE_VALUE_PREDICATES_ONLY);
+    else
+        typeStrings = PlotPredicateFactory::getAllTypeStrings(PlotPredicateFactory::ALL_VALUE_PREDICATES_ONLY);
+    cbPredicates_ = new QComboBox();
+
+    // fill combobox
+    int i = 1;
+    std::string typeString = (predicate_ != 0) ? PlotPredicateFactory::getInstance()->getTypeString(typeid(*predicate_)) : "";
+    cbPredicates_->addItem(tr("No Predicate"), QVariant(tr("")));
+    cbPredicates_->setCurrentIndex(0);
+    for (std::vector<std::string>::const_iterator it = typeStrings.begin(); it != typeStrings.end(); ++it, ++i) {
+        cbPredicates_->addItem(QString::fromStdString(*it), QVariant(QString::fromStdString(*it)));
+        // select item if it matches current predicate
+        if (*it == typeString)
+            cbPredicates_->setCurrentIndex(i);
     }
-    values_ = values;
-    choice_->setCurrentIndex(index);
+
+    mainLayout_->addWidget(cbPredicates_, 0, 1, 1, 2);
+
+    btnOK_ = new QPushButton(tr("OK"));
+    btnCancel_ = new QPushButton(tr("Cancel"));
+    updateInnerWidgets();
+
+    setLayout(mainLayout_);
+
+    connect(cbPredicates_, SIGNAL(currentIndexChanged(int)), this, SLOT(choiceChange(int)));
+    connect(btnOK_, SIGNAL(clicked()), this, SLOT(clickedOk()));
+    connect(btnCancel_, SIGNAL(clicked()), this, SLOT(clickedCancel()));
 }
 
-void PlotPredicateDialog::choiceChange(int index) {
-    unsigned int x = static_cast<unsigned int>(index);
-    for (size_t i = 0; i < editVector_.size(); ++i) {
-        delete editVector_.at(i);
-        delete labelVector_.at(i);
-    }
-    editVector_.clear();
+const PlotPredicate* PlotPredicateDialog::getPlotPredicate() const {
+    return predicate_;
+}
+
+void PlotPredicateDialog::updateInnerWidgets() {
+    // remove all widgets first
+    for (std::vector<QLabel*>::iterator it = labelVector_.begin(); it != labelVector_.end(); ++it)
+        delete *it;
     labelVector_.clear();
-    if (comboBoxText_.size() > x) {
-        for (int i = 0; i < comboBoxText_.at(x).second; ++i) {
-            editVector_.push_back(new QLineEdit(this));
-            labelVector_.push_back(new QLabel(this));
-            labelVector_.at(i)->setText(QString(tr("Value: ",0)));
-            if (valueType_ == PlotBase::NUMBER) {
-                QDoubleValidator* dVal = new QDoubleValidator(this);
-//                dVal->setLocale(QLocale(QLocale::English));
-                editVector_.at(i)->setValidator(dVal);
-                if (values_.at(i).isTag()) {
-                    editVector_.at(i)->setText(QString(tr("",0)));
-                }
-                else {
-                    editVector_.at(i)->setText(QString::number(values_.at(i).getValue()));
-                }
+
+    for (std::vector<QDoubleSpinBox*>::iterator it = sbVector_.begin(); it != sbVector_.end(); ++it)
+        delete *it;
+    sbVector_.clear();
+
+    for (std::vector<QLineEdit*>::iterator it = editVector_.begin(); it != editVector_.end(); ++it)
+        delete *it;
+    editVector_.clear();
+
+    // now create the new widgets
+    int innerWidgetCount = (predicate_ == 0 ? 0 : predicate_->getNumberOfThresholdValues());
+    if (innerWidgetCount > 0) {
+        std::vector<std::string> titles = predicate_->getThresholdTitles();
+        std::vector<PlotCellValue> values = predicate_->getThresholdValues();
+
+        for (int i = 0; i < innerWidgetCount; ++i) {
+            labelVector_.push_back(new QLabel(QString::fromStdString(titles[i])));
+            mainLayout_->addWidget(labelVector_[i], i+2, 0);
+
+            if (tagsOnly_) {
+                editVector_.push_back(new QLineEdit(QString::fromStdString(values[i].getTag())));
+                connect(editVector_[i], SIGNAL(editingFinished()), this, SLOT(updatePredicate()));
+                mainLayout_->addWidget(editVector_[i], i+2, 1, 1, 2);
             }
             else {
-                if (values_.at(i).isTag()) {
-                    editVector_.at(i)->setText(QString::fromStdString(values_.at(i).getTag()));
-                }
-                else {
-                    editVector_.at(i)->setText(QString::number(values_.at(i).getValue()));
-                }
+                sbVector_.push_back(new QDoubleSpinBox());
+                // REMARK: std::numeric_limits<double>::min() does not work here :( hopefully -1000000000 is low enough
+                sbVector_[i]->setMinimum(-1000000000);
+                sbVector_[i]->setMaximum(std::numeric_limits<double>::max());
+                sbVector_[i]->setDecimals(5);
+                sbVector_[i]->setValue(values[i].getValue());
+                connect(sbVector_[i], SIGNAL(editingFinished()), this, SLOT(updatePredicate()));
+                mainLayout_->addWidget(sbVector_[i], i+2, 1, 1, 2);
             }
-            mainLayout->addWidget(labelVector_.at(i),i+1,0,Qt::AlignCenter);
-            mainLayout->addWidget(editVector_.at(i),i+1,1,Qt::AlignCenter);
         }
     }
+
+    // move dialog buttons to the appropriate position
+    mainLayout_->addWidget(btnOK_, innerWidgetCount + 3, 1);
+    mainLayout_->addWidget(btnCancel_, innerWidgetCount + 3, 2);
 }
 
+void PlotPredicateDialog::choiceChange(int /*index*/) {
+    PlotPredicate* copy = predicate_;
+
+    // a dynamic_cast to 0 is also OK here as it says 'no predicate selected'
+    predicate_ = dynamic_cast<PlotPredicate*>(PlotPredicateFactory::getInstance()->createType(cbPredicates_->currentText().toStdString()));
+
+    if (predicate_ != 0) {
+        int newThresholdCount = predicate_->getNumberOfThresholdValues();
+        std::vector<PlotCellValue> values;
+        if (copy != 0) {
+            values = copy->getThresholdValues();
+            delete copy;
+            copy = 0;
+        }
+        values.resize(newThresholdCount, (tagsOnly_ ? PlotCellValue("") : PlotCellValue(0)));
+        predicate_->setThresholdValues(values);
+
+    }
+    updateInnerWidgets();
+}
+
+void PlotPredicateDialog::updatePredicate() {
+    if (predicate_ != 0) {
+        int newThresholdCount = predicate_->getNumberOfThresholdValues();
+        std::vector<PlotCellValue> values;
+        for (int i = 0; i < newThresholdCount; ++i) {
+            if (tagsOnly_) {
+                values.push_back(PlotCellValue(editVector_[i]->text().toStdString()));
+            }
+            else {
+                values.push_back(PlotCellValue(sbVector_[i]->value()));
+            }
+        }
+        predicate_->setThresholdValues(values);
+    }
+}
 
 void PlotPredicateDialog::clickedOk() {
     accept();
@@ -137,21 +198,5 @@ void PlotPredicateDialog::clickedCancel() {
     reject();
 }
 
-
-std::vector<std::string> PlotPredicateDialog::getStringValues() const {
-    std::vector<std::string> result;
-    for (size_t i = 0; i < editVector_.size(); ++i) {
-        result.push_back(editVector_.at(i)->text().toStdString());
-    }
-    return result;
-}
-
-int PlotPredicateDialog::getSelected() const {
-    return choice_->currentIndex();
-}
-
-int PlotPredicateDialog::getSelectedValue() const {
-    return choice_->itemData(getSelected()).toInt();
-}
 
 } // namespace voreen

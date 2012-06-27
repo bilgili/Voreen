@@ -535,14 +535,16 @@ void VolumeLoadButton::loadDicomFiles(const std::string& dir) {
     }
     catch (tgt::FileException e) {
         LERROR(e.what());
+        progress->hide();
         QErrorMessage* errorMessageDialog = new QErrorMessage(VoreenApplicationQt::qtApp()->getMainWindow());
         errorMessageDialog->showMessage(e.what());
     }
     catch (std::bad_alloc) {
         LERROR("std::Error BAD ALLOCATION");
+        progress->hide();
         QErrorMessage* errorMessageDialog = new QErrorMessage(VoreenApplicationQt::qtApp()->getMainWindow());
         errorMessageDialog->showMessage("std::Error BAD ALLOCATION, File: "
-            + QString(dicomDirDialog_->getFilename().c_str()));
+            + QString(dicomDirDialog_ ? dicomDirDialog_->getFilename().c_str() : ""));
     }
     QApplication::restoreOverrideCursor();
 

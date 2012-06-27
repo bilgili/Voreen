@@ -57,13 +57,16 @@ void VolumeHandleProperty::set(VolumeHandle* handle) {
     if (get() != handle) {
 
         VolumeHandle* prevHandle = get();
-        validate(handle, false);
+        std::string errorMsg;
+        validate(handle, errorMsg, false);
 
-        if (value_ != handle)
+        if (value_ != handle) {
+            LWARNINGC("voreen.VolumeHandleProperty", errorMsg);
             return;
+        }
 
         // execute links
-        executeLinks(prevHandle, value_);
+        executeLinks();
 
         // free handle, if stored value has changed and property is owner
         if ((prevHandle != get()) && handleOwner_)

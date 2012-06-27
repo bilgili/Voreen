@@ -124,6 +124,12 @@ public:
      */
     const std::vector<std::string>& getShaderPaths() const;
 
+    /**
+     * Returns true, if the module has been successfully initialized,
+     * and has not yet been deinitialized.
+     */
+    bool isInitialized() const;
+
 protected:
     /**
      * OpenGL-dependent or time-consuming initializations
@@ -203,6 +209,8 @@ private:
     std::vector<VolumeWriter*> volumeWriters_;
     std::vector<SerializableFactory*> serializerFactories_;
     std::vector<std::string> shaderPaths_;
+
+    bool initialized_;  ///< set by VoreenApplication
 };
 
 } // namespace

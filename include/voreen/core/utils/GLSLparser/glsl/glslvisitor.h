@@ -63,6 +63,19 @@ public:
      */
     std::vector<GLSLVariableSymbol*> getUniforms(const bool keepInTable);
 
+    /**
+     * Returns all declarations of out symbols within this GLSL program.
+     *
+     * The returned symbols are no long kept within the symbol table if the
+     * parameter keepInTable is set to true and the caller must delete the
+     * returned pointers using C++ delete operator in order to prevent memory
+     * leaks.
+     * If keepInTable is false, the pointers are kept within the table, but
+     * become deleted invalid as soon as the dtor of GLSLVistitor is called,
+     * for it deletes its symbol table and all contained symbols.
+     */
+    std::vector<GLSLVariableSymbol*> getOuts(const bool keepInTable);
+
 private:
     // Expressions
     //

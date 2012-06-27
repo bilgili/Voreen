@@ -67,7 +67,7 @@ void main() {
         //gl_FragData[1] = vec4(1.0, 0.0, 0.8, 1.0);
     } else {*/
         vec4 spotColor = spotTexture(gl_TexCoord[2].st);
-        vec4 color = texture2D(spotNoiseTex_, gl_TexCoord[1].st);
+        vec4 color = texture(spotNoiseTex_, gl_TexCoord[1].st);
         float intensity = randIntensity_;
         if (spotColor.a > 0.0) {
             if (color == vec4(0.0, 0.0, 0.0, 1.0))

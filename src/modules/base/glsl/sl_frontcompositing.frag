@@ -46,5 +46,5 @@ void main() {
     vec4 result;
     result.rgb = previousRes.rgb + (1.0-previousRes.a) * currentRes.a*currentRes.rgb;
     result.a = previousRes.a + (1.0-previousRes.a) * currentRes.a;
-    gl_FragColor = result;
+    FragData0 = result;
 }

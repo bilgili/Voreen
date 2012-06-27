@@ -31,36 +31,42 @@
 #include "voreen/core/plotting/functionlibrary.h"
 #include "voreen/core/plotting/plotdata.h"
 
+#include "tgt/logmanager.h"
+
 
 
 namespace voreen {
 
+const std::string PlotFunction::loggerCat_("voreen.plotting.PlotFunction");
+
 PlotFunction::PlotFunction()
     : PlotBase(0,0)
-    , expr_(Expression())
+    , expr_(PlotExpression())
 {
 }
 
-PlotFunction::PlotFunction(const std::string& expressionString)
+PlotFunction::PlotFunction(const std::string& expressionString, const std::string& expressionName)
     : PlotBase(0,0)
-    , expr_(Expression(expressionString))
+    , expr_(PlotExpression(expressionString,expressionName))
 {
-    PlotBase::reset(expr_.numberOfVariables(),1);
+    PlotBase::reset(std::max<int>(expr_.numberOfVariables(),1),1);
+    setColumnLabel(0,"x-axis");
     for (int i = 0; i < expr_.numberOfVariables(); ++i) {
         setColumnLabel(i,expr_.getVariable(i));
     }
-    setColumnLabel(expr_.numberOfVariables(),expr_.toString());
+    setColumnLabel(std::max<int>(expr_.numberOfVariables(),1),expr_.toString());
 }
 
 
-PlotFunction::PlotFunction(const Expression& expr)
-    :PlotBase(expr.numberOfVariables(),1)
+PlotFunction::PlotFunction(const PlotExpression& expr)
+    :PlotBase(std::max<int>(expr.numberOfVariables(),1),1)
     , expr_(expr)
 {
-    for (int i = 0; i < expr.numberOfVariables(); ++i) {
-        setColumnLabel(i,expr.getVariable(i));
+    setColumnLabel(0,"x-axis");
+    for (int i = 0; i < expr_.numberOfVariables(); ++i) {
+        setColumnLabel(i,expr_.getVariable(i));
     }
-    setColumnLabel(expr.numberOfVariables(),expr.toString());
+    setColumnLabel(std::max<int>(expr_.numberOfVariables(),1),expr_.toString());
 }
 
 PlotFunction::PlotFunction(const PlotFunction& rhs)
@@ -72,12 +78,12 @@ PlotFunction::PlotFunction(const PlotFunction& rhs)
 PlotFunction::~PlotFunction() {
 }
 
-PlotFunction& PlotFunction::operator=(PlotFunction rhs) {
+PlotFunction& PlotFunction::operator=(const PlotFunction& rhs) {
     PlotBase::operator=(rhs);
-    std::swap(expr_, rhs.expr_);
+    PlotExpression cpy(rhs.expr_);
+    std::swap(expr_, cpy);
     return *this;
 }
-
 
 plot_t PlotFunction::evaluateAt(const std::vector<plot_t>& value) {
     return expr_.evaluateAt(value);
@@ -86,29 +92,36 @@ plot_t PlotFunction::evaluateAt(const std::vector<plot_t>& value) {
 std::vector<std::vector<plot_t> > PlotFunction::evaluateAt(const std::vector<Interval<plot_t> >& interval,const std::vector<plot_t>& step) {
     std::vector<std::vector<plot_t> > result;
     result.clear();
-    if (interval.size() != step.size() || (expr_.numberOfVariables() != static_cast<int>(step.size())))
+    if (interval.size() != step.size() || (expr_.numberOfVariables() > static_cast<int>(step.size())))
         return result;
     std::vector<plot_t> x;
-    for (size_t j = 0; j < interval.size(); ++j) {
-        if (interval.at(j).getLeftOpen()) {
-            x.push_back(interval.at(j).getLeft() + step.at(j));
+    std::vector<plot_t> start;
+    for (size_t z = 0; z < interval.size(); ++z) {
+        if (interval.at(z).getLeftOpen()) {
+            start.push_back(interval.at(z).getLeft() + step.at(z));
         }
         else {
-            x.push_back(interval.at(j).getLeft());
+            start.push_back(interval.at(z).getLeft());
         }
     }
+    x = start;
     plot_t y;
     std::vector<plot_t> partVector;
-    for (size_t j = 0; j < interval.size(); ++j) {
-        while (interval.at(j).contains(x.at(j))) {
-            partVector.clear();
-            y = evaluateAt(x);
-            for (size_t i = 0; i < step.size(); ++i) {
-                partVector.push_back(x[i]);
+    size_t j = interval.size()-1;
+    while (interval.at(0).contains(x.at(0))) {
+        partVector.clear();
+        y = evaluateAt(x);
+        for (size_t i = 0; i < step.size(); ++i) {
+            partVector.push_back(x[i]);
+        }
+        partVector.push_back(y);
+        result.push_back(partVector);
+        x[j] += step.at(j);
+        for (size_t k = 1; k < interval.size(); ++k) {
+            if (!interval.at(k).contains(x[k])) {
+                x[k] = start[k];
+                x[k-1] += step[k-1];
             }
-            partVector.push_back(y);
-            result.push_back(partVector);
-            x[j] += step.at(j);
         }
     }
     return result;
@@ -116,21 +129,18 @@ std::vector<std::vector<plot_t> > PlotFunction::evaluateAt(const std::vector<Int
 
 
 bool PlotFunction::select(const std::vector<Interval<plot_t> >& interval, const std::vector<plot_t>& step, PlotData& target) {
-    if (interval.size() != step.size() || (expr_.numberOfVariables() != static_cast<int>(step.size())))
+    if (interval.size() != step.size() || (expr_.numberOfVariables() > static_cast<int>(step.size())) ||
+        keyColumnCount_ + dataColumnCount_ == 0)
         return false;
     std::vector<std::vector<plot_t> > result = evaluateAt(interval,step);
-    target.reset(expr_.numberOfVariables(),1);
+    target.reset(keyColumnCount_,1);
     for (size_t i = 0; i < result.size(); ++i) {
         target.insert(result.at(i));
     }
     for (int i = 0; i < target.getColumnCount(); ++i) {
-        if (i < expr_.numberOfVariables()) {
-            target.setColumnLabel(i,getColumnLabel(i));
-        }
-        else {
-            target.setColumnLabel(i,expr_.toString());
-        }
+        target.setColumnLabel(i,getColumnLabel(i));
     }
+    target.sorted_ = true;
     return true;
 }
 
@@ -167,40 +177,31 @@ bool PlotFunction::select(Interval<plot_t>* interval, plot_t* step, int count, P
     return select(intervals,steps,target);
 }
 
-/*
-PlotData* PlotFunction::select(Interval<plot_t>* interval, plot_t* step, int count) {
-
-    //check that count equals the number of variables in expr_
-    if (count != expr_.numberOfVariables())
-        throw "Wrong number of Variables.";
-
-    //number of key columns equals count, one data column
-    PlotData* data = new PlotData(count, 1);
-
-    //the function is of type R->R
-    if (count == 1) {
-        for (plot_t x = (interval[0].getLeftOpen() ? interval[0].getLeft() + step[0] : interval[0].getLeft());
-            interval[0].contains(x) ; x+= step[0]) {
-            plot_t value[] = {x};
-            plot_t row[] = {x, expr_.evaluateAt((value))};
-            data->insert(row, 2);
-        }
-    }
-    //the function is of typre RxR->R
-    else if (count == 2) {
-        for (plot_t x = (interval[0].getLeftOpen() ? interval[0].getLeft() + step[0] : interval[0].getLeft());
-            (x < interval[0].getRight()) || (x == interval[0].getRight() && interval[0].getRightOpen()) ; x+= step[0]) {
-            for (plot_t y = (interval[1].getLeftOpen() ? interval[1].getLeft() + step[1] : interval[1].getLeft());
-                (y < interval[1].getRight()) || (y == interval[1].getRight() && interval[1].getRightOpen()) ; y+= step[1]) {
-            plot_t value[] = {x, y};
-            plot_t row[] = {x, y, expr_.evaluateAt((value))};
-            data->insert(row, 3);
-            }
-        }
-    }
-    return data;
-
+PlotExpression& PlotFunction::getPlotExpression() {
+    return expr_;
 }
-*/
+
+void PlotFunction::setExpressionLength(ExpressionDescriptionLengthType expressionType, int maxLength, const std::string& customText) {
+    std::string text;
+    if (getKeyColumnCount() <= 0 || getDataColumnCount() <= 0)
+        return;
+    for (size_t k = 0; k < customText.size(); ++k) {
+        if (customText[k] > 0)
+            text += customText[k];
+    }
+    if (expressionType == CUSTOM && text.size() > 0) {
+        setColumnLabel(std::max<int>(1,expr_.numberOfVariables()),text);
+    }
+    else if (expressionType == MAXLENGTH && static_cast<int>(expr_.toString().size()) > maxLength) {
+        setColumnLabel(std::max<int>(1,expr_.numberOfVariables()),expr_.toString().substr(0,maxLength)+"...");
+    }
+    else if (expressionType == ONLYNAME) {
+        setColumnLabel(std::max<int>(1,expr_.numberOfVariables()),
+            expr_.toString().substr(0,expr_.toString().size()-expr_.getExpressionString().size()-1));
+    }
+    else
+        setColumnLabel(std::max<int>(1,expr_.numberOfVariables()),expr_.toString());
+}
+
 }
 

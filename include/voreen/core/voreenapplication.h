@@ -60,29 +60,34 @@ class VoreenApplication : private tgt::EventListener {
 public:
     /// Features used in this application
     enum ApplicationType {
-        APP_NONE    =  0,      ///< nothing
-        APP_SHADER  =  1,      ///< detect shader path
-        APP_DATA    =  2,      ///< detect data path
-        APP_LOGGING =  4,      ///< activate logging to the console
-        APP_PYTHON  =  8,      ///< activate python scripting
-        APP_DEFAULT =  0xFFFF  ///< all features
+        APP_NONE                =  0,       ///< nothing
+        APP_SHADER              =  1,       ///< detect shader path
+        APP_DATA                =  2,       ///< detect data path
+        APP_CONSOLE_LOGGING     =  4,       ///< activate logging to the console
+        APP_HTML_LOGGING        =  8,       ///< activate logging to a HTML file
+        APP_AUTOLOAD_MODULES    =  16,      ///< loads all modules listed in the module registration header
+                                            ///  'moduleregistration.h' or 'gen_moduleregistration.h', resp.
+        APP_ALL                 =  0xFFFF,  ///< all features
+        APP_DEFAULT = APP_ALL &~ APP_CONSOLE_LOGGING   ///< default: all features except HTML logging
     };
 
     /**
+     * Calls init().
+     *
      * @param name Short name of the application in lowercase ("voreenve")
      * @param displayName Nice-looking name of the application ("VoreenVE")
      * @param argc Number of arguments as retrieved from main()
      * @param argv Argument vector as retrieved from main()
      * @param appType Features to activate
+     * @param autoLoadModules if true, the application loads all modules listed in
+     *  the module registration header ('moduleregistration.h' or 'gen_moduleregistration.h' resp.).
+     *  Otherwise, modules need to be instantiated "manually" and passed to addModule().
      */
     VoreenApplication(const std::string& name, const std::string& displayName,
                       int argc, char** argv, ApplicationType appType = APP_DEFAULT);
 
     /**
-     * Calls deinitialize() on all registered modules and deletes them.
-     * Also deinitializes tgt.
-     *
-     * @see VoreenModule
+     * Calls deinit().
      */
     virtual ~VoreenApplication();
 
@@ -114,21 +119,41 @@ public:
      */
     NetworkEvaluator* getNetworkEvaluator() const;
 
-
-    //
-    // Initialization
-    //
-
     /**
-     * Do the actual initializations as controlled by appType_:
-     * Initialize tgt, execute command parser, start logging, detect paths and initialize Python.
+     * Performs basic initializations as controlled by appType_, which do not require OpenGL access:
+     *  - initialize tgt
+     *  - execute command parser
+     *  - start logging
+     *  - detect paths
+     *  - instantiates and registers the module classes
+     *
+     * @note This function should be called right after object construction,
+     *  especially before calling initGL().
      */
     virtual void init();
 
     /**
-     * Do OpenGL-specific initialization and call initialize() on all registered modules.
+     * Deinitializes the application and deletes the module objects,
+     * to be called right before object destruction.
      */
-    virtual void initGL();
+    virtual void deinit();
+
+    /**
+     * Do OpenGL-specific initialization and initialize registered modules.
+     *
+     * @note init() must be called first.
+     *
+     * @throws VoreenException if OpenGL initialization failed
+     */
+    virtual void initGL() throw (VoreenException);
+
+    /**
+     * Do OpenGL-specific deinitialization and deinitialize all registered modules.
+     *
+     * @throws VoreenException if OpenGL deinitialization failed.
+     */
+    virtual void deinitGL() throw (VoreenException);
+
 
     //
     // Modules
@@ -334,6 +359,9 @@ protected:
 
     tgt::LogLevel logLevel_;
     std::string logFile_;
+
+    bool initialized_;
+    bool initializedGL_;
 
     static const std::string loggerCat_;
 

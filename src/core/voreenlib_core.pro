@@ -8,15 +8,29 @@ VERSION = 1.0
 CONFIG += static thread
 CONFIG -= dll
 
-# Include local configuration
-!include(../../config.txt) {
-  warning("config.txt not found! Using config-default.txt instead.")
-  warning("For custom behavior, copy config-default.txt to config.txt and edit!")
-  include(../../config-default.txt)
+# check qmake version
+QMAKE_VERS = $$[QMAKE_VERSION]
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+isEmpty(QMAKE_VERSION_CHECK) {
+   error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }
+
+# include config
+!exists(../../config.txt) {
+  error("config.txt not found! copy config-default.txt to config.txt and edit!")
+}
+include(../../config.txt)
 
 # Include common configuration
 include(../../commonconf.pri)
+
+contains(DEFINES, VRN_PRECOMPILE_HEADER) {
+  PRECOMPILED_HEADER = ../../pch.h
+  CONFIG += precompile_header
+}
+else {
+  CONFIG -= precompile_header
+}
 
 unix: DESTDIR = ../..
 win32: {
@@ -36,18 +50,13 @@ include(tgt.pri)
 # file 'foo_core.pri' there.
 for(i, VRN_MODULES) : include($${VRN_HOME}/src/modules/$${i}/$${i}_core.pri)
 
-PRECOMPILED_HEADER = ../../pch.h
 
 #
 # Generate module registration file
 # 
-contains(DEFINES, VRN_NO_MODULE_AUTO_REGISTRATION) { 
-    message("Using static module registration file 'moduleregistration.h'")
-    HEADERS += "$${VRN_HOME}/include/voreen/modules/moduleregistration.h"
-}
-else {
-    message ("Generating module registration file 'gen_moduleregistration.h'")
+!contains(DEFINES, VRN_NO_MODULE_AUTO_REGISTRATION) {
     MODULE_REGISTRATION_FILE = "$${VRN_HOME}/include/voreen/modules/gen_moduleregistration.h"
+    message ("Generating '$${MODULE_REGISTRATION_FILE}'")
 
     REGIST_LINES += "$${LITERAL_HASH}include \"voreen/core/voreenapplication.h\""
     REGIST_LINES += "// module class headers"
@@ -66,18 +75,32 @@ else {
 
     # write lines to module registration file
     win32 {
-        system(echo "// WARNING: This file is auto-generated!" > $${MODULE_REGISTRATION_FILE})
-        for(i, REGIST_LINES) : system(echo $${i}  >> $${MODULE_REGISTRATION_FILE})
+        system(echo "// WARNING: This file is auto-generated!" > \"$${MODULE_REGISTRATION_FILE}\")
+        for(i, REGIST_LINES) : system(echo $${i}  >> \"$${MODULE_REGISTRATION_FILE}\")
     }
-    
-    unix {
-        system(echo "\"// WARNING: This file is auto-generated!\"" > $${MODULE_REGISTRATION_FILE})
-        for(i, REGIST_LINES) : system(echo \'$${i}\'  >> $${MODULE_REGISTRATION_FILE})
+    else:unix {
+        system(echo "\"// WARNING: This file is auto-generated!\"" > \"$${MODULE_REGISTRATION_FILE}\")
+        for(i, REGIST_LINES) : system(echo \'$${i}\'  >> \"$${MODULE_REGISTRATION_FILE}\")
     }
-    
-    HEADERS += "$${VRN_HOME}/include/voreen/modules/gen_moduleregistration.h"
+    else {
+        warning("Unknown platform: registration file not generated")
+        DEFINES += VRN_NO_MODULE_AUTO_REGISTRATION
+    }
+
+    # add generated file to headers if exists, otherwise use static registration file as fallback
+    exists($${MODULE_REGISTRATION_FILE}) {
+        HEADERS += "$${VRN_HOME}/include/voreen/modules/gen_moduleregistration.h"
+    }
+    else {
+        warning("$${MODULE_REGISTRATION_FILE} not found. Using static fallback!")
+        DEFINES += VRN_NO_MODULE_AUTO_REGISTRATION
+    }
 }
 
+contains(DEFINES, VRN_NO_MODULE_AUTO_REGISTRATION) { 
+    message("Using static module registration file '$${VRN_HOME}/include/voreen/modules/moduleregistration.h'")
+    HEADERS += "$${VRN_HOME}/include/voreen/modules/moduleregistration.h"
+}
 
 # add module class source/headers
 for(i, VRN_MODULE_CLASS_HEADERS) : HEADERS += $${VRN_MODULE_INC_DIR}/$${i}
@@ -133,18 +156,13 @@ SOURCES += \
     plotting/aggregationfunction.cpp \
     plotting/aggregationfunctionfactory.cpp \
     plotting/colormap.cpp \
-    plotting/expression.cpp \
+    plotting/plotexpression.cpp \
     plotting/functionlibrary.cpp \
     plotting/plotbase.cpp \
     plotting/plotentitysettings.cpp \
     plotting/plotdata.cpp \
     plotting/plotcell.cpp \
     plotting/plotfunction.cpp \
-    plotting/plotfunctionterminals.cpp \
-    plotting/plotfunctiongrammar.cpp \
-    plotting/plotfunctionlexer.cpp \
-    plotting/plotfunctionparser.cpp \
-    plotting/plotfunctionnode.cpp \
     plotting/plotlibrary.cpp \
     plotting/plotrow.cpp \
     plotting/plotpredicate.cpp \
@@ -152,8 +170,15 @@ SOURCES += \
     plotting/plotselection.cpp \
     plotting/smartlabel.cpp 
 SOURCES += \
+    plotting/parser/plotfunctionterminals.cpp \
+    plotting/parser/plotfunctiongrammar.cpp \
+    plotting/parser/plotfunctionlexer.cpp \
+    plotting/parser/plotfunctionparser.cpp \
+    plotting/parser/plotfunctionnode.cpp \
+    plotting/parser/plotfunctionvisitor.cpp \
+    plotting/parser/plotfunctiontoken.cpp
+SOURCES += \
     datastructures/rendertarget.cpp \
-    utils/pyvoreen.cpp \
     utils/voreenpainter.cpp
 SOURCES += \
     animation/interpolation/basicfloatinterpolation.cpp \
@@ -260,16 +285,16 @@ SOURCES += \
 
 SOURCES += \
     properties/link/boxobject.cpp\
-    properties/link/changeaction.cpp \
-    properties/link/changedata.cpp \
-    properties/link/dependencylinkevaluator.cpp \
+    properties/link/boxobjecthelper.cpp\
+    properties/link/dependancylinkevaluatorbase.cpp \
+    properties/link/dependancylinkevaluators.cpp \
+    properties/link/linkevaluatorbase.cpp \
     properties/link/linkevaluatorboolinvert.cpp \
     properties/link/linkevaluatorfactory.cpp \
     properties/link/linkevaluatorid.cpp \
     properties/link/linkevaluatoridnormalized.cpp \
-    properties/link/linkevaluatorpython.cpp \
-    properties/link/propertylink.cpp \
-    properties/link/scriptmanagerlinking.cpp
+    properties/link/linkevaluatorplotselection.cpp \
+    properties/link/propertylink.cpp 
 SOURCES += \
     properties/colorproperty.cpp \
     properties/lightproperty.cpp \
@@ -349,9 +374,7 @@ SHADER_SOURCES_MODS += \
     glsl/modules/mod_curvature.frag \
     glsl/modules/mod_depth.frag \
     glsl/modules/mod_filtering.frag \
-    glsl/modules/mod_firsthit.frag \
     glsl/modules/mod_gradients.frag \
-    glsl/modules/mod_masking.frag \
     glsl/modules/mod_normdepth.frag \
     glsl/modules/mod_raysetup.frag \
     glsl/modules/mod_sampler2d.frag \
@@ -447,18 +470,13 @@ HEADERS += \
     ../../include/voreen/core/plotting/aggregationfunctionfactory.h \
     ../../include/voreen/core/plotting/colormap.h \
     ../../include/voreen/core/plotting/plotentitysettings.h \
-    ../../include/voreen/core/plotting/expression.h \
+    ../../include/voreen/core/plotting/plotexpression.h \
     ../../include/voreen/core/plotting/interval.h \
     ../../include/voreen/core/plotting/functionlibrary.h \
     ../../include/voreen/core/plotting/plotbase.h \
     ../../include/voreen/core/plotting/plotcell.h \
     ../../include/voreen/core/plotting/plotdata.h \
     ../../include/voreen/core/plotting/plotfunction.h \
-    ../../include/voreen/core/plotting/plotfunctionterminals.h \
-    ../../include/voreen/core/plotting/plotfunctiongrammar.h \
-    ../../include/voreen/core/plotting/plotfunctionlexer.h \
-    ../../include/voreen/core/plotting/plotfunctionparser.h \
-    ../../include/voreen/core/plotting/plotfunctionnode.h \
     ../../include/voreen/core/plotting/plotlibrary.h \
     ../../include/voreen/core/plotting/plotpredicate.h \    
     ../../include/voreen/core/plotting/plotpredicatefactory.h \    
@@ -466,6 +484,13 @@ HEADERS += \
     ../../include/voreen/core/plotting/plotselection.h \
     ../../include/voreen/core/plotting/plotzoomstate.h \
     ../../include/voreen/core/plotting/smartlabel.h \
+    ../../include/voreen/core/plotting/parser/plotfunctionterminals.h \
+    ../../include/voreen/core/plotting/parser/plotfunctiongrammar.h \
+    ../../include/voreen/core/plotting/parser/plotfunctionlexer.h \
+    ../../include/voreen/core/plotting/parser/plotfunctionparser.h \
+    ../../include/voreen/core/plotting/parser/plotfunctionnode.h \
+    ../../include/voreen/core/plotting/parser/plotfunctionvisitor.h \
+    ../../include/voreen/core/plotting/parser/plotfunctiontoken.h \
     ../../include/voreen/core/animation/animatedprocessor.h \
     ../../include/voreen/core/animation/animation.h \
     ../../include/voreen/core/animation/animationobserver.h \
@@ -572,7 +597,6 @@ HEADERS += \
 HEADERS += \
     ../../include/voreen/core/datastructures/rendertarget.h \
     ../../include/voreen/core/utils/exception.h \
-    ../../include/voreen/core/utils/pyvoreen.h \
     ../../include/voreen/core/utils/voreenpainter.h     
 HEADERS += \
     ../../include/voreen/core/ports/allports.h \
@@ -600,17 +624,17 @@ HEADERS += \
     ../../include/voreen/core/processors/volumerenderer.h 
 HEADERS += \
     ../../include/voreen/core/properties/link/boxobject.h \
-    ../../include/voreen/core/properties/link/changeaction.h \
-    ../../include/voreen/core/properties/link/changedata.h \
-	../../include/voreen/core/properties/link/dependencylinkevaluator.h \
+    ../../include/voreen/core/properties/link/boxobjecthelper.h \
+	../../include/voreen/core/properties/link/dependancylinkevaluatorbase.h \
+	../../include/voreen/core/properties/link/dependancylinkevaluators.h \
     ../../include/voreen/core/properties/link/linkevaluatorbase.h \
     ../../include/voreen/core/properties/link/linkevaluatorboolinvert.h \
     ../../include/voreen/core/properties/link/linkevaluatorfactory.h \
     ../../include/voreen/core/properties/link/linkevaluatorid.h \
+    ../../include/voreen/core/properties/link/linkevaluatoridgeneric.h \
     ../../include/voreen/core/properties/link/linkevaluatoridnormalized.h \
-    ../../include/voreen/core/properties/link/linkevaluatorpython.h \
-    ../../include/voreen/core/properties/link/propertylink.h \
-    ../../include/voreen/core/properties/link/scriptmanagerlinking.h
+    ../../include/voreen/core/properties/link/linkevaluatorplotselection.h \
+    ../../include/voreen/core/properties/link/propertylink.h 
 HEADERS += \
     ../../include/voreen/core/properties/action.h \
     ../../include/voreen/core/properties/allactions.h \
@@ -698,13 +722,6 @@ HEADERS += \
     ../../ext/tinyxml/tinyxml.h \
     ../../ext/tinyxml/tinystr.h
 
-SOURCES += \
-    ../../ext/fboClass/fboclass_framebufferobject.cpp \
-    ../../ext/fboClass/fboclass_renderbuffer.cpp
-HEADERS += \
-    ../../ext/fboClass/fboclass_framebufferObject.h \
-    ../../ext/fboClass/fboclass_renderbuffer.h
-
 contains(DEFINES, VRN_MODULE_EXPERIMENTAL) { 
 SOURCES += \
     properties/volumestreamproperty.cpp 
@@ -718,14 +735,6 @@ SOURCES = $$unique(SOURCES)
 ####################################################
 # Modules which can be enabled/disabled by defines
 ####################################################
-
-# TIFF Reader
-contains(DEFINES, VRN_WITH_TIFF) {
-  SOURCES += \
-      io/tiffvolumereader.cpp
-  HEADERS += \
-      ../../include/voreen/core/io/tiffvolumereader.h
-}
 
 # ZIP reader
 contains(DEFINES, VRN_WITH_ZLIB) {

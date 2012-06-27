@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <math.h>
 
 namespace voreen {
 
@@ -100,7 +101,7 @@ AggregationFunction* AggregationFunctionMinHistogram::clone() const {
 }
 
 std::string AggregationFunctionMinHistogram::toString() const {
-    return "Histogramm Min";
+    return "Min Histogramm";
 }
 
 
@@ -117,7 +118,7 @@ plot_t AggregationFunctionMin::evaluate(std::vector<plot_t>& values) const {
         return 0;
     plot_t min = values[0];
     for (size_t i = 1; i < values.size(); ++i) {
-        if((values[i] < min && values[i] != values[i]) || (min != min))
+        if((values[i] < min && values[i] == values[i]) || (min != min))
             min = values[i];
     }
     return min;
@@ -157,7 +158,7 @@ AggregationFunction* AggregationFunctionMaxHistogram::clone() const {
 }
 
 std::string AggregationFunctionMaxHistogram::toString() const {
-    return "Histogramm Max";
+    return "Max Histogramm";
 }
 
 void AggregationFunctionMaxHistogram::serialize(XmlSerializer& /*s*/) const {
@@ -174,7 +175,7 @@ plot_t AggregationFunctionMax::evaluate(std::vector<plot_t>& values) const {
 
     plot_t max = values[0];
     for (size_t i = 1; i < values.size(); ++i) {
-        if ((values[i] > max && values[i] != values[i])|| (max != max))
+        if ((values[i] > max && values[i] == values[i])|| (max != max))
             max = values[i];
     }
     return max;
@@ -238,7 +239,7 @@ AggregationFunction* AggregationFunctionSumHistogram::clone() const {
 }
 
 std::string AggregationFunctionSumHistogram::toString() const {
-    return "Histogramm Sum";
+    return "Sum Histogramm";
 }
 
 void AggregationFunctionSumHistogram::serialize(XmlSerializer& /*s*/) const {
@@ -275,6 +276,63 @@ void AggregationFunctionAverage::serialize(XmlSerializer& /*s*/) const {
 void AggregationFunctionAverage::deserialize(XmlDeserializer& /*s*/) {
 }
 
+
+// AggregationFunctionGeometricAverage methods -------------------------------------------------------
+
+plot_t AggregationFunctionGeometricAverage::evaluate(std::vector<plot_t>& values) const {
+    if (values.size() <= 0)
+        return 0;
+
+    plot_t sum = 1;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sum *= values[i];
+    }
+    return std::pow(sum,1.0/values.size());
+}
+
+AggregationFunction* AggregationFunctionGeometricAverage::clone() const {
+    return new AggregationFunctionGeometricAverage();
+}
+
+std::string AggregationFunctionGeometricAverage::toString() const {
+    return "Geometric Average";
+}
+
+void AggregationFunctionGeometricAverage::serialize(XmlSerializer& /*s*/) const {
+}
+
+void AggregationFunctionGeometricAverage::deserialize(XmlDeserializer& /*s*/) {
+}
+
+// AggregationFunctionHarmonicAverage methods -------------------------------------------------------
+
+plot_t AggregationFunctionHarmonicAverage::evaluate(std::vector<plot_t>& values) const {
+    if (values.size() <= 0)
+        return 0;
+
+    plot_t sum = 0;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sum += 1.f/values[i];
+    }
+    return (values.size()+1.f)/sum;
+}
+
+AggregationFunction* AggregationFunctionHarmonicAverage::clone() const {
+    return new AggregationFunctionHarmonicAverage();
+}
+
+std::string AggregationFunctionHarmonicAverage::toString() const {
+    return "Harmonic Average";
+}
+
+void AggregationFunctionHarmonicAverage::serialize(XmlSerializer& /*s*/) const {
+}
+
+void AggregationFunctionHarmonicAverage::deserialize(XmlDeserializer& /*s*/) {
+}
+
 // AggregationFunctionMedian methods -------------------------------------------------------
 
 plot_t AggregationFunctionMedian::evaluate(std::vector<plot_t>& values) const {
@@ -302,7 +360,7 @@ void AggregationFunctionMedian::serialize(XmlSerializer& /*s*/) const {
 void AggregationFunctionMedian::deserialize(XmlDeserializer& /*s*/) {
 }
 
-// AggregationFunctionHistogrammMedian methods -------------------------------------------------------
+// AggregationFunctionMedianHistogram methods -------------------------------------------------------
 
 plot_t AggregationFunctionMedianHistogram::evaluate(std::vector<plot_t>& values) const {
     if (values.size() <= 0)
@@ -332,6 +390,122 @@ void AggregationFunctionMedianHistogram::serialize(XmlSerializer& /*s*/) const {
 }
 
 void AggregationFunctionMedianHistogram::deserialize(XmlDeserializer& /*s*/) {
+}
+
+// AggregationFunctionStandardDeviation methods -------------------------------------------------------
+
+plot_t AggregationFunctionStandardDeviation::evaluate(std::vector<plot_t>& values) const {
+    if (values.size() <= 0)
+        return 0;
+
+    plot_t sum = 0;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sum += values[i];
+    }
+    plot_t average = sum/values.size();
+    plot_t sqrtsum = 0;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sqrtsum += std::pow(values[i]-average,2);
+    }
+    return std::sqrt(sqrtsum/values.size());
+}
+
+AggregationFunction* AggregationFunctionStandardDeviation::clone() const {
+    return new AggregationFunctionStandardDeviation();
+}
+
+std::string AggregationFunctionStandardDeviation::toString() const {
+    return "Standard Deviation";
+}
+
+void AggregationFunctionStandardDeviation::serialize(XmlSerializer& /*s*/) const {
+}
+
+void AggregationFunctionStandardDeviation::deserialize(XmlDeserializer& /*s*/) {
+}
+
+
+// AggregationFunctionVariance methods -------------------------------------------------------
+
+plot_t AggregationFunctionVariance::evaluate(std::vector<plot_t>& values) const {
+    if (values.size() <= 0)
+        return 0;
+
+    plot_t sum = 0;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sum += values[i];
+    }
+    plot_t average = sum/values.size();
+    plot_t sqrtsum = 0;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (values[i] == values[i])
+            sqrtsum += std::pow(values[i]-average,2);
+    }
+    return sqrtsum/values.size();
+}
+
+AggregationFunction* AggregationFunctionVariance::clone() const {
+    return new AggregationFunctionVariance();
+}
+
+std::string AggregationFunctionVariance::toString() const {
+    return "Variance";
+}
+
+void AggregationFunctionVariance::serialize(XmlSerializer& /*s*/) const {
+}
+
+void AggregationFunctionVariance::deserialize(XmlDeserializer& /*s*/) {
+}
+
+
+
+// AggregationFunctionMode methods -------------------------------------------------------
+
+plot_t AggregationFunctionMode::evaluate(std::vector<plot_t>& values) const {
+    if (values.size() <= 0)
+        return 0;
+    std::stable_sort(values.begin(),values.end());
+
+    std::vector<std::pair<plot_t,int> > value;
+    std::pair<plot_t,int> mode =  std::pair<plot_t,int>(0,0);
+    bool match;
+    for (size_t i = 0; i < values.size(); ++i) {
+        match = false;
+        for (size_t j = 0; j < value.size(); ++j) {
+            if (values[i] == value[j].first) {
+                ++value[j].second;
+                match = true;
+                break;
+            }
+        }
+        if (!match)
+            value.push_back(std::pair<plot_t,int>(values[i],1));
+    }
+    for (size_t i = 0; i < value.size(); ++i) {
+        if (value[i].second > mode.second) {
+            mode = value[i];
+        }
+    }
+
+    return mode.first;
+}
+
+AggregationFunction* AggregationFunctionMode::clone() const {
+    return new AggregationFunctionMode();
+}
+
+std::string AggregationFunctionMode::toString() const {
+    return "Mode";
+}
+
+void AggregationFunctionMode::serialize(XmlSerializer& /*s*/) const {
+}
+
+void AggregationFunctionMode::deserialize(XmlDeserializer& /*s*/) {
 }
 
 }

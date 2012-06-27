@@ -58,6 +58,9 @@
 
 namespace voreen {
 
+// forward declaration
+struct PlotSelectionEntry;
+
 /**
  * @c XmlDeserializer is responsible for deserializing XML documents to memory data.
  *
@@ -542,7 +545,20 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
+
     void deserialize(const std::string& key, PlotCellValue& data)
+        throw (SerializationException);
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, PlotSelectionEntry& data)
         throw (SerializationException);
 
     /**

@@ -62,7 +62,7 @@ void GrayscaleCL::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
     OpenCLModule::getInstance()->initCL();
-    if (!OpenCLModule::getInstance()->getCLContext()) 
+    if (!OpenCLModule::getInstance()->getCLContext())
         throw VoreenException("No OpenCL context created");
 
     prog_ = new Program(OpenCLModule::getInstance()->getCLContext());

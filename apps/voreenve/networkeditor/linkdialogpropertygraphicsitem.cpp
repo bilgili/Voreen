@@ -100,12 +100,7 @@ void LinkDialogPropertyGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* ev
             if ((p1 != p2) && delegate_->allowConnectionBetweenProperties(p1, p2))
                 currentArrow_->setNormalColor(Qt::green);
             else {
-#ifdef VRN_WITH_PYTHON
-                // those properties might be linkable if a specific evaluator
-                currentArrow_->setNormalColor(Qt::yellow);
-#else
                 currentArrow_->setNormalColor(Qt::red);
-#endif
             }
         }
     }
@@ -140,14 +135,8 @@ void LinkDialogPropertyGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*
                 emit createdArrow(currentArrow_);
             }
             else {
-#ifdef VRN_WITH_PYTHON
-                currentArrow_->setDestinationItem(gi);
-                currentArrow_->setNormalColor(Qt::yellow);
-                emit createdArrow(currentArrow_);
-#else
                 delete currentArrow_;
                 currentArrow_ = 0;
-#endif
             }
         }
         else

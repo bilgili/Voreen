@@ -52,8 +52,6 @@ public slots:
 protected:
     StringProperty* property_;
     QLineEdit* lineEdit_;
-    // true if the propertychange originates in this widget
-    bool textChangeSource_;
 };
 
 } // namespace

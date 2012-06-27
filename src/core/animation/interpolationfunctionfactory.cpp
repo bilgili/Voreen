@@ -65,7 +65,7 @@ InterpolationFunctionFactory<T>::InterpolationFunctionFactory() {
     registerFunction(new InterpolationFunction<tgt::mat2>());
     registerFunction(new InterpolationFunction<tgt::mat3>());
     registerFunction(new InterpolationFunction<tgt::mat4>());
-    registerFunction(new InterpolationFunction<tgt::Camera*>());
+    registerFunction(new InterpolationFunction<tgt::Camera>());
     registerFunction(new InterpolationFunction<std::string>());
     registerFunction(new InterpolationFunction<ShaderSource>());
     registerFunction(new InterpolationFunction<TransFunc*>());
@@ -695,7 +695,7 @@ template class InterpolationFunctionFactory<tgt::vec4>;
 template class InterpolationFunctionFactory<tgt::mat2>;
 template class InterpolationFunctionFactory<tgt::mat3>;
 template class InterpolationFunctionFactory<tgt::mat4>;
-template class InterpolationFunctionFactory<tgt::Camera*>;
+template class InterpolationFunctionFactory<tgt::Camera>;
 template class InterpolationFunctionFactory<std::string>;
 template class InterpolationFunctionFactory<ShaderSource>;
 template class InterpolationFunctionFactory<TransFunc*>;

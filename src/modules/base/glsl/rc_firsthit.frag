@@ -43,18 +43,16 @@ uniform VOLUME_PARAMETERS volumeParameters_;    // texture lookup parameters for
 vec4 getFirstHitColor(in vec3 firstHitPos) {
     vec4 result = vec4(0.0);
     vec4 voxel = getVoxel(volume_, volumeParameters_, firstHitPos);
-    // apply masking
-    //FIXME: segmentation should not be possible here (tr)
-    if (RC_NOT_MASKED(samplePos, voxel.a)) {
-        // calculate gradients
-        voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, firstHitPos, volume_, volumeParameters_, 0.0, vec3(0.0), entryPoints_);
 
-        // apply classification
-        result = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
+    // calculate gradients
+    voxel.xyz = RC_CALC_GRADIENTS(voxel.xyz, firstHitPos, volume_, volumeParameters_, 0.0, vec3(0.0), entryPoints_);
 
-        // apply shading
-        result.rgb = RC_APPLY_SHADING(voxel.xyz, firstHitPos, volumeParameters_, result.rgb, result.rgb, result.rgb);
-    }
+    // apply classification
+    result = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
+
+    // apply shading
+    result.rgb = RC_APPLY_SHADING(voxel.xyz, firstHitPos, volumeParameters_, result.rgb, result.rgb, result.rgb);
+
     return result;
 }
 
@@ -65,14 +63,11 @@ void main() {
 
     vec3 firstHitPos = textureLookup2D(entryPoints_, gl_FragCoord.xy).rgb;
 
-    // initialize light and material parameters
-    matParams = gl_FrontMaterial;
-
     if (firstHitPos == vec3(0.0))
         // background needs no rendering
         discard;
     else {
-        gl_FragColor = getFirstHitColor(firstHitPos);
+        FragData0 = getFirstHitColor(firstHitPos);
         // FIXME: somehow the depth values seem to be not correct (tr)
         //gl_FragDepth = calculateDepthValue(0.5, entryPointsDepth_, entryPointsDepth_);
         //gl_FragDepth = textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z;

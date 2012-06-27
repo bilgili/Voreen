@@ -42,6 +42,9 @@ namespace tgt{
 }
 
 namespace voreen{
+
+class CameraProperty;
+
 /**
  * A class that makes it possible to navigate freely through datasets like in first-person games.
  */
@@ -52,7 +55,7 @@ public:
      *
      * @param camera the camera that is to be modified by the navigation
      */
-    FirstPersonNavigation(tgt::Camera* camera);
+    FirstPersonNavigation(CameraProperty* camera);
     ~FirstPersonNavigation();
 
     /**
@@ -85,8 +88,8 @@ public:
      */
     virtual void keyEvent(tgt::KeyEvent* e);
 
-    tgt::Camera* getCamera() const;
-    void setCamera(tgt::Camera* camera);
+    CameraProperty* getCamera() const;
+    void setCamera(CameraProperty* camera);
 
     void initialize();
 
@@ -152,7 +155,7 @@ protected:
      */
     float computeRotationAngle(int oldMouse, int newMouse);
 
-    tgt::Camera* camera_;
+    CameraProperty* camera_;
     tgt::Stopwatch* stopwatch_;
 
     tgt::vec3 movingDirection_;

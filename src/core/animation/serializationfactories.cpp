@@ -92,7 +92,7 @@ const std::string PropertyTimelineFactory::getTypeString(const std::type_info& t
         return "TemplatePropertyTimeline_mat3";
     else if (type == typeid(TemplatePropertyTimeline<tgt::mat4>))
         return "TemplatePropertyTimeline_mat4";
-    else if (type == typeid(TemplatePropertyTimeline<tgt::Camera*>))
+    else if (type == typeid(TemplatePropertyTimeline<tgt::Camera>))
         return "TemplatePropertyTimeline_Camera";
     else if (type == typeid(TemplatePropertyTimeline<std::string>))
         return "TemplatePropertyTimeline_string";
@@ -134,7 +134,7 @@ Serializable* PropertyTimelineFactory::createType(const std::string& typeString)
     else if (typeString == "TemplatePropertyTimeline_mat4")
         return new TemplatePropertyTimeline<tgt::mat4>();
     else if (typeString == "TemplatePropertyTimeline_Camera")
-        return new TemplatePropertyTimeline<tgt::Camera*>();
+        return new TemplatePropertyTimeline<tgt::Camera>();
     else if (typeString == "TemplatePropertyTimeline_string")
         return new TemplatePropertyTimeline<std::string>();
     else if (typeString == "TemplatePropertyTimeline_ShaderSource")
@@ -183,7 +183,7 @@ const std::string KeyValueFactory::getTypeString(const std::type_info& type) con
         return "KeyValue_mat3";
     else if (type == typeid(PropertyKeyValue<tgt::mat4>))
         return "KeyValue_mat4";
-    else if (type == typeid(PropertyKeyValue<tgt::Camera*>))
+    else if (type == typeid(PropertyKeyValue<tgt::Camera>))
         return "KeyValue_Camera";
     else if (type == typeid(PropertyKeyValue<std::string>))
         return "KeyValue_string";
@@ -236,7 +236,7 @@ Serializable* KeyValueFactory::createType(const std::string& typeString) {
     else if (typeString == "KeyValue_mat4")
         return new PropertyKeyValue<mat4>(mat4(0.0f), 0);
     else if (typeString == "KeyValue_Camera")
-        return new PropertyKeyValue<tgt::Camera*>(new tgt::Camera(vec3(0.0f), vec3(0.0f), vec3(0.0f)), 0);
+        return new PropertyKeyValue<tgt::Camera>(tgt::Camera(vec3(0.0f), vec3(0.0f), vec3(0.0f)), 0);
     else if (typeString == "KeyValue_string")
         return new PropertyKeyValue<std::string>("", 0);
     else if (typeString == "KeyValue_ShaderSource")
@@ -285,7 +285,7 @@ const std::string TemplatePropertyTimelineStateFactory::getTypeString(const std:
         return "TemplatePropertyTimelineState_mat3";
     else if (type == typeid(TemplatePropertyTimelineState<tgt::mat4>))
         return "TemplatePropertyTimelineState_mat4";
-    else if (type == typeid(TemplatePropertyTimelineState<tgt::Camera*>))
+    else if (type == typeid(TemplatePropertyTimelineState<tgt::Camera>))
         return "TemplatePropertyTimelineState_Camera";
     else if (type == typeid(TemplatePropertyTimelineState<std::string>))
         return "TemplatePropertyTimelineState_string";
@@ -331,7 +331,7 @@ Serializable* TemplatePropertyTimelineStateFactory::createType(const std::string
     else if (typeString == "TemplatePropertyTimelineState_mat4")
         return new TemplatePropertyTimelineState<tgt::mat4>();
     else if (typeString == "TemplatePropertyTimelineState_Camera")
-        return new TemplatePropertyTimelineState<tgt::Camera*>();
+        return new TemplatePropertyTimelineState<tgt::Camera>();
     else if (typeString == "TemplatePropertyTimelineState_string")
         return new TemplatePropertyTimelineState<std::string>();
     else if (typeString == "TemplatePropertyTimelineState_ShaderSource")

@@ -172,7 +172,7 @@ void VolumeCollectionPropertyWidget::selectAll(bool toggle) {
     updateCollection();
 }
 
-const QLabel* VolumeCollectionPropertyWidget::getNameLabel() const {
+CustomLabel* VolumeCollectionPropertyWidget::getNameLabel() const {
     return 0;
 }
 

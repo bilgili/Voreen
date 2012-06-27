@@ -92,7 +92,12 @@ public:
      */
     cl::Device* getCLDevice() const;
 
-    /// Singleton pattern
+    /**
+     * Returns the global instance of this class.
+     *
+     * @note Does not create the instance. If the module class has not been
+     *       instantiated yet, the null pointer is returned.
+     */
     static OpenCLModule* getInstance();
 
 private:

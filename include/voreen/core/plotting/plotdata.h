@@ -46,14 +46,25 @@ class PlotRowValue;
 class PlotRowImplicit;
 
 /**
- * \brief   A PlotData stores rows sorted by key columns. Insert and find calls should be fast.
+ * \brief   A PlotData stores rows which can be sorted by key columns. Insert and find calls should be fast.
  *
  * \note    As we are handling pointers in private member highlightedCells_, it is crucial to
  *          pay attention on implementing new member functions. Especially if you plan to
  *          modify rows_ make sure all pointers in this set remain valid or are removed!
+ *
  **/
 class PlotData : public PlotBase {
+friend class PlotFunction;
+
 public:
+    /// possible types of the Plotdatamerge
+    enum MergeType {
+        NOSELECTION,
+        IGNORECOLUMNLABELS,
+        NEWCOLUMNS,
+        NEWROWS
+    };
+
     /**
      * \brief initializes keyColumnCount, dataColumnCount by given values and columnLabels with empty strings.
      *
@@ -69,7 +80,7 @@ public:
     virtual ~PlotData();
 
     /// assignment operator
-    PlotData& operator=(PlotData rhs);
+    PlotData& operator=(const PlotData& rhs);
 
     /**
      * \brief  Selects the subset of stored rows matching the PlotPredicates in \a predicates
@@ -215,10 +226,6 @@ public:
      **/
     bool insert(const std::vector<std::pair<int, PlotCellValue> >& cells);
 
-    /*
-    bool update(pair<PlotPredicate, int>*, int predicateCount, pair<PlotCell*, int>* cells, int cellCount);
-    */
-
     /**
      * \brief      removes all rows matching PlotPredicates in \a predicates.
      *
@@ -283,8 +290,16 @@ public:
                     std::vector<std::pair<int, int> >& keyColumns,
                     std::vector<std::pair<int, int> >& dataColumns,
                     PlotData& target) const;
-
-    bool mergeWith(const PlotData& otherPlotData, PlotData& target) const;
+    /**
+     * \brief   merges this PlotData with \a otherPlotData into \a target
+     *          \a target will be reset before inserting the rows
+     *
+     * \param   otherPlotData   the second source PlotData for the merging process
+     * \param   target          target PlotData where the merged rows will be stored
+     *
+     * \return  true upon success, false on failure (e.g. index out of bounds)
+     **/
+    bool mergeWith(const PlotData& otherPlotData, PlotData& target, MergeType mergeType = NOSELECTION) const;
 
     /**
      * \brief   inserts an implicit row into this PlotData
@@ -361,7 +376,7 @@ public:
     /// Returns whether this PlotData has PlotRowImplicits or not.
     bool implicitRowsEmpty() const;
     /// Checks if this PlotCell is highlighted
-    bool isHighlighted(const tgt::ivec2& cellPosition);
+    bool isHighlighted(const tgt::ivec2& cellPosition) const;
 
     /**
      * \brief   Changes the highlighted-flag state of all PlotCellValues named in \a cellPosition.
@@ -401,13 +416,26 @@ public:
      **/
     void reset(int keyColumnCount, int dataColumnCount);
 
-private:
-    /// updateIntervals
-    void updateIntervals(const PlotRowValue& row);
-
     /// ensures that rows_ is sorted lexicographically by key columns
     void sortRows() const;
 
+    /// returns whether the data is sorted
+    bool sorted() const;
+
+    /**
+     * \brief   Returns whether the given column is an index column in \a pData.
+     *
+     * Checks for column for being 0 (first column), column type NUMBER and column header "Index".
+     *
+     * \param   pData   PlotData containing the column
+     * \param   column  column index
+     **/
+    static bool isIndexColumn(const PlotData& pData, int column);
+
+private:
+    /// updateIntervals
+    void updateIntervals(const PlotRowValue& row);
+    /// delete implicit rows and their values
     void deleteImplicitRows();
 
     /**
@@ -416,7 +444,7 @@ private:
      * \note    Make sure to call this function before removing \a row from rows_. If not
      *          sooner or later everything here will explode!
      **/
-    void removePointersToCellsOfRow(const PlotRowValue& row);
+    void removePointersToCellsOfRow(PlotRowValue& row);
 
     /**
      * \brief   all value rows of this PlotData

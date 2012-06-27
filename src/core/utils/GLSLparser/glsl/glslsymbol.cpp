@@ -46,6 +46,20 @@ GLSLSymbol::~GLSLSymbol() {
         delete annotations_[i];
 }
 
+const std::string GLSLSymbol::getAnnotationValueString(std::string name) const {
+    for (unsigned int i=0; i<annotations_.size(); i++)
+        if (annotations_[i]->getName() == name)
+            return annotations_[i]->getValueString();
+    return "";
+}
+
+const GLSLAnnotation* GLSLSymbol::getAnnotation(std::string name) const {
+    for (unsigned int i=0; i<annotations_.size(); i++)
+        if (annotations_[i]->getName() == name)
+            return annotations_[i];
+    return 0;
+}
+
 // ============================================================================
 
 GLSLVariableSymbol::GLSLVariableSymbol(const std::string& identifier, const InternalType type,

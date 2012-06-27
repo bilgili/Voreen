@@ -39,7 +39,7 @@ namespace voreen {
 
 GeometryRendererBase::GeometryRendererBase()
     : RenderProcessor()
-    , camera_(0)
+    , camera_()
     , outPort_(Port::OUTPORT, "coprocessor.geometryrenderer")
     , idManager_(0)
 {
@@ -90,8 +90,8 @@ tgt::vec3 GeometryRendererBase::getWindowPos(tgt::vec3 pos, tgt::mat4 pModelview
     GLdouble modelview[16];
     GLdouble projection[16];
 
-    tgt::mat4 projection_tgt = camera_->getProjectionMatrix() * pProjection;
-    tgt::mat4 modelview_tgt = camera_->getViewMatrix() * pModelview;
+    tgt::mat4 projection_tgt = camera_.getProjectionMatrix() * pProjection;
+    tgt::mat4 modelview_tgt = camera_.getViewMatrix() * pModelview;
     for (int i = 0; i < 4; ++i) {
         modelview[i+0]   = modelview_tgt[i].x;
         modelview[i+4]   = modelview_tgt[i].y;

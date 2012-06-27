@@ -63,6 +63,7 @@ public:
     void saveMeta();
     void loadMeta();
 
+    void initializePorts();
     QList<Port*> getInports() const;
     QList<Port*> getOutports() const;
     QList<CoProcessorPort*> getCoProcessorInports() const;
@@ -70,6 +71,7 @@ public:
 
     void processorWidgetCreated(const Processor* processor);
     void processorWidgetDeleted(const Processor* processor);
+    void portsAndPropertiesChanged(const Processor*);
 
     QList<QAction*> getProcessorWidgetContextMenuActions();
 

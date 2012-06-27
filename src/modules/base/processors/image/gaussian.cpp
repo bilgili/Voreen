@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Gaussian::Gaussian()
-    : ImageProcessor("pp_gaussian"),
+    : ImageProcessor("image/gaussian"),
       sigma_("sigma", "Sigma", 2.0f, 0.1f, 10.0f),
       blurRed_("blurRed", "Red channel", true),
       blurGreen_("blurGreen", "Green channel", true),
@@ -67,13 +67,13 @@ void Gaussian::process() {
     privatePort_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "textureParameters_");
     program_->setUniform("dir_", tgt::vec2(1.0,0.0));
@@ -94,12 +94,12 @@ void Gaussian::process() {
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    privatePort_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    privatePort_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "textureParameters_");
     program_->setUniform("dir_", tgt::vec2(0.0,1.0));

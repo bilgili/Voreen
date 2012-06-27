@@ -58,7 +58,7 @@ EntryExitPoints::EntryExitPoints()
       jitterStepLength_("jitterStepLength", "Jitter step length",
                         0.005f, 0.0005f, 0.025f),
       jitterTexture_(0),
-      camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
+      camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
       entryPort_(Port::OUTPORT, "image.entrypoints"),
       exitPort_(Port::OUTPORT, "image.exitpoints"),
       inport_(Port::INPORT, "volumehandle.volumehandle"),
@@ -138,18 +138,19 @@ void EntryExitPoints::process() {
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix());
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getViewMatrix());
+    tgt::loadMatrix(camera_.get().getViewMatrix());
 
     // enable culling
     glEnable(GL_CULL_FACE);
 
     // activate shader program
     shaderProgram_->activate();
-    setGlobalShaderParameters(shaderProgram_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgram_, &cam);
     LGL_ERROR;
 
     //
@@ -233,7 +234,8 @@ void EntryExitPoints::complementClippedEntryPoints() {
     LGL_ERROR;
 
     shaderProgramClipping_->activate();
-    setGlobalShaderParameters(shaderProgramClipping_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgramClipping_, &cam);
     shaderProgramClipping_->setUniform("entryTex_", entryUnit.getUnitNumber());
     activePort.setTextureParameters(shaderProgramClipping_, "entryParameters_");
     shaderProgramClipping_->setUniform("exitTex_", exitUnit.getUnitNumber());
@@ -270,7 +272,8 @@ void EntryExitPoints::jitterEntryPoints() {
     }
 
     shaderProgramJitter_->activate();
-    setGlobalShaderParameters(shaderProgramJitter_, camera_.get());
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgramJitter_, &cam);
 
     // bind jitter texture
     TextureUnit jitterUnit;

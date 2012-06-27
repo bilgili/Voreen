@@ -8,10 +8,7 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -29,6 +26,7 @@
                         <Property name="canvasSize">
                             <value x="481" y="454" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -37,7 +35,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-271" y="42" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref14">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref13">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
@@ -118,19 +116,19 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="41" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClipPlane" value="40" id="ref19" />
-                        <Property name="bottomClipPlane" value="0" id="ref25" />
+                        <Property name="backClipPlane" value="40" id="ref17" />
+                        <Property name="bottomClipPlane" value="0" id="ref23" />
                         <Property name="enableBackZ" value="true" />
                         <Property name="enableBottomY" value="true" />
                         <Property name="enableFrontZ" value="true" />
                         <Property name="enableLeftX" value="true" />
                         <Property name="enableRightX" value="true" />
                         <Property name="enableTopY" value="true" />
-                        <Property name="frontClipPlane" value="0" id="ref21" />
+                        <Property name="frontClipPlane" value="0" id="ref19" />
                         <Property name="innerColor">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="leftClipPlane" value="40" id="ref29" />
+                        <Property name="leftClipPlane" value="40" id="ref27" />
                         <Property name="lightPosition">
                             <value x="2.29999995" y="1.5" z="1.5" w="1" />
                         </Property>
@@ -138,9 +136,9 @@
                         <Property name="manipulatorScaling" value="1" />
                         <Property name="mouseEvent.clipplaneMovement" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.synchronizedMovement" enabled="false" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="rightClipPlane" value="19" id="ref27" />
+                        <Property name="rightClipPlane" value="19" id="ref25" />
                         <Property name="showInnerBB" value="false" />
-                        <Property name="topClipPlane" value="40" id="ref23" />
+                        <Property name="topClipPlane" value="40" id="ref21" />
                         <Property name="useSphereManipulatorBackY" value="false" />
                         <Property name="useSphereManipulatorBottomZ" value="false" />
                         <Property name="useSphereManipulatorFrontY" value="false" />
@@ -169,7 +167,7 @@
                         <Property name="brickLodSelector" value="error-based" />
                         <Property name="bricking.strategy.mode" value="balanced" />
                         <Property name="bricking.update.strategy" value="never" />
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref15">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref14">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="46" y="122" />
                             </MetaData>
@@ -205,6 +203,8 @@
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="5" />
                         <Property name="shading" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -254,13 +254,13 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-219" y="-264" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClippingPlane" value="40" id="ref22" />
-                        <Property name="bottomClippingPlane" value="0" id="ref20" />
-                        <Property name="frontClippingPlane" value="0" id="ref24" />
-                        <Property name="leftClippingPlane" value="40" id="ref28" />
+                        <Property name="backClippingPlane" value="40" id="ref20" />
+                        <Property name="bottomClippingPlane" value="0" id="ref18" />
+                        <Property name="frontClippingPlane" value="0" id="ref22" />
+                        <Property name="leftClippingPlane" value="40" id="ref26" />
                         <Property name="resetClipPlanes" />
-                        <Property name="rightClippingPlane" value="19" id="ref26" />
-                        <Property name="topClippingPlane" value="40" id="ref18" />
+                        <Property name="rightClippingPlane" value="19" id="ref24" />
+                        <Property name="topClippingPlane" value="40" id="ref16" />
                         <Property name="useClipping" value="true" />
                     </Properties>
                     <InteractionHandlers />
@@ -270,7 +270,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-205" y="-174" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" id="ref16">
+                        <Property name="camera" adjustProjectionToViewport="true" id="ref15">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-955" y="376" />
                             </MetaData>
@@ -415,92 +415,92 @@
                 <PropertyLink>
                     <SourceProperty ref="ref11" />
                     <DestinationProperty ref="ref12" />
-                    <Evaluator type="LinkEvaluatorId" id="ref13" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref12" />
                     <DestinationProperty ref="ref11" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref13" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref14" />
                     <DestinationProperty ref="ref15" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref15" />
                     <DestinationProperty ref="ref14" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref13" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref15" />
-                    <DestinationProperty ref="ref16" />
-                    <Evaluator type="LinkEvaluatorId" id="ref17" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref16" />
-                    <DestinationProperty ref="ref15" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref16" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref18" />
                     <DestinationProperty ref="ref19" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref19" />
                     <DestinationProperty ref="ref18" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref20" />
                     <DestinationProperty ref="ref21" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref21" />
                     <DestinationProperty ref="ref20" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref22" />
                     <DestinationProperty ref="ref23" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref23" />
                     <DestinationProperty ref="ref22" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref24" />
                     <DestinationProperty ref="ref25" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref25" />
                     <DestinationProperty ref="ref24" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref26" />
                     <DestinationProperty ref="ref27" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref27" />
                     <DestinationProperty ref="ref26" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref28" />
-                    <DestinationProperty ref="ref29" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty ref="ref29" />
-                    <DestinationProperty ref="ref28" />
-                    <Evaluator type="LinkEvaluatorId" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

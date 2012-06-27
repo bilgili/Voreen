@@ -61,15 +61,15 @@ void main() {
 
     if (entry_) {
         if (geomDepth <= entryDepth) {
-            gl_FragData[0] = exitCol;
+            FragData0 = exitCol;
             gl_FragDepth = geomDepth;
         } else {
-            gl_FragData[0] = entryCol;
+            FragData0 = entryCol;
             gl_FragDepth = entryDepth;
         }
     } else {
         if (geomDepth <= entryDepth) {
-            gl_FragData[0] = exitCol;
+            FragData0 = exitCol;
             gl_FragDepth = exitDepth;
         } else if (geomDepth > entryDepth && geomDepth <= exitDepth) {
 
@@ -98,14 +98,14 @@ void main() {
             result.xyz *= 2.0 / volumeSize_;
 
             if(!useFloatTarget_)
-                gl_FragData[0] = vec4(0.5*result.xyz + 0.5, 1.0);
+                FragData0 = vec4(0.5*result.xyz + 0.5, 1.0);
             else
-                gl_FragData[0] = vec4(result.xyz, 1.0);
+                FragData0 = vec4(result.xyz, 1.0);
 
             gl_FragDepth = geomDepth;
 
         } else {
-            gl_FragData[0] = exitCol;
+            FragData0 = exitCol;
             gl_FragDepth = exitDepth;
         }
     }

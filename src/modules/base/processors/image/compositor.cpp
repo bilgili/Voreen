@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Compositor::Compositor()
-    : ImageProcessor("pp_compositor")
+    : ImageProcessor("image/compositor")
     , compositingMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM)
     , weightingFactor_("weightingFactor", "Weighting factor", 0.5f, 0.0f, 1.0f)
     , inport0_(Port::INPORT, "image.inport0")
@@ -82,22 +82,22 @@ void Compositor::process() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDepthFunc(GL_ALWAYS);
 
-    TextureUnit shadeUnit, shadeUnitDepth;
-    TextureUnit shadeUnit1, shadeUnitDepth1;
-    inport0_.bindTextures(shadeUnit.getEnum(), shadeUnitDepth.getEnum());
-    inport1_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    TextureUnit colorUnit1, depthUnit1;
+    inport0_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
+    inport1_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
     if (compositingMode_.get() != "take-second") {
-        program_->setUniform("shadeTex0_", shadeUnit.getUnitNumber());
-        program_->setUniform("depthTex0_", shadeUnitDepth.getUnitNumber());
+        program_->setUniform("colorTex0_", colorUnit.getUnitNumber());
+        program_->setUniform("depthTex0_", depthUnit.getUnitNumber());
         inport0_.setTextureParameters(program_, "textureParameters0_");
     }
     if (compositingMode_.get() != "take-first") {
-        program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
-        program_->setUniform("depthTex1_", shadeUnitDepth1.getUnitNumber());
+        program_->setUniform("colorTex1_", colorUnit1.getUnitNumber());
+        program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
         inport1_.setTextureParameters(program_, "textureParameters1_");
     }
     if (compositingMode_.get() == "weighted-average")

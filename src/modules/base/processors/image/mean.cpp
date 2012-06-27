@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Mean::Mean()
-    : ImageProcessorDepth("pp_mean"),
+    : ImageProcessorDepth("image/mean"),
       halfKernelDim_("halfKernelDim", "Half kernel size", 1, 1, 10),
       inport_(Port::INPORT, "image.inport"),
       outport_(Port::OUTPORT, "image.outport")
@@ -55,13 +55,13 @@ void Mean::process() {
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     inport_.setTextureParameters(program_, "textureParameters_");
     program_->setUniform("halfKernelDim_", halfKernelDim_.get());

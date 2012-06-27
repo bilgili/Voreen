@@ -27,6 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
+#include "voreen/core/voreenmodule.h"
+
 #include "voreen/qt/widgets/processorlistwidget.h"
 #include "voreen/qt/widgets/lineeditresetwidget.h"
 #include "voreen/qt/voreenapplicationqt.h"
@@ -111,6 +113,8 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     sbctm_->setCheckable(true);
     sbmtc_->setCheckable(true);
 
+    sbmtc_->setChecked(true);
+
     css_ = new QAction("Show Code State 'stable'", this);
     cst_ = new QAction("Show Code State 'testing'", this);
     csb_ = new QAction("Show Code State 'experimental'", this);
@@ -161,7 +165,7 @@ void ProcessorListWidget::loadSettings()
         tree_->codeState_.insert(Processor::CODE_STATE_EXPERIMENTAL);
         settings.endGroup();
         sort(ProcessorListTreeWidget::SORT_BY_CATEGORY);
-        return;
+        setModuleNameVisibility("Check All", true);
     }
     std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
     while(it != moduleVisibility_.end()) {
@@ -180,9 +184,11 @@ void ProcessorListWidget::loadSettings()
 
     hideAction_->setChecked(settings.value("hideCodeStatus").toBool());
     searchDescription_->setChecked(settings.value("searchDescription").toBool());
-    css_->setChecked(settings.value("csw").toBool());
-    cst_->setChecked(settings.value("cst").toBool());
-    csb_->setChecked(settings.value("csb").toBool());
+    if(settings.contains("cst")) {
+        css_->setChecked(settings.value("csw").toBool());
+        cst_->setChecked(settings.value("cst").toBool());
+        csb_->setChecked(settings.value("csb").toBool());
+    }
     if(css_->isChecked()) {
         tree_->codeState_.insert(Processor::CODE_STATE_STABLE);
         css_->setChecked(true);
@@ -281,6 +287,10 @@ void ProcessorListWidget::setInfo(Processor* processor) {
         info_->setHtml(QString::fromStdString("<b>" + processor->getClassName() + "</b><br>" + processor->getProcessorInfo()));
     else
         info_->setHtml("");
+}
+
+void ProcessorListWidget::setInfo(std::string text) {
+    info_->setHtml(QString::fromStdString(text));
 }
 
 void ProcessorListWidget::sortMenu() {
@@ -474,11 +484,18 @@ void ProcessorListTreeWidget::mousePressEvent(QMouseEvent *event) {
         return;
 
     ProcessorListItem* item = dynamic_cast<ProcessorListItem*>(itemAt(event->pos()));
-
     // if no ProcessorListItem selected, return
-    if (!item)
+    if (!item) {
+        const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
+        std::vector<VoreenModule*>::const_iterator it = modules.begin();
+        while(it != modules.end()) {
+            if(itemAt(event->pos()) && (*it)->getName() == itemAt(event->pos())->text(0).toStdString())
+                processorListWidget_->setInfo("<b>"+(*it)->getName()+":</b> "+(*it)->getDescription());
+            ++it;
+        }
         return;
 
+    }
     QString idStr(item->getId().c_str());
 
     QMimeData *mimeData = new QMimeData;
@@ -616,7 +633,11 @@ void ProcessorListTreeWidget::sortByModuleName() {
     for (unsigned int i = 0; i < processorVector_.size(); ++i) {
         moduleIdentifier = QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second));
         if(modules.find(moduleIdentifier) == modules.end()) {
-            modules[moduleIdentifier] = new QTreeWidgetItem(QStringList(moduleIdentifier));
+            QTreeWidgetItem* item = new QTreeWidgetItem(QStringList(moduleIdentifier));
+            QFont font = item->font(0);
+            font.setBold(true);
+            item->setFont(0, font);
+            modules[moduleIdentifier] = item;
         }
     }
 
@@ -668,6 +689,9 @@ void ProcessorListTreeWidget::sortByModuleThenCategory() {
 
         //QString categoryIdentifier=categories.at(i);
         QTreeWidgetItem* moduleItem = new QTreeWidgetItem(QStringList(moduleNames.at(ii)));
+        QFont font = moduleItem->font(0);
+        font.setBold(true);
+        moduleItem->setFont(0, font);
         items_.append(moduleItem);
 
         QStringList categories;
@@ -753,6 +777,9 @@ void ProcessorListTreeWidget::sortByCategoryThenModule() {
         //for every module in the current category check processors
         for (int j = 0; j < moduleNames.size(); ++j) {
             QTreeWidgetItem* moduleItem = new QTreeWidgetItem(QStringList(moduleNames.at(j)));
+            QFont font = moduleItem->font(0);
+            font.setBold(true);
+            moduleItem->setFont(0, font);
             categoryItem->addChild(moduleItem);
 
             for (unsigned int i = 0; i < processorVector_.size(); ++i) {
@@ -850,6 +877,5 @@ void ProcessorListItem::setProcessorInfo(const std:: string& name) {
     else
         info_ = "";
 }
-
 
 } //namespace voreen

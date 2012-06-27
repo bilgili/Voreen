@@ -78,6 +78,9 @@ public:
     /// Update after network has been processed.
     void afterNetworkProcess();
 
+    // frees OGL resources, called by mainwindow before destruction
+    void deinit();
+
 public slots:
     void processorsSelected(const QList<Processor*>& processors);
 
@@ -103,6 +106,7 @@ protected:
 
     virtual void initializeGL();
     void initializeFbo();
+
     virtual void resizeGL(int width, int height);
     virtual void paintGL();
     void updateSelected();

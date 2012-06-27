@@ -126,7 +126,7 @@ std::string InterpolationFunction<tgt::ivec4>::getMode() const {
 }
 
 template <>
-std::string InterpolationFunction<tgt::Camera*>::getMode() const {
+std::string InterpolationFunction<tgt::Camera>::getMode() const {
     return "linear interpolation";
 }
 
@@ -221,7 +221,7 @@ std::string InterpolationFunction<tgt::ivec4>::getIdentifier() const {
 }
 
 template <>
-std::string InterpolationFunction<tgt::Camera*>::getIdentifier() const {
+std::string InterpolationFunction<tgt::Camera>::getIdentifier() const {
     return "default linear";
 }
 
@@ -354,15 +354,15 @@ bool InterpolationFunction<bool>::interpolate(bool startvalue, bool endvalue, fl
 }
 
 template <>
-Camera* InterpolationFunction<Camera*>::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
+Camera InterpolationFunction<Camera>::interpolate(Camera startvalue, Camera endvalue, float time) const {
             Vec3LinearInterpolationFunction* intfunc = new Vec3LinearInterpolationFunction();
             Vec3SphericalLinearInterpolationFunction* intfunc2 = new Vec3SphericalLinearInterpolationFunction();
-            tgt::vec3 posvec = intfunc->interpolate(startvalue->getPosition(), endvalue->getPosition(), time);
-            tgt::vec3 focvec = intfunc->interpolate(startvalue->getFocus(), endvalue->getFocus(), time);
-            tgt::vec3 upvec = normalize(intfunc2->interpolate(startvalue->getUpVector(), endvalue->getUpVector(), time));
+            tgt::vec3 posvec = intfunc->interpolate(startvalue.getPosition(), endvalue.getPosition(), time);
+            tgt::vec3 focvec = intfunc->interpolate(startvalue.getFocus(), endvalue.getFocus(), time);
+            tgt::vec3 upvec = normalize(intfunc2->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
 /*            tgt::vec3 direction = intfunc2->interpolate(startvalue->getDirection(), endvalue->getDirection(), time);
             return new CameraNode(posvec, focvec, upvec, direction); */
-            return new Camera(posvec, focvec, upvec);
+            return Camera(posvec, focvec, upvec);
 }
 
 template <>
@@ -513,7 +513,7 @@ template class InterpolationFunction<tgt::quat>;
 template class InterpolationFunction<tgt::mat2>;
 template class InterpolationFunction<tgt::mat3>;
 template class InterpolationFunction<tgt::mat4>;
-template class InterpolationFunction<tgt::Camera*>;
+template class InterpolationFunction<tgt::Camera>;
 template class InterpolationFunction<std::string>;
 template class InterpolationFunction<ShaderSource>;
 template class InterpolationFunction<TransFunc*>;
@@ -533,7 +533,7 @@ template class MultiPointInterpolationFunction<tgt::quat>;
 template class MultiPointInterpolationFunction<tgt::mat2>;
 template class MultiPointInterpolationFunction<tgt::mat3>;
 template class MultiPointInterpolationFunction<tgt::mat4>;
-template class MultiPointInterpolationFunction<tgt::Camera*>;
+template class MultiPointInterpolationFunction<tgt::Camera>;
 template class MultiPointInterpolationFunction<std::string>;
 template class MultiPointInterpolationFunction<ShaderSource>;
 template class MultiPointInterpolationFunction<TransFunc*>;

@@ -38,7 +38,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 IntensityMeasure::IntensityMeasure()
-    : ImageProcessor("pp_distance")
+    : ImageProcessor("image/distance")
     , imgInport_(Port::INPORT, "image.input0")
     , fhpInport_(Port::INPORT, "image.input1")
     , outport_(Port::OUTPORT, "image.output")
@@ -199,13 +199,13 @@ void IntensityMeasure::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    TextureUnit shadeUnit, depthUnit;
-    imgInport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    imgInport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     imgInport_.setTextureParameters(program_, "textureParameters_");
 

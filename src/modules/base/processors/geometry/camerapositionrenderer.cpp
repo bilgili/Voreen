@@ -37,7 +37,7 @@ using tgt::vec3;
 CameraPositionRenderer::CameraPositionRenderer()
     : GeometryRendererBase()
     , showCamera_("showCamera", "Show Camera Position", true)
-    , displayCamera_("displayCamera", "Display Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , displayCamera_("displayCamera", "Display Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
     addProperty(showCamera_);
     addProperty(displayCamera_);
@@ -109,23 +109,23 @@ void CameraPositionRenderer::render() {
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-        glTranslatef(displayCamera_.get()->getPosition().x, displayCamera_.get()->getPosition().y, displayCamera_.get()->getPosition().z);
+        glTranslatef(displayCamera_.get().getPosition().x, displayCamera_.get().getPosition().y, displayCamera_.get().getPosition().z);
         LGL_ERROR;
 
         float m[16];
-        m[0] = displayCamera_.get()->getStrafe().x;
-        m[1] = displayCamera_.get()->getStrafe().y;
-        m[2] = displayCamera_.get()->getStrafe().z;
+        m[0] = displayCamera_.get().getStrafe().x;
+        m[1] = displayCamera_.get().getStrafe().y;
+        m[2] = displayCamera_.get().getStrafe().z;
         m[3] = 0.0f;
 
-        m[4] = displayCamera_.get()->getUpVector().x;
-        m[5] = displayCamera_.get()->getUpVector().y;
-        m[6] = displayCamera_.get()->getUpVector().z;
+        m[4] = displayCamera_.get().getUpVector().x;
+        m[5] = displayCamera_.get().getUpVector().y;
+        m[6] = displayCamera_.get().getUpVector().z;
         m[7] = 0.0f;
 
-        m[8] = displayCamera_.get()->getLook().x;
-        m[9] = displayCamera_.get()->getLook().y;
-        m[10] = displayCamera_.get()->getLook().z;
+        m[8] = displayCamera_.get().getLook().x;
+        m[9] = displayCamera_.get().getLook().y;
+        m[10] = displayCamera_.get().getLook().z;
         m[11] = 0.0f;
 
         m[12] = 0.0f;
@@ -135,8 +135,8 @@ void CameraPositionRenderer::render() {
 
         glMultMatrixf(m);
 
-        float fovy = displayCamera_.get()->getFovy();
-        float fovx = fovy * camera_->getRatio();
+        float fovy = displayCamera_.get().getFovy();
+        float fovx = fovy * camera_.getRatio();
         float mult = sin(fovx * (2.0f * tgt::PIf) / 360.0f);
         //LINFO(fovy << " " << fovx);
         LGL_ERROR;
@@ -160,9 +160,9 @@ void CameraPositionRenderer::render() {
         LGL_ERROR;
 
         //light moves with cone...looks better :)
-        light_pos[0] = displayCamera_.get()->getPosition().x + displayCamera_.get()->getUpVector().x;
-        light_pos[1] = displayCamera_.get()->getPosition().y + displayCamera_.get()->getUpVector().y;
-        light_pos[2] = displayCamera_.get()->getPosition().z + displayCamera_.get()->getUpVector().z;
+        light_pos[0] = displayCamera_.get().getPosition().x + displayCamera_.get().getUpVector().x;
+        light_pos[1] = displayCamera_.get().getPosition().y + displayCamera_.get().getUpVector().y;
+        light_pos[2] = displayCamera_.get().getPosition().z + displayCamera_.get().getUpVector().z;
         light_pos[3] = 1.0f;
         glLightfv(GL_LIGHT3,GL_POSITION,light_pos);
         glLightfv(GL_LIGHT3,GL_AMBIENT,light_ambient);

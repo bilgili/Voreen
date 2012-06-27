@@ -68,6 +68,16 @@ const std::string AggregationFunctionFactory::getTypeString(const std::type_info
         return "AggregationFunctionMedianHistogram";
     else if (type == typeid(AggregationFunctionAverage))
         return "AggregationFunctionAverage";
+    else if (type == typeid(AggregationFunctionGeometricAverage))
+        return "AggregationFunctionGeometricAverage";
+    else if (type == typeid(AggregationFunctionHarmonicAverage))
+        return "AggregationFunctionHarmonicAverage";
+    else if (type == typeid(AggregationFunctionStandardDeviation))
+        return "AggregationFunctionStandardDeviation";
+    else if (type == typeid(AggregationFunctionVariance))
+        return "AggregationFunctionVariance";
+    else if (type == typeid(AggregationFunctionMode))
+        return "AggregationFunctionMode";
     else
         return "";
 }
@@ -95,6 +105,16 @@ Serializable* AggregationFunctionFactory::createType(const std::string& typeStri
         return new AggregationFunctionMedianHistogram();
     else if (typeString == "AggregationFunctionAverage")
         return new AggregationFunctionAverage();
+    else if (typeString == "AggregationFunctionGeometricAverage")
+        return new AggregationFunctionGeometricAverage();
+    else if (typeString == "AggregationFunctionHarmonicAverage")
+        return new AggregationFunctionHarmonicAverage();
+    else if (typeString == "AggregationFunctionStandardDeviation")
+        return new AggregationFunctionStandardDeviation();
+    else if (typeString == "AggregationFunctionVariance")
+        return new AggregationFunctionVariance();
+    else if (typeString == "AggregationFunctionMode")
+        return new AggregationFunctionMode();
     else
         return 0;
 }

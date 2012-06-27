@@ -119,7 +119,7 @@ void Processor::initialize() throw (VoreenException) {
             processorWidget_->initialize();
 
             // inform the observers about the new widget
-            std::vector<ProcessorObserver*> observers = getObservers();
+            std::vector<ProcessorObserver*> observers = Observable<ProcessorObserver>::getObservers();
             for (size_t i = 0; i < observers.size(); ++i)
                 observers[i]->processorWidgetCreated(this);
         }
@@ -164,7 +164,7 @@ void Processor::deinitialize() throw (VoreenException) {
     processorWidget_ = 0;
 
     // notify observers about the deleted widget
-    std::vector<ProcessorObserver*> observers = getObservers();
+    std::vector<ProcessorObserver*> observers = Observable<ProcessorObserver>::getObservers();
     for (size_t i = 0; i < observers.size(); ++i)
         observers[i]->processorWidgetDeleted(this);
 
@@ -209,6 +209,36 @@ void Processor::addPort(Port* port) {
 
 void Processor::addPort(Port& port) {
     addPort(&port);
+}
+
+void Processor::removePort(Port* port) {
+    tgtAssert(port, "Null pointer passed");
+    //port->setProcessor(NULL);
+    CoProcessorPort* cpp = dynamic_cast<CoProcessorPort*>(port);
+    if (port->isOutport()) {
+        if (cpp)
+            coProcessorOutports_.erase(std::find(coProcessorOutports_.begin(), coProcessorOutports_.end(), port));
+        else
+            outports_.erase(std::find(outports_.begin(), outports_.end(), port));
+    }
+    else {
+        if (cpp)
+            coProcessorInports_.erase(std::find(coProcessorInports_.begin(), coProcessorInports_.end(), port));
+        else
+            inports_.erase(std::find(inports_.begin(), inports_.end(), port));
+    }
+
+    map<std::string, Port*>::iterator it = portMap_.find(port->getName());
+    if (it != portMap_.end())
+        portMap_.erase(it);
+    else {
+        LERROR("Port with name " << port->getName() << " was not found in port map!");
+        tgtAssert(false, std::string("Port with name " + port->getName() + " was not found in port map!").c_str());
+    }
+}
+
+void Processor::removePort(Port& port) {
+    removePort(&port);
 }
 
 Processor::CodeState Processor::getCodeState() const {

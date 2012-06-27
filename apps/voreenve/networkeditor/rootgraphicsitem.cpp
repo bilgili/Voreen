@@ -107,6 +107,13 @@ void RootGraphicsItem::createChildItems() {
     layoutChildItems();
 }
 
+void RootGraphicsItem::deleteChildItems() {
+    foreach (PortGraphicsItem* p, portGraphicsItems_) {
+        portGraphicsItems_.pop_front();
+        delete p;
+    }
+}
+
 void RootGraphicsItem::layoutChildItems() {
     // ports should be distributed evenly across the side of the item
 
@@ -399,6 +406,17 @@ QVariant RootGraphicsItem::itemChange(GraphicsItemChange change, const QVariant&
 }
 
 void RootGraphicsItem::nameChanged() {
+    if (!networkEditor_ || !networkEditor_->getProcessorNetwork())
+        return;
+
+    prepareGeometryChange();
+    layoutChildItems();
+    propertyListItem_.resizeChildItems();
+    if (scene())
+        scene()->invalidate();
+}
+
+void RootGraphicsItem::portsAndPropertiesChanged() {
     if (!networkEditor_ || !networkEditor_->getProcessorNetwork())
         return;
 

@@ -68,5 +68,5 @@ void main() {
     vec3 frontPos = textureLookup2D(frontTex_, fragCoord.xy).rgb;
     vec3 backPos = textureLookup2D(backTex_, fragCoord.xy).rgb;
 
-    gl_FragColor = hitpoints(frontPos, backPos);
+    FragData0 = hitpoints(frontPos, backPos);
 }

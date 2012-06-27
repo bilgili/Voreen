@@ -120,23 +120,22 @@ public:
 
     /**
      * Returns whether the given value would be valid for this property.
-     *
      * The property is not modified.
+     *
+     * @param value the value to check
+     * @param errorMsg contains the error message, if the validation failed
      */
-    bool isValidValue(const T& value);
+    bool isValidValue(const T& value, std::string& errorMsg);
 
 protected:
     /**
      * Runs validate() on all Validations. If any of them is not met() a Condition::ValidationFailed
      * exception is thrown.
      */
-    void validate(const T& value, bool restore = true);
+    void validate(const T& value, std::string& errorMsg, bool restore = true);
 
-    /**
-     * Executes the links currently registered at the property
-     * with the previous and current values.
-     */
-    virtual void executeLinks(const T& prevValue, const T& curValue);
+    ///Executes the links currently registered at the property
+    virtual void executeLinks();
 
     T value_;
     std::vector<Condition*> conditions_;
@@ -173,17 +172,18 @@ TemplateProperty<T>::~TemplateProperty() {
 template<class T>
 void TemplateProperty<T>::set(const T& value) {
     if (value_ != value) {
-        const T prevValue = value_;
+        std::string errorMsg;
+        validate(value, errorMsg, false);
 
-        validate(value, false);
-
+        if (!errorMsg.empty())
+            LWARNINGC("voreen.TemplateProperty", errorMsg);
         if (value_ != value)
             return;
 
         Property::invalidate();  // issues invalidateOwner and updateWidgets
 
         // execute links
-        executeLinks(prevValue, value_);
+        executeLinks();
 
         // check if conditions are met and exec actions
         for (size_t j = 0; j < conditions_.size(); ++j)
@@ -192,13 +192,13 @@ void TemplateProperty<T>::set(const T& value) {
 }
 
 template<class T>
-void TemplateProperty<T>::validate(const T& value, bool restore) {
+void TemplateProperty<T>::validate(const T& value, std::string& errorMsg, bool restore) {
     // save value
     T temp(value_);
     value_ = value;
     bool valid = true;
     for (size_t j = 0; j < validations_.size() && valid; ++j)
-        valid &= validations_[j]->validate();
+        valid &= validations_[j]->validate(errorMsg);
 
     if (!valid || restore) // restore if new value valid or requested
         value_ = temp;
@@ -214,30 +214,18 @@ void voreen::TemplateProperty<T>::invalidate() {
         conditions_[j]->exec();
 
     // execute links: we do not know the old value here, so just assign the current one twice
-    executeLinks(value_, value_);
+    executeLinks();
 }
 
 template<class T>
-void voreen::TemplateProperty<T>::executeLinks(const T& prevValue, const T& curValue) {
-
+void voreen::TemplateProperty<T>::executeLinks() {
     if (links_.empty())
         return;
-
-    // construct change data object
-    ChangeData changeData;
-    try {
-        changeData.setOldValue(BoxObject(prevValue));
-        changeData.setNewValue(BoxObject(curValue));
-    }
-    catch (const VoreenException& e) {
-        LERRORC("voreen.TemplateProperty", "executeLinks(): " << e.what() << " (src='" << getFullyQualifiedID() << "')");
-        return;
-    }
 
     // pass change data object to links
     for (std::vector<PropertyLink*>::iterator it = links_.begin(); it != links_.end(); it++) {
         try {
-            (*it)->onChange(changeData);
+            (*it)->onChange();
         }
         catch (const VoreenException& e) {
             LERRORC("voreen.TemplateProperty", "executeLinks(): " << e.what());
@@ -246,13 +234,13 @@ void voreen::TemplateProperty<T>::executeLinks(const T& prevValue, const T& curV
 }
 
 template<class T>
-bool TemplateProperty<T>::isValidValue(const T& value) {
+bool TemplateProperty<T>::isValidValue(const T& value, std::string& errorMsg) {
     // save value
     T temp(value_);
     value_ = value;
     bool valid = true;
     for (size_t j = 0; j < validations_.size() && valid; ++j)
-        valid &= validations_[j]->validate();
+        valid &= validations_[j]->validate(errorMsg);
     value_ = temp;
     return valid;
 }

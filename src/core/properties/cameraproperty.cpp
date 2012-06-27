@@ -37,34 +37,45 @@ namespace voreen {
 using tgt::Camera;
 
 CameraProperty::CameraProperty(const std::string& id, const std::string& guiText,
-                       tgt::Camera* const value, bool adjustProjectionToViewport,
+                       tgt::Camera const value, bool adjustProjectionToViewport,
                        Processor::InvalidationLevel invalidationLevel) :
-        TemplateProperty<Camera*>(id, guiText, value, invalidationLevel)
+        TemplateProperty<Camera>(id, guiText, value, invalidationLevel)
 {
-    tgtAssert(value, "No camera");
-
-    value->setNearDist(0.01f);
-    value->setFovy(45.f);
+    value_.setNearDist(0.01f);
+    value_.setFovy(45.f);
 
     adjustProjectionToViewport_ = adjustProjectionToViewport;
 }
 
 CameraProperty::~CameraProperty() {
-    delete value_;
-    value_ = 0;
 }
 
 void CameraProperty::set(const tgt::Camera& camera) {
-    if (!value_)
-        return;
-
-    if (value_->getPosition()   !=  camera.getPosition()   ||
-        value_->getFocus()      !=  camera.getFocus()      ||
-        value_->getUpVector()   !=  camera.getUpVector())
+    if (value_.getPosition()   !=  camera.getPosition()   ||
+        value_.getFocus()      !=  camera.getFocus()      ||
+        value_.getUpVector()   !=  camera.getUpVector())
     {
-            value_->positionCamera(camera.getPosition(), camera.getFocus(), camera.getUpVector());
+            //value_ = camera;
+            value_.setPosition(camera.getPosition());
+            value_.setFocus(camera.getFocus());
+            value_.setUpVector(camera.getUpVector());
             invalidate();
     }
+}
+
+void CameraProperty::setPosition(const tgt::vec3& pos) {
+    value_.setPosition(pos);
+    notifyChange();
+}
+
+void CameraProperty::setFocus(const tgt::vec3& focus) {
+    value_.setFocus(focus);
+    notifyChange();
+}
+
+void CameraProperty::setUpVector(const tgt::vec3& up) {
+    value_.setUpVector(up);
+    notifyChange();
 }
 
 void CameraProperty::setAdjustProjectionToViewport(bool adjust) {
@@ -76,12 +87,8 @@ bool CameraProperty::getAdjustProjectionToViewport() const {
 }
 
 void CameraProperty::notifyChange() {
-    Camera* cam = value_;
-
     // execute links
-    if (cam) {
-        executeLinks(cam, cam);
-    }
+    executeLinks();
 
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)
@@ -96,7 +103,7 @@ void CameraProperty::notifyChange() {
 void CameraProperty::viewportChanged(const tgt::ivec2& viewport) {
 
     if (adjustProjectionToViewport_) {
-        value_->setRatio(static_cast<float>(viewport.x) / viewport.y);
+        value_.setRatio(static_cast<float>(viewport.x) / viewport.y);
         //value_->updateFrustum();
         invalidateOwner(invalidationLevel_);
     }
@@ -112,9 +119,9 @@ void CameraProperty::serialize(XmlSerializer& s) const {
 
     s.serialize("adjustProjectionToViewport", adjustProjectionToViewport_);
 
-    s.serialize("position", value_->getPosition());
-    s.serialize("focus", value_->getFocus());
-    s.serialize("upVector", value_->getUpVector());
+    s.serialize("position", value_.getPosition());
+    s.serialize("focus", value_.getFocus());
+    s.serialize("upVector", value_.getUpVector());
 }
 
 void CameraProperty::deserialize(XmlDeserializer& s) {
@@ -125,15 +132,19 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
     tgt::vec3 vector;
 
     s.deserialize("position", vector);
-    value_->setPosition(vector);
+    value_.setPosition(vector);
     s.deserialize("focus", vector);
-    value_->setFocus(vector);
+    value_.setFocus(vector);
     s.deserialize("upVector", vector);
-    value_->setUpVector(vector);
+    value_.setUpVector(vector);
 }
 
 std::string CameraProperty::getTypeString() const {
     return "Camera";
+}
+
+void CameraProperty::look() {
+    value_.look();
 }
 
 } // namespace voreen

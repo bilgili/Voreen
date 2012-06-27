@@ -2,20 +2,34 @@ TARGET = voreenve
 TEMPLATE = app
 LANGUAGE = C++
 
-CONFIG += console qt
+CONFIG += qt
 QT += opengl
 
-# Include local configuration
-!include(../../config.txt) {
-  warning("config.txt not found! Using config-default.txt instead. For custom behavior, copy config-default.txt to config.txt and edit!")
-  include(../../config-default.txt)
+# check qmake version
+QMAKE_VERS = $$[QMAKE_VERSION]
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+isEmpty(QMAKE_VERSION_CHECK) {
+   error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }
+
+# include config
+!exists(../../config.txt) {
+  error("config.txt not found! copy config-default.txt to config.txt and edit!")
+}
+include(../../config.txt)
 
 # Include common configuration
 include(../../commonconf.pri)
 
 # Include generic app configuration
 include(../voreenapp.pri)
+
+win32 {
+  contains(DEFINES, VRN_DEBUG) {
+    # link against console subsystem for debug builds (opens console)
+    CONFIG += console
+  }
+}
 
 HEADERS += \
     voreenmainwindow.h \

@@ -77,6 +77,8 @@ QPropertyWidget::~QPropertyWidget() {
         prop_->removeWidget(this);
         prop_ = 0;
     }
+    delete nameLabel_;
+    nameLabel_ = 0;
 }
 
 std::string QPropertyWidget::getPropertyGuiName() {
@@ -194,15 +196,14 @@ void QPropertyWidget::mouseMoveEvent(QMouseEvent* event) {
     QWidget::mouseMoveEvent(event);
 }
 
-const QLabel* QPropertyWidget::getNameLabel() const{
+CustomLabel* QPropertyWidget::getNameLabel() const {
     if (!nameLabel_) {
         nameLabel_ = new CustomLabel(prop_->getGuiName().c_str(), const_cast<QPropertyWidget*>(this), const_cast<QPropertyWidget*>(this), 0, false, true);
         nameLabel_->setMinimumWidth(80);
         nameLabel_->setWordWrap(true);
-
         QFontInfo fontInfo(font());
         nameLabel_->setFont(QFont(fontInfo.family(), fontSize_));
-        nameLabel_->setToolTip(prop_->getGuiName().c_str());
+        nameLabel_->setToolTip("id: " + QString::fromStdString(prop_->getID()));
 
         nameLabel_->setVisible(isVisible());
         nameLabel_->setEnabled(isEnabled());

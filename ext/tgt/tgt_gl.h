@@ -36,6 +36,7 @@
 #endif // __APPLE__
 
 #include "tgt/config.h"
+#include "tgt/gpucapabilities.h"
 
 namespace tgt {
     GLenum _lGLError(int line, const char* file);

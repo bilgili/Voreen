@@ -29,42 +29,164 @@
 
 #include "voreen/core/plotting/plotselection.h"
 #include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/properties/plotselectionproperty.h"
+
+#include <sstream>
 
 namespace voreen {
+
+PlotSelection::PlotSelection()
+    :isTablePositionFlag_(false)
+    , tablePosition_(-1, -1)
+{}
 
 PlotSelection::PlotSelection(tgt::ivec2 tablePosition)
     : isTablePositionFlag_(true)
     , tablePosition_(tablePosition)
-{};
+{}
 
-PlotSelection::PlotSelection(std::vector<std::pair<int, PlotPredicate*> > selection)
-    : isTablePositionFlag_(false)
-    , tablePosition_(-1,-1)
-    , selection_(selection)
-{};
+PlotSelection::PlotSelection(const PlotSelection& rhs)
+    : isTablePositionFlag_(rhs.isTablePositionFlag_)
+    , tablePosition_(rhs.tablePosition_)
+{
+    for (std::vector< std::pair<int, PlotPredicate*> >::const_iterator it = rhs.selection_.begin(); it < rhs.selection_.end(); ++it) {
+        PlotPredicate* p = 0;
+        if (it->second != 0)
+            p = it->second->clone();
+        selection_.push_back(std::make_pair(it->first, p));
+    }
+}
+
+PlotSelection::~PlotSelection() {
+    for (std::vector< std::pair<int, PlotPredicate*> >::iterator it = selection_.begin(); it < selection_.end(); ++it) {
+        delete it->second;
+    }
+}
+
+PlotSelection& PlotSelection::operator=(PlotSelection rhs) {
+    std::swap(isTablePositionFlag_, rhs.isTablePositionFlag_);
+    std::swap(tablePosition_, rhs.tablePosition_);
+    std::swap(selection_, rhs.selection_); // no worries: all formerly pointed objects will be deleted on ~rhs()
+    return *this;
+}
 
 void PlotSelection::serialize(XmlSerializer& s) const {
     s.serialize("isTablePositionFlag", isTablePositionFlag_);
     s.serialize("tablePosition", tablePosition_);
+    s.serialize("selection", selection_);
 }
 
 void PlotSelection::deserialize(XmlDeserializer& s) {
     s.deserialize("isTablePositionFlag", isTablePositionFlag_);
     s.deserialize("tablePosition", tablePosition_);
+    s.deserialize("selection", selection_);
 }
 
-bool PlotSelection::isTablePosition() {
+void PlotSelection::addPredicate(int column, const PlotPredicate* pred) {
+    PlotPredicate* p = 0;
+    if (pred != 0) {
+        p = pred->clone();
+    }
+    selection_.push_back(std::make_pair(column, p));
+}
+
+void PlotSelection::removeRow(size_t index) {
+    tgtAssert(index < selection_.size(), "PlotSelection::removeRow(): Index out of bounds");
+    if (selection_[index].second != 0)
+        delete selection_[index].second;
+    selection_.erase(selection_.begin()+index);
+}
+
+bool PlotSelection::isTablePosition() const {
     return isTablePositionFlag_;
 }
 
-tgt::ivec2 PlotSelection::getTablePosition() {
+const tgt::ivec2& PlotSelection::getTablePosition() const {
     tgtAssert(isTablePositionFlag_, "No table position");
     return tablePosition_;
 }
 
-std::vector<std::pair<int, PlotPredicate*> > PlotSelection::getSelection() {
+const std::vector<std::pair<int, PlotPredicate*> >& PlotSelection::getSelection() const {
     tgtAssert(!isTablePositionFlag_, "Is table position");
     return selection_;
+}
+
+void PlotSelection::setColumn(size_t index, int column) {
+    tgtAssert(index < selection_.size(), "PlotSelection::setColumn(): Index out of bounds");
+    selection_[index].first = column;
+}
+
+void PlotSelection::setPredicate(size_t index, const PlotPredicate* pred) {
+    tgtAssert(index < selection_.size(), "PlotSelection::setPredicate(): Index out of bounds");
+    if (selection_[index].second != 0)
+        delete selection_[index].second;
+    if (pred != 0) {
+        PlotPredicate* p = pred->clone();
+        selection_[index].second = p;
+    }
+    else {
+        selection_[index].second = 0;
+    }
+}
+
+std::string PlotSelection::toString(const PlotData& pData) const {
+    std::stringstream ss;
+    if (isTablePositionFlag_) {
+        ss << "Table Position: (" << tablePosition_.x << ", " << tablePosition_.y << ")";
+    }
+    else {
+        for (std::vector< std::pair<int, PlotPredicate*> >::const_iterator it = selection_.begin(); it < selection_.end(); ++it) {
+            switch (it->first) {
+                case PlotSelectionProperty::X_AXIS_COLUMN:
+                    ss << "x Axis: ";
+                    break;
+                case PlotSelectionProperty::Y_AXIS_COLUMN:
+                    ss << "y Axis: ";
+                    break;
+                case PlotSelectionProperty::Z_AXIS_COLUMN:
+                    ss << "z Axis: ";
+                    break;
+                default:
+                    if (pData.getColumnCount() > it->first)
+                        ss << pData.getColumnLabel(it->first) << ": ";
+                    else
+                        ss << it->first << ": ";
+                    break;
+            }
+            if (it->second != 0)
+                ss << it->second->toString();
+            else
+                ss << "No Predicate";
+            // add line break if not last predicate
+            if (it+1 != selection_.end())
+                ss << std::endl;
+        }
+    }
+    return ss.str();
+}
+
+
+bool PlotSelection::operator==(const PlotSelection& rhs) const {
+    if (isTablePositionFlag_ != rhs.isTablePositionFlag_)
+        return false;
+    if (isTablePositionFlag_)
+        return (tablePosition_ == rhs.tablePosition_);
+    else {
+        std::vector< std::pair<int, PlotPredicate*> >::const_iterator it, rhsIt;
+        for (it = selection_.begin(), rhsIt = rhs.selection_.begin(); it != selection_.end() && rhsIt != rhs.selection_.end(); ++it, ++rhsIt) {
+            if (it->first != rhsIt->first)
+                return false;
+            if (it->second == 0 && rhsIt->second == 0)
+                continue;
+            if (it->second == 0 || rhsIt->second == 0)
+                return false;
+            if (typeid(*(it->second)) != typeid(*(rhsIt->second)))
+                return false;
+            if (it->second->getThresholdValues() != rhsIt->second->getThresholdValues())
+                return false;
+        }
+    }
+    return true;
 }
 
 } // namespace voreen

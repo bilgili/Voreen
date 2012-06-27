@@ -34,6 +34,8 @@
 #include "voreen/modules/base/processors/utility/propertycontainer.h"
 
 #include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
+#include "voreen/qt/widgets/customlabel.h"
+
 #include "tgt/logmanager.h"
 
 #include <QCheckBox>
@@ -137,7 +139,7 @@ void PropertyVectorWidget::createAndAddPropertyWidget(Property* prop, QPropertyW
     if (propertyWidget) {
         propertyWidget->hideLODControls();
         propertyWidget->setMinimumWidth(250);
-        QLabel* nameLabel = const_cast<QLabel*>(propertyWidget->getNameLabel());
+        CustomLabel* nameLabel = propertyWidget->getNameLabel();
         int row = propertiesLayout_->rowCount();
         propertiesLayout_->addWidget(nameLabel, row, 1);
         propertiesLayout_->addWidget(propertyWidget, row, 2);

@@ -60,6 +60,7 @@ public:
 protected:
     virtual void process();
     virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     virtual void loadShader();
     virtual void compile();
@@ -69,6 +70,8 @@ protected:
     RenderPort exitPort_;
     RenderPort firstHitpointsPort_;
     RenderPort idMapPort_;
+
+    tgt::Shader* raycastPrg_;          ///< The shader program used by this raycaster.
 
     /// The camera used for raycasting.
     CameraProperty camera_;

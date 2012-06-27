@@ -27,11 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_WITH_PYTHON
-// this must come first
-#include "tgt/scriptmanager.h"
-#endif // VRN_WITH_PYTHON
-
 #include "voreenmainwindow.h"
 
 #include "tgt/filesystem.h"
@@ -40,18 +35,16 @@
 #include "voreen/core/version.h"
 #include "voreen/qt/voreenapplicationqt.h"
 
-#ifdef VRN_NO_MODULE_AUTO_REGISTRATION
-#include "voreen/modules/moduleregistration.h"
-#else
-#include "voreen/modules/gen_moduleregistration.h"
-#endif
-
 using namespace voreen;
 
 class VoreenVEApplication : public VoreenApplicationQt {
 public:
     VoreenVEApplication(int argc, char** argv)
+#ifdef VRN_ADD_FILE_LOGGER
+        : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_ALL)
+#else
         : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_DEFAULT)
+#endif
     {}
 
     virtual void prepareCommandParser() {
@@ -63,7 +56,7 @@ public:
 
         p->addCommand(new SingleCommand<std::string>(&workspaceFilename_, "--workspace", "-w",
                                                      "Loads a workspace", "<workspace file>"));
-#ifdef VRN_WITH_PYTHON
+#ifdef VRN_MODULE_PYTHON
         p->addCommand(new SingleCommand<std::string>(&scriptFilename_, "--script", "-s",
                                                      "Runs a python script", "<script file>"));
 #endif
@@ -142,12 +135,18 @@ public:
 };
 
 int main(int argc, char** argv) {
+    //disable argb visuals (Qt bug) fixes/works around invisible TF (etc) windows
+#ifdef __unix__
+    setenv ("XLIB_SKIP_ARGB_VISUALS", "1", 1);
+#endif
+
     CatchApp app(argc, argv);
 
     app.setOverrideCursor(Qt::WaitCursor);
 
 #ifdef VRN_SPLASHSCREEN
     VoreenSplashScreen splash;
+    splash.showMessage("Creating application...");
     splash.show();
     qApp->processEvents();
 #endif
@@ -161,21 +160,12 @@ int main(int argc, char** argv) {
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
     app.setStyleSheet(styleSheet);
-#ifdef VRN_SPLASHSCREEN
-    splash.showMessage("Starting up...");
-#endif
 #endif
 
     // init resources for voreen_qt
     Q_INIT_RESOURCE(vrn_qt);
     // init common application resources
     Q_INIT_RESOURCE(vrn_app);
-
-    // initialize all Voreen modules
-#ifdef VRN_SPLASHSCREEN
-    splash.showMessage("Initializing modules...");
-#endif
-    addAllModules(&vapp);
 
 #ifdef VRN_SPLASHSCREEN
     splash.showMessage("Creating main window...");

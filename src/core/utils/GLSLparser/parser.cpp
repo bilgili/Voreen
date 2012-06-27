@@ -181,12 +181,10 @@ void Parser::logError(ParserActionError* const error, Token* const token) {
         {
             oss << "(= '" << gen->getValue() << "')";
         }
-    } else
-        oss << "unexpected end of input";
+    } // else oss << "unexpected end of input";
 
     if (! symbols_.empty())
         oss << " following symbol '" << symbolID2String(symbols_.top()->getSymbolID()) << "'";
-    oss << "!";
 
     error->setErrorMessage(oss.str());
     if (token != 0) {
@@ -194,7 +192,8 @@ void Parser::logError(ParserActionError* const error, Token* const token) {
         error->setCharPosition(token->getCharNumber());
     }
 
-    log_ << error->getError() << "\n";
+    if ((error->getError()).length() > 0)
+        log_ << error->getError() << "\n";
 }
 
 void Parser::logState() {
@@ -227,7 +226,7 @@ bool Parser::reduce(ParserActionReduce* const r) {
     const int productionID = r->getProductionID();
     ProductionStub* prod = findProduction(productionID);
     if (prod == 0) {
-        log_ << "fatal error: there is no procution with ID = " << productionID << "!\n";
+        log_ << "fatal error: there is no production with ID = " << productionID << "!\n";
         return false;
     }
 

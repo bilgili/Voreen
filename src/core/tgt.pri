@@ -2,11 +2,6 @@ unix : contains(DEFINES, tgtZLIB) {
   LIBS += -lz
 }
 
-contains(DEFINES, TGT_USE_PYTHON) {
-    SOURCES += ../../ext/tgt/scriptmanager.cpp
-    HEADERS += ../../ext/tgt/scriptmanager.h
-}
-
 contains(DEFINES, TGT_WITH_TRACKING) {
     SOURCES += ../../ext/tgt/modules/tracking/tracker.cpp \
                ../../ext/tgt/modules/tracking/eostracker.cpp

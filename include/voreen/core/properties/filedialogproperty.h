@@ -30,11 +30,11 @@
 #ifndef VRN_FILEDIALOGPROPERTY_H
 #define VRN_FILEDIALOGPROPERTY_H
 
-#include "voreen/core/properties/templateproperty.h"
+#include "voreen/core/properties/stringproperty.h"
 
 namespace voreen {
 
-class FileDialogProperty : public TemplateProperty<std::string> {
+class FileDialogProperty : public StringProperty {
 public:
 
     enum FileMode {
@@ -67,7 +67,6 @@ public:
     virtual void deserialize(XmlDeserializer& s);
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
-    virtual std::string toString() const { return value_; }
 
 protected:
     std::string dialogCaption_;

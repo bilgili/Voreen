@@ -47,61 +47,61 @@
 namespace voreen {
 
 /**
- * Abstract base class for GPU-based raycasters.
+ * Abstract base class for GPU-based ray-casters.
+ *
+ * It extends the generateHeader, setGlobalShaderParameters and
+ * bindVolumes methods inherited from VolumeRenderer.
+ * Additionally, it provides several ray-casting-related properties
+ * and handles bricked volumes.
  */
 class VolumeRaycaster : public VolumeRenderer {
 public:
     VolumeRaycaster();
-    ~VolumeRaycaster();
 
-    ///Save the requested size(newsize) in size_ and resize all renderports, using interactionMode() and interactionCoarseness_
+    /// Save the requested size(newsize) in size_ and resize all renderports, using interactionMode() and interactionCoarseness_.
     virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
 
-    ///Switches interactioncoarseness on/off by resizing all renderports.
+    /// Switches interaction coarseness on/off by resizing all renderports.
     virtual void interactionModeToggled();
 
+    /**
+     * Resizes the RenderPorts, if interaction coarseness is currently active.
+     *
+     * @see RenderProcessor::invalidate
+     */
     virtual void invalidate(int inv = INVALID_RESULT);
+
+protected:
+    /**
+     * Defines ray-casting macros to be used in the shader.
+     * The volume handle parameter has only to be passed
+     * for bricked rendering.
+     *
+     * @see VolumeRenderer::generateHeader
+     */
+    virtual std::string generateHeader(VolumeHandle* volumehandle = 0);
+
+    /**
+     * Sets frustum parameters necessary for depth value calculation in shaders.
+     * The camera parameter is passed to the super class function.
+     *
+     * @see VolumeRenderer::setGlobalShaderParameters
+     */
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
 
     /**
      * Binds volume textures (inherited from VolumeRenderer) and sets the sampling step size
-     * relative to the resolution of the first volume.
+     * relative to the resolution of the first volume. The camera and light position
+     * parameters are passed to the super class function.
      *
      * @see VolumeRenderer::bindVolumes
      */
     virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
         const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
-protected:
-    /**
-     * Disposes the shader.
-     */
-    void deinitialize() throw (VoreenException);
-
-    /**
-     * Load the shader into memory.
-     */
-    virtual void loadShader(VolumeHandle* /*volumeHandle*/ = 0) {}
-
-    /**
-     * Compile and link the shader program
-     */
-    virtual void compile(VolumeHandle* /*volumeHandle*/ = 0) {}
-
-    /**
-     * Generates header defines for the shader.
-     */
-    virtual std::string generateHeader(VolumeHandle* volumehandle = 0);
-
-    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
-
-    /**
-     * Initialize the properties of the raycaster.
-     */
-    void initProperties();
-
     void showBrickingProperties(bool b);
 
-    virtual void setBrickedVolumeUniforms(VolumeHandle* volumeHandle);
+    virtual void setBrickedVolumeUniforms(tgt::Shader* shader, VolumeHandle* volumeHandle);
     virtual void addBrickedVolumeModalities(VolumeHandle* volumeHandle, std::vector<VolumeStruct>& volumeTextures,
                                             tgt::TextureUnit* unit1 = 0, tgt::TextureUnit* unit2 = 0);
 
@@ -110,35 +110,28 @@ protected:
     void changeBrickingUpdateStrategy(std::string);
     void changeBrickLodSelector(std::string);
 
-    tgt::Shader* raycastPrg_; ///< The shader-program to be used with this raycaster.
-
-    FloatProperty samplingRate_;  ///< Sampling rate of the raycasting, specified relative to
-                                  ///the size of one voxel
+    FloatProperty samplingRate_;  ///< Sampling rate of the raycasting, specified relative to the size of one voxel
     FloatProperty isoValue_;      ///< The used isovalue, when isosurface raycasting is enabled
 
     // properties for all volume raycasters
-    StringOptionProperty maskingMode_;                      ///< What masking should be applied (thresholding, segmentation)
-    StringOptionProperty gradientMode_;                     ///< What type of calculation should be used for on-the-fly gradients
-    StringOptionProperty classificationMode_;               ///< What type of transfer function should be used for classification
-    StringOptionProperty shadeMode_;                        ///< What shading method should be applied
-    StringOptionProperty compositingMode_;                  ///< What compositing mode should be applied
+    StringOptionProperty maskingMode_;                 ///< What masking should be applied (thresholding, segmentation)
+    StringOptionProperty gradientMode_;                ///< What type of calculation should be used for on-the-fly gradients
+    StringOptionProperty classificationMode_;          ///< What type of transfer function should be used for classification
+    StringOptionProperty shadeMode_;                   ///< What shading method should be applied
+    StringOptionProperty compositingMode_;             ///< What compositing mode should be applied
 
-    StringOptionProperty brickingInterpolationMode_;        ///< Which interpolation method to use when rendering bricked volumes.
-    StringOptionProperty brickingStrategyMode_;                ///< Which bricking strategy to use when rendering bricked volumes.
-    StringOptionProperty brickingUpdateStrategy_;            ///< When to update bricks when rendering bricked volumes.
-    StringOptionProperty brickLodSelector_;
-    BoolProperty useAdaptiveSampling_;
-
-    IntProperty segment_;                           ///< Controls the segment that is to be rendered
-    BoolProperty useSegmentation_;                  ///< Controls whether or not
-                                                    ///< segmentation-mode is used. FIXME: deprecated
-
-    IntProperty interactionCoarseness_;             ///< RenderPorts are resized to size_/interactionCoarseness_ in interactionmode
+    IntProperty interactionCoarseness_;                ///< RenderPorts are resized to size_/interactionCoarseness_ in interactionmode
     FloatProperty interactionQuality_;
     BoolProperty useInterpolationCoarseness_;
 
-    tgt::ivec2 size_;                               ///< The size expected by the processors connected to the outports. (Needed to switch to/from interactionmode)
-    bool switchToInteractionMode_;
+    StringOptionProperty brickingInterpolationMode_;   ///< Which interpolation method to use when rendering bricked volumes.
+    StringOptionProperty brickingStrategyMode_;        ///< Which bricking strategy to use when rendering bricked volumes.
+    StringOptionProperty brickingUpdateStrategy_;      ///< When to update bricks when rendering bricked volumes.
+    StringOptionProperty brickLodSelector_;
+    BoolProperty useAdaptiveSampling_;
+
+    tgt::ivec2 size_;                                  ///< The size expected by the processors connected to the outports. ()
+    bool switchToInteractionMode_;                     ///< Needed to switch to/from interactionmode.
 
     bool brickingParametersChanged_;
     std::string brickResoluationModeStr_;
@@ -146,6 +139,10 @@ protected:
     std::string brickLodSelectorStr_;
 
     static const std::string loggerCat_; ///< category used in logging
+
+private:
+    /// Initializes and adds the ray-casters properties. Called by the constructor.
+    void initProperties();
 };
 
 } // namespace voreen

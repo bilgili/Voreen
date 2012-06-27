@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/interaction/trackballnavigation.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "voreen/core/network/networkevaluator.h"
 #include "tgt/camera.h"
@@ -43,7 +44,7 @@ using tgt::KeyEvent;
 
 const std::string TrackballNavigation::loggerCat_ = "voreen.Trackballnavigation";
 
-TrackballNavigation::TrackballNavigation(tgt::Camera* camera, TrackballNavigation::Mode mode, float minDist, float maxDist)
+TrackballNavigation::TrackballNavigation(CameraProperty* camera, TrackballNavigation::Mode mode, float minDist, float maxDist)
     : trackball_(new VoreenTrackball(camera))
     , mode_(mode)
     , minDistance_(minDist)
@@ -310,16 +311,22 @@ void TrackballNavigation::endMouseDrag(tgt::MouseEvent* /*e*/) {
 
 // This can be used to rotate (or "roll") the camera left and right, angle in radian measure
 void TrackballNavigation::rollCameraHorz(float angle) {
-    vec3 up = normalize( quat::rotate(trackball_->getCamera()->getUpVector(), angle, trackball_->getCamera()->getLook()) );
+    tgt::Camera cam = trackball_->getCamera()->get();
+    vec3 up = normalize( quat::rotate(cam.getUpVector(), angle, cam.getLook()) );
+    //cam.setUpVector(up);
     trackball_->getCamera()->setUpVector(up);
 }
 
 // This can be used to rotate (or "roll") the camera forwards and backwards, angle in radian measure
 void TrackballNavigation::rollCameraVert(float angle) {
-    vec3 up = normalize( quat::rotate(trackball_->getCamera()->getUpVector(), angle, trackball_->getCamera()->getStrafe()) );
+    tgt::Camera cam = trackball_->getCamera()->get();
+    vec3 up = normalize( quat::rotate(cam.getUpVector(), angle, cam.getStrafe()) );
+    cam.setUpVector(up);
+    vec3 look = cross(up, cam.getStrafe());
+    cam.setFocus(look);
     trackball_->getCamera()->setUpVector(up);
-    vec3 look = cross(up, trackball_->getCamera()->getStrafe());
-    trackball_->getCamera()->setFocus(trackball_->getCamera()->getPosition() + look);
+    //trackball_->getCamera()->set(cam);
+    //trackball_->getCamera()->set(cam);
 }
 
 

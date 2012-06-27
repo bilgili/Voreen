@@ -43,14 +43,14 @@ namespace voreen {
 
 namespace {
 /// compares pair<plot_t, color> but only the plot_t is used. We need it to order bars
-struct mergedBarSorter {
+struct MergedBarSorter {
     bool operator() (std::pair<plot_t, tgt::Color> a, std::pair<plot_t, tgt::Color> b) const {
         if (a.first >= 0 || b.first >= 0)
             return (a.first < b.first);
         else
             return (b.first < a.first);
     };
-};
+} mergedBarSorter;
 };
 
 const std::string PlotLibrary::loggerCat_("voreen.plotting.PlotLibrary");
@@ -63,11 +63,10 @@ PlotLibrary::PlotLibrary()
     , xAxisLabelGroup_(&labelFont_, 10, tgt::Bounds())
     , axisLabelGroup_(&labelFont_, 6)
     , dimension_(TWO)
-    , polarCoordinateFlag_(false)
-    , renderDataLabelFlag_(false)
     , drawingColor_(0.0f, 0.0f, 0.0f, 1.0f)
     , fillColor_(0.0f, 0.0f, 0.0f, 0.5f)
     , fontColor_(0.0f, 0.0f, 0.0f, 1.0f)
+    , highlightColor_(1.0f, 0.95f, 0.9f, 0.5f)
     , colorMap_(ColorMap::createColdHot())
     , minGlyphSize_(1.0f)
     , maxGlyphSize_(1.0f)
@@ -133,12 +132,11 @@ bool PlotLibrary::setOpenGLStatus() {
             glClipPlane (GL_CLIP_PLANE2, eqnBottom); glClipPlane (GL_CLIP_PLANE3, eqnTop);
         }
         else { //dimension_ == FAKETHREE
-            //shearing for fake 3d effect
             //translation to the center
             glTranslated((xl+xr)/2,(yl+yr)/2,(zl+zr)/2);
             //rescaling
             glScaled(1/(1+shear_.x*(zr-zl)),1/(1+shear_.y*(zr-zl)),1);
-            //shearing
+            //shearing for fake 3d effect
             tgt::mat4 m = tgt::mat4(1,0,0,0,0,1,0,0,-shear_.x*static_cast<float>(xr-xl),
                 -shear_.y*static_cast<float>(yr-yl),1,0,0,0,0,1);
             tgt::multTransposeMatrix(m);
@@ -158,7 +156,7 @@ bool PlotLibrary::setOpenGLStatus() {
             glEnable(GL_LIGHT0);
             glEnable(GL_NORMALIZE);
         }
-        tgt::loadMatrix(camera_->getViewMatrix());
+        tgt::loadMatrix(camera_.getViewMatrix());
         //plot into [-0.5,0.5]^3
         glTranslated(-0.5,-0.5,-0.5);
         glScaled(1/domain_[0].size(),1/domain_[1].size(),1/domain_[2].size());
@@ -168,7 +166,7 @@ bool PlotLibrary::setOpenGLStatus() {
         if (orthographicCameraFlag_)
             glOrtho(-.9,.9,-.9,.9,-2,10);
         else
-            tgt::loadMatrix(camera_->getProjectionMatrix());
+            tgt::loadMatrix(camera_.getProjectionMatrix());
         GLdouble eqnLeft[4] = {1.0, 0.0, 0.0, -domain_[X_AXIS].getLeft()};
         GLdouble eqnRight[4] = {-1.0, 0.0, 0.0, domain_[X_AXIS].getRight()};
         GLdouble eqnBottom[4] = {0.0, 1.0, 0.0, -domain_[Y_AXIS].getLeft()};
@@ -178,6 +176,9 @@ bool PlotLibrary::setOpenGLStatus() {
         glClipPlane (GL_CLIP_PLANE0, eqnLeft);   glClipPlane (GL_CLIP_PLANE1, eqnRight);
         glClipPlane (GL_CLIP_PLANE2, eqnBottom); glClipPlane (GL_CLIP_PLANE3, eqnTop);
         glClipPlane (GL_CLIP_PLANE4, eqnFront);  glClipPlane (GL_CLIP_PLANE5, eqnBack);
+        // we need to calculate which are the outer edges (used for selection and
+        // labeling the axes)
+        calculateSelectionEdges();
     }
     glMatrixMode(GL_MODELVIEW);
     //some settings are not used for drawing pickable objects
@@ -206,10 +207,7 @@ void PlotLibrary::renderLine(const PlotData& data, int indexX, int indexY) const
     //set up some opengl settings
     glEnable (GL_CLIP_PLANE0); glEnable (GL_CLIP_PLANE1);
     glEnable (GL_CLIP_PLANE2); glEnable (GL_CLIP_PLANE3);
-    if (usePlotPickingManager_)
-        ppm_->setGLColor(-1, indexY);
-    else
-        glColor4fv(drawingColor_.elem);
+    bool lineIsHighlighted = data.isHighlighted(tgt::ivec2(-1,indexY));
     glLineWidth(lineWidth_);
     glPointSize(maxGlyphSize_);
     glDisable(GL_DEPTH_TEST);
@@ -229,14 +227,17 @@ void PlotLibrary::renderLine(const PlotData& data, int indexX, int indexY) const
     }
     if (it == data.getRowsEnd() || it == --data.getRowsEnd())
         return;
+
+    // draw the line
     double oldX = tagsInX ? i : it->getValueAt(indexX);
     double oldY = it->getValueAt(indexY);
-    glBegin(GL_POINTS);
-        logGlVertex2d(oldX, oldY);
-    glEnd();
-    ++i;
-    // draw the line
-    for (it = (++it); it != data.getRowsEnd(); ++it, ++i) {
+    if (usePlotPickingManager_)
+        ppm_->setGLColor(-1, indexY);
+    else if (lineIsHighlighted)
+        glColor4fv(highlightColor_.elem);
+    else
+        glColor4fv(drawingColor_.elem);
+    for (++it, ++i; it != data.getRowsEnd(); ++it, ++i) {
         //we ignore rows with null entries
         if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
             continue;
@@ -247,32 +248,35 @@ void PlotLibrary::renderLine(const PlotData& data, int indexX, int indexY) const
             logGlVertex2d(oldX, oldY);
             logGlVertex2d(x, y);
         glEnd();
-        glBegin(GL_POINTS);
-            logGlVertex2d(x, y);
-        glEnd();
         //if x is out of the interval, we leave the loop
         if (x>= domain_[X_AXIS].getRight())
             break;
         oldX = x;
         oldY = y;
     }
+
+    // render the points
+    glPointSize(maxGlyphSize_);
+    glBegin(GL_POINTS);
+    for (it = data.getRowsBegin(), i = 0; it != data.getRowsEnd(); ++it, ++i) {
+        //we ignore rows with null entries
+        if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
+            continue;
+        }
+        x = tagsInX ? i : it->getValueAt(indexX);
+        y = it->getValueAt(indexY);
+        if (usePlotPickingManager_)
+            ppm_->setGLColor(i, indexY);
+        else if (it->getCellAt(indexY).isHighlighted())
+            glColor4fv(highlightColor_.elem);
+        else
+            glColor4fv(drawingColor_.elem);
+        logGlVertex2d(x, y);
+    }
+    glEnd();
+
     glDisable (GL_CLIP_PLANE0); glDisable (GL_CLIP_PLANE1);
     glDisable (GL_CLIP_PLANE2); glDisable (GL_CLIP_PLANE3);
-    //draw the label
-    if (data.getColumnLabel(indexY) != "" && renderDataLabelFlag_ && !usePlotPickingManager_) {
-        // we might have clipped the line, so we need to calculate the right y value
-        // and check if it is inside the domain
-        double dydx = (oldY-y)/(oldX-x);
-        y = dydx * domain_[X_AXIS].getRight() + y - dydx * x;
-        if (domain_[Y_AXIS].contains(y)) {
-            if (logarithmicAxisFlags_[1])
-                y = convertToLogCoordinates(y, Y_AXIS);
-
-            lineLabelGroup_.addLabel(data.getColumnLabel(indexY),
-                                     tgt::dvec3(10, 0, 0) + convertPlotCoordinatesToViewport3(tgt::dvec3(domain_[0].getRight(), y, domain_[2].getLeft())),
-                                     fontColor_, fontSize_, SmartLabel::MIDDLELEFT);
-        }
-    }
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_LINE_STIPPLE);
 }
@@ -282,13 +286,8 @@ void PlotLibrary::renderSpline(const PlotData& data, int indexX, int indexY) con
     tgt::Spline spline;
     // check if only values or only tags in given cells
     bool tagsInX = (data.getColumnType(indexX) == PlotBase::STRING);
-    //set up some opengl settings
-    if (usePlotPickingManager_)
-        ppm_->setGLColor(-1, indexY);
-    else
-        glColor4fv(drawingColor_.elem);
+    bool lineIsHighlighted = data.isHighlighted(tgt::ivec2(-1,indexY));
     glLineWidth(lineWidth_);
-    glPointSize(maxGlyphSize_);
     glDisable(GL_DEPTH_TEST);
     glEnable (GL_CLIP_PLANE0); glEnable (GL_CLIP_PLANE1);
     glEnable (GL_CLIP_PLANE2); glEnable (GL_CLIP_PLANE3);
@@ -306,11 +305,11 @@ void PlotLibrary::renderSpline(const PlotData& data, int indexX, int indexY) con
     }
     if (it == data.getRowsEnd())
         return;
+
+    // add the control points
     double x = tagsInX ? i : it->getValueAt(indexX);
     double y = it->getValueAt(indexY);
     spline.addControlPoint(tgt::dvec3(x,y,0));
-    // add the control points
-    glBegin(GL_POINTS);
     for (; it != data.getRowsEnd(); ++it, ++i) {
         //we ignore rows with null entries
         if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
@@ -319,12 +318,17 @@ void PlotLibrary::renderSpline(const PlotData& data, int indexX, int indexY) con
         x = tagsInX ? i : it->getValueAt(indexX);
         y = it->getValueAt(indexY);
         spline.addControlPoint(tgt::dvec3(x,y,0));
-        logGlVertex2d(x, y);
     }
-    glEnd();
     spline.addControlPoint(tgt::dvec3(x,y,0));
+
     //render spline, possibly with log coordinates
     GLfloat step = 1.f /spline.getStepCount();
+    if (usePlotPickingManager_)
+        ppm_->setGLColor(-1, indexY);
+    else if (lineIsHighlighted)
+        glColor4fv(highlightColor_.elem);
+    else
+        glColor4fv(drawingColor_.elem);
     glBegin(GL_LINE_STRIP);
     for (GLfloat p = 0.f; p < 1.f; p+=step) {
         x = spline.getPoint(p).x;
@@ -334,17 +338,29 @@ void PlotLibrary::renderSpline(const PlotData& data, int indexX, int indexY) con
             break;
     }
     glEnd();
+
+    // render the points
+    glPointSize(maxGlyphSize_);
+    glBegin(GL_POINTS);
+    for (it = data.getRowsBegin(), i = 0; it != data.getRowsEnd(); ++it, ++i) {
+        //we ignore rows with null entries
+        if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
+            continue;
+        }
+        x = tagsInX ? i : it->getValueAt(indexX);
+        y = it->getValueAt(indexY);
+        if (usePlotPickingManager_)
+            ppm_->setGLColor(i, indexY);
+        else if (it->getCellAt(indexY).isHighlighted())
+            glColor4fv(highlightColor_.elem);
+        else
+            glColor4fv(drawingColor_.elem);
+        logGlVertex2d(x, y);
+    }
+    glEnd();
+
     glDisable (GL_CLIP_PLANE0); glDisable (GL_CLIP_PLANE1);
     glDisable (GL_CLIP_PLANE2); glDisable (GL_CLIP_PLANE3);
-    //draw line label
-    if (data.getColumnLabel(indexY) != "" && renderDataLabelFlag_ && domain_[Y_AXIS].contains(y) && !usePlotPickingManager_) {
-        if (logarithmicAxisFlags_[1])
-            y = convertToLogCoordinates(y, Y_AXIS);
-
-        lineLabelGroup_.addLabel(data.getColumnLabel(indexY),
-                                 tgt::dvec3(10, 0, 0) + convertPlotCoordinatesToViewport3(tgt::dvec3(domain_[0].getRight(), y, domain_[2].getLeft())),
-                                 fontColor_, fontSize_, SmartLabel::MIDDLELEFT);
-    }
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_LINE_STIPPLE);
 }
@@ -368,19 +384,16 @@ void PlotLibrary::renderErrorline(const PlotData& data, int indexX, int indexY, 
     double x             = tagsInX ? i : it->getValueAt(indexX);
     double errorTop      = it->getValueAt(indexY) + std::abs(it->getValueAt(indexError));
     double errorBottom   = it->getValueAt(indexY) - std::abs(it->getValueAt(indexError));
-
     if (usePlotPickingManager_)
-        ppm_->setGLColor(-1, indexError);
+        ppm_->setGLColor(-1, indexY);
     else
         glColor4fv(fillColor_.elem);
     // draw the errorline
     ++i;
     glBegin(GL_QUAD_STRIP);
         for (it = (++it); it != data.getRowsEnd(); ++it, ++i) {
-            if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
+            if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull())
                 continue;
-            }
-
             logGlVertex2d(x, errorBottom);
             logGlVertex2d(x, errorTop);
 
@@ -402,9 +415,8 @@ void PlotLibrary::renderErrorspline(const PlotData& data, int indexX, int indexY
 
     // check if only values or only tags in given cells
     bool tagsInX = (data.getColumnType(indexX) == PlotBase::STRING);
-    // openGl settings
     if (usePlotPickingManager_)
-        ppm_->setGLColor(-1, indexError);
+        ppm_->setGLColor(-1, indexY);
     else
         glColor4fv(fillColor_.elem);
     glDisable(GL_DEPTH_TEST);
@@ -459,14 +471,8 @@ void PlotLibrary::renderErrorspline(const PlotData& data, int indexX, int indexY
 
 void PlotLibrary::renderErrorbars(const PlotData& data, int indexX, int indexY, int indexError) const{
     std::vector<PlotRowValue>::const_iterator it;
-
     // check if only values or only tags in given cells
     bool tagsInX = (data.getColumnType(indexX) == PlotBase::STRING);
-    // openGl settings
-    if (usePlotPickingManager_)
-        ppm_->setGLColor(-1, indexError);
-    else
-        glColor4fv(drawingColor_.elem);
     glLineWidth(lineWidth_);
     glDisable(GL_DEPTH_TEST);
     glEnable (GL_CLIP_PLANE2);
@@ -485,6 +491,13 @@ void PlotLibrary::renderErrorbars(const PlotData& data, int indexX, int indexY, 
         double x = tagsInX ? i : it->getValueAt(indexX);
         if (!domain_[X_AXIS].contains(x))
             continue;
+
+        if (usePlotPickingManager_)
+            ppm_->setGLColor(i, indexError);
+        else if (it->getCellAt(indexError).isHighlighted())
+            glColor4fv(highlightColor_.elem);
+        else
+            glColor4fv(drawingColor_.elem);
 
         double y = it->getValueAt(indexY);
         double yTop = it->getValueAt(indexY) + it->getValueAt(indexError);
@@ -506,7 +519,6 @@ void PlotLibrary::renderErrorbars(const PlotData& data, int indexX, int indexY, 
             glVertex2d(x+radius, yBottom);
         glEnd();
 
-
         tgt::Ellipse midpoint(tgt::dvec3(x, y, domain_[2].getLeft()), radius/2,
                               (radius*aspectRatio)/2, tgt::dvec3(0, 0, 1), tgt::dvec3(1, 0, 0 ), 32);
         midpoint.render();
@@ -516,7 +528,8 @@ void PlotLibrary::renderErrorbars(const PlotData& data, int indexX, int indexY, 
     glDisable (GL_CLIP_PLANE3);
 }
 
-void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stickTop, int stickBottom, int candleTop, int candleBottom) const {
+void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stickTop,
+                                     int stickBottom, int candleTop, int candleBottom) const {
     std::vector<PlotRowValue>::const_iterator it;
 
     // check if only values or only tags in given cells
@@ -531,22 +544,28 @@ void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stick
 
     // draw the candlestick
     int i=0;
+    double yStickTop     = 0.0;
+    double yStickBottom  = 0.0;
+    double yCandleTop    = 0.0;
+    double yCandleBottom = 0.0;
+
     for (it = data.getRowsBegin(); it != data.getRowsEnd(); ++it, ++i) {
         if (it->getCellAt(indexX).isNull() || it->getCellAt(stickTop).isNull() || it->getCellAt(stickBottom).isNull()
             || it->getCellAt(candleTop).isNull() || it->getCellAt(candleBottom).isNull()) {
             continue;
         }
         double x = tagsInX ? i : it->getValueAt(indexX);
-        double yStickTop        = it->getValueAt(stickTop);
-        double yStickBottom     = it->getValueAt(stickBottom);
-        double yCandleTop       = it->getValueAt(candleTop);
-        double yCandleBottom    = it->getValueAt(candleBottom);
+        yStickTop     = it->getValueAt(stickTop);
+        yStickBottom  = it->getValueAt(stickBottom);
+        yCandleTop    = it->getValueAt(candleTop);
+        yCandleBottom = it->getValueAt(candleBottom);
 
-        // we divide the stick and the candle in top and bottom half in order to
-        // enable objectpicking
+        // we divide the stick and the candle in top and bottom half
         // draw stick
         if (usePlotPickingManager_)
             ppm_->setGLColor(i, stickTop);
+        else if (it->getCellAt(stickTop).isHighlighted())
+            glColor4fv(highlightColor_.elem);
         else
             glColor4fv(drawingColor_.elem);
         glBegin(GL_LINES);
@@ -555,6 +574,10 @@ void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stick
         glEnd();
         if (usePlotPickingManager_)
             ppm_->setGLColor(i, stickBottom);
+        else if (it->getCellAt(stickBottom).isHighlighted())
+            glColor4fv(highlightColor_.elem);
+        else
+            glColor4fv(drawingColor_.elem);
         glBegin(GL_LINES);
             logGlVertex2d(x, (yStickTop+yStickBottom)/2.0);
             logGlVertex2d(x, yStickBottom);
@@ -562,6 +585,8 @@ void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stick
         //draw candle
         if (usePlotPickingManager_)
             ppm_->setGLColor(i, candleTop);
+        else if (it->getCellAt(candleTop).isHighlighted())
+            glColor4fv(highlightColor_.elem);
         else
             glColor4fv(fillColor_.elem);
         glBegin(GL_POLYGON);
@@ -572,41 +597,24 @@ void PlotLibrary::renderCandlesticks(const PlotData& data, int indexX, int stick
         glEnd();
         if (usePlotPickingManager_)
             ppm_->setGLColor(i, candleBottom);
+        else if (it->getCellAt(candleBottom).isHighlighted())
+            glColor4fv(highlightColor_.elem);
+        else
+            glColor4fv(fillColor_.elem);
         glBegin(GL_POLYGON);
             logGlVertex2d(x-width, (yCandleBottom+yCandleTop)/2.0);
             logGlVertex2d(x-width, yCandleBottom);
             logGlVertex2d(x+width, yCandleBottom);
             logGlVertex2d(x+width, (yCandleBottom+yCandleTop)/2.0);
         glEnd();
-        // render info label if cell is highlighted and the point is inside the domains
-        if (!usePlotPickingManager_ && domain_[X_AXIS].contains(x)) {
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(4) << "x: " << x << std::endl << "StickTop: " << yStickTop << std::endl << "CandlestickTop: " << yCandleTop << std::endl
-                << "CandlestickBottom: " << yCandleBottom << std::endl << "StickBottom: " << yStickBottom ;
-            if (it->getCellAt(stickTop).isHighlighted() && domain_[Y_AXIS].contains(yStickTop)) {
-                tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, yStickTop, 0));
-                plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
-            if (it->getCellAt(stickBottom).isHighlighted() && domain_[Y_AXIS].contains(yStickBottom)) {
-                tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, yStickBottom, 0));
-                plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
-            if (it->getCellAt(candleTop).isHighlighted() && domain_[Y_AXIS].contains(yCandleTop)) {
-                tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, yCandleTop, 0));
-                plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
-            if (it->getCellAt(candleBottom).isHighlighted() && domain_[Y_AXIS].contains(yCandleBottom)) {
-                tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, yCandleBottom, 0));
-                plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
-        }
     }
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CLIP_PLANE0); glDisable(GL_CLIP_PLANE1);
     glDisable(GL_CLIP_PLANE2); glDisable(GL_CLIP_PLANE3);
 }
 
-void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire, int indexX, int indexY, int indexZ, int indexCM)  const {
+void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire,
+                                int indexX, int indexY, int indexZ, int indexCM)  const {
     // security check: if count of edge indices is not a multiple of 3 abort
     if (triangleVertexIndices.size() % 3 != 0)
         return;
@@ -615,17 +623,13 @@ void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& tr
     glEnable(GL_CLIP_PLANE2); glEnable(GL_CLIP_PLANE3);
     glEnable(GL_CLIP_PLANE4); glEnable(GL_CLIP_PLANE5);
 
-    if (lightingFlag_ == true && usePlotPickingManager_ == false) {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_COLOR_MATERIAL);
-    }
     Interval<plot_t> colInterval(0, 0);
 
     if (wire)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else {
         glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
+        glPolygonOffset(2.0, 1.0);
     }
     if ( indexCM != -1 ) {
         colInterval = data.getInterval(indexCM);
@@ -637,8 +641,9 @@ void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& tr
 
     glLineWidth(lineWidth_);
     // draw the triangles
-    std::set<int> drawedPlotLabels; // we want to render each plot label only once
-    for (std::vector<int>::const_iterator it = triangleVertexIndices.begin(); it < triangleVertexIndices.end(); ) {
+    std::set<int> renderedHighlights; // we want to render each plot label // highlight only once
+    for (std::vector<int>::const_iterator it = triangleVertexIndices.begin(); it < triangleVertexIndices.end(); it += 3) {
+        // render plot picking data?
         if (usePlotPickingManager_) {
             // to write out the PlotCell information to the ppm, we subdivide our triangle into three
             // quads, and render each with the according encoded color
@@ -681,41 +686,26 @@ void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& tr
                 glVertex3dv(bc.elem);
             glEnd();
 
-            it  += 3;
         }
+        // else render plot
         else {
-            // render info label if cell is highlighted and the point is inside the domains
-            for (int i=0; i<3; ++i) {
-                const PlotRowValue& row = data.getRow(*(it+i));
-                plot_t x = row.getValueAt(indexX);
-                plot_t y = row.getValueAt(indexY);
-                plot_t z = row.getValueAt(indexZ);
-                if (!wire && row.getCellAt(indexZ).isHighlighted()
-                          && drawedPlotLabels.find(*(it+i)) == drawedPlotLabels.end()
-                          && domain_[X_AXIS].contains(x) && domain_[Y_AXIS].contains(y) && domain_[Z_AXIS].contains(z)) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, y, z));
-                    std::stringstream ss;
-                    ss << std::fixed << std::setprecision(4) << "x: " << x << std::endl << "y: " << y << std::endl <<  "z: " << z;
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-                    glColor3f(0, 0, 0);
-                    renderGlyph(row.getValueAt(indexX), row.getValueAt(indexY), row.getValueAt(indexZ), 4);
-                    glColor4fv(drawingColor_.elem);
-                    drawedPlotLabels.insert(*(it+i));
-                }
-            }
-
+            // render triangle first
             glBegin(GL_POLYGON);
             for (int i=0; i<3; ++i) {
-                const PlotRowValue& row = data.getRow(*it);
+                const PlotRowValue& row = data.getRow(*(it+i));
 
                 if (indexCM != -1 ) {
                     float c = static_cast<float>((row.getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
                     tgt::Color cc = colorMap_.getColorAtPosition(c);
                     glColor4fv(cc.elem);
                 }
-                glVertex3d(row.getValueAt(indexX), row.getValueAt(indexY), row.getValueAt(indexZ));
-
-                ++it;
+                if (!wire && row.getCellAt(indexZ).isHighlighted()) {
+                    glColor4fv(highlightColor_.elem);
+                    glVertex3d(row.getValueAt(indexX), row.getValueAt(indexY), row.getValueAt(indexZ));
+                    glColor4fv(drawingColor_.elem);
+                }
+                else
+                    glVertex3d(row.getValueAt(indexX), row.getValueAt(indexY), row.getValueAt(indexZ));
             }
             glEnd();
         }
@@ -723,20 +713,13 @@ void PlotLibrary::renderSurface(const PlotData& data, const std::vector<int>& tr
 
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glDisable(GL_POLYGON_OFFSET_FILL);
-    if (lightingFlag_ == true && usePlotPickingManager_ == false) {
-        glDisable(GL_LIGHTING);
-        glDisable(GL_COLOR_MATERIAL);
-    }
     glDisable(GL_CLIP_PLANE0); glDisable(GL_CLIP_PLANE1);
     glDisable(GL_CLIP_PLANE2); glDisable(GL_CLIP_PLANE3);
     glDisable(GL_CLIP_PLANE4); glDisable(GL_CLIP_PLANE5);
 }
 
-void PlotLibrary::renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions, bool wire, int indexX, int indexY, int indexZ, int indexCM) const {
-    if (lightingFlag_ == true && usePlotPickingManager_ == false) {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_COLOR_MATERIAL);
-    }
+void PlotLibrary::renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions,
+                                  bool wire, int indexZ, int indexCM) const {
     Interval<plot_t> colInterval(0, 0);
     plot_t yMin = data.getInterval(2).getLeft();
 
@@ -744,16 +727,13 @@ void PlotLibrary::renderHeightmap(const voreen::PlotData& data, const std::vecto
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else {
         glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
+        glPolygonOffset(2.0, 1.0);
     }
     if ( indexCM != -1 ) {
         colInterval = data.getInterval(indexCM);
         if (colInterval.size() == 0)
             indexCM = -1;
     }
-    if ( indexCM == -1)
-        glColor4fv(drawingColor_.elem);
-
     glLineWidth(lineWidth_);
 
     int row = 0;
@@ -763,14 +743,17 @@ void PlotLibrary::renderHeightmap(const voreen::PlotData& data, const std::vecto
         if (rit->empty())
             continue;
 
-        if (usePlotPickingManager_) {
+        if (usePlotPickingManager_)
             ppm_->setGLColor(row, indexZ);
-        }
+        else if (!wire && pit->getCellAt(indexZ).isHighlighted())
+            glColor4fv(highlightColor_.elem);
         else if (indexCM != -1 ) {
             float c = static_cast<float>((pit->getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
-            tgt::Color cc = colorMap_.getColorAtPosition(c);
-            glColor4fv(cc.elem);
+            glColor4fv(colorMap_.getColorAtPosition(c).elem);
         }
+        else
+            glColor4fv(drawingColor_.elem);
+
         plot_t height = pit->getValueAt(indexZ);
         //clip it:
         if (height > domain_[Z_AXIS].getRight())
@@ -799,31 +782,19 @@ void PlotLibrary::renderHeightmap(const voreen::PlotData& data, const std::vecto
                 glVertex3d(eit->x, eit->y, yMin);
             }
             glEnd();
-
-            // render info label if cell is highlighted
-            if (pit->getCellAt(indexZ).isHighlighted()) {
-                tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(pit->getValueAt(indexX), pit->getValueAt(indexY), height));
-                std::stringstream ss;
-                ss << std::fixed << std::setprecision(4) << "x: " << pit->getValueAt(indexX) << std::endl << "y: " << pit->getValueAt(indexY) << std::endl <<  "z: " << pit->getValueAt(indexZ);
-                plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
         }
     }
-
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glDisable(GL_POLYGON_OFFSET_FILL);
-    if (lightingFlag_ == true && usePlotPickingManager_ == false) {
-        glDisable(GL_LIGHTING);
-        glDisable(GL_COLOR_MATERIAL);
-    }
 }
 
 void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) const {
     std::vector<PlotRowValue>::const_iterator rowIt = data.getRowsBegin();
     //stores y values and indices of a merged bar group, the indices are used to get the right color
-    std::vector<std::pair<plot_t, tgt::Color> > mergedBars = std::vector<std::pair<plot_t, tgt::Color> >();
+    std::vector<std::pair<plot_t, tgt::Color> > mergedBars;
     //stores last y value, used for stacked bars
     plot_t lastY;
+    tgt::Color c;
     //rowcounter
     plot_t row = 0;
     for (; rowIt < data.getRowsEnd(); ++rowIt) {
@@ -831,7 +802,10 @@ void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) co
         mergedBars.clear();
         // we do not use the iterator because we also iterate through the colormap
         for (size_t i = 0; i < indicesY.size(); ++i) {
-            tgt::Color c = colorMap_.getColorAtIndex(i);
+            if (rowIt->getCellAt(indicesY.at(i)).isHighlighted())
+                c = highlightColor_;
+            else
+                c = colorMap_.getColorAtIndex(i);
             if (barMode_ == STACKED) {
                 if (rowIt->getCellAt(indicesY.at(i)).isNull() )
                     continue;
@@ -842,13 +816,6 @@ void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) co
                 if (usePlotPickingManager_)
                     ppm_->setGLColor(static_cast<int>(row), indicesY.at(i));
                 renderSingleBar(row-barWidth_/2.0,row+barWidth_/2.0, lastY, newY, c);
-                // render info label if cell is highlighted
-                if (!usePlotPickingManager_ && rowIt->getCellAt(indicesY.at(i)).isHighlighted()) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(row, (lastY + newY)/2, domain_[2].getRight()));
-                    std::stringstream ss;
-                    ss << rowIt->getValueAt(indicesY.at(i));
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::TOPCENTERED);
-                }
                 lastY = newY;
             }
             else if (barMode_ == GROUPED) {
@@ -859,38 +826,21 @@ void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) co
                     ppm_->setGLColor(static_cast<int>(row), indicesY.at(i));
                 renderSingleBar(row-barWidth_/2.0+static_cast<double>(i)*singleBarWidth,
                     row-barWidth_/2.0+static_cast<double>(i+1)*singleBarWidth, 0, rowIt->getValueAt(indicesY.at(i)), c);
-                // render info label if cell is highlighted
-                if (!usePlotPickingManager_ && rowIt->getCellAt(indicesY.at(i)).isHighlighted()) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(
-                        row-barWidth_/2.0+static_cast<double>(i+0.5)*singleBarWidth, rowIt->getValueAt(indicesY.at(i))/2, domain_[2].getRight()));
-                    std::stringstream ss;
-                    ss << rowIt->getValueAt(indicesY.at(i));
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::TOPCENTERED);
-                }
             }
 
             else { // MERGED
-                //we can't skip null entries, so we set them 0
+                // we can't skip null entries, so we set them 0
                 if (usePlotPickingManager_)
                     c = ppm_->convertColor(ppm_->getColorFromCell(static_cast<int>(row), indicesY.at(i)));
                 if (rowIt->getCellAt(indicesY.at(i)).isNull())
                     mergedBars.push_back(std::pair<plot_t, tgt::Color>(0, c));
-
-                //push the y value and the color index
+                // push the y value and the color index
                 mergedBars.push_back(std::pair<plot_t, tgt::Color>(rowIt->getValueAt(indicesY.at(i)), c));
-                // render info label if cell is highlighted
-                if (!usePlotPickingManager_ && rowIt->getCellAt(indicesY.at(i)).isHighlighted()) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(row, rowIt->getValueAt(indicesY.at(i)), domain_[2].getRight()));
-                    std::stringstream ss;
-                    ss << rowIt->getValueAt(indicesY.at(i));
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::TOPCENTERED);
-                }
             }
         }
         if (barMode_ == MERGED) {
-            //the values are stored in bars, but not yet drawn
-            mergedBarSorter sorter;
-            std::sort(mergedBars.begin(), mergedBars.end(), sorter);
+            // the values are stored in bars, but not yet drawn
+            std::sort(mergedBars.begin(), mergedBars.end(), mergedBarSorter);
             std::vector<std::pair<plot_t, tgt::Color> >::const_iterator it;
             double squeeze = 1.0;
             for (it = mergedBars.begin(); it < mergedBars.end(); ++it) {
@@ -900,6 +850,28 @@ void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) co
             }
         }
         ++row;
+    }
+}
+
+void PlotLibrary::renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY) const {
+    std::vector<PlotRowValue>::const_iterator it;
+
+    // render nodes
+    glColor4fv(drawingColor_.elem);
+    plot_t glyphSize = (maxGlyphSize_ + minGlyphSize_)/2;
+    for (it = nodeData.getRowsBegin(); it != nodeData.getRowsEnd(); ++it) {
+        renderGlyph(it->getValueAt(indexX), it->getValueAt(indexY), 0, glyphSize);
+    }
+
+    // render connections
+    glLineWidth(lineWidth_);
+    for (it = connectionData.getRowsBegin(); it != connectionData.getRowsEnd(); ++it) {
+        const PlotRowValue& first = nodeData.getRow(static_cast<int>(it->getValueAt(0)));
+        const PlotRowValue& second = nodeData.getRow(static_cast<int>(it->getValueAt(1)));
+        glBegin(GL_LINE_STRIP);
+            logGlVertex2d(first.getValueAt(indexX), first.getValueAt(indexY));
+            logGlVertex2d(second.getValueAt(indexX), second.getValueAt(indexY));
+        glEnd();
     }
 }
 
@@ -925,10 +897,10 @@ void PlotLibrary::renderColorMapLegend(const PlotData& data, int column, int num
 
     // render legend
     int colorcount      = colorMap_.getColorCount();
-    const double width  = 128;
-    const double height = 20;
-    const double xStart = windowSize_.x - width - 20;
-    const double yStart = windowSize_.y - 20 - (number*48);
+    const double width  = 96;
+    const double height = 16;
+    const double xStart = windowSize_.x - width - 8;
+    const double yStart = windowSize_.y - 8 - (number*32);
     double stepWidth    = width / (colorcount - 1);
 
     // color map
@@ -955,16 +927,19 @@ void PlotLibrary::renderColorMapLegend(const PlotData& data, int column, int num
     glEnd();
 
     // labels
-    SmartLabelGroupBase::renderSingleLabel(&labelFont_, label, tgt::dvec3(xStart, yStart - (height/2), 0), fontColor_, fontSize_, SmartLabel::MIDDLERIGHT, 4);
+    SmartLabelGroupBase::renderSingleLabel(&labelFont_, label, tgt::dvec3(xStart, yStart - (height/2), 0),
+            fontColor_, fontSize_, SmartLabel::MIDDLERIGHT, 4);
 
     std::stringstream ss;
     ss << std::setprecision(4) << interval.getLeft();
-    SmartLabelGroupBase::renderSingleLabel(&labelFont_, ss.str(), tgt::dvec3(xStart, yStart - height, 0), fontColor_, fontSize_, SmartLabel::BOTTOMCENTERED, 4);
+    SmartLabelGroupBase::renderSingleLabel(&labelFont_, ss.str(), tgt::dvec3(xStart, yStart - height, 0),
+            fontColor_, fontSize_, SmartLabel::BOTTOMCENTERED, 4);
 
     ss.str("");
     ss.clear();
     ss << std::setprecision(4) << interval.getRight();
-    SmartLabelGroupBase::renderSingleLabel(&labelFont_, ss.str(), tgt::dvec3(xStart + width, yStart - height, 0), fontColor_, fontSize_, SmartLabel::BOTTOMCENTERED, 4);
+    SmartLabelGroupBase::renderSingleLabel(&labelFont_, ss.str(), tgt::dvec3(xStart + width, yStart - height, 0),
+            fontColor_, fontSize_, SmartLabel::BOTTOMCENTERED, 4);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -986,9 +961,6 @@ void PlotLibrary::renderScatter(const PlotData& data, int indexX, int indexY, in
         if (colInterval.size() == 0)
             indexCM = -1;
     }
-    if (indexCM == -1)
-        glColor4fv(drawingColor_.elem);
-
     plot_t x, y, z;
     plot_t size = maxGlyphSize_;
     // if there is size data, we interpolate it to [minGlyphSize_,maxGlyphSize_]
@@ -999,7 +971,6 @@ void PlotLibrary::renderScatter(const PlotData& data, int indexX, int indexY, in
         if (sizeInterval.size() == 0)
             indexSize = -1;
     }
-
     //row iterator
     int i = 0;
     std::vector<PlotRowValue>::const_iterator it = data.getRowsBegin();
@@ -1009,37 +980,28 @@ void PlotLibrary::renderScatter(const PlotData& data, int indexX, int indexY, in
         if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
             continue;
         }
-        if (usePlotPickingManager_) {
-            ppm_->setGLColor(i,indexZ == -1 ? indexY : indexZ);
-        }
-        else {
-            if (indexCM != -1 ) {
+        x = it->getValueAt(indexX); y = it->getValueAt(indexY); z = (indexZ == -1 ? 0 : it->getValueAt(indexZ));
+        //check if the point is inside the domains
+        if (domain_[X_AXIS].contains(x) && domain_[Y_AXIS].contains(y) && (dimension_ == TWO || domain_[Z_AXIS].contains(z))) {
+            // set color
+            if (usePlotPickingManager_)
+                ppm_->setGLColor(i,indexZ == -1 ? indexY : indexZ);
+            else if ((indexZ != -1 && it->getCellAt(indexZ).isHighlighted())
+                    || (indexZ == -1 && it->getCellAt(indexY).isHighlighted()))
+                glColor4fv(highlightColor_.elem);
+            else if (indexCM != -1 ) {
                 float c = static_cast<float>((it->getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
                 tgt::Color cc = colorMap_.getColorAtPosition(c);
                 glColor4fv(cc.elem);
             }
-        }
-        if (indexSize != -1 ) {
-            size = minGlyphSize_ + (maxGlyphSize_ - minGlyphSize_) * (it->getValueAt(indexSize) - sizeInterval.getLeft()) / sizeInterval.size();
-        }
-        x = it->getValueAt(indexX); y = it->getValueAt(indexY); z = (indexZ == -1 ? 0 : it->getValueAt(indexZ));
-        //check if the point is inside the domains
-        if (domain_[X_AXIS].contains(x) && domain_[Y_AXIS].contains(y) && (dimension_ == TWO || domain_[Z_AXIS].contains(z))) {
+            else
+                glColor4fv(drawingColor_.elem);
+            // set size
+            if (indexSize != -1 ) {
+                size = minGlyphSize_ + (maxGlyphSize_ - minGlyphSize_) *
+                            (it->getValueAt(indexSize) - sizeInterval.getLeft()) / sizeInterval.size();
+            }
             renderGlyph(x, y, z, size);
-            // render info label if cell is highlighted in 3D
-            if (indexZ != -1 && it->getCellAt(indexZ).isHighlighted()) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, y, z));
-                    std::stringstream ss;
-                    ss << std::fixed << std::setprecision(4) << "x: " << x << std::endl << "y: " << y << std::endl <<  "z: " << z;
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
-            // render info label if cell is highlighted in 2D
-            else if (indexZ == -1 && it->getCellAt(indexY).isHighlighted()) {
-                    tgt::dvec3 viewportCoords = convertPlotCoordinatesToViewport3(tgt::dvec3(x, y, 0));
-                    std::stringstream ss;
-                    ss << std::fixed << std::setprecision(4) << "x: " << x << std::endl << "y: " << y;
-                    plotLabelGroup_.addLabel(ss.str(), viewportCoords, fontColor_, fontSize_, SmartLabel::CENTERED);
-            }
         }
     }
     if (lightingFlag_ == true && usePlotPickingManager_ == false && glyphStyle_ != PlotEntitySettings::POINT) {
@@ -1175,7 +1137,7 @@ void PlotLibrary::renderAxisScales(Axis axis, bool helperLines, const std::strin
         start = ceil(start / step.x) * step.x;
 
         for (plot_t i = start; i <= domain_[axis].getRight(); i += step.x) {
-            plot_t pos = (logarithmicAxisFlags_[axis] ? convertFromLogCoordinates(i, axis) : i);
+            plot_t pos = i;//(logarithmicAxisFlags_[axis] ? convertFromLogCoordinates(i, axis) : i);
             stream.str("");
             stream.clear();
             stream << round(pos, step.y);
@@ -1185,8 +1147,8 @@ void PlotLibrary::renderAxisScales(Axis axis, bool helperLines, const std::strin
                                           fontColor_, fontSize_, SmartLabel::TOPCENTERED);
                 if (helperLines && dimension_ == TWO) {
                     glBegin(GL_LINE_STRIP);
-                        glVertex2d(i, yl);
-                        glVertex2d(i, yr);
+                        logGlVertex2d(i, yl);
+                        logGlVertex2d(i, yr);
                     glEnd();
                 }
             }
@@ -1195,9 +1157,9 @@ void PlotLibrary::renderAxisScales(Axis axis, bool helperLines, const std::strin
                 if (helperLines) {
                     glBegin(GL_LINE_STRIP);
                         if (dimension_ == FAKETHREE)
-                            glVertex3d(xl, i, zr);
-                        glVertex3d(xl, i, zl);
-                        glVertex3d(xr, i, zl);
+                            logGlVertex3d(xl, i, zr);
+                        logGlVertex3d(xl, i, zl);
+                        logGlVertex3d(xr, i, zl);
                     glEnd();
                 }
             }
@@ -1207,36 +1169,36 @@ void PlotLibrary::renderAxisScales(Axis axis, bool helperLines, const std::strin
     else if (dimension_ == THREE) {
         // If we are inside the plot cube (or really close to it) we do not want to
         // render scales because it looks ugly it doesn't make any sense.
-        if (!orthographicCameraFlag_ && tgt::distance(camera_->getPosition(), tgt::vec3(0,0,0)) < 1)
+        if (!orthographicCameraFlag_ && tgt::distance(camera_.getPosition(), tgt::vec3(0,0,0)) < 1)
             return;
 
         axisLabelGroup_.reset();
 
         // avoid expensive copying by using iterators
-        std::vector<ZoomEdge>::const_iterator minEdge = zoomEdgesX_.begin();
-        std::vector<ZoomEdge>::const_iterator endEdge = zoomEdgesX_.end();
+        std::vector<SelectionEdge>::const_iterator minEdge = selectionEdgesX_.begin();
+        std::vector<SelectionEdge>::const_iterator endEdge = selectionEdgesX_.end();
         if (axis == X_AXIS) {
-            if (zoomEdgesX_.empty())
+            if (selectionEdgesX_.empty())
                 return;
         }
         else if (axis == Y_AXIS) {
-            if (zoomEdgesY_.empty())
+            if (selectionEdgesY_.empty())
                 return;
-            minEdge = zoomEdgesY_.begin();
-            endEdge = zoomEdgesY_.end();
+            minEdge = selectionEdgesY_.begin();
+            endEdge = selectionEdgesY_.end();
         }
         else if (axis == Z_AXIS) {
-            if (zoomEdgesZ_.empty())
+            if (selectionEdgesZ_.empty())
                 return;
-            minEdge = zoomEdgesZ_.begin();
-            endEdge = zoomEdgesZ_.end();
+            minEdge = selectionEdgesZ_.begin();
+            endEdge = selectionEdgesZ_.end();
         }
 
         // find edge with maximum length
         double length = tgt::length(minEdge->endVertex_ - minEdge->startVertex_);
 
         if (! orthographicCameraFlag_) {
-            for (std::vector<ZoomEdge>::const_iterator it = ++minEdge; it < endEdge; ++it) {
+            for (std::vector<SelectionEdge>::const_iterator it = ++minEdge; it < endEdge; ++it) {
                 double val = tgt::length(it->endVertex_ - it->startVertex_);
                 if (val > length) {
                     minEdge = it;
@@ -1287,9 +1249,13 @@ void PlotLibrary::renderAxisScales(Axis axis, bool helperLines, const std::strin
             stream.clear();
             stream << round(i, step.y);
             if (minEdge->ascOrientation_)
-                axisLabelGroup_.addLabel(stream.str(), minEdge->startVertex_ + ((i - domain_[axis].getLeft())/domainSize)*edgeDirection, fontColor_, fontSize_, align);
+                axisLabelGroup_.addLabel(stream.str(),
+                        minEdge->startVertex_ + ((i - domain_[axis].getLeft())/domainSize)*edgeDirection,
+                        fontColor_, fontSize_, align);
             else
-                axisLabelGroup_.addLabel(stream.str(), minEdge->endVertex_   - ((i - domain_[axis].getLeft())/domainSize)*edgeDirection, fontColor_, fontSize_, align);
+                axisLabelGroup_.addLabel(stream.str(),
+                        minEdge->endVertex_ - ((i - domain_[axis].getLeft())/domainSize)*edgeDirection,
+                        fontColor_, fontSize_, align);
 
         }
         renderSmartLabelGroup(&axisLabelGroup_);
@@ -1403,11 +1369,11 @@ void PlotLibrary::renderAxisLabel(Axis axis, const std::string& label) const {
     switch (axis) {
         case X_AXIS:
             renderLabel(tgt::dvec3(domain_[0].getRight(), domain_[1].getLeft(),
-                domain_[2].getRight()), SmartLabel::TOPLEFT, label, false, 15);
+                domain_[2].getRight()), SmartLabel::BOTTOMLEFT, label, false, 15);
             break;
         case Y_AXIS:
             renderLabel(tgt::dvec3(domain_[0].getLeft(), domain_[1].getRight(),
-                domain_[2].getRight()), SmartLabel::BOTTOMRIGHT, label, false, 15);
+                domain_[2].getRight()), SmartLabel::TOPRIGHT, label, false, 15);
             break;
         case Z_AXIS:
             // should not be reached
@@ -1416,7 +1382,8 @@ void PlotLibrary::renderAxisLabel(Axis axis, const std::string& label) const {
     }
 }
 
-void PlotLibrary::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text, bool viewCoordinates, int padding) const {
+void PlotLibrary::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text,
+                              bool viewCoordinates, int padding) const {
     if (!viewCoordinates)
         pos = convertPlotCoordinatesToViewport3(pos);
 
@@ -1451,7 +1418,8 @@ void PlotLibrary::renderLabel(tgt::dvec2 pos, const SmartLabel::Alignment align,
     glLoadIdentity();
 
     glDisable(GL_DEPTH_TEST);
-    SmartLabelGroupBase::renderSingleLabel(&labelFont_, text, tgt::vec3((float)pos.x, (float)pos.y, 0), fontColor_, fontSize_, align, static_cast<float>(padding));
+    SmartLabelGroupBase::renderSingleLabel(&labelFont_, text, tgt::vec3((float)pos.x, (float)pos.y, 0), fontColor_,
+            fontSize_, align, static_cast<float>(padding));
     glEnable(GL_DEPTH_TEST);
 
     glMatrixMode(GL_PROJECTION);
@@ -1459,6 +1427,16 @@ void PlotLibrary::renderLabel(tgt::dvec2 pos, const SmartLabel::Alignment align,
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     LGL_ERROR;
+}
+
+void PlotLibrary::addPlotLabel(std::string text, tgt::vec3 position, tgt::Color color,
+                               int size, SmartLabel::Alignment align) {
+    plotLabelGroup_.addLabel(text, position, color, size, align);
+}
+
+void PlotLibrary::addLineLabel(std::string text, tgt::vec3 position, tgt::Color color,
+                               int size, SmartLabel::Alignment align) {
+    lineLabelGroup_.addLabel(text, position, color, size, align);
 }
 
 //
@@ -1527,63 +1505,64 @@ void PlotLibrary::renderMousePosition(tgt::ivec2 position) {
         tgt::dvec2 center(windowSize_.x/2, windowSize_.y/2);
         tgt::dvec2 startPosition(position.x, position.y);
 
-        int zoomEdgeIndex = -1; // -1 means no axis found
-        ZoomEdge zoomEdge;
+        int selectionEdgeIndex = -1; // -1 means no axis found
+        SelectionEdge selectionEdge;
         std::stringstream ss;
 
-        std::vector<ZoomEdge>::const_iterator it;
+        std::vector<SelectionEdge>::const_iterator it;
         // check against x-zoom-axes
-        for (it = getZoomEdgesX().begin(); it < getZoomEdgesX().end(); ++it) {
+        for (it = getSelectionEdgesX().begin(); it < getSelectionEdgesX().end(); ++it) {
             if (PlotLibrary::rightTurn(center, startPosition, it->startVertex_)
                 && PlotLibrary::leftTurn(center, startPosition, it->endVertex_)
                 && PlotLibrary::rightTurn(it->startVertex_, it->endVertex_, startPosition)) {
-                zoomEdge = *it;
-                zoomEdgeIndex = 0;
+                selectionEdge = *it;
+                selectionEdgeIndex = 0;
                 ss << "x-axis: ";
             }
         }
-        if (zoomEdgeIndex == -1) {
+        if (selectionEdgeIndex == -1) {
             // check against y-zoom-axes
-            for (it = getZoomEdgesY().begin(); it < getZoomEdgesY().end(); ++it) {
+            for (it = getSelectionEdgesY().begin(); it < getSelectionEdgesY().end(); ++it) {
                 if (PlotLibrary::rightTurn(center, startPosition, it->startVertex_)
                     && PlotLibrary::leftTurn(center, startPosition, it->endVertex_)
                     && PlotLibrary::rightTurn(it->startVertex_, it->endVertex_, startPosition)) {
-                    zoomEdge = *it;
-                    zoomEdgeIndex = 1;
+                    selectionEdge = *it;
+                    selectionEdgeIndex = 1;
                     ss << "y-axis: ";
                 }
             }
         }
-        if (zoomEdgeIndex == -1) {
+        if (selectionEdgeIndex == -1) {
             // check against z-zoom-axes
-            for (it = getZoomEdgesZ().begin(); it < getZoomEdgesZ().end(); ++it) {
+            for (it = getSelectionEdgesZ().begin(); it < getSelectionEdgesZ().end(); ++it) {
                 if (PlotLibrary::rightTurn(center, startPosition, it->startVertex_)
                     && PlotLibrary::leftTurn(center, startPosition, it->endVertex_)
                     && PlotLibrary::rightTurn(it->startVertex_, it->endVertex_, startPosition)) {
-                    zoomEdge = *it;
-                    zoomEdgeIndex = 2;
+                    selectionEdge = *it;
+                    selectionEdgeIndex = 2;
                     ss << "z-axis: ";
                 }
             }
         }
-        // if zoomEdgeIndex != -1, we are outside of the cube
-        if (zoomEdgeIndex != -1) {
-            tgtAssert(zoomEdgeIndex >= 0 && zoomEdgeIndex <= 2, "PlotLibrary::renderMousePosition(): zoomEdgeIndex must be in [0, 2]");
+        // if selectionEdgeIndex != -1, we are outside of the cube
+        if (selectionEdgeIndex != -1) {
+            tgtAssert(selectionEdgeIndex >= 0 && selectionEdgeIndex <= 2,
+                    "PlotLibrary::renderMousePosition(): selectionEdgeIndex must be in [0, 2]");
 
             // determine position of the zoom clipping planes by orthogonal projection of
             // start-click onto the zoom edge (scaled dot product)
-            tgt::dvec2 edge = zoomEdge.endVertex_ - zoomEdge.startVertex_;
-            tgt::dvec2 click = startPosition - zoomEdge.startVertex_;
+            tgt::dvec2 edge = selectionEdge.endVertex_ - selectionEdge.startVertex_;
+            tgt::dvec2 click = startPosition - selectionEdge.startVertex_;
             double dot = (edge.x*click.x + edge.y*click.y) / (tgt::length(edge) * tgt::length(edge));
 
             // calculate plot coordinates of zoom clipping plane
             plot_t plotPosition;
-            if (zoomEdge.ascOrientation_)
-                plotPosition = domain_[zoomEdgeIndex].getLeft() + (dot*domain_[zoomEdgeIndex].size());
+            if (selectionEdge.ascOrientation_)
+                plotPosition = domain_[selectionEdgeIndex].getLeft() + (dot*domain_[selectionEdgeIndex].size());
             else
-                plotPosition = domain_[zoomEdgeIndex].getRight() - (dot*domain_[zoomEdgeIndex].size());
+                plotPosition = domain_[selectionEdgeIndex].getRight() - (dot*domain_[selectionEdgeIndex].size());
 
-            if (domain_[zoomEdgeIndex].contains(plotPosition))
+            if (domain_[selectionEdgeIndex].contains(plotPosition))
                 ss << plotPosition;
             else
                 ss << "-";
@@ -1600,7 +1579,8 @@ namespace {
     }
 }
 
-void PlotLibrary::findEdges(const tgt::dvec2* vertices, const std::vector< std::valarray< int > > indices, std::vector< ZoomEdge >& out, PlotLibrary::Axis axis) const {
+void PlotLibrary::findEdges(const tgt::dvec2* vertices, const std::vector< std::valarray< int > > indices,
+                            std::vector< SelectionEdge >& out, PlotLibrary::Axis axis) const {
     // for each edge
     for (int i=0; i<4; ++i) {
         // check if it is an outer edge (part of convex hull) by checking if it meets the leftTurn predicate
@@ -1608,17 +1588,17 @@ void PlotLibrary::findEdges(const tgt::dvec2* vertices, const std::vector< std::
         if (   leftTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+1)%4])])
             && leftTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+2)%4])])
             && leftTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+3)%4])]))
-            out.push_back(ZoomEdge(axis, vertices[decode(indices[i])], vertices[decode(indices[i+4])], true));
+            out.push_back(SelectionEdge(axis, vertices[decode(indices[i])], vertices[decode(indices[i+4])], true));
 
         // same with rightTurn predicate -> then the inverse edge is part of the convex hull
         if (   rightTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+1)%4])])
             && rightTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+2)%4])])
             && rightTurn(vertices[decode(indices[i])], vertices[decode(indices[i+4])], vertices[decode(indices[(i+3)%4])]))
-            out.push_back(ZoomEdge(axis, vertices[decode(indices[i+4])], vertices[decode(indices[i])], false));
+            out.push_back(SelectionEdge(axis, vertices[decode(indices[i+4])], vertices[decode(indices[i])], false));
     }
 }
 
-void PlotLibrary::calculateZoomEdges() {
+void PlotLibrary::calculateSelectionEdges() {
     if (dimension_ != THREE)
         return;
 
@@ -1676,72 +1656,32 @@ void PlotLibrary::calculateZoomEdges() {
     }
 
     // find edges fox x-axis
-    zoomEdgesX_.clear();
-    findEdges(vertices, indices, zoomEdgesX_, X_AXIS);
+    selectionEdgesX_.clear();
+    findEdges(vertices, indices, selectionEdgesX_, X_AXIS);
 
     // cyclically shift each valarray 1 step right to get bits encoding y-axis comparisions
     for (std::vector<std::valarray<int> >::iterator it = indices.begin(); it < indices.end(); ++it)
         *it = it->cshift(-1);
-    zoomEdgesY_.clear();
-    findEdges(vertices, indices, zoomEdgesY_, Y_AXIS);
+    selectionEdgesY_.clear();
+    findEdges(vertices, indices, selectionEdgesY_, Y_AXIS);
 
     // cyclically shift each valarray 1 step right to get bits encoding z-axis comparisions
     for (std::vector<std::valarray<int> >::iterator it = indices.begin(); it < indices.end(); ++it)
         *it = it->cshift(-1);
-    zoomEdgesZ_.clear();
-    findEdges(vertices, indices, zoomEdgesZ_, Z_AXIS);
+    selectionEdgesZ_.clear();
+    findEdges(vertices, indices, selectionEdgesZ_, Z_AXIS);
 }
 
-void PlotLibrary::renderZoomEdges() {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glDisable(GL_DEPTH_TEST);
-    glLineWidth(lineWidth_);
-    glColor4fv(drawingColor_.elem);
-
-    glBegin(GL_LINES);
-    for (std::vector<ZoomEdge>::iterator it = zoomEdgesX_.begin(); it < zoomEdgesX_.end(); ++it) {
-        glVertex2d(it->startVertex_.x, it->startVertex_.y);
-        glVertex2d(it->endVertex_.x, it->endVertex_.y);
-    }
-    for (std::vector<ZoomEdge>::iterator it = zoomEdgesY_.begin(); it < zoomEdgesY_.end(); ++it) {
-        glVertex2d(it->startVertex_.x, it->startVertex_.y);
-        glVertex2d(it->endVertex_.x, it->endVertex_.y);
-    }
-    for (std::vector<ZoomEdge>::iterator it = zoomEdgesZ_.begin(); it < zoomEdgesZ_.end(); ++it) {
-        glVertex2d(it->startVertex_.x, it->startVertex_.y);
-        glVertex2d(it->endVertex_.x, it->endVertex_.y);
-    }
-    glEnd();
-
-
-    glEnable(GL_DEPTH_TEST);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    LGL_ERROR;
-
+const std::vector<PlotLibrary::SelectionEdge>& PlotLibrary::getSelectionEdgesX() const {
+    return selectionEdgesX_;
 }
 
-const std::vector<PlotLibrary::ZoomEdge>& PlotLibrary::getZoomEdgesX() const {
-    return zoomEdgesX_;
+const std::vector<PlotLibrary::SelectionEdge>& PlotLibrary::getSelectionEdgesY() const {
+    return selectionEdgesY_;
 }
 
-const std::vector<PlotLibrary::ZoomEdge>& PlotLibrary::getZoomEdgesY() const {
-    return zoomEdgesY_;
-}
-
-const std::vector<PlotLibrary::ZoomEdge>& PlotLibrary::getZoomEdgesZ() const {
-    return zoomEdgesZ_;
+const std::vector<PlotLibrary::SelectionEdge>& PlotLibrary::getSelectionEdgesZ() const {
+    return selectionEdgesZ_;
 }
 
 double PlotLibrary::orientation(const tgt::dvec2& a, const tgt::dvec2& b, const tgt::dvec2& c) {
@@ -1799,20 +1739,36 @@ plot_t PlotLibrary::convertFromLogCoordinates(plot_t value, Axis axis) const {
 }
 
 tgt::dvec2 PlotLibrary::convertPlotCoordinatesToViewport(const tgt::dvec3& plotCoordinates) const {
+    tgt::dvec3 copy(plotCoordinates);
+    if (logarithmicAxisFlags_[X_AXIS])
+        copy.x = convertToLogCoordinates(plotCoordinates.x, X_AXIS);
+    if (logarithmicAxisFlags_[Y_AXIS])
+        copy.y = convertToLogCoordinates(plotCoordinates.y, Y_AXIS);
+    if (logarithmicAxisFlags_[Z_AXIS])
+        copy.z = convertToLogCoordinates(plotCoordinates.z, Z_AXIS);
+
     GLdouble x, y, z;
     GLdouble mv[16];   glGetDoublev(GL_MODELVIEW_MATRIX, mv);
     GLdouble pr[16];   glGetDoublev(GL_PROJECTION_MATRIX, pr);
     GLint viewport[4]; glGetIntegerv(GL_VIEWPORT, viewport);
-    gluProject(plotCoordinates.x, plotCoordinates.y, plotCoordinates.z, mv, pr, viewport, &x, &y, &z);
+    gluProject(copy.x, copy.y, copy.z, mv, pr, viewport, &x, &y, &z);
     return tgt::dvec2(x, y);
 }
 
 tgt::dvec3 PlotLibrary::convertPlotCoordinatesToViewport3(const tgt::dvec3& plotCoordinates) const {
+    tgt::dvec3 copy(plotCoordinates);
+    if (logarithmicAxisFlags_[X_AXIS])
+        copy.x = convertToLogCoordinates(plotCoordinates.x, X_AXIS);
+    if (logarithmicAxisFlags_[Y_AXIS])
+        copy.y = convertToLogCoordinates(plotCoordinates.y, Y_AXIS);
+    if (logarithmicAxisFlags_[Z_AXIS])
+        copy.z = convertToLogCoordinates(plotCoordinates.z, Z_AXIS);
+
     GLdouble x, y, z;
     GLdouble mv[16];   glGetDoublev(GL_MODELVIEW_MATRIX, mv);
     GLdouble pr[16];   glGetDoublev(GL_PROJECTION_MATRIX, pr);
     GLint viewport[4]; glGetIntegerv(GL_VIEWPORT, viewport);
-    gluProject(plotCoordinates.x, plotCoordinates.y, plotCoordinates.z, mv, pr, viewport, &x, &y, &z);
+    gluProject(copy.x, copy.y, copy.z, mv, pr, viewport, &x, &y, &z);
     return tgt::dvec3(x, y, z);
 }
 
@@ -1852,7 +1808,7 @@ tgt::dvec2 PlotLibrary::updateScaleSteps(Axis axis) const {
     }
     // due to numerical erosion viewportsize can be 0 leading to infinite loops - we do not want that.
     if (viewportsize <= 0)
-        viewportsize = .1f;
+        viewportsize = .1;
 
     double maxStepCount = viewportsize / minimumScaleStep_[axis];
     double minStep = domain_[axis].size() / maxStepCount;
@@ -1892,7 +1848,6 @@ plot_t PlotLibrary::round(plot_t value, plot_t roundingParameter) const {
 }
 
 void PlotLibrary::resetOpenGLStatus() {
-
     glClearDepth(1.0);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glLineWidth(1.f);
@@ -1936,6 +1891,10 @@ tgt::dvec2 PlotLibrary::convertViewportToPlotCoordinates(tgt::ivec2 viewCoord) c
     GLdouble pr[16];   glGetDoublev(GL_PROJECTION_MATRIX, pr);
     GLint viewport[4]; glGetIntegerv(GL_VIEWPORT, viewport);
     gluUnProject(static_cast<double>(viewCoord.x), static_cast<double>(viewCoord.y), 0.0, mv, pr, viewport, &x, &y, &z);
+    if (logarithmicAxisFlags_[X_AXIS])
+        x = convertFromLogCoordinates(x, X_AXIS);
+    if (logarithmicAxisFlags_[Y_AXIS])
+        y = convertFromLogCoordinates(y, Y_AXIS);
     return tgt::dvec2(x, y);
 }
 
@@ -2098,21 +2057,13 @@ void PlotLibrary::setDimension(Dimension dim){
 }
 
 void PlotLibrary::setDomain(const Interval<plot_t>& interval, Axis axis) {
-    if (interval.size() < 0 ) //this does not make much sense, so we take just [0,1]
+    if (interval.empty()) //this does not make much sense, so we take just [0,1]
         domain_[axis] = Interval<plot_t>(0.0, 1.0, false, false);
-    else if (interval.size()==0)
-        domain_[axis] = Interval<plot_t>(interval.getLeft()-1.0, interval.getRight()+1.0, false, false);
+    else if (interval.size()==0) // not empty but interval [x, x], x \in \R
+        domain_[axis] = Interval<plot_t>(interval.getLeft()-0.1, interval.getRight()+0.1, false, false);
     else
         domain_[axis] = interval;
     renewPlotToViewportScale();
-}
-
-void PlotLibrary::setPolarCoordinateFlag(bool polar){
-    polarCoordinateFlag_ = polar;
-}
-
-void PlotLibrary::setRenderDataLabelFlag(bool value){
-    renderDataLabelFlag_ = value;
 }
 
 void PlotLibrary::setLogarithmicAxis(bool polar, Axis axis){
@@ -2129,6 +2080,10 @@ void PlotLibrary::setFillColor(tgt::Color color) {
 
 void PlotLibrary::setFontColor(tgt::Color color) {
     fontColor_ = color;
+}
+
+void PlotLibrary::setHighlightColor(tgt::Color color) {
+    highlightColor_ = color;
 }
 
 void PlotLibrary::setColorMap(ColorMap cm) {
@@ -2211,7 +2166,7 @@ void PlotLibrary::setMinimumScaleStep(int value, Axis axis) {
         minimumScaleStep_[axis] = value;
 }
 
-void PlotLibrary::setCamera(tgt::Camera* camera) {
+void PlotLibrary::setCamera(const tgt::Camera& camera) {
     camera_ = camera;
 }
 

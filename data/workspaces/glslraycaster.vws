@@ -8,20 +8,12 @@
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ScriptManagerLinking>
-            <pythonFunctionScriptMap />
-        </ScriptManagerLinking>
-        <ProcessorNetwork version="6">
+        <ProcessorNetwork version="7">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
                         <item type="GLSLRaycaster" ref="ref3" />
                     </values>
-                </MetaItem>
-                <MetaItem name="Zoom" type="ZoomMetaData">
-                    <transform.row0 x="1.1019129753112793" y="0" z="0" />
-                    <transform.row1 x="0" y="1.1019129753112793" z="0" />
-                    <transform.row2 x="1025.6097412109375" y="-6.2976274490356445" z="1" />
                 </MetaItem>
             </MetaData>
             <Processors>
@@ -52,6 +44,7 @@
                         <Property name="canvasSize">
                             <value x="450" y="400" />
                         </Property>
+                        <Property name="showCursor" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -270,12 +263,12 @@
                 <PropertyLink>
                     <SourceProperty ref="ref7" />
                     <DestinationProperty ref="ref8" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty ref="ref8" />
                     <DestinationProperty ref="ref7" />
-                    <Evaluator type="LinkEvaluatorId" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

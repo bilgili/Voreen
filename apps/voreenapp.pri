@@ -5,7 +5,17 @@
 # common Qt resource files
 qt : RESOURCES = "$${VRN_HOME}/resource/vrn_share/vrn_app.qrc"
 
-qt : PRECOMPILED_HEADER = ../pch_qtapp.h
+contains(DEFINES, VRN_PRECOMPILE_HEADER) { 
+  qt {
+    PRECOMPILED_HEADER = ../pch_qtapp.h
+  }
+  else {
+    PRECOMPILED_HEADER = ../../pch.h
+  }  CONFIG += precompile_header
+}
+else {
+  CONFIG -= precompile_header
+}
 
 ####################################################
 # Platform-dependant configuration
@@ -50,19 +60,9 @@ win32 {
     LIBS += "$${DEVIL_DIR}/lib/DevIL.lib"
   }
 
-  contains(DEFINES, VRN_WITH_TIFF) {
-    LIBS += "$${TIFF_DIR}/lib/libtiff.lib"
-  }
-
   contains(DEFINES, VRN_WITH_ZLIB) {
     LIBS += "$${ZLIB_DIR}/lib/zdll.lib"
   }	
-
-  contains(DEFINES, VRN_WITH_PYTHON) {
-    win32-msvc2005: LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/VS2005/python26.lib"
-    win32-msvc2008: LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/python26.lib"
-    win32-g++:      LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/VS2005/python26.lib"
-  }
 
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
     win32-msvc: LIBS += "$${FREETYPE_DIR}/lib/freetype.lib"
@@ -103,10 +103,6 @@ unix {
 
   contains(DEFINES, VRN_WITH_DEVIL) {
     LIBS += -lIL
-  }
-
-  contains(DEFINES, VRN_WITH_TIFF) {
-    LIBS += -ltiff
   }
 
   contains(DEFINES, VRN_WITH_ZLIB) {

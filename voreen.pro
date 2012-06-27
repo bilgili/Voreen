@@ -8,7 +8,7 @@ isEmpty(QMAKE_VERSION_CHECK) {
 }
 
 # Default projects
-VRN_PROJECTS = core qt voreenve serializertest
+VRN_PROJECTS = core qt voreenve
 
 !exists(config.txt) {
   error("config.txt not found! copy config-default.txt to config.txt and edit!")
@@ -23,7 +23,6 @@ contains(VRN_PROJECTS, simple-qt):  SUBDIRS += sub_simple-qt
 contains(VRN_PROJECTS, simple-glut):  SUBDIRS += sub_simple-glut
 contains(VRN_PROJECTS, simple-memcheck):  SUBDIRS += sub_simple-memcheck
 contains(VRN_PROJECTS, simple-memcheckinit):  SUBDIRS += sub_simple-memcheckinit
-contains(VRN_PROJECTS, serializertest):  SUBDIRS += sub_serializertest
 
 sub_core.file = src/core/voreenlib_core.pro
 
@@ -63,9 +62,9 @@ unix {
 
   # clean up old Makefiles also
   mrproper.target = mrproper
-  MRPROPER_DIRS=src/core src/qt apps/*
-  mrproper.commands = @echo \"Removing Makefiles...\"; \
-                            find $$MRPROPER_DIRS -name \"Makefile*\" -or -name "Makefile" | \
+  MRPROPER_DIRS=src/core src/qt include/voreen/modules apps/*
+  mrproper.commands = @echo \"Removing Makefiles and module registration file...\"; \
+                            find $$MRPROPER_DIRS -name \"Makefile*\" -or -name "Makefile" -or -name "gen_moduleregistration.h" | \
                             xargs /bin/rm -fv
   QMAKE_EXTRA_TARGETS += mrproper
 

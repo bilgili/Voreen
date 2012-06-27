@@ -198,9 +198,9 @@ void ProcessorTimelineWidget::createPropertyTimelineWidget(PropertyTimeline* tl)
         TemplatePropertyTimeline<VolumeHandle*>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<VolumeHandle*>*>(tl);
         propertyTimelineWidget = new TemplatePropertyTimelineWidget<VolumeHandle*>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
     }
-    else if(dynamic_cast<TemplatePropertyTimeline<Camera*>*>(tl)) {
-        TemplatePropertyTimeline<Camera*>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<Camera*>*>(tl);
-        propertyTimelineWidget = new TemplatePropertyTimelineWidget<Camera*>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
+    else if(dynamic_cast<TemplatePropertyTimeline<Camera>*>(tl)) {
+        TemplatePropertyTimeline<Camera>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<Camera>*>(tl);
+        propertyTimelineWidget = new TemplatePropertyTimelineWidget<Camera>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
     }
     else {
         propertyTimelineWidget = new PropertyTimelineWidget("not working", tl, this);      // this should never happen. maybe propertytimelines should be made virtual = 0

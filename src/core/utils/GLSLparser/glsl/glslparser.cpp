@@ -146,7 +146,7 @@ void GLSLParser::expandParseTree(const int productionID,
         case 49:  // [jump-statement] ::= return [expression] ;
         case 50:  // [jump-statement] ::= discard ;
             break;
-*/
+        */
         case 51:  // [primary-expression] ::= IDENTIFIER
         case 52:  // [primary-expression] ::= INTCONSTANT
         case 53:  // [primary-expression] ::= UINTCONSTANT

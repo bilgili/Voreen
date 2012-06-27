@@ -32,7 +32,10 @@
 
 #include <QWidget>
 #include <math.h>
+
 #include <tgt/vector.h>
+#include <tgt/camera.h>
+
 #include "voreen/qt/widgets/property/floatvec4propertywidget.h"
 #include "voreen/qt/widgets/lightwidget.h"
 
@@ -45,13 +48,13 @@ public:
     LightPropertyWidget(FloatVec4Property*, QWidget* parent = 0);
 
 protected:
-    //tgt::mat4 viewMatrix_;
+    tgt::mat4 viewMatrix_;
     FloatVec4Property* property_;
     tgt::Vector4f vector_;
-    tgt::Camera* camera_;
+    tgt::Camera camera_;
     int hemisphere_;
     LightWidget* light_;
-    tgt::Camera* getCamera();
+    tgt::Camera getCamera();
     void cameraUpdate();    // on property change of the cameraproperty this is invoked by calling
                             // a member action
     void updateFromProperty();

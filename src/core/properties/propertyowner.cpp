@@ -33,6 +33,9 @@
 
 namespace voreen {
 
+void PropertyOwnerObserver::preparePropertyRemoval(Property*) {}
+
+
 const std::string PropertyOwner::loggerCat_("voreen.PropertyOwner");
 
 PropertyOwner::PropertyOwner()
@@ -53,6 +56,25 @@ void PropertyOwner::addProperty(Property* prop) {
 
 void PropertyOwner::addProperty(Property& prop) {
     addProperty(&prop);
+}
+
+void PropertyOwner::removeProperty(Property* prop) {
+    tgtAssert(prop, "Null pointer passed");
+    if (!getProperty(prop->getID())) {
+        LERROR(getName() << ": Property '" << prop->getID() << "' cannot be removed, it does not exist");
+    }
+    // inform the observers to prepare property removal
+    // thus all links can be removed in the processornetwork
+    std::vector<PropertyOwnerObserver*> observers = getObservers();
+    for (size_t i = 0; i < observers.size(); ++i)
+        observers[i]->preparePropertyRemoval(prop);
+
+    prop->setOwner(0);
+    properties_.erase(find(properties_.begin(), properties_.end(), prop));
+}
+
+void PropertyOwner::removeProperty(Property& prop) {
+    removeProperty(&prop);
 }
 
 const std::vector<Property*>& PropertyOwner::getProperties() const {
@@ -89,7 +111,7 @@ void PropertyOwner::setPropertyGroupVisible(const std::string& id, bool visible)
 }
 
 bool PropertyOwner::isPropertyGroupVisible(const std::string& id) const {
-    if (propertyGroupVisibilities_.find(id) != propertyGroupVisibilities_.end()) 
+    if (propertyGroupVisibilities_.find(id) != propertyGroupVisibilities_.end())
         return propertyGroupVisibilities_.find(id)->second;
     else
         return true;

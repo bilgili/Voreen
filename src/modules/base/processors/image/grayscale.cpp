@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Grayscale::Grayscale()
-    : ImageProcessor("pp_grayscale"), // loads fragment shader pp_grayscale.frag
+    : ImageProcessor("image/grayscale"), // loads fragment shader pp_grayscale.frag
       inport_(Port::INPORT, "inport"),
       outport_(Port::OUTPORT, "outport"),
       saturation_("saturation", "Saturation", 0.f)

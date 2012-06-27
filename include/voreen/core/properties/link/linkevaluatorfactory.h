@@ -33,9 +33,6 @@
 #include "voreen/core/io/serialization/serialization.h"
 
 #include "voreen/core/properties/link/linkevaluatorbase.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
-#include "voreen/core/properties/link/linkevaluatorpython.h"
-#include "voreen/core/properties/link/scriptmanagerlinking.h"
 
 #include <map>
 #include <string>
@@ -44,60 +41,53 @@ namespace voreen {
 
 class LinkEvaluatorFactory : public SerializableFactory {
 public:
-    /*
-     * Gets the singleton instance of the factory
-     */
+    ///Gets the singleton instance of the factory
     static LinkEvaluatorFactory* getInstance();
 
     /*
      * Returns a LinkEvaluator instance identified by the
      * provided function name or throws an Exception
+     *
+     * @deprecated Use createType instead!
      */
-    LinkEvaluatorBase* createLinkEvaluator(std::string functionName);
+    //LinkEvaluatorBase* createLinkEvaluator(std::string functionName);
 
-    /*
-     * Get the function name that identifies the provided link evaluator instance
-     */
-    std::string getFunctionName(LinkEvaluatorBase* linkEvaluator);
-
-    /*
-     * Returns the complete list of functions registered with the factory including python scripts
-     */
+    ///Returns the complete list of functions registered with the factory.
     std::vector<std::string> listFunctionNames();
 
-    /*
-     * Register and create a new LinkEvaluator by the given parameters
-     */
-    void registerLinkEvaluatorPython(std::string functionName, std::string script, bool overwrite=false);
-    /*
-     * Register a previously created link evaluator instance
-     */
-    void registerLinkEvaluatorPython(LinkEvaluatorPython* linkEvaluator);
-
-    /*
-     * Set the script manager to use
-     */
-    void setScriptManager(ScriptManagerLinking* scriptManagerLinking);
-
-    /*
-     * Get the script manager
-     */
-    ScriptManagerLinking* getScriptManager();
-
-    /**
-     * @see SerializableFactory::getTypeString
-     */
+    ///@see SerializableFactory::getTypeString
     virtual const std::string getTypeString(const std::type_info& type) const;
 
-    /**
-     * @see SerializableFactory::createType
-     */
+    ///@see SerializableFactory::createType
     virtual Serializable* createType(const std::string& typeString);
 
+    virtual LinkEvaluatorBase* create(const std::string& typeString);
+
+    /**
+     * Checks if the properties p1 and p2 are linkable.
+     * A property is linkable if at least one registered LinkEvaluator can link these properties.
+     *
+     * \return true, if p1 and p2 are compatible, false otherwise
+     */
+    bool arePropertiesLinkable(const Property* p1, const Property* p2, bool bidirectional = false) const;
+
+    /**
+     * @brief Get all linkevaluators that can link p1 to p2.
+     *
+     * @return Vector of compatible linkevaluators, in the form of <Classname, name> pairs.
+     */
+    std::vector<std::pair<std::string, std::string> > getCompatibleLinkEvaluators(const Property* p1, const Property* p2) const;
+
+    void registerClass(LinkEvaluatorBase* const newClass);
+
+    /// Returns true, if a linkevaluator instance with the passed class name has been registered
+    bool isLinkEvaluatorKnown(const std::string& className) const;
 private:
     LinkEvaluatorFactory();
     static LinkEvaluatorFactory* instance_;
-    ScriptManagerLinking* scriptManagerLinking_;
+
+    std::map<std::string, LinkEvaluatorBase*> classList_;
+    std::vector<std::string> knownClasses_;
 };
 
 } // namespace

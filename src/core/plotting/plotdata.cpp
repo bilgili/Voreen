@@ -33,6 +33,7 @@
 #include "voreen/core/plotting/plotcell.h"
 
 #include "tgt/assert.h"
+#include "tgt/logmanager.h"
 
 #include <map>
 #include <vector>
@@ -56,6 +57,10 @@ PlotData::PlotData(const PlotData& rhs)
 {
     for (std::vector<PlotRowValue>::iterator it = rows_.begin(); it < rows_.end(); ++it) {
         it->parent_ = this;
+        for (std::vector<PlotCellValue>::iterator cit = it->cells_.begin(); cit != it->cells_.end(); ++cit) {
+            if (cit->isHighlighted())
+                highlightedCells_.insert(&(*cit));
+        }
     }
 
     std::vector<PlotRowImplicit>::const_iterator imit;
@@ -68,20 +73,55 @@ PlotData::~PlotData() {
     deleteImplicitRows();
 }
 
-PlotData& PlotData::operator=(PlotData rhs) {
+PlotData& PlotData::operator=(const PlotData& rhs) {
+    // prevent self assignment
+    if (this == &rhs)
+        return *this;
+
     PlotBase::operator=(rhs);
-    std::swap(rows_, rhs.rows_);
-    std::swap(intervals_, rhs.intervals_);
-    std::swap(sorted_, rhs.sorted_);
 
-    for (std::vector<PlotRowValue>::iterator it = rows_.begin(); it < rows_.end(); ++it) {
-        it->parent_ = this;
+    // we do not use the copy-and-swap pattern here for performance reasons (avoid walking through all cells twice)
+    // if an exception raises, this object will be empty but valid
+    try {
+        rows_ = rhs.rows_;
+        intervals_ = rhs.intervals_;
+        sorted_ = rhs.sorted_;
+        highlightedCells_.clear();
+
+        for (std::vector<PlotRowValue>::iterator it = rows_.begin(); it < rows_.end(); ++it) {
+            it->parent_ = this;
+            for (std::vector<PlotCellValue>::iterator cit = it->cells_.begin(); cit != it->cells_.end(); ++cit) {
+                if (cit->isHighlighted())
+                    highlightedCells_.insert(&(*cit));
+            }
+        }
+
+        std::vector<PlotRowImplicit>::const_iterator imit;
+        for (imit = rhs.implicitRows_.begin(); imit < rhs.implicitRows_.end(); ++imit) {
+            insertImplicit(imit->getCells());
+        }
+    }
+    catch (std::bad_alloc&) {
+        // something bad happened, we can't be sure about the current state
+        // clear everything to have at least a valid state.
+        rows_.clear();
+        implicitRows_.clear();
+        intervals_.clear();
+        highlightedCells_.clear();
+        LERRORC("PlotData::operator=()", "bad_alloc occured, object won't contain any data!");
+        return *this;
+    }
+    catch (...) {
+        // something bad happened, we can't be sure about the current state
+        // clear everything to have at least a valid state.
+        rows_.clear();
+        implicitRows_.clear();
+        intervals_.clear();
+        highlightedCells_.clear();
+        LERRORC("PlotData::operator=()", "unknown exception occured, object won't contain any data!");
+        return *this;
     }
 
-    std::vector<PlotRowImplicit>::const_iterator imit;
-    for (imit = rhs.implicitRows_.begin(); imit < rhs.implicitRows_.end(); ++imit) {
-        insertImplicit(imit->getCells());
-    }
     return *this;
 }
 
@@ -142,7 +182,8 @@ void PlotData::select(const std::vector<int>& columns, int keyColumnCount, int d
     }
 }
 
-void PlotData::select(const std::vector< int >& columns, int keyColumnCount, int dataColumnCount, const std::vector< std::pair< int, voreen::PlotPredicate* > >& predicates, voreen::PlotData& target) const {
+void PlotData::select(const std::vector< int >& columns, int keyColumnCount, int dataColumnCount,
+                      const std::vector< std::pair< int, voreen::PlotPredicate* > >& predicates, voreen::PlotData& target) const {
     target.reset(keyColumnCount, dataColumnCount);
     int columnCount = 0;
     if (columns.size() != 0) {
@@ -182,7 +223,8 @@ void PlotData::select(const std::vector< int >& columns, int keyColumnCount, int
     }
 }
 
-void PlotData::select(const std::vector<int>& columns, const std::vector<int>& rows, int keyColumnCount, int dataColumnCount, PlotData& target) const {
+void PlotData::select(const std::vector<int>& columns, const std::vector<int>& rows, int keyColumnCount,
+                      int dataColumnCount, PlotData& target) const {
     target.reset(keyColumnCount, dataColumnCount);
     int columnCount = 0;
     if (columns.size() != 0) {
@@ -243,16 +285,27 @@ bool PlotData::insert(const std::vector<plot_t>& values) {
         int i = 0;
         for (it = values.begin(); it < values.end(); ++it) {
             if (getColumnType(i) == NUMBER) {
-                cellsToInsert.push_back(PlotCellValue(*it));
+                if (*it == *it)
+                    cellsToInsert.push_back(PlotCellValue(*it));
+                else
+                    cellsToInsert.push_back(PlotCellValue());
             }
             else if (getColumnType(i) ==  EMPTY) {
-                cellsToInsert.push_back(PlotCellValue(*it));
-                setColumnType(i,NUMBER);
+                if (*it == *it) {
+                    cellsToInsert.push_back(PlotCellValue(*it));
+                    setColumnType(i,NUMBER);
+                }
+                else
+                    cellsToInsert.push_back(PlotCellValue());
             }
             else {
-                std::stringstream ss;
-                ss << *it;
-                cellsToInsert.push_back(PlotCellValue(ss.str()));
+                if (*it == *it) {
+                    std::stringstream ss;
+                    ss << *it;
+                    cellsToInsert.push_back(PlotCellValue(ss.str()));
+                }
+                else
+                    cellsToInsert.push_back(PlotCellValue());
             }
             ++i;
         }
@@ -275,16 +328,28 @@ bool PlotData::insert(std::vector<std::pair<int, plot_t> >& values) {
 
         for (it = values.begin(); it < values.end(); ++it) {
             if (getColumnType(it->first) == NUMBER) {
-                cellsToInsert[it->first] = PlotCellValue(it->second);
+                if (it->second == it->second)
+                    cellsToInsert[it->first] = PlotCellValue(it->second);
+                else
+                    cellsToInsert[it->first] = PlotCellValue();
             }
             else if (getColumnType(it->first) ==  EMPTY) {
-                cellsToInsert[it->first] = PlotCellValue(it->second);
-                setColumnType(it->first,NUMBER);
+                if (it->second == it->second) {
+                    cellsToInsert[it->first] = PlotCellValue(it->second);
+                    setColumnType(it->first,NUMBER);
+                }
+                else
+                    cellsToInsert[it->first] = PlotCellValue();
             }
             else {
-                std::stringstream ss;
-                ss << it->second;
-                cellsToInsert[it->first] = PlotCellValue(ss.str());
+                if (it->second == it->second) {
+                    std::stringstream ss;
+                    ss << it->second;
+                    cellsToInsert[it->first] = PlotCellValue(ss.str());
+                }
+                else
+                    cellsToInsert[it->first] = PlotCellValue();
+
             }
         }
         sorted_ = false;
@@ -783,13 +848,8 @@ bool PlotData::mergeWith(
     return true;
 }
 
-bool PlotData::mergeWith(const PlotData& otherPlotData, PlotData& target) const {
-
-   // target.reset(keyColumns.size(), dataColumns.size());
-
-   //TODO: merge implicitrows too
-
-    if (otherPlotData.getColumnCount() == getColumnCount()){
+bool PlotData::mergeWith(const PlotData& otherPlotData, PlotData& target, MergeType mergeType) const {
+    if (otherPlotData.getColumnCount() == getColumnCount() && (mergeType == NOSELECTION || mergeType == NEWROWS)){
         bool columnMatch = true;
         for (int i=0; i< getColumnCount();  ++i){
             if (otherPlotData.getColumnLabel(i) != getColumnLabel(i)){
@@ -809,40 +869,145 @@ bool PlotData::mergeWith(const PlotData& otherPlotData, PlotData& target) const 
             mergeWith(otherPlotData, keyColumns, dataColumns, target);
             return true;
         }
+        else if (mergeType == NEWROWS)
+            return false;
     }
-    std::vector<PlotCellValue> cells;
-    std::vector<PlotCellValue> row;
-    std::vector<PlotCellValue> otherRow;
-    int count = std::max<int>(getRowsCount(),otherPlotData.getRowsCount());
-    target.reset(getKeyColumnCount(), getDataColumnCount() + otherPlotData.getColumnCount());
-    for (int i=0; i< count; ++i){ // Anzahl der rows
-        cells.clear();
-        if (i < getRowsCount()) {
-            row = getRow(i).getCells();
-            for( size_t j=0; j< row.size(); ++j){
-                cells.push_back(row.at(j));
+    else if (mergeType == NEWROWS)
+        return false;
+
+    if (keyColumnCount_ == otherPlotData.getKeyColumnCount() && (mergeType == NOSELECTION || mergeType == IGNORECOLUMNLABELS)) {
+        bool columnMatch = true;
+        for (int i = 0; i < keyColumnCount_; ++i) {
+            if (getColumnType(i) != otherPlotData.getColumnType(i) || (getColumnLabel(i) != otherPlotData.getColumnLabel(i) && mergeType == NOSELECTION)) {
+                columnMatch = false;
+                break;
             }
         }
-        else {
-            for(int j=0; j< getColumnCount(); ++j){
-                cells.push_back(PlotCellValue());
+        if (columnMatch) {
+            sortRows();
+            otherPlotData.sortRows();
+            target.reset(getKeyColumnCount(),getDataColumnCount() + otherPlotData.getDataColumnCount());
+            for (int i = 0; i < getColumnCount(); ++i) {
+                target.setColumnLabel(i,getColumnLabel(i));
             }
-        }
-        if (i < otherPlotData.getRowsCount()) {
-            otherRow = otherPlotData.getRow(i).getCells();
-            for( size_t j=0; j< otherRow.size(); ++j){
-                cells.push_back(otherRow.at(j));
+            for (int i = 0; i < otherPlotData.getDataColumnCount(); ++i) {
+                target.setColumnLabel(getColumnCount() + i, otherPlotData.getColumnLabel(getKeyColumnCount() + i));
             }
+            int selfcounter = 0;
+            int othercounter = 0;
+            std::vector<PlotCellValue> row;
+            std::vector<PlotCellValue> otherrow;
+            std::vector<PlotCellValue> cells;
+            row.resize(getKeyColumnCount());
+            otherrow.resize(getKeyColumnCount());
+            while (selfcounter < getRowsCount() || othercounter < otherPlotData.getRowsCount()) {
+                cells.clear();
+                cells.resize(getColumnCount() + otherPlotData.getDataColumnCount());
+                for (int i = 0; i < getKeyColumnCount(); ++i) {
+                    if (selfcounter < getRowsCount())
+                        row[i] = rows_[selfcounter].cells_[i];
+                    if (othercounter < otherPlotData.getRowsCount())
+                        otherrow[i] = otherPlotData.getRow(othercounter).cells_[i];
+                }
+                if (row == otherrow) {
+                    for (int i = 0; i < getColumnCount(); ++i) {
+                        cells[i] = rows_[selfcounter].cells_[i];
+                    }
+                    for (int i = 0; i < otherPlotData.getDataColumnCount(); ++i) {
+                        cells[i+getColumnCount()] = otherPlotData.getRow(othercounter).cells_[i+getKeyColumnCount()];
+                    }
+                    target.insert(cells);
+                    ++selfcounter;
+                    ++othercounter;
+                }
+                else if ((row > otherrow && othercounter < otherPlotData.getRowsCount()) || (selfcounter >= getRowsCount())) {
+                    for (int i = 0; i < getKeyColumnCount(); ++i) {
+                        cells[i] = otherPlotData.getRow(othercounter).cells_[i];
+                    }
+                    for (int i = 0; i < otherPlotData.getDataColumnCount(); ++i) {
+                        cells[i+getColumnCount()] = otherPlotData.getRow(othercounter).cells_[i+getKeyColumnCount()];
+                    }
+                    target.insert(cells);
+                    ++othercounter;
+                }
+                else if ((row < otherrow && selfcounter < getRowsCount()) || (othercounter >= otherPlotData.getRowsCount())) {
+                    for (int i = 0; i < getColumnCount(); ++i) {
+                        cells[i] = rows_[selfcounter].cells_[i];
+                    }
+                    target.insert(cells);
+                    ++selfcounter;
+                }
+            }
+            return true;
         }
-        target.insert(cells);
     }
-    for (int i = 0; i < getColumnCount(); ++i) {
-        target.setColumnLabel(i,getColumnLabel(i));
+    else if (mergeType == IGNORECOLUMNLABELS)
+        return false;
+
+    if (mergeType == NOSELECTION || mergeType == NEWCOLUMNS) {
+        std::vector<PlotCellValue> cells;
+        std::vector<PlotCellValue> row;
+        std::vector<PlotCellValue> otherRow;
+        int count = std::max<int>(getRowsCount(),otherPlotData.getRowsCount());
+        target.reset(getKeyColumnCount(), getDataColumnCount() + otherPlotData.getColumnCount());
+        for (int i=0; i< count; ++i){ // Anzahl der rows
+            cells.clear();
+            if (i < getRowsCount()) {
+                row = getRow(i).getCells();
+                for( size_t j=0; j< row.size(); ++j){
+                    cells.push_back(row.at(j));
+                }
+            }
+            else {
+                for(int j=0; j< getColumnCount(); ++j){
+                    cells.push_back(PlotCellValue());
+                }
+            }
+            if (i < otherPlotData.getRowsCount()) {
+                otherRow = otherPlotData.getRow(i).getCells();
+                for( size_t j=0; j< otherRow.size(); ++j){
+                    cells.push_back(otherRow.at(j));
+                }
+            }
+            target.insert(cells);
+        }
+        for (int i = 0; i < getColumnCount(); ++i) {
+            target.setColumnLabel(i,getColumnLabel(i));
+        }
+        for (int i = 0; i < otherPlotData.getColumnCount(); ++i) {
+            target.setColumnLabel(i + getColumnCount(),otherPlotData.getColumnLabel(i));
+        }
+        std::vector<PlotCellImplicit> cellsToInsert;
+        count = std::max<int>(getImplicitRowsCount(),otherPlotData.getImplicitRowsCount());
+        for (int j = 0; j < count; ++j) {
+            cellsToInsert.clear();
+            if (getImplicitRowsCount() > j) {
+                for (int i = 0; i < getColumnCount(); ++i) {
+                    cellsToInsert.push_back(implicitRows_[j].getCellAt(i));
+                }
+            }
+            else {
+                for (int i = 0; i < getColumnCount(); ++i) {
+                    cellsToInsert.push_back(PlotCellImplicit(0,&target,i));
+                }
+            }
+            if (otherPlotData.getImplicitRowsCount() > j) {
+                for (int i = 0; i < otherPlotData.getColumnCount(); ++i) {
+                    cellsToInsert.push_back(otherPlotData.getImplicitRow(j).getCellAt(i));
+                }
+            }
+            else {
+                for (int i = 0; i < otherPlotData.getColumnCount(); ++i) {
+                    cellsToInsert.push_back(PlotCellImplicit(0,&target,getColumnCount()+i));
+                }
+            }
+            target.insertImplicit(cellsToInsert);
+        }
+        return true;
     }
-    for (int i = 0; i < otherPlotData.getColumnCount(); ++i) {
-        target.setColumnLabel(i + getColumnCount(),otherPlotData.getColumnLabel(i));
-    }
-    return true;
+    else if (mergeType == NEWCOLUMNS)
+        return false;
+    return false;
 }
 
 bool PlotData::insertImplicit(const std::vector<std::pair<int, AggregationFunction*> >& functions) {
@@ -884,11 +1049,10 @@ Interval<plot_t> PlotData::getInterval(int column) const {
 
 Interval<plot_t> PlotData::getSumInterval(const std::vector< int >& column) const {
     if (rows_.empty()) {
-        Interval<plot_t> toReturn(0, 0, true, true);
-        return toReturn;
+        return Interval<plot_t>(0, 0, true, true);
     }
 
-    std::vector<int> numberColumn = std::vector<int>();
+    std::vector<int> numberColumn;
     //only keep number columns
     std::vector<int>::const_iterator colIt;
     for (colIt = column.begin(); colIt < column.end(); ++colIt) {
@@ -896,24 +1060,21 @@ Interval<plot_t> PlotData::getSumInterval(const std::vector< int >& column) cons
             numberColumn.push_back(*colIt);
     }
 
-    std::vector<PlotRowValue>::const_iterator rowIt;
-    rowIt = rows_.begin();
-
+    std::vector<PlotRowValue>::const_iterator rowIt = rows_.begin();
     plot_t min = 0;
     plot_t max = 0;
 
-    for (++rowIt; rowIt < rows_.end(); ++rowIt) {
+    for ( ; rowIt < rows_.end(); ++rowIt) {
         plot_t temp = 0;
         for (colIt = numberColumn.begin(); colIt < numberColumn.end(); ++colIt) {
             if (!rowIt->getCellAt(*colIt).isNull())
-                temp += abs(rowIt->getValueAt(*colIt));
+                temp += fabs(rowIt->getValueAt(*colIt));
         }
         if (temp > max)
             max = temp;
     }
 
-    Interval<plot_t> toReturn(min, max);
-    return toReturn;
+    return Interval<plot_t>(min, max);
 }
 
 std::vector<PlotRowValue>::const_iterator  PlotData::getRowsBegin() const {
@@ -961,7 +1122,7 @@ bool PlotData::implicitRowsEmpty() const {
     return rows_.empty();
 }
 
-bool PlotData::isHighlighted(const tgt::ivec2& cellPosition){
+bool PlotData::isHighlighted(const tgt::ivec2& cellPosition) const {
     // check if cellPosition is valid
     if ((cellPosition.x >= -1 && cellPosition.x < getRowsCount()) && (cellPosition.y >= -1 && cellPosition.y < getColumnCount())) {
         // (-1,-1) is not a valid cellPosition
@@ -974,7 +1135,7 @@ bool PlotData::isHighlighted(const tgt::ivec2& cellPosition){
         else if (cellPosition.x == -1) {
             bool highlighted = true;
             // the column is highlighted if all cells are highlighted
-            for (std::vector<PlotRowValue>::iterator it = rows_.begin(); it < rows_.end(); ++it) {
+            for (std::vector<PlotRowValue>::const_iterator it = rows_.begin(); it < rows_.end(); ++it) {
                 if (!it->getCellAt(cellPosition.y).isHighlighted()) {
                     highlighted = false;
                     break;
@@ -1068,28 +1229,17 @@ void PlotData::deleteImplicitRows() {
             delete aggf;
         }
     }
-    //TODO: check if this works correct and deletes everything
-    //check if it is possible to do this in a lower layer
 }
 
-void PlotData::removePointersToCellsOfRow(const PlotRowValue& row) {
-    for (std::vector<PlotCellValue>::const_iterator cit = row.getCells().begin(); cit < row.getCells().end(); ++cit) {
-        // Again an ugly const cast, but unfortunately necessairy:
-        // - The pointers in highlightedCells_ cannot be const, as they are used to unset the
-        //   highlight-flag of the according PlotCellValue.
-        // - Claiming <row> to be a non-const reference just moves this problem one step
-        //   upwards and worries callers which actually shall not worry about internals.
-        // - The only clean solution would be making the PlotCellValue responsible itsself
-        //   to clean highlightedCells_ in its destructor. That would lead to another
-        //   pointer necessairy in PlotCellValue class almost doubling its size. But as we
-        //   are juggling loads of PlotCellValues size does matter.
-        // So in the end we const cast here once and nothing goes kaput. :)
-        PlotCellValue* pCell = const_cast<PlotCellValue*>(&(*cit));
+void PlotData::removePointersToCellsOfRow(PlotRowValue& row) {
+    for (std::vector<PlotCellValue>::iterator cit = row.cells_.begin(); cit < row.cells_.end(); ++cit) {
+        PlotCellValue* pCell = &(*cit);
         highlightedCells_.erase(pCell);
     }
 }
 
 void PlotData::reset(int keyColumnCount, int dataColumnCount) {
+    highlightedCells_.clear();
     rows_.clear();
     deleteImplicitRows();
     implicitRows_.clear();
@@ -1105,24 +1255,44 @@ void PlotData::updateIntervals(const PlotRowValue& row) {
     int column = 0;
     for (; rit < row.getCells().end() && iit < intervals_.end(); ++iit, ++rit, ++column) {
         if (columnTypes_[column] == PlotBase::STRING)
-            *iit = Interval<plot_t>(0,rows_.size()-1,false, false);
+            *iit = Interval<plot_t>(0, rows_.size() - 1, false, false);
         else if (rit->isValue()) {
             const plot_t& value = rit->getValue();
-            *iit = iit->nibble(value);
+            iit->nibble(value);
         }
     }
 }
 
 void PlotData::sortRows() const {
-    if (! sorted_) {
-        // sortRows() shall be callable by const member functions so it has to be const itself
-        // Unfortunately std::sort does not offer bitwise-constness but in the semantic way of constness
-        // (the items of this plot data are still the same) sortRows() is const. So we do a const cast
-        // here to be allowed to call std::sort
-        PlotData* foo = const_cast<PlotData*>(this);
-        std::sort(foo->rows_.begin(), foo->rows_.end());
-        sorted_ = true;
+    if (! sorted_ && rows_.size() > 0) {
+        // in many cases the data is sorted by construction, so we check that
+        bool sorted = true;
+        for (std::vector< PlotRowValue >::const_iterator it = rows_.begin(); it+1 < rows_.end(); ++it) {
+            if ( *(it+1) < *it ) {
+                sorted = false;
+                break;
+            }
+        }
+        if (sorted)
+            sorted_ = true;
+        else {
+            // sortRows() shall be callable by const member functions so it has to be const itself
+            // Unfortunately std::sort does not offer bitwise-constness but in the semantic way of constness
+            // (the items of this plot data are still the same) sortRows() is const. So we do a const cast
+            // here to be allowed to call std::sort
+            PlotData* foo = const_cast<PlotData*>(this);
+            std::sort(foo->rows_.begin(), foo->rows_.end());
+            sorted_ = true;
+        }
     }
+}
+
+bool PlotData::sorted() const {
+    return sorted_;
+}
+
+bool PlotData::isIndexColumn(const PlotData& pData, int column) {
+    return (column == 0 && pData.getColumnCount() > 0 && pData.getColumnLabel(0) == "Index" && pData.getColumnType(0) == NUMBER);
 }
 
 } // namespace

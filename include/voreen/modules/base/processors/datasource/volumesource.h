@@ -98,6 +98,7 @@ public:
 protected:
     virtual void process();
     virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     VolumeHandleProperty volumeHandle_;
 

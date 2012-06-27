@@ -34,8 +34,9 @@ namespace voreen {
 
     PlotDataExtendedTableModel::PlotDataExtendedTableModel(PlotData* data,
         const std::vector<std::pair<int, std::string> >& stringVector, QObject* parent,
-                                  const QColor& keyColumnColor, const QColor& dataColumnColor)
-    : PlotDataSimpleTableModel(data,parent,keyColumnColor,dataColumnColor)
+        const QColor& keyColumnColor, const QColor& dataColumnColor,
+        const QColor& selectColumnColor, int selectedColumn)
+    : PlotDataSimpleTableModel(data,parent,keyColumnColor,dataColumnColor,QColor(200,240,240,255),selectColumnColor,selectedColumn)
     , data_(data)
     , stringVector_(stringVector)
     , addLines_(0)

@@ -480,31 +480,41 @@ void PortGraphicsItem::TCTooltip::initialize(RenderTarget* rt) {
         return;
 
     tgt::ivec2 size = rt->getSize();
-    image_ = new QImage(size.x, size.y, QImage::Format_ARGB32);
-
     tgt::Texture* tex = rt->getColorTexture();
     if (!tex)
         return;
 
-    tex->downloadTexture();
+    // download pixel data to buffer
+    tgt::col4* pixels = 0;
+    try {
+        GLubyte* pixels_b = tex->downloadTextureToBuffer(GL_RGBA, GL_UNSIGNED_BYTE);
+        LGL_ERROR;
+        if (pixels_b)
+            pixels = reinterpret_cast<tgt::col4*>(pixels_b);
+        else {
+            LERRORC("TCTooltip::initialize", "failed to download texture");
+            return;
+        }
+    }
+    catch (std::bad_alloc&) {
+        LERRORC("TCTooltip::initialize", "bad allocation");
+        return;
+    }
 
-    QColor color;
+    image_ = new QImage(size.x, size.y, QImage::Format_ARGB32);
 
     // The pixels are stored row by row from bottom to top an in each row from left to right
+    QColor color;
     for (int y=0; y < size.y; ++y) {
         for (int x=0; x < size.x; ++x) {
-            tgt::Color col = tex->texelAsFloat(x,y);
-
-            // fragment values are not necessarily clamped when written to the texture,
-            // so clamp them here
-            col = tgt::clamp(col, 0.f, 1.f);
-
-            color.setRgbF(col.r, col.g, col.b, col.a);
-
+            tgt::col4 col = pixels[x + y*size.x];
+            color.setRgb(col.r, col.g, col.b, col.a);
             //(0,0) is top left
             image_->setPixel(x, size.y - 1 - y, color.rgba());
         }
     }
+    delete[] pixels;
+    pixels = 0;
 
     // checkers background
     QPixmap pm(20, 20);

@@ -54,7 +54,7 @@ public:
         NONE               = 0, ///< no editor appears in the widget
         INTENSITY          = 1, ///< general widget for 1D transfer functions
         INTENSITY_RAMP     = 2, ///< widget for 1D transfer functions which only allows 2 keys
-        INTENSITY_PET      = 4, ///< widget for 1D transfer functions for pet datasets
+        //INTENSITY_PET      = 4, ///< widget for 1D transfer functions for pet datasets
         INTENSITY_GRADIENT = 8, ///< widget for 2D transfer functions
         ALL                = 15 ///< aggregation of all editor widgets
     };

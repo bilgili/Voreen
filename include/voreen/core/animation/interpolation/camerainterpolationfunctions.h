@@ -35,83 +35,83 @@
 
 namespace voreen {
 
-class CameraLinearInterpolationFunction : public InterpolationFunction<tgt::Camera*> {
+class CameraLinearInterpolationFunction : public InterpolationFunction<tgt::Camera> {
 public:
     CameraLinearInterpolationFunction();
-    InterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(tgt::Camera* startvalue, tgt::Camera* endvalue, float time) const;
+    InterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(tgt::Camera startvalue, tgt::Camera endvalue, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraSphericalLinearInterpolationFunction : public InterpolationFunction<tgt::Camera*> {
+class CameraSphericalLinearInterpolationFunction : public InterpolationFunction<tgt::Camera> {
 public:
     CameraSphericalLinearInterpolationFunction();
-    InterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(tgt::Camera* startvalue, tgt::Camera* endvalue, float time) const;
+    InterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(tgt::Camera startvalue, tgt::Camera endvalue, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraCubicSplineInterpolationFunction: public MultiPointInterpolationFunction<tgt::Camera*>{
+class CameraCubicSplineInterpolationFunction: public MultiPointInterpolationFunction<tgt::Camera>{
 public:
     CameraCubicSplineInterpolationFunction();
-    MultiPointInterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(std::vector<PropertyKeyValue<tgt::Camera*>*> controlpoints, float time) const;
+    MultiPointInterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(std::vector<PropertyKeyValue<tgt::Camera>*> controlpoints, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraStartInterpolationFunction : public InterpolationFunction<tgt::Camera*> {
+class CameraStartInterpolationFunction : public InterpolationFunction<tgt::Camera> {
 public:
     CameraStartInterpolationFunction();
-    InterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(tgt::Camera* startvalue, tgt::Camera* endvalue, float time) const;
+    InterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(tgt::Camera startvalue, tgt::Camera endvalue, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraEndInterpolationFunction : public InterpolationFunction<tgt::Camera*> {
+class CameraEndInterpolationFunction : public InterpolationFunction<tgt::Camera> {
 public:
     CameraEndInterpolationFunction();
-    InterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(tgt::Camera* startvalue, tgt::Camera* endvalue, float time) const;
+    InterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(tgt::Camera startvalue, tgt::Camera endvalue, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraStartEndInterpolationFunction : public InterpolationFunction<tgt::Camera*> {
+class CameraStartEndInterpolationFunction : public InterpolationFunction<tgt::Camera> {
 public:
     CameraStartEndInterpolationFunction();
-    InterpolationFunction<tgt::Camera*>* clone() const;
-    tgt::Camera* interpolate(tgt::Camera* startvalue, tgt::Camera* endvalue, float time) const;
+    InterpolationFunction<tgt::Camera>* clone() const;
+    tgt::Camera interpolate(tgt::Camera startvalue, tgt::Camera endvalue, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraCatmullRomInterpolationFunction : public MultiPointInterpolationFunction<tgt::Camera*>{
+class CameraCatmullRomInterpolationFunction : public MultiPointInterpolationFunction<tgt::Camera>{
 public:
     CameraCatmullRomInterpolationFunction();
-    MultiPointInterpolationFunction<tgt::Camera*>* clone() const;
+    MultiPointInterpolationFunction<tgt::Camera>* clone() const;
 
-    tgt::Camera* interpolate(std::vector<PropertyKeyValue<tgt::Camera*>*> controlpoints, float time) const;
+    tgt::Camera interpolate(std::vector<PropertyKeyValue<tgt::Camera>*> controlpoints, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;
 };
 
-class CameraSquadInterpolationFunction : public MultiPointInterpolationFunction<tgt::Camera*>{
+class CameraSquadInterpolationFunction : public MultiPointInterpolationFunction<tgt::Camera>{
 public:
     CameraSquadInterpolationFunction();
-    MultiPointInterpolationFunction<tgt::Camera*>* clone() const;
+    MultiPointInterpolationFunction<tgt::Camera>* clone() const;
 
-    tgt::Camera* interpolate(std::vector<PropertyKeyValue<tgt::Camera*>*> controlpoints, float time) const;
+    tgt::Camera interpolate(std::vector<PropertyKeyValue<tgt::Camera>*> controlpoints, float time) const;
 
     std::string getMode() const;
     std::string getIdentifier() const;

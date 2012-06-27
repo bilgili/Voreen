@@ -54,7 +54,7 @@ public:
     void setIncludePath(const std::string& includePath);
     void setShaderHeader(const std::string& shaderHeader) { shaderHeader_ = shaderHeader; }
 
-    std::ostringstream& translate(const std::string& file);
+    std::ostringstream& translate(std::istream* const is, const std::string& path = "");
     std::ostringstream& translate(ParseTreeNode* const node);
 
 private:

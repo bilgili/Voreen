@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 EdgeDetect::EdgeDetect()
-    : ImageProcessorDepth("pp_edgedetect"),
+    : ImageProcessorDepth("image/edgedetect"),
       edgeThreshold_("edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f),
       backgroundColor_("backgroundColor", "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f)),
       showImage_("showImage", "Show image", true),
@@ -84,15 +84,15 @@ void EdgeDetect::process() {
     if (!interactionMode())
         analyzeDepthBuffer(&inport_);
 
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
     LGL_ERROR;
 
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
     inport_.setTextureParameters(program_, "texParams_");
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());

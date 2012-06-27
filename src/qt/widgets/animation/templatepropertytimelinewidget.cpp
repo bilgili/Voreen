@@ -262,21 +262,21 @@ void TemplatePropertyTimelineWidget<TransFunc*>::templateItemClicked(KeyframeGra
 }
 
 template <>
-void TemplatePropertyTimelineWidget<Camera*>::templateItemClicked(KeyframeGraphicsItem* kfgi) {
+void TemplatePropertyTimelineWidget<Camera>::templateItemClicked(KeyframeGraphicsItem* kfgi) {
 
     if (keyframes_.find(kfgi) == keyframes_.end()) {
         LERROR("KeyframeGraphicsItem not found");
         return;
     }
-    if (!keyframes_[kfgi]->getValue()) {
-        LERROR("KeyframeGraphicsItem contains no value");
-        return;
-    }
+    //if (!keyframes_[kfgi]->getValue()) {
+        //LERROR("KeyframeGraphicsItem contains no value");
+        //return;
+    //}
 
     currentItem_ = kfgi;
     if (keyframes_[currentItem_]->getForegoingInterpolationFunction() != 0) {
         inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getMode()));
-        if (dynamic_cast<const MultiPointInterpolationFunction<Camera*>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
+        if (dynamic_cast<const MultiPointInterpolationFunction<Camera>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
         smoothness_ = keyframes_[currentItem_]->getSmooth();
@@ -284,7 +284,7 @@ void TemplatePropertyTimelineWidget<Camera*>::templateItemClicked(KeyframeGraphi
     }
     if (keyframes_[currentItem_]->getFollowingInterpolationFunction() != 0) {
         outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getMode()));
-        if (dynamic_cast<const MultiPointInterpolationFunction<Camera*>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
+        if (dynamic_cast<const MultiPointInterpolationFunction<Camera>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
         smoothness_ = keyframes_[currentItem_]->getSmooth();
@@ -549,7 +549,7 @@ TemplateProperty<bool>* TemplatePropertyTimelineWidget<bool>::copyProperty(const
 }
 
 template<>
-TemplateProperty<Camera*>* TemplatePropertyTimelineWidget<Camera*>::copyProperty(const Property* /*tempProperty*/) {
+TemplateProperty<Camera>* TemplatePropertyTimelineWidget<Camera>::copyProperty(const Property* /*tempProperty*/) {
     return 0;
 }
 
@@ -763,7 +763,7 @@ QPropertyWidget* TemplatePropertyTimelineWidget<T>::getWidget() {
             delete qpwf;
             return retWidget;
         }
-        else if (dynamic_cast<TemplateProperty<Camera*>*>(property_)) {
+        else if (dynamic_cast<TemplateProperty<Camera>*>(property_)) {
             return new StringPropertyWidget(new StringProperty("","",""), this);
         }
         else if (dynamic_cast<FloatProperty*>(property_)) {
@@ -901,7 +901,7 @@ template class TemplatePropertyTimelineWidget<tgt::ivec4>;
 template class TemplatePropertyTimelineWidget<tgt::vec2>;
 template class TemplatePropertyTimelineWidget<tgt::vec3>;
 template class TemplatePropertyTimelineWidget<tgt::vec4>;
-template class TemplatePropertyTimelineWidget<tgt::Camera*>;
+template class TemplatePropertyTimelineWidget<tgt::Camera>;
 template class TemplatePropertyTimelineWidget<std::string>;
 template class TemplatePropertyTimelineWidget<ShaderSource>;
 template class TemplatePropertyTimelineWidget<TransFunc*>;

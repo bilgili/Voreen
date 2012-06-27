@@ -47,7 +47,7 @@ FlowOrthogonalSliceRenderer::FlowOrthogonalSliceRenderer()
     sliceNoXYProp_("sliceNoXYProp", "xy-slice number:", 1, 1, 100),
     sliceNoXZProp_("sliceNoZXProp", "zx-slice number:", 1, 1, 100),
     sliceNoZYProp_("sliceNoZYProp", "zy-slice number:", 1, 1, 100),
-    camProp_("camera", "Camera", new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
+    camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
     cameraHandler_(0),
     cpInport_(Port::INPORT, "coprocessor.slicepositionsInput", false),
     cpOutport_(Port::OUTPORT, "coprocessor.slicepositions")
@@ -128,7 +128,8 @@ void FlowOrthogonalSliceRenderer::process() {
     }
 
     TextureUnit volumeUnit, transferUnit;
-    setupShader(volumeGL, &volumeUnit, &transferUnit, camProp_.get(), lightPosition_.get()); // also binds the volume
+    tgt::Camera cam = camProp_.get();
+    setupShader(volumeGL, &volumeUnit, &transferUnit, &cam, lightPosition_.get()); // also binds the volume
     if (!ready())
         return;
 
@@ -155,7 +156,7 @@ void FlowOrthogonalSliceRenderer::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.get()->look();
+    camProp_.look();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (useXYSliceProp_.get() == true) {

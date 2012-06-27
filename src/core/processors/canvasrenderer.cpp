@@ -43,6 +43,7 @@ const std::string CanvasRenderer::loggerCat_("voreen.CanvasRenderer");
 CanvasRenderer::CanvasRenderer()
     : RenderProcessor()
     , canvasSize_("canvasSize", "Canvas Size", tgt::ivec2(256), tgt::ivec2(32), tgt::ivec2(2 << 12), Processor::VALID)
+    , showCursor_("showCursor", "Show Cursor", true)
     , canvas_(0)
     , shader_(0)
     , inport_(Port::INPORT, "image.input")
@@ -52,9 +53,11 @@ CanvasRenderer::CanvasRenderer()
 {
     addPort(inport_);
     addProperty(canvasSize_);
+    addProperty(showCursor_);
     inport_.sizeOriginChanged(&inport_);
 
     canvasSize_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::sizePropChanged));
+    showCursor_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::cursorVisibilityChanged));
 }
 
 CanvasRenderer::~CanvasRenderer() {
@@ -158,6 +161,9 @@ bool CanvasRenderer::isReady() const {
 
 void CanvasRenderer::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
+
+    if(getProcessorWidget())
+        getProcessorWidget()->updateFromProcessor();
 
     shader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag", generateHeader(), false);
 
@@ -333,7 +339,6 @@ std::string CanvasRenderer::getRenderToImageError() const {
 }
 
 void CanvasRenderer::resizeCanvas(tgt::ivec2 newsize) {
-
     if (!tgt::hand(tgt::greaterThanEqual(newsize, tgt::ivec2(canvasSize_.getMinValue()))) && tgt::hand(tgt::lessThanEqual(newsize, canvasSize_.getMaxValue()))) {
         LWARNING("Invalid canvas dimensions: " << newsize << ". Ignoring.");
     }
@@ -359,6 +364,11 @@ void CanvasRenderer::resizeCanvas(tgt::ivec2 newsize) {
 
 void CanvasRenderer::sizePropChanged() {
     resizeCanvas(canvasSize_.get());
+}
+
+void CanvasRenderer::cursorVisibilityChanged() {
+    if(getProcessorWidget())
+        getProcessorWidget()->updateFromProcessor();
 }
 
 } // namespace voreen

@@ -63,10 +63,6 @@ contains(DEFINES, VRN_WITH_ZLIB) {
   DEFINES += TGT_HAS_ZLIB
 }
 
-contains(DEFINES, VRN_WITH_PYTHON) {
-  DEFINES += TGT_USE_PYTHON
-}
-
 contains(DEFINES, VRN_WITH_TRACKING) {
   DEFINES += TGT_WITH_TRACKING
 }
@@ -79,9 +75,9 @@ contains(DEFINES, VRN_DEBUG) {
 # end tgt #
 ###########
 
-precompile_header : contains(QMAKE_CC, "icc") {
+contains(DEFINES, VRN_PRECOMPILE_HEADER) : contains(QMAKE_CC, "icc") {
   warning("Disabled precompiled headers because compiler is icc.")
-  CONFIG -= precompile_header
+  DEFINES -= VRN_PRECOMPILE_HEADER
 }
 
 win32 {
@@ -104,15 +100,24 @@ DEPENDPATH += \
 VRN_MODULE_SRC_DIR=$${VRN_HOME}/src/modules
 VRN_MODULE_INC_DIR=$${VRN_HOME}/include/voreen/modules
 
-# meta-modules that include all modules or most modules (=modules
-# without dependancies on external libs)
-contains(VRN_MODULES, all) : include(src/modules/all.pri)
-contains(VRN_MODULES, most) : include(src/modules/most.pri)
-
-# remove duplicates
+# meta-modules that include default modules 
+# (= modules without dependencies on external libs)
+contains(VRN_MODULES, most) {
+  warning("Meta-module 'most' has been replaced by 'default', please adapt your config.txt")
+  VRN_MODULES += default
+}
+contains(VRN_MODULES, default) {
+  include(src/modules/default.pri)
+  exists(src/modules/default-internal.pri) : include(src/modules/default-internal.pri)
+}
+# remove meta-modules and duplicates
+VRN_MODULES -= all most default
 VRN_MODULES = $$unique(VRN_MODULES)
-VRN_MODULES -= all most
 
+contains(DEFINES, VRN_NO_MODULE_AUTO_REGISTRATION) {
+   DEFINES -= VRN_NO_MODULE_AUTO_REGISTRATION
+   DEFINES += VRN_NO_REGISTRATION_HEADER_GENERATION
+}
 
 ########################
 # Module configuration #
@@ -139,6 +144,18 @@ contains(DEFINES, VRN_WITH_DCMTK) {
   warning("DICOM support is now provided by the 'dicom' module, please adapt your config.txt")
   DEFINES -= VRN_WITH_DCMTK
   VRN_MODULES += dicom
+}
+
+contains(DEFINES, VRN_WITH_TIFF) {
+  warning("TIFF support is now provided by the 'tiff' module, please adapt your config.txt")
+  DEFINES -= VRN_WITH_TIFF
+  VRN_MODULES += tiff
+}
+
+contains(DEFINES, VRN_WITH_PYTHON) {
+  warning("Python bindings are now provided by the 'python' module, please adapt your config.txt")
+  DEFINES -= VRN_WITH_PYTHON
+  VRN_MODULES += python
 }
 
 # again remove duplicates
@@ -183,10 +200,6 @@ win32 {
   contains(DEFINES, VRN_WITH_FFMPEG) {
     INCLUDEPATH += "$${FFMPEG_DIR}"
   }
-  
-  contains(DEFINES, VRN_WITH_TIFF) {
-    INCLUDEPATH += "$${TIFF_DIR}/include"
-  }
 
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
     INCLUDEPATH += "$${FREETYPE_DIR}/include/freetype2"
@@ -198,10 +211,6 @@ win32 {
 	INCLUDEPATH += "$${VRN_HOME}/ext/zlib/include"
   }
 
-  contains(DEFINES, VRN_WITH_PYTHON) {
-    INCLUDEPATH += "$${PYTHON_DIR}/include"
-  } 
-  
   win32-msvc {
     # Disable warnings for Microsoft compiler:
     # C4305: 'identifier' : truncation from 'type1' to 'type2'
@@ -291,20 +300,11 @@ unix {
     INCLUDEPATH += $${FREETYPE_DIR}
   }
 
-  contains (DEFINES, VRN_WITH_PYTHON) {
-    INCLUDEPATH += $${PYTHON_DIR}
-    LIBS += $${PYTHON_LIBS}
-  }
   
 #################################
 # additional Macintosh settings #
 #################################
-  macx {
-    contains (DEFINES, VRN_WITH_RENDER_TO_TEXTURE) {
-      DEFINES -= VRN_WITH_RENDER_TO_TEXTURE
-      warning("Render-to-Texture not supported on MacOSX")
-    }
-    
+  macx {   
     # workaround for inconsistent symbol visibility flags
     # set by Xcode for executables and libraries
     QMAKE_CXXFLAGS += -fvisibility=hidden

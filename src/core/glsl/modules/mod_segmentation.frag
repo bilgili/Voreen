@@ -27,26 +27,3 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef MOD_APPLY_SEGMENTATION
-
-uniform sampler2D segmentationTransferFunc_;
-
-vec4 applySegmentationClassification(vec3 sample, vec4 voxel, sampler3D segmentation, VOLUME_PARAMETERS segmentationParameters) {
-
-    // Determine segment id and perform transfer function lookup within corresponding segmentation transfer function.
-    // The 1D transfer function of a segment is stored in the 2D segmentation tf texture as a 3-row wide stripe which is centered around the row 3*i+1.
-
-    float segmentScaleFactor = 255.0;
-    if (segmentationParameters.bitDepth_ == 12)
-        segmentScaleFactor = 4095.0;
-    else if (segmentationParameters.bitDepth_ == 16)
-        segmentScaleFactor = 65535.0;
-
-    float segValue = getVoxel(segmentation, segmentationParameters, sample).a;
-    float segment = segValue * segmentScaleFactor;
-
-    return texture2D(segmentationTransferFunc_, vec2(voxel.a, (segment*3.0+1.0)/float(SEGMENTATION_TRANSFUNC_HEIGHT)) );
-
-}
-
-#endif

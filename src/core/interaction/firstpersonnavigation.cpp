@@ -29,6 +29,7 @@
 
 #include "voreen/core/interaction/firstpersonnavigation.h"
 #include "voreen/core/voreenapplication.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "tgt/camera.h"
 #include "tgt/event/keyevent.h"
@@ -38,7 +39,7 @@
 
 namespace voreen{
 
-    FirstPersonNavigation::FirstPersonNavigation(tgt::Camera* camera)
+    FirstPersonNavigation::FirstPersonNavigation(CameraProperty* camera)
             : camera_(camera)
             , movingDirection_(tgt::vec3::zero)
             , firstMove_(true)
@@ -214,11 +215,11 @@ namespace voreen{
         if (length == 0.f || tgt::length(axis) == 0.f)
             return;
 
-        float frustFactor = camera_->getFocalLength() / camera_->getFrustum().getNearDist();
-        float frustWidth  = ( camera_->getFrustum().getRight()
-                            - camera_->getFrustum().getLeft() );
-        float frustHeight = ( camera_->getFrustum().getTop()
-                              - camera_->getFrustum().getBottom() );
+        float frustFactor = camera_->get().getFocalLength() / camera_->get().getFrustum().getNearDist();
+        float frustWidth  = ( camera_->get().getFrustum().getRight()
+                            - camera_->get().getFrustum().getLeft() );
+        float frustHeight = ( camera_->get().getFrustum().getTop()
+                              - camera_->get().getFrustum().getBottom() );
 
         float timestep;
 
@@ -233,10 +234,12 @@ namespace voreen{
         axis.z *= (frustWidth+frustHeight)/2;
 
         tgt::mat4 rotation;
-        camera_->getRotateMatrix().invert(rotation);
+        camera_->get().getRotateMatrix().invert(rotation);
 
-        camera_->setPosition(camera_->getPosition() - rotation*axis);
-        camera_->setFocus(camera_->getFocus() - rotation*axis);
+        tgt::Camera cam = camera_->get();
+        cam.setPosition(cam.getPosition() - rotation*axis);
+        cam.setFocus(cam.getFocus() - rotation*axis);
+        camera_->set(cam);
 
         if (curAccuteness_ < maxAccuteness_)
             curAccuteness_ += 0.005f*timestep;
@@ -248,27 +251,33 @@ namespace voreen{
     }
 
     void FirstPersonNavigation::rollCameraAroundUp(float angle){
-       tgt::vec3 look=normalize(tgt::quat::rotate(camera_->getLook(), angle, camera_->getUpVector()));
-       camera_->setFocus(camera_->getPosition() + look);
+       tgt::vec3 look=normalize(tgt::quat::rotate(camera_->get().getLook(), angle, camera_->get().getUpVector()));
+        tgt::Camera cam = camera_->get();
+        cam.setFocus(cam.getPosition() + look);
+        camera_->set(cam);
     }
 
     void FirstPersonNavigation::rollCameraAroundLook(float angle){
-        tgt::vec3 up = normalize(tgt::quat::rotate(camera_->getUpVector(), angle, camera_->getLook()) );
-        camera_->setUpVector(up);
+        tgt::vec3 up = normalize(tgt::quat::rotate(camera_->get().getUpVector(), angle, camera_->get().getLook()) );
+        tgt::Camera cam = camera_->get();
+        cam.setUpVector(up);
+        camera_->set(cam);
     }
 
     void FirstPersonNavigation::rollCameraAroundStrafe(float angle){
-        tgt::vec3 up = normalize(tgt::quat::rotate(camera_->getUpVector(), angle, camera_->getStrafe()) );
-        camera_->setUpVector(up);
-        tgt::vec3 look = cross(up, camera_->getStrafe());
-        camera_->setFocus(camera_->getPosition() + look);
+        tgt::vec3 up = normalize(tgt::quat::rotate(camera_->get().getUpVector(), angle, camera_->get().getStrafe()) );
+        tgt::Camera cam = camera_->get();
+        cam.setUpVector(up);
+        tgt::vec3 look = cross(up, camera_->get().getStrafe());
+        cam.setFocus(cam.getPosition() + look);
+        camera_->set(cam);
     }
 
-    tgt::Camera* FirstPersonNavigation::getCamera() const{
+    CameraProperty* FirstPersonNavigation::getCamera() const{
         return camera_;
     }
 
-    void FirstPersonNavigation::setCamera(tgt::Camera* camera){
+    void FirstPersonNavigation::setCamera(CameraProperty* camera){
         tgtAssert(camera, "No camera");
         camera_ = camera;
     }

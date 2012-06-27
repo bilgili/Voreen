@@ -70,47 +70,44 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos = first + t * rayDirection;
         vec4 voxel = getVoxel(volume_, volumeParameters_, samplePos);
 
-        // apply masking
-        if (RC_NOT_MASKED(samplePos, voxel.a)) {
-            // fetch gradient
-            voxel.xyz = (textureLookup3DUnnormalized(gradientVolume_, gradientVolumeParameters_, samplePos).xyz-vec3(0.5))*2.0;
+        // fetch gradient
+        voxel.xyz = (textureLookup3DUnnormalized(gradientVolume_, gradientVolumeParameters_, samplePos).xyz-vec3(0.5))*2.0;
 
-            // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
+        // apply classification
+        vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, voxel);
 
-            if (color.a > 0.0) {
-                color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
-                color = vec4(0.0);
+        if (color.a > 0.0) {
+            color.rgb = RC_APPLY_SHADING(voxel.xyz, samplePos, volumeParameters_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+            color = vec4(0.0);
 
-                /*
-                // contour stuff
-                vec3 V = normalize(cameraPosition_ - samplePos);
-                vec3 N = normalize(voxel.xyz);
-                float sil = dot(N, V);
+            /*
+            // contour stuff
+            vec3 V = normalize(cameraPosition_ - samplePos);
+            vec3 N = normalize(voxel.xyz);
+            float sil = dot(N, V);
 
-                if (abs(sil) <= 0.5 && (length(voxel.xyz) > minGradientLength_))
-                    color = vec4(1.0-abs(sil));
-                */
+            if (abs(sil) <= 0.5 && (length(voxel.xyz) > minGradientLength_))
+                color = vec4(1.0-abs(sil));
+            */
 
-                /*
-                // curvature stuff
-                float curvature;
-                vec2 kappa = computeCurvature(gradientVolume_, gradientVolumeParameters_, samplePos);
-                if (curvatureType_ == 0) curvature = kappa.x; // first principle
-                else if (curvatureType_ == 1) curvature = kappa.y; // second principle
-                else if (curvatureType_ == 2) curvature = (kappa.x+kappa.y)/2.0; // mean
-                else if (curvatureType_ == 3) curvature = kappa.x*kappa.y; // Gaussian
-                if (curvature < 0.0) color.rgb = clamp(lerp(color.rgb, vec3(abs(curvature)*curvatureFactor_,0.0,abs(curvature)*curvatureFactor_), 0.5), 0.0, 1.0);
-                else if (curvature >= 0.0) color.rgb = clamp(lerp(color.rgb, vec3(0.0,abs(curvature)*curvatureFactor_,0.0), 0.5),0.0,1.0);
-                */
+            /*
+            // curvature stuff
+            float curvature;
+            vec2 kappa = computeCurvature(gradientVolume_, gradientVolumeParameters_, samplePos);
+            if (curvatureType_ == 0) curvature = kappa.x; // first principle
+            else if (curvatureType_ == 1) curvature = kappa.y; // second principle
+            else if (curvatureType_ == 2) curvature = (kappa.x+kappa.y)/2.0; // mean
+            else if (curvatureType_ == 3) curvature = kappa.x*kappa.y; // Gaussian
+            if (curvature < 0.0) color.rgb = clamp(lerp(color.rgb, vec3(abs(curvature)*curvatureFactor_,0.0,abs(curvature)*curvatureFactor_), 0.5), 0.0, 1.0);
+            else if (curvature >= 0.0) color.rgb = clamp(lerp(color.rgb, vec3(0.0,abs(curvature)*curvatureFactor_,0.0), 0.5),0.0,1.0);
+            */
 
-                // curvature silhouettes
-                vec3 V = normalize(cameraPosition_ - samplePos);
-                vec3 N = normalize(voxel.xyz);
-                if (abs(dot(N, V)) <= computeViewCurvature(gradientVolume_, gradientVolumeParameters_, samplePos, V, silhouetteWidth_))
-                    if (length(voxel.xyz) > minGradientLength_)
-                        color = vec4(1.0,0.0,0.0,1.0);
-           }
+            // curvature silhouettes
+            vec3 V = normalize(cameraPosition_ - samplePos);
+            vec3 N = normalize(voxel.xyz);
+            if (abs(dot(N, V)) <= computeViewCurvature(gradientVolume_, gradientVolumeParameters_, samplePos, V, silhouetteWidth_))
+                if (length(voxel.xyz) > minGradientLength_)
+                    color = vec4(1.0,0.0,0.0,1.0);
 
             // if opacity greater zero, apply compositing
             if (color.a > 0.0) {
@@ -133,9 +130,6 @@ void main() {
     vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
     vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
 
-    // initialize light and material parameters
-    matParams = gl_FrontMaterial;
-
     // determine whether the ray has to be casted
     if (frontPos == backPos)
         // background needs no raycasting
@@ -144,21 +138,13 @@ void main() {
         // fragCoords are lying inside the bounding box
         rayTraversal(frontPos, backPos);
 
-    /*
-    #ifdef TONE_MAPPING_ENABLED
-        result.r = 1.0 - exp(-result.r * TONE_MAPPING_VALUE);
-        result.g = 1.0 - exp(-result.g * TONE_MAPPING_VALUE);
-        result.b = 1.0 - exp(-result.b * TONE_MAPPING_VALUE);
-    #endif
-    */
-
     #ifdef OP0
-        gl_FragData[OP0] = result;
+        FragData0 = result;
     #endif
     #ifdef OP1
-        gl_FragData[OP1] = result1;
+        fragData1 = result1;
     #endif
     #ifdef OP2
-        gl_FragData[OP2] = result2;
+        fragData2 = result2;
     #endif
 }

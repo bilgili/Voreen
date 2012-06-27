@@ -36,8 +36,8 @@ using tgt::TextureUnit;
 namespace voreen {
 
 BinaryImageProcessor::BinaryImageProcessor()
-    : ImageProcessorDepth("pp_binary")
-    , shader_("shader", "Fragment shader", "pp_binary.frag")
+    : ImageProcessorDepth("image/binary")
+    , shader_("shader", "Fragment shader", "image/binary.frag")
     , inport0_(Port::INPORT, "image.inport0")
     , inport1_(Port::INPORT, "image.inport1")
     , outport_(Port::OUTPORT, "image.outport", true)
@@ -61,9 +61,11 @@ void BinaryImageProcessor::initialize() throw (VoreenException) {
     // assign header before initializing the shader property
     initialized_ = true;
     shader_.setHeader(generateHeader());
-    initialized_ = false;           //< prevents warning
+    shader_.rebuild();
+    initialized_ = false;
     ImageProcessorDepth::initialize();  // initializes the shader property
     loadShader();
+    initialized_ = true;
 }
 
 void BinaryImageProcessor::loadShader() {
@@ -88,19 +90,19 @@ void BinaryImageProcessor::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1;
-    inport0_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
-    inport1_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
+    TextureUnit colorUnit0, depthUnit0, colorUnit1, depthUnit1;
+    inport0_.bindTextures(colorUnit0.getEnum(), depthUnit0.getEnum());
+    inport1_.bindTextures(colorUnit1.getEnum(), depthUnit1.getEnum());
 
     // initialize shader
     sh->activate();
     setGlobalShaderParameters(sh);
 
     sh->setIgnoreUniformLocationError(true);
-    sh->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
-    sh->setUniform("depthTex0_", shadeUnitDepth0.getUnitNumber());
-    sh->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
-    sh->setUniform("depthTex1_", shadeUnitDepth1.getUnitNumber());
+    sh->setUniform("colorTex0_", colorUnit0.getUnitNumber());
+    sh->setUniform("depthTex0_", depthUnit0.getUnitNumber());
+    sh->setUniform("colorTex1_", colorUnit1.getUnitNumber());
+    sh->setUniform("depthTex1_", depthUnit1.getUnitNumber());
     inport0_.setTextureParameters(sh, "texParams0_");
     inport1_.setTextureParameters(sh, "texParams1_");
     sh->setIgnoreUniformLocationError(false);

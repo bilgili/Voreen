@@ -116,7 +116,7 @@ public:
 		source_ = source;
 		unparsedSource_ = source;
 	}
-	std::string getSource() { return unparsedSource_; }
+	const std::string getSource() { return unparsedSource_; }
 
     /**
      * Set geometry shader input type. For this change to take effect call setDirectives() and
@@ -198,6 +198,8 @@ public:
     bool rebuildFromFile();
 
     void setHeaders(const std::string& customHeader);
+
+    void bindFragDataLocation(GLuint colorNumber, std::string name);
 
     GLint getID() {return id_;};
     /**

@@ -27,12 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef VRN_WITH_PYTHON
-// this needs to come first
-#include "tgt/scriptmanager.h"
-#include "voreen/core/utils/pyvoreen.h"
-#endif
-
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/utils/cmdparser/commandlineparser.h"
@@ -44,6 +38,12 @@
 #include "tgt/shadermanager.h"
 #include "tgt/timer.h"
 #include "tgt/gpucapabilities.h"
+
+#ifndef VRN_NO_REGISTRATION_HEADER_GENERATION
+    #include "voreen/modules/gen_moduleregistration.h"
+#else
+    #include "voreen/modules/moduleregistration.h"
+#endif
 
 #ifdef WIN32
 #ifdef _MSC_VER
@@ -125,6 +125,8 @@ string findVolumePath(const string& basePath) {
 string findShaderPath(const string& basePath) {
 #ifdef VRN_INSTALL_PREFIX
     return basePath + "/share/voreen/shaders";
+#elif VRN_DEPLOYMENT
+    return basePath + "/glsl";
 #else
     return basePath + "/src/core/glsl";
 #endif
@@ -175,6 +177,8 @@ VoreenApplication::VoreenApplication(const std::string& name, const std::string&
       cmdParser_(displayName),
       processorWidgetFactory_(0),
       logLevel_(tgt::Info),
+      initialized_(false),
+      initializedGL_(false),
       networkEvaluator_(0),
       schedulingTimer_(0),
       eventHandler_()
@@ -184,29 +188,17 @@ VoreenApplication::VoreenApplication(const std::string& name, const std::string&
 }
 
 VoreenApplication::~VoreenApplication() {
-    // deinitialize and clear modules
-    for (size_t i=0; i<modules_.size(); i++) {
-        try {
-            modules_[i]->deinitialize();
-        }
-        catch (const VoreenException& e) {
-            LERROR("VoreenException during deinitialization of module '" << modules_[i]->getName() << "':" << e.what());
-        }
-        catch (const std::exception& e) {
-            LERROR("std::exception during deinitialization of module '" << modules_[i]->getName() << "':" << e.what());
-        }
-        catch (...) {
-            LERROR("unknown exception during deinitialization of module '" << modules_[i]->getName() << "'");
-        }
-        delete modules_[i];
+    if (initializedGL_) {
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LWARNING("~VoreenApplication(): OpenGL has not been deinitialized. Call deinitGL() before destruction.");
+        return;
     }
-    modules_.clear();
 
-    delete schedulingTimer_;
-    schedulingTimer_ = 0;
-
-    tgt::deinitGL();
-    tgt::deinit();
+    if (initialized_) {
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LWARNING("~VoreenApplication(): application has not been deinitialized. Call deinit() before destruction.");
+        return;
+    }
 }
 
 void VoreenApplication::prepareCommandParser() {
@@ -215,17 +207,25 @@ void VoreenApplication::prepareCommandParser() {
 }
 
 void VoreenApplication::init() {
+
+    if (initialized_) {
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LWARNING("init() Application already initialized. Skip.");
+        return;
+    }
+
     //
     // tgt initialization
     //
     tgt::InitFeature::Features featureset
-        = tgt::InitFeature::Features(tgt::InitFeature::ALL);
-    if (!(appType_ & APP_LOGGING))
-        featureset = tgt::InitFeature::Features(featureset & ~tgt::InitFeature::LOG_TO_CONSOLE);
-    if (!(appType_ & APP_PYTHON)) {
-        featureset = tgt::InitFeature::Features(featureset & ~tgt::InitFeature::SCRIPT_MANAGER);
-    }
+        = tgt::InitFeature::Features(tgt::InitFeature::ALL &~ tgt::InitFeature::LOG_TO_CONSOLE);
     tgt::init(featureset);
+
+    if (appType_ & APP_CONSOLE_LOGGING) {
+        tgt::Log* clog = new tgt::ConsoleLog();
+        clog->addCat("", true, logLevel_);
+        LogMgr.addLog(clog);
+    }
 
     // init timer
     schedulingTimer_ = createTimer(&eventHandler_);
@@ -248,32 +248,25 @@ void VoreenApplication::init() {
         documentsPath_ = getenv("HOME");
 #endif
 
-    //
-    // Logging
-    //
-    if (appType_ & APP_LOGGING) {
-        std::string logDir;
-#ifdef VRN_DISTRIBUTION
-        logDir = documentsPath_;
-        LogMgr.reinit(logDir);
+    // HTML logging
+    if (appType_ & APP_HTML_LOGGING) {
+
+#ifdef VRN_DEPLOYMENT
+        LogMgr.reinit(documentsPath_);
 #endif
 
-        tgt::Log* clog = new tgt::ConsoleLog();
-        clog->addCat("", true, logLevel_);
-        LogMgr.addLog(clog);
-
-#ifdef VRN_ADD_FILE_LOGGER
         if (logFile_.empty())
             logFile_ = name_ + "-log.html";
-#endif
 
-        if (!logFile_.empty()) {
-            // add a file logger
-            tgt::Log* log = new tgt::HtmlLog(logFile_);
-            log->addCat("", true, logLevel_);
-            LogMgr.addLog(log);
-        }
+        // add a file logger
+        tgt::Log* log = new tgt::HtmlLog(logFile_);
+        log->addCat("", true, logLevel_);
+        LogMgr.addLog(log);
     }
+
+#ifdef VRN_DEPLOYMENT
+    LINFO("Deployment build.");
+#endif
 
     //
     // Path detection
@@ -306,7 +299,7 @@ void VoreenApplication::init() {
 
     // shader path
     if (appType_ & APP_SHADER) {
-#if defined(__APPLE__) && defined(VRN_DISTRIBUTION)
+#if defined(__APPLE__) && defined(VRN_DEPLOYMENT)
         shaderPath_ = appBundleResourcesPath_ + "/glsl";
 #else
         shaderPath_ = findShaderPath(basePath_);
@@ -319,7 +312,7 @@ void VoreenApplication::init() {
         cachePath_ = dataPath_ + "/cache";
         temporaryPath_ = dataPath_ + "/tmp";
         volumePath_ = findVolumePath(basePath_);
-#if defined(__APPLE__) && defined(VRN_DISTRIBUTION)
+#if defined(__APPLE__) && defined(VRN_DEPLOYMENT)
         fontPath_ = appBundleResourcesPath_ + "/fonts";
         texturePath_ = appBundleResourcesPath_ + "/textures";
         documentationPath_ = appBundleResourcesPath_ + "/doc";
@@ -331,17 +324,66 @@ void VoreenApplication::init() {
     }
 
     //
-    // Python
+    // Modules
     //
-#ifdef VRN_WITH_PYTHON
-    if (appType_ & APP_PYTHON) {
-        ScriptMgr.addPath("");
-        tgt::Singleton<VoreenPython>::init(new VoreenPython());
+    if (appType_ & APP_AUTOLOAD_MODULES) {
+        LDEBUG("Loading modules from module registration header");
+        addAllModules(this);
+        if (modules_.empty()) {
+            LWARNING("No modules loaded");
+        }
+        else {
+            std::string modString = modules_[0]->getName();
+            for (size_t i=1; i<modules_.size(); i++)
+                modString += ", " +  modules_[i]->getName();
+            LINFO("Modules: " << modString);
+        }
     }
-#endif
+    else {
+        LDEBUG("Module auto loading disabled");
+    }
+
+    initialized_ = true;
 }
 
-void VoreenApplication::initGL() {
+void VoreenApplication::deinit() {
+
+    if (!initialized_) {
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LWARNING("deinit() Application not initialized. Skip.");
+        return;
+    }
+
+    delete schedulingTimer_;
+    schedulingTimer_ = 0;
+
+    // clear modules
+    for (size_t i=0; i<modules_.size(); i++) {
+        LDEBUG("Deleting module '" << modules_[i]->getName() << "'");
+        delete modules_[i];
+    }
+    modules_.clear();
+
+    LDEBUG("tgt::deinit()");
+    tgt::deinit();
+
+    initialized_ = false;
+}
+
+void VoreenApplication::initGL() throw (VoreenException) {
+
+    if (!initialized_)
+        throw VoreenException("VoreenApplication::initGL(): Application not initialized");
+
+    if (initializedGL_)
+        throw VoreenException("VoreenApplication::initGL(): OpenGL already initialized");
+
+    if ((appType_ & APP_HTML_LOGGING) && !logFile_.empty()) {
+        std::string logPath = !LogMgr.getLogDir().empty() ? LogMgr.getLogDir() + "/" : "";
+        LINFO("Log file: " << logPath << logFile_);
+    }
+
+    LDEBUG("tgt::initGL");
     tgt::initGL();
 
 #ifdef _MSC_VER
@@ -357,17 +399,61 @@ void VoreenApplication::initGL() {
         try {
             LINFO("Initializing module '" << modules_.at(i)->getName() << "'");
             modules_.at(i)->initialize();
+            modules_.at(i)->initialized_ = true;
         }
         catch (const VoreenException& e) {
-            LERROR("VoreenException during initialization of module '" << modules_.at(i)->getName() << "':" << e.what());
+            LERROR("VoreenException during initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            modules_.at(i)->initialized_ = false;
         }
         catch (const std::exception& e) {
-            LERROR("std::exception during initialization of module '" << modules_.at(i)->getName() << "':" << e.what());
+            LERROR("std::exception during initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            modules_.at(i)->initialized_ = false;
         }
         catch (...) {
             LERROR("Unknown exception during initialization of module '" << modules_.at(i)->getName() << "'");
+            modules_.at(i)->initialized_ = false;
         }
     }
+
+    initializedGL_ = true;
+}
+
+void VoreenApplication::deinitGL() throw (VoreenException) {
+
+    if (!initializedGL_) {
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LWARNING("deinitGL() OpenGL not initialized. Skip.");
+        return;
+    }
+
+    // deinitialize modules
+    for (size_t i=0; i<modules_.size(); i++) {
+
+        if (modules_[i]->isInitialized()) {
+            try {
+                LDEBUG("Deinitializing module '" << modules_[i]->getName() << "'");
+                modules_[i]->deinitialize();
+                modules_[i]->initialized_ = false;
+            }
+            catch (const VoreenException& e) {
+                LERROR("VoreenException during deinitialization of module '" << modules_[i]->getName() << "': " << e.what());
+            }
+            catch (const std::exception& e) {
+                LERROR("std::exception during deinitialization of module '" << modules_[i]->getName() << "': " << e.what());
+            }
+            catch (...) {
+                LERROR("unknown exception during deinitialization of module '" << modules_[i]->getName() << "'");
+            }
+        }
+        else {
+            LWARNING("Skipping deinitialization of module '" << modules_[i]->getName() << "': not initialized");
+        }
+    }
+
+    LDEBUG("tgt::deinitGL");
+    tgt::deinitGL();
+
+    initializedGL_ = false;
 }
 
 VoreenApplication* VoreenApplication::app() {
@@ -439,7 +525,7 @@ std::string VoreenApplication::getScriptPath(const std::string& filename) const 
 }
 
 std::string VoreenApplication::getSnapshotPath(const std::string& filename) const {
-#ifdef VRN_DISTRIBUTION
+#ifdef VRN_DEPLOYMENT
     return getDocumentsPath(filename);
 #else
     return dataPath_ + "/snapshots" + (filename.empty() ? "" : "/" + filename);
@@ -451,7 +537,11 @@ std::string VoreenApplication::getTransFuncPath(const std::string& filename) con
 }
 
 std::string VoreenApplication::getModulePath(const std::string& filename) const {
+#ifdef VRN_DEPLOYMENT
+    return basePath_ + "/modules" + (filename.empty() ? "" : "/" + filename);
+#else
     return basePath_ + "/src/modules" + (filename.empty() ? "" : "/" + filename);
+#endif
 }
 
 std::string VoreenApplication::getTexturePath(const std::string& filename) const {

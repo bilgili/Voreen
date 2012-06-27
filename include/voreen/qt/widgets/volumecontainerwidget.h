@@ -92,9 +92,11 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent*);
+    std::string calculateSize();
 
     VolumeLoadButton* volumeLoadButton_;
     QLabel* containerInfo_;
+    std::map<Volume*, QTreeWidgetItem*> volumeItems_;
 
 private:
     void update();

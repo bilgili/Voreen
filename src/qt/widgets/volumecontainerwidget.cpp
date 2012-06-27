@@ -201,70 +201,18 @@ void VolumeContainerWidget::setVolumeContainer(VolumeContainer* volumeContainer)
 
 }
 
-void VolumeContainerWidget::update() {
-    volumeInfos_->clear();
+std::string VolumeContainerWidget::calculateSize() {
+
     int volumeSize = 0;
-    int volumeCount = 0;
 
     if (!volumeContainer_ || volumeContainer_->empty()) {
-        containerInfo_->setText("");
-        return;
+        return "";
     }
-
-    for(size_t i = 0 ; i< volumeContainer_->size(); ++i) {
-        VolumeHandle* handle = volumeContainer_->at(i);
+    for(size_t i = 0 ; i < volumeContainer_->size(); ++i) {
         Volume* volume = volumeContainer_->at(i)->getVolume();
-        QTreeWidgetItem* qtwi = new QTreeWidgetItem(volumeInfos_);
-        std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
-        std::string path = VolumeViewHelper::getVolumePath(handle);
-
-        ++volumeCount;
         volumeSize += VolumeViewHelper::getVolumeMemorySizeByte(volume);
-
-        // uint stringLength = 22;
-        // if(name.size() > stringLength) {
-        //     int end = name.size();
-        //     std::string startString;
-        //     std::string endString;
-        //     for(size_t i = 0; i < stringLength/2; i++){
-        //          startString += name.at(i);
-        //          endString += name.at(end-stringLength/2+i);
-        //     }
-        //     name = startString+"..."+endString;
-        // }
-        // if(path.size() > stringLength) {
-        //     int end = path.size();
-        //     std::string startString;
-        //     std::string endString;
-        //     for(size_t i = 0; i < stringLength/2; i++){
-        //          startString += path.at(i);
-        //          endString += path.at(end-stringLength/2+i);
-        //     }
-        //     path = startString+"..."+endString;
-        // }
-
-        QFontInfo fontInfo(qtwi->font(0));
-        qtwi->setFont(0, QFont(fontInfo.family(), fontSize));
-        qtwi->setText(0, QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
-                      + QString(path.c_str()) + QString(QChar::LineSeparator)
-                      + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
-                      
-            //                                     + "afdjkl ajdsflj alsdfj lasdjflakjdsf\n"
-            // + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+path
-            // +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
-            // + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
-            // + VolumeViewHelper::getVolumeMemorySize(volume)));
-
-        qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(volume, 63, 0)));
-        qtwi->setSizeHint(0,QSize(65,65));
-        qtwi->setToolTip(0, QString::fromStdString(VolumeViewHelper::getStrippedVolumeName(handle)
-            + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+VolumeViewHelper::getVolumePath(handle)
-            +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
-            + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
-            + VolumeViewHelper::getVolumeMemorySize(volume)));
-
-        volumeInfos_->addTopLevelItem(qtwi);
     }
+    int volumeCount = volumeContainer_->size();
     long bytes = volumeSize;
     std::stringstream out;
     if(volumeCount == 1) {
@@ -284,7 +232,49 @@ void VolumeContainerWidget::update() {
     else {
         out << bytes << " bytes)";
     }
-    containerInfo_->setText(QString::fromStdString(out.str()));
+    return out.str();
+}
+
+void VolumeContainerWidget::update() {
+    volumeInfos_->clear();
+    volumeItems_.clear();
+    if (!volumeContainer_ || volumeContainer_->empty()) {
+        containerInfo_->setText("");
+        return;
+    }
+
+    for(size_t i = 0 ; i < volumeContainer_->size(); ++i) {
+        VolumeHandle* handle = volumeContainer_->at(i);
+        Volume* volume = volumeContainer_->at(i)->getVolume();
+        QTreeWidgetItem* qtwi = new QTreeWidgetItem(volumeInfos_);
+        std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
+        std::string path = VolumeViewHelper::getVolumePath(handle);
+        volumeItems_[handle->getVolume()] = qtwi;
+
+        QFontInfo fontInfo(qtwi->font(0));
+
+        /*QLabel* infos = new QLabel(QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
+                      + QString(path.c_str()) + QString(QChar::LineSeparator)
+                      + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
+        infos->setWordWrap(true);*/
+
+        qtwi->setFont(0, QFont(fontInfo.family(), fontSize));
+        qtwi->setText(0, QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
+                      + QString(path.c_str()) + QString(QChar::LineSeparator)
+                      + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
+
+        qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(volume, 63, 0)));
+        qtwi->setSizeHint(0,QSize(65,65));
+        qtwi->setToolTip(0, QString::fromStdString(VolumeViewHelper::getStrippedVolumeName(handle)
+            + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+VolumeViewHelper::getVolumePath(handle)
+            +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
+            + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
+            + VolumeViewHelper::getVolumeMemorySize(volume)));
+
+        volumeInfos_->addTopLevelItem(qtwi);
+        //volumeInfos_->setItemWidget(qtwi, 0, infos);
+    }
+    containerInfo_->setText(QString::fromStdString(calculateSize()));
 }
 
 void VolumeContainerWidget::removeVolume() {
@@ -309,8 +299,33 @@ void VolumeContainerWidget::keyPressEvent(QKeyEvent* keyEvent) {
 }
 
 
-void VolumeContainerWidget::volumeAdded(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/) {
-    update();
+void VolumeContainerWidget::volumeAdded(const VolumeCollection* /*source*/, const VolumeHandle* handleConst) {
+    VolumeHandle* handle = const_cast<VolumeHandle*>(handleConst);
+    QTreeWidgetItem* qtwi = new QTreeWidgetItem(volumeInfos_);
+    std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
+    std::string path = VolumeViewHelper::getVolumePath(handle);
+    volumeItems_[handle->getVolume()] = qtwi;
+
+    Volume* volume = handle->getVolume();
+
+    QFontInfo fontInfo(qtwi->font(0));
+
+    qtwi->setFont(0, QFont(fontInfo.family(), fontSize));
+    qtwi->setText(0, QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
+                      + QString(path.c_str()) + QString(QChar::LineSeparator)
+                      + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
+
+    qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(volume, 63, 0)));
+    qtwi->setSizeHint(0,QSize(65,65));
+    qtwi->setToolTip(0, QString::fromStdString(VolumeViewHelper::getStrippedVolumeName(handle)
+        + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+VolumeViewHelper::getVolumePath(handle)
+        +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
+        + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
+        + VolumeViewHelper::getVolumeMemorySize(volume)));
+
+    volumeInfos_->addTopLevelItem(qtwi);
+
+    containerInfo_->setText(QString::fromStdString(calculateSize()));
 }
 
 void VolumeContainerWidget::volumeRemoved(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/) {

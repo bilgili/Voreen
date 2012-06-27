@@ -44,7 +44,10 @@ NumericProperty<T>::NumericProperty(const std::string& id, const std::string& gu
     numDecimals_(2)
 {
     addValidation(NumericPropertyValidation<T>(this));
-    validate(value);
+    std::string errorMsg;
+    validate(value, errorMsg);
+    if (!errorMsg.empty())
+        LWARNINGC("voreen.TemplateProperty", errorMsg);
 }
 
 template<typename T>

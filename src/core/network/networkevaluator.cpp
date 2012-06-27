@@ -53,6 +53,7 @@ NetworkEvaluator::NetworkEvaluator(tgt::GLCanvas* sharedContext)
     , sharedContext_(sharedContext)
     , networkChanged_(false)
     , locked_(false)
+    , processPending_(false)
 {
 
 #ifdef VRN_DEBUG
@@ -222,7 +223,8 @@ void NetworkEvaluator::process() {
         return;
 
     if (isLocked()) {
-        LWARNING("process() called on locked evaluator. Skipping.");
+        LDEBUG("process() called on locked evaluator. Scheduling.");
+        processPending_ = true;
         return;
     }
 
@@ -360,6 +362,12 @@ void NetworkEvaluator::process() {
     LGL_ERROR;
 
     unlock();
+
+    if (processPending_) {
+        // make sure that canvases are repainted, if their update has been blocked by the locked evaluator
+        processPending_ = false;
+        updateCanvases();
+    }
 }
 
 void NetworkEvaluator::removeProcessWrapper(const ProcessWrapper* w)  {

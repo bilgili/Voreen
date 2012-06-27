@@ -189,7 +189,10 @@ protected:
      */
     virtual Token* nextToken();
 
+
+
 private:
+
     Parser(const Parser&);
     Parser& operator=(const Parser&);
 

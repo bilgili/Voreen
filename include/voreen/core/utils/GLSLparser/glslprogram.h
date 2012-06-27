@@ -43,8 +43,8 @@ namespace glslparser {
 
 class GLSLProgram {
 public:
+    GLSLProgram(std::istream* is);
     GLSLProgram(const std::string& fileName);
-    //GLSLProgram(std::istream* const is);
 
     ~GLSLProgram();
 
@@ -53,6 +53,7 @@ public:
     const std::ostringstream& getLog() const { return log_; }
     const std::string& getShaderHeader() const { return shaderHeader_; }
     const std::vector<GLSLVariableSymbol*>& getUniformDeclarations() const { return uniformDecls_; }
+    const std::vector<GLSLVariableSymbol*>& getOutDeclarations() const { return outDecls_; }
 
     void setShaderHeader(const std::string& shaderHeader) { shaderHeader_ = shaderHeader; }
 
@@ -63,7 +64,10 @@ private:
     std::istream* const is_;
     std::string shaderHeader_;
     std::vector<GLSLVariableSymbol*> uniformDecls_;
+    std::vector<GLSLVariableSymbol*> outDecls_;
     std::ostringstream log_;
+
+    static const std::string loggerCat_;
 };
 
 }   // namespace glslparser

@@ -53,7 +53,7 @@ void main() {
         // and 1.0, so do a conservative test here.
         if (entryCol.a >= 0.5) {
             // entry point is okay
-            gl_FragColor = entryCol;
+            FragData0 = entryCol;
             gl_FragDepth = textureLookup2Dnormalized(entryTexDepth_, entryParameters_, fragCoord).z;
         }
         else {
@@ -69,7 +69,7 @@ void main() {
             // object coordinates -> texture coordinates
             vec3 eep = (pos.xyz * volumeCubeSizeRCP_) + 0.5;
             // write new entry point
-            gl_FragColor = vec4(eep, 1.0);
+            FragData0 = vec4(eep, 1.0);
             gl_FragDepth = 0.0;
         }
     }

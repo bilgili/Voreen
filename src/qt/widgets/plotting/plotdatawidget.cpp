@@ -58,13 +58,6 @@ void PlotDataWidget::createWidgets() {
     setLayout(mainLayout);
 }
 
-void PlotDataWidget::createConnections() {
-    /*connect(table_->selectionModel(),
-             SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-             this, SIGNAL(selectionChanged(const QItemSelection &)));*/
-}
-
-
 void PlotDataWidget::updateFromPlotData() {
     tgtAssert(property_, "No PlotDataProperty");
     delete proxyModel;

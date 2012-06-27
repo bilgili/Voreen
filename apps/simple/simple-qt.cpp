@@ -40,7 +40,6 @@
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/processors/canvasrenderer.h"
 #include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/modules/moduleregistration.h"
 
 using namespace voreen;
 
@@ -53,9 +52,8 @@ int main(int argc, char* argv[]) {
     // a QApplication is always needed
     QApplication myapp(argc, argv);
 
-    VoreenApplicationQt vapp("simple-Qt", "simple-Qt", argc, argv);
+    VoreenApplicationQt vapp("simple-Qt", "simple-Qt", argc, argv, VoreenApplication::APP_ALL);
     vapp.init();
-    addAllModules(&vapp);
 
     // this is the actual canvas we will paint on
     tgt::QtCanvas* canvas = new tgt::QtCanvas("Voreen - The Volume Rendering Engine");
@@ -89,4 +87,7 @@ int main(int argc, char* argv[]) {
     delete workspace;
     delete networkEvaluator;
     delete canvas;
+
+    vapp.deinitGL();
+    vapp.deinit();
 }

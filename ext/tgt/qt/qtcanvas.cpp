@@ -108,6 +108,7 @@ void QtCanvas::swap() {
 }
 
 void QtCanvas::getGLFocus() {
+    QGLWidget::doneCurrent();
     QGLWidget::makeCurrent();
 }
 

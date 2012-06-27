@@ -36,7 +36,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ImageOverlay::ImageOverlay()
-    : ImageProcessor("pp_compositor")
+    : ImageProcessor("image/compositor")
     , imageInport_(Port::INPORT, "image.in")
     , overlayInport_(Port::INPORT, "image.overlay")
     , outport_(Port::OUTPORT, "image.out")
@@ -163,9 +163,9 @@ void ImageOverlay::process() {
 
         // image texture parameters
         imageInport_.setTextureParameters(program_, "textureParameters0_");
-        program_->setUniform("shadeTex0_", imageUnit.getUnitNumber());
+        program_->setUniform("colorTex0_", imageUnit.getUnitNumber());
         program_->setUniform("depthTex0_", imageUnitDepth.getUnitNumber());
-        program_->setUniform("shadeTex1_", overlayUnit.getUnitNumber());
+        program_->setUniform("colorTex1_", overlayUnit.getUnitNumber());
         program_->setUniform("weightingFactor_", 1.f-overlayOpacity_.get());
 
         // determine overlay dimensions and bottom-left in float pixel coords
