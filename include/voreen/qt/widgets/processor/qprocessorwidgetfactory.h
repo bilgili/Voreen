@@ -42,7 +42,7 @@ class NetworkEvaluator;
 class QProcessorWidgetFactory : public ProcessorWidgetFactory {
 public:
     QProcessorWidgetFactory(QWidget* parent, NetworkEvaluator* nwe);
-    QProcessorWidget* createWidget(Processor*) const;
+    virtual ProcessorWidget* createWidget(Processor*) const;
 
 private:
     QWidget* parent_;

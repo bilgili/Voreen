@@ -34,31 +34,23 @@ public:
     enum Features {
         NONE            =      0,
         LOG_MANAGER     = 1 << 0,
-        FILE_SYSTEM     = 1 << 1,  //FIXME: Texture/ShaderManager crashes without this
-        GPU_PROPERTIES  = 1 << 2,  //FIXME: ShaderManager crashes without this
+        FILE_SYSTEM     = 1 << 1,
+        GPU_PROPERTIES  = 1 << 2,
         SCRIPT_MANAGER  = 1 << 3,
         SHADER_MANAGER  = 1 << 4,
         MODEL_MANAGER   = 1 << 5,
         TEXTURE_MANAGER = 1 << 6,
         TESSELATOR      = 1 << 7,
 
-        LOG_TO_CONSOLE  = 1 << 30,
+        LOG_TO_CONSOLE  = 1 << 30,  //FIXME: unused?
         NO_SHADER_CACHING  = 1 << 31,
 
         ALL             = ( 
-                            // FIXME: this should not be here...
-                            //disable caching of shaders in voreen
-                            #ifdef TGT_COMPILED_FOR_VOREEN 
-                            NO_SHADER_CACHING |
-                            #else
-                            LOG_TO_CONSOLE |    
-                            #endif
-                        
                             LOG_MANAGER | FILE_SYSTEM | GPU_PROPERTIES | 
                             SCRIPT_MANAGER | SHADER_MANAGER |
-                            MODEL_MANAGER | TEXTURE_MANAGER | TESSELATOR 
-                            )
-        
+                            MODEL_MANAGER | TEXTURE_MANAGER | TESSELATOR |
+                            LOG_TO_CONSOLE | NO_SHADER_CACHING                            
+                            )        
     };
 };
 

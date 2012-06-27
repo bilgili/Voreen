@@ -271,8 +271,6 @@ SHADER_SOURCES += \
     vis/glsl/eep_texcoord.vert \
     vis/glsl/eep_vertex.vert \
     vis/glsl/im_background.frag \
-    vis/glsl/lightvolumegenerator.frag \
-    vis/glsl/lightvolumegenerator.vert \
     vis/glsl/pp_binary.frag \
     vis/glsl/pp_grayscale.frag \
     vis/glsl/pp_colordepth.frag \

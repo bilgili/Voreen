@@ -63,6 +63,7 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
             LERRORC("voreen.RenderTarget", "Unknown internal format!");
     }
     colorTex_->uploadTexture();
+	colorTex_->setWrapping(tgt::Texture::CLAMP_TO_EDGE);
 
     switch(internalDepthFormat) {
         case GL_DEPTH_COMPONENT16:
@@ -78,6 +79,7 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
             LERRORC("voreen.RenderTarget", "Unknown internal depth format!");
     }
     depthTex_->uploadTexture();
+	depthTex_->setWrapping(tgt::Texture::CLAMP_TO_EDGE);
 
     fbo_ = new tgt::FramebufferObject();
     if (!fbo_) {

@@ -1,6 +1,27 @@
 Voreen Changelog
 ----------------
 
+2010-01-29: Voreen 2.01 (r34, internal r9025)
+---------------------------------------------
+
+   * Bug fixes:
+     o Add missing Flowreen shader files to binary distribution.
+     o Fix crash when loading new workspace while the transfer function editor
+       window is open.
+     o Set correct clamping mode for rendering in coarseness mode and for the
+       render target viewer. This removes artifacts at the border of the
+       rendering canvas.
+     o Correct export of transfer function files on unix platforms with
+       non-POSIX locale.
+     o Support loading of compressed TGA image files without using the DevIL
+       image library. This is used for the "test card" image shown in the output
+       window when not connected to a valid processor.
+     o Change the coordinate system origin for SliceSequenceRenderer from bottom
+       right to bottom left.
+     o Activate workaround for incorrectly reported non-power-of-two (NPOT)
+       texture capabilities for ATI Radeon 9* and X* on Linux in addition to Mac.
+
+
 2009-12-23: Voreen 2.0 (r29, internal r8753)
 --------------------------------------------
 

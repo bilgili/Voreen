@@ -343,8 +343,8 @@ void GpuCapabilities::detectCapabilities() {
         glGetIntegerv(GL_MAX_TEXTURE_UNITS, (GLint *) &numTextureUnits_);
 
     npotTextures_ = (isExtensionSupported("GL_ARB_texture_non_power_of_two"));
-#ifdef __APPLE__
-    // No NPOT support on older ATI Macs.
+#if defined(__APPLE__) || defined(__linux__)
+    // No NPOT support on older ATI Macs and Linux.
     // ATI cards up to X1900 report they support this extension, but only do so under certain
     // circumstances, else falling back to software.
     // See this thread for details:

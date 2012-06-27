@@ -704,13 +704,23 @@ void TiXmlElement::SetAttribute( const std::string& name, int val )
 
 void TiXmlElement::SetDoubleAttribute( const char * name, double val )
 {	
-	char buf[256];
+#ifndef WIN32
+    // need to switch to default locale "C" to prevent problems when current locale uses comma
+    // instead of decimal point
+    const char* oldlocale = setlocale(LC_NUMERIC, "C");
+#endif
+
+    char buf[256];
 	#if defined(TIXML_SNPRINTF)		
 		TIXML_SNPRINTF( buf, sizeof(buf), "%f", val );
 	#else
 		sprintf( buf, "%f", val );
 	#endif
 	SetAttribute( name, buf );
+
+#ifndef WIN32
+    setlocale(LC_NUMERIC, oldlocale);
+#endif
 }
 
 

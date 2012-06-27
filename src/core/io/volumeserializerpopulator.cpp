@@ -77,9 +77,9 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
     progressDialog_(0)
 {
 
-    if (showProgress) {
+    if (showProgress && VoreenApplication::app()) {
         progressDialog_ = VoreenApplication::app()->createProgressDialog();
-        if(progressDialog_) {
+        if (progressDialog_) {
             progressDialog_->setTitle("Loading volume");
             progressDialog_->setMessage("Loading volume ...");
         }

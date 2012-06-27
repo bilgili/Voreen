@@ -37,7 +37,7 @@ QProcessorWidgetFactory::QProcessorWidgetFactory(QWidget* parent, NetworkEvaluat
     parent_ = parent;
 }
 
-QProcessorWidget* QProcessorWidgetFactory::createWidget(Processor* processor) const {
+ProcessorWidget* QProcessorWidgetFactory::createWidget(Processor* processor) const {
 
     if (dynamic_cast<CanvasRenderer*>(processor))
         return new CanvasRendererWidget(parent_, static_cast<CanvasRenderer*>(processor), nwe_);

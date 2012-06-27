@@ -78,7 +78,7 @@ struct TEXTURE_PARAMETERS {
 
 #endif
 
-vec4 textureLookup2Dscreen(in sampler2D texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+vec4 textureLookup2Dscreen(in SAMPLER2D_TYPE texture, TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
     vec2 texCoordsNormalized = texCoords * screenDimRCP_;
     return textureLookup2Dnormalized(texture, texParams, texCoordsNormalized);
 }

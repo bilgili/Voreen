@@ -40,11 +40,6 @@ MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
 # we don't use tgt's build system
 DEFINES += TGT_WITHOUT_DEFINES
 
-# This just changes the default params for tgt::init() to include
-# NO_SHADER_CACHING and to remove LOG_TO_CONSOLE. Should be done
-# differently.
-DEFINES += TGT_COMPILED_FOR_VOREEN
-
 # tgt defines #
 contains( DEFINES, VRN_WITH_DEVIL) {
   DEFINES += TGT_HAS_DEVIL

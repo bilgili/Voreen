@@ -150,7 +150,8 @@ void VolumeContainer::free(const VolumeCollection& volumeCollection) {
 }
 
 void VolumeContainer::freeAll() {
-    free(static_cast<VolumeCollection>(*this)); // also notifies the observers
+    while (!empty())
+        free(first());
 }
 
 } // namespace

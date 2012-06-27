@@ -187,9 +187,13 @@ void TransFuncMappingCanvas::showKeyContextMenu(QMouseEvent* event) {
 }
 
 void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
+    if (!tf_)
+        return;
+
     //the histogram is automatically painted onto this widget
     //we do not need to call the paintevent for the Histogrampainter directly
     event->accept();
+    
     QPainter paint(this);
 
     // put origin in lower lefthand corner
@@ -852,7 +856,6 @@ void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
 }
 
 void TransFuncMappingCanvas::volumeChanged(VolumeHandle* volumeHandle) {
-
     // stop histogram thread and deregister from volume handle as observer
     if (histogramThread_) {
         stopObservation(volumeHandle_);
@@ -887,6 +890,7 @@ void TransFuncMappingCanvas::volumeChanged(VolumeHandle* volumeHandle) {
 
     }
     else {
+        tf_ = 0;
         update();
     }
 

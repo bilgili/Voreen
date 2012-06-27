@@ -58,6 +58,9 @@ unix {
    shaders_tar.target = shaders.tar
    shaders_tar.commands = cd ../../src/core/vis/glsl/ && \
                           tar -cf $$PWD/shaders.tar * \
+                              --owner root --group 0 --exclude \*.svn && \
+			  cd ../../../modules/flowreen/glsl &&\
+                          tar -rf $$PWD/shaders.tar * \
                               --owner root --group 0 --exclude \*.svn
    QMAKE_EXTRA_TARGETS += shaders_tar
 }

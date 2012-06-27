@@ -179,6 +179,11 @@ void VolumeCollection::deserialize(XmlDeserializer& s)
 {
     s.deserialize("VolumeHandles", volumeHandles_, "VolumeHandle");
 
+    // Remove all null pointer handles in volume handle list...
+    VolumeHandleList::iterator it;
+    while ((it = find(0)) != volumeHandles_.end())
+        remove(0);
+
     // add volume handles of loaded volumes...
     VolumeHandleList removeList;
     for (VolumeHandleList::iterator it = volumeHandles_.begin(); it != volumeHandles_.end(); ++it)

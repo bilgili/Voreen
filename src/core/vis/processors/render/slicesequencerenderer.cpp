@@ -445,7 +445,7 @@ tgt::ivec3 SliceSequenceRenderer::screenToVoxelPos(const tgt::ivec2& screenPos) 
     const int numSlicesCol = numSlicesPerColProp_.get();
     const tgt::ivec2 sliceSizeInt = static_cast<tgt::ivec2>(sliceSize_);
 
-    // if coordinates are greater than the number of slice per direction
+    // if coordinates are greater than the number of slices per direction
     // times their extension in that direction, no slice could be hit either
     //
     if ((p.x >= (sliceSizeInt.x * numSlicesCol)) || (p.y >= (sliceSizeInt.y * numSlicesRow)))
@@ -464,14 +464,13 @@ tgt::ivec3 SliceSequenceRenderer::screenToVoxelPos(const tgt::ivec2& screenPos) 
 
     // Now the position within the original volume can be determined by dividing
     // the position within the slice in pixel by the size of the slice in pixel.
-    // 1.0 - ... is taken in order to correct from "top-down" to "bottom-up" axis.
     // voxelPosPermutation_ contains the permutation of the coordinates in p to which
     // the value read from the mouse position applies to in the volumetric texture.
     // volxelPosPerumation_ is set whenever the alignment of the slices are changed
     // (most frequently this will be done by the user interacting with the processor)
     //
     p[voxelPosPermutation_.x] = static_cast<int>(volumeDimensions_[voxelPosPermutation_.x]
-        * (1.0f - (posWithinSlice.x / sliceSize_.x)));
+        * (posWithinSlice.x / sliceSize_.x));
     p[voxelPosPermutation_.y] = static_cast<int>(volumeDimensions_[voxelPosPermutation_.y]
         * (1.0f - (posWithinSlice.y / sliceSize_.y)));
     p[voxelPosPermutation_.z] = sliceX + (sliceY * numSlicesCol) + sliceIndexProp_.get();

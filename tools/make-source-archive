@@ -18,10 +18,10 @@ if [ "$1" == "win" ]; then
  
   # create nice subdir name as symlink in temporary directory
   DISTDIR=$PWD
-  LINK=voreen-r$REV
+  LINK=voreen-$REV
   rm -f /tmp/$LINK
   ln -s $DISTDIR/../.. /tmp/$LINK || exit 1
-  OUT=$DISTDIR/voreen-src-r$REV.zip
+  OUT=$DISTDIR/voreen-src-$REV.zip
   rm -f $OUT
 
   cat > exclude.lst <<EOF
@@ -32,7 +32,7 @@ EOF
   zip -rX $OUT $LINK -x@$DISTDIR/exclude.lst
   rm -f $DISTDIR/exclude.lst
   rm -f $LINK
-  echo Writen to $OUT
+  echo Written to $OUT
 
 elif [ "$1" == "unix" ]; then
   echo "Creating unix source tarball..."
@@ -41,10 +41,10 @@ elif [ "$1" == "unix" ]; then
   DISTDIR=$PWD
 
   # create nice subdir name as symlink in temporary directory
-  LINK=voreen-r$REV
+  LINK=voreen-$REV
   rm -f /tmp/$LINK
   ln -s $DISTDIR/../.. /tmp/$LINK || exit 1
-  OUT=$DISTDIR/voreen-src-r$REV.tar.gz
+  OUT=$DISTDIR/voreen-src-$REV.tar.gz
   rm -f $OUT
 
   # Skip libs that are usually already there on unix
@@ -56,7 +56,6 @@ elif [ "$1" == "unix" ]; then
 */ext/glew
 */ext/glut
 */ext/il
-*/ext/jama
 */ext/jpeg
 */ext/openssl
 */ext/python

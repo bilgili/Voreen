@@ -93,7 +93,7 @@ string findBasePath(const string& path) {
     p = findWithSubDir(path, "share/voreen/networks", 1);
 #else
     if (p.empty())
-        p = findWithSubDir(path, "data/networks", 7);
+        p = findWithSubDir(path, "data/workspaces", 7);
 #endif
 
 #ifdef VRN_INSTALL_PREFIX
@@ -185,11 +185,14 @@ void VoreenApplication::prepareCommandParser() {
 }
 
 void VoreenApplication::init() {
-
     //
     // tgt initialization
     //
-    tgt::init();
+    tgt::InitFeature::Features featureset
+        = tgt::InitFeature::Features(tgt::InitFeature::ALL | tgt::InitFeature::NO_SHADER_CACHING);
+    if (!(appType_ & APP_LOGGING)) // TODO: has no effect, LOG_TO_CONSOLE is used nowhere in tgt
+        featureset = tgt::InitFeature::Features(featureset & ~tgt::InitFeature::LOG_TO_CONSOLE);
+    tgt::init(featureset);
 
     //
     // Command line parser

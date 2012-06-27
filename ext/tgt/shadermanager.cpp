@@ -307,6 +307,8 @@ bool ShaderObject::loadSourceFromFile(const string& filename) {
     // check if file is open
 	if (!file || !file->isOpen()) {
 		LERROR("File not found: " << filename);
+		if(file)
+			delete file;
         return false;
 	}
 

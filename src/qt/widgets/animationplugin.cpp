@@ -79,14 +79,6 @@ AnimationPlugin::~AnimationPlugin() {
     renderBox_->disconnect();
     editBox_->disconnect();
 
-    delete tabFrames_;
-    delete tabCircle_;
-    delete loadSaveBox_;
-    delete playerBox_;
-    delete renderBox_;
-    delete editBox_;
-    delete mainLayout_;
-
     delete animationTimer_;
 }
 

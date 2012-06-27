@@ -150,37 +150,33 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
             return 0;
         }
     } else {
-        LERROR("Reading compressed TGA file is currently unsupported.");
-        delete file;
-        delete t;
-        return 0;
-#if 0        
         // file is compressed
         LDEBUG("Reading compressed TGA file " << filename << " ...");
-        
+
+		//TODO: error handling
         unsigned char chunk[4];
         unsigned char* at = t->getPixelData();
+		int Bpp = bpp / 8;
         for (unsigned int bytesDone=0; bytesDone < t->getArraySize(); ) {
             unsigned char packetHead;
             file->read(reinterpret_cast<char*>(&packetHead), 1);
-            if ((packetHead & 0x80)) {
-                packetHead &= 0x7F;
-                packetHead++;
-                file->read(reinterpret_cast<char*>(&chunk), bytesPerPixel);
+            if (packetHead > 128) {
+				//RLE
+				packetHead -= 127;
+                file->read(reinterpret_cast<char*>(&chunk), Bpp);
                 for (unsigned char b=0; b < packetHead; b++) {
-                        std::memcpy(at, chunk, bytesPerPixel);
-                        bytesDone += bytesPerPixel;
-                        at += bytesPerPixel;
+                        std::memcpy(at, chunk, Bpp);
+                        bytesDone += Bpp;
+                        at += Bpp;
                 }
             } else {
-                packetHead &= 0x7F;
+				//RAW
                 packetHead++;
-                file->read(reinterpret_cast<char*>(at), bytesPerPixel * packetHead);
-                bytesDone += packetHead * bytesPerPixel;
-                at += packetHead * bytesPerPixel;
+                file->read(reinterpret_cast<char*>(at), Bpp * packetHead);
+                bytesDone += packetHead * Bpp;
+                at += packetHead * Bpp;
             }
         }
-#endif // 0
     }
 
     file->close();
@@ -195,14 +191,14 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
     }
     
     // flip image horizontally
-    col3 tmp;
-    for (int y=0; y < dimensions.y/2; ++y) {
-        for (int x=0; x < dimensions.x; ++x) {
-            tmp = t->texel<col3>(x,y);
-            t->texel<col3>(x,y) = t->texel<col3>(x,dimensions.y-1-y);
-            t->texel<col3>(x,dimensions.y-1-y) = tmp;
-        }
-    }
+    //col3 tmp;
+    //for (int y=0; y < dimensions.y/2; ++y) {
+        //for (int x=0; x < dimensions.x; ++x) {
+            //tmp = t->texel<col3>(x,y);
+            //t->texel<col3>(x,y) = t->texel<col3>(x,dimensions.y-1-y);
+            //t->texel<col3>(x,dimensions.y-1-y) = tmp;
+        //}
+    //}
     
 
     bool success;
