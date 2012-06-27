@@ -30,9 +30,14 @@
 
 #ifdef TGT_DEBUG
 
+#ifndef TGT_NON_INTERACTIVE_ASSERT
 bool myCustomAssert(long line, const char* filename, const char* functionName, const char* description, bool& always) {
+#else
+bool myCustomAssert(long line, const char* filename, const char* functionName, const char* description, bool& /*always*/) {
+#endif
     std::cout << "Assertion: " << filename << " " << line << ":" << std::endl << "     " << functionName << std::endl;
     std::cout << "   " << description << std::endl;
+#ifndef TGT_NON_INTERACTIVE_ASSERT
     do {
         std::cout << "   (b)reakpoint, (i)gnore, ignore (a)lways, (q)uit" << std::endl;
         std::string inStr;
@@ -51,6 +56,9 @@ bool myCustomAssert(long line, const char* filename, const char* functionName, c
                 std::cout << "An assertion in a assertion... :(" << std::endl;
         }
     } while (true);
+#else
+	exit(EXIT_FAILURE);
+#endif
 }
 
 #endif // TGT_DEBUG

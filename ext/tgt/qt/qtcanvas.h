@@ -44,7 +44,7 @@ class QtCanvas : public QGLWidget, public GLCanvas {
 public:
     /**
      * The constructor. Allows the user to specify a shared widget that this canvas will share
-     * the OpenGL context with. Also, it is possible to specifiy whether or not a custom
+     * the OpenGL context with. Also, it is possible to specify whether or not a custom
      * event-loop has to be used.
      *
      * @param parent The parent widget of this canvas.
@@ -120,17 +120,19 @@ public:
     virtual void keyPressEvent(QKeyEvent* event);
     virtual void keyReleaseEvent(QKeyEvent* event);
 
-protected:
-    // helpers used to generate tgt-Events out of qt-Events
-    // map one Qt-mousebutton to one tgt-mousebutton
-    tgt::MouseEvent::MouseButtons getButton(QMouseEvent* e);
-    // map a set of Qt-mousebuttons to a set of tgt-mousebuttons
-    tgt::MouseEvent::MouseButtons getButtons(QMouseEvent* e);
-    tgt::Event::Modifier getModifier(QInputEvent* e);
-    KeyEvent::KeyCode getKey(int key);
+    ///
+    /// Helpers used to generate tgt-Events out of qt-Events
+    ///
 
+    // map one Qt-mousebutton to one tgt-mousebutton
+    static tgt::MouseEvent::MouseButtons getButton(QMouseEvent* e);
+    // map a set of Qt-mousebuttons to a set of tgt-mousebuttons
+    static tgt::MouseEvent::MouseButtons getButtons(QMouseEvent* e);
+    static tgt::Event::Modifier getModifier(QInputEvent* e);
+    static KeyEvent::KeyCode getKey(int key);
     static QGLFormat getQGLFormat(const Buffers buffers);
 
+protected:
     static QGLWidget* shareWidget_;  ///< widget that this canvas shares the OpenGL context with
 
 };

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -67,7 +67,7 @@ std::string XmlSerializer::getDocumentPath() const {
 }
 
 void XmlSerializer::checkAttributeKey(const std::string& key)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     // Is key a reserved XML attribute name?
     if (key == XmlSerializationConstants::IDATTRIBUTE
@@ -215,123 +215,205 @@ void XmlSerializer::resolveUnresolvedReferences() {
 }
 
 void XmlSerializer::serialize(const std::string& key, const bool& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, (data ? "true" : "false"));
 }
 
 void XmlSerializer::serialize(const std::string& key, const char& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const signed char& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const unsigned char& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const signed short& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const unsigned short& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const signed int& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const unsigned int& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const signed long& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const unsigned long& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const float& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const double& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const long double& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
 void XmlSerializer::serialize(const std::string& key, const std::string& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::vec2& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::vec2& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::vec3& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::vec3& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::vec4& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::vec4& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::ivec2& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::dvec2& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::ivec3& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::dvec3& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::ivec4& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::dvec4& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::col3& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::ivec2& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key, data);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::ivec3& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key, data);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::ivec4& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key, data);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::col3& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data, true);
 }
 
-void XmlSerializer::serialize(const std::string& key, const tgt::col4& data) {
+void XmlSerializer::serialize(const std::string& key, const tgt::col4& data)
+    throw (SerializationException)
+{
     serializeTgtVector(key, data, true);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::mat2& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::mat3& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+    serializeTgtVector(key+".row2", data[2]);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::mat4& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+    serializeTgtVector(key+".row2", data[2]);
+    serializeTgtVector(key+".row3", data[3]);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::Matrix2d& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::Matrix3d& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+    serializeTgtVector(key+".row2", data[2]);
+}
+
+void XmlSerializer::serialize(const std::string& key, const tgt::Matrix4d& data)
+    throw (SerializationException)
+{
+    serializeTgtVector(key+".row0", data[0]);
+    serializeTgtVector(key+".row1", data[1]);
+    serializeTgtVector(key+".row2", data[2]);
+    serializeTgtVector(key+".row3", data[3]);
 }
 
 void XmlSerializer::serialize(const std::string& key, const Serializable& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }

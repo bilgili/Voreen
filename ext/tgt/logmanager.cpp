@@ -294,8 +294,7 @@ LogManager::~LogManager() {
  	for (it = logs_.begin(); it != logs_.end(); it++)
         delete (*it);
     
-    if (consoleLog_)
-        delete consoleLog_;
+    delete consoleLog_;
 }
 
 void LogManager::reinit(const std::string& logDir) {
@@ -322,6 +321,22 @@ void LogManager::addLog(Log* log) {
     }
     else
         logs_.push_back(log);
+}
+
+void LogManager::removeLog(Log* log) {
+    ConsoleLog* clog = dynamic_cast<ConsoleLog*>(log);
+    if (clog) {
+        delete consoleLog_;
+        consoleLog_ = clog;
+    } else {
+        vector<Log*>::iterator iter = logs_.begin();
+        while (iter != logs_.end()) {
+            if (*iter == log)
+                iter = logs_.erase(iter);
+            else
+                ++iter;
+        }        
+    }
 }
 
 } // namespace tgt

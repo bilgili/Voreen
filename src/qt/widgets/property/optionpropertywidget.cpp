@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/property/optionpropertywidget.h"
 
-#include "voreen/core/vis/properties/optionproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 
 #include <QComboBox>
 
@@ -41,8 +41,11 @@ OptionPropertyWidget::OptionPropertyWidget(OptionPropertyBase* prop, QWidget* pa
     , cBox_(new QComboBox)
 {
     updateFromProperty();
+    QFontInfo fontInfo(font());
+    cBox_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
     addWidget(cBox_);
     connect(cBox_, SIGNAL(currentIndexChanged(int)), this, SLOT(setProperty(int)));
+    connect(cBox_, SIGNAL(currentIndexChanged(int)), this, SIGNAL(widgetChanged()));
 
     addVisibilityControls();
 }
@@ -51,30 +54,31 @@ void OptionPropertyWidget::updateFromProperty() {
     cBox_->blockSignals(true);
     cBox_->clear();
 
-    std::vector<std::string> ids = property_->getKeys();
-    std::map<std::string, std::string> descriptions = property_->getDescriptions();
+    // build combo box from descriptions
+    std::vector<std::string> keys = property_->getKeys();
+    std::vector<std::string> descriptions = property_->getDescriptions();
+    tgtAssert(keys.size() == descriptions.size(), "Dimension mismatch");
+    for (size_t i=0; i<keys.size(); i++) {
+        cBox_->addItem(QString::fromStdString(descriptions.at(i)), QString::fromStdString(keys.at(i)));
+    }
 
-    for (size_t i=0; i< ids.size(); i++)
-        cBox_->insertItem(i, descriptions[ids[i]].c_str());
-    cBox_->setCurrentIndex(indexOf(property_->get(), ids));
+    // set selected options
+    int itemIndex = cBox_->findData(QString::fromStdString(property_->get()));
+    if (itemIndex == -1) {
+        LWARNINGC("OptionPropertyWidget", "Data item not found");
+    }
+    else {
+        cBox_->setCurrentIndex(itemIndex);
+    }
+
     cBox_->blockSignals(false);
 }
 
 void OptionPropertyWidget::setProperty(int index) {
     if (!disconnected_) {
-        std::string value = property_->getKeys().at(index);
-        property_->set(value);
+        property_->set(cBox_->itemData(index).toString().toStdString());
         emit modified();
     }
-}
-
-size_t OptionPropertyWidget::indexOf(const std::string& s, const std::vector<std::string>& v) {
-    size_t i;
-    for (i = 0; i < v.size(); ++i) {
-        if (s == v[i])
-            return i;
-    }
-    return 0;
 }
 
 } // namespace

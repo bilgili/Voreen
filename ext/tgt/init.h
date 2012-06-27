@@ -41,8 +41,8 @@ public:
         MODEL_MANAGER   = 1 << 5,
         TEXTURE_MANAGER = 1 << 6,
         TESSELATOR      = 1 << 7,
+        LOG_TO_CONSOLE  = 1 << 30,
 
-        LOG_TO_CONSOLE  = 1 << 30,  //FIXME: unused?
         NO_SHADER_CACHING  = 1 << 31,
 
         ALL             = ( 

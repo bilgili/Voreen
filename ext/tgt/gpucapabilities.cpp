@@ -228,18 +228,16 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         features << ", GLSL Version " << shaderVersion_;
 
         features << ", Shader Model ";
-        if (shaderModel_ == SHADER_MODEL_4) {
+        if (shaderModel_ == SHADER_MODEL_5)
+            features << "5.0";
+        if (shaderModel_ == SHADER_MODEL_4)
             features << "4.0";
-		}
-        else if (shaderModel_ == SHADER_MODEL_3) {
+        else if (shaderModel_ == SHADER_MODEL_3)
             features << "3.0";
-        }
-        else if (shaderModel_ == SHADER_MODEL_2) {
+        else if (shaderModel_ == SHADER_MODEL_2)
             features << "2.0";
-        }
-        else {
+        else
             features << "unknown";
-        }
 
         if (GLEW_NV_fragment_program2) {
             LINFO(features.str());
@@ -308,7 +306,10 @@ void GpuCapabilities::detectCapabilities() {
     // Shader model
     // see http://www.opengl.org/wiki/Shading_languages:_How_to_detect_shader_model%3F
     // for information about shader models in OpenGL
-    if (isExtensionSupported("GL_EXT_geometry_shader4"))
+    if (isExtensionSupported("GL_ARB_tessellation_shader"))
+        shaderModel_ = SHADER_MODEL_5;
+    if (isExtensionSupported("GL_ARB_geometry_shader4") ||
+        isExtensionSupported("GL_EXT_geometry_shader4"))
         shaderModel_ = SHADER_MODEL_4;
     else if (isExtensionSupported("GL_NV_vertex_program3")  ||
              isExtensionSupported("GL_ATI_shader_texture_lod"))
@@ -321,7 +322,7 @@ void GpuCapabilities::detectCapabilities() {
     // Texturing
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &maxTexSize_);
     texturing3D_ = (glVersion_ >= GlVersion::TGT_GL_VERSION_1_2 ||
-        isExtensionSupported("GL_EXT_texture3D"));
+                    isExtensionSupported("GL_EXT_texture3D"));
 
     if (texturing3D_) {
         if (glVersion_ >= GlVersion::TGT_GL_VERSION_2_0)
@@ -465,11 +466,16 @@ const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_2_1(
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_0(3,0,0);
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_1(3,1,0);
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_2(3,2,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_3(3,3,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_4_0(4,0,0);
 
-const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_110(1,10);      ///< GLSL version 1.10
-const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_120(1,20);      ///< GLSL version 1.20
-const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_130(1,30);      ///< GLSL version 1.30
-const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_140(1,40);      ///< GLSL version 1.40
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_110(1,10); ///< GLSL version 1.10
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_120(1,20); ///< GLSL version 1.20
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_130(1,30); ///< GLSL version 1.30
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_140(1,40); ///< GLSL version 1.40
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_150(1,50); ///< GLSL version 1.50
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_330(3,30); ///< GLSL version 3.30
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_400(4, 0); ///< GLSL version 4.00
 
 GpuCapabilities::GlVersion::GlVersion(int major, int minor, int release)
   : major_(major), minor_(minor), release_(release)

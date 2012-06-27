@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,30 +30,57 @@
 #ifndef VRN_EVENTPROPERTYWIDGET_H
 #define VRN_EVENTPROPERTYWIDGET_H
 
+class QBoxLayout;
+
+#include "voreen/core/properties/propertywidget.h"
 #include <QWidget>
 
-class QBoxLayout;
+class QCheckBox;
+class QComboBox;
+class QCheckBox;
 
 namespace voreen {
 
-class EventProperty;
+class EventPropertyBase;
+class ModifierDetectorWidget;
+class KeyDetectorWidget;
 
-class EventPropertyWidget : public QWidget {
+class EventPropertyWidget : public QWidget, public PropertyWidget {
 Q_OBJECT
 public:
-    EventPropertyWidget(EventProperty* property, QWidget* parent = 0);
+    EventPropertyWidget(EventPropertyBase* property, QWidget* parent = 0);
+    ~EventPropertyWidget();
+
+    virtual void setEnabled(bool enabled);
+    virtual void setVisible(bool state);
+
+    virtual void disconnect();
+    virtual void updateFromProperty();
 
 public slots:
     void modifierChanged(Qt::KeyboardModifiers modifier);
     void keyChanged(int key);
     void buttonChanged(int button);
+    void enabledChanged(bool enabled);
+    void sharingChanged(bool shared);
 
 protected:
+    void createEnabledBox();
+    void createSharingBox();
     void createMouseWidgets();
     void createKeyWidgets();
+    void adjustWidgetState();
 
     QBoxLayout* layout_;
-    EventProperty* property_;
+    EventPropertyBase* property_;
+
+    QCheckBox* checkEnabled_;
+    ModifierDetectorWidget* modifierWidget_;
+    KeyDetectorWidget* keyWidget_;
+    QComboBox* buttonBox_;
+    QCheckBox* checkSharing_;
+
+    bool disconnected_;
 };
 
 } // namespace

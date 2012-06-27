@@ -415,7 +415,7 @@ int parseLogLineNumber(const std::string& message) {
 
 } // namespace
 
-string ShaderObject::getCompilerLog() {
+string ShaderObject::getCompilerLog() const {
     GLint len;
     glGetShaderiv(id_, GL_INFO_LOG_LENGTH , &len);
 
@@ -581,7 +581,7 @@ bool Shader::linkProgram() {
     return isLinked_;
 }
 
-string Shader::getLinkerLog() {
+string Shader::getLinkerLog() const {
     GLint len;
     glGetProgramiv(id_, GL_INFO_LOG_LENGTH , &len);
 
@@ -806,6 +806,10 @@ GLint Shader::getUniformLocation(const string& name) {
 
 void Shader::setIgnoreUniformLocationError(bool ignoreError) {
     ignoreError_ = ignoreError;
+}
+
+bool Shader::getIgnoreUniformLocationError() {
+    return ignoreError_;
 }
 
 // Floats
@@ -1388,9 +1392,12 @@ Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& g
     if (shdr->loadSeparate(vert_completeFilename, frag_completeFilename,
                            customHeader, processHeader, geom_completeFilename))
     {
+        // register even when caching is disabled, needed for rebuildFromFile()
         reg(shdr, identifier);
+
         if (activate)
             shdr->activate();
+        
         return shdr;
     } else {
         delete shdr;

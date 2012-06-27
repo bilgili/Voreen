@@ -19,6 +19,10 @@ contains(VRN_PROJECTS, core):     SUBDIRS += sub_core
 contains(VRN_PROJECTS, qt):       SUBDIRS += sub_qt
 contains(VRN_PROJECTS, voreenve): SUBDIRS += sub_voreenve
 contains(VRN_PROJECTS, voltool):  SUBDIRS += sub_voltool
+contains(VRN_PROJECTS, simple-qt):  SUBDIRS += sub_simple-qt
+contains(VRN_PROJECTS, simple-glut):  SUBDIRS += sub_simple-glut
+contains(VRN_PROJECTS, simple-memcheck):  SUBDIRS += sub_simple-memcheck
+contains(VRN_PROJECTS, simple-memcheckinit):  SUBDIRS += sub_simple-memcheckinit
 contains(VRN_PROJECTS, serializertest):  SUBDIRS += sub_serializertest
 
 sub_core.file = src/core/voreenlib_core.pro
@@ -32,8 +36,19 @@ sub_voreenve.depends = sub_core sub_qt
 sub_voltool.file = apps/voltool/voltool.pro
 sub_voltool.depends = sub_core
 
+sub_simple-qt.file = apps/simple/simple-qt.pro
+sub_simple-qt.depends = sub_core sub_qt
 
-sub_serializertest.file = apps/serializertest/serializertest.pro
+sub_simple-glut.file = apps/simple/simple-glut.pro
+sub_simple-glut.depends = sub_core
+
+sub_simple-memcheck.file = apps/simple/simple-memcheck.pro
+sub_simple-memcheck.depends = sub_core
+
+sub_simple-memcheckinit.file = apps/simple/simple-memcheckinit.pro
+sub_simple-memcheckinit.depends = sub_core
+
+sub_serializertest.file = apps/tests/serializertest/serializertest.pro
 sub_serializertest.depends = sub_core
 
 unix {

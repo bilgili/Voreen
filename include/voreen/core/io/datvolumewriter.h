@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,6 +41,8 @@ namespace voreen {
 class DatVolumeWriter : public VolumeWriter {
 public:
     DatVolumeWriter();
+
+    virtual VolumeWriter* create(IOProgress* progress = 0) const;
 
     std::string getDatFileString(VolumeHandle* const volumeHandle,
         const std::string& rawFileName, char** volData, size_t& numBytes);

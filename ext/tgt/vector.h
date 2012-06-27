@@ -555,6 +555,9 @@ typedef Vector4<double> dvec4; // currently not supported in GLSL but a reserved
 typedef Vector2<int>    ivec2;
 typedef Vector3<int>    ivec3;
 typedef Vector4<int>    ivec4;
+typedef Vector2<size_t> svec2;
+typedef Vector3<size_t> svec3;
+typedef Vector4<size_t> svec4;
 typedef Vector2<bool>   bvec2;
 typedef Vector3<bool>   bvec3;
 typedef Vector4<bool>   bvec4;

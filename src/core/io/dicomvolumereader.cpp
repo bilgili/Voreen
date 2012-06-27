@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,7 +33,7 @@
 #include "voreen/core/io/dicommovescu.h"
 #include "voreen/core/io/dicomfindscu.h"
 
-#include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "tgt/texture.h"
 
 #ifdef WIN32
@@ -69,6 +69,7 @@
 #include <dcmtk/dcmjpeg/djdecode.h>    /* for dcmjpeg decoders */
 #include <dcmtk/dcmjpeg/dipijpeg.h>    /* for dcmimage JPEG plugin */
 #include <dcmtk/dcmimgle/dcmimage.h>
+#include <dcmtk/dcmimgle/didocu.h>
 #include <dcmtk/dcmimage/diregist.h>
 
 #ifdef WIN32
@@ -84,7 +85,9 @@
 #endif // WIN32
 
 #include <dcmtk/dcmdata/dctk.h>
+#ifndef VRN_DCMTK_VERSION_355
 #include <dcmtk/dcmdata/dcdebug.h>
+#endif
 #include <dcmtk/dcmdata/cmdlnarg.h>
 #include <dcmtk/ofstd/ofconapp.h>
 #include <dcmtk/dcmjpeg/djencode.h>  /* for dcmjpeg encoders */
@@ -96,7 +99,7 @@
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
+//#undef PACKAGE_VERSION
 
 // Includes for directory-listing
 #ifdef WIN32
@@ -139,6 +142,21 @@ DicomVolumeReader::DicomVolumeReader(IOProgress* progress)
         LERROR("Warning: no data dictionary loaded, check environment variable: " <<
                DCM_DICT_ENVIRONMENT_VARIABLE);
     }
+    else {
+        // register RLE and JPEG decompression codecs
+        DcmRLEDecoderRegistration::registerCodecs(OFFalse /*pCreateSOPInstanceUID*/, OFTrue);
+        DJDecoderRegistration::registerCodecs(EDC_photometricInterpretation, EUC_default, EPC_default, OFTrue);
+    }
+
+#ifdef VRN_DCMTK_VERSION_355
+    LINFO("Dcmtk version: " << OFFIS_DCMTK_VERSION_STRING);
+#endif
+}
+
+
+DicomVolumeReader::~DicomVolumeReader() {
+    DJDecoderRegistration::cleanup();
+    DcmRLEDecoderRegistration::cleanup();
 }
 
 void DicomVolumeReader::setSecurityOptions(const DicomSecurityOptions& security) {
@@ -178,9 +196,9 @@ int DicomVolumeReader::loadSlice(const std::string& fileName, size_t posScalar) 
     }
 
     // Render pixel data into scalar array
-    if (!image.getOutputData(&scalars_[posScalar * bytesPerVoxel_], dx_ * dy_ * bytesPerVoxel_, bits_)) {
+    if (!image.getOutputData(&scalars_[posScalar * bytesPerVoxel_], dx_ * dy_ * bytesPerVoxel_, bitsStored_)) {
         LERROR("Failed to render pixel data "
-               << image.getOutputDataSize(bits_) << " vs. " << dx_ * dy_ * bytesPerVoxel_);
+               << image.getOutputDataSize(bitsStored_) << " vs. " << dx_ * dy_ * bytesPerVoxel_);
 
         return 0;
     }
@@ -328,14 +346,23 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                     found_first = false;
                 }
                 if (dataset->findAndGetOFStringArray(DCM_BitsStored, tmpString).good()) {
-                    bits_ = atoi(tmpString.c_str());
-                } else {
+                    bitsStored_ = atoi(tmpString.c_str());
+                }
+                else {
                     LERROR("Can't retrieve DCM_BitsStored from file " << (*it_files));
-                    bits_ = 16;//TODO
+                    bitsStored_ = 16;//TODO
+                    found_first = false;
+                }
+                if (dataset->findAndGetOFStringArray(DCM_SamplesPerPixel, tmpString).good()) {
+                    samplesPerPixel_ = atoi(tmpString.c_str());
+                }
+                else {
+                    LERROR("Can't retrieve DCM_SamplesPerPixel from file " << (*it_files));
+                    samplesPerPixel_ = 1;
                     found_first = false;
                 }
 
-                LINFO("    Size: " << dx_ << "x" << dy_ << ", " << bits_ << " bits");
+                LINFO("    Size: " << dx_ << "x" << dy_ << ", " << bitsStored_*samplesPerPixel_ << " bits");
 
                 // Extract PixelSpacing
                 OFString rowspacing_str, colspacing_str;
@@ -417,15 +444,22 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
             imagePositionZ = slices[slices.size()-1].second.z;
         }
         slicespacing = length(slices[slices.size()-1].second - slices[0].second) / (slices.size()-1);
+        if (slicespacing == 0.f) {
+            LWARNING("z spacing is 0.0, correcting to 1.0");
+            slicespacing = 1.f;
+        }
     }
 
     dz_ = slices.size();
 
-    switch (bits_) {
-    case  8: bytesPerVoxel_ = 1; break;
-    case 12: bytesPerVoxel_ = 2; break;
-    case 16: bytesPerVoxel_ = 2; break;
-    case 32: bytesPerVoxel_ = 4; break;
+    switch (bitsStored_*samplesPerPixel_) {
+        case  8: bytesPerVoxel_ = 1; break;
+        case 12: bytesPerVoxel_ = 2; break;
+        case 16: bytesPerVoxel_ = 2; break;
+        case 24: bytesPerVoxel_ = 3; break;
+        case 32: bytesPerVoxel_ = 4; break;
+        default:
+            throw tgt::CorruptedFileException("Unknown bit depth", *it_files);
     }
     // casts needed to handle files > 4 GB
     scalars_ = new uint8_t[(size_t)dx_ * (size_t)dy_ * (size_t)dz_ * (size_t)bytesPerVoxel_];
@@ -462,12 +496,12 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
 
     Volume* dataset = 0;
 
-    switch (bits_) {
+    switch (bitsStored_*samplesPerPixel_) {
     case 8:
         dataset = new VolumeUInt8(scalars_,
                                   tgt::ivec3(dx_, dy_, dz_),
                                   tgt::vec3(x_spacing, y_spacing, z_spacing),
-                                  bits_);
+                                  bitsStored_);
         //dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
@@ -476,7 +510,15 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         dataset = new VolumeUInt16(reinterpret_cast<uint16_t*>(scalars_),
                                    tgt::ivec3(dx_, dy_, dz_),
                                    tgt::vec3(x_spacing, y_spacing, z_spacing),
-                                   bits_);
+                                   bitsStored_);
+        //dataset->meta().setFileName(slices[0].first);
+        dataset->meta().setImagePositionZ(imagePositionZ);
+        break;
+    case 24:
+        dataset = new Volume3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
+            tgt::ivec3(dx_, dy_, dz_),
+            tgt::vec3(x_spacing, y_spacing, z_spacing),
+            bitsStored_*samplesPerPixel_);
         //dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
@@ -491,7 +533,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
             VolumeUInt32* source = new VolumeUInt32(reinterpret_cast<uint32_t*>(scalars_),
                                    tgt::ivec3(dx_, dy_, dz_),
                                    tgt::vec3(x_spacing, y_spacing, z_spacing),
-                                   bits_);
+                                   bitsStored_);
 
             for(int x=0; x<dx_;++x) {
                 for(int y=0; y<dy_;++y) {
@@ -515,7 +557,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
     default:
-        LERROR("Unsupported bit depth: " << bits_);
+        LERROR("Unsupported bit depth: " << bitsStored_*samplesPerPixel_);
         delete[] scalars_;
         scalars_ = 0;
         return 0;
@@ -794,9 +836,12 @@ bool pathIsDir(const string &path) {
 } // namespace
 
 
-VolumeCollection* DicomVolumeReader::read(const string &fileName)
+VolumeCollection* DicomVolumeReader::read(const string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
+    VolumeOrigin origin(url);
+    std::string fileName = origin.getPath();
+
     dx_ = dy_ = dz_ = 0;
     Volume* volume;
 
@@ -806,7 +851,8 @@ VolumeCollection* DicomVolumeReader::read(const string &fileName)
             volume = readDicomFiles(getFileNamesInDir(fileName.substr(8)), "", true);
         else
             volume = readDicomFiles(getFileNamesInDir(fileName), "", true);
-    } else if (fileName.find("dicom://") == 0) {
+    }
+    else if (fileName.find("dicom://") == 0) {
         // Handle Dicom network connection to PACS
         string connection = fileName.substr(0, fileName.find("/", 8));
         string path = fileName.substr(fileName.find("/", 8));
@@ -873,239 +919,182 @@ vector<DicomSeriesInfo> DicomVolumeReader::listSeries(const string &fileName) {
     return series;
 }
 
-tgt::Texture* DicomVolumeReader::readSingleSliceIntoTex(const string& sliceFileName) {
-    DiRegister* dr = new DiRegister();
+DicomImage* DicomVolumeReader::readDicomImage(const std::string& fileName, int startFrame, int numFrames) {
 
-    const char *opt_ifname = sliceFileName.c_str();
+    DicomImage* dicomImage = 0;
 
-    OFBool opt_verbose = OFTrue;
-    E_FileReadMode opt_readMode = ERM_autoDetect;
-    E_TransferSyntax opt_oxfer = EXS_LittleEndianExplicit;
-    E_TransferSyntax opt_ixfer = EXS_Unknown;
-
-    // JPEG parameters
-    E_DecompressionColorSpaceConversion opt_decompCSconversion = EDC_photometricInterpretation;
-    E_UIDCreation opt_uidcreation = EUC_default;
-
-    // register global decompression codecs
-    DJDecoderRegistration::registerCodecs(
-      opt_decompCSconversion,
-      opt_uidcreation,
-      EPC_default,
-      opt_verbose);
-
-    /* make sure data dictionary is loaded */
-    if (!dcmDataDict.isDictionaryLoaded()) {
-        LERROR( "Warning: no data dictionary loaded, "
-             << "check environment variable: "
-             << DCM_DICT_ENVIRONMENT_VARIABLE);
+    // load dicom file
+    try {
+        LINFO("Reading dicom file " << fileName << " ...");
+        unsigned int flags = 0;
+#ifdef VRN_DCMTK_VERSION_355
+        flags = CIF_UsePartialAccessToPixelData;
+#endif
+        dicomImage = new DicomImage(fileName.c_str(), flags, startFrame, numFrames);
+    }
+    catch (std::exception& e) {
+        LERROR("Failed to load file " << fileName << ": " << e.what());
+        dicomImage = 0;
     }
 
-    // open inputfile
-    if ((opt_ifname == NULL) || (strlen(opt_ifname) == 0)) {
-        LERROR( "invalid filename: <empty string>");
-        return 0;
+    // check for errors
+    if (dicomImage && dicomImage->getStatus() == EIS_Normal) {
+        LINFO("num frames: " << dicomImage->getFrameCount()
+            << ", dimensions: " << dicomImage->getWidth() << "x" << dicomImage->getHeight()
+            << ", bit depth: " << dicomImage->getDepth()
+            << ", color model: " << DicomImage::getString(dicomImage->getPhotometricInterpretation())
+            << ", frame size: " << dicomImage->getOutputDataSize() << " bytes");
+    }
+    else if (dicomImage) {
+        LERROR("Loading dicom file " << fileName << " failed: " << DicomImage::getString(dicomImage->getStatus()));
+        delete dicomImage;
+        dicomImage = 0;
+    }
+    else {
+        LERROR("Loading dicom file " << fileName << " failed");
     }
 
-    OFCondition error = EC_Normal;
-    DcmFileFormat fileformat;
-    error = fileformat.loadFile(opt_ifname, opt_ixfer, EGL_noChange, DCM_MaxReadLength, opt_readMode);
-    if (error.bad())
-    {
-        LERROR( "Error: "
-             << error.text()
-             << ": reading file: " <<  opt_ifname);
-        return 0;
-    }
-    DcmDataset *dataset = fileformat.getDataset();
-
-    DcmXfer opt_oxferSyn(opt_oxfer);
-
-    error = dataset->chooseRepresentation(opt_oxfer, NULL);
-    if (error.bad()) {
-        LERROR("Error: "
-             << error.text()
-             << ": decompressing file: " <<  opt_ifname);
-        return 0;
-    }
-
-    if (dataset->canWriteXfer(opt_oxfer)) {
-        LINFO("Output transfer syntax " << opt_oxferSyn.getXferName() << " can be written");
-    } else {
-        LERROR("No conversion to transfer syntax " << opt_oxferSyn.getXferName()
-             << " possible!");
-        return 0;
-    }
-
-    fileformat.loadAllDataIntoMemory();
-
-    //DicomImage image(&fileformat, dataset->getOriginalXfer());
-    DicomImage image(&fileformat, opt_oxfer);
-    image.hideAllOverlays(); // do not show overlays by default (would write 0xFFFF into the data)
-
-    if (image.getStatus() != EIS_Normal) {
-        LERROR("Error creating DicomImage from file " << sliceFileName << ": " <<
-                        image.getString(image.getStatus()));
-        return 0;
-    }
-
-    tgt::Texture* tex = generate2DTextureFromDcmImage(&image);
-    delete dr;
-
-    //// deregister global codecs
-    DJDecoderRegistration::cleanup();
-    return tex;
+    return dicomImage;
 }
 
-tgt::Texture* DicomVolumeReader::generate2DTextureFromDcmImage(DicomImage* image) {
+tgt::Texture* DicomVolumeReader::readSingleSlice(DicomImage* image, int frame) {
 
-    uint8_t* imgData = new uint8_t[image->getOutputDataSize()];
-    // Render pixel data into scalar array
-    if (!image->getOutputData(imgData, image->getOutputDataSize(), 0)) {
-        LERROR("Failed to render pixel data ");
+    // check parameters
+    tgtAssert(image, "No dicom image object");
+    if (frame < 0 || frame >= (int)image->getFrameCount()) {
+        LWARNING("Invalid frame number: " << frame);
         return 0;
     }
 
-    GLenum depth;
-    switch(image->getDepth()) {
-        case 8:
-            depth = GL_UNSIGNED_BYTE;
-            break;
-        default:
-            LERROR("bit-depth " << image->getDepth() << " currently not supported.");
-            return 0;
+    // delegate loading to readSliceSequence
+    std::vector<tgt::Texture*> sequence = readSliceSequence(image, frame, 1);
+    tgtAssert(sequence.size() <= 1, "Sequence with more than 1 element returned.");
+    if (sequence.empty())
+        return 0;
+    else
+        return sequence.front();
+}
+
+tgt::Texture* DicomVolumeReader::readSingleSlice(const std::string& fileName, int frame) {
+
+    // delegate loading to readSliceSequence
+    std::vector<tgt::Texture*> sequence = readSliceSequence(fileName, frame, 1);
+    tgtAssert(sequence.size() <= 1, "Sequence with more than 1 element returned.");
+    if (sequence.empty())
+        return 0;
+    else
+        return sequence.front();
+}
+
+std::vector<tgt::Texture*> DicomVolumeReader::readSliceSequence(DicomImage* dicomImage, int startFrame, int numFrames) {
+
+    std::vector<tgt::Texture*> result;
+
+    // check parameters
+    tgtAssert(dicomImage, "No dicom image object");
+    if (startFrame < 0 || startFrame >= (int)dicomImage->getFrameCount()) {
+        LWARNING("Invalid start frame number: " << startFrame);
+        return result;
+    }
+    if (numFrames < 0) {
+        LWARNING("Invalid frame count: " << numFrames);
+        return result;
     }
 
-    tgt::Texture* tex = new tgt::Texture(tgt::ivec3(image->getWidth(), image->getHeight(), 1), GL_RGB, depth);
+    // check bit depth
+    GLenum dataType;
+    switch (dicomImage->getDepth()) {
+        case 8:
+            dataType = GL_UNSIGNED_BYTE;
+            break;
+        default:
+            LERROR("Bit depth " << dicomImage->getDepth() << " not supported.");
+            return result;
+    }
 
-    // in my test-dataset the resulting textures were mirrored along the x-axis (i.e., y-coordinates were swapped), so we deal with that here...
-    // I don't know if that is always the case? (FL)
-    for(int y = 0; y < tex->getDimensions().y; ++y) {
-        for(int x = 0; x < tex->getDimensions().x; ++x) {
-            tex->texel<tgt::col3>(x, tex->getDimensions().y - y - 1)[0] = imgData[(y*image->getWidth() + x)*3    ];
-            tex->texel<tgt::col3>(x, tex->getDimensions().y - y - 1)[1] = imgData[(y*image->getWidth() + x)*3 + 1];
-            tex->texel<tgt::col3>(x, tex->getDimensions().y - y - 1)[2] = imgData[(y*image->getWidth() + x)*3 + 2];
+    // check color model
+    GLint format;
+    if (dicomImage->isMonochrome()) {
+        format = GL_LUMINANCE;
+    }
+    else if (dicomImage->getPhotometricInterpretation() == EPI_RGB) {
+        format = GL_RGB;
+    }
+    else {
+        LERROR("Color model " << DicomImage::getString(dicomImage->getPhotometricInterpretation()) << " not supported.");
+        return result;
+    }
+
+    // check image data buffer size (size of a single frame)
+    int numPixels = dicomImage->getWidth()*dicomImage->getHeight();
+    if (format == GL_LUMINANCE) {
+        if (static_cast<int>(dicomImage->getOutputDataSize()) != numPixels) {
+            LERROR("Unexpected frame data size: " << dicomImage->getOutputDataSize());
+            return result;
+        }
+    }
+    else if (format == GL_RGB) {
+        if (static_cast<int>(dicomImage->getOutputDataSize()) != 3*numPixels) {
+            LERROR("Unexpected frame data size: " << dicomImage->getOutputDataSize());
+            return result;
         }
     }
 
-    delete[] imgData;
-    return tex;
+    // calculate index of last frame to extract
+    int endFrame;
+    if (numFrames <= 0 || (numFrames > ((int)dicomImage->getFrameCount()))) {
+        endFrame = dicomImage->getFrameCount() - 1;
+    }
+    else {
+        endFrame = startFrame + (numFrames-1);
+    }
+    tgtAssert(endFrame >= 0 && endFrame < (int)dicomImage->getFrameCount(), "Invalid end frame id");
+
+    // for each frame: render pixel data into texture array and create texture from it
+    tgt::ivec3 frameDim = tgt::ivec3(dicomImage->getWidth(), dicomImage->getHeight(), 1);
+    for (int frame = startFrame; frame <= endFrame; frame++) {
+
+        // render pixel data
+        uint8_t* texData = new uint8_t[dicomImage->getOutputDataSize()];
+        if (!dicomImage->getOutputData(texData, dicomImage->getOutputDataSize(), 8, frame)) {
+            LERROR("Failed to render pixel data for frame: " << frame);
+            delete[] texData;
+        }
+        else {
+            // create texture
+            tgt::Texture* tex = new tgt::Texture(texData, frameDim, format, dataType);
+            if (tex) {
+                result.push_back(tex);
+            }
+            else {
+                LERROR("Failed to create texture for frame: " << frame);
+                delete[] texData;
+            }
+        }
+    }
+
+    return result;
 }
 
-tgt::Texture* DicomVolumeReader::readDicomLoopSlice(DcmFileFormat* dfile, unsigned int num) {
+std::vector<tgt::Texture*> DicomVolumeReader::readSliceSequence(const std::string& fileName,
+    int startFrame, int numFrames) {
 
-    unsigned long       opt_compatibilityMode = CIF_MayDetachPixelData | CIF_TakeOverExternalDataset;
+    std::vector<tgt::Texture*> result;
 
-    OFCmdUnsignedInt    opt_frame = num;
-    OFCmdUnsignedInt    opt_frameCount = 1;
+    DicomImage* dicomImage = readDicomImage(fileName, startFrame, numFrames);
+    if (!dicomImage)
+        return result;
+    else
+        result = readSliceSequence(dicomImage, 0, numFrames);
+    delete dicomImage;
 
-    E_DecompressionColorSpaceConversion opt_decompCSconversion = EDC_photometricInterpretation;
-
-    // register RLE decompression codec
-    DcmRLEDecoderRegistration::registerCodecs(OFFalse /*pCreateSOPInstanceUID*/, OFTrue);
-
-    // register JPEG decompression codecs
-    DJDecoderRegistration::registerCodecs(opt_decompCSconversion, EUC_default, EPC_default, OFTrue);
-
-    LINFO("preparing pixel data.");
-
-    DcmDataset* ds = dfile->getDataset();
-    E_TransferSyntax xfer = ds->getOriginalXfer();
-    //E_TransferSyntax xfer = dfile->getDataset()->getOriginalXfer();
-
-    DicomImage *di = 0;
-    try {
-        di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame, opt_frameCount);
-    }
-    catch(...) {
-        di = 0;
-    }
-    //DicomImage *di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame, opt_frameCount);
-    //DicomImage *di = new DicomImage(dfile, xfer, opt_compatibilityMode, opt_frame-1, opt_frameCount);
-    if (di == NULL) {
-        LERROR("Out of memory");
-        DcmRLEDecoderRegistration::cleanup();
-        DJDecoderRegistration::cleanup();
-        return 0;
-    }
-
-    if (di->getStatus() != EIS_Normal) {
-        LERROR(DicomImage::getString(di->getStatus()));
-        DcmRLEDecoderRegistration::cleanup();
-        DJDecoderRegistration::cleanup();
-        return 0;
-    }
-
-    tgt::Texture* tex = generate2DTextureFromDcmImage(di);
-
-    DcmRLEDecoderRegistration::cleanup();
-    DJDecoderRegistration::cleanup();
-
-    //FIXME For some reason, deleting the image leads to crashes... I'll have to look into that. (FL)
-    //delete di;
-    return tex;
+    return result;
 }
 
-
-DcmFileFormat* DicomVolumeReader::initDicomLoop(const std::string& filename, unsigned int& frameCount, unsigned int& fps) {
-
-    /* make sure data dictionary is loaded */
-    if (!dcmDataDict.isDictionaryLoaded())
-        LERROR("Warning: no data dictionary loaded, check environment variable" << DCM_DICT_ENVIRONMENT_VARIABLE);
-
-    E_FileReadMode readMode = ERM_autoDetect;
-    E_TransferSyntax xfer = EXS_Unknown;
-    static OFCmdUnsignedInt maxReadLength = 4096; // default is 4 KB
-
-    const DcmTagKey* printTagKeys[2];
-
-    /* it is a name */
-    const DcmDataDictionary& globalDataDict = dcmDataDict.rdlock();
-    const DcmDictEntry* dicentFrameNum = globalDataDict.findEntry("NumberOfFrames");
-    const DcmDictEntry* dicentFps      = globalDataDict.findEntry("RecommendedDisplayFrameRate");
-
-    /* note for later */
-    printTagKeys[0] = new DcmTagKey(dicentFrameNum->getKey());
-    printTagKeys[1] = new DcmTagKey(dicentFps->getKey());
-    dcmDataDict.unlock();
-
-    DcmFileFormat* dfile = new DcmFileFormat();
-    DcmObject *dset = dfile;
-
-    OFCondition cond = dfile->loadFile(filename.c_str(), xfer, EGL_noChange, maxReadLength, readMode);
-    if (! cond.good()) {
-        LERROR("Error loading file " << filename);
-        return 0;
-    }
-
-    dfile->loadAllDataIntoMemory();
-
-    DcmStack stack;
-    if (dset->search(*printTagKeys[0], stack, ESM_fromHere, OFTrue) != EC_Normal)
-        LERROR("Error searching TagKey");
-
-    DcmIntegerString* frameNumObj = dynamic_cast<DcmIntegerString*>(stack.top());
-
-    if (dset->search(*printTagKeys[1], stack, ESM_fromHere, OFTrue) != EC_Normal)
-        LERROR("Error searching TagKey");
-
-    DcmIntegerString* fpsObj = dynamic_cast<DcmIntegerString*>(stack.top());
-
-    if(!frameNumObj || !fpsObj)
-        LERROR("Error during dynamic-cast");
-
-    Sint32 fn;
-    Sint32 fp;
-
-    frameNumObj->getSint32(fn);
-    fpsObj->getSint32(fp);
-
-    frameCount = fn;
-    fps = fp;
-
-    return dfile;
+VolumeReader* DicomVolumeReader::create(IOProgress* progress) const {
+    return new DicomVolumeReader(progress);
 }
 
-} // namespace voreen
+} // namespace
 
 #endif //VRN_WITH_DCMTK

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,18 +31,20 @@
 #define VRN_VOLUMEHANDLEPROPERTYWIDGET_H
 
 #include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/volume/volume.h"
-#include "voreen/core/volume/volumecontainer.h"
-#include "voreen/core/vis/properties/volumehandleproperty.h"
-#include "voreen/core/vis/processors/volume/volumesourceprocessor.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+#include "voreen/core/properties/volumehandleproperty.h"
+#include "voreen/modules/base/processors/datasource/volumesource.h"
 
+#include "voreen/qt/widgets/customlabel.h"
+#include "voreen/qt/widgets/volumeloadbutton.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 
 #include <QDialog>
-#include <QComboBox>
 
 class QLabel;
 class QPushButton;
+class QComboBox;
 
 namespace voreen {
 
@@ -55,41 +57,47 @@ public:
     virtual void updateFromProperty();
     void setVolumeContainer(VolumeContainer*);
 
-    /**
-    * These are virtual methods of the VolumeCollectionObserver Interface
-    */
+    /// @see VolumeCollectionObserver
     void volumeAdded(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
+    /// @see VolumeCollectionObserver
     void volumeRemoved(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
+    /// @see VolumeCollectionObserver
+    void volumeChanged(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
 
+    /// Returns the null pointer, since this widget does not need a separate label.
+    virtual const QLabel* getNameLabel() const;
 
 protected:
     void updateFromContainer();
+    /// @see QPropertyWidget
+    void showNameLabel(bool);
 
     static const std::string loggerCat_;
+    VolumeLoadButton* volumeLoadButton_;
+/*
+#ifdef VRN_WITH_DCMTK
+    QAction* loadDicomAction_;
+#endif
+*/
 
 protected slots:
-    void newFileDialog();
     void changeVolume(int);
-    void filterChanged(QString);
 
 private:
+    //void loadDicomFiles(const std::string&);
     VolumeHandle* getVolume() const;
 
     QLabel* previewLabel_;
-    QPushButton* loadVolumeButton_;
     QLabel* infoLabel_;
     QComboBox* volumeSelectorBox_;
 
-    QLabel* nameLabel_;
-    QLabel* pathLabel_;
-    QLabel* dimensionLabel_;
-    QLabel* spacingLabel_;
-    QLabel* memSizeLabel_;
+    CustomLabel* volumeNameLabel_;
+    CustomLabel* pathLabel_;
+    CustomLabel* dimensionLabel_;
+    CustomLabel* spacingLabel_;
+    CustomLabel* memSizeLabel_;
 
     VolumeContainer* volumeContainer_;
-
-    //Indicates the FilenameFilter of the volume opening dialog
-    bool rawSelected_;
 
 };
 

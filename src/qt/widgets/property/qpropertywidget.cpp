@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 
-#include "voreen/core/vis/properties/property.h"
+#include "voreen/core/properties/property.h"
 #include <QAction>
 #include <QCheckBox>
 #include <QContextMenuEvent>
@@ -38,32 +38,37 @@
 #include <QMenu>
 
 #include <QToolButton>
+
 namespace voreen {
-
-    /*QPropertyWidget::QPropertyWidget(QWidget* parent)
-    : QWidget(parent)
-    , PropertyWidget()
-    {}
-
-    QPropertyWidget::~QPropertyWidget() {
-    } */
+#ifdef __APPLE__
+    const int QPropertyWidget::fontSize_ = 13;
+#else
+    const int QPropertyWidget::fontSize_ = 8;
+#endif
+//int QPropertyWidget::fontSize_ = 4;
 
 QPropertyWidget::QPropertyWidget(Property* prop, QWidget* parent, bool showNameLabel)
-    : QWidget(parent),
-      disconnected_(false),
-      prop_(prop),
-      lodControl_(0)
+    : QWidget(parent)
+    , disconnected_(false)
+    , prop_(prop)
+    , lodControl_(0)
+    , nameLabel_(0)
+    , showNameLabel_(showNameLabel)
 {
-
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    showNameLabel = false;
+    tgtAssert(prop, "No property passed");
+    setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
 
     layout_ = new QHBoxLayout(this);
-    layout_->setSpacing(1);
-    layout_->setMargin(1);
+    layout_->addSpacing(2);
+    layout_->setContentsMargins(1, 1, 1, 1);
+    QFontInfo fontInfo(font());
+    setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 
-    // Add GuiText
-    if (prop_ != 0 && showNameLabel)
-        layout_->addWidget(new QLabel(tr(prop_->getGuiText().c_str())), 1);
+    setMinimumWidth(125);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+
+    setMouseTracking(true);     // This is kind of a hack needed to update propertytimelinewidgets for animation. Look at them for further explanation
 }
 
 QPropertyWidget::~QPropertyWidget() {
@@ -73,23 +78,29 @@ QPropertyWidget::~QPropertyWidget() {
     }
 }
 
-void QPropertyWidget::addVisibilityControls() {
-    layout_->addSpacing(10);
+std::string QPropertyWidget::getPropertyGuiName() {
+    if (disconnected_ || !prop_)
+        return "";
 
+    return prop_->getGuiName().c_str();
+}
+
+void QPropertyWidget::addVisibilityControls() {
     lodControl_ = new QToolButton(this);
-    lodControl_->setToolTip(tr("Show property in visualization mode"));
+     lodControl_->setToolTip(tr("Show property in visualization mode"));
     lodControl_->setCheckable(true);
-    lodControl_->setMaximumSize(16, 16);
+    lodControl_->setFixedSize(13, 13);
     if (prop_ != 0)
         setLevelOfDetail(prop_->getLevelOfDetail());
+    lodControl_->hide();
 
     connect(lodControl_, SIGNAL(clicked(bool)), this, SLOT(setLevelOfDetail(bool)));
 
-    layout_->addWidget(lodControl_);
+    layout_->addWidget(lodControl_, 0);
 }
 
 QSize QPropertyWidget::sizeHint() const {
-    return QSize(280, 0);
+    return QSize(150, 0);
 }
 
 /*
@@ -104,11 +115,17 @@ void QPropertyWidget::addLayout(QLayout* layout) {
 }
 
 void QPropertyWidget::hideLODControls() {
+    if (disconnected_ || !prop_)
+        return;
+
     if (lodControl_)
         lodControl_->hide();
 }
 
 void QPropertyWidget::showLODControls() {
+    if (disconnected_ || !prop_)
+        return;
+
     if (lodControl_)
         lodControl_->show();
 }
@@ -123,7 +140,8 @@ void QPropertyWidget::setLevelOfDetail(bool value) {
 }
 
 void QPropertyWidget::setLevelOfDetail(Property::LODSetting value) {
-    if (prop_ == 0)
+
+    if (disconnected_ || !prop_)
         return;
 
     prop_->setLevelOfDetail(value);
@@ -142,16 +160,57 @@ void QPropertyWidget::setLevelOfDetail(Property::LODSetting value) {
 }
 
 void QPropertyWidget::setEnabled(bool enabled) {
+    if (disconnected_ || !prop_)
+        return;
+
     QWidget::setEnabled(enabled);
+    if(nameLabel_ != 0)
+        nameLabel_->setEnabled(enabled);
 }
 
 void QPropertyWidget::setVisible(bool state) {
+    if (disconnected_ || !prop_)
+        return;
+
     QWidget::setVisible(state);
+    if(nameLabel_ != 0)
+        nameLabel_->setVisible(state);
 }
 
 void QPropertyWidget::toggleInteractionMode(bool im) {
-    if(prop_)
-        prop_->toggleInteractionMode(im, this);
+    if (disconnected_ || !prop_)
+        return;
+
+    prop_->toggleInteractionMode(im, this);
+}
+
+void QPropertyWidget::mouseMoveEvent(QMouseEvent* event) {
+    emit mouseClicked();
+    QWidget::mouseMoveEvent(event);
+}
+const QLabel* QPropertyWidget::getNameLabel() const{
+    if (!nameLabel_) {
+        nameLabel_ = new QLabel(prop_->getGuiName().c_str());
+        nameLabel_->setMinimumWidth(80);
+        nameLabel_->setWordWrap(true);
+
+        QFontInfo fontInfo(font());
+        nameLabel_->setFont(QFont(fontInfo.family(), fontSize_));
+        nameLabel_->setToolTip(prop_->getGuiName().c_str());
+
+        nameLabel_->setVisible(isVisible());
+        nameLabel_->setEnabled(isEnabled());
+    }
+    return nameLabel_;
+}
+
+void QPropertyWidget::showNameLabel(bool visible) {
+    if(nameLabel_) {
+        if(showNameLabel_)
+            nameLabel_->setVisible(visible);
+        else
+            nameLabel_->setVisible(false);
+    }
 }
 
 } // namespace

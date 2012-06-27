@@ -1,16 +1,29 @@
 <?xml version="1.0" ?>
-<TransFuncIntensity>
-    <key intensity="0.095439" split="0">
-        <col4 r="187" g="153" b="79" a="0" />
-    </key>
-    <key intensity="0.106151" split="0">
-        <col4 r="225" g="186" b="130" a="76" />
-    </key>
-    <key intensity="0.115890" split="0">
-        <col4 r="181" g="147" b="52" a="0" />
-    </key>
-    <key intensity="0.299342" split="0">
-        <col4 r="132" g="91" b="77" a="56" />
-    </key>
-    <threshold lower="0.000000" upper="1.000000" />
-</TransFuncIntensity>
+<VoreenData version="1">
+    <TransFuncIntensity>
+        <Keys>
+            <key>
+                <intensity value="0.095439" />
+                <split value="false" />
+                <colorL r="187" g="153" b="79" a="0" />
+            </key>
+            <key>
+                <intensity value="0.106151" />
+                <split value="false" />
+                <colorL r="225" g="186" b="130" a="76" />
+            </key>
+            <key>
+                <intensity value="0.115890" />
+                <split value="false" />
+                <colorL r="181" g="147" b="52" a="0" />
+            </key>
+            <key>
+                <intensity value="0.299342" />
+                <split value="false" />
+                <colorL r="132" g="91" b="77" a="56" />
+            </key>
+        </Keys>
+        <lower value="0.000000" />
+        <upper value="1.000000" />
+    </TransFuncIntensity>
+</VoreenData>

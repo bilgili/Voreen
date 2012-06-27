@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/property/colorpropertywidget.h"
 
-#include "voreen/core/vis/properties/colorproperty.h"
+#include "voreen/core/properties/colorproperty.h"
 
 #include <QColorDialog>
 #include <QLabel>
@@ -67,8 +67,10 @@ ColorPropertyWidget::ColorPropertyWidget(ColorProperty* prop, QWidget* parent)
     updateColorLabel();
     addWidget(colorLbl_);
     connect(colorLbl_, SIGNAL(clicked(void)), this, SLOT(setProperty(void)));
+    connect(colorLbl_, SIGNAL(clicked(void)), this, SIGNAL(widgetChanged(void)));
 
     addVisibilityControls();
+    setMinimumHeight(18);
 }
 
 void ColorPropertyWidget::updateFromProperty() {
@@ -87,7 +89,13 @@ void ColorPropertyWidget::setProperty() {
 }
 
 void ColorPropertyWidget::colorDialog() {
+    #if (QT_VERSION >= 0x040500)
+    QColor col = QColorDialog::getColor(currentColor_, this, "Color", QColorDialog::ShowAlphaChannel);
+    if(col.isValid())
+        currentColor_ = col;
+    #else   //if qt is < version 4.5 there is no way to set the alpha value to its correct value, so in this casse it will be 255
     currentColor_.setRgba(QColorDialog::getRgba(currentColor_.rgba()));
+    #endif
 }
 
 void ColorPropertyWidget::updateColorLabel() {

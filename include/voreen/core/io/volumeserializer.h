@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -36,8 +36,8 @@
 
 #include "tgt/exception.h"
 
-#include "voreen/core/volume/volumehandle.h"
-#include "voreen/core/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumecollection.h"
 
 namespace voreen {
 
@@ -69,6 +69,7 @@ public:
 protected:
 
     Extensions extensions_; ///< The extensions which have already been registered.
+    std::string message_;
 };
 
 //------------------------------------------------------------------------------
@@ -135,8 +136,7 @@ public:
      *      if it does not contain a file path at all, an identical copy is returned.
      */
     VolumeOrigin convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const
-        throw (tgt::FileException);
-
+        throw (tgt::UnsupportedFormatException);
     /**
      * Converts the passed origin's file path from a path relative to the passed base path
      * to an absolute path. The conversion is delegated to the appropriate reader.
@@ -145,7 +145,7 @@ public:
      *      if it does not contain a file path at all, an identical copy is returned.
      */
     VolumeOrigin convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const
-        throw (tgt::FileException);
+        throw (tgt::UnsupportedFormatException);
 
     /**
      * Saves a Volume to the given file.
@@ -196,7 +196,7 @@ private:
      * @return A VolumeReader that is able to read from the URL.
      */
     VolumeReader* getReader(const std::string& url) const
-        throw (tgt::FileException, std::bad_alloc);
+        throw (tgt::UnsupportedFormatException);
 
     /**
      * @brief Find a suitable VolumeWriter for the specified filename.
@@ -204,9 +204,9 @@ private:
      * @return A VolumeWriter that is able to write to this file.
      */
     VolumeWriter* getWriter(const std::string& filename) const
-        throw (tgt::FileException, std::bad_alloc);
+        throw (tgt::UnsupportedFormatException);
 };
 
 } // namespace voreen
 
-#endif // VRN_VOLUMESERIALIZER_H_
+#endif // VRN_VOLUMESERIA

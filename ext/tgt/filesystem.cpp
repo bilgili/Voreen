@@ -730,7 +730,7 @@ string cleanupPath(std::string path) {
     // convert to native windows separators
     path = replaceAllCharacters(path, '/', '\\');
     // convert drive letter to uppercase
-    if (!path.empty() && isalpha(path[0]))
+    if ((path.size()>1) && isalpha(path[0]) && (path[1] == ':'))
         std::transform(path.begin(), path.begin()+1, path.begin(), toupper);
 #endif
 
@@ -796,10 +796,16 @@ std::string FileSystem::relativePath(const std::string& path, const std::string&
     string abspath = cleanupPath(absolutePath(path)) + "/";
     string absdir = cleanupPath(absolutePath(dir)) + "/";
 
+    /*
     // catch differing DOS-style drive names
     if (abspath.size() < 1 || abspath.size() < 1 || abspath[0] != absdir[0]) {
         std::transform(abspath.begin(), abspath.begin()+1, abspath.begin(), static_cast<int (*)(int)>(std::tolower));
         std::transform(absdir.begin(), absdir.begin()+1, absdir.begin(), static_cast<int (*)(int)>(std::tolower));
+    }*/
+
+    // do not generate a relative patch across different Windows drives 
+    if (!abspath.empty() && !absdir.empty() && (abspath[0] != absdir[0])) {
+        return path;
     }
 
     // find common part in path and dir string
@@ -1048,11 +1054,35 @@ std::vector<std::string> FileSystem::readDirectory(const std::string& directory,
 }
 #else
 
-std::vector<std::string> FileSystem::readDirectory(const std::string& /*directory*/, const bool /*sort*/,
-                                                   const bool /*recursiveSearch*/)
-{
-    LERROR("TODO: implement FileSystem::readDirectory() for Unix");
-    return std::vector<std::string>();
+std::vector<std::string> FileSystem::readDirectory(const std::string& directory, const bool sort,
+                                                   const bool recursiveSearch) {
+    std::vector<std::string> result;
+
+    if (sort) {
+        LWARNING("FileSystem::readDirectory(): sorting currently not supported on Unix");
+    }
+
+    if (recursiveSearch) {
+        LWARNING("FileSystem::readDirectory(): recursive search not supported on Unix");
+    }
+
+    // POSIX directory listing
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(directory.c_str())) == NULL) {
+        LERROR("Can't list directory: " << directory);
+        return result;
+    }
+    std::string name;
+    while ((ent = readdir(dir))) {
+        name = ent->d_name;
+        if ((ent->d_type != DT_DIR) && (name != ".") && (name != "..")) {
+            result.push_back(ent->d_name);
+        }
+    }
+    closedir(dir);
+
+    return result;
 }
 
 #endif // WIN32

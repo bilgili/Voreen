@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -98,6 +98,10 @@ void IOProgressDialog::setMessage(const std::string& message) {
 void IOProgressDialog::setTitle(const std::string& title) {
     IOProgress::setTitle(title);
     progressDialog_->setWindowTitle(QString::fromStdString(title));
+}
+
+void IOProgressDialog::forceUpdate() {
+    progressDialog_->repaint();
 }
 
 } // namespace

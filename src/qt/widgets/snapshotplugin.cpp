@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,8 +29,8 @@
 
 #include "voreen/qt/widgets/snapshotplugin.h"
 
-#include "voreen/core/application.h"
-#include "voreen/core/vis/processors/image/canvasrenderer.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/processors/canvasrenderer.h"
 
 #include "tgt/gpucapabilities.h"
 
@@ -48,13 +48,12 @@
 namespace voreen {
 
 SnapshotPlugin::SnapshotPlugin(QWidget* parent, CanvasRenderer* canvasRenderer)
-    : WidgetPlugin(parent)
-    , canvasRenderer_(canvasRenderer)
+    : QWidget(parent),
+      canvasRenderer_(canvasRenderer)
 {
+    if (canvasRenderer_)
+        setWindowTitle(tr("Snapshot: ") + QString::fromStdString(canvasRenderer_->getName()));
 
-    tgtAssert(canvasRenderer_, "No canvas renderer");
-
-    setWindowTitle(tr("Snapshot: ") + QString::fromStdString(canvasRenderer_->getName()));
     setObjectName(tr("Snapshot"));
 
     resolutions_.push_back("512x512");
@@ -66,16 +65,12 @@ SnapshotPlugin::SnapshotPlugin(QWidget* parent, CanvasRenderer* canvasRenderer)
     resolutions_.push_back("1920x1080");
     resolutions_.push_back("1920x1200");
     resolutions_.push_back("2048x2048");
-    resolutions_.push_back("canvas size");
+    if (canvasRenderer_)
+        resolutions_.push_back("canvas size");
     resolutions_.push_back("user-defined");
 
     setWindowFlags(Qt::Tool);
-}
 
-SnapshotPlugin::~SnapshotPlugin() {
-}
-
-void SnapshotPlugin::createWidgets() {
 
     QVBoxLayout* vboxLayout = new QVBoxLayout();
     QGridLayout* gridLayout = new QGridLayout();
@@ -120,13 +115,15 @@ void SnapshotPlugin::createWidgets() {
 
     // initialize widget state
     sizeComboChanged(sizeCombo_->currentIndex());
-}
 
-void SnapshotPlugin::createConnections() {
+
     connect(buMakeSnapshot_, SIGNAL(clicked()), this, SLOT(takeSnapshot()));
     connect(spWidth_, SIGNAL(valueChanged(int)), this, SLOT(widthSpinChanged(int)));
     connect(spHeight_, SIGNAL(valueChanged(int)), this, SLOT(heightSpinChanged(int)));
     connect(sizeCombo_, SIGNAL(currentIndexChanged(int)), this, SLOT(sizeComboChanged(int)));
+}
+
+SnapshotPlugin::~SnapshotPlugin() {
 }
 
 void SnapshotPlugin::widthSpinChanged(int /*value*/) {
@@ -138,11 +135,8 @@ void SnapshotPlugin::heightSpinChanged(int /*value*/) {
 }
 
 void SnapshotPlugin::sizeComboChanged(int index) {
-
-    tgtAssert(canvasRenderer_ && canvasRenderer_->getCanvas(), "No canvas present");
-
     // if user-defined
-    if (index == sizeCombo_->count()-1) {
+    if (index == sizeCombo_->count() - 1) {
         spWidth_->setEnabled(true);
         spHeight_->setEnabled(true);
         return;
@@ -156,7 +150,7 @@ void SnapshotPlugin::sizeComboChanged(int index) {
     spHeight_->blockSignals(true);
 
     // if canvas-size
-    if (index == sizeCombo_->count()-2) {
+    if (canvasRenderer_ && (index == sizeCombo_->count() - 2)) {
         tgt::ivec2 size = canvasRenderer_->getCanvas()->getSize();
         spWidth_->setValue(size.x);
         spHeight_->setValue(size.y);
@@ -176,10 +170,9 @@ void SnapshotPlugin::sizeComboChanged(int index) {
 }
 
 void SnapshotPlugin::takeSnapshot() {
-
     QFileDialog filedialog(this);
-    filedialog.setDefaultSuffix(tr("png"));
     filedialog.setWindowTitle(tr("Save Snapshot"));
+    filedialog.setDefaultSuffix(tr("png"));
 
     QStringList filter;
     filter << tr("PNG image (*.png)");
@@ -203,44 +196,51 @@ void SnapshotPlugin::takeSnapshot() {
     if (fileList.empty())
         return;
 
+    QString file = fileList.at(0);
     path_ = filedialog.directory().absolutePath();
 
-    if (!fileList.at(0).endsWith(".jpg") && !fileList.at(0).endsWith(".png")) {
-        std::string text = "Snapshot could not be saved.\n";
-        int index = fileList[0].lastIndexOf(".");
+    if (!file.endsWith(".jpg", Qt::CaseInsensitive) && !file.endsWith(".png", Qt::CaseInsensitive)) {
+        QString text = tr("Image file could not be saved.\n");
+        int index = file.lastIndexOf(".");
         if ((index == -1) || (index+1 == fileList[0].size()))
-            text += "No file extension specified.";
+            text += tr("No file extension specified.");
         else
-            text += "Invalid file extension: " + fileList[0].right(fileList[0].size()-index-1).toStdString();
+            text += tr("Invalid file extension: ") + file.right(file.size() - index - 1);
 
-        QMessageBox::critical(this, tr("Error saving snapshot"), tr(text.c_str()));
+        QMessageBox::critical(this, tr("Error saving snapshot"), text);
         return;
     }
 
-    tgt::ivec2 size(spWidth_->value(), spHeight_->value());
+    saveSnapshot(file, spWidth_->value(), spHeight_->value());
+}
+
+void SnapshotPlugin::saveSnapshot(const QString& filename, int width, int height) {
+    if (!canvasRenderer_)
+        return;
+
+    tgt::ivec2 size(width, height);
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     qApp->processEvents();
     try {
-        bool success = canvasRenderer_->renderToImage(fileList.at(0).toStdString(), size);
+        bool success = canvasRenderer_->renderToImage(filename.toStdString(), size);
         QApplication::restoreOverrideCursor();
         if (!success) {
-            QString text = tr("Snapshot could not be saved:\n%1").arg(
-                QString::fromStdString(canvasRenderer_->getRenderToImageError()));
-            QMessageBox::warning(this, tr("Error saving snapshot"), text);
+            QMessageBox::warning(this, tr("Error saving snapshot"),
+                                 tr("Snapshot could not be saved:\n%1").arg(
+                                     QString::fromStdString(canvasRenderer_->getRenderToImageError())));
         }
     }
     catch (const std::exception& e) {
         QApplication::restoreOverrideCursor();
-        QString text = tr("Snapshot could not be saved:\n%1").arg(e.what());
-        QMessageBox::warning(this, tr("Error saving snapshot"), text);
+        QMessageBox::warning(this, tr("Error saving snapshot"),
+                             tr("Snapshot could not be saved:\n%1").arg(e.what()));
     }
-
 }
 
 void SnapshotPlugin::updateFromProcessor() {
-
-    tgtAssert(canvasRenderer_ && canvasRenderer_->getCanvas(), "No canvas present");
+    if (!canvasRenderer_)
+        return;
 
     // if canvas-size
     if (sizeCombo_->currentIndex() == sizeCombo_->count()-2) {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,25 +29,35 @@
 
 #include "voreen/qt/widgets/property/buttonpropertywidget.h"
 
-#include "voreen/core/vis/properties/buttonproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
 
 #include <QPushButton>
+#include <QLabel>
 
 namespace voreen {
 
 ButtonPropertyWidget::ButtonPropertyWidget(ButtonProperty* prop, QWidget* parent)
     : QPropertyWidget(prop, parent, false)
     , property_(prop)
-    , button_(new QPushButton(prop->getGuiText().c_str()))
+    , button_(new QPushButton(prop->getGuiName().c_str()))
 {
     connect(button_, SIGNAL(clicked()), this, SLOT(clicked()));
+    connect(button_, SIGNAL(clicked(void)), this, SIGNAL(widgetChanged(void)));
     addWidget(button_);
     addVisibilityControls();
+    QFontInfo fontInfo(font());
+    button_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
 void ButtonPropertyWidget::clicked() {
     if (!disconnected_)
         property_->clicked();
+}
+
+const QLabel* ButtonPropertyWidget::getNameLabel() const {
+    if (!nameLabel_)
+        nameLabel_ = new QLabel();
+    return nameLabel_;
 }
 
 } // namespace

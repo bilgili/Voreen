@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,8 +29,9 @@
 
 #include "voreen/qt/widgets/property/filedialogpropertywidget.h"
 
-#include "voreen/core/vis/properties/filedialogproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
 
+#include <QDir>
 #include <QFileDialog>
 #include <QPushButton>
 
@@ -48,13 +49,22 @@ FileDialogPropertyWidget::FileDialogPropertyWidget(FileDialogProperty* prop, QWi
     addWidget(openFileDialogBtn_);
 
     addVisibilityControls();
+
+    QFontInfo fontInfo(font());
+    openFileDialogBtn_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
 void FileDialogPropertyWidget::setProperty() {
     if (!disconnected_) {
-        const QString dialogCaption = property_->getDialogCaption().c_str();
-        const QString directory = property_->getDirectory().c_str();
-        const QString fileFilter = QString(property_->getFileFilter().c_str()) + ";;" + tr("All files (*)");
+        QString dialogCaption = QString::fromStdString(property_->getDialogCaption());
+        QString directory;
+        // use directory of current property value if any, default directory otherwise
+        if (!property_->get().empty())
+            directory = QString::fromStdString(property_->get());
+        else
+            directory = QString::fromStdString(property_->getDirectory());
+
+        const QString fileFilter = QString::fromStdString(property_->getFileFilter()) + ";;" + tr("All files (*)");
 
         QString filename;
         if (property_->getFileMode() == FileDialogProperty::OPEN_FILE) {
@@ -64,41 +74,49 @@ void FileDialogPropertyWidget::setProperty() {
             filename = QFileDialog::getSaveFileName(QWidget::parentWidget(), dialogCaption, directory, fileFilter);
         }
         else if (property_->getFileMode() == FileDialogProperty::DIRECTORY) {
-            filename = QFileDialog::getExistingDirectory(QWidget::parentWidget(), dialogCaption, property_->get().c_str());
+            filename = QFileDialog::getExistingDirectory(QWidget::parentWidget(), dialogCaption, QString::fromStdString(property_->get()));
         }
 
         if (!filename.isEmpty()) {
             property_->set(filename.toStdString());
-            updateButtonText(filename.toStdString());
             emit modified();
         }
     }
 }
 
 void FileDialogPropertyWidget::updateButtonText(const std::string& filename) {
+
     if (!filename.empty()) {
         if ((property_->getFileMode() == FileDialogProperty::OPEN_FILE) || (property_->getFileMode() == FileDialogProperty::SAVE_FILE)) {
             size_t index = filename.find_last_of('/');
-            std::string endFilename = filename.substr(index + 1, filename.length());
-            openFileDialogBtn_->setText(endFilename.c_str());
+            if (index == filename.npos)
+                index = filename.find_last_of('\\');
+            std::string endFilename = filename;
+            if (index != filename.npos)
+                endFilename = filename.substr(index + 1, filename.length());
+            openFileDialogBtn_->setText(QString::fromStdString(endFilename));
         }
         else if (property_->getFileMode() == FileDialogProperty::DIRECTORY) {
             std::string directory = filename;
             if (directory.length() >= 20)
                 directory = "..." + directory.substr(directory.length()-20);
-            openFileDialogBtn_->setText(directory.c_str());
+            openFileDialogBtn_->setText(QString::fromStdString(directory));
         }
     }
     else {
         if (property_->getFileMode() == FileDialogProperty::OPEN_FILE)
-             openFileDialogBtn_->setText(tr("open file"));
+             openFileDialogBtn_->setText(tr("Select File"));
         else if (property_->getFileMode() == FileDialogProperty::SAVE_FILE)
-             openFileDialogBtn_->setText(tr("save file"));
+             openFileDialogBtn_->setText(tr("Select File"));
         else if (property_->getFileMode() == FileDialogProperty::DIRECTORY)
-            openFileDialogBtn_->setText(tr("select directory"));
+            openFileDialogBtn_->setText(tr("Select Directory"));
     }
 
     openFileDialogBtn_->update();
+}
+
+void FileDialogPropertyWidget::updateFromProperty() {
+    updateButtonText(property_->get());
 }
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,15 +30,15 @@
 #ifndef VRN_QPROPERTYWIDGETFACTORY_H
 #define VRN_QPROPERTYWIDGETFACTORY_H
 
-#include "voreen/core/vis/properties/property.h"
-#include "voreen/core/vis/properties/propertywidget.h"
-#include "voreen/core/vis/properties/allproperties.h"
+#include "voreen/core/properties/property.h"
+#include "voreen/core/properties/propertywidget.h"
+#include "voreen/core/properties/allproperties.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 
 namespace voreen {
 
 /**
- * Creates compact Qt PropertyWidgets (used in VoreenVE)
+ * Creates Qt PropertyWidgets
  */
 class QPropertyWidgetFactory : public PropertyWidgetFactory {
 public:
@@ -55,6 +55,10 @@ public:
     QPropertyWidget* createWidget(IntVec2Property* p);
     QPropertyWidget* createWidget(IntVec3Property* p);
     QPropertyWidget* createWidget(IntVec4Property* p);
+    QPropertyWidget* createWidget(FloatMat2Property* p);
+    QPropertyWidget* createWidget(FloatMat3Property* p);
+    QPropertyWidget* createWidget(FloatMat4Property* p);
+    QPropertyWidget* createWidget(LightProperty* p);
     QPropertyWidget* createWidget(OptionPropertyBase* p);
     QPropertyWidget* createWidget(PropertyVector* p);
     QPropertyWidget* createWidget(ShaderProperty* p);
@@ -62,7 +66,6 @@ public:
     QPropertyWidget* createWidget(TransFuncProperty* p);
     QPropertyWidget* createWidget(VolumeCollectionProperty* p);
     QPropertyWidget* createWidget(VolumeHandleProperty* p);
-
 };
 
 } // namespace

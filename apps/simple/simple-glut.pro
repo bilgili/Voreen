@@ -11,10 +11,10 @@ CONFIG -= qt
 include(../../config.txt)
 
 # Include common configuration
-include(../../commonconf.txt)
+include(../../commonconf.pri)
 
 # Include generic app configuration
-include(../voreenapp.txt)
+include(../voreenapp.pri)
 
 win32 {
   INCLUDEPATH += \

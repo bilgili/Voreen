@@ -72,9 +72,12 @@ public:
      * @param fps target video's fps
      * @param width source=target-video's width
      * @param height video's height
+     * @param pixelFormat input pixel format, supported: GL_RGBA
+     * @param pixelType input pixel type, supported: GL_FLOAT, GL_UNSIGNED_SHORT, GL_UNSIGNED_BYTE
      */
     void startVideoEncoding(std::string filePath, const int fps,
-                            const int width, const int height);// throw (NotMultipleOfTwoDimensionsException,CodecNotFoundOrNotLoadableException, NoWriteAccessException);
+                            const int width, const int height,
+                            GLint pixelFormat, GLenum pixelType);// throw (NotMultipleOfTwoDimensionsException,CodecNotFoundOrNotLoadableException, NoWriteAccessException);
     /**
      * finish encoding
      */

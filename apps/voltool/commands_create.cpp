@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -82,7 +82,6 @@ bool CommandGenerateMask::execute(const std::vector<std::string>& parameters) {
         const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target);
         delete target;
-        delete serializer;
         return true;
     }
     else
@@ -123,7 +122,7 @@ bool CommandCreate::checkParameters(const std::vector<std::string>& parameters) 
     set.insert("aotestbox");
     set.insert("shadowtestvol");
     set.insert("aorticarch");
-    return (parameters.size() == 3) && is<int>(parameters[1]) && isValueInSet(parameters[0], &set);
+    return (parameters.size() == 3) && is<int>(parameters[1]) && isValueInSet(parameters[0], set);
 }
 
 bool CommandCreate::execute(const std::vector<std::string>& parameters) {

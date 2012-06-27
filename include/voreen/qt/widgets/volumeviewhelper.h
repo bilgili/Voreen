@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,8 +30,8 @@
 #ifndef VRN_VOLUMEVIEW_H
 #define VRN_VOLUMEVIEW_H
 
-#include "voreen/core/volume/volume.h"
-#include "voreen/core/volume/volumecontainer.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
 
 #include <QPixmap>
 
@@ -88,9 +88,10 @@ public:
     static std::string getVolumeSpacing(Volume*);
 
     /**
-     * Returns bytesize
+     * Returns a string desribing the amount of memory
+     * that is actually occupied by the volume.
      */
-    static std::string getVolumeBytes(Volume*);
+    static std::string getVolumeMemorySize(Volume*);
 
 };
 

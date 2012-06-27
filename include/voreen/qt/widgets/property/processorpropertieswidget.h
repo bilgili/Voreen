@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,8 +30,9 @@
 #ifndef VRN_PROCESSORPROPERTIESWIDGET_H
 #define VRN_PROCESSORPROPERTIESWIDGET_H
 
-#include "voreen/core/vis/properties/property.h"
+#include "voreen/core/properties/property.h"
 #include <QWidget>
+#include <QVBoxLayout>
 
 namespace voreen {
 
@@ -39,6 +40,8 @@ class ExpandableHeaderButton;
 class Processor;
 class PropertyWidgetFactory;
 class QPropertyWidget;
+class VolumeContainer;
+
 
 /**
  * Widget containing each processor's property widgets. The title bar contains the name of the
@@ -47,6 +50,13 @@ class QPropertyWidget;
 class ProcessorPropertiesWidget : public QWidget {
 Q_OBJECT
 public:
+
+    enum widgetInstantiationState {
+        NONE,
+        ONLY_TF,
+        ALL
+    };
+
     ProcessorPropertiesWidget(QWidget* parent = 0, const Processor* processor = 0, PropertyWidgetFactory* factory = 0,
                               bool expanded = false, bool userExpandable = true);
 
@@ -54,18 +64,21 @@ public:
     bool isUserExpandable() const;
 
     void setLevelOfDetail(Property::LODSetting lod);
+    void setVolumeContainer(VolumeContainer*);
 
 signals:
     void modified();
-                                                   
+
 public slots:
     void setExpanded(bool expanded);
     void setUserExpandable(bool expandable);
     void toggleExpansionState();
     void updateHeaderTitle();
+    void instantiateWidgets();
+    void updateState();
+
 
 protected slots:
-    void updateState();
     void setLODHidden();
     void setLODVisible();
     void propertyModified();
@@ -75,6 +88,14 @@ protected:
     QWidget* propertyWidget_;
     const Processor* processor_;
     std::vector<QPropertyWidget*> widgets_;
+    void showEvent(QShowEvent*);
+
+    VolumeContainer* volumeContainer_;
+    bool expanded_;
+    bool userExpandable_;
+    PropertyWidgetFactory* widgetFactory_;
+    QVBoxLayout* mainLayout_;
+    widgetInstantiationState widgetInstantiationState_;
 };
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,10 @@
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/versionqt.h"
 #include "voreen/qt/ioprogressdialog.h"
+#include "tgt/init.h"
 #include "tgt/qt/qttimer.h"
+#include "tgt/filesystem.h"
+#include "tgt/shadermanager.h"
 
 #ifdef VRN_WITH_PYTHON
 #include "voreen/qt/pyvoreenqt.h"
@@ -39,6 +42,21 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QDir>
+
+using std::string;
+
+namespace {
+
+string findShaderPath(const string& basePath) {
+#ifdef VRN_INSTALL_PREFIX
+    return basePath + "/share/voreen/shaders";
+#else
+    return basePath + "/src/qt/glsl";
+#endif
+}
+
+} // namespace
+
 
 namespace voreen {
 
@@ -49,9 +67,9 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
     : VoreenApplication(name, displayName, argc, argv, appType)
     , mainWindow_(0)
 {
-    QApplication::setOrganizationName("Voreen");
-    QApplication::setOrganizationDomain("voreen.org");
-    QApplication::setApplicationName(displayName.c_str());
+    QCoreApplication::setOrganizationName("Voreen");
+    QCoreApplication::setOrganizationDomain("voreen.org");
+    QCoreApplication::setApplicationName(displayName.c_str());
 
     qtApp_ = this;
 }
@@ -67,6 +85,20 @@ void VoreenApplicationQt::init() {
 #ifdef VRN_WITH_PYTHON
     tgt::Singleton<VoreenPythonQt>::init(new VoreenPythonQt());
 #endif
+
+    //
+    // Path detection
+    //
+
+    // shader path
+    if (appType_ & APP_SHADER) {
+        shaderPathQt_ = findShaderPath(basePath_);
+    }
+}
+
+void VoreenApplicationQt::initGL() {
+    VoreenApplication::initGL();
+    ShdrMgr.addPath(getShaderPathQt());
 }
 
 void VoreenApplicationQt::setMainWindow(QMainWindow* mainWindow) {
@@ -89,4 +121,9 @@ IOProgressDialog* VoreenApplicationQt::createProgressDialog() const {
     return new IOProgressDialog(getMainWindow());
 }
 
+std::string VoreenApplicationQt::getShaderPathQt(const std::string& filename) const {
+    return shaderPathQt_ + (filename.empty() ? "" : "/" + filename);
+}
+
 } // namespace
+

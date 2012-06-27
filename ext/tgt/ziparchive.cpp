@@ -1,6 +1,7 @@
 #include "tgt/ziparchive.h"
 
 #include <algorithm>
+#include <cstring>
 
 #ifdef TGT_HAS_ZLIB
 #include <zlib.h>

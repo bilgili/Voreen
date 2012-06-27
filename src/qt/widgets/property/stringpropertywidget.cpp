@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,23 +41,28 @@ StringPropertyWidget::StringPropertyWidget(StringProperty* prop, QWidget* parent
     addWidget(lineEdit_);
 
     connect(lineEdit_, SIGNAL(textChanged(QString)), this, SLOT(setProperty(QString)));
+    connect(lineEdit_, SIGNAL(textChanged(QString)), this, SIGNAL(widgetChanged()));
 
     addVisibilityControls();
 }
 
 void StringPropertyWidget::updateFromProperty() {
     lineEdit_->blockSignals(true);
-    lineEdit_->setText(QString(property_->get().c_str()));
+    if(!textChangeSource_) {
+        lineEdit_->setText(QString(property_->get().c_str()));
+        textChangeSource_ = false;
+    }
     lineEdit_->blockSignals(false);
 }
 
 void StringPropertyWidget::setProperty(const QString& text) {
     if (!disconnected_) {
         property_->set(text.toStdString());
-        emit modified();        
+        emit modified();
     }
     else
         updateFromProperty();
+    textChangeSource_ = true;
 }
 
 } // namespace

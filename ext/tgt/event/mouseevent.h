@@ -34,27 +34,30 @@ namespace tgt {
 class MouseEvent : public Event {
 public:
     enum MouseButtons {
-        NO_MOUSE_BUTTON =       0,
-        MOUSE_BUTTON_1 =   1 << 0, MOUSE_BUTTON_LEFT =   MOUSE_BUTTON_1,
+        MOUSE_BUTTON_NONE =     0,
+        MOUSE_BUTTON_1 =   1 << 0, MOUSE_BUTTON_LEFT   = MOUSE_BUTTON_1,
         MOUSE_BUTTON_2 =   1 << 1, MOUSE_BUTTON_MIDDLE = MOUSE_BUTTON_2,
-        MOUSE_BUTTON_3 =   1 << 2, MOUSE_BUTTON_RIGHT =  MOUSE_BUTTON_3,
+        MOUSE_BUTTON_3 =   1 << 2, MOUSE_BUTTON_RIGHT  = MOUSE_BUTTON_3,
         MOUSE_BUTTON_4 =   1 << 3,
         MOUSE_BUTTON_5 =   1 << 4,
         MOUSE_WHEEL_DOWN = 1 << 5,
         MOUSE_WHEEL_UP =   1 << 6,
-        MOUSE_ALL = MOUSE_BUTTON_1 | MOUSE_BUTTON_2 | MOUSE_BUTTON_3 | MOUSE_BUTTON_4 | MOUSE_BUTTON_5 | MOUSE_WHEEL_DOWN | MOUSE_WHEEL_UP
+        MOUSE_WHEEL    = MOUSE_WHEEL_DOWN | MOUSE_WHEEL_UP,
+        MOUSE_BUTTON_ALL = MOUSE_BUTTON_1 | MOUSE_BUTTON_2 | MOUSE_BUTTON_3 | MOUSE_BUTTON_4 | MOUSE_BUTTON_5 | MOUSE_WHEEL
     };
 
     enum MouseAction {
+        ACTION_NONE = 0,
         MOTION      = 1 << 0,
         PRESSED     = 1 << 1,
-        RELEASED    = 1 << 2,
+        RELEASED    = 1 << 2, CLICK = PRESSED | RELEASED,
         DOUBLECLICK = 1 << 3,
-        WHEEL       = 1 << 4
+        WHEEL       = 1 << 4,
+        ACTION_ALL  = CLICK | MOTION | DOUBLECLICK | WHEEL
     };
 
 public:
-    MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button = NO_MOUSE_BUTTON,
+    MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button = MOUSE_BUTTON_NONE,
         tgt::ivec2 viewport = tgt::ivec2(-1));
 
     ivec2 coord() const;

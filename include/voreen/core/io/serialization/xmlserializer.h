@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,6 +32,8 @@
 
 #include <string>
 #include <vector>
+#include <deque>
+#include <list>
 #include <map>
 #include <set>
 #include <iostream>
@@ -39,6 +41,7 @@
 #include "tinyxml/tinyxml.h"
 
 #include "tgt/vector.h"
+#include "tgt/matrix.h"
 
 #include "voreen/core/io/serialization/xmlserializerbase.h"
 #include "voreen/core/io/serialization/serializationexceptions.h"
@@ -133,7 +136,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const bool& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -145,7 +148,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const char& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -157,7 +160,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const signed char& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -169,7 +172,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const unsigned char& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -181,7 +184,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const signed short& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -193,7 +196,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const unsigned short& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -205,7 +208,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const signed int& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -217,7 +220,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const unsigned int& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -229,7 +232,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const signed long& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -241,7 +244,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const unsigned long& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -253,7 +256,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const float& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -265,7 +268,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const double& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -277,7 +280,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const long double& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -289,7 +292,7 @@ public:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void serialize(const std::string& key, const std::string& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -297,7 +300,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::vec2& data);
+    void serialize(const std::string& key, const tgt::vec2& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -305,7 +309,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::vec3& data);
+    void serialize(const std::string& key, const tgt::vec3& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -313,7 +318,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::vec4& data);
+    void serialize(const std::string& key, const tgt::vec4& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -321,7 +327,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::ivec2& data);
+    void serialize(const std::string& key, const tgt::dvec2& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -329,7 +336,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::ivec3& data);
+    void serialize(const std::string& key, const tgt::dvec3& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -337,7 +345,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::ivec4& data);
+    void serialize(const std::string& key, const tgt::dvec4& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -345,7 +354,8 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::col3& data);
+    void serialize(const std::string& key, const tgt::ivec2& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -353,7 +363,89 @@ public:
      * @param key the XML node key
      * @param data the data
      */
-    void serialize(const std::string& key, const tgt::col4& data);
+    void serialize(const std::string& key, const tgt::ivec3& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::ivec4& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::col3& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::col4& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::mat2& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::mat3& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::mat4& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::Matrix2d& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::Matrix3d& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const tgt::Matrix4d& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c Serializable interface realization.
@@ -368,7 +460,7 @@ public:
      *     if @c serialize method of given @c Serializable raises this exception
      */
     void serialize(const std::string& key, const Serializable& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Serializes the given pointer reference.
@@ -379,7 +471,8 @@ public:
      * @param data the pointer reference
      */
     template<class T>
-    void serialize(const std::string& key, const T* const& data);
+    void serialize(const std::string& key, const T* const& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given data vector.
@@ -401,7 +494,51 @@ public:
      */
     template<class T>
     void serialize(const std::string& key, const std::vector<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
+
+    /**
+     * Serializes the given data deque.
+     *
+     * @par
+     * Iterates over the given data collection and serialize each collection item.
+     *
+     * @note Element order of collection items remains constant during
+     *       serialization and deserialization.
+     *
+     * @tparam T data type of vector items
+     *
+     * @param key the XML node key
+     * @param data the data vector
+     * @param itemKey XML node key for each XML child node
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if serialization of collection items raises this exception
+     */
+    template<class T>
+    void serialize(const std::string& key, const std::deque<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given data list.
+     *
+     * @par
+     * Iterates over the given data collection and serialize each collection item.
+     *
+     * @note Element order of collection items remains constant during
+     *       serialization and deserialization.
+     *
+     * @tparam T data type of vector items
+     *
+     * @param key the XML node key
+     * @param data the data vector
+     * @param itemKey XML node key for each XML child node
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if serialization of collection items raises this exception
+     */
+    template<class T>
+    void serialize(const std::string& key, const std::list<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
 
     /**
      * Serializes the given data set.
@@ -428,7 +565,7 @@ public:
      */
     template<class T, class C>
     void serialize(const std::string& key, const std::set<T, C>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-        throw (XmlSerializationAttributeNamingException, XmlSerializationInvalidOperationException);
+        throw (SerializationException);
 
     /**
      * Serializes the given data map.
@@ -458,7 +595,7 @@ public:
         const std::map<T, U, C>& data,
         const std::string& valueKey = XmlSerializationConstants::VALUENODE,
         const std::string& keyKey = XmlSerializationConstants::KEYNODE)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Writes the XML document that contains all already serialized data to the given stream.
@@ -506,7 +643,7 @@ private:
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
     void checkAttributeKey(const std::string& key)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Makes the XML attribute key of the given @c element the first XML attribute.
@@ -534,7 +671,7 @@ private:
      */
     template<class T>
     inline void serializeSimpleTypes(const std::string& key, const T& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Helper function for serializing @c key/data pairs with tgt vectors.
@@ -546,7 +683,8 @@ private:
      * @param isColor flag determine if given vector is a color
      */
     template<class T>
-    inline void serializeTgtVector(const std::string& key, const T& vector, const bool& isColor = false);
+    inline void serializeTgtVector(const std::string& key, const T& vector, const bool& isColor = false)
+        throw (SerializationException);
 
     /**
      * Helper function creates a XML node with the given @c nodeKey and
@@ -563,7 +701,7 @@ private:
      */
     template<class T>
     inline void serializeAttributeInNode(const std::string& nodeKey, const std::string& key, const T& data)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Helper function for serializing data collections like STL container.
@@ -582,7 +720,7 @@ private:
      */
     template<class T>
     inline void serializeCollection(const std::string& key, const T& collection, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Helper function for serializing data maps like STL maps.
@@ -607,7 +745,7 @@ private:
         const T& map,
         const std::string& valueKey = XmlSerializationConstants::VALUENODE,
         const std::string& keyKey = XmlSerializationConstants::KEYNODE)
-        throw (XmlSerializationAttributeNamingException);
+        throw (SerializationException);
 
     /**
      * Type definition for XML node look up map.
@@ -784,7 +922,9 @@ inline void XmlSerializer::addUnresolvedReference(TiXmlElement* unresolvedRefere
 }
 
 template<class T>
-void XmlSerializer::serialize(const std::string& key, const T* const& data) {
+void XmlSerializer::serialize(const std::string& key, const T* const& data)
+    throw (SerializationException)
+{
     // Always serialize pointer content?
     if (usePointerContentSerialization_) {
         TemporaryUsePointerContentSerializationChanger usePointerContentSerializationChanger(*this, false);
@@ -811,14 +951,28 @@ void XmlSerializer::serialize(const std::string& key, const T* const& data) {
 
 template<class T>
 void XmlSerializer::serialize(const std::string& key, const std::vector<T>& data, const std::string& itemKey)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
+{
+    serializeCollection(key, data, itemKey);
+}
+
+template<class T>
+void XmlSerializer::serialize(const std::string& key, const std::deque<T>& data, const std::string& itemKey)
+    throw (SerializationException)
+{
+    serializeCollection(key, data, itemKey);
+}
+
+template<class T>
+void XmlSerializer::serialize(const std::string& key, const std::list<T>& data, const std::string& itemKey)
+    throw (SerializationException)
 {
     serializeCollection(key, data, itemKey);
 }
 
 template<class T, class C>
 void XmlSerializer::serialize(const std::string& key, const std::set<T, C>& data, const std::string& itemKey)
-    throw (XmlSerializationAttributeNamingException, XmlSerializationInvalidOperationException)
+    throw (SerializationException)
 {
     if (usePointerContentSerialization_)
         raise(XmlSerializationInvalidOperationException("Set serialization using pointer content is not permitted."));
@@ -830,14 +984,14 @@ void XmlSerializer::serialize(const std::string& key,
                               const std::map<T, U, C>& data,
                               const std::string& valueKey,
                               const std::string& keyKey)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     serializeMap(key, data, valueKey, keyKey);
 }
 
 template<class T>
 inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const T& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     // Serialize as XML attribute?
     if (useAttributes_) {
@@ -856,7 +1010,7 @@ inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const T&
 
 template<>
 inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const std::string& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     // Serialize as XML attribute wanted and possible?
     if (useAttributes_ && data.find("\n") == std::string::npos && data.find("\r") == std::string::npos) {
@@ -885,7 +1039,7 @@ inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const st
 
 template<>
 inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const Serializable& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     TiXmlElement* newNode = new TiXmlElement(key);
     node_->LinkEndChild(newNode);
@@ -898,7 +1052,9 @@ inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const Se
 }
 
 template<class T>
-inline void XmlSerializer::serializeTgtVector(const std::string& key, const T& vector, const bool& isColor) {
+inline void XmlSerializer::serializeTgtVector(const std::string& key, const T& vector, const bool& isColor)
+    throw (SerializationException)
+{
     TiXmlElement* newNode = new TiXmlElement(key);
     node_->LinkEndChild(newNode);
 
@@ -929,7 +1085,7 @@ inline void XmlSerializer::serializeTgtVector(const std::string& key, const T& v
 
 template<class T>
 inline void XmlSerializer::serializeAttributeInNode(const std::string& nodeKey, const std::string& key, const T& data)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     TiXmlNode* newNode = new TiXmlElement(nodeKey);
     node_->LinkEndChild(newNode);
@@ -941,7 +1097,7 @@ inline void XmlSerializer::serializeAttributeInNode(const std::string& nodeKey, 
 
 template<class T>
 inline void XmlSerializer::serializeCollection(const std::string& key, const T& collection, const std::string& itemKey)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     TiXmlElement* newNode = new TiXmlElement(key);
     node_->LinkEndChild(newNode);
@@ -966,7 +1122,7 @@ inline void XmlSerializer::serializeMap(const std::string& key,
                                         const T& map,
                                         const std::string& valueKey,
                                         const std::string& keyKey)
-    throw (XmlSerializationAttributeNamingException)
+    throw (SerializationException)
 {
     TiXmlElement* newNode = new TiXmlElement(key);
     node_->LinkEndChild(newNode);

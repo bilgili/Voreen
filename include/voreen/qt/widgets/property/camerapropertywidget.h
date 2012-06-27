@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_CAMERAPROPERTYWIDGET_H
 #define VRN_CAMERAPROPERTYWIDGET_H
 
-#include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h"
 
 class QPushButton;
 
@@ -43,18 +43,12 @@ class CameraProperty;
 class VoreenToolWindow;
 class CameraWidget;
 
-class CameraPropertyWidget : public QPropertyWidget {
+class CameraPropertyWidget : public QPropertyWidgetWithEditorWindow {
     Q_OBJECT
 public:
     CameraPropertyWidget(CameraProperty* prop, QWidget* parent = 0);
-    ~CameraPropertyWidget();
 
     void updateFromProperty();
-
-    /**
-     * Stores the state of the camera editor window.
-     */
-    virtual MetaDataBase* getWidgetMetaData() const;
 
 public slots:
     void setProperty(tgt::Camera* value);
@@ -62,17 +56,15 @@ public slots:
 private slots:
     void toggleWidgetVisibility();
 
-private:
-
-    /// Creates the camera widget
-    void createCameraWidget();
+protected:
+    virtual QWidget* createEditorWindowWidget();
+    virtual void customizeEditorWindow();
+    virtual Property* getProperty();
 
     QPushButton* editBt_;
 
     CameraProperty* property_;
     CameraWidget* cameraWidget_;
-    VoreenToolWindow* toolWindow_;
-
 };
 
 } // namespace

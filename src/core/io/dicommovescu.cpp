@@ -66,7 +66,9 @@
 #include <dcmtk/dcmnet/dimse.h>
 #include <dcmtk/dcmnet/diutil.h>
 #include <dcmtk/dcmdata/dcfilefo.h>
+#ifndef VRN_DCMTK_VERSION_355
 #include <dcmtk/dcmdata/dcdebug.h>
+#endif
 #include <dcmtk/dcmdata/dcuid.h>
 #include <dcmtk/dcmdata/dcdict.h>
 #include <dcmtk/dcmdata/cmdlnarg.h>
@@ -177,6 +179,7 @@ errmsg(const char *msg,...)
     fprintf(stderr, "\n");
 }
 
+#ifndef VRN_DCMTK_VERSION_355
 static void
 addOverrideKey(/*OFConsoleApplication& app,*/ const char* s)
 {
@@ -239,6 +242,13 @@ addOverrideKey(/*OFConsoleApplication& app,*/ const char* s)
         errmsg(msg2);
     }
 }
+#else
+static void
+addOverrideKey(/*OFConsoleApplication& app,*/ const char* /*s*/) {
+    LWARNINGC("dicommovescu.cpp",
+        "addOverrideKey not supported for Dcmtk version " << OFFIS_DCMTK_VERSION_NUMBER);
+}
+#endif
 
 static OFCondition cmove(T_ASC_Association *assoc, const char *fname);
 
@@ -468,6 +478,7 @@ struct StoreCallbackData
   T_ASC_Association* assoc;
 };
 
+#ifndef VRN_DCMTK_VERSION_355
 static void
 storeSCPCallback(
     /* in */
@@ -578,7 +589,23 @@ storeSCPCallback(
     }
     return;
 }
+#else
+static void
+storeSCPCallback(/* in */
+                 void* /*callbackData*/,
+                 T_DIMSE_StoreProgress* /*progress*/,    /* progress state */
+                 T_DIMSE_C_StoreRQ /*req*/,             /* original store request */
+                 char* /*imageFileName*/, DcmDataset /***imageDataSet*/, /* being received into */
+                 /* out */
+                 T_DIMSE_C_StoreRSP* /*rsp*/,            /* final store response */
+                 DcmDataset* /*statusDetail*/)
+{
+    LWARNINGC("dicommovescu.cpp",
+        "storeSCPCallback not supported for Dcmtk version " << OFFIS_DCMTK_VERSION_NUMBER);
+}
+#endif
 
+#ifndef VRN_DCMTK_VERSION_355
 static OFCondition storeSCP(
   T_ASC_Association *assoc,
   T_DIMSE_Message *msg,
@@ -647,6 +674,17 @@ static OFCondition storeSCP(
     }
     return cond;
 }
+#else
+static OFCondition storeSCP(
+    T_ASC_Association* /*assoc*/,
+    T_DIMSE_Message* /*msg*/,
+    T_ASC_PresentationContextID /*presID*/)
+{
+    LWARNINGC("dicommovescu.cpp",
+          "storeSCP not supported for Dcmtk version " << OFFIS_DCMTK_VERSION_NUMBER);
+    return EC_IllegalParameter;
+}
+#endif
 
 static OFCondition
 subOpSCP(T_ASC_Association **subAssoc)
@@ -915,21 +953,27 @@ myDIMSE_moveUser(
         switch (status) {
         case STATUS_Pending:
             if (*statusDetail != NULL) {
+#ifndef VRN_DCMTK_VERSION_355
                 DIMSE_warning(assoc,
                     "moveUser: Pending with statusDetail, ignoring detail");
+#endif
                 delete *statusDetail;
                 *statusDetail = NULL;
             }
             if (response->DataSetType != DIMSE_DATASET_NULL)
             {
+#ifndef VRN_DCMTK_VERSION_355
                 DIMSE_warning(assoc, "moveUser: Status Pending, but DataSetType!=NULL");
+#endif
                 if (! ignorePendingDatasets)
                 {
                     // Some systems send an (illegal) dataset following C-MOVE-RSP messages
                     // with pending status, which is a protocol violation, but we need to
                     // handle this nevertheless. The MV300 has been reported to exhibit
                     // this behavior.
+#ifndef VRN_DCMTK_VERSION_355
                     DIMSE_warning(assoc, "  Reading but ignoring response identifier set");
+#endif
                     DcmDataset *tempset = NULL;
                     cond = DIMSE_receiveDataSetInMemory(assoc, blockMode, timeout, &presID, &tempset, NULL, NULL);
                     delete tempset;
@@ -941,7 +985,9 @@ myDIMSE_moveUser(
                 {
                     // The alternative is to assume that the command set is wrong
                     // and not to read a dataset from the network association.
+#ifndef VRN_DCMTK_VERSION_355
                     DIMSE_warning(assoc, "  Assuming NO response identifiers are present");
+#endif
                 }
             }
 
@@ -1186,7 +1232,9 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
     opt_retrievePort = retrievePort_;
 
 //    opt_verbose = OFTrue;
+#ifndef VRN_DCMTK_VERSION_355
     SetDebugLevel((0)); /* stop dcmdata debugging messages */
+#endif
 
 
 //     if (cmd.findOption("--prefer-uncompr"))  opt_in_networkTransferSyntax = EXS_Unknown;
@@ -1210,7 +1258,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
         if (cond.bad())
         {
             CERR << "error reading config file: "
-                 << cond.text() << endl;
+                << cond.text() << std::endl;
             return 1;
         }
 
@@ -1226,7 +1274,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
         if (!asccfg->isKnownProfile(sprofile.c_str()))
         {
             CERR << "unknown configuration profile name: "
-                 << sprofile << endl;
+                << sprofile << std::endl;
             return 1;
         }
 
@@ -1235,7 +1283,7 @@ int voreen::DicomMoveSCU::move(std::vector<std::string>& keys, QueryModel queryM
             CERR << "profile '"
                  << sprofile
                  << "' is not valid for SCP use, duplicate abstract syntaxes found."
-                 << endl;
+                 << std::endl;
             return 1;
         }
     }

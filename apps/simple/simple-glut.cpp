@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -37,44 +37,55 @@
 #include "tgt/shadermanager.h"
 #include "tgt/glut/glutcanvas.h"
 
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/network/networkevaluator.h"
-#include "voreen/core/vis/workspace/workspace.h"
-#include "voreen/core/vis/processors/image/canvasrenderer.h"
+#include "voreen/core/utils/voreenpainter.h"
+#include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/network/workspace.h"
+#include "voreen/core/processors/canvasrenderer.h"
+#include "voreen/modules/moduleregistration.h"
 
 using namespace voreen;
 
 //---------------------------------------------------------------------------
 
-tgt::GLUTCanvas* canvas_ = 0;
+tgt::GLUTCanvas* canvas = 0;
+VoreenApplication* app = 0;
+
+NetworkEvaluator* networkEvaluator = 0;
+ProcessorNetwork* network = 0;
+VoreenPainter* painter = 0;
 
 //---------------------------------------------------------------------------
 
-void init() {
-    // add shader path to the shader manager
-    ShdrMgr.addPath(VoreenApplication::app()->getShaderPath());
-
+void initialize() {
     Workspace* workspace = new Workspace();
-    workspace->load(VoreenApplication::app()->getWorkspacePath() + "/standard.vws");
+    workspace->load(VoreenApplication::app()->getWorkspacePath("/standard.vws"));
 
     // initialize the network evaluator
-    NetworkEvaluator* networkEvaluator = new NetworkEvaluator();
-    ProcessorNetwork* network = workspace->getProcessorNetwork();
+    networkEvaluator = new NetworkEvaluator();
+    network = workspace->getProcessorNetwork();
     std::vector<CanvasRenderer*> canvasRenderer = network->getProcessorsByType<CanvasRenderer>();
 
-    if(canvasRenderer.size() > 0) {
+    if (canvasRenderer.size() > 0) {
         // init painter and connect it to the canvas
-        VoreenPainter* painter = new VoreenPainter(canvas_, networkEvaluator, canvasRenderer[0]);
-        canvas_->setPainter(painter);
-        canvasRenderer[0]->setCanvas(canvas_);
+        painter = new VoreenPainter(canvas, networkEvaluator, canvasRenderer[0]);
+        canvas->setPainter(painter);
+        canvasRenderer[0]->setCanvas(canvas);
         // give the network to the network evaluator
         networkEvaluator->setProcessorNetwork(network);
     }
 }
 
+void finalize() {
+    delete painter;
+    delete network;
+    delete networkEvaluator;
+}
+
 void keyPressed(unsigned char key, int /*x*/, int /*y*/) {
     switch (key) {
         case '\033': // = ESC
+            finalize();
+            delete app;
             exit(0);
             break;
         case '1':
@@ -93,22 +104,23 @@ void keyPressed(unsigned char key, int /*x*/, int /*y*/) {
 }
 
 int main(int argc, char** argv) {
-    VoreenApplication app("simple-GLUT", "simple-GLUT", argc, argv);
-    app.init();
+    app = new VoreenApplication("simple-GLUT", "simple-GLUT", argc, argv);
+    app->init();
+    addAllModules(app);
 
     glutInit(&argc, argv);
 
     // initialize canvas
-    canvas_ = new tgt::GLUTCanvas("Voreen - The Volume Rendering Engine", tgt::ivec2(512, 512), tgt::GLCanvas::RGBADD);
-    canvas_->init();
+    canvas = new tgt::GLUTCanvas("Voreen - The Volume Rendering Engine",
+                                  tgt::ivec2(512, 512), tgt::GLCanvas::RGBADD);
+    canvas->init();
 
     glutKeyboardFunc(keyPressed);
 
-    app.initGL();
-
-    init();
+    app->initGL();
+    initialize();
 
     glutMainLoop();
 
-    return 0;
+    return 0; // will never be reached for standard GLUT
 }

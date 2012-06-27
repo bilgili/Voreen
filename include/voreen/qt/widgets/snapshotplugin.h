@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_SNAPSHOTPLUGIN_H
 #define VRN_SNAPSHOTPLUGIN_H
 
-#include "voreen/qt/widgets/widgetplugin.h"
+#include <QWidget>
 
 #include <vector>
 
@@ -42,14 +42,11 @@ namespace voreen {
 
 class CanvasRenderer;
 
-class SnapshotPlugin : public WidgetPlugin {
+class SnapshotPlugin : public QWidget {
     Q_OBJECT
 public:
     SnapshotPlugin(QWidget* parent, CanvasRenderer* canvasRenderer);
     ~SnapshotPlugin();
-
-    void createWidgets();
-    void createConnections();
 
 public slots:
     void takeSnapshot();
@@ -58,7 +55,9 @@ public slots:
     void sizeComboChanged(int index);
     void updateFromProcessor();
 
-private:
+protected:
+    virtual void saveSnapshot(const QString& filename, int width, int height);
+
     CanvasRenderer* canvasRenderer_;
     QComboBox* sizeCombo_;
     QToolButton* buMakeSnapshot_;

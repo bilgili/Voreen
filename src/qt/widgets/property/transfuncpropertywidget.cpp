@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,62 +29,58 @@
 
 #include "voreen/qt/widgets/property/transfuncpropertywidget.h"
 
-#include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/widgets/voreentoolwindow.h"
 #include "voreen/qt/widgets/transfunc/transfuncplugin.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/properties/transferfuncproperty.h"
+#include "voreen/core/processors/processor.h"
+#include "voreen/core/properties/transfuncproperty.h"
 
-#include <QAction>
-#include <QApplication>
-#include <QMainWindow>
 #include <QPushButton>
-#include <QDesktopWidget>
 
 namespace voreen {
 
 TransFuncPropertyWidget::TransFuncPropertyWidget(TransFuncProperty* prop, QWidget* parent)
-    : QPropertyWidget(prop, parent)
+    : QPropertyWidgetWithEditorWindow(prop, parent)
     , plugin_(0)
     , property_(prop)
-    , window_(0)
     , editBt_(new QPushButton(tr("edit")))
 {
 
+    tgtAssert(prop, "No property passed");
+
     if (!prop->getLazyEditorInstantiation() || editorVisibleOnStartup())
-        createEditorWindow();
+        createEditorWindow(Qt::RightDockWidgetArea);
 
     addWidget(editBt_);
 
     connect(editBt_, SIGNAL(clicked()), this, SLOT(setProperty()));
+    connect(editBt_, SIGNAL(clicked()), this, SIGNAL(widgetChanged()));
 
     addVisibilityControls();
-}
-
-TransFuncPropertyWidget::~TransFuncPropertyWidget() {
-    delete window_;
+    QFontInfo fontInfo(font());
+    editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
 void TransFuncPropertyWidget::updateFromProperty() {
     if (plugin_)
-        plugin_->update();
+        plugin_->updateFromProperty();
 }
 
 void TransFuncPropertyWidget::setProperty() {
     if (!disconnected_) {
         // lazy instantiation of transfunc editor window
-        if (!window_) {
-            createEditorWindow();
-            tgtAssert(window_, "Transfunc editor not instantiated");
+        if (!editorWindow_) {
+            createEditorWindow(Qt::RightDockWidgetArea);
+            tgtAssert(editorWindow_, "Transfunc editor not instantiated");
         }
 
-        if (window_->isVisible()) {
+        if (editorWindow_->isVisible()) {
             //close widget
-            window_->close();
+            editorWindow_->close();
         }
         else {
             //open Widget
-            window_->showNormal();
+            editorWindow_->showNormal();
+            plugin_->updateFromProperty();
         }
     }
 }
@@ -95,70 +91,22 @@ void TransFuncPropertyWidget::disconnect() {
         plugin_->disconnect();
 }
 
-void TransFuncPropertyWidget::createEditorWindow() {
-
-    tgtAssert(!window_ && !plugin_, "Transfunc editor already instantiated");
-
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
+QWidget* TransFuncPropertyWidget::createEditorWindowWidget() {
     plugin_ = new TransFuncPlugin(property_, parentWidget(), Qt::Horizontal);
     plugin_->createWidgets();
     plugin_->createConnections();
     connect(plugin_, SIGNAL(transferFunctionChanged()), this, SIGNAL(modified()));
 
-    QString title;
-    if (property_->getOwner()) {
-        title.append(property_->getOwner()->getName().c_str());
-        title.append(" - ");
-    }
-    title.append(QString::fromStdString(property_->getGuiText()));
-    QMainWindow* mainWindow = VoreenApplicationQt::qtApp()->getMainWindow();
-    tgtAssert(mainWindow, "No mainwindow");
-    window_ = new VoreenToolWindow(new QAction(title, mainWindow), mainWindow, plugin_, title, true);
-    window_->setAllowedAreas(Qt::RightDockWidgetArea);
-    window_->setFloating(true);    
-    mainWindow->addDockWidget(Qt::RightDockWidgetArea, window_);
-    
-    WindowStateMetaData* meta = dynamic_cast<WindowStateMetaData*>(property_->getMetaDataContainer().getMetaData("EditorWindow"));
-    if (meta) {
-        // check whether serialized left-top corner of lies inside the available screen geometry
-        QRect screenGeometry = QApplication::desktop()->availableGeometry(QPoint(meta->getX(), meta->getY()));
-        if (screenGeometry.contains(QPoint(meta->getX(), meta->getY())))
-            window_->move(meta->getX(), meta->getY());
-
-        if (meta->getWidth() > 0 && meta->getHeight() > 0)
-            window_->resize(meta->getWidth(), meta->getHeight());
-
-        window_->setVisible(meta->getVisible());
-    }
-
-    QApplication::restoreOverrideCursor();
+    return plugin_;
 }
 
-MetaDataBase* TransFuncPropertyWidget::getWidgetMetaData() const {
-    WindowStateMetaData* meta;
-    if (window_) {
-        meta = new WindowStateMetaData(
-            window_->isVisible(),
-            window_->pos().x(),
-            window_->pos().y(),
-            window_->width(),
-            window_->height());
-    }
-    else
-        meta = new WindowStateMetaData(false);
-
-    property_->getMetaDataContainer().addMetaData("EditorWindow", meta);
-
-    return meta;
+void TransFuncPropertyWidget::customizeEditorWindow() {
+    editorWindow_->setAllowedAreas(Qt::RightDockWidgetArea);
+    editorWindow_->setFloating(true);
 }
 
-bool TransFuncPropertyWidget::editorVisibleOnStartup() const {
-    WindowStateMetaData* meta = dynamic_cast<WindowStateMetaData*>(property_->getMetaDataContainer().getMetaData("EditorWindow"));
-    if (!meta)
-        return false;
-
-    return meta->getVisible();
+Property* TransFuncPropertyWidget::getProperty() {
+    return property_;
 }
 
 } // namespace voreen

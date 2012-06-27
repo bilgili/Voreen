@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
-#include "voreen/core/volume/histogram.h"
+#include "voreen/core/datastructures/volume/histogram.h"
 
 #include <QPainter>
 #include <QPaintEvent>

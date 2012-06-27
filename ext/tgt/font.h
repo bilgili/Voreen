@@ -28,10 +28,27 @@
 #include "tgt/bounds.h"
 
 #ifdef TGT_HAS_FTGL
-class FTTextureFont;
+#include <FTGL/ftgl.h>
+class FTFont;
 #endif
 
 namespace tgt {
+
+enum FontType {
+    BitmapFont,
+    BufferFont,
+    ExtrudeFont,
+    OutlineFont,
+    PixmapFont,
+    PolygonFont,
+    TextureFont    
+};
+
+enum TextAlignment {
+    Left,
+    Center,
+    Right
+};
 
 /**
  * This class acts as a wrapper for the ftgl fonts. A FTTextureFont will be created and it is
@@ -47,12 +64,22 @@ public:
      * \param fontName The path to the font file, which should be used for this font object.
      * \param size The font size.
      */
-    Font(const std::string& fontName, const int size = 72);
+    Font(const std::string& fontName, const int size = 72, FontType fontType = TextureFont);
 
     /**
      * Destructor - deletes the font object.
      */
     ~Font();
+
+    /**
+     * Get the height of one line.
+     */
+    float getLineHeight();
+
+    /**
+     * Sets the line width to use.
+     */
+    void setLineWidth(const float lineWidth);
 
     /**
      * Sets the font size which should be used from now on.
@@ -61,11 +88,24 @@ public:
     void setSize(const int size);
 
     /**
+     * Sets the font text alignment of the font.
+     * Don't forget to specify line width!
+     */
+    void setTextAlignment(TextAlignment textAlignment);
+
+    /**
      * Renders the text 'text' to the position 'pos'. 
      * \sa pos The pen position of the first character
      * \sa text The text to be rendered
      */
     void render(const tgt::vec3& pos, const std::string& text);
+
+    /**
+     * Renders the text 'text' to the position 'pos' using layoutmanager. 
+     * \sa pos The pen position of the first character
+     * \sa text The text to be rendered
+     */
+    void renderWithLayout(const tgt::vec3& pos, const std::string& text);
 
     /**
      * Computes the bounding box for the the text 'text' beginning at position 'pos'.
@@ -76,7 +116,8 @@ public:
 
 protected:
 #ifdef TGT_HAS_FTGL
-    FTTextureFont* font_;
+    FTFont* font_;
+    FTSimpleLayout* simpleLayout_;
 #endif
 };
 

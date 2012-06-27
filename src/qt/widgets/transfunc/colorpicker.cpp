@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -50,8 +50,7 @@ ColorPicker::ColorPicker(QWidget* parent)
 }
 
 ColorPicker::~ColorPicker() {
-    if (pix_)
-        delete pix_;
+    delete pix_;
 }
 
 QPoint ColorPicker::colPt() {
@@ -131,8 +130,7 @@ void ColorPicker::paintEvent(QPaintEvent* /*event*/) {
                 img.setPixel(x, y, c.rgb());
             }
         }
-        if (pix_)
-            delete pix_;
+        delete pix_;
         pix_ = new QPixmap(QPixmap::fromImage(img));
     }
     p.drawPixmap(r.topLeft(), *pix_);

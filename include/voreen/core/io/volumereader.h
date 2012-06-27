@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include "voreen/core/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumecollection.h"
 #include "voreen/core/io/ioprogress.h"
 
 #include "tgt/exception.h"
@@ -51,6 +51,11 @@ class VolumeReader {
 public:
     VolumeReader(IOProgress* progress = 0);
     virtual ~VolumeReader() {}
+
+    /**
+     * Virtual constructor.
+     */
+    virtual VolumeReader* create(IOProgress* progress = 0) const = 0;
 
     /**
      * Loads one or multiple volumes from the specified URL.
@@ -81,7 +86,7 @@ public:
      * Override this function in order to provide a brick-wise loading routine.
      * The default implementation throws an exception.
      */
-    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 , int)
+    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 start, int dimensions)
         throw(tgt::FileException, std::bad_alloc);
 
     /**
@@ -93,15 +98,16 @@ public:
      * @param origin The origin the data set is to be read from.
      * @return VolumeHandle encapsulating the loaded volume. The caller is responsible for freeing the memory.
      */
-    virtual VolumeHandle* read(const VolumeOrigin& origin) throw (tgt::FileException, std::bad_alloc);
+    virtual VolumeHandle* read(const VolumeOrigin& origin)
+        throw (tgt::FileException, std::bad_alloc);
 
     /**
-     * Returns whether this reader is persistent and should not be deleted aber read() has
-     * completed. This is necessary in case a read want to do incremental loading, for example,
+     * Returns whether this reader is persistent and should not be deleted after read() has
+     * completed. This is necessary in case a reader want to do incremental loading, for example,
      * based on some view parameters. Then this reader must be freed through some other means.
      */
     virtual bool isPersistent() const;
-    
+
     /**
      * Converts the file path of the passed origin to a path relative to the passed base path.
      *

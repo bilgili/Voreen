@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,11 +29,9 @@
 
 #include "voreen/qt/widgets/property/camerawidget.h"
 
-#include <vector>
-
-#include "voreen/core/application.h"
-#include "voreen/core/vis/properties/cameraproperty.h"
-#include "voreen/core/vis/interaction/voreentrackball.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/interaction/voreentrackball.h"
 
 #include "tgt/quaternion.h"
 #include "tgt/quadric.h"
@@ -50,6 +48,8 @@
 
 #include "tinyxml/tinyxml.h"
 
+#include <vector>
+
 using std::abs;
 using tgt::quat;
 using tgt::vec3;
@@ -57,7 +57,7 @@ using tgt::vec3;
 namespace voreen {
 
 CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxDist, QWidget* parent)
-    : WidgetPlugin(parent)
+    : QWidget(parent)
     , cameraProp_(cameraProp)
     , CAM_DIST_SCALE_FACTOR(100.0f)
     , AXIAL_VIEW(tgt::vec3(0.0f, 0.0f, -1.0f))
@@ -67,8 +67,7 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxD
     , CORONAL_INV_VIEW(tgt::vec3(0.0f, -1.0f, 0.0f))
     , SAGITTAL_INV_VIEW(tgt::vec3(-1.0f, 0.0f, 0.0f))
 {
-
-    setObjectName(tr("CameraWidget"));
+    setObjectName("CameraWidget");
 
     tgtAssert(cameraProp_, "No camera property");
     tgtAssert(cameraProp_->get(), "No camera");
@@ -78,11 +77,10 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxD
     minDist_ = tgt::iround(minDist * CAM_DIST_SCALE_FACTOR);
     maxDist_ = tgt::iround(maxDist * CAM_DIST_SCALE_FACTOR);
 
-    icon_ = QIcon(":/icons/trackball-reset.png");
+    setWindowIcon(QIcon(":/icons/trackball-reset.png"));
     dist_ = 5;
     timer_ = new QBasicTimer();
     rotateX_ = rotateY_ = rotateZ_ = false;
-
 }
 
 CameraWidget::~CameraWidget() {
@@ -91,7 +89,6 @@ CameraWidget::~CameraWidget() {
 }
 
 void CameraWidget::createWidgets() {
-
     QVBoxLayout* mainLayout = new QVBoxLayout();
 
     // Group box for orientation
@@ -166,7 +163,7 @@ void CameraWidget::createConnections() {
     connect(rotateAroundZ_,              SIGNAL(toggled(bool)),     this, SLOT(enableZ(bool)));
     connect(continueSpin_,               SIGNAL(toggled(bool)),     this, SLOT(enableContSpin(bool)));
 
-    connect(comboOrientation_,   SIGNAL(activated(int)),    this, SLOT(orientationChanged(int)));
+    connect(comboOrientation_,   SIGNAL(currentIndexChanged(int)),    this, SLOT(orientationChanged(int)));
     connect(slDistance_,         SIGNAL(valueChanged(int)), this, SLOT(distanceSliderChanged(int)));
     connect(slDistance_,         SIGNAL(sliderPressed()),   this, SLOT(distanceSliderPressed()));
     connect(slDistance_,         SIGNAL(sliderReleased()),  this, SLOT(distanceSliderReleased()));
@@ -186,7 +183,6 @@ void CameraWidget::toBelow() {
 }
 
 void CameraWidget::toBehind() {
-//     float c = 0.5f * sqrtf(2.f);
     // This is not very pretty, admittedly.  The quaternion should be (0, 0.5*sqrt(2), 0.5*sqrt(2), 0)
     // to be precise, but that seems to be some kind of edge case that breaks the modelview-matrix which
     // can also not be reached by turning the trackball by mouse.  So, we use a quaternion that is approximately
@@ -212,7 +208,6 @@ void CameraWidget::toRight() {
 }
 
 void CameraWidget::applyOrientation(const quat& q) {
-
     std::vector<float> keyframe;
     keyframe.push_back(q.x);
     keyframe.push_back(q.y);
@@ -221,11 +216,9 @@ void CameraWidget::applyOrientation(const quat& q) {
     keyframe.push_back(slDistance_->value() / CAM_DIST_SCALE_FACTOR);
 
     applyOrientationAndDistanceAnimated(keyframe);
-
 }
 
 void CameraWidget::updateDistance() {
-
     dist_ = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
     slDistance_->blockSignals(true);
     track_->zoomAbsolute(dist_);
@@ -279,11 +272,9 @@ void CameraWidget::distanceSliderPressed() {
     updateDistance();
 }
 
-
 void CameraWidget::distanceSliderReleased() {
     cameraProp_->toggleInteractionMode(false, slDistance_);
 }
-
 
 void CameraWidget::timerEvent(QTimerEvent* /*event*/) {
 
@@ -352,7 +343,6 @@ void CameraWidget::checkCameraState() {
 }
 
 void CameraWidget::applyOrientationAndDistanceAnimated(std::vector<float> keyframe) {
-
     tgtAssert(track_, "No trackball");
     tgt::Camera* camera = track_->getCamera();
 
@@ -398,7 +388,7 @@ void CameraWidget::applyOrientationAndDistanceAnimated(std::vector<float> keyfra
 }
 
 void CameraWidget::showEvent(QShowEvent* event) {
-    WidgetPlugin::showEvent(event);
+    QWidget::showEvent(event);
     checkCameraState();
 }
 
@@ -421,7 +411,9 @@ void CameraWidget::enableZ(bool b) {
     setTimerState();
 }
 
-CameraWidget::SerializationResource::SerializationResource(XmlSerializerBase* serializer, const std::string& filename, const std::ios_base::openmode& openMode)
+CameraWidget::SerializationResource::SerializationResource(XmlSerializerBase* serializer,
+                                                           const std::string& filename,
+                                                           const std::ios_base::openmode& openMode)
     : stream_(filename.c_str(), openMode)
 {
     serializer->setUseAttributes(true);
@@ -436,17 +428,14 @@ std::fstream& CameraWidget::SerializationResource::getStream() {
 }
 
 void CameraWidget::saveCameraToDisk() {
-    QString s = QFileDialog::getSaveFileName(
-                    this,
-                    tr("Choose a filename to save under"),
-                    ".",
-                    tr("Voreen Camera Files (*.vcm)"));
+    QFileDialog dlg(this, tr("Save Camera Position As"), "", tr("Voreen Camera Files (*.vcm)"));
+    dlg.setDefaultSuffix("vcm");
 
-    std::string chosenFileName = s.toStdString();
+    std::string chosenFileName;
+    if (dlg.exec())
+        chosenFileName = dlg.selectedFiles().first().toStdString();
 
-    if (chosenFileName.length() == 0)
-        return;
-    else
+    if (!chosenFileName.empty())
         saveCameraToDisk(chosenFileName);
 }
 
@@ -471,7 +460,7 @@ void CameraWidget::restoreCamera(std::string fn) {
 }
 
 void CameraWidget::restoreCamera() {
-    QString fn = QFileDialog::getOpenFileName(this, tr("Open camera position"), ".",
+    QString fn = QFileDialog::getOpenFileName(this, tr("Open Camera Position"), ".",
                                               tr("Voreen Camera Files (*.vcm)"));
     std::string s = fn.toStdString();
     if (!s.empty())
@@ -498,8 +487,11 @@ void CameraWidget::updateFromCamera() {
 }
 
 void CameraWidget::resetCameraPosition() {
-    // all trackball operations assume an initial view along the negative z-axis with the y-axis as up vector
-    cameraProp_->get()->positionCamera(vec3(0.f, 0.f, 1.f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f));
+    // all trackball operations assume an initial view along the negative z-axis with the
+    // y-axis as up vector
+    cameraProp_->get()->positionCamera(vec3(0.f, 0.f, 1.f),
+                                       vec3(0.f, 0.f, 0.f),
+                                       vec3(0.f, 1.f, 0.f));
     cameraProp_->notifyChange();
 }
 

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,9 +30,9 @@
 #include "voreen/qt/widgets/transfunc/transfunceditorintensitygradient.h"
 
 #include "voreen/qt/widgets/transfunc/transfuncintensitygradientpainter.h"
-#include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
-#include "voreen/core/vis/transfunc/transfuncprimitive.h"
-#include "voreen/core/volume/volume.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
+#include "voreen/core/datastructures/transfunc/transfuncprimitive.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #include "tgt/qt/qtcanvas.h"
 #include "tgt/logmanager.h"
@@ -356,7 +356,7 @@ void TransFuncEditorIntensityGradient::stopTracking() {
     toggleInteractionMode(false);
 }
 
-void TransFuncEditorIntensityGradient::update() {
+void TransFuncEditorIntensityGradient::updateFromProperty() {
     if (!supported_)
         return;
 

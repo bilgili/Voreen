@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,8 +35,8 @@
 #include "voreen/qt/widgets/transfunc/transfunctexturepainter.h"
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvas.h"
 
-#include "voreen/core/vis/transfunc/transfuncintensity.h"
-#include "voreen/core/volume/volume.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #include "tgt/logmanager.h"
 #include "tgt/qt/qtcanvas.h"
@@ -51,7 +51,7 @@
 
 namespace voreen {
 
-const std::string TransFuncEditorIntensity::loggerCat_("voreen.qt.transfunceditorintensity");
+const std::string TransFuncEditorIntensity::loggerCat_("voreen.qt.TransFuncEditorIntensity");
 
 TransFuncEditorIntensity::TransFuncEditorIntensity(TransFuncProperty* prop, QWidget* parent,
                                                    Qt::Orientation orientation)
@@ -276,7 +276,7 @@ void TransFuncEditorIntensity::causeVolumeRenderingRepaint() {
     // this informs the owner about change in transfer function texture
     property_->notifyChange();
     repaintAll();
-    emit transferFunctionChanged();    
+    emit transferFunctionChanged();
 }
 
 void TransFuncEditorIntensity::clearButtonClicked() {
@@ -287,10 +287,21 @@ void TransFuncEditorIntensity::clearButtonClicked() {
 }
 
 void TransFuncEditorIntensity::resetTransferFunction() {
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     transferFuncIntensity_->createStdFunc();
 }
 
 void TransFuncEditorIntensity::resetThresholds() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     lowerThresholdSpin_->blockSignals(true);
     lowerThresholdSpin_->setValue(0);
     lowerThresholdSpin_->blockSignals(false);
@@ -308,6 +319,12 @@ void TransFuncEditorIntensity::resetThresholds() {
 }
 
 void TransFuncEditorIntensity::loadTransferFunction() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     //create filter with supported file formats
     QString filter = "transfer function (";
     for (size_t i = 0; i < transferFuncIntensity_->getLoadFileFormats().size(); ++i) {
@@ -331,6 +348,12 @@ void TransFuncEditorIntensity::loadTransferFunction() {
 }
 
 void TransFuncEditorIntensity::saveTransferFunction() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     QStringList filter;
     for (size_t i = 0; i < transferFuncIntensity_->getSaveFileFormats().size(); ++i) {
         std::string temp = "transfer function (*." + transferFuncIntensity_->getSaveFileFormats()[i] + ")";
@@ -349,9 +372,13 @@ void TransFuncEditorIntensity::saveTransferFunction() {
 }
 
 void TransFuncEditorIntensity::updateTransferFunction() {
-    transferFuncIntensity_->textureUpdateNeeded();
+
+    if (!transferFuncIntensity_)
+        return;
+
+    transferFuncIntensity_->invalidateTexture();
     property_->notifyChange();
-    emit transferFunctionChanged();    
+    emit transferFunctionChanged();
 }
 
 void TransFuncEditorIntensity::markerColorChanged(int h, int s, int v) {
@@ -429,6 +456,10 @@ void TransFuncEditorIntensity::upperThresholdSpinChanged(int value) {
 }
 
 void TransFuncEditorIntensity::applyThreshold() {
+
+    if (!transferFuncIntensity_)
+        return;
+
     float min = doubleSlider_->getMinValue();
     float max = doubleSlider_->getMaxValue();
     transCanvas_->setThreshold(min, max);
@@ -437,7 +468,25 @@ void TransFuncEditorIntensity::applyThreshold() {
     updateTransferFunction();
 }
 
-void TransFuncEditorIntensity::update() {
+void TransFuncEditorIntensity::updateFromProperty() {
+
+    tgtAssert(property_, "No property");
+
+    // check whether new transfer function object has been assigned
+    if (property_->get() != transferFuncIntensity_) {
+        transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(property_->get());
+        // propagate transfer function to mapping canvas and texture painter
+        texturePainter_->setTransFunc(transferFuncIntensity_);
+        transCanvas_->setTransFunc(transferFuncIntensity_);
+
+        if (property_->get() && !transferFuncIntensity_) {
+            if (isEnabled()) {
+                LWARNING("Current transfer function not supported by this editor. Disabling.");
+                setEnabled(false);
+            }
+        }
+    }
+
     // check whether the volume associated with the TransFuncProperty has changed
     VolumeHandle* newHandle = property_->getVolumeHandle();
     if (newHandle != volumeHandle_) {
@@ -446,17 +495,27 @@ void TransFuncEditorIntensity::update() {
     }
 
     if (transferFuncIntensity_) {
+        setEnabled(true);
+
         // update treshold widgets from tf
         restoreThresholds();
 
         // repaint control elements
         repaintAll();
     }
-    else
-        resetEditor();
+    else {
+        setEnabled(false);
+    }
+
 }
 
 void TransFuncEditorIntensity::restoreThresholds() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     tgt::vec2 thresh = transferFuncIntensity_->getThresholds();
     // set value for doubleSlider
     doubleSlider_->blockSignals(true);
@@ -502,6 +561,8 @@ void TransFuncEditorIntensity::restoreThresholds() {
 void TransFuncEditorIntensity::volumeChanged() {
     if (volumeHandle_ && volumeHandle_->getVolume()) {
         int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
+        if (bits > 16)
+            bits = 16; // handle float data as if it was 16 bit to prevent overflow
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
         if (maxNew != maximumIntensity_) {
             float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
@@ -519,10 +580,10 @@ void TransFuncEditorIntensity::volumeChanged() {
             upperThresholdSpin_->updateGeometry();
             upperThresholdSpin_->blockSignals(false);
         }
-    }
 
-    // propagate new volume to transfuncMappingCanvas
-    transCanvas_->volumeChanged(volumeHandle_);
+        // propagate new volume to transfuncMappingCanvas
+        transCanvas_->volumeChanged(volumeHandle_);
+    }
 }
 
 void TransFuncEditorIntensity::resetEditor() {
@@ -546,8 +607,8 @@ void TransFuncEditorIntensity::resetEditor() {
 }
 
 void TransFuncEditorIntensity::repaintAll() {
-    transCanvas_->repaint();
-    doubleSlider_->repaint();
+    transCanvas_->update();
+    doubleSlider_->update();
     textureCanvas_->update();
 }
 
@@ -559,7 +620,7 @@ void TransFuncEditorIntensity::setTransFuncProp(TransFuncProperty* prop) {
     transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(prop->get());
     texturePainter_->setTransFunc(transferFuncIntensity_);
     transCanvas_->setTransFunc(transferFuncIntensity_);
-    update();
+    updateFromProperty();
 }
 
 const TransFuncProperty* TransFuncEditorIntensity::getTransFuncProp() const {

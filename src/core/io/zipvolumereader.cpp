@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,12 +29,15 @@
 
 #include "voreen/core/io/zipvolumereader.h"
 
-#include "voreen/core/application.h"
+#include "voreen/core/voreenapplication.h"
 #include "voreen/core/io/datvolumereader.h" // used to determine related .raw file name
 #include "voreen/core/io/ioprogress.h"
-#include "voreen/core/io/multivolumereader.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
+
+#ifdef VRN_MODULE_BASE
+#include "voreen/modules/base/io/multivolumereader.h"
+#endif
 
 #include "tgt/ziparchive.h"
 #include <fstream>
@@ -105,9 +108,14 @@ VolumeHandle* ZipVolumeReader::read(const VolumeOrigin& origin)
     return result;
 }
 
-VolumeCollection* ZipVolumeReader::read(const std::string& fileName)
+VolumeCollection* ZipVolumeReader::read(const std::string& url)
     throw (tgt::FileException, std::bad_alloc)
 {
+
+#ifdef VRN_MODULE_BASE
+    VolumeOrigin origin(url);
+    std::string fileName = origin.getPath();
+
     tgt::ZipArchive zip(fileName);
 
     std::string temporaryPath = VoreenApplication::app()->getTemporaryPath();
@@ -144,6 +152,10 @@ VolumeCollection* ZipVolumeReader::read(const std::string& fileName)
         tgt::FileSystem::deleteFile(temporaryPath + "/" + files[i]);
 
     return volumeCollection;
+#else
+    LERROR("Unable to load " << url << " (core module required)");
+    return 0;
+#endif
 }
 
 VolumeOrigin ZipVolumeReader::convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const {
@@ -178,6 +190,10 @@ VolumeOrigin ZipVolumeReader::convertOriginToAbsolutePath(const VolumeOrigin& or
     }
     else
         return origin;
+}
+
+VolumeReader* ZipVolumeReader::create(IOProgress* progress) const {
+    return new ZipVolumeReader(0, progress);
 }
 
 } // namespace voreen

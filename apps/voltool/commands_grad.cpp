@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,10 +28,10 @@
  **********************************************************************/
 
 #include "commands_grad.h"
-#include "voreen/core/volume/gradient.h"
+#include "voreen/core/datastructures/volume/gradient.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumecollection.h"
 
 #include "tgt/exception.h"
 
@@ -54,7 +54,7 @@ bool CommandGrad::checkParameters(const std::vector<std::string>& parameters) {
     set.insert("26");
     set.insert("sobel");
     set.insert("sobelic");
-    return (parameters.size() == 3) && isValueInSet(parameters[0], &set);
+    return (parameters.size() == 3) && isValueInSet(parameters[0], set);
 }
 
 bool CommandGrad::execute(const std::vector<std::string>& parameters) {
@@ -68,7 +68,6 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     VolumeCollection* volumeCollection = serializer->load(parameters[1]);
     sourceDataset_ = volumeCollection->first()->getVolume();
 
-
     if (parameters[0] == "simple")
         targetDataset_ = calcGradients<tgt::col4>(sourceDataset_);
     else if (parameters[0] == "26")
@@ -80,16 +79,17 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
         VolumeSerializerPopulator volLoadPop;
         const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[2], targetDataset_);
-        delete serializer;
         delete targetDataset_;
     }
     else {
         LERROR("Failed to calculate target dataset!");
         delete sourceDataset_;
+    delete volumeCollection;
         return false;
     }
 
     delete sourceDataset_;
+    delete volumeCollection;
     return true;
 }
 
@@ -107,7 +107,7 @@ bool CommandFilterGrad::checkParameters(const std::vector<std::string>& paramete
     set.insert("mid");
     set.insert("weighted");
     set.insert("weightedic");
-    return ((parameters.size() == 4) && isValueInSet(parameters[0], &set));
+    return ((parameters.size() == 4) && isValueInSet(parameters[0], set));
 }
 
 bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
@@ -150,7 +150,6 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
         VolumeSerializerPopulator volLoadPop;
         const VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[3], targetDataset_);
-        delete serializer;
         delete targetDataset_;
     }
     else {
@@ -160,6 +159,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     }
 
     delete sourceDataset_;
+    delete volumeCollection;
     return true;
 }
 

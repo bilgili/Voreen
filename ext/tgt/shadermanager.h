@@ -101,7 +101,7 @@ public:
 
     bool isCompiled() const { return isCompiled_; }
 
-    std::string getCompilerLog();
+    std::string getCompilerLog() const;
 
     bool rebuildFromFile();
 
@@ -202,6 +202,7 @@ public:
 
     void setHeaders(const std::string& customHeader, bool processHeader = true);
 
+    GLint getID() {return id_;};
     /**
      * Activates the shader
      */
@@ -221,7 +222,7 @@ public:
 
     bool isLinked() { return isLinked_; }
 
-    std::string getLinkerLog();
+    std::string getLinkerLog() const;
 
     //
     // Uniform stuff
@@ -233,6 +234,7 @@ public:
     GLint getUniformLocation(const std::string& name);
     
     void setIgnoreUniformLocationError(bool ignoreError);
+    bool getIgnoreUniformLocationError();
 
     // Floats
     bool setUniform(const std::string& name, GLfloat value);

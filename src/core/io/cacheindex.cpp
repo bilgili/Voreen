@@ -1,10 +1,39 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #include "voreen/core/io/cache.h"
 
 #include "tgt/filesystem.h"
-#include "voreen/core/application.h"
+#include "voreen/core/voreenapplication.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/processors/processor.h"
 
 #include <iostream>
 #include <queue>
@@ -243,8 +272,8 @@ void CacheIndex::incrementRefCounter(const IndexKey& key) {
 
 std::string CacheIndex::insert(Processor* const processor, Port* const port,
                                            const std::string& objectClassName,
-                                           const std::string& inportConfig,
-                                           const std::string& filename)
+                                           const std::string& /*inportConfig*/,
+                                           const std::string& /*filename*/)
 {
     CacheIndex::CacheIndexEntry cie(processor->getClassName(), processor->getName(),
         port->getName(), objectClassName);
@@ -264,8 +293,8 @@ std::string CacheIndex::insert(Processor* const processor, Port* const port,
     //
     std::pair<EntryMap::iterator, bool> result1 = entries_.insert(std::make_pair(entryKey, cie));
     CacheIndex::CacheIndexEntry& entry = (result1.first)->second;
-    std::string subKey = entry.insert(processor->getState(), inportConfig,
-        filename);
+    std::string subKey; /* = entry.insert(processor->getState(), inportConfig,
+        filename); */
 
     // Take eventually displaced subentries in the current entry, make a copy of that
     // entry without its not-displaced subentries and add the DISPLACED subentries.
@@ -302,7 +331,7 @@ CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const processo
     return IndexKey(std::string("Processor{" + processor->getClassName()
         + "}.Outport{" + port->getName() + "}"),
         std::string ("InportConfig{" + inportConfig
-        + "}.State{" + processor->getState() + "}"));
+        + "}.State{" + /*processor->getState() +*/ "}"));
 }
 
 // private methods

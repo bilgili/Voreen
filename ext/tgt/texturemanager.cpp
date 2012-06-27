@@ -158,7 +158,7 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
             LERROR("Texture file not found: " + filename);
     }
     else {
-        LERROR("No matching reader found for " << ending << " while loading " << filename);
+        LERROR("No matching reader found for ending '" << ending << "' while loading " << filename);
     }
     
     return t;

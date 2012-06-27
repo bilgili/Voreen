@@ -139,7 +139,7 @@ class Trackball : public Navigation {
         ///
         /// use MouseEvent::NO_MOUSE_BUTTON as button to disable mouse rotation
         void setMouseRotate(MouseEvent::MouseButtons button = MouseEvent::MOUSE_BUTTON_LEFT,
-                            int mod = Event::NONE);
+                            int mod = Event::MODIFIER_NONE);
         /// let trackball react on key pressures with rotating
         /// @param acuteness The per-keypress angle of rotation will be smaller at greater acuteness. Use acuteness = 0.f to disable key rotation.
         /// @param left, right, up, down keycode which should cause suitable rotation
@@ -150,14 +150,14 @@ class Trackball : public Navigation {
                           KeyEvent::KeyCode right = KeyEvent::K_RIGHT,
                           KeyEvent::KeyCode up    = KeyEvent::K_UP,
                           KeyEvent::KeyCode down  = KeyEvent::K_DOWN,
-                          int mod = Event::NONE,
+                          int mod = Event::MODIFIER_NONE,
                           bool pressed = false);
         /// let trackball react on mouse movements when button is pressed and modifiers are suitable
         /// to mod with moving
         ///
         /// use MouseEvent::NO_MOUSE_BUTTON as button to disable mouse movement
         void setMouseMove(MouseEvent::MouseButtons button = MouseEvent::MOUSE_BUTTON_LEFT,
-                          int mod = Event::LSHIFT);
+                          int mod = Event::SHIFT);
         /// let trackball react on key presses with moving
         /// @param acuteness The per-keypress length of movement will be smaller at greater
         ///        acuteness. Use acuteness = 0.f to disable key rotation.
@@ -189,7 +189,7 @@ class Trackball : public Navigation {
         /// @param wheelUpZoomIn zoom in on wheel up and out on wheel down when true, otherwise when
         ///        false
         void setMouseWheelZoom(float acuteness = 10.f, bool wheelUpZoomIn = true,
-                               int mod = Event::NONE);
+                               int mod = Event::MODIFIER_NONE);
         /// @param acuteness The zoom factor will be smaller at greater acuteness. Use acuteness = 0.f to disable key rotation.
         void setKeyZoom(float acuteness = 10.f,
                         KeyEvent::KeyCode in  = KeyEvent::K_UP,
@@ -351,7 +351,7 @@ class Trackball : public Navigation {
     
         void initializeEventHandling() {
             mouseRotateButton_ = mouseMoveButton_ = mouseZoomButton_ = mouseRollButton_ 
-                = MouseEvent::NO_MOUSE_BUTTON;
+                = MouseEvent::MOUSE_BUTTON_NONE;
             keyRotateLeft_ = keyRotateRight_ = keyRotateUp_ = keyRotateDown_
                 = keyMoveLeft_ = keyMoveRight_ = keyMoveUp_ = keyMoveDown_
                 = keyZoomIn_ = keyZoomOut_

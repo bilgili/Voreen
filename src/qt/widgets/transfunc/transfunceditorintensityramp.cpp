@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,8 +35,8 @@
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvasramp.h"
 #include "voreen/qt/widgets/transfunc/transfunctexturepainter.h"
 
-#include "voreen/core/vis/transfunc/transfuncintensity.h"
-#include "voreen/core/volume/volume.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #include "tgt/logmanager.h"
 #include "tgt/qt/qtcanvas.h"
@@ -54,7 +54,7 @@
 
 namespace voreen {
 
-const std::string TransFuncEditorIntensityRamp::loggerCat_("voreen.qt.transfunceditorintensityramp");
+const std::string TransFuncEditorIntensityRamp::loggerCat_("voreen.qt.TransFuncEditorIntensityRamp");
 
 TransFuncEditorIntensityRamp::TransFuncEditorIntensityRamp(TransFuncProperty* prop, QWidget* parent,
                                                            Qt::Orientation orientation)
@@ -156,18 +156,10 @@ QLayout* TransFuncEditorIntensityRamp::createButtonLayout() {
     saveButton_->setIcon(QIcon(":/icons/save.png"));
     saveButton_->setToolTip(tr("Save transfer function"));
 
-    //if (property_->getManualRepaint()) {
-        //repaintButton_ = new QToolButton();
-        //repaintButton_->setIcon(QIcon(":/icons/view-refresh.png"));
-        //repaintButton_->setToolTip(tr("Repaint the volume rendering"));
-    //}
-
     buttonLayout->setSpacing(0);
     buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
-    //if (property_->getManualRepaint())
-        //buttonLayout->addWidget(repaintButton_);
     buttonLayout->addStretch();
 
     return buttonLayout;
@@ -268,8 +260,6 @@ void TransFuncEditorIntensityRamp::createConnections() {
     connect(clearButton_, SIGNAL(clicked()), this, SLOT(clearButtonClicked()));
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
-    //if (property_->getManualRepaint())
-        //connect(repaintButton_, SIGNAL(clicked()), this, SLOT(causeVolumeRenderingRepaint()));
 
     // signals from transferMappingCanvas
     connect(transCanvas_, SIGNAL(changed()), this, SLOT(updateTransferFunction()));
@@ -330,6 +320,12 @@ void TransFuncEditorIntensityRamp::clearButtonClicked() {
 }
 
 void TransFuncEditorIntensityRamp::resetTransferFunction() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     transferFuncIntensity_->createStdFunc();
 
     float rampCenter, rampWidth;
@@ -341,6 +337,12 @@ void TransFuncEditorIntensityRamp::resetTransferFunction() {
 }
 
 void TransFuncEditorIntensityRamp::resetThresholds() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     lowerThresholdSpin_->blockSignals(true);
     lowerThresholdSpin_->setValue(0);
     lowerThresholdSpin_->blockSignals(false);
@@ -358,6 +360,12 @@ void TransFuncEditorIntensityRamp::resetThresholds() {
 }
 
 void TransFuncEditorIntensityRamp::loadTransferFunction() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     //create filter with supported file formats
     QString filter = "transfer function (";
     for (size_t i = 0; i < transferFuncIntensity_->getLoadFileFormats().size(); ++i) {
@@ -391,6 +399,12 @@ void TransFuncEditorIntensityRamp::loadTransferFunction() {
 }
 
 void TransFuncEditorIntensityRamp::saveTransferFunction() {
+
+    if (!transferFuncIntensity_) {
+        LWARNING("No valid transfer function assigned");
+        return;
+    }
+
     QStringList filter;
     for (size_t i = 0; i < transferFuncIntensity_->getSaveFileFormats().size(); ++i) {
         std::string temp = "transfer function (*." + transferFuncIntensity_->getSaveFileFormats()[i] + ")";
@@ -409,7 +423,12 @@ void TransFuncEditorIntensityRamp::saveTransferFunction() {
 }
 
 void TransFuncEditorIntensityRamp::updateTransferFunction() {
-    transferFuncIntensity_->textureUpdateNeeded();
+
+    if (!transferFuncIntensity_) {
+        return;
+    }
+
+    transferFuncIntensity_->invalidateTexture();
 
     // syncronize ramp slider and spinboxes
     float rampCenter, rampWidth;
@@ -496,6 +515,11 @@ void TransFuncEditorIntensityRamp::upperThresholdSpinChanged(int value) {
 }
 
 void TransFuncEditorIntensityRamp::applyThreshold() {
+
+    if (!transferFuncIntensity_) {
+        return;
+    }
+
     float min = doubleSlider_->getMinValue();
     float max = doubleSlider_->getMaxValue();
     transCanvas_->setThreshold(min, max);
@@ -504,7 +528,29 @@ void TransFuncEditorIntensityRamp::applyThreshold() {
     updateTransferFunction();
 }
 
-void TransFuncEditorIntensityRamp::update() {
+void TransFuncEditorIntensityRamp::updateFromProperty() {
+
+    // check whether new transfer function object has been assigned
+    if (property_->get() != transferFuncIntensity_) {
+        transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(property_->get());
+
+        // ramp only applicable for two keys
+        if (transferFuncIntensity_ && transferFuncIntensity_->getNumKeys() > 2)
+            transferFuncIntensity_ = 0;
+
+        // propagate transfer function to mapping canvas and texture painter
+        texturePainter_->setTransFunc(transferFuncIntensity_);
+        transCanvas_->setTransFunc(transferFuncIntensity_);
+
+        // disable, if tf type unsupported
+        if (property_->get() && !transferFuncIntensity_) {
+            if (isEnabled()) {
+                LWARNING("Current transfer function not supported by this editor. Disabling.");
+                setEnabled(false);
+            }
+        }
+    }
+
     // check whether the volume associated with the TransFuncProperty has changed
     VolumeHandle* newHandle = property_->getVolumeHandle();
     if (newHandle != volumeHandle_) {
@@ -513,14 +559,7 @@ void TransFuncEditorIntensityRamp::update() {
     }
 
     if (transferFuncIntensity_) {
-        if (transferFuncIntensity_->getNumKeys() > 2) {
-            LINFO("The loaded transfer function is not supported by this editor."
-                  << "Resetting transfer function to default.");
-            resetTransferFunction();
-
-            property_->notifyChange();
-            emit transferFunctionChanged();
-        }
+        setEnabled(true);
 
         // update treshold widgets from tf
         restoreThresholds();
@@ -528,8 +567,10 @@ void TransFuncEditorIntensityRamp::update() {
         // repaint control elements
         repaintAll();
     }
-    else
-        resetEditor();
+    else {
+        setEnabled(false);
+    }
+
 }
 
 void TransFuncEditorIntensityRamp::volumeChanged() {
@@ -578,6 +619,11 @@ void TransFuncEditorIntensityRamp::volumeChanged() {
 }
 
 void TransFuncEditorIntensityRamp::restoreThresholds() {
+
+    if (!transferFuncIntensity_) {
+        return;
+    }
+
     tgt::vec2 thresh = transferFuncIntensity_->getThresholds();
     // set value for doubleSlider
     doubleSlider_->blockSignals(true);
@@ -698,8 +744,8 @@ void TransFuncEditorIntensityRamp::resetEditor() {
 }
 
 void TransFuncEditorIntensityRamp::repaintAll() {
-    transCanvas_->repaint();
-    doubleSlider_->repaint();
+    transCanvas_->update();
+    doubleSlider_->update();
     textureCanvas_->update();
 }
 
@@ -715,7 +761,7 @@ void TransFuncEditorIntensityRamp::setTransFuncProp(TransFuncProperty* prop) {
     transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(prop->get());
     texturePainter_->setTransFunc(transferFuncIntensity_);
     transCanvas_->setTransFunc(transferFuncIntensity_);
-    update();
+    updateFromProperty();
 
 }
 

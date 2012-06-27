@@ -1,9 +1,38 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_FLOWSLICERENDERER_H
 #define VRN_FLOWSLICERENDERER_H
 
-#include "voreen/core/vis/processors/renderprocessor.h"
-#include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/processors/renderprocessor.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
 #include "voreen/modules/flowreen/colorcodingability.h"
 #include "voreen/modules/flowreen/flowreenprocessor.h"
 
@@ -25,8 +54,8 @@ public:
     FlowSliceRenderer();
     virtual ~FlowSliceRenderer();
 
-    virtual std::string getModuleName() const { return "flowreen"; }
     virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
 protected:
     enum SliceAlignment {
@@ -119,7 +148,7 @@ protected:
      * @param   thresholds  Lower and upper threshold for the flow magnitudes which
      *                      shall be rendered. The thresholds are absolute values
      *                      of the magnitudes from the input flow texture. Magnitudes
-     *                      not within the range of the thresholds will be dropped 
+     *                      not within the range of the thresholds will be dropped
      *                      during texture generation.
      */
     tgt::Texture* renderArrowPlotTexture(const Flow2D& flow, const tgt::vec2& textureSize,
@@ -142,7 +171,7 @@ protected:
      * @param   thresholds  Lower and upper threshold for the flow magnitudes which
      *                      shall be rendered. The thresholds are absolute values
      *                      of the magnitudes from the input flow texture. Magnitudes
-     *                      not within the range of the thresholds will be dropped 
+     *                      not within the range of the thresholds will be dropped
      *                      during texture generation.
      * @param   projected   Determines whether the calculations are performed on
      *                      the 3D texture and are projected afterwards (in case
@@ -164,14 +193,14 @@ protected:
      *                  generated.
      * @param   textureScaling  Determines the magnification of the output texture
      *                          according to the input flow texture respectively to
-     *                          size of the slice taken from it. A value of 2 for 
+     *                          size of the slice taken from it. A value of 2 for
      *                          instance will generate a texture of double input size.
      *                          This parameter may not be negative.
      * @param   technique   Determines the technique to be used for texutre generation.
      * @param   thresholds  Lower and upper threshold for the flow magnitudes which
      *                      shall be rendered. The thresholds are absolute values
      *                      of the magnitudes from the input flow texture. Magnitudes
-     *                      not within the range of the thresholds will be dropped 
+     *                      not within the range of the thresholds will be dropped
      *                      during texture generation.
      */
     tgt::Texture* renderFlowTexture(const Flow3D& flow, const size_t sliceNo,
@@ -190,7 +219,7 @@ protected:
      *                      for internal calculations, e.g. the spot size.
      * @param   tempPorts   Renderports used for texture generation. This parameter
      *                      must be supplied by the caller and should be a vector of
-     *                      private rendering ports to avoid resource conflicts during 
+     *                      private rendering ports to avoid resource conflicts during
      *                      rendering.
      * @param   projected   Determines whether the calculations are performed on
      *                      the 3D texture and are projected afterwards (in case
@@ -228,7 +257,7 @@ protected:
     virtual std::string generateShaderHeader() const;
 
     bool loadShader(const std::string& vertexShaderName, const std::string& fragmentShaderName);
-    
+
     bool rebuildShader();
 
 private:

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -91,7 +91,7 @@ public:
      * Tests whether the volume associated with the transFuncProperty has changed and updates
      * the editor to the new volume when necessary.
      */
-    void update();
+    void updateFromProperty();
 
     /**
      * Updates the histogram and minimum and maximum threshold values. Additionally the volume

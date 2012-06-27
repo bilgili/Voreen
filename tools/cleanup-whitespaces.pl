@@ -6,8 +6,8 @@ use warnings;
 use File::Find;
 use File::Copy;
 
-my @dirs = qw(src include apps/glutexample apps/voreenve apps/simple apps/voltool apps/voreenve);
-my $interesting = 'cpp|h|frag|vert';
+my @dirs = qw(src include apps/voreenve apps/simple apps/tests apps/voltool);
+my $interesting = 'cpp|h|frag|vert|cu|cl';
 my $skip_dirs = '\.svn|\.moc|\.obj|\.ui';
 
 chdir('..');

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,7 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/io/volumereader.h"
-#include "voreen/core/volume/volume.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #include <fstream>
 

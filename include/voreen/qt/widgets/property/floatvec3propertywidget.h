@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,9 +30,12 @@
 #ifndef VRN_FLOATVEC3PROPERTYWIDGET_H
 #define VRN_FLOATVEC3PROPERTYWIDGET_H
 
-#include "voreen/core/vis/properties/vectorproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 #include "voreen/qt/widgets/property/floatpropertywidget.h"
 #include "voreen/qt/widgets/property/vecpropertywidget.h"
+
+#include <QMenu>
+#include <QMouseEvent>
 
 namespace voreen {
 
@@ -40,6 +43,9 @@ class FloatVec3PropertyWidget: public VecPropertyWidget<DoubleSliderSpinBoxWidge
 Q_OBJECT
 public:
     FloatVec3PropertyWidget(FloatVec3Property* prop, QWidget* parent = 0);
+
+protected:
+    void mousePressEvent(QMouseEvent*);
 
 public slots:
     void setProperty(double value);

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,6 +27,12 @@
  *                                                                    *
  **********************************************************************/
 
+#ifdef VRN_WITH_PYTHON
+// Must come first!
+#include "tgt/scriptmanager.h"
+#include "voreen/core/utils/pyvoreen.h"
+#endif // VRN_WITH_PYTHON
+
 #include "voreenmainwindow.h"
 
 #include "tgt/gpucapabilities.h"
@@ -34,41 +40,36 @@
 #include "tgt/ziparchive.h"
 #include "tgt/qt/qtcanvas.h"
 
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/network/processornetwork.h"
-#include "voreen/core/vis/processors/processorfactory.h"
+#include "voreen/core/processors/processor.h"
+#include "voreen/core/network/processornetwork.h"
+#include "voreen/core/processors/processorfactory.h"
 
-#include "voreen/core/vis/workspace/workspace.h"
-#include "voreen/core/vis/network/networkevaluator.h"
-#include "voreen/core/vis/processors/image/canvasrenderer.h"
+#include "voreen/core/network/workspace.h"
+#include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/processors/canvasrenderer.h"
 
-#include "voreen/core/volume/volumecontainer.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
 
 #include "voreen/qt/aboutbox.h"
 #include "voreen/qt/helpbrowser.h"
-#include "voreen/qt/widgets/animationplugin.h"
+
 #include "voreen/qt/widgets/consoleplugin.h"
-#include "voreen/qt/widgets/segmentationplugin.h"
-#include "voreen/qt/widgets/shortcutpreferenceswidget.h"
-#include "voreen/qt/widgets/rendertargetdebugwidget.h"
+#include "voreen/qt/widgets/linkingscriptmanager.h"
+#include "voreen/qt/widgets/inputmappingdialog.h"
+#include "voreen/qt/widgets/rendertargetviewer.h"
 #include "voreen/qt/widgets/volumecontainerwidget.h"
 #include "voreen/qt/widgets/voreentoolwindow.h"
-#include "voreen/qt/widgets/animationplugin.h"
+#include "voreen/qt/widgets/animation/animationeditor.h"
 #include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
 #include "voreen/qt/widgets/processor/canvasrendererwidget.h"
 
-#include "voreen/qt/widgets/network/processorlistwidget.h"
-#include "voreen/qt/widgets/network/propertylistwidget.h"
-#include "voreen/qt/widgets/network/editor/networkeditor.h"
+#include "voreen/qt/widgets/processorlistwidget.h"
+#include "voreen/qt/widgets/propertylistwidget.h"
+#include "networkeditor/networkeditor.h"
 
-#include "voreen/core/application.h"
+#include "voreen/core/voreenapplication.h"
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/core/version.h"
-
-#ifdef VRN_WITH_PYTHON
-#include "tgt/scriptmanager.h"
-#include "voreen/core/vis/pyvoreen.h"
-#endif // VRN_WITH_PYTHON
 
 #include <QVariant>
 
@@ -82,8 +83,39 @@ const int MAX_RECENT_FILES = 5;
 // Increase when incompatible changes happen.
 const int WINDOW_STATE_VERSION = 11;
 
-
 } // namespace
+
+////////// VoreenSplashScreen //////////////////////////////////////////////////////////
+
+VoreenSplashScreen::VoreenSplashScreen()
+    : QSplashScreen()
+{
+    pixmap_ = new QPixmap(":/voreenve/image/splash.png");
+    setPixmap(*pixmap_);
+}
+
+VoreenSplashScreen::~VoreenSplashScreen() {
+    delete pixmap_;
+}
+
+void VoreenSplashScreen::drawContents(QPainter* painter) {
+    painter->setPen(Qt::white);
+    QRect r = rect();
+
+    r.setRect(r.x() + 21, r.y() + 95, r.width() - 10, r.height() - 10);
+    std::string version = "Version " + VoreenVersion::getVersion();
+    painter->drawText(r, Qt::AlignLeft, version.c_str());
+
+    r = rect();
+    //r.setRect(r.x() + 116, r.y(), r.x() + 300, r.height() - 13);
+    r.setRect(r.x() + 3, r.y(), r.x() + 300, r.height() - 2);
+    painter->drawText(r, Qt::AlignLeft | Qt::AlignBottom, message_);
+}
+
+void VoreenSplashScreen::showMessage(const QString& message) {
+    message_ = message;
+    QSplashScreen::showMessage(message);
+}
 
 ////////// VoreenMdiSubWindow //////////////////////////////////////////////////////////
 
@@ -196,10 +228,16 @@ protected:
 VoreenMainWindow::VoreenMainWindow(const std::string& workspace, const std::string& dataset)
     : QMainWindow()
     , guiMode_(MODE_NONE)
+    , animationEditor_(0)
     , resetSettings_(false)
     , canvasPos_(0, 0)
     , canvasSize_(0, 0)
 {
+
+#ifdef MICRO_MODE
+    resetSettings_ = true;
+#endif
+
     setDockOptions(QMainWindow::AnimatedDocks); // disallow tabbed docks
 
     // initialialize the console early so it gets all the interesting messages
@@ -222,7 +260,7 @@ VoreenMainWindow::VoreenMainWindow(const std::string& workspace, const std::stri
     // show tooltips (for icons in toolbar) even if the window is inactive, as often the case
     // when a canvas window is active
     setAttribute(Qt::WA_AlwaysShowToolTips);
-    
+
     ignoreWindowTitleModified_ = true;
     updateWindowTitle();
 }
@@ -232,9 +270,13 @@ VoreenMainWindow::~VoreenMainWindow() {
 
     delete propertyListWidget_;             // needs to be deleted before properties and thus processors
     delete vis_;
+    delete consolePlugin_;
 }
 
-void VoreenMainWindow::init() {
+void VoreenMainWindow::init(VoreenSplashScreen* splash) {
+    if (splash)
+        splash->showMessage("Initializing OpenGL...");
+
     // initGL requires a valid OpenGL context
     sharedContext_ = new tgt::QtCanvas("Init Canvas", tgt::ivec2(32, 32), tgt::GLCanvas::RGBADD, this, true);
     sharedContext_->init(); //neccessary?
@@ -242,7 +284,6 @@ void VoreenMainWindow::init() {
     VoreenApplication::app()->initGL();
 
     sharedContext_->hide();
-
 
     // some hardware/driver checks
     if (GpuCaps.getVendor() != GpuCaps.GPU_VENDOR_NVIDIA && GpuCaps.getVendor() != GpuCaps.GPU_VENDOR_ATI) {
@@ -291,10 +332,14 @@ void VoreenMainWindow::init() {
         qApp->processEvents();
     }
 
-
+    if (splash)
+        splash->showMessage("Creating visualization...");
 
     // create visualization object
     vis_ = new VoreenVisualization(sharedContext_);
+
+    if (splash)
+        splash->showMessage("Creating GUI...");
 
     // mdi area
     mdiArea_ = new QMdiArea(this);
@@ -304,44 +349,71 @@ void VoreenMainWindow::init() {
     // create tool windows now, after everything is initialized, but before window settings are restored
     createMenus();
     createToolBars();
-    createToolWindows();
 
     // signals indicating a change in network
     connect(vis_, SIGNAL(networkModified(ProcessorNetwork*)), this, SLOT(adjustSnapshotMenu()));
     connect(vis_, SIGNAL(newNetwork(ProcessorNetwork*)), this, SLOT(adjustSnapshotMenu()));
-    connect(networkEditorWidget_, SIGNAL(pasteSignal()), this, SLOT(adjustSnapshotMenu()));
-    connect(vis_, SIGNAL(modified()), this, SLOT(networkModified()));    
-
+    //connect(vis_, SIGNAL(modified()), this, SLOT(networkModified()));
+    createToolWindows();
     qApp->processEvents();
 
     // restore session
-    if (resetSettings_) {
+    /*if (resetSettings_) {
         QMessageBox::information(this, tr("VoreenVE"), tr("Configuration reset."));
         qApp->processEvents();
         resetSettings_ = false;
-    }
+    }*/
     loadWindowSettings();
+
+#ifdef MICRO_MODE
+    // restricted gui mode for voreenmicro
+    guiMode_ = MODE_VISUALIZATION;
+
+    fileToolBar_->setVisible(false);
+    toolsToolBar_->setVisible(false);
+    viewToolBar_->setVisible(false);
+    actionToolBar_->setVisible(false);
+
+    modeVisualizationAction_->setEnabled(false);
+    modeNetworkAction_->setEnabled(false);
+    processorListAction_->setEnabled(false);
+
+    importNetworkAction_->setEnabled(false);
+    exportNetworkAction_->setEnabled(false);
+    workspaceExtractAction_->setEnabled(false);
+
+    openDatasetAction_->setEnabled(false);
+    openDicomFilesAct_->setEnabled(false);
+    workspaceNewAction_->setEnabled(false);
+
+    volumeContainerTool_->setEnabled(false);
+
+    currentWorkspace_ = QString::fromStdString(VoreenApplication::app()->getWorkspacePath("voreenmicro.vws"));
+
+    setMinimumSize(900, 450);
+#endif
+
     setGuiMode(guiMode_);
+
+    if (splash)
+        splash->showMessage("Loading workspace...");
 
     //
     // now the GUI is complete
     //
     if (!currentWorkspace_.isEmpty()) {
-        // load an initial workspace
+        // load workspace passed as program parameter
         openWorkspace(currentWorkspace_);
     }
-    else if (!lastWorkspace_.isEmpty() && loadLastWorkspace_) {
-        // load last workspace
+    else if (!lastWorkspace_.isEmpty() && loadLastWorkspace_ && startupWorkspace_) {
+        // load last workspace, but only if loading has been successful last time
         openWorkspace(lastWorkspace_);
     }
     else {
         // load an initial workspace
         openWorkspace(VoreenApplication::app()->getWorkspacePath("standard.vws").c_str());
     }
-
-    // adjust canvas widgets (created during workspace load) to visualization mode
-    if (guiMode_ == MODE_VISUALIZATION)
-        adjustCanvasWidgets(MODE_VISUALIZATION);
+    startupComplete("workspace");
 
     // load an initial dataset
     if (!defaultDataset_.isEmpty())
@@ -359,36 +431,42 @@ void VoreenMainWindow::createMenus() {
     fileMenu_ = menu_->addMenu(tr("&File"));
 
     // Workspace
-    workspaceNewAction_ = new QAction(QIcon(":/voreenve/icons/clear.png"), tr("New Workspace"),  this);
+    workspaceNewAction_ = new QAction(QIcon(":/voreenve/icons/clear.png"), tr("&New Workspace"),  this);
     workspaceNewAction_->setShortcut(QKeySequence::New);
     connect(workspaceNewAction_, SIGNAL(triggered()), this, SLOT(newWorkspace()));
     fileMenu_->addAction(workspaceNewAction_);
 
-    workspaceOpenAction_ = new QAction(QIcon(":/voreenve/icons/open.png"), tr("Open Workspace..."),  this);
+    workspaceOpenAction_ = new QAction(QIcon(":/voreenve/icons/open.png"), tr("&Open Workspace..."),  this);
     workspaceOpenAction_->setShortcut(QKeySequence::Open);
     connect(workspaceOpenAction_, SIGNAL(triggered()), this, SLOT(openWorkspace()));
     fileMenu_->addAction(workspaceOpenAction_);
 
-    workspaceSaveAction_ = new QAction(QIcon(":/voreenve/icons/save.png"), tr("Save Workspace"),  this);
+    workspaceSaveAction_ = new QAction(QIcon(":/voreenve/icons/save.png"), tr("&Save Workspace"),  this);
     workspaceSaveAction_->setShortcut(QKeySequence::Save);
     connect(workspaceSaveAction_, SIGNAL(triggered()), this, SLOT(saveWorkspace()));
     fileMenu_->addAction(workspaceSaveAction_);
 
 
-    workspaceSaveAsAction_ = new QAction(QIcon(":/voreenve/icons/saveas.png"), tr("Save Workspace As..."),  this);
+    workspaceSaveAsAction_ = new QAction(QIcon(":/voreenve/icons/saveas.png"), tr("Save Workspace &As..."),  this);
     connect(workspaceSaveAsAction_, SIGNAL(triggered()), this, SLOT(saveWorkspaceAs()));
     fileMenu_->addAction(workspaceSaveAsAction_);
 
     fileMenu_->addSeparator();
 
     // Volumes
-    openDatasetAction_ = new QAction(QIcon(":/voreenve/icons/open-volume.png"), tr("Load Volume..."), this);
+    openDatasetAction_ = new QAction(QIcon(":/voreenve/icons/open-volume.png"), tr("Load &Volume..."), this);
     openDatasetAction_->setStatusTip(tr("Load a volume data set"));
-    openDatasetAction_->setShortcut(tr("Ctrl+L"));
+    openDatasetAction_->setShortcut(tr("Ctrl+V"));
     connect(openDatasetAction_, SIGNAL(triggered()), this, SLOT(openDataset()));
     fileMenu_->addAction(openDatasetAction_);
 
-    openDicomFilesAct_ = new QAction(QIcon(":/voreenve/icons/open-dicom.png"), tr("Load DICOM Slices..."), this);
+    openRawDatasetAction_ = new QAction(QIcon(":/voreenve/icons/open-volume.png"), tr("Load &Raw Volume..."), this);
+    openRawDatasetAction_->setStatusTip(tr("Load a raw volume data set"));
+    openRawDatasetAction_->setShortcut(tr("Ctrl+R"));
+    connect(openRawDatasetAction_, SIGNAL(triggered()), this, SLOT(openRawDataset()));
+    fileMenu_->addAction(openRawDatasetAction_);
+
+    openDicomFilesAct_ = new QAction(QIcon(":/voreenve/icons/open-dicom.png"), tr("Load &DICOM Slices..."), this);
     openDicomFilesAct_->setStatusTip(tr("Load DICOM slices"));
     openDicomFilesAct_->setToolTip(tr("Load DICOM files containing individual slices"));
     connect(openDicomFilesAct_, SIGNAL(triggered()), this, SLOT(buttonAddDICOMClicked()));
@@ -399,17 +477,17 @@ void VoreenMainWindow::createMenus() {
 #ifdef VRN_WITH_ZLIB
     // ZIP-Workspaces
     workspaceExtractAction_ = new QAction(QIcon(":/voreenve/icons/extract-workspace.png"),
-        tr("Extract Workspace Archive..."), this);
+                                          tr("&Extract Workspace Archive..."), this);
     connect(workspaceExtractAction_, SIGNAL(triggered()), this, SLOT(extractZippedWorkspace()));
     fileMenu_->addAction(workspaceExtractAction_);
 #endif // VRN_WITH_ZLIB
 
     // Network
-    importNetworkAction_ = new QAction(QIcon(":/voreenve/icons/import.png"), tr("Import Network..."), this);
+    importNetworkAction_ = new QAction(QIcon(":/voreenve/icons/import.png"), tr("&Import Network..."), this);
     connect(importNetworkAction_, SIGNAL(triggered()), this, SLOT(openNetwork()));
     fileMenu_->addAction(importNetworkAction_);
 
-    exportNetworkAction_ = new QAction(QIcon(":/voreenve/icons/export.png"), tr("Export Network..."), this);
+    exportNetworkAction_ = new QAction(QIcon(":/voreenve/icons/export.png"), tr("E&xport Network..."), this);
     connect(exportNetworkAction_, SIGNAL(triggered()), this, SLOT(saveNetworkAs()));
     fileMenu_->addAction(exportNetworkAction_);
 
@@ -438,12 +516,12 @@ void VoreenMainWindow::createMenus() {
     viewMenu_ = menu_->addMenu(tr("&View"));
 
     modeNetworkAction_ = new QAction(QIcon(":/voreenve/icons/development-mode.png"),
-                                     tr("Development Mode"), this);
+                                     tr("&Development Mode"), this);
     modeNetworkAction_->setCheckable(true);
     modeNetworkAction_->setShortcut(tr("F2"));
 
     modeVisualizationAction_ = new QAction(QIcon(":/voreenve/icons/visualization-mode.png"),
-                                           tr("Visualization Mode"), this);
+                                           tr("&Visualization Mode"), this);
     modeVisualizationAction_->setCheckable(true);
     modeVisualizationAction_->setShortcut(tr("F3"));
 
@@ -462,7 +540,7 @@ void VoreenMainWindow::createMenus() {
     //
     toolsMenu_ = menu_->addMenu(tr("&Tools"));
 
-    snapshotAction_ = new QAction(QIcon(":/voreenve/icons/make-snapshot.png"), "Snapshot", this);
+    snapshotAction_ = new QAction(QIcon(":/voreenve/icons/make-snapshot.png"), "&Snapshot", this);
     snapshotAction_->setData(0);
     QMenu* snapshotMenu = new QMenu(this);
     snapshotAction_->setMenu(snapshotMenu);
@@ -475,7 +553,7 @@ void VoreenMainWindow::createMenus() {
     // Action menu
     //
     actionMenu_ = menu_->addMenu(tr("&Action"));
-    rebuildShadersAction_ = new QAction(QIcon(":/voreenve/icons/rebuild.png"), tr("Rebuild Shaders"),  this);
+    rebuildShadersAction_ = new QAction(QIcon(":/voreenve/icons/rebuild.png"), tr("&Rebuild Shaders"),  this);
     rebuildShadersAction_->setShortcut(tr("F5"));
     rebuildShadersAction_->setStatusTip(tr("Rebuilds all currently used shaders"));
     rebuildShadersAction_->setToolTip(tr("Rebuild all shaders"));
@@ -483,7 +561,7 @@ void VoreenMainWindow::createMenus() {
     actionMenu_->addAction(rebuildShadersAction_);
 
 #ifdef VRN_WITH_PYTHON
-    scriptAction_ = new QAction(QIcon(":/voreenve/icons/python.png"), tr("Run Python Script..."), this);
+    scriptAction_ = new QAction(QIcon(":/voreenve/icons/python.png"), tr("Run &Python Script..."), this);
     scriptAction_->setShortcut(tr("F7"));
     scriptAction_->setStatusTip(tr("Select and run a python script"));
     scriptAction_->setToolTip(tr("Run Python script"));
@@ -502,10 +580,6 @@ void VoreenMainWindow::createMenus() {
     connect(loadLastWorkspaceAct_, SIGNAL(triggered()), this, SLOT(setLoadLastWorkspace()));
     optionsMenu_->addAction(loadLastWorkspaceAct_);
 
-    setReuseTargetsAction_ = new QAction("Reuse TC targets (needs rebuild)", this);
-    setReuseTargetsAction_->setCheckable(true);
-    setReuseTargetsAction_->setChecked(false);
-
     //
     // Help menu
     //
@@ -518,15 +592,45 @@ void VoreenMainWindow::createMenus() {
 
     helpMenu_->addSeparator();
 
+    // Add some web links to the menu. Use the redirects (in the "go" directory) to be
+    // independent of website reorganization.
+    QAction* websiteAct = new QAction(tr("Voreen Website..."), this);
+    websiteAct->setData(tr("http://www.voreen.org/go/start"));
+    connect(websiteAct, SIGNAL(triggered()), this, SLOT(helpWebsite()));
+    helpMenu_->addAction(websiteAct);
+
+    QAction* videosAct = new QAction(tr("Video Tutorials..."), this);
+    videosAct->setData(tr("http://www.voreen.org/go/video-tutorials"));
+    connect(videosAct, SIGNAL(triggered()), this, SLOT(helpWebsite()));
+    helpMenu_->addAction(videosAct);
+
+    QAction* faqAct = new QAction(tr("FAQ..."), this);
+    faqAct->setData(tr("http://www.voreen.org/go/faq"));
+    connect(faqAct, SIGNAL(triggered()), this, SLOT(helpWebsite()));
+    helpMenu_->addAction(faqAct);
+
+    QAction* mailAct = new QAction(tr("Mailing List..."), this);
+    mailAct->setData(tr("http://www.voreen.org/go/mailinglist"));
+    connect(mailAct, SIGNAL(triggered()), this, SLOT(helpWebsite()));
+    helpMenu_->addAction(mailAct);
+
+    helpMenu_->addSeparator();
+
     aboutAction_ = new QAction(QIcon(":/voreenve/icons/about.png"), tr("&About VoreenVE..."), this);
     connect(aboutAction_, SIGNAL(triggered()), this, SLOT(helpAbout()));
     helpMenu_->addAction(aboutAction_);
 }
 
 void VoreenMainWindow::createToolBars() {
+#ifdef __APPLE__
+    const QSize iconSize = QSize(23,23);
+#endif
 
     // file toolbar
     fileToolBar_ = addToolBar(tr("File"));
+#ifdef __APPLE__
+    fileToolBar_->setIconSize(iconSize);
+#endif
     fileToolBar_->setObjectName("file-toolbar");
     fileToolBar_->addAction(workspaceNewAction_);
     fileToolBar_->addAction(workspaceOpenAction_);
@@ -535,6 +639,9 @@ void VoreenMainWindow::createToolBars() {
 
     // view toolbar
     viewToolBar_ = addToolBar(tr("View"));
+#ifdef __APPLE__
+    viewToolBar_->setIconSize(iconSize);
+#endif
     viewToolBar_->setObjectName("view-toolbar");
     QLabel* label = new QLabel(tr("   View  "));
     label->setObjectName("toolBarLabel");
@@ -546,6 +653,9 @@ void VoreenMainWindow::createToolBars() {
 
     // tools toolbar
     toolsToolBar_ = addToolBar(tr("Tools"));
+#ifdef __APPLE__
+    toolsToolBar_->setIconSize(iconSize);
+#endif
     toolsToolBar_->setObjectName("tools-toolbar");
     label = new QLabel(tr("   Tools "));
     label->setObjectName("toolBarLabel");
@@ -554,6 +664,10 @@ void VoreenMainWindow::createToolBars() {
 
     // action toolbar
     actionToolBar_ = addToolBar(tr("Action"));
+#ifdef __APPLE__
+    actionToolBar_->setIconSize(iconSize);
+#endif
+
     actionToolBar_->setObjectName("action-toolbar");
     label = new QLabel(tr("   Action "));
     label->setObjectName("toolBarLabel");
@@ -578,12 +692,6 @@ VoreenToolWindow* VoreenMainWindow::addToolWindow(QAction* action, QWidget* widg
     VoreenToolWindow* window = new VoreenToolWindow(action, this, widget, name, false);
     addDockWidget(Qt::LeftDockWidgetArea, window);
 
-    if (WidgetPlugin* plugin = dynamic_cast<WidgetPlugin*>(widget)) {
-        if (!plugin->usable(std::vector<Processor*>())) // not usable without processors?
-            action->setVisible(false); // will be made visible in evaluateNetwork()
-        tools_ << std::make_pair(plugin, action);
-    }
-
     if (basic) {
         if (viewMenu_)
             viewMenu_->addAction(action);
@@ -604,18 +712,12 @@ VoreenToolWindow* VoreenMainWindow::addToolWindow(QAction* action, QWidget* widg
 }
 
 VoreenToolWindow* VoreenMainWindow::addToolDockWindow(QAction* action, QWidget* widget, const QString& name,
-                                                      Qt::DockWidgetArea dockarea, Qt::DockWidgetAreas allowedAreas, 
+                                                      Qt::DockWidgetArea dockarea, Qt::DockWidgetAreas allowedAreas,
                                                       bool basic)
 {
     action->setCheckable(true);
 
     VoreenToolWindow* window = new VoreenToolWindow(action, this, widget, name, true);
-
-    if (WidgetPlugin* plugin = dynamic_cast<WidgetPlugin*>(widget)) {
-        if (!plugin->usable(std::vector<Processor*>())) // not usable without processors?
-            action->setVisible(false); // will be made visible in evaluateNetwork()
-        tools_ << std::make_pair(plugin, action);
-    }
 
     if (basic) {
         if (viewMenu_)
@@ -638,43 +740,48 @@ VoreenToolWindow* VoreenMainWindow::addToolDockWindow(QAction* action, QWidget* 
 }
 
 void VoreenMainWindow::createToolWindows() {
+    animationEditor_ = new AnimationEditor(vis_->getEvaluator(), vis_->getWorkspace(), this);
+    addToolDockWindow(new QAction(QIcon(":/icons/video.png"), tr("&Animation"), this), animationEditor_, "Animation",
+                      Qt::BottomDockWidgetArea, Qt::BottomDockWidgetArea, false);
+
     // network editor
-    networkEditorWidget_ = new NetworkEditor(this, vis_->getWorkspace(), vis_->getEvaluator());
+    networkEditorWidget_ = new NetworkEditor(this, vis_->getWorkspace()->getProcessorNetwork(), vis_->getEvaluator());
     networkEditorWidget_->setWindowTitle(tr("Processor Network"));
-    networkEditorWindow_ = new VoreenMdiSubWindow(networkEditorWidget_, this);
+    networkEditorWindow_ = new VoreenMdiSubWindow(networkEditorWidget_, this, Qt::FramelessWindowHint);
     networkEditorWindow_->setWindowState(networkEditorWindow_->windowState() | Qt::WindowFullScreen);
+    networkEditorWindow_->hide(); // hide initially to prevent flicker
     mdiArea_->addSubWindow(networkEditorWindow_);
     vis_->setNetworkEditorWidget(networkEditorWidget_);
 
     // processor list
-    processorListWidget_ = new ProcessorListWidget();
+    processorListWidget_ = new ProcessorListWidget(this);
     processorListWidget_->setMinimumSize(200, 200);
-    processorListAction_ = new QAction(QIcon(":/voreenve/icons/show-processors.png"), tr("Processors"), this);
-    processorListTool_ = addToolDockWindow(processorListAction_, processorListWidget_, "ProcessorList", 
+    processorListAction_ = new QAction(QIcon(":/voreenve/icons/show-processors.png"), tr("&Processors"), this);
+    processorListTool_ = addToolDockWindow(processorListAction_, processorListWidget_, "ProcessorList",
         Qt::LeftDockWidgetArea, Qt::LeftDockWidgetArea);
     vis_->setProcessorListWidget(processorListWidget_);
 
     // property list
     propertyListWidget_ = new PropertyListWidget(this, 0);
-    propertyListTool_ = addToolDockWindow(new QAction(QIcon(":/voreenve/icons/show-properties.png"), tr("Properties"), this),
+    propertyListTool_ = addToolDockWindow(new QAction(QIcon(":/voreenve/icons/show-properties.png"), tr("P&roperties"), this),
                                           propertyListWidget_, "Properties", Qt::RightDockWidgetArea, Qt::RightDockWidgetArea);
     vis_->setPropertyListWidget(propertyListWidget_);
 
     // VolumeContainerWidget
     volumeContainerWidget_ = new VolumeContainerWidget(vis_->getVolumeContainer(), this);
-    volumeContainerWidget_->setMinimumSize(250, 250);
-    volumeContainerTool_ = addToolDockWindow(new QAction(QIcon(":/voreenve/icons/show-volumecontainer.png"), tr("Volumes"), this),
+    volumeContainerTool_ = addToolDockWindow(new QAction(QIcon(":/voreenve/icons/show-volumecontainer.png"), tr("V&olumes"), this),
                       volumeContainerWidget_, "VolumeContainer", Qt::RightDockWidgetArea);
     vis_->setVolumeContainerWidget(volumeContainerWidget_);
 
-    // shortcut preferences
-    shortcutPrefWidget_ =  new ShortcutPreferencesWidget(vis_->getEvaluator());
-    //connect(this, SIGNAL(newNetwork(processorNetwork_)), shortcutPrefWidget_, SLOT(rebuildWidgets()));
-    addToolWindow(new QAction(QIcon(":/voreenve/icons/show-keymapping.png"), tr("Input Mapping"), this),
-                  shortcutPrefWidget_, tr("Show shortcut preferences"), true);
+    // input mapping
+    inputMappingDialog_ =  new InputMappingDialog(this, vis_->getWorkspace()->getProcessorNetwork());
+    QAction* inputMappingAction = new QAction(QIcon(":/voreenve/icons/show-keymapping.png"), tr("&Input Mapping"), this);
+    inputMappingAction->setShortcut(tr("Ctrl+I"));
+    addToolWindow(inputMappingAction, inputMappingDialog_, tr("Show shortcut preferences"), true);
+    vis_->setInputMappingDialog(inputMappingDialog_);
 
     // console
-    QAction* consoleAction = new QAction(QIcon(":/voreenve/icons/show-console.png"), tr("Debug Console"), this);
+    QAction* consoleAction = new QAction(QIcon(":/voreenve/icons/show-console.png"), tr("&Debug Console"), this);
     consoleAction->setShortcut(tr("Ctrl+D"));
     consoleTool_ = addToolDockWindow(consoleAction, consolePlugin_, "Console", Qt::BottomDockWidgetArea, Qt::BottomDockWidgetArea);
     consoleTool_->setAllowedAreas(Qt::BottomDockWidgetArea);
@@ -683,33 +790,28 @@ void VoreenMainWindow::createToolWindows() {
     consoleTool_->setMinimumHeight(200);
 
     // render target debug window
-    renderTargetDebugWidget_ = new RenderTargetDebugWidget(sharedContext_);
-    renderTargetDebugWidget_->setEvaluator(vis_->getEvaluator());
-    renderTargetDebugWidget_->setMinimumSize(200, 200);
-    QAction* texContainerAction = new QAction(QIcon(":/voreenve/icons/show-rendertargets.png"),tr("Render Target Viewer"), this);
+    renderTargetViewer_ = new RenderTargetViewer(sharedContext_);
+    renderTargetViewer_->setEvaluator(vis_->getEvaluator());
+    renderTargetViewer_->setMinimumSize(200, 200);
+    QAction* texContainerAction = new QAction(QIcon(":/voreenve/icons/show-rendertargets.png"),tr("Render &Target Viewer"), this);
     texContainerAction->setShortcut(tr("Ctrl+T"));
-    VoreenToolWindow* tc = addToolWindow(texContainerAction, renderTargetDebugWidget_, "Rendertargets");
-    tc->resize(500, 500);                                    
-                                                             
-    // animation
-    QAction* animationAction = new QAction(QIcon(":/voreenve/icons/make-animation.png"), tr("Animation"), this);
-    AnimationPlugin* animationPlugin = new AnimationPlugin(this);
-    animationAction->setShortcut(tr("Ctrl+A"));
-    animationTool_ = addToolDockWindow(animationAction, animationPlugin, "Animation", Qt::RightDockWidgetArea, Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea, false);
-    animationTool_->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    animationTool_->setFloating(false);
-    animationTool_->resize(700, 300);
-    animationTool_->setMinimumHeight(200);
-    vis_->setAnimationPlugin(animationPlugin);
+    VoreenToolWindow* tc = addToolWindow(texContainerAction, renderTargetViewer_, "RenderTargetViewer");
+    tc->widget()->setContentsMargins(0,0,0,0);
+    tc->widget()->layout()->setContentsMargins(0,0,0,0);
+    tc->resize(500, 500);
 
-    // segmentation
-    //SegmentationPlugin* segwidget = new SegmentationPlugin(this, vis_->getEvaluator());
-    //addToolWindow(new QAction(QIcon(":/voreenve/icons/segmentation.png"), tr("Segmentation"), this),
-                  //segwidget, "Segmentation", false);
-
+    // scripts
+#ifdef VRN_WITH_PYTHON
+    linkingScriptManager_ = new LinkingScriptManager(this);
+    connect(vis_, SIGNAL(newNetwork(ProcessorNetwork*)), linkingScriptManager_, SLOT(rebuildScriptList()));
+    addToolWindow(new QAction(QIcon(":/voreenve/icons/python_2.png"), tr("&Linking Scripts"), this), linkingScriptManager_, tr("Linking scripts"), false);
+#endif
 
 
     // connections between tool widgets
+    connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
+        renderTargetViewer_, SLOT(processorsSelected(const QList<Processor*>&)));
+
     vis_->createConnections();
 
 }
@@ -744,14 +846,19 @@ void VoreenMainWindow::loadSettings() {
         loadLastWorkspace_ = settings_.value("loadLastWorkspace", false).toBool();
         visualizationModeState_ = settings_.value("visualizationModeState").toByteArray();
         networkModeState_ = settings_.value("networkModeState").toByteArray();
-        renderWindowStateVisualizationMode_ = settings_.value("renderWindowStateVisualizationMode").toByteArray();
-        renderWindowStateNetworkMode_ = settings_.value("renderWindowStateNetworkMode").toByteArray();
         networkEditorWindowState_ = settings_.value("networkEditorWindowState").toByteArray();
         settings_.endGroup();
 
         settings_.beginGroup("Paths");
         networkPath_ = settings_.value("network", networkPath_).toString();
         workspacePath_ = settings_.value("workspace", workspacePath_).toString();
+        settings_.endGroup();
+
+        settings_.beginGroup("Startup");
+        // load last startup values
+        startupWorkspace_ = settings_.value("workspace", true).toBool();
+        // set default values for the current startup
+        settings_.setValue("workspace", false);
         settings_.endGroup();
     }
 
@@ -823,10 +930,8 @@ void VoreenMainWindow::saveSettings() {
 
     if (guiMode_ == MODE_VISUALIZATION) {
         visualizationModeState_ = saveState(WINDOW_STATE_VERSION);
-        //renderWindowStateVisualizationMode_ = renderWindow_->saveGeometry();
     } else if (guiMode_ == MODE_NETWORK) {
         networkModeState_ = saveState(WINDOW_STATE_VERSION);
-        //renderWindowStateNetworkMode_ = renderWindow_->saveGeometry();
         networkEditorWindowState_ = networkEditorWindow_->saveGeometry();
     }
 
@@ -838,8 +943,6 @@ void VoreenMainWindow::saveSettings() {
     settings_.setValue("loadLastWorkspace", loadLastWorkspace_);
     settings_.setValue("visualizationModeState", visualizationModeState_);
     settings_.setValue("networkModeState", networkModeState_);
-    settings_.setValue("renderWindowStateVisualizationMode", renderWindowStateVisualizationMode_);
-    settings_.setValue("renderWindowStateNetworkMode", renderWindowStateNetworkMode_);
     settings_.setValue("networkEditorWindowState", networkEditorWindowState_);
     settings_.setValue("visualizationMode", (guiMode_ == MODE_VISUALIZATION));
     settings_.endGroup();
@@ -863,6 +966,12 @@ void VoreenMainWindow::saveSettings() {
     settings_.endGroup();
 }
 
+void VoreenMainWindow::startupComplete(const std::string& phaseName) {
+    settings_.beginGroup("Startup");
+    settings_.setValue(phaseName.c_str(), true);
+    settings_.endGroup();
+}
+
 ////////// loading / saving ////////////////////////////////////////////////////////////
 
 void VoreenMainWindow::openNetwork() {
@@ -874,6 +983,9 @@ void VoreenMainWindow::openNetwork() {
                            "Voreen network files (*.vnw)");
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getNetworkPath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec()) {
@@ -925,20 +1037,23 @@ bool VoreenMainWindow::saveNetworkAs() {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getNetworkPath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec()) {
         currentNetwork_ = fileDialog.selectedFiles().at(0);
 
         try {
-            vis_->saveNetwork(currentNetwork_.toStdString(), setReuseTargetsAction_->isChecked());
-        } 
+            vis_->saveNetwork(currentNetwork_.toStdString());
+        }
         catch (SerializationException& e) {
             QApplication::restoreOverrideCursor();
             QErrorMessage* errorMessageDialog = new QErrorMessage(this);
             errorMessageDialog->showMessage(e.what());
             return false;
-        } 
+        }
 
         networkPath_ = fileDialog.directory().path();
         vis_->setModified(false);
@@ -975,6 +1090,9 @@ void VoreenMainWindow::exportWorkspace() {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getWorkspacePath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec() == false)
@@ -1000,6 +1118,9 @@ void VoreenMainWindow::extractZippedWorkspace() {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getWorkspacePath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec()) {
@@ -1022,15 +1143,16 @@ void VoreenMainWindow::newWorkspace() {
     lastWorkspace_ = currentWorkspace_;
 
     propertyListWidget_->clear();
-    renderTargetDebugWidget_->update();
+    renderTargetViewer_->update();
 
     vis_->setModified(false);
     updateWindowTitle();
+    animationEditor_->setWorkspace(vis_->getWorkspace());
 }
 
 void VoreenMainWindow::openWorkspace(const QString& filename) {
     // disable render target widget during load
-    renderTargetDebugWidget_->setEvaluator(0);
+    renderTargetViewer_->setEvaluator(0);
     ignoreWindowTitleModified_ = true;
     updateWindowTitle();
     try {
@@ -1039,8 +1161,14 @@ void VoreenMainWindow::openWorkspace(const QString& filename) {
         vis_->newWorkspace();
         qApp->processEvents();
         vis_->openWorkspace(filename);
+
+        // adjust canvas widgets (created during workspace load) to visualization mode
+        if (guiMode_ == MODE_VISUALIZATION)
+            adjustCanvasWidgets(MODE_VISUALIZATION);
     }
     catch (SerializationException& e) {
+        vis_->newWorkspace();
+        setUpdatesEnabled(true);
         currentWorkspace_ = "";
         lastWorkspace_ = currentWorkspace_;
         ignoreWindowTitleModified_ = false;
@@ -1067,10 +1195,6 @@ void VoreenMainWindow::openWorkspace(const QString& filename) {
     showWorkspaceErrors();
     showNetworkErrors();
 
-    // adjust canvas widgets (created during workspace load) to visualization mode
-    if (guiMode_ == MODE_VISUALIZATION)
-        adjustCanvasWidgets(MODE_VISUALIZATION);
-
     adaptWidgetsToNetwork();
     currentWorkspace_ = filename;
     lastWorkspace_ = currentWorkspace_;
@@ -1079,8 +1203,17 @@ void VoreenMainWindow::openWorkspace(const QString& filename) {
     vis_->setModified(false);
     ignoreWindowTitleModified_ = false;
     updateWindowTitle();
-    renderTargetDebugWidget_->setEvaluator(vis_->getEvaluator());
+    renderTargetViewer_->setEvaluator(vis_->getEvaluator());
     QApplication::restoreOverrideCursor();
+
+#ifdef MICRO_MODE
+    qApp->processEvents();
+    propertyListWidget_->expandAll();
+#endif
+
+    if (animationEditor_)
+        animationEditor_->setWorkspace(vis_->getWorkspace());
+
 }
 
 void VoreenMainWindow::openWorkspace() {
@@ -1099,6 +1232,9 @@ void VoreenMainWindow::openWorkspace() {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getWorkspacePath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec()) {
@@ -1116,11 +1252,12 @@ bool VoreenMainWindow::saveWorkspace(const QString& filename) {
         return saveWorkspaceAs();
 
     try {
-        vis_->saveWorkspace(f.toStdString(), setReuseTargetsAction_->isChecked());
+        vis_->saveWorkspace(f.toStdString());
     }
     catch (SerializationException& e) {
         QApplication::restoreOverrideCursor();
         QErrorMessage* errorMessageDialog = new QErrorMessage(this);
+        errorMessageDialog->setWindowTitle(tr("Serialization Failed"));
         errorMessageDialog->showMessage(e.what());
         return false;
     }
@@ -1133,12 +1270,12 @@ bool VoreenMainWindow::saveWorkspace(const QString& filename) {
     return true;
 }
 
-bool VoreenMainWindow::saveWorkspaceAs() {    
+bool VoreenMainWindow::saveWorkspaceAs() {
     QFileDialog fileDialog(this, tr("Save Workspace As..."), QDir(workspacePath_).absolutePath());
     fileDialog.setFileMode(QFileDialog::AnyFile);
     fileDialog.setAcceptMode(QFileDialog::AcceptSave);
     fileDialog.setConfirmOverwrite(true);
-    
+
     QStringList filters;
     // do not allow standard vws-format for zipped workspaces (data sets would be missing)
     if (!QString::fromStdString(vis_->getWorkspace()->getFilename()).endsWith(".zip", Qt::CaseInsensitive))
@@ -1147,18 +1284,27 @@ bool VoreenMainWindow::saveWorkspaceAs() {
     filters << "Voreen workspace archives (*.zip)";
 #endif
     fileDialog.setNameFilters(filters);
-
-    if (QString::fromStdString(vis_->getWorkspace()->getFilename()).endsWith(".zip", Qt::CaseInsensitive)) 
-        fileDialog.setDefaultSuffix("zip");
-    else
-        fileDialog.setDefaultSuffix("vws");
-
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getWorkspacePath().c_str());
+#ifndef VRN_DISTRIBUTION
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getModulePath().c_str());
+#endif
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec()) {
-        bool result = saveWorkspace(fileDialog.selectedFiles().at(0));
+        bool result;
+        QString name = fileDialog.selectedFiles().at(0);
+        if(fileDialog.selectedNameFilter() == "Voreen workspace archives (*.zip)") {
+            if(!name.endsWith(".zip"))
+                result = saveWorkspace(name+".zip");
+            else
+                result = saveWorkspace(name);
+        }
+        else
+            if(!name.endsWith(".vws"))
+                result = saveWorkspace(fileDialog.selectedFiles().at(0)+".vws");
+            else
+                result = saveWorkspace(fileDialog.selectedFiles().at(0));
         workspacePath_ = fileDialog.directory().path();
         return result;
     }
@@ -1174,6 +1320,15 @@ void VoreenMainWindow::openDataset() {
     }
 
     volumeContainerWidget_->loadVolume();
+}
+
+void VoreenMainWindow::openRawDataset() {
+    if (!volumeContainerWidget_) {
+        LWARNINGC("voreenve.VoreenMainWindow", "No volume container widget");
+        return;
+    }
+
+    volumeContainerWidget_->loadVolumeRawFilter();
 }
 
 void VoreenMainWindow::loadDataset(const std::string& filename) {
@@ -1205,7 +1360,7 @@ void VoreenMainWindow::loadDataset(const std::string& filename) {
 void VoreenMainWindow::openRecentFile() {
     if (!askSave())
         return;
-    
+
     QAction* action = qobject_cast<QAction*>(sender());
     if (action) {
         QString file(action->data().toString());
@@ -1247,12 +1402,15 @@ void VoreenMainWindow::showNetworkErrors() {
     std::vector<std::string> errors = vis_->getNetworkErrors();
     if (!errors.empty()) {
         QString msg;
-        for (size_t i=0; i < errors.size(); i++)
+        for (size_t i=0; i < errors.size(); i++) {
             msg += "<li>" + QString(errors[i].c_str()) + "</li>\n";
+            LWARNINGC("voreenve.VoreenMainWindow", errors[i]);
+        }
 
         QErrorMessage* errorMessageDialog = new QErrorMessage(this);
-        errorMessageDialog->resize(400,200);
-        errorMessageDialog->showMessage(tr("There were %1 errors loading the network:\n<ul>").arg(errors.size())
+        errorMessageDialog->resize(600, 300);
+        errorMessageDialog->setWindowTitle(tr("Network Deserialization"));
+        errorMessageDialog->showMessage(tr("There were <b>%1 errors</b> loading the network:\n<ul>").arg(errors.size())
                                         + msg + "\n</ul>");
 
         qApp->processEvents();
@@ -1265,12 +1423,16 @@ void VoreenMainWindow::showWorkspaceErrors() {
     std::vector<std::string> errors = vis_->getWorkspaceErrors();
     if (!errors.empty()) {
         QString msg;
-        for (size_t i=0; i < errors.size(); i++)
+        for (size_t i=0; i < errors.size(); i++) {
             msg += "<li>" + QString(errors[i].c_str()) + "</li>\n";
+            LWARNINGC("voreenve.VoreenMainWindow", errors[i]);
+        }
 
         QErrorMessage* errorMessageDialog = new QErrorMessage(this);
-        errorMessageDialog->resize(400,200);
-        errorMessageDialog->showMessage(tr("There were %1 errors loading the workspace:\n<ul>").arg(errors.size())
+        errorMessageDialog->resize(600, 300);
+        errorMessageDialog->setWindowTitle(tr("Workspace Deserialization"));
+        errorMessageDialog->showMessage(tr("There were <b>%1 errors</b> loading the workspace %2:\n<ul>").arg(
+            errors.size()).arg(QString::fromStdString(vis_->getWorkspace() ? vis_->getWorkspace()->getFilename() : ""))
             + msg + "\n</ul>");
 
         qApp->processEvents();
@@ -1278,23 +1440,6 @@ void VoreenMainWindow::showWorkspaceErrors() {
 }
 
 void VoreenMainWindow::adaptWidgetsToNetwork() {
-
-    shortcutPrefWidget_->rebuildWidgets();
-
-    // ask each tool whether it should be visible for these processors
-    std::pair<WidgetPlugin*, QAction*> p;
-    foreach (p, tools_) {
-        bool usable;
-        if (!vis_->getEvaluator()->getProcessorNetwork())
-            usable = false;
-        else
-            usable = p.first->usable(vis_->getEvaluator()->getProcessorNetwork()->getProcessors());
-        p.second->setVisible(usable);
-        // hide tool's toolwindow if not usable
-        VoreenToolWindow* toolWindow = dynamic_cast<VoreenToolWindow*>(p.first->parent());
-        if (toolWindow && !usable)
-            toolWindow->setVisible(false);
-    }
 }
 
 ////////// actions /////////////////////////////////////////////////////////////////////
@@ -1358,7 +1503,6 @@ void VoreenMainWindow::runScript(const QString& filename) {
         QMessageBox::warning(this, "Voreen", tr("Python compile error (see stdout)"));
     }
     ScriptMgr.dispose(script);
-    std::cout << "runscript finished" << std::endl;
 #else
     QMessageBox::warning(this, "Voreen", tr("Voreen has been compiled without Python support, "
                                             "can not run '%1'").arg(filename));
@@ -1410,6 +1554,12 @@ void VoreenMainWindow::helpFirstSteps() {
     help->resize(1050, 700);
     help->show();
     connect(this, SIGNAL(closeMainWindow()), help, SLOT(close()));
+}
+
+void VoreenMainWindow::helpWebsite() {
+    // URL is stored in data portion of the sender
+    if (QAction* act = dynamic_cast<QAction*>(sender()))
+        QDesktopServices::openUrl(QUrl(act->data().toString()));
 }
 
 void VoreenMainWindow::helpAbout() {
@@ -1465,32 +1615,36 @@ void VoreenMainWindow::setGuiMode(GuiMode guiMode) {
             networkEditorWindowState_ = networkEditorWindow_->saveGeometry();
         }
 
+        setUpdatesEnabled(false);
+
         // hide all first to prevent some flicker
         modeVisualizationAction_->setChecked(true);
         processorListAction_->setEnabled(false);
         networkEditorWindow_->hide();
         networkEditorWidget_->setVisible(false);
         processorListTool_->hide();
-        qApp->processEvents();
+//        qApp->processEvents(); //TODO: seems unneccessary
 
         if (!restoreState(visualizationModeState_, WINDOW_STATE_VERSION)) {
-            propertyListTool_->show();
-            volumeContainerTool_->show();
+            if (processorListTool_->isEnabled())
+                propertyListTool_->show();
+            if (volumeContainerTool_->isEnabled())
+                volumeContainerTool_->show();
         }
+        setUpdatesEnabled(true);
 
         // resize canvas after gui has been settled
-        qApp->processEvents();
+//        qApp->processEvents(); //TODO: seems unneccessary
         adjustCanvasWidgets(MODE_VISUALIZATION);
-
     }
     else if (guiMode == MODE_NETWORK) {
-        if (guiMode_ == MODE_VISUALIZATION) {
+        if (guiMode_ == MODE_VISUALIZATION)
             visualizationModeState_ = saveState(WINDOW_STATE_VERSION);
-        }
 
         // first update canvas widget
         adjustCanvasWidgets(MODE_NETWORK);
-        qApp->processEvents();
+
+//        qApp->processEvents(); //TODO: seems unneccessary
 
         if (!restoreState(networkModeState_, WINDOW_STATE_VERSION)) {
             processorListTool_->show();
@@ -1498,36 +1652,40 @@ void VoreenMainWindow::setGuiMode(GuiMode guiMode) {
             volumeContainerTool_->show();
         }
 
+        setUpdatesEnabled(false);
+
         if (networkEditorWindow_->restoreGeometry(networkEditorWindowState_))
             networkEditorWindow_->show();
         else
-            networkEditorWindow_->showMaximized();
+             networkEditorWindow_->showMaximized();
 
         networkEditorWidget_->setVisible(true); // only show now, so it immediately gets the correct size
         modeNetworkAction_->setChecked(true);
         processorListAction_->setEnabled(true);
+
+        setUpdatesEnabled(true);
     }
+
+    setUpdatesEnabled(false);
 
     // adjust property list widget at last, since this is quite expensive and may flicker
-    qApp->processEvents();
-    if (guiMode == MODE_VISUALIZATION) {
+//    qApp->processEvents(); //TODO: seems unneccessary
+    if (guiMode == MODE_VISUALIZATION)
         propertyListWidget_->setState(PropertyListWidget::LIST, Property::USER);
-    }
-    else {
+    else
         propertyListWidget_->setState(PropertyListWidget::SELECTED, Property::DEVELOPER);
-    }
 
+    setUpdatesEnabled(true);
     guiMode_ = guiMode;
 }
 
 void VoreenMainWindow::adjustCanvasWidgets(GuiMode guiMode) {
     // adjust canvas widgets
     if (vis_->getWorkspace() && vis_->getWorkspace()->getProcessorNetwork()) {
-
         const ProcessorNetwork* network = vis_->getWorkspace()->getProcessorNetwork();
         const std::vector<CanvasRenderer*>& processors = network->getProcessorsByType<CanvasRenderer>();
-        for (size_t i=0; i<processors.size(); ++i) {
 
+        for (size_t i=0; i < processors.size(); ++i) {
             ProcessorWidget* pw = processors[i]->getProcessorWidget();
             if (pw) {
                 QProcessorWidget* qpw = dynamic_cast<QProcessorWidget*>(pw);
@@ -1545,8 +1703,10 @@ void VoreenMainWindow::adjustCanvasWidgets(GuiMode guiMode) {
                             mdiArea_->removeSubWindow(qpw);
                             delete par;
                         }
+
                         qpw->setParent(this);
                         qpw->setWindowFlags(Qt::Tool);
+
                         static_cast<QWidget*>(qpw)->setVisible(true);
                         if (canvasSize_.x > 0 && canvasSize_.y > 0) {
                             qpw->setSize(canvasSize_.x,  canvasSize_.y);
@@ -1562,21 +1722,22 @@ void VoreenMainWindow::adjustCanvasWidgets(GuiMode guiMode) {
 }
 
 void VoreenMainWindow::adjustSnapshotMenu() {
+#ifdef VRN_WITH_DEVIL
     if (!snapshotAction_)
         return;
 
-#ifdef VRN_WITH_DEVIL
     snapshotAction_->menu()->clear();
+
     if (!vis_->getWorkspace()->getProcessorNetwork()) {
         snapshotAction_->setEnabled(false);
         return;
     }
 
+    snapshotAction_->setEnabled(true);
     std::vector<CanvasRenderer*> canvasRenderers
         = vis_->getWorkspace()->getProcessorNetwork()->getProcessorsByType<CanvasRenderer>();
-    snapshotAction_->setEnabled(!canvasRenderers.empty());
-    
-    for (size_t i=0; i<canvasRenderers.size(); ++i) {
+
+    for (size_t i=0; i < canvasRenderers.size(); ++i) {
         QAction* menuAction = new QAction(QString::fromStdString(canvasRenderers[i]->getName()), this);
         // store index of canvasrenderer in action for identification
         // TODO: replace by name, when processors' names are unique
@@ -1584,17 +1745,24 @@ void VoreenMainWindow::adjustSnapshotMenu() {
         snapshotAction_->menu()->addAction(menuAction);
         connect(menuAction, SIGNAL(triggered(bool)), this, SLOT(snapshotActionTriggered(bool)));
     }
+
+    // add network snapshot functionality
+    QAction* networkAction = new QAction(tr("Network Graph"), this);
+    networkAction->setData(-1);
+    snapshotAction_->menu()->addSeparator();
+    snapshotAction_->menu()->addAction(networkAction);
+    connect(networkAction, SIGNAL(triggered(bool)), this, SLOT(snapshotActionTriggered(bool)));
 #endif
 }
 
 void VoreenMainWindow::snapshotActionTriggered(bool /*triggered*/) {
     if (dynamic_cast<QAction*>(QObject::sender())) {
-
         int rendererIndex = static_cast<QAction*>(QObject::sender())->data().toInt();
         std::vector<CanvasRenderer*> canvasRenderers
             = vis_->getWorkspace()->getProcessorNetwork()->getProcessorsByType<CanvasRenderer>();
 
         if (rendererIndex >= 0 && (size_t)rendererIndex < canvasRenderers.size()) {
+            // snapshot of canvas
             CanvasRendererWidget* canvasWidget
                 = dynamic_cast<CanvasRendererWidget*>(canvasRenderers[rendererIndex]->getProcessorWidget());
             if (!canvasWidget) {
@@ -1602,6 +1770,13 @@ void VoreenMainWindow::snapshotActionTriggered(bool /*triggered*/) {
                 return;
             }
             canvasWidget->showSnapshotTool();
+        }
+        else if (rendererIndex == -1) {
+            // snapshot of network graph
+            NetworkSnapshotPlugin* snapshotTool_ = new NetworkSnapshotPlugin(this, networkEditorWidget_);
+            snapshotTool_->adjustSize();
+            snapshotTool_->setFixedSize(snapshotTool_->sizeHint());
+            snapshotTool_->show();
         }
     }
 }

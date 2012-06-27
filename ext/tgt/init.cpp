@@ -66,9 +66,11 @@ void init(InitFeature::Features featureset) {
 
     if (featureset & InitFeature::LOG_MANAGER) {
         Singleton<LogManager>::init(new LogManager());
-        ConsoleLog* log = new ConsoleLog();
-        log->addCat("", true, Info);
-        LogMgr.addLog(log);
+        if (featureset & InitFeature::LOG_TO_CONSOLE) {
+            ConsoleLog* log = new ConsoleLog();
+            log->addCat("", true, Info);
+            LogMgr.addLog(log);
+        }
         // LogMgr disposes all its logs
     }
 
@@ -139,7 +141,7 @@ void initGL(InitFeature::Features featureset) {
     if (featureset & (InitFeature::SHADER_MANAGER | InitFeature::NO_SHADER_CACHING))
         Singleton<ShaderManager> ::init(new ShaderManager(false));
     else if (featureset & InitFeature::SHADER_MANAGER & !InitFeature::NO_SHADER_CACHING)
-        Singleton<ShaderManager> ::init(new ShaderManager());
+        Singleton<ShaderManager> ::init(new ShaderManager(true));
 }
 
 void deinitGL() {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,8 +34,8 @@
 #include "voreen/qt/widgets/transfunc/transfunceditorintensitypet.h"
 #include "voreen/qt/widgets/transfunc/transfunceditorintensityramp.h"
 
-#include "voreen/core/vis/transfunc/transfuncintensity.h"
-#include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
 
 #include <QComboBox>
 #include <QMessageBox>
@@ -121,10 +121,10 @@ void TransFuncPlugin::createConnections() {
     connect(tabWidget_, SIGNAL(currentChanged(int)), this, SLOT(editorChanged(int)));
 }
 
-void TransFuncPlugin::update() {
+void TransFuncPlugin::updateFromProperty() {
     if (editors_.size() > 0 && tabWidget_) {
         int index = tabWidget_->currentIndex();
-        editors_[index]->update();
+        editors_[index]->updateFromProperty();
     }
 }
 
@@ -162,10 +162,6 @@ void TransFuncPlugin::showEvent(QShowEvent* /*event*/) {
 }
 
 void TransFuncPlugin::disconnect() {
-    // editors are freed by their Qt parent
-    /*for (size_t i = 0; i < editors_.size(); ++i) {
-        delete editors_[i];
-    }*/
     editors_.clear();
 }
 

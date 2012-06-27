@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,9 +33,9 @@
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 #include "voreen/qt/widgets/transfunc/transfunctexturepainter.h"
 
-#include "voreen/core/vis/transfunc/transfuncintensity.h"
-#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
-#include "voreen/core/volume/histogram.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
+#include "voreen/core/datastructures/volume/histogram.h"
 
 #include "tgt/logmanager.h"
 #include "tgt/qt/qtcanvas.h"
@@ -48,7 +48,7 @@
 
 namespace voreen {
 
-const std::string TransFuncEditorIntensityPet::loggerCat_("voreen.qt.transfunceditorintensitypet");
+const std::string TransFuncEditorIntensityPet::loggerCat_("voreen.qt.TransFuncEditorIntensityPet");
 
 TransFuncEditorIntensityPet::TransFuncEditorIntensityPet(TransFuncProperty* prop, QWidget* parent)
     : TransFuncEditor(prop, parent)
@@ -251,8 +251,8 @@ void TransFuncEditorIntensityPet::rectifyTransferFunction() {
         key = transferFuncGradient_->getKey(i);
         key->setAlphaL(1.f);
     }
-    transferFuncIntensity_->textureUpdateNeeded();
-    transferFuncGradient_->textureUpdateNeeded();
+    transferFuncIntensity_->invalidateTexture();
+    transferFuncGradient_->invalidateTexture();
 }
 
 bool TransFuncEditorIntensityPet::transferFunctionCorrect() {
@@ -426,15 +426,13 @@ void TransFuncEditorIntensityPet::collapseGradient() {
 }
 
 void TransFuncEditorIntensityPet::updateTransferFunction() {
-    transferFuncIntensity_->textureUpdateNeeded();
-    transferFuncGradient_->textureUpdateNeeded();
+    transferFuncIntensity_->invalidateTexture();
+    transferFuncGradient_->invalidateTexture();
 
     property_->notifyChange();
-    //if (!property_->getManualRepaint())
-        //causeVolumeRenderingRepaint();
 }
 
-void TransFuncEditorIntensityPet::update() {
+void TransFuncEditorIntensityPet::updateFromProperty() {
     // check whether the volume associated with the TransFuncProperty has changed
     VolumeHandle* newHandle = property_->getVolumeHandle();
     if (newHandle != volumeHandle_) {
@@ -443,7 +441,7 @@ void TransFuncEditorIntensityPet::update() {
     }
 
     if (transferFuncGradient_) {
-        transferFuncGradient_->setTextureDimension(maximumIntensity_ + 1, 1);
+        transferFuncGradient_->resize(maximumIntensity_ + 1);
 
         bool emitRepaint = false;
         // adjust tf when not all keys have maximum alpha
@@ -507,7 +505,7 @@ void TransFuncEditorIntensityPet::volumeChanged() {
     }
 
     // propagate new volume to histogrampainter
-    histogramPainter_->setHistogram(new HistogramIntensity((volumeHandle_ ? volumeHandle_->getVolume() : 0), maximumIntensity_+1));
+    histogramPainter_->setHistogram(new HistogramIntensity((volumeHandle_ ? volumeHandle_->getVolume() : 0), maximumIntensity_ + 1));
     // resize histogram painter
     histogramPainter_->setMinimumSize(200, 150);
 

@@ -59,9 +59,6 @@ const char *containerCodecPairNames[] = { "auto", "mpeg4 in avi", "wmv in wmv",
 
 /**
  * float to uint8_t conversion
- * TODO this is misplaced here -> centralize
- * TODO extend TextureContainer to return just GL_RGB, atm we get GL_RGBA, so we just drop the alpha channel
- * TODO consider moving pixelOrderManip there too
  * TODO we have to put down an assumption about the pixel-order expected or let it be specified for the input data
  * @param pixels as floats
  * @param size number of pixels
@@ -96,6 +93,86 @@ uint8_t* floatToUint8_tRGB(float* pixels, const int size, const int lineSize,
 
         // dropping alpha channel and clamp to [0.0; 1.0]
         pixels_b[i] = tgt::clamp(pixels_f[j].xyz(), 0.f, 1.f) * 255.f;
+    }
+    return reinterpret_cast<uint8_t*> (pixels_b);
+}
+
+/**
+ * uint16_t to uint8_t conversion
+ * TODO we have to put down an assumption about the pixel-order expected or let it be specified for the input data
+ * @param pixels as uint16_t
+ * @param size number of pixels
+ * @param lineSize (ignored but for FLIP_VERT)
+ * @param manip (defaults: NONE)
+ * @return pixels of type uint8_t
+ */
+uint8_t* uint16ToUint8_tRGB(uint16_t* pixels, const int size, const int lineSize,
+        enum PixelOrderManipulation manip = NONE) {
+    tgt::Vector4<uint16_t>* pixels_16 = reinterpret_cast<tgt::Vector4<uint16_t>*> (pixels);
+    tgt::col3* pixels_b = new tgt::col3[size];
+    int j = 0;
+    for (int i = 0; i < size; i++) {
+        /*
+         * 0 ... lineSize-1
+         * lineSize ... 2*lineSize-1
+         * ...
+         * size-lineSize ... size-1
+         */
+        switch (manip) {
+        case NONE:
+            j = i; // up to compiler optimisation
+            break;
+        case REVERSE:
+            j = size - i - 1;
+            break;
+        case FLIP_VERT:
+            int curLine = (size / lineSize) - (i / lineSize) - 1;
+            j = curLine * lineSize + (i % lineSize); // assume int div truncates
+            break;
+        }
+
+        // dropping alpha channel and converting to 8 bit
+        pixels_b[i] = tgt::col3(pixels_16[j].x >> 8, pixels_16[j].y >> 8, pixels_16[j].z >> 8);
+    }
+    return reinterpret_cast<uint8_t*> (pixels_b);
+}
+
+/**
+ * uint8_t RGBA to uint8_t RGB conversion
+ * TODO we have to put down an assumption about the pixel-order expected or let it be specified for the input data
+ * @param pixels as uint8_t
+ * @param size number of pixels
+ * @param lineSize (ignored but for FLIP_VERT)
+ * @param manip (defaults: NONE)
+ * @return pixels of type uint8_t
+ */
+uint8_t* uint8ToUint8_tRGB(uint8_t* pixels, const int size, const int lineSize,
+        enum PixelOrderManipulation manip = NONE) {
+    tgt::col4* pixels_col = reinterpret_cast<tgt::col4*> (pixels);
+    tgt::col3* pixels_b = new tgt::col3[size];
+    int j = 0;
+    for (int i = 0; i < size; i++) {
+        /*
+         * 0 ... lineSize-1
+         * lineSize ... 2*lineSize-1
+         * ...
+         * size-lineSize ... size-1
+         */
+        switch (manip) {
+        case NONE:
+            j = i; // up to compiler optimisation
+            break;
+        case REVERSE:
+            j = size - i - 1;
+            break;
+        case FLIP_VERT:
+            int curLine = (size / lineSize) - (i / lineSize) - 1;
+            j = curLine * lineSize + (i % lineSize); // assume int div truncates
+            break;
+        }
+
+        // dropping alpha channel 
+        pixels_b[i] = tgt::col3(pixels_col[j].x, pixels_col[j].y, pixels_col[j].z);
     }
     return reinterpret_cast<uint8_t*> (pixels_b);
 }
@@ -188,7 +265,8 @@ struct VEAVContext {
      */
     uint8_t* videoBuffer;
 
-    GLenum pixelFormat_, pixelType_; // input specification
+    GLenum pixelType_; // input specification
+    GLint pixelFormat_;
 
     /**
      * init picture- & video-buffer
@@ -273,8 +351,8 @@ struct VEAVContext {
             GLenum pixelFormat, GLenum pixelType, const int bitRate) {
 
         // TODO check limits of swscale conversion
-        if (GL_RGB != pixelFormat && GL_FLOAT != pixelType) {
-            LERRORC(loggerCat_,"only GL_RGB + GL_FLOAT as input supported");
+        if (GL_RGBA != pixelFormat || (GL_FLOAT != pixelType && GL_UNSIGNED_SHORT != pixelType && GL_UNSIGNED_BYTE != pixelType)) {
+            LERRORC(loggerCat_,"only GL_RGBA + GL_FLOAT/GL_UNSIGNED_SHORT/GL_UNSIGNED_BYTE as input supported");
             return false;
         }
 
@@ -506,7 +584,8 @@ VideoEncoder::~VideoEncoder() {
 }
 
 void VideoEncoder::startVideoEncoding(std::string filePath, const int fps,
-        const int width, const int height) {
+                                      const int width, const int height,
+                                      GLint pixelFormat, GLenum pixelType) {
     if (encoderContext != 0) {
         LWARNING("already encoding a video");
         return;
@@ -514,8 +593,8 @@ void VideoEncoder::startVideoEncoding(std::string filePath, const int fps,
 
     // we must not reuse this context because it still stores state of finished encoding
     // TODO consider reusing everything but videoStream
-    encoderContext = new VEAVContext(filePath, fps, width, height, GL_RGB,
-            GL_FLOAT, bitrate_, preset_);
+    encoderContext = new VEAVContext(filePath, fps, width, height, pixelFormat,
+            pixelType, bitrate_, preset_);
 
     if (!encoderContext) {
         LWARNING("Encoding NOT started due to previous error");
@@ -547,12 +626,28 @@ void VideoEncoder::nextFrame(GLvoid* pixels) {
 
     AVCodecContext* codecContext = encoderContext->videoStream->codec;
 
-    float* pixelsFloat = reinterpret_cast<float*> (pixels);
+    if (encoderContext->pixelFormat_ != GL_RGBA) {
+        LERROR("Only GL_RGBA as input format supported.");
+        return;
+    }
 
-    // TODO move this conversion into VEAVContext and let it rely it on input specs
-    uint8_t* pixels8 = tgt::floatToUint8_tRGB(pixelsFloat, codecContext->width
-            * codecContext->height, codecContext->width, FLIP_VERT);
-    //delete[] pixelsFloat;
+    uint8_t* pixels8 = 0;
+    if (encoderContext->pixelType_ == GL_FLOAT) {
+        pixels8 = tgt::floatToUint8_tRGB(reinterpret_cast<float*>(pixels), codecContext->width
+                    * codecContext->height, codecContext->width, FLIP_VERT);
+    }
+    else if (encoderContext->pixelType_ == GL_UNSIGNED_SHORT) {
+        pixels8 = tgt::uint16ToUint8_tRGB(reinterpret_cast<uint16_t*>(pixels), codecContext->width
+                    * codecContext->height, codecContext->width, FLIP_VERT); 
+    }
+    else if (encoderContext->pixelType_ == GL_UNSIGNED_BYTE) {
+        pixels8 = tgt::uint8ToUint8_tRGB(reinterpret_cast<uint8_t*>(pixels), codecContext->width
+                    * codecContext->height, codecContext->width, FLIP_VERT); 
+    }
+    else {
+        LERROR("Unknown pixel type. Only GL_FLOAT/GL_UNSIGNED_SHORT/GL_UNSIGNED_BYTE supported");
+        return;
+    }
 
     encoderContext->nextFrame(pixels8);
     delete [] pixels8;

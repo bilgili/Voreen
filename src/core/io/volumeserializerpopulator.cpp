@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,36 +29,17 @@
 
 #include "voreen/core/io/volumeserializerpopulator.h"
 
-#include "voreen/core/io/datvolumereader.h"
-#include "voreen/core/io/datvolumewriter.h"
-#include "voreen/core/io/nrrdvolumereader.h"
-#include "voreen/core/io/nrrdvolumewriter.h"
-#include "voreen/core/io/philipsusvolumereader.h"
-#include "voreen/core/io/quadhidacvolumereader.h"
-#include "voreen/core/io/rawvolumereader.h"
-#include "voreen/core/io/tuvvolumereader.h"
-#include "voreen/core/io/interfilevolumereader.h"
-#include "voreen/core/io/brickedvolumereader.h"
-#include "voreen/core/io/multivolumereader.h"
-
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 #include "voreen/core/io/volumeserializer.h"
 
-#include "voreen/core/application.h"
-
-#ifdef VRN_MODULE_FLOWREEN
-#include "voreen/modules/flowreen/flowreader.h"
-#endif
+#include "voreen/core/io/datvolumereader.h"
+#include "voreen/core/io/datvolumewriter.h"
+#include "voreen/core/io/rawvolumereader.h"
+#include "voreen/core/io/brickedvolumereader.h"
 
 #ifdef VRN_WITH_DCMTK
     #include "voreen/core/io/dicomvolumereader.h"
-#endif
-
-#ifdef VRN_WITH_MATLAB
-    #include "voreen/core/io/matvolumereader.h"
-#endif
-
-#ifdef VRN_WITH_PVM
-    #include "voreen/core/io/pvmvolumereader.h"
 #endif
 
 #ifdef VRN_WITH_TIFF
@@ -73,47 +54,41 @@
 namespace voreen {
 
 VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
-  : vs_(new VolumeSerializer()),
-    progressDialog_(0)
+    : vs_(new VolumeSerializer()),
+      progressDialog_(0)
 {
 
-    if (showProgress && VoreenApplication::app()) {
-        progressDialog_ = VoreenApplication::app()->createProgressDialog();
-        if (progressDialog_) {
-            progressDialog_->setTitle("Loading volume");
-            progressDialog_->setMessage("Loading volume ...");
+    if (VoreenApplication::app()) {
+        // create progress bar
+        if (showProgress) {
+            progressDialog_ = VoreenApplication::app()->createProgressDialog();
+            if (progressDialog_) {
+                progressDialog_->setTitle("Loading volume");
+                progressDialog_->setMessage("Loading volume ...");
+            }
+        }
+
+        // retrieve volume readers/writers from modules
+        std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
+        for (size_t i=0; i<modules.size(); i++) {
+            for (size_t j=0; j<modules.at(i)->getVolumeReaders().size(); j++) {
+                readers_.push_back(modules.at(i)->getVolumeReaders().at(j)->create(progressDialog_));
+            }
+            for (size_t j=0; j<modules.at(i)->getVolumeWriters().size(); j++) {
+                writers_.push_back(modules.at(i)->getVolumeWriters().at(j)->create(progressDialog_));
+            }
         }
     }
+    else {
+        LWARNINGC("voreen.VolumeSerializerPopulator", "VoreenApplication not instantiated");
+    }
 
-    /*
-        populate array with all known VolumeReaders
-        --> if an FormatClashException occurs here it is an error in this method
-    */
     readers_.push_back(new DatVolumeReader(progressDialog_));
-    readers_.push_back(new NrrdVolumeReader());
-    readers_.push_back(new QuadHidacVolumeReader());
     readers_.push_back(new RawVolumeReader(progressDialog_));
-    readers_.push_back(new TUVVolumeReader());
-    readers_.push_back(new InterfileVolumeReader());
     readers_.push_back(new BrickedVolumeReader(progressDialog_) );
-    readers_.push_back(new MultiVolumeReader(this, progressDialog_));
 
 #ifdef VRN_WITH_DCMTK
     readers_.push_back(new DicomVolumeReader(progressDialog_));
-#else
-    readers_.push_back(new PhilipsUSVolumeReader());
-#endif
-
-#ifdef VRN_MODULE_FLOWREEN
-    readers_.push_back(new FlowReader(progressDialog_));
-#endif
-
-#ifdef VRN_WITH_MATLAB
-    readers_.push_back(new MatVolumeReader());
-#endif
-
-#ifdef VRN_WITH_PVM
-    readers_.push_back(new PVMVolumeReader(progressDialog_));
 #endif
 
 #ifdef VRN_WITH_TIFF
@@ -124,18 +99,29 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
     readers_.push_back(new ZipVolumeReader(this, progressDialog_));
 #endif
 
-    for (size_t i = 0; i < readers_.size(); ++i)
-        vs_->registerReader(readers_[i]);
+    // populate array with all known VolumeReaders
+    // --> if an FormatClashException occurs here it is an error in this method
+    for (size_t i = 0; i < readers_.size(); ++i) {
+        try {
+            vs_->registerReader(readers_[i]);
+        }
+        catch (const FormatClashException& e) {
+            LWARNINGC("voreen.VolumeSerializerPopulator", e.what());
+        }
+    }
 
-    /*
-        populate array with all known VolumeWriters
-        --> if an FormatClashException occurs here it is an error in this method
-    */
+    // populate array with all known VolumeWriters
+    // --> if an FormatClashException occurs here it is an error in this method
     writers_.push_back(new DatVolumeWriter());
-    writers_.push_back(new NrrdVolumeWriter());
 
-    for (size_t i = 0; i < writers_.size(); ++i)
-        vs_->registerWriter(writers_[i]);
+    for (size_t i = 0; i < writers_.size(); ++i) {
+        try {
+            vs_->registerWriter(writers_[i]);
+        }
+        catch (const FormatClashException& e) {
+            LWARNINGC("voreen.VolumeSerializerPopulator", e.what());
+        }
+    }
 }
 
 VolumeSerializerPopulator::~VolumeSerializerPopulator() {

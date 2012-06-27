@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_SHADERPROPERTYWIDGET_H
 #define VRN_SHADERPROPERTYWIDGET_H
 
-#include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h"
 
 class QPushButton;
 
@@ -40,35 +40,24 @@ class ShaderPlugin;
 class VoreenToolWindow;
 class ShaderProperty;
 
-class ShaderPropertyWidget : public QPropertyWidget {
+class ShaderPropertyWidget : public QPropertyWidgetWithEditorWindow {
 Q_OBJECT
 public:
     ShaderPropertyWidget(ShaderProperty* prop, QWidget* parent = 0);
 
-    ~ShaderPropertyWidget();
-
     void updateFromProperty();
     void disconnect();
-
-    /**
-     * Stores the state of the transfer function editor window.
-     */
-    virtual MetaDataBase* getWidgetMetaData() const;
 
 public slots:
     void setProperty();
 
 protected:
-    /// Creates the transfunc editor
-    void createEditorWindow();
-
-    /// Queries the property's meta data for
-    /// the editor window's visibility state
-    bool editorVisibleOnStartup() const;
+    virtual QWidget* createEditorWindowWidget();
+    virtual void customizeEditorWindow();
+    virtual Property* getProperty();
 
     ShaderPlugin* plugin_;
     ShaderProperty* property_;
-    VoreenToolWindow* window_;
     QPushButton* editBt_;
 };
 

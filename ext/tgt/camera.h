@@ -73,6 +73,11 @@ public:
 
     virtual ~Camera();
 
+    /** 
+     * Creates a copy.
+     */
+    Camera* clone() const;
+
     /// Setter / Getter
     void setPosition(const vec3& pos) {
         position_ = pos;

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,8 +34,9 @@ namespace voreen {
 PositionMetaData::PositionMetaData(const int& x, const int& y)
     : x_(x)
     , y_(y)
-{
-}
+{}
+
+PositionMetaData::~PositionMetaData() {}
 
 void PositionMetaData::serialize(XmlSerializer& s) const {
     s.serialize("x", x_);

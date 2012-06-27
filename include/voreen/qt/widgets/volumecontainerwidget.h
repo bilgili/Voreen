@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -36,8 +36,8 @@
 #include <QTreeWidget>
 #include <QWidget>
 
-#include "voreen/core/volume/volumecontainer.h"
-#include "voreen/core/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #ifdef VRN_WITH_DCMTK
 #include "voreen/core/io/dicomvolumereader.h"
@@ -45,6 +45,7 @@
 #endif
 
 class QPixmap;
+class VolumeLoadButton;
 
 namespace voreen {
 
@@ -75,50 +76,47 @@ public:
 
     void setVolumeContainer(VolumeContainer* volumeContainer);
 
+    virtual QSize sizeHint() const;
+
     /// @see VolumeCollectionObserver
     void volumeAdded(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
     /// @see VolumeCollectionObserver
     void volumeRemoved(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
+    /// @see VolumeCollectionObserver
+    void volumeChanged(const VolumeCollection* /*source*/, const VolumeHandle* /*handle*/);
 
-public slots:
-    void loadVolume();
-    void loadRawVolume(std::string);
     void loadDicomFiles();
+    void loadVolume();
+    void loadVolumeRawFilter();
 
 protected:
     void keyPressEvent(QKeyEvent*);
 
+    VolumeLoadButton* volumeLoadButton_;
+
 private:
     void update();
-    const std::string getExtensions() const;
 
     VolumeContainer* volumeContainer_;
 
+    /**
+    * QTreeWidget with custom context Menu is only applied
+    * by the volumecontainer for now
+    */
     QRCTreeWidget* volumeInfos_;
-    bool rawSelected_;
-    //QCheckBox* rawCheckBox_;
-
-#ifdef VRN_WITH_DCMTK
-    DicomDirDialog* dicomDirDialog_;
-#endif
 
     static const std::string loggerCat_;
 
 private slots:
 
-    std::vector<std::string> openFileDialog();
-    void addMultipleVolumes(std::vector<std::string>);
-
-    void loadDicomDir(const std::string& file);
-    void loadDicomFiles(const std::string& dir);
-    void dicomDirDialogFinished();
-
+    /// removes a volume
     void removeVolume();
+    /// reloads a volume into memory
     void volumeRefresh(QTreeWidgetItem*);
+    /// exports currently selected volumes
     void exportDat();
 
     void resizeOnCollapse(bool);
-    void filterChanged(QString);
 
 };
 

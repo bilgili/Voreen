@@ -13,11 +13,11 @@ CONFIG += static thread
 CONFIG -= dll
 
 # Check Qt version:
-# Use a regex that matches all invalid version numbers, i.e, X.*.*
-# with X <= 3 and 4.Y.* with Y <= 2.
-VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[12])\..*$")
+# Use a regex that matches all invalid version numbers, namely X.*.*
+# with X <= 3 and 4.Y.* with Y <= 3.
+VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[123])\..*$")
 !isEmpty(VERSION_CHECK) {
-   error("Your Qt version is $$QT_VERSION but at least 4.3.0 is required!")
+   error("Your Qt version is $$QT_VERSION but at least 4.4.0 is required!")
 }
 
 # Include local configuration
@@ -28,8 +28,9 @@ VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[12])\..*$")
 }
 
 # Include common configuration
-include(../../commonconf.txt)
+include(../../commonconf.pri)
 
+# Destination directory for the library
 macx: DESTDIR = ../..
 unix: DESTDIR = ../..
 win32: {
@@ -63,35 +64,52 @@ SOURCES += \
     versionqt.cpp \
     voreenapplicationqt.cpp
 SOURCES += \
-    widgets/animationplugin.cpp \
     widgets/choicelistcombobox.cpp \
+    widgets/clickablelabel.cpp \
+    widgets/codeedit.cpp \
     widgets/consoleplugin.cpp \
+    widgets/customlabel.cpp \
     widgets/eventpropertywidget.cpp \
     widgets/expandableheaderbutton.cpp \
     widgets/glslhighlighter.cpp \
+    widgets/inputmappingdialog.cpp \
     widgets/keydetectorwidget.cpp \
     widgets/labelingwidgetqt.cpp \
-    widgets/plugindialog.cpp \
-    widgets/qlabelclickable.cpp \
+    widgets/lightwidget.cpp \
     widgets/lineeditresetwidget.cpp \
+    widgets/linkingscriptmanager.cpp \
+    widgets/pythonhighlighter.cpp \
     widgets/rawvolumewidget.cpp \
-    widgets/segmentationplugin.cpp \
+    widgets/rendertargetviewer.cpp \
     widgets/shaderplugin.cpp \
-    widgets/shortcutpreferenceswidget.cpp \
-    widgets/rendertargetdebugwidget.cpp \
     widgets/sliderspinboxwidget.cpp \
     widgets/snapshotplugin.cpp \
-    widgets/tablesstextedit.cpp \
+    widgets/syntaxhighlighter.cpp \
     widgets/volumecontainerwidget.cpp \
+    widgets/volumeloadbutton.cpp \
     widgets/volumeviewhelper.cpp \
-    widgets/voreentoolwindow.cpp \
-    widgets/widgetplugin.cpp
+    widgets/voreentoolwindow.cpp
+SOURCES += \
+    widgets/animation/animationeditor.cpp \
+    widgets/animation/animationexportwidget.cpp \
+    widgets/animation/currentframegraphicsitem.cpp \
+    widgets/animation/keyframegraphicsitem.cpp \
+    widgets/animation/nodechainwidget.cpp \
+    widgets/animation/overviewwidget.cpp \
+    widgets/animation/processortimelinewidget.cpp \
+    widgets/animation/propertytimelineview.cpp \
+    widgets/animation/propertytimelinewidget.cpp \
+    widgets/animation/templatepropertytimelinewidget.cpp \
+    widgets/animation/timelinewidget.cpp  
 SOURCES += \
     widgets/property/boolpropertywidget.cpp \
     widgets/property/buttonpropertywidget.cpp \
     widgets/property/camerapropertywidget.cpp \
     widgets/property/colorpropertywidget.cpp \
     widgets/property/filedialogpropertywidget.cpp \
+    widgets/property/floatmat2propertywidget.cpp \
+    widgets/property/floatmat3propertywidget.cpp \
+    widgets/property/floatmat4propertywidget.cpp \
     widgets/property/floatpropertywidget.cpp \
     widgets/property/floatvec2propertywidget.cpp \
     widgets/property/floatvec3propertywidget.cpp \
@@ -100,39 +118,31 @@ SOURCES += \
     widgets/property/intvec2propertywidget.cpp \
     widgets/property/intvec3propertywidget.cpp \
     widgets/property/intvec4propertywidget.cpp \
+    widgets/property/lightpropertywidget.cpp \
+    widgets/property/matrixpropertywidget.cpp \
     widgets/property/optionpropertywidget.cpp \
-    widgets/property/propertyvectorwidget.cpp \
     widgets/property/processorpropertieswidget.cpp \
+    widgets/property/propertyvectorwidget.cpp \
     widgets/property/qpropertywidget.cpp \
     widgets/property/qpropertywidgetfactory.cpp \
+    widgets/property/qpropertywidgetwitheditorwindow.cpp \
     widgets/property/shaderpropertywidget.cpp \
     widgets/property/stringpropertywidget.cpp \
     widgets/property/transfuncpropertywidget.cpp \
-	widgets/property/vecpropertywidget.cpp \
+    widgets/property/vecpropertywidget.cpp \
     widgets/property/volumecollectionpropertywidget.cpp \
-    widgets/property/volumehandlepropertywidget.cpp
+    widgets/property/volumehandlepropertywidget.cpp 
+
 SOURCES += \
-    widgets/network/processorlistwidget.cpp \
-    widgets/network/propertylistwidget.cpp \
-    widgets/network/editor/arrowgraphicsitem.cpp \
-    widgets/network/editor/linkarrowgraphicsitem.cpp \
-    widgets/network/editor/portgraphicsitem.cpp \
-    widgets/network/editor/networkeditor.cpp \
-    widgets/network/editor/openpropertylistbutton.cpp \
-    widgets/network/editor/processorgraphicsitem.cpp \
-    widgets/network/editor/propertylistgraphicsitem.cpp \
-    widgets/network/editor/tctooltip.cpp \
-    widgets/network/editor/propertygraphicsitem.cpp \
-    widgets/network/editor/propertylinkdialog.cpp \
-    widgets/network/editor/scripteditor.cpp \
-    widgets/network/editor/textgraphicsitem.cpp \
-    widgets/network/editor/tooltiptimer.cpp
+    widgets/processorlistwidget.cpp \
+    widgets/propertylistwidget.cpp
 SOURCES += \
+    widgets/processor/canvasrendererwidget.cpp \
     widgets/processor/qprocessorwidget.cpp \
-    widgets/processor/qprocessorwidgetfactory.cpp \
-    widgets/processor/canvasrendererwidget.cpp
+    widgets/processor/qprocessorwidgetfactory.cpp
 SOURCES += \
     widgets/property/camerawidget.cpp 
+
 SOURCES += \
     widgets/transfunc/colorluminancepicker.cpp \
     widgets/transfunc/colorpicker.cpp \
@@ -153,6 +163,14 @@ SOURCES += \
     ../../ext/tgt/qt/qtcanvas.cpp \
     ../../ext/tgt/qt/qttimer.cpp
 
+#SHADER_SOURCES += \
+
+SHADER_SOURCES_RENDERTARGETVIEWER += \
+    glsl/rendertargetviewer/color.frag \
+    glsl/rendertargetviewer/inversecolor.frag
+
+visual_studio: SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_RENDERTARGETVIEWER
+
 ##############
 # Headers
 ##############
@@ -162,40 +180,55 @@ HEADERS += \
     ../../include/voreen/qt/helpbrowser.h \
     ../../include/voreen/qt/ioprogressdialog.h \
     ../../include/voreen/qt/pyvoreenqt.h \
-    ../../include/voreen/qt/qdebug.h \
     ../../include/voreen/qt/versionqt.h \
-    ../../include/voreen/qt/voreenapplicationqt.h \
-    ../../include/voreen/qt/voreenqtglobal.h
+    ../../include/voreen/qt/voreenapplicationqt.h
 HEADERS += \
-    ../../include/voreen/qt/widgets/animationplugin.h \
+    ../../include/voreen/qt/widgets/animation/animationexportwidget.h \
     ../../include/voreen/qt/widgets/choicelistcombobox.h \
+    ../../include/voreen/qt/widgets/clickablelabel.h \
+    ../../include/voreen/qt/widgets/codeedit.h \
     ../../include/voreen/qt/widgets/consoleplugin.h \
+    ../../include/voreen/qt/widgets/customlabel.h \
     ../../include/voreen/qt/widgets/eventpropertywidget.h \
     ../../include/voreen/qt/widgets/expandableheaderbutton.h \
     ../../include/voreen/qt/widgets/glslhighlighter.h \
+    ../../include/voreen/qt/widgets/inputmappingdialog.h \
     ../../include/voreen/qt/widgets/keydetectorwidget.h \
     ../../include/voreen/qt/widgets/labelingwidgetqt.h \
-    ../../include/voreen/qt/widgets/plugindialog.h \
-    ../../include/voreen/qt/widgets/qlabelclickable.h \
+    ../../include/voreen/qt/widgets/lightwidget.h \
     ../../include/voreen/qt/widgets/lineeditresetwidget.h \
+    ../../include/voreen/qt/widgets/linkingscriptmanager.h \
+    ../../include/voreen/qt/widgets/pythonhighlighter.h \
     ../../include/voreen/qt/widgets/rawvolumewidget.h \
-    ../../include/voreen/qt/widgets/segmentationplugin.h \
+    ../../include/voreen/qt/widgets/rendertargetviewer.h \
     ../../include/voreen/qt/widgets/shaderplugin.h \
-    ../../include/voreen/qt/widgets/shortcutpreferenceswidget.h \
-    ../../include/voreen/qt/widgets/rendertargetdebugwidget.h \
     ../../include/voreen/qt/widgets/sliderspinboxwidget.h \
     ../../include/voreen/qt/widgets/snapshotplugin.h \
-    ../../include/voreen/qt/widgets/tablesstextedit.h \
+    ../../include/voreen/qt/widgets/syntaxhighlighter.h \
     ../../include/voreen/qt/widgets/volumecontainerwidget.h \
+    ../../include/voreen/qt/widgets/volumeloadbutton.h \
     ../../include/voreen/qt/widgets/volumeviewhelper.h \
-    ../../include/voreen/qt/widgets/voreentoolwindow.h \
-    ../../include/voreen/qt/widgets/widgetplugin.h
+    ../../include/voreen/qt/widgets/voreentoolwindow.h
+HEADERS +=  \
+    ../../include/voreen/qt/widgets/animation/animationeditor.h \
+    ../../include/voreen/qt/widgets/animation/currentframegraphicsitem.h \
+    ../../include/voreen/qt/widgets/animation/keyframegraphicsitem.h \
+    ../../include/voreen/qt/widgets/animation/nodechainwidget.h \
+    ../../include/voreen/qt/widgets/animation/overviewwidget.h \
+    ../../include/voreen/qt/widgets/animation/processortimelinewidget.h \
+    ../../include/voreen/qt/widgets/animation/propertytimelineview.h \
+    ../../include/voreen/qt/widgets/animation/propertytimelinewidget.h \
+    ../../include/voreen/qt/widgets/animation/templatepropertytimelinewidget.h \
+    ../../include/voreen/qt/widgets/animation/timelinewidget.h 
 HEADERS += \
     ../../include/voreen/qt/widgets/property/boolpropertywidget.h \
     ../../include/voreen/qt/widgets/property/buttonpropertywidget.h \
     ../../include/voreen/qt/widgets/property/camerapropertywidget.h \
     ../../include/voreen/qt/widgets/property/colorpropertywidget.h \
     ../../include/voreen/qt/widgets/property/filedialogpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatmat2propertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatmat3propertywidget.h \
+    ../../include/voreen/qt/widgets/property/floatmat4propertywidget.h \
     ../../include/voreen/qt/widgets/property/floatpropertywidget.h \
     ../../include/voreen/qt/widgets/property/floatvec2propertywidget.h \
     ../../include/voreen/qt/widgets/property/floatvec3propertywidget.h \
@@ -204,40 +237,31 @@ HEADERS += \
     ../../include/voreen/qt/widgets/property/intvec2propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec3propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec4propertywidget.h \
+    ../../include/voreen/qt/widgets/property/lightpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/matrixpropertywidget.h \
     ../../include/voreen/qt/widgets/property/optionpropertywidget.h \
-    ../../include/voreen/qt/widgets/property/propertyvectorwidget.h \
     ../../include/voreen/qt/widgets/property/processorpropertieswidget.h \
+    ../../include/voreen/qt/widgets/property/propertyvectorwidget.h \
     ../../include/voreen/qt/widgets/property/qpropertywidget.h \
     ../../include/voreen/qt/widgets/property/qpropertywidgetfactory.h \
+    ../../include/voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h \
     ../../include/voreen/qt/widgets/property/shaderpropertywidget.h \
     ../../include/voreen/qt/widgets/property/stringpropertywidget.h \
     ../../include/voreen/qt/widgets/property/transfuncpropertywidget.h \
-	../../include/voreen/qt/widgets/property/vecpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/vecpropertywidget.h \
     ../../include/voreen/qt/widgets/property/volumecollectionpropertywidget.h \
     ../../include/voreen/qt/widgets/property/volumehandlepropertywidget.h 
+
 HEADERS += \
-    ../../include/voreen/qt/widgets/network/processorlistwidget.h \
-    ../../include/voreen/qt/widgets/network/propertylistwidget.h \
-    ../../include/voreen/qt/widgets/network/editor/arrowgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/linkarrowgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/portgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/networkeditor.h \
-    ../../include/voreen/qt/widgets/network/editor/openpropertylistbutton.h \
-    ../../include/voreen/qt/widgets/network/editor/processorgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/propertylistgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/tctooltip.h \
-    ../../include/voreen/qt/widgets/network/editor/textgraphicsitem.h \
-    ../../include/voreen/qt/widgets/network/editor/tooltiptimer.h \
-    ../../include/voreen/qt/widgets/network/editor/propertylinkdialog.h \
-    ../../include/voreen/qt/widgets/network/editor/scripteditor.h \
-    ../../include/voreen/qt/widgets/network/editor/itooltip.h \
-    ../../include/voreen/qt/widgets/network/editor/propertygraphicsitem.h
+    ../../include/voreen/qt/widgets/processorlistwidget.h \
+    ../../include/voreen/qt/widgets/propertylistwidget.h
 HEADERS += \
+    ../../include/voreen/qt/widgets/processor/canvasrendererwidget.h \
     ../../include/voreen/qt/widgets/processor/qprocessorwidget.h \
-    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h \       
-    ../../include/voreen/qt/widgets/processor/canvasrendererwidget.h
+    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h
 HEADERS += \
-    ../../include/voreen/qt/widgets/property/camerawidget.h
+    ../../include/voreen/qt/widgets/property/camerawidget.h 
+
 HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/colorluminancepicker.h \
     ../../include/voreen/qt/widgets/transfunc/colorpicker.h \
@@ -259,18 +283,15 @@ HEADERS += \
     ../../ext/tgt/qt/qttimer.h
 
 MSVC_IDE: SOURCES += \
-    ../core/vis/glsl/stc_showdepth.frag \
-    ../core/vis/glsl/stc_showfloatcolor.frag \
-    ../core/vis/glsl/stc_showtexture.frag
+    ../core/glsl/rendertargetdebugwidget/color.frag \
+    ../core/glsl/rendertargetdebugwidget/inversecolor.frag
 
 contains(DEFINES, VRN_WITH_DCMTK) {
   HEADERS += ../../include/voreen/qt/dicomdialog.h
   SOURCES += dicomdialog.cpp
 }
 
-
-
-FORMS += aboutbox.ui scripteditor.ui
+FORMS += aboutbox.ui
 
 
 # this must come after all SOURCES, HEADERS and FORMS have been added
@@ -280,7 +301,13 @@ contains(DEFINES, VRN_WITH_SVNVERSION) : revtarget.depends = $$SOURCES $$HEADERS
 unix {
   !isEmpty(INSTALL_PREFIX) {
     target.path = $$INSTALLPATH_LIB
-    INSTALLS += target
+
+    shaders.path = $$INSTALLPATH_SHARE/shaders
+    shaders.files += $$SHADER_SOURCES
+    shaders_rtv.path = $$INSTALLPATH_SHARE/shaders/rendertargetviewer
+    shaders_rtv.files += $$SHADER_SOURCES_RENDERTARGETVIEWER
+
+    INSTALLS += target shaders shaders_rtv
   }
 }
 

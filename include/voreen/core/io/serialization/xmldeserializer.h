@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,6 +32,8 @@
 
 #include <string>
 #include <vector>
+#include <deque>
+#include <list>
 #include <map>
 #include <set>
 #include <iostream>
@@ -40,6 +42,7 @@
 #include "tinyxml/tinyxml.h"
 
 #include "tgt/vector.h"
+#include "tgt/matrix.h"
 #include "tgt/logmanager.h"
 
 #include "voreen/core/io/serialization/xmlserializerbase.h"
@@ -134,7 +137,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, bool& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -147,7 +150,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, char& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -160,7 +163,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, signed char& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -173,7 +176,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, unsigned char& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -186,7 +189,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, signed short& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -199,7 +202,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, unsigned short& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -212,7 +215,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, signed int& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -225,7 +228,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, unsigned int& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -238,7 +241,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, signed long& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -251,7 +254,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, unsigned long& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -264,7 +267,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, float& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -277,7 +280,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, double& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -290,7 +293,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, long double& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -303,7 +306,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, std::string& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -316,7 +319,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::vec2& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -329,7 +332,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::vec3& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -342,7 +345,46 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::vec4& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::dvec2& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::dvec3& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::dvec4& data)
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -355,7 +397,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::ivec2& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -368,7 +410,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::ivec3& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -381,7 +423,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::ivec4& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -394,7 +436,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::col3& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -407,7 +449,85 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::col4& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::mat2& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::mat3& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::mat4& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::Matrix2d& data)
+        throw (SerializationException);
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::Matrix3d& data)
+        throw (SerializationException);
+
+        /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, tgt::Matrix4d& data)
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c Serializable interface realization.
@@ -423,7 +543,7 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, Serializable& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Deserializes the given pointer reference.
@@ -440,7 +560,7 @@ public:
      */
     template<class T>
     void deserialize(const std::string& key, T*& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Deserializes a data vector.
@@ -463,7 +583,53 @@ public:
      */
     template<class T>
     void deserialize(const std::string& key, std::vector<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
+
+    /**
+     * Deserializes a data deque.
+     *
+     * @note Element order of collection items remains constant during
+     *       serialization and deserialization.
+     *
+     * @tparam T data type of vector items
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data vector
+     * @param itemKey XML node key for each XML child node
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     * @throws XmlSerializationMemoryAllocationException
+     *         in case of trying to allocate memory for an @c AbstractSerializable
+     *         or if there are not enough allocate items if pointer content serialization is enabled
+     */
+    template<class T>
+    void deserialize(const std::string& key, std::deque<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
+
+    /**
+     * Deserializes a data list.
+     *
+     * @note Element order of collection items remains constant during
+     *       serialization and deserialization.
+     *
+     * @tparam T data type of vector items
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data vector
+     * @param itemKey XML node key for each XML child node
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     * @throws XmlSerializationMemoryAllocationException
+     *         in case of trying to allocate memory for an @c AbstractSerializable
+     *         or if there are not enough allocate items if pointer content serialization is enabled
+     */
+    template<class T>
+    void deserialize(const std::string& key, std::list<T>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
 
     /**
      * Deserializes a data set.
@@ -491,7 +657,7 @@ public:
      */
     template<class T, class C>
     void deserialize(const std::string& key, std::set<T, C>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException, XmlSerializationInvalidOperationException);
+        throw (SerializationException);
 
     /**
      * Deserializes a data map.
@@ -522,7 +688,7 @@ public:
         std::map<T, U, C>& data,
         const std::string& valueKey = XmlSerializationConstants::VALUENODE,
         const std::string& keyKey = XmlSerializationConstants::KEYNODE)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Mark a pointer as freed during deserialization process,
@@ -545,7 +711,7 @@ public:
      *     the XML document which cannot be resolved.
      */
     void read(std::istream& stream, XmlProcessor* xmlProcessor = 0)
-        throw (XmlSerializationFormatException, XmlSerializationVersionMismatchException, XmlSerializationReferenceResolvingException);
+        throw (SerializationException);
 
 protected:
     /**
@@ -563,7 +729,7 @@ private:
      * @throws XmlSerializationDuplicateIdException if id already exists
      */
     inline void addReferenceAddress(TiXmlElement* element, void* address)
-        throw (XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Adds given @c id/reference pair to the unresolved reference map.
@@ -584,7 +750,8 @@ private:
      * @return pointer to allocated memory or @c null in case of memory was not allocatable
      */
     template<class T>
-    inline T* allocateMemory(const std::string* type);
+    inline T* allocateMemory(const std::string* type)
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -601,7 +768,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(bool* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -618,7 +785,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(char* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -635,7 +802,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(signed char* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -652,7 +819,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(unsigned char* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -669,7 +836,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(signed short* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -686,7 +853,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(unsigned short* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -703,7 +870,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(signed int* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -719,7 +886,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(unsigned int* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -736,7 +903,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(signed long* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -753,7 +920,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(unsigned long* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -770,7 +937,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(float* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -787,7 +954,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(double* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -804,7 +971,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(long double* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -821,7 +988,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(std::string* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -838,7 +1005,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::vec2* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -855,7 +1022,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::vec3* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -872,7 +1039,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::vec4* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -889,7 +1056,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::ivec2* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -906,7 +1073,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::ivec3* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -923,7 +1090,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::ivec4* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -940,7 +1107,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::col3* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -957,7 +1124,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(tgt::col4* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -974,7 +1141,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(Serializable* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Allocates new memory of given type on the heap and returns a pointer to it.
@@ -991,7 +1158,7 @@ private:
      */
     template<class T>
     inline T* allocateMemory(AbstractSerializable* data, const std::string* type = 0)
-        throw (XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     typedef std::set<std::string> ReferenceIdSetType;
     typedef std::vector<std::string> ReferenceIdListType;
@@ -1031,7 +1198,7 @@ private:
      */
     template<class T>
     inline void deserializeSimpleTypes(const std::string& key, T& data)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Helper function for deserializing tgt vectors.
@@ -1048,7 +1215,7 @@ private:
      */
     template<class T>
     inline void deserializeTgtVector(const std::string& key, T& vector, const bool& isColor = false)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException);
+        throw (SerializationException);
 
     /**
      * Helper function deserializes the given @c key/data pair from XML attribute named @c key
@@ -1070,7 +1237,7 @@ private:
      */
     template<class T>
     inline void deserializeAttributeFromNode(const std::string& nodeKey, const std::string& key, T& data, const bool& markVisited = true)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Helper function for deserializing data collections like STL container.
@@ -1097,10 +1264,10 @@ private:
      */
     template<class T>
     inline void deserializeCollectionConstIteratorItems(
-            const std::string& key,
-            T& collection,
-            const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-            throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        const std::string& key,
+        T& collection,
+        const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
 
     /**
      * Helper function for deserializing data collections like STL container.
@@ -1123,10 +1290,10 @@ private:
      */
     template<class T>
     inline void deserializeCollection(
-            const std::string& key,
-            T& collection,
-            const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
-            throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        const std::string& key,
+        T& collection,
+        const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
 
     /**
      * Helper function for deserializing data maps like STL maps.
@@ -1155,7 +1322,7 @@ private:
         T& map,
         const std::string& valueKey = XmlSerializationConstants::VALUENODE,
         const std::string& keyKey = XmlSerializationConstants::KEYNODE)
-        throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException);
+        throw (SerializationException);
 
     /**
      * Resolves the reference corresponding with the reference attribute of the given @c element.
@@ -1176,7 +1343,7 @@ private:
      * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
      */
     TiXmlElement* getNextXmlElement(const std::string& key)
-        throw (XmlSerializationNoSuchDataException);
+        throw (SerializationException);
 
     /**
      * Type definition for set of visited XML nodes.
@@ -1281,7 +1448,7 @@ void XmlDeserializer::ReferenceResolver<T>::resolve(void* resolvedAddress) {
 }
 
 inline void XmlDeserializer::addReferenceAddress(TiXmlElement* element, void* address)
-    throw (XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     const std::string* id = element->Attribute(XmlSerializationConstants::IDATTRIBUTE);
     // Has element no id attribute?
@@ -1328,15 +1495,22 @@ inline void XmlDeserializer::addUnresolvedReference(TiXmlElement* element, T*& d
 }
 
 template<class T>
-inline T* XmlDeserializer::allocateMemory(const std::string* type) {
+inline T* XmlDeserializer::allocateMemory(const std::string* type)
+    throw (SerializationException)
+{
     T* data = 0;
 
     // Does type attribute exists?
     if (type)
         // Look for a matching factory to create object instance...
         for (FactoryListType::iterator it = factories_.begin(); it != factories_.end(); ++it) {
-            data = dynamic_cast<T*>((*it)->createType(*type));
-
+            try {
+                Serializable* serializable = (*it)->createType(*type);
+                data = dynamic_cast<T*>(serializable);
+            }
+            catch (std::exception& e) {
+                raise(XmlSerializationMemoryAllocationException("Object of type '" + *type + "' could not be created: " + std::string(e.what())));
+            }
             // Was factory capable of instance creation?
             if (data)
                 break;
@@ -1345,30 +1519,30 @@ inline T* XmlDeserializer::allocateMemory(const std::string* type) {
     return data;
 }
 
-template<class T> inline T* XmlDeserializer::allocateMemory(bool*, const std::string*)           throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(char*, const std::string*)           throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed char*, const std::string*)    throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned char*, const std::string*)  throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed short*, const std::string*)   throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned short*, const std::string*) throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed int*, const std::string*)     throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned int*, const std::string*)   throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed long*, const std::string*)    throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned long*, const std::string*)  throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(float*, const std::string*)          throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(double*, const std::string*)         throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(long double*, const std::string*)    throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(std::string*, const std::string*)    throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec2*, const std::string*)      throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec3*, const std::string*)      throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec4*, const std::string*)      throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec2*, const std::string*)     throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec3*, const std::string*)     throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec4*, const std::string*)     throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::col3*, const std::string*)      throw (XmlSerializationMemoryAllocationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(tgt::col4*, const std::string*)      throw (XmlSerializationMemoryAllocationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(bool*, const std::string*)           throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(char*, const std::string*)           throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(signed char*, const std::string*)    throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(unsigned char*, const std::string*)  throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(signed short*, const std::string*)   throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(unsigned short*, const std::string*) throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(signed int*, const std::string*)     throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(unsigned int*, const std::string*)   throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(signed long*, const std::string*)    throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(unsigned long*, const std::string*)  throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(float*, const std::string*)          throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(double*, const std::string*)         throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(long double*, const std::string*)    throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(std::string*, const std::string*)    throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec2*, const std::string*)      throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec3*, const std::string*)      throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::vec4*, const std::string*)      throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec2*, const std::string*)     throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec3*, const std::string*)     throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::ivec4*, const std::string*)     throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::col3*, const std::string*)      throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(tgt::col4*, const std::string*)      throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(Serializable*, const std::string* type)
-    throw (XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     // Is a factory registered to allocate memory for objects of this type?
     T* data = allocateMemory<T>(type);
@@ -1383,7 +1557,7 @@ template<class T> inline T* XmlDeserializer::allocateMemory(Serializable*, const
 }
 
 template<class T> inline T* XmlDeserializer::allocateMemory(AbstractSerializable*, const std::string* type)
-    throw (XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     // Is a factory registered to allocate memory for objects of this type?
     T* data = allocateMemory<T>(type);
@@ -1394,16 +1568,16 @@ template<class T> inline T* XmlDeserializer::allocateMemory(AbstractSerializable
     else {
         // Raise exception since we cannot allocate memory for abstract classes without a factory...
         if (type)
-            raise(XmlSerializationMemoryAllocationException("No factory is capable of creating an object of type '" + *type + "'"));
+            raise(XmlSerializationMemoryAllocationException("Object of type '" + *type + "' could not be created (no matching factory)."));
         else
-            raise(XmlSerializationMemoryAllocationException("No factory is capable of creating an object of type '" + std::string(typeid(T).name()) + "'"));
+            raise(XmlSerializationMemoryAllocationException("Object of type '" + std::string(typeid(T).name()) + "' could not be created (no matching factory)."));
         return 0;
     }
 }
 
 template<class T>
 void XmlDeserializer::deserialize(const std::string& key, T*& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     // Always deserialize pointer from content?
     if (usePointerContentSerialization_) {
@@ -1428,6 +1602,11 @@ void XmlDeserializer::deserialize(const std::string& key, T*& data)
     else { // No reference attribute...
         // Does element contain serialized content?
         if (useAttributes_ || element->Attribute(XmlSerializationConstants::VALUEATTRIBUTE) || !element->NoChildren()) {
+            // Is AbstractSerializable 0 pointer?
+            if (!element->FirstAttribute() && element->NoChildren())
+                return;
+
+            // Gather type information...
             const std::string* type = element->Attribute(XmlSerializationConstants::TYPEATTRIBUTE);
 
             // Allocate memory for the object...
@@ -1443,14 +1622,28 @@ void XmlDeserializer::deserialize(const std::string& key, T*& data)
 
 template<class T>
 void XmlDeserializer::deserialize(const std::string& key, std::vector<T>& data, const std::string& itemKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
+{
+    deserializeCollection(key, data, itemKey);
+}
+
+template<class T>
+void XmlDeserializer::deserialize(const std::string& key, std::deque<T>& data, const std::string& itemKey)
+    throw (SerializationException)
+{
+    deserializeCollection(key, data, itemKey);
+}
+
+template<class T>
+void XmlDeserializer::deserialize(const std::string& key, std::list<T>& data, const std::string& itemKey)
+    throw (SerializationException)
 {
     deserializeCollection(key, data, itemKey);
 }
 
 template<class T, class C>
 void XmlDeserializer::deserialize(const std::string& key, std::set<T, C>& data, const std::string& itemKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException, XmlSerializationInvalidOperationException)
+    throw (SerializationException)
 {
     if (usePointerContentSerialization_)
         raise(XmlSerializationInvalidOperationException("Set deserialization using pointer content is not permitted."));
@@ -1462,14 +1655,14 @@ void XmlDeserializer::deserialize(const std::string& key,
                                   std::map<T, U, C>& data,
                                   const std::string& valueKey,
                                   const std::string& keyKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     deserializeMap(key, data, valueKey, keyKey);
 }
 
 template<class T>
 inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, T& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TiXmlElement* element;
     if (useAttributes_)
@@ -1499,7 +1692,7 @@ inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, T& d
 
 template<>
 inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, std::string& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TiXmlElement* element;
     // Deserialize from XML attributes?
@@ -1544,7 +1737,7 @@ inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, std:
 
 template<>
 inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, Serializable& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TiXmlElement* element = getNextXmlElement(key);
 
@@ -1557,7 +1750,7 @@ inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, Seri
 
 template<class T>
 inline void XmlDeserializer::deserializeTgtVector(const std::string& key, T& vector, const bool& isColor)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     TiXmlElement* element = getNextXmlElement(key);
 
@@ -1652,7 +1845,7 @@ inline void XmlDeserializer::deserializeTgtVector(const std::string& key, T& vec
 
 template<class T>
 inline void XmlDeserializer::deserializeAttributeFromNode(const std::string& nodeKey, const std::string& key, T& data, const bool& markVisited)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TemporaryNodeChanger nodeChanger(*this, getNextXmlElement(nodeKey));
 
@@ -1664,7 +1857,7 @@ inline void XmlDeserializer::deserializeAttributeFromNode(const std::string& nod
 
 template<class T>
 inline void XmlDeserializer::deserializeCollectionConstIteratorItems(const std::string& key, T& collection, const std::string& itemKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TiXmlElement* element = getNextXmlElement(key);
 
@@ -1701,7 +1894,7 @@ inline void XmlDeserializer::deserializeCollectionConstIteratorItems(const std::
 
 template<class T>
 inline void XmlDeserializer::deserializeCollection(const std::string& key, T& collection, const std::string& itemKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     // Never deserialize pointer from content?
     if (!usePointerContentSerialization_) {
@@ -1740,7 +1933,7 @@ inline void XmlDeserializer::deserializeMap(const std::string& key,
                                             T& map,
                                             const std::string& valueKey,
                                             const std::string& keyKey)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException, XmlSerializationMemoryAllocationException)
+    throw (SerializationException)
 {
     TiXmlElement* element = getNextXmlElement(key);
 

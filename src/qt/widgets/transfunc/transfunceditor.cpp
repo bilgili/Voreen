@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,8 +29,8 @@
 
 #include "voreen/qt/widgets/transfunc/transfunceditor.h"
 
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/application.h"
+#include "voreen/core/utils/voreenpainter.h"
+#include "voreen/core/voreenapplication.h"
 
 #include <QFileDialog>
 #include <QUrl>

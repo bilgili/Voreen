@@ -1,6 +1,77 @@
 Voreen Changelog
 ----------------
 
+2010-07-14: Voreen 2.5 (r35, internal r11040)
+---------------------------------------------
+
+   * Major feature improvements:
+     o With the novel animation feature, Voreen can be used to create complex
+       animations of render networks and export them as a movie. Try out the
+       animation user interface by clicking the animation button in the toolbar.
+     o The new MultiVolumeRaycaster allows rendering of up to four volumes
+       simultaneously with correct sampling and blending.
+     o Voreen now has OpenCL support. You can find a few example processors in
+       /src/modules/opencl (VolumeGradientCL and GrayscaleCL)
+     o To ease the development of complex rendering networks, the aggregation of
+       subnetworks is supported in VoreenVE. Just select multiple processors in
+       the network editor and choose "Aggregate" in the context menu.
+     o Several arbitrary clipping planes can be used simultaneously (see the
+       workspace "arbitraryclipping.vws").
+     o The render target viewer has been extended to better support visual
+       debugging. You can now choose which channels to view and also quantify
+       the actual pixel content for each channel of each used render target.
+       Furthermore, export of the intermediate results in the render targets as
+       an image file is possible.
+     o The TextOverlay processor allows to augment renderings with text.
+     o Opaque geometry can be comfortably integrated into volume renderings by
+       using the EEPGeometryIntegrator processor.
+     o Loops can be used within the network to support iterative processing
+       (RenderLoopInitiator, RenderLoopFinalizer), see "renderloop.vws".
+     o Exploded views of volume data exploiting the loop functionality, see
+       "explodedviews.vws".
+     o Support for analyze and nifti file formats.
+  
+   * Minor feature improvements:
+     o RGBRaycaster using a hue-based transfer function
+     o New volume processors
+       o VolumeCombine for resampling and combining two volumes on a common grid.
+       o VolumeMasking for masking a volume based on an opacity masking function.
+       o ConnectedComponents3D, VolumeMorphology, VolumeResampling, VolumeSubSet
+     o New image processors
+       o Gabor filter, to be used in combination with the Convolution processor
+     o The OrientationOverlay processor has been revised.
+     o GPU-based marching cubes rendering through the HPMC library.
+     o Camera fly-through navigation (selectable in InputMappingDialog)
+     o GUI improvements
+       o Linking dialog
+       o Layout of InputMappingDialog
+       o Layout of property widgets 
+     o Workspace serialization now writes to temporary file that is moved to the
+       final filename in an atomic operation for added data security.
+
+   * Infrastructure changes
+     o Voreen now requires Qt 4.4 or newer.
+     o Use RGBA16 instead of RGBA16F as standard texture format
+     o The directory structure has been revised. Now, all processors are contained
+       in modules. All basic functionality is provided by the 'Base' module. 
+       To learn how to generate your own modules, please see:
+       http://www.voreen.org/402-Adding-a-Module.html
+     o The volume data files have been moved from data/ to data/volumes/.
+     o Use .pri instead of .txt for files included from .pro files.
+
+   * Bug fixes:
+     o The PVM reader has been improved:
+       o Fixed endianness issues when loading 16 bit volumes
+       o Detect whether loaded data set can be represented as a 12 bit volume
+       o More robust error handling
+       o Fixed a crash with non-C locale and 16 bit data on Linux
+     o Sampling rate changed for anisotropical volumes: now relative to maximum size
+       not minimum (value might need to be reduced for some data sets).
+     o Fix serialization of transfer functions on unix systems with non-posix locale
+     o Limited resolution of 2D transfer functions to 10 bit, preventing
+     inacceptable memory consumption
+
+
 2010-01-29: Voreen 2.01 (r34, internal r9025)
 ---------------------------------------------
 
@@ -22,7 +93,7 @@ Voreen Changelog
        texture capabilities for ATI Radeon 9* and X* on Linux in addition to Mac.
 
 
-2009-12-23: Voreen 2.0 (r29, internal r8753)
+2009-12-23: Voreen 2.0 (r29, internal r8674)
 --------------------------------------------
 
    * Since we have introduced several new concepts, we provide new tutorial

@@ -187,10 +187,10 @@ public:
     Camera* getCamera() const;
 
     /// Getter
-    bool isDoubleBuffered() { return doubleBuffered_; }
+    bool isDoubleBuffered() const { return doubleBuffered_; }
 
     /// Getter
-    bool isInitialized() { return initialized_; }
+    bool isInitialized() const { return initialized_; }
 
 protected:
 

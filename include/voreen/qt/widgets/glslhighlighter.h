@@ -1,77 +1,56 @@
-//=============================================================================
-/** @file        highlighter.cpp
- *
- * Implements a GLSL syntax highlighter.
- *
-    @internal
-    created:    2007-12-06
-    last mod:    2008-01-03
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
 
-    Shader Maker - a cross-platform GLSL editor.
-    Copyright (C) 2007-2008 Markus Kramer
+// This class is based on the GLSL syntax highlighter written by Markus Kramer for
+// Shader Maker - a cross-platform GLSL editor
 
-=============================================================================*/
+#ifndef VRN_GLSLHIGHLIGHTER_H
+#define VRN_GLSLHIGHLIGHTER_H
 
-#include <QtGui/QTextCharFormat>
-#include <QtCore/QVector>
-#include <QtCore/QRegExp>
-#include <QSyntaxHighlighter>
+#include "voreen/qt/widgets/syntaxhighlighter.h"
 
-//=============================================================================
-//    GLSLHighlighter definition
-//=============================================================================
+namespace voreen {
 
-/** A syntax highlighter for GLSL.
- * This is mainly the modified syntax highlighter example from the Qt toolkit.
- * Because GLSL has really many special worlds (keyworlds, built-in uniforms,
- * attributes, ... ) this syntax highlighter operates quite slow. A possible
- * improvement would be to reduce the number of supported keywords, but that
- * would confuse the user.
- */
-class GLSLHighlighter : public QSyntaxHighlighter
-{
+class GLSLHighlighter : public SyntaxHighlighter {
 public:
-    /** Constructs a GLSL syntax highlighter object.
-     * @param doc Document to highlight.
-     */
-    GLSLHighlighter( QTextDocument* doc );
+    GLSLHighlighter(QTextDocument* doc);
 
 protected:
-    /** Does actual highlighting.
-     * See Qt documentation for details.
-     */
-    void highlightBlock( const QString & text );
-
-private:
-
-    // construction hlpers
-    void setupKeywords( void );
-    void setupReservedKeywords( void );
-    void setupComments( void );
-    void setupNumberRules( void );
-    void setupRegisters( void );
-    void setupBuiltInFunctions( void );
-    void setupPreprocessor( void );
-
-    // rules
-    typedef struct highlightRule_s {
-        QRegExp pattern;
-        QTextCharFormat format;
-    } highlightRule_t;
-    QVector< highlightRule_t > m_rules;
-
-    // comment expressions
-    QRegExp m_commentStartExpression;
-    QRegExp m_commentEndExpression;
-
-    // format infos
-    QTextCharFormat m_keywordFormat;
-    QTextCharFormat m_reservedKeywordFormat;
-    QTextCharFormat m_integerFormat;
-    QTextCharFormat m_floatFormat;
-    QTextCharFormat m_registerFormat; // IO registers and GL uniform state
-    QTextCharFormat m_builtInFunctionFormat;
-    QTextCharFormat m_preprocessorFormat;
-    QTextCharFormat m_singleLineCommentFormat;
-    QTextCharFormat m_multiLineCommentFormat;
+    void setupKeywords();
+    void setupReservedKeywords();
+    void setupComments();
+    void setupNumberRules();
+    void setupRegisters();
+    void setupBuiltInFunctions();
+    void setupPreprocessor();
 };
+
+} // namespace
+
+#endif // VRN_GLSLHIGHLIGHTER_H

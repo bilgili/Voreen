@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,8 +30,8 @@
 #ifndef VRN_COMMANDS_CREATE_H
 #define VRN_COMMANDS_CREATE_H
 
-#include "voreen/core/cmdparser/command.h"
-#include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/utils/cmdparser/command.h"
+#include "voreen/core/datastructures/volume/volumeatomic.h"
 
 namespace voreen {
 

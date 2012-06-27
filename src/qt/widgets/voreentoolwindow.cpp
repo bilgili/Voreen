@@ -1,31 +1,31 @@
 /**********************************************************************
-*                                                                    *
-* Voreen - The Volume Rendering Engine                               *
-*                                                                    *
-* Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
-* Department of Computer Science, University of Muenster, Germany.   *
-* <http://viscg.uni-muenster.de>                                     *
-*                                                                    *
-* This file is part of the Voreen software package. Voreen is free   *
-* software: you can redistribute it and/or modify it under the terms *
-* of the GNU General Public License version 2 as published by the    *
-* Free Software Foundation.                                          *
-*                                                                    *
-* Voreen is distributed in the hope that it will be useful,          *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of     *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
-* GNU General Public License for more details.                       *
-*                                                                    *
-* You should have received a copy of the GNU General Public License  *
-* in the file "LICENSE.txt" along with this program.                 *
-* If not, see <http://www.gnu.org/licenses/>.                        *
-*                                                                    *
-* The authors reserve all rights not expressly granted herein. For   *
-* non-commercial academic use see the license exception specified in *
-* the file "LICENSE-academic.txt". To get information about          *
-* commercial licensing please contact the authors.                   *
-*                                                                    *
-**********************************************************************/
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
 
 #include "voreen/qt/widgets/voreentoolwindow.h"
 
@@ -41,7 +41,7 @@ namespace voreen {
 
 VoreenToolWindowTitle::VoreenToolWindowTitle(QDockWidget *parent, bool dockable)
     : QWidget(parent),
-    dockable_(dockable)
+      dockable_(dockable)
 {
     closeButton_ = QPixmap(":/voreenve/widgetstyle/closebutton.png");
     maximizeButton_ = QPixmap(":/voreenve/widgetstyle/maximizebutton.png");
@@ -114,23 +114,23 @@ void VoreenToolWindowTitle::paintEvent(QPaintEvent* /*e*/) {
 
     // draw logos
     QRect logoPos = button_rect;
-	if (dockable_) {
+    if (dockable_) {
         logoPos.setLeft(button_rect.right() - 32);
         logoPos.setTop(button_rect.top() + 4);
         painter.drawPixmap(logoPos.topLeft(), undockButton_);
         logoPos = button_rect;
-	}
+    }
 
     logoPos.setLeft(button_rect.right() - 16);
     logoPos.setTop(button_rect.top() + 4);
     painter.drawPixmap(logoPos.topLeft(), closeButton_);
 
-	QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
-	if ( dw->isFloating() && (dw->maximumSize() != dw->minimumSize()) ) {
-		logoPos.setLeft(button_rect.right() - 48);
-		logoPos.setTop(button_rect.top() + 4);
-		painter.drawPixmap(logoPos.topLeft(), maximizeButton_);
-	}
+    QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
+    if ( dw->isFloating() && (dw->maximumSize() != dw->minimumSize()) ) {
+        logoPos.setLeft(button_rect.right() - 48);
+        logoPos.setTop(button_rect.top() + 4);
+        painter.drawPixmap(logoPos.topLeft(), maximizeButton_);
+    }
 }
 
 void VoreenToolWindowTitle::mousePressEvent(QMouseEvent *event) {
@@ -143,22 +143,22 @@ void VoreenToolWindowTitle::mousePressEvent(QMouseEvent *event) {
     if (buttonRectClose.contains(pos)) {
         event->accept();
         QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
-		dw->close();
+        dw->close();
     } else if (buttonRectUndock.contains(pos) && dockable_) {
         event->accept();
         QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
         dw->setFloating(!dw->isFloating());
     } else if (buttonRectMaximize.contains(pos)) {
         QDockWidget *dw = qobject_cast<QDockWidget*>(parentWidget());
-		if(!dw->isFloating() || (dw->maximumSize() == dw->minimumSize())) {
-			event->ignore();
-			return;
-		}
+        if(!dw->isFloating() || (dw->maximumSize() == dw->minimumSize())) {
+            event->ignore();
+            return;
+        }
         event->accept();
-		if(dw->isMaximized())
-			dw->showNormal();
-		else
-			dw->showMaximized();
+        if(dw->isMaximized())
+            dw->showNormal();
+        else
+            dw->showMaximized();
     } else
         event->ignore();
 }
@@ -176,15 +176,22 @@ void VoreenToolWindowTitle::mouseDoubleClickEvent(QMouseEvent *event) {
 VoreenToolWindow::VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name, bool dockable)
     : QDockWidget(name, parent)
 {
-    setWindowTitle(action->text());
-    setWindowIcon(action->icon());
+    if (action) {
+        QString text = action->text();
+        text.replace("&", ""); // remove menu accels
+        setWindowTitle(text);
+        setWindowIcon(action->icon());
+    } else {
+        setWindowTitle("");
+    }
     setObjectName(name);
 
     QFrame* frame = new QFrame();
-    frame->setFrameStyle(QFrame::Box);
-    frame->setContentsMargins(1,1,1,1);
+    frame->setFrameStyle(QFrame::StyledPanel);
+    frame->setContentsMargins(1, 1, 1, 1);
     QVBoxLayout* vBox = new QVBoxLayout();
     vBox->addWidget(child);
+    vBox->setContentsMargins(0, 0, 0, 0);
     frame->setLayout(vBox);
     setWidget(frame);
 
@@ -202,8 +209,10 @@ VoreenToolWindow::VoreenToolWindow(QAction* action, QWidget* parent, QWidget* ch
     // Connect action and widget visibility:
     // It is important to use triggered() instead of toggled() here, or else the widget will be
     // hidden when switching to a differen virtual desktop and back.
-    connect(action, SIGNAL(triggered(bool)), this, SLOT(setVisible(bool)));
-    connect(toggleViewAction(), SIGNAL(toggled(bool)), action, SLOT(setChecked(bool)));
+    if(action) {
+        connect(action, SIGNAL(triggered(bool)), this, SLOT(setVisible(bool)));
+        connect(toggleViewAction(), SIGNAL(toggled(bool)), action, SLOT(setChecked(bool)));
+    }
 }
 
 } // namespace

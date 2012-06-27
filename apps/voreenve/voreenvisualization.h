@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_VOREENVISUALIZATION_H
 #define VRN_VOREENVISUALIZATION_H
 
-#include "voreen/core/vis/network/processornetwork.h"
+#include "voreen/core/network/processornetwork.h"
 #include <QtGui>
 
 namespace tgt {
@@ -45,9 +45,10 @@ class PropertyListWidget;
 class NetworkEditor;
 class ProcessorNetwork;
 class ProcessorListWidget;
+class InputMappingDialog;
 class VolumeContainer;
 class VolumeContainerWidget;
-class AnimationPlugin;
+
 
 
 class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
@@ -60,19 +61,19 @@ public:
 
     void exportWorkspaceAsZip(const std::string& filename, bool overwrite = true)
         throw (SerializationException);
-    void importZippedWorkspace(const std::string& archiveName, const std::string& path, 
+    void importZippedWorkspace(const std::string& archiveName, const std::string& path,
         bool deflateTemporarily = true) throw (SerializationException);
 
     void newWorkspace();
     void openWorkspace(const QString& filename)
         throw (SerializationException);
-    void saveWorkspace(const std::string& filename, bool reuseTCTargets, bool overwrite = true)
+    void saveWorkspace(const std::string& filename, bool overwrite = true)
         throw (SerializationException);
 
     /// @deprecated is to be replacd by importNetwork
     void openNetwork(const std::string& filename) throw (SerializationException);
     /// @deprecated is to be replacd by exportNetwork
-    void saveNetwork(const std::string& filename, bool reuseTCTargets) throw (SerializationException);
+    void saveNetwork(const std::string& filename) throw (SerializationException);
 
 
     NetworkEvaluator* getEvaluator() const;
@@ -91,8 +92,7 @@ public:
     void setPropertyListWidget(PropertyListWidget* propertyListWidget);
     void setProcessorListWidget(ProcessorListWidget* processorListWidget);
     void setVolumeContainerWidget(VolumeContainerWidget* volumeContainerWidget);
-
-    void setAnimationPlugin(AnimationPlugin* animationPlugin);
+    void setInputMappingDialog(InputMappingDialog* inputMappingDialog);
 
     bool readOnlyWorkspace() const { return readOnlyWorkspace_; }
 
@@ -121,7 +121,7 @@ private:
     PropertyListWidget* propertyListWidget_;
     ProcessorListWidget* processorListWidget_;
     VolumeContainerWidget* volumeContainerWidget_;
-    AnimationPlugin* animationPlugin_;
+    InputMappingDialog* inputMappingDialog_;
 
     bool readOnlyWorkspace_;
 

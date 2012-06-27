@@ -1,3 +1,32 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifdef VRN_MODULE_FLOWREEN
 
 #include "tgt/glmath.h"
@@ -43,32 +72,32 @@ FlowSliceRenderer::FlowSliceRenderer()
     portGroup_(true)
 {
     techniqueProp_ = new OptionProperty<RenderingTechnique>("visualizationMode", "technique:");
-    techniqueProp_->addOption("color coding", "color coding", 
+    techniqueProp_->addOption("color coding", "color coding",
         TECHNIQUE_COLOR_CODING);
-    techniqueProp_->addOption("Integrate & Draw", "Integrate & Draw", 
+    techniqueProp_->addOption("Integrate & Draw", "Integrate & Draw",
         TECHNIQUE_INTEGRATE_DRAW);
-    techniqueProp_->addOption("fast LIC", "fast LIC", 
+    techniqueProp_->addOption("fast LIC", "fast LIC",
         TECHNIQUE_FAST_LIC);
-    techniqueProp_->addOption("arrow plot (random positions)", "arrow plot (random positions)", 
+    techniqueProp_->addOption("arrow plot (random positions)", "arrow plot (random positions)",
         TECHNIQUE_ARROW_PLOT_RAND);
-    techniqueProp_->addOption("arrow plot (regular grid)", "arrow plot (regular grid)", 
+    techniqueProp_->addOption("arrow plot (regular grid)", "arrow plot (regular grid)",
         TECHNIQUE_ARROW_PLOT_GRID);
-    techniqueProp_->addOption("spot noise", "spot noise", 
+    techniqueProp_->addOption("spot noise", "spot noise",
         TECHNIQUE_SPOTNOISE);
-    techniqueProp_->addOption("color coding (projected)", "color coding (projected)", 
+    techniqueProp_->addOption("color coding (projected)", "color coding (projected)",
         TECHNIQUE_COLOR_CODING_PROJECTED);
-    techniqueProp_->addOption("Integrate & Draw (projected)", "Integrate & Draw (projected)", 
+    techniqueProp_->addOption("Integrate & Draw (projected)", "Integrate & Draw (projected)",
         TECHNIQUE_INTEGRATE_DRAW_PROJECTED);
-    techniqueProp_->addOption("fast LIC (projected)", "fast LIC (projected)", 
+    techniqueProp_->addOption("fast LIC (projected)", "fast LIC (projected)",
         TECHNIQUE_FAST_LIC_PROJECTED);
-    techniqueProp_->addOption("spot noise (projected)", "spot noise (projected)", 
+    techniqueProp_->addOption("spot noise (projected)", "spot noise (projected)",
         TECHNIQUE_SPOTNOISE_PROJECTED);
     techniqueProp_->onChange(
         CallMemberAction<FlowSliceRenderer>(this, &FlowSliceRenderer::onTechniqueChange));
 
     CallMemberAction<FlowSliceRenderer> invalidateAction(this, &FlowSliceRenderer::invalidateTexture);
 
-    OptionProperty<ColorCodingAbility::ColorCodingMode>& colorCodingModeProp = 
+    OptionProperty<ColorCodingAbility::ColorCodingMode>& colorCodingModeProp =
         colorCoding_.getColorCodingModeProp();
     colorCodingModeProp.onChange(
         CallMemberAction<FlowSliceRenderer>(this, &FlowSliceRenderer::onColorCodingChange));
@@ -127,16 +156,20 @@ FlowSliceRenderer::FlowSliceRenderer()
 FlowSliceRenderer::~FlowSliceRenderer() {
     delete techniqueProp_;
 
+    delete [] randomIntensities_;
+    delete [] randomPositions_;
+    delete noiseTexture_;
+    delete flow2DTexture_;
+}
+
+void FlowSliceRenderer::deinitialize() throw (VoreenException) {
     if (shader_ != 0) {
         shader_->deactivate();
         ShdrMgr.dispose(shader_);
         shader_ = 0;
     }
-
-    delete [] randomIntensities_;
-    delete [] randomPositions_;
-    delete noiseTexture_;
-    delete flow2DTexture_;
+    portGroup_.deinitialize();
+    RenderProcessor::deinitialize();
 }
 
 void FlowSliceRenderer::initialize() throw (VoreenException) {
@@ -1034,7 +1067,7 @@ void FlowSliceRenderer::renderSpotMesh(const size_t tesselation) {
 
 void FlowSliceRenderer::toggleProperties() {
     const size_t numProps = 15;
-    OptionProperty<ColorCodingAbility::ColorCodingMode>& colorCodingModeProp = 
+    OptionProperty<ColorCodingAbility::ColorCodingMode>& colorCodingModeProp =
         colorCoding_.getColorCodingModeProp();
     IntOptionProperty& colorTableProp = colorCoding_.getColorTableProp();
     ColorProperty& colorProp = colorCoding_.getColorProp();

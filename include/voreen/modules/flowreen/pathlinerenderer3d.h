@@ -1,15 +1,44 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifdef VRN_MODULE_FLOWREEN
 #ifndef VRN_PATHLINERENDERER3D_H
 
 #include <string>
-#include "voreen/core/vis/processors/renderprocessor.h"
+#include "voreen/core/processors/renderprocessor.h"
 #include "voreen/modules/flowreen/flowreenprocessor.h"
 
 namespace voreen {
 
 class CameraInteractionHandler;
 class Modality;
-class OrthogonalSliceRenderer;
+class FlowOrthogonalSliceRenderer;
 
 /**
  * Processor for rendering pathlines from time-dependent flow data using
@@ -21,13 +50,12 @@ public:
     virtual ~PathlineRenderer3D();
 
     virtual Processor* create() const { return new PathlineRenderer3D(); }
-    virtual std::string getModuleName() const { return "flowreen"; }
     virtual std::string getCategory() const { return "Flow Visualization"; }
     virtual std::string getClassName() const { return "PathlineRenderer3D"; }
     virtual Processor::CodeState getCodeState() const { return Processor::CODE_STATE_STABLE; }
-    virtual const std::string getProcessorInfo() const;
+    virtual std::string getProcessorInfo() const;
     virtual void initialize() throw (VoreenException);
-    virtual void invalidate(InvalidationLevel inv = INVALID_RESULT);
+    virtual void invalidate(int inv = INVALID_RESULT);
     virtual void process();
 
 private:
@@ -76,25 +104,25 @@ private:
     static const std::string loggerCat_;
 
     enum LineStyle {
-        STYLE_POINTS, 
-        STYLE_LINES, 
-        STYLE_TUBES, 
-        STYLE_ARROWS, 
+        STYLE_POINTS,
+        STYLE_LINES,
+        STYLE_TUBES,
+        STYLE_ARROWS,
         STYLE_SEGMENTS
     };
 
     enum SeedingStrategy {
-        SEED_RANDOM, 
-        SEED_GRID, 
-        SEED_SLICES_RANDOM, 
+        SEED_RANDOM,
+        SEED_GRID,
+        SEED_SLICES_RANDOM,
         SEED_SLICES_GRID
     };
-    
-    enum Thresholding { 
-        THRESHOLDING_NONE, 
-        THRESHOLDING_LINELENGTH, 
+
+    enum Thresholding {
+        THRESHOLDING_NONE,
+        THRESHOLDING_LINELENGTH,
         THRESHOLDING_INTENSITY,
-        THRESHOLDING_OR, 
+        THRESHOLDING_OR,
         THRESHOLDING_AND
     };
 
@@ -136,7 +164,7 @@ private:
     size_t previousTimestep_;
     tgt::ivec3 slicePositions_;
 
-    GenericCoProcessorPort<OrthogonalSliceRenderer> coInport_;
+    GenericCoProcessorPort<FlowOrthogonalSliceRenderer> coInport_;
     RenderPort imgOutport_;
     VolumeCollectionPort inportContext_;
     VolumeCollectionPort inportFlows_;

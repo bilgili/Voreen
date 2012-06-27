@@ -1109,10 +1109,12 @@ std::ostream& operator << (std::ostream& s, const Matrix4<T>& m) {
 }
 
 /// This operator is not available in GLSL but very usefull: A mat4 * vec3 operator, returning a vec3
+/// note: the resulting vec3 is divided by the w component of the temporary result!
 template<class T>
 Vector3<T> operator * (const Matrix4<T>& m, const Vector3<T>& v) {
     Vector4<T> v4(v, 1);
     v4 = m * v4;
+    v4 /= v4.w;
     return Vector3<T>(v4.elem);
 }
 

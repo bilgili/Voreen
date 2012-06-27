@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,16 +31,16 @@
 #define VRN_VOLUMECOLLECTIONPROPERTYWIDGET_H
 
 
-#include "voreen/core/volume/volumecontainer.h"
-#include "voreen/core/vis/properties/volumecollectionproperty.h"
-#include "voreen/core/volume/volume.h"
-#include "voreen/core/vis/properties/volumehandleproperty.h"
-#include "voreen/core/vis/processors/volume/volumesourceprocessor.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+#include "voreen/core/properties/volumecollectionproperty.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/properties/volumehandleproperty.h"
+#include "voreen/modules/base/processors/datasource/volumesource.h"
 
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 
 #include <QDialog>
-#include <QComboBox>
+#include <QCheckBox>
 #include <QTreeWidget>
 
 namespace voreen {
@@ -62,6 +62,9 @@ public:
 
     void setVolumeContainer(VolumeContainer*);
 
+    /// Returns the null pointer, since this widget does not need a separate label.
+    virtual const QLabel* getNameLabel() const;
+
 protected:
     static const std::string loggerCat_;
 
@@ -69,10 +72,12 @@ private:
     QTreeWidget* volumeInfos_;
     VolumeContainer* volumeContainer_;
     void updateWidget();
+    QCheckBox* selectAll_;
 
 private slots:
     void updateCollection();
     void updateCollection(QTreeWidgetItem*, int);
+    void selectAll(bool);
 
 };
 

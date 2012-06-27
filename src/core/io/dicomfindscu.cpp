@@ -69,7 +69,9 @@ END_EXTERN_C
 #include <dcmtk/dcmnet/dimse.h>
 #include <dcmtk/dcmnet/diutil.h>
 #include <dcmtk/dcmdata/dcfilefo.h>
+#ifndef VRN_DCMTK_VERSION_355
 #include <dcmtk/dcmdata/dcdebug.h>
+#endif
 #include <dcmtk/dcmdata/dcuid.h>
 #include <dcmtk/dcmdata/dcdict.h>
 #include <dcmtk/dcmdata/cmdlnarg.h>
@@ -90,13 +92,15 @@ END_EXTERN_C
 #endif
 
 #include "voreen/core/io/dicomfindscu.h"
-// #include "voreen/core/io/dicomseriesinfo.h"
+#include "voreen/core/io/dicomseriesinfo.h"
 
+using std::string;
+using std::vector;
 
 // Start anonymous namespace to encapsulate imported code
 namespace {
 
-vector<voreen::DicomSeriesInfo>* serieslist; // Found series are added here
+std::vector<voreen::DicomSeriesInfo>* serieslist; // Found series are added here
 
 
 static OFBool           opt_verbose = OFFalse;
@@ -127,6 +131,7 @@ errmsg(const char *msg,...)
 }
 
 
+#ifndef VRN_DCMTK_VERSION_355
 static void
 addOverrideKey(/*OFConsoleApplication& app,*/ const char* s)
 {
@@ -189,6 +194,13 @@ addOverrideKey(/*OFConsoleApplication& app,*/ const char* s)
         errmsg(msg2);
     }
 }
+#else
+static void
+addOverrideKey(/*OFConsoleApplication& app,*/ const char* /*s*/) {
+    LWARNINGC("dicomfindscu.cpp",
+        "addOverrideKey not supported for Dcmtk version " << OFFIS_DCMTK_VERSION_NUMBER);
+}
+#endif
 
 static OFCondition
 addPresentationContexts(T_ASC_Parameters *params);
@@ -1131,7 +1143,7 @@ cfind(T_ASC_Association * assoc, const char *fname)
 } // namespace
 
 int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
-                               int port, const string &peerTitle, vector<DicomSeriesInfo>* series,
+                               int port, const string &peerTitle, std::vector<DicomSeriesInfo>* series,
                                const DicomSecurityOptions& security) {
     T_ASC_Network *net;
     T_ASC_Parameters *params;
@@ -1180,9 +1192,11 @@ int voreen::DicomFindSCU::find(const string &ourTitle, const string &peer,
   if (0/*cmd.findOption("--debug"*/)
   {
       opt_debug = OFTrue;
+#ifndef VRN_DCMTK_VERSION_355
       DUL_Debug(OFTrue);
       DIMSE_debug(OFTrue);
       SetDebugLevel(3);
+#endif
   }
 
     //push back the keys that should be recieved:

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -51,6 +51,12 @@ public:
      * Makes the progress dialog invisible.
      */
     virtual void hide() = 0;
+
+    /**
+     * Calling this function is assumed to force a repaint,
+     * rather than just schedule an update.
+     */
+    virtual void forceUpdate() = 0;
 
     /// Override this method to get notified on IO progress.
     virtual void update() = 0;

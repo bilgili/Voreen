@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -36,13 +36,8 @@
 #include "commands_convert.h"
 #include "commands_create.h"
 #include "commands_modify.h"
-#ifndef VRN_SNAPSHOT
-#include "commands_motion.h"
-#include "commands_dao.h"
-#include "commands_registration.h"
-#endif
 
-#include "voreen/core/cmdparser/commandlineparser.h"
+#include "voreen/core/utils/cmdparser/commandlineparser.h"
 
 #include "tgt/init.h"
 #include "tgt/exception.h"
@@ -87,6 +82,7 @@ int main(int argc, char** argv) {
 #endif
     cmdparser.addCommand(new CommandStackRaw());
     cmdparser.addCommand(new CommandConvert());
+    cmdparser.addCommand(new CommandConvertFormat());
 
     cmdparser.addCommand(new CommandCreate());
     cmdparser.addCommand(new CommandGenerateMask());
@@ -98,27 +94,6 @@ int main(int argc, char** argv) {
     cmdparser.addCommand(new CommandBrick());
 
 
-#ifndef VRN_SNAPSHOT
-    cmdparser.addCommand(new CommandCreateMotion());
-
-    cmdparser.addCommand(new CommandScaleTexCoords());
-
-    cmdparser.addCommand(new CommandDao32216());
-    cmdparser.addCommand(new CommandDaoSphere());
-    cmdparser.addCommand(new CommandRegionDaoSphere());
-    cmdparser.addCommand(new CommandVQ());
-    cmdparser.addCommand(new CommandVQTrain());
-    cmdparser.addCommand(new CommandVQPack());
-    cmdparser.addCommand(new CommandVQUnpack());
-    cmdparser.addCommand(new CommandVQMeasure());
-    cmdparser.addCommand(new CommandStaticGlowValue());
-    cmdparser.addCommand(new CommandPlotCB());
-    cmdparser.addCommand(new CommandPlotHG());
-    cmdparser.addCommand(new CommandHistogram());
-
-    //cmdparser.addCommand(new CommandRegistrationUniformScaling());
-    //cmdparser.addCommand(new CommandRegistrationAffine());
-#endif
 
     //cmdparser.addCommand(new CommandStretchHisto());
 

@@ -1,15 +1,21 @@
-The Voreen project team at VisCG (alphabetically):
+The Voreen Team (alphabetically):
 
 Alexander Bock
 Benjamin Bolte
 Stefan Diepenbrock
 Christian Döring
+Jan Esser
+André Exeler
 Dirk Feldmann
-Timo Giese
+Alejandro Figueroa Meana
+Timo Griese
+Dieter Janzen
 Jens Kasten
 Daniel Kirsch
+Rico Lehmann
 Roland Leißa
 Florian Lindemann
+Markus Madeja
 Jörg Mensmann
 Jennis Meyer-Spradow
 Borislav Petkov
@@ -18,9 +24,13 @@ Stephan Rademacher
 Rainer Reich
 Mona Riemenschneider
 Timo Ropinski
-Jan Roters
 Christoph Rosemann
+Jan Roters
+Sönke Schmid
 Michael Specht
 Fabian Spiegel
+David Terbeek
 Christian Vorholt
+Carolin Walter
+Michael Weinkath
 Frank Wisniewski

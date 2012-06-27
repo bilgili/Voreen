@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,92 +27,61 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/qt/widgets/property/processorpropertieswidget.h"
-#include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/customlabel.h"
 
 #include "voreen/qt/widgets/expandableheaderbutton.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/interaction/interactionhandler.h"
+#include "voreen/qt/widgets/property/lightpropertywidget.h"
+#include "voreen/qt/widgets/property/processorpropertieswidget.h"
+#include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
+#include "voreen/qt/widgets/property/transfuncpropertywidget.h"
+#include "voreen/qt/widgets/property/volumecollectionpropertywidget.h"
+#include "voreen/qt/widgets/property/volumehandlepropertywidget.h"
+
+#include "voreen/core/interaction/interactionhandler.h"
+#include "voreen/core/processors/processor.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+
 #include <QVBoxLayout>
-#include <QLabel>
+#include <QGridLayout>
 
 namespace voreen {
 
 ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Processor* processor,
                                                      PropertyWidgetFactory* widgetFactory,
                                                      bool expanded, bool userExpandable)
-    : QWidget(parent),
-      propertyWidget_(0),
-      processor_(processor)
+    : QWidget(parent)
+    , propertyWidget_(0)
+    , processor_(processor)
+    , volumeContainer_(0)
+    , expanded_(expanded)
+    , userExpandable_(userExpandable)
+    , widgetFactory_(widgetFactory)
+    , widgetInstantiationState_(NONE)
 {
-    setObjectName("ProcessorTitleWidget");
 
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(0);
-    mainLayout->setMargin(0);
+    setObjectName("ProcessorTitleWidget");
+    mainLayout_ = new QVBoxLayout(this);
+    mainLayout_->setContentsMargins(0, 0, 0, 0);
+    mainLayout_->setSpacing(0);
+    mainLayout_->setMargin(0);
 
     setUpdatesEnabled(false);
 
-    header_ = new ExpandableHeaderButton(processor->getName().c_str(), this,
-            expanded, userExpandable);
+    header_ = new ExpandableHeaderButton(processor_->getName().c_str(), this,
+            expanded_, userExpandable_);
     connect(header_, SIGNAL(toggled(bool)), this, SLOT(updateState()));
     connect(header_, SIGNAL(setLODHidden()), this, SLOT(setLODHidden()));
     connect(header_, SIGNAL(setLODVisible()), this, SLOT(setLODVisible()));
     header_->showLODControls();
-    mainLayout->addWidget(header_);
-
-    // property widget
-    propertyWidget_ = new QWidget;
-    QVBoxLayout* vbox = new QVBoxLayout(propertyWidget_);
-    std::vector<Property*> propertyList = processor->getProperties();
-
-    // create widget for every property and put them into a vertical layout
-    for (std::vector<Property*>::iterator iter = propertyList.begin(); iter
-            != propertyList.end(); ++iter) {
-        QPropertyWidget* w =
-                dynamic_cast<QPropertyWidget*>((*iter)->createAndAddWidget(widgetFactory));
-        if (w != 0) {
-            widgets_.push_back(w);
-            connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
-            vbox->addWidget(w);
-        }
-    }
-
-    // add widgets for interaction handler properties
-    if (!processor->getInteractionHandlers().empty()) {
-
-        // separator
-        QHBoxLayout* separatorLayout = new QHBoxLayout();
-        QFrame* frame = new QFrame();
-        frame->setFrameShape(QFrame::HLine);
-        separatorLayout->addWidget(frame);
-        separatorLayout->addWidget(new QLabel(tr("Interaction Handlers")));
-        frame = new QFrame();
-        frame->setFrameShape(QFrame::HLine);
-        separatorLayout->addWidget(frame);
-        vbox->addLayout(separatorLayout);
-
-        for (size_t i=0; i<processor->getInteractionHandlers().size(); ++i) {
-            std::vector<Property*> propertyList = processor->getInteractionHandlers().at(i)->getProperties();
-            for (size_t j=0; j<propertyList.size(); ++j) {
-                QPropertyWidget* w = dynamic_cast<QPropertyWidget*>(propertyList[j]->createAndAddWidget(widgetFactory));
-                if (w != 0) {
-                    widgets_.push_back(w);
-                    vbox->addWidget(w);
-                }
-            }
-        }
-    }
-
-    mainLayout->addWidget(propertyWidget_);
-
-    setUpdatesEnabled(true);
-
-    updateState();
+    mainLayout_->addWidget(header_);
 }
 
 void ProcessorPropertiesWidget::setLevelOfDetail(Property::LODSetting lod) {
-    const std::vector<Property*> propertyList = processor_->getProperties();
+
+    std::vector<Property*> propertyList(processor_->getProperties());
+
+    // update property widgets visibility and LOD controls
     for (size_t i = 0; i < propertyList.size(); ++i) {
         std::set<PropertyWidget*> set = propertyList[i]->getPropertyWidgets(); // This set usually contains only one property
         for (std::set<PropertyWidget*>::iterator iter = set.begin(); iter
@@ -123,10 +92,14 @@ void ProcessorPropertiesWidget::setLevelOfDetail(Property::LODSetting lod) {
                 if (wdt == (*innerIter)) {
                     if (lod == Property::USER)
                         wdt->hideLODControls();
-                    else
-                        wdt->showLODControls();
-                        wdt->setVisible((propertyList[i]->isVisible()
+                    //FIXME: do this only when lod controls are not disabled in propertylistwidget
+                    // else
+                    //     wdt->showLODControls();
+                    wdt->setVisible((propertyList[i]->isVisible()
                             && (propertyList[i]->getLevelOfDetail() <= lod)));
+                    wdt->showNameLabel(propertyList[i]->isVisible()
+                            && (propertyList[i]->getLevelOfDetail() <= lod));
+
                 }
             }
         }
@@ -147,12 +120,20 @@ void ProcessorPropertiesWidget::setLevelOfDetail(Property::LODSetting lod) {
     setVisible(headerVisible);
 }
 
+void ProcessorPropertiesWidget::setVolumeContainer(VolumeContainer* volCon) {
+    volumeContainer_ = volCon;
+}
+
 void ProcessorPropertiesWidget::updateState() {
-    propertyWidget_->setVisible(header_->isExpanded());
+    if(propertyWidget_!=0)
+        propertyWidget_->setVisible(header_->isExpanded());
+    updateGeometry();  // prevent flicker when hiding property widgets
 }
 
 void ProcessorPropertiesWidget::setLODHidden() {
-    const std::vector<Property*> propertyList = processor_->getProperties();
+
+    std::vector<Property*> propertyList(processor_->getProperties());
+    // update property widgets LOD level
     for (size_t i = 0; i < propertyList.size(); ++i) {
         std::set<PropertyWidget*> set = propertyList[i]->getPropertyWidgets(); // This set usually contains only one property
         for (std::set<PropertyWidget*>::iterator iter = set.begin(); iter
@@ -169,7 +150,10 @@ void ProcessorPropertiesWidget::setLODHidden() {
 }
 
 void ProcessorPropertiesWidget::setLODVisible() {
-    const std::vector<Property*> propertyList = processor_->getProperties();
+
+    std::vector<Property*> propertyList(processor_->getProperties());
+
+    // update property widgets LOD level
     for (size_t i = 0; i < propertyList.size(); ++i) {
         std::set<PropertyWidget*> set = propertyList[i]->getPropertyWidgets(); // This set usually contains only one property
         for (std::set<PropertyWidget*>::iterator iter = set.begin(); iter
@@ -214,6 +198,102 @@ void ProcessorPropertiesWidget::updateHeaderTitle() {
 
 void ProcessorPropertiesWidget::propertyModified() {
     emit modified();
+}
+
+void ProcessorPropertiesWidget::instantiateWidgets() {
+setUpdatesEnabled(false);
+if(widgetInstantiationState_ == NONE) {
+    propertyWidget_ = new QWidget;
+    QGridLayout* gridLayout = new QGridLayout(propertyWidget_);
+    gridLayout->setContentsMargins(3, 4, 0, 2);
+    gridLayout->setSpacing(2);
+    gridLayout->setColumnStretch(0, 1);
+    gridLayout->setColumnStretch(1, 2);
+    gridLayout->setEnabled(false);
+    std::vector<Property*> propertyList = processor_->getProperties();
+
+    // create widget for every property and put them into a vertical layout
+    int rows = 0;
+    widgetFactory_ = new QPropertyWidgetFactory();
+    for (std::vector<Property*>::iterator iter = propertyList.begin(); iter
+            != propertyList.end(); ++iter) {
+                if (dynamic_cast<TransFuncProperty*>(*iter)) {
+                    QPropertyWidget* w =
+                            dynamic_cast<QPropertyWidget*>((*iter)->createAndAddWidget(widgetFactory_));
+                    if (w != 0) {
+                        widgets_.push_back(w);
+                        connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
+                        QLabel* nameLabel = const_cast<QLabel*>(w->getNameLabel());
+
+                        gridLayout->addWidget(w, rows, 1, 1, 1);
+                        gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                    }
+                }
+                ++rows;
+    }
+    gridLayout->setEnabled(true);
+
+    delete widgetFactory_;
+    mainLayout_->addWidget(propertyWidget_);
+    setUpdatesEnabled(true);
+    updateState();
+    widgetInstantiationState_ = ONLY_TF;
+}
+else if(widgetInstantiationState_ == ONLY_TF) {
+    QGridLayout* gridLayout = dynamic_cast<QGridLayout*>(propertyWidget_->layout());
+    std::vector<Property*> propertyList = processor_->getProperties();
+
+    // create widget for every property and put them into a vertical layout
+    int rows = 0;
+    widgetFactory_ = new QPropertyWidgetFactory();
+    for (std::vector<Property*>::iterator iter = propertyList.begin(); iter
+            != propertyList.end(); ++iter) {
+                if(!dynamic_cast<TransFuncProperty*>(*iter)) {
+                    QPropertyWidget* w =
+                            dynamic_cast<QPropertyWidget*>((*iter)->createAndAddWidget(widgetFactory_));
+                    if (w != 0) {
+                        widgets_.push_back(w);
+                        connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
+                        QLabel* nameLabel = const_cast<QLabel*>(w->getNameLabel());
+
+                        if(dynamic_cast<LightPropertyWidget*>(w)) {     // HACK: this prevents a cut off gui element e.g. seen in the clipping plane widget
+                            gridLayout->setRowStretch(rows, 1);
+                        }
+
+                        if (nameLabel) {
+                            gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                            gridLayout->addWidget(w, rows, 1, 1, 1);
+                        }
+                        else {
+                            gridLayout->addWidget(w, rows, 0, 1, 2);
+                        }
+
+                        if (dynamic_cast<VolumeHandlePropertyWidget*>(w)){
+                            if(volumeContainer_)
+                                static_cast<VolumeHandlePropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
+                        }
+                        else if (dynamic_cast<VolumeCollectionPropertyWidget*>(w)){
+                            if(volumeContainer_)
+                                static_cast<VolumeCollectionPropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
+                        }
+
+                    }
+            }
+            ++rows;
+        }
+
+        delete widgetFactory_;
+        //mainLayout_->addWidget(propertyWidget_);
+        setUpdatesEnabled(true);
+        updateState();
+        widgetInstantiationState_ = ALL;
+    }
+    setUpdatesEnabled(true);
+}
+
+void ProcessorPropertiesWidget::showEvent(QShowEvent* event) {
+    instantiateWidgets();
+    QWidget::showEvent(event);
 }
 
 } // namespace

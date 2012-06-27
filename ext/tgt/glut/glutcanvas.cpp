@@ -41,7 +41,7 @@ GLUTCanvas::GLUTCanvas(const std::string& title,
 {
     fullscreen_ = false;
     glutMouse_ = 0;
-    holdButton_ = MouseEvent::NO_MOUSE_BUTTON;
+    holdButton_ = MouseEvent::MOUSE_BUTTON_NONE;
 }
 
 GLUTCanvas::~GLUTCanvas() {
@@ -134,7 +134,7 @@ void GLUTCanvas::mouseMotion(const int& x, const int& y) {
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, holdButton_, getSize());
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::MODIFIER_NONE, holdButton_, getSize());
     getEventHandler()->broadcast(moveEvent);
 }
 
@@ -143,7 +143,7 @@ void GLUTCanvas::passiveMouseMotion(const int& x, const int& y) {
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, MouseEvent::NO_MOUSE_BUTTON, getSize());
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::MODIFIER_NONE, MouseEvent::MOUSE_BUTTON_NONE, getSize());
     getEventHandler()->broadcast(moveEvent);
 }
 
@@ -168,7 +168,7 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
     }
     else{
         action = MouseEvent::RELEASED;
-        holdButton_ = MouseEvent::NO_MOUSE_BUTTON;
+        holdButton_ = MouseEvent::MOUSE_BUTTON_NONE;
     }
 
     // calculate right TGT modifier

@@ -1,33 +1,59 @@
 <?xml version="1.0" ?>
-<TransFuncIntensityKeys>
-    <key intensity="0.000000" split="0">
-        <col4 r="0" g="0" b="0" a="255" />
-    </key>
-    <key intensity="0.125" split="0">
-        <col4 r="85" g="0" b="0" a="255" />
-    </key>
-    <key intensity="0.25" split="0">
-        <col4 r="170" g="0" b="0" a="255" />
-    </key>
-    <key intensity="0.375" split="0">
-        <col4 r="255" g="0" b="0" a="255" />
-    </key>
-    <key intensity="0.5" split="0">
-        <col4 r="255" g="85" b="0" a="255" />
-    </key>
-    <key intensity="0.625" split="0">
-        <col4 r="255" g="170" b="0" a="255" />
-    </key>
-    <key intensity="0.75" split="0">
-        <col4 r="255" g="255" b="0" a="255" />
-    </key>
-    <key intensity="0.833333" split="0">
-        <col4 r="255" g="255" b="85" a="255" />
-    </key>
-    <key intensity="0.916666" split="0">
-        <col4 r="255" g="255" b="170" a="255" />
-    </key>
-    <key intensity="1.000000" split="0">
-        <col4 r="255" g="255" b="255" a="255" />
-    </key>
-</TransFuncIntensityKeys>
+<VoreenData version="1">
+    <TransFuncIntensity>
+        <Keys>
+            <key>
+                <intensity value="0.000000" />
+                <split value="false" />
+                <colorL r="0" g="0" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.125000" />
+                <split value="false" />
+                <colorL r="85" g="0" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.250000" />
+                <split value="false" />
+                <colorL r="170" g="0" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.375000" />
+                <split value="false" />
+                <colorL r="255" g="0" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.500000" />
+                <split value="false" />
+                <colorL r="255" g="85" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.625000" />
+                <split value="false" />
+                <colorL r="255" g="170" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.750000" />
+                <split value="false" />
+                <colorL r="255" g="255" b="0" a="255" />
+            </key>
+            <key>
+                <intensity value="0.833333" />
+                <split value="false" />
+                <colorL r="255" g="255" b="85" a="255" />
+            </key>
+            <key>
+                <intensity value="0.916666" />
+                <split value="false" />
+                <colorL r="255" g="255" b="170" a="255" />
+            </key>
+            <key>
+                <intensity value="1.000000" />
+                <split value="false" />
+                <colorL r="255" g="255" b="255" a="255" />
+            </key>
+        </Keys>
+        <lower value="0.000000" />
+        <upper value="1.000000" />
+    </TransFuncIntensity>
+</VoreenData>

@@ -78,9 +78,9 @@ public:
 		int minor_;
 		int release_;
 
-		int major() { return major_; }
-		int minor() { return minor_; }
-		int release() { return release_; }
+		int major() const { return major_; }
+		int minor() const { return minor_; }
+		int release() const { return release_; }
 
 		friend bool operator==(const GlVersion& x, const GlVersion& y);
 		friend bool operator!=(const GlVersion& x, const GlVersion& y);
@@ -101,11 +101,16 @@ public:
  		static const GlVersion TGT_GL_VERSION_3_0;
  		static const GlVersion TGT_GL_VERSION_3_1;
  		static const GlVersion TGT_GL_VERSION_3_2;
+ 		static const GlVersion TGT_GL_VERSION_3_3;
+ 		static const GlVersion TGT_GL_VERSION_4_0;
 
-        static const GlVersion SHADER_VERSION_110;      ///< GLSL version 1.10
-        static const GlVersion SHADER_VERSION_120;      ///< GLSL version 1.20
-        static const GlVersion SHADER_VERSION_130;      ///< GLSL version 1.30
-        static const GlVersion SHADER_VERSION_140;      ///< GLSL version 1.40
+        static const GlVersion SHADER_VERSION_110; ///< GLSL version 1.10
+        static const GlVersion SHADER_VERSION_120; ///< GLSL version 1.20
+        static const GlVersion SHADER_VERSION_130; ///< GLSL version 1.30
+        static const GlVersion SHADER_VERSION_140; ///< GLSL version 1.40
+        static const GlVersion SHADER_VERSION_150; ///< GLSL version 1.50
+        static const GlVersion SHADER_VERSION_330; ///< GLSL version 3.30
+        static const GlVersion SHADER_VERSION_400; ///< GLSL version 4.00
 	};
 
 
@@ -130,8 +135,9 @@ public:
     enum ShaderModel {
         SHADER_MODEL_UNKNOWN,
         SHADER_MODEL_2,     ///< implied by OpenGL version 2.0
-        SHADER_MODEL_3,     ///< extension GL_NV_vertex_program3 or GL_ATI_shader_texture_lod
-        SHADER_MODEL_4      ///< extension GL_EXT_geometry_shader4
+        SHADER_MODEL_3,     ///< extension NV_vertex_program3 or ATI_shader_texture_lod
+        SHADER_MODEL_4,     ///< extension ARB_geometry_shader4
+        SHADER_MODEL_5      ///< extension ARB_tessellation_shader
     };
 
     /**

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,20 +28,20 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/consoleplugin.h"
-#include "voreen/qt/qdebug.h"
 
 #include "tgt/logmanager.h"
 
 #include <QApplication>
+#include <QTextEdit>
 #include <QVBoxLayout>
 
 namespace voreen {
 
 class ConsoleLogQt : public tgt::Log {
 public:
-    ConsoleLogQt(ConsolePlugin* plugin, std::string debugStyle = "", std::string infoStyle = "", 
+    ConsoleLogQt(ConsolePlugin* plugin, std::string debugStyle = "", std::string infoStyle = "",
         std::string warnStyle = "", std::string errorStyle = "",
-        bool timeStamping = false, bool dateStamping = false, 
+        bool timeStamping = false, bool dateStamping = false,
         bool showCat = true, bool showLevel = true)
         : tgt::Log(),
           plugin_(plugin),
@@ -80,12 +80,21 @@ protected:
             output += cat + " ";
         if (showLevel_)
             output += "(" + getLevelString(level) + ")";
-        //output += "\t";
 
         output += "&nbsp;&nbsp;";
 
         output += "<span style=\"" + style + "\">";
-        output += msg;
+
+        size_t lookHere = 0;
+        size_t foundHere;
+        std::string s = msg;
+        const std::string br = "<br/>";
+        while ((foundHere = s.find("\n", lookHere)) != std::string::npos) {
+            s.replace(foundHere, 1, br);
+            lookHere = foundHere + br.size();
+        }
+
+        output += s;
         output += "</span>";
 
         plugin_->log(output);
@@ -99,7 +108,7 @@ protected:
 };
 
 ConsolePlugin::ConsolePlugin(QWidget* parent)
-  : WidgetPlugin(parent)
+  : QWidget(parent)
 {
     setObjectName(tr("Console"));
 
@@ -115,15 +124,14 @@ ConsolePlugin::ConsolePlugin(QWidget* parent)
     LogMgr.addLog(log_);
 }
 
+ConsolePlugin::~ConsolePlugin() {
+    LogMgr.removeLog(log_);
+    delete log_;
+}
+
 void ConsolePlugin::log(const std::string& msg) {
     consoleText_->append(msg.c_str());
     consoleText_->ensureCursorVisible();
-}
-
-void ConsolePlugin::createWidgets() {
-}
-
-void ConsolePlugin::createConnections() {
 }
 
 } // namespace voreen

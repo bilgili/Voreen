@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,11 +41,6 @@
 #include "voreen/core/io/serialization/serializablefactory.h"
 
 namespace voreen {
-
-/**
- * Type definition for an error message list.
- */
-typedef std::vector<std::string> ErrorListType;
 
 /**
  * The @c XmlSerializerBase class encapsulates functions that are common to @c XmlSerializer
@@ -100,7 +95,7 @@ public:
      *
      * @return the error list
      */
-    ErrorListType getErrors() const;
+    std::vector<std::string> getErrors() const;
 
     /**
      * Returns whether primitive data is serialized as XML attributes or XML nodes.
@@ -169,6 +164,28 @@ protected:
      */
     template<class T>
     inline std::string convertDataToString(const T& data);
+
+    /**
+     * Converts the given data to @c std::string.
+     *
+     * @tparam T type of data to convert
+     *
+     * @param data data to convert
+     *
+     * @return the string
+     */
+    std::string convertDataToString(const float& data);
+
+    /**
+     * Converts the given data to @c std::string.
+     *
+     * @tparam T type of data to convert
+     *
+     * @param data data to convert
+     *
+     * @return the string
+     */
+    std::string convertDataToString(const double& data);
 
     /**
      * Converts the given @c std::string to data.
@@ -324,7 +341,7 @@ protected:
     /**
      * A list containing all error messages that were raised during serialization process.
      */
-    ErrorListType errors_;
+    std::vector<std::string> errors_;
 };
 
 template<class T>
@@ -338,10 +355,6 @@ void XmlSerializerBase::raise(const T& exception)
 template<class T>
 inline std::string XmlSerializerBase::convertDataToString(const T& data) {
     std::stringstream stream;
-
-    stream.setf(XmlSerializationConstants::FLOATFORMAT, std::ios::floatfield);
-    stream.precision(XmlSerializationConstants::FLOATPRECISION);
-
     stream << data;
     return stream.str();
 }

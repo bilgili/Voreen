@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,6 +34,9 @@
 #include "voreen/qt/widgets/property/camerapropertywidget.h"
 #include "voreen/qt/widgets/property/colorpropertywidget.h"
 #include "voreen/qt/widgets/property/filedialogpropertywidget.h"
+#include "voreen/qt/widgets/property/floatmat2propertywidget.h"
+#include "voreen/qt/widgets/property/floatmat3propertywidget.h"
+#include "voreen/qt/widgets/property/floatmat4propertywidget.h"
 #include "voreen/qt/widgets/property/floatpropertywidget.h"
 #include "voreen/qt/widgets/property/floatvec2propertywidget.h"
 #include "voreen/qt/widgets/property/floatvec3propertywidget.h"
@@ -42,6 +45,7 @@
 #include "voreen/qt/widgets/property/intvec2propertywidget.h"
 #include "voreen/qt/widgets/property/intvec3propertywidget.h"
 #include "voreen/qt/widgets/property/intvec4propertywidget.h"
+#include "voreen/qt/widgets/property/lightpropertywidget.h"
 #include "voreen/qt/widgets/property/optionpropertywidget.h"
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/shaderpropertywidget.h"
@@ -71,6 +75,10 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(ColorProperty* p) {
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FileDialogProperty* p) {
     return new FileDialogPropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(LightProperty* p) {
+    return new LightPropertyWidget(p, 0);
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatProperty* p) {
@@ -105,6 +113,18 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(IntVec4Property* p) {
     return new IntVec4PropertyWidget(p, 0);
 }
 
+QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatMat2Property* p) {
+    return new FloatMat2PropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatMat3Property* p) {
+    return new FloatMat3PropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatMat4Property* p) {
+    return new FloatMat4PropertyWidget(p, 0);
+}
+
 QPropertyWidget* QPropertyWidgetFactory::createWidget(OptionPropertyBase* p) {
     return new OptionPropertyWidget(p, 0);
 }
@@ -132,5 +152,6 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(VolumeHandleProperty* p) {
 QPropertyWidget* QPropertyWidgetFactory::createWidget(VolumeCollectionProperty* p) {
     return new VolumeCollectionPropertyWidget(p, 0);
 }
+
 
 } // namespace voreen

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,7 +28,8 @@
  **********************************************************************/
 
 #include "voreen/core/io/brickedvolumewriter.h"
-#include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 
 namespace voreen {
 
@@ -56,12 +57,9 @@ BrickedVolumeWriter::BrickedVolumeWriter(BrickingInformation& brickingInformatio
 }
 
 BrickedVolumeWriter::~BrickedVolumeWriter() {
-    if (bvout_ != 0)
-        delete bvout_;
-    if (bviout_ != 0)
-        delete bviout_;
-    if (bpiout_ != 0)
-        delete bpiout_;
+    delete bvout_;
+    delete bviout_;
+    delete bpiout_;
 }
 
 void BrickedVolumeWriter::write(const std::string&, VolumeHandle* /*volumeHandle*/)
@@ -70,12 +68,9 @@ void BrickedVolumeWriter::write(const std::string&, VolumeHandle* /*volumeHandle
 }
 
 bool BrickedVolumeWriter::openFile(std::string filename) {
-    if (bviout_ != 0)
-        delete bviout_;
-    if (bvout_ != 0)
-        delete bvout_;
-    if (bpiout_ != 0)
-        delete bpiout_;
+    delete bviout_;
+    delete bvout_;
+    delete bpiout_;
 
     bviname_ = filename;
     bvname_ = getFileNameWithoutExtension(filename) + ".bv";
@@ -160,7 +155,8 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
     positionArray_[currentBrick_] = bvPosition_;
     //bpiout_->write(position,sizeOfUint64_);
 
-    bool allVoxelsEqual = volume->getAllVoxelsEqual();
+    VolumeOperatorIsUniform isUniform;
+    bool allVoxelsEqual = isUniform.apply<bool>(volume);
 
     char allEqual;
     if (allVoxelsEqual) {
@@ -204,7 +200,7 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
     while (!finished) {
         newDims = temp->getDimensions() / 2;
         //scaledVolume = temp->scale(newDims,Volume::LINEAR);
-        scaledVolume = temp->downsample();
+        scaledVolume = temp->halfsample();
         volumeVector.push_back(scaledVolume);
         numVoxels = scaledVolume->getNumVoxels();
         temp = scaledVolume;
@@ -225,7 +221,8 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
     //actual volume data for every level of detail to file too.
     for (size_t i=0; i<volumeVector.size(); i++) {
         Volume* currentVolume = volumeVector.at(i);
-        error = volume->calcError(currentVolume);
+        VolumeOperatorCalcError calcError;
+        error = calcError.apply<float>(volume, currentVolume);
         /*errorOut = reinterpret_cast<char*>(&error);
         bpiout_->write(errorOut,4);*/
         errorArray_[errorArrayPosition_] = error;
@@ -240,6 +237,11 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
     }
 
 
+}
+
+VolumeWriter* BrickedVolumeWriter::create(IOProgress* /*progress*/) const {
+    BrickingInformation i;
+    return new BrickedVolumeWriter(i);
 }
 
 

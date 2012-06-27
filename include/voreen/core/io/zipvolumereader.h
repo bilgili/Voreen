@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -46,7 +46,9 @@ class ZipVolumeReader : public VolumeReader {
 public:
     ZipVolumeReader(VolumeSerializerPopulator* populator_, IOProgress* progress = 0);
 
-    virtual VolumeCollection* read(const std::string& fileName)
+    virtual VolumeReader* create(IOProgress* progress = 0) const;
+
+    virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     virtual VolumeHandle* read(const VolumeOrigin& origin)

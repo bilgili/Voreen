@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -49,6 +49,11 @@ class VolumeWriter {
 public:
     VolumeWriter(IOProgress* progress = 0);
     virtual ~VolumeWriter() {}
+
+    /**
+     * Virtual constructor.
+     */
+    virtual VolumeWriter* create(IOProgress* progress = 0) const = 0;
 
     /**
      * Saves a Volume to the given file.

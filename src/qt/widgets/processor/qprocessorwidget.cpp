@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,10 +30,12 @@
 #include "tgt/vector.h"
 #include "voreen/qt/widgets/processor/qprocessorwidget.h"
 #include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/processors/processor.h"
 
 #include <QDialog>
+#include <QApplication>
 #include <QMainWindow>
+#include <QDesktopWidget>
 #include <QMoveEvent>
 
 namespace voreen {
@@ -44,6 +46,7 @@ QProcessorWidget::QProcessorWidget(Processor* processor, QWidget* parent) :
 {
     tgtAssert(processor, "No processor");
     setWindowTitle(QString::fromStdString(processor->getName()));
+    QWidget::setVisible(false);
 }
 
 void QProcessorWidget::setVisible(bool visible) {
@@ -74,13 +77,27 @@ tgt::ivec2 QProcessorWidget::getSize() const {
 }
 
 void QProcessorWidget::setPosition(int x, int y) {
-    // set position relative to mainwindow
+
+    // compute position relative to mainwindow
+    int xrel = x;
+    int yrel = y;
     if (VoreenApplicationQt::qtApp() && VoreenApplicationQt::qtApp()->getMainWindow()) {
         QPoint mainPindowPos = VoreenApplicationQt::qtApp()->getMainWindow()->pos();
-        QWidget::move(mainPindowPos.x() + x, mainPindowPos.y() + y);
+        xrel += mainPindowPos.x();
+        yrel += mainPindowPos.y();
     }
-    else
-        QWidget::move(x, y);
+
+    // check whether top-left corner lies inside the available screen geometry
+    QRect screenGeometry = QApplication::desktop()->availableGeometry(QPoint(xrel+25,yrel+25));
+    if (screenGeometry.contains(QPoint(xrel+25,yrel+25))) {
+        QWidget::move(xrel, yrel);
+    }
+    else {
+        LWARNINGC("voreenqt.QProcessorWidget",
+            "setPosition(" << x << ", " << y << "): '" << windowTitle().toStdString() <<
+            "' would be placed outside visible desktop area. Ignoring.");
+    }
+
 }
 
 tgt::ivec2 QProcessorWidget::getPosition() const {

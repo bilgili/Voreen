@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,33 +28,35 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/volumeviewhelper.h"
-#include "voreen/core/volume/volumehandle.h"
-#include "voreen/core/volume/volumeatomic.h"
-#include "voreen/core/volume/bricking/brickedvolume.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/bricking/brickedvolume.h"
 
 #include <QDir>
 
 namespace voreen {
 
 std::string VolumeViewHelper::getVolumeType(Volume* volume) {
-    if (dynamic_cast<VolumeUInt8*>(volume)!=0) return "UInt8";
-    if (dynamic_cast<VolumeUInt16*>(volume)!=0) return "UInt16";
-    if (dynamic_cast<VolumeUInt32*>(volume)!=0) return "UInt32";
-    if (dynamic_cast<VolumeInt8*>(volume)!=0) return "Int8";
-    if (dynamic_cast<VolumeInt16*>(volume)!=0) return "Int16";
-    if (dynamic_cast<VolumeInt32*>(volume)!=0) return "Int32";
-    if (dynamic_cast<Volume4xUInt8*>(volume)!=0) return "4xUInt8";
-    if (dynamic_cast<Volume4xUInt16*>(volume)!=0) return "4xUInt16";
-    if (dynamic_cast<Volume4xInt8*>(volume)!=0) return "4xInt8";
-    if (dynamic_cast<Volume4xInt16*>(volume)!=0) return "4xInt16";
-    if (dynamic_cast<Volume3xUInt8*>(volume)!=0) return "3xUInt8";
-    if (dynamic_cast<Volume3xUInt16*>(volume)!=0) return "3xUInt16";
-    if (dynamic_cast<Volume3xInt8*>(volume)!=0) return "3xInt8";
-    if (dynamic_cast<Volume3xInt16*>(volume)!=0) return "3xInt16";
-    if (dynamic_cast<Volume3xFloat*>(volume)!=0) return "3xFloat";
-    if (dynamic_cast<Volume3xDouble*>(volume)!=0) return "3xDouble";
-    if (dynamic_cast<Volume4xFloat*>(volume)!=0) return "4xFloat";
-    if (dynamic_cast<Volume4xDouble*>(volume)!=0) return "4xDouble";
+    if (dynamic_cast<VolumeUInt8*>(volume)!=0) return "uint8";
+    if (dynamic_cast<VolumeUInt16*>(volume)!=0) return "uint16";
+    if (dynamic_cast<VolumeUInt32*>(volume)!=0) return "uint32";
+    if (dynamic_cast<VolumeInt8*>(volume)!=0) return "int8";
+    if (dynamic_cast<VolumeInt16*>(volume)!=0) return "int16";
+    if (dynamic_cast<VolumeInt32*>(volume)!=0) return "int32";
+    if (dynamic_cast<VolumeFloat*>(volume)!=0) return "float";
+    if (dynamic_cast<VolumeDouble*>(volume)!=0) return "double";
+    if (dynamic_cast<Volume4xUInt8*>(volume)!=0) return "4 x uint8";
+    if (dynamic_cast<Volume4xUInt16*>(volume)!=0) return "4 x uint16";
+    if (dynamic_cast<Volume4xInt8*>(volume)!=0) return "4 x int8";
+    if (dynamic_cast<Volume4xInt16*>(volume)!=0) return "4 x int16";
+    if (dynamic_cast<Volume3xUInt8*>(volume)!=0) return "3 x uint8";
+    if (dynamic_cast<Volume3xUInt16*>(volume)!=0) return "3 x uint16";
+    if (dynamic_cast<Volume3xInt8*>(volume)!=0) return "3 x int8";
+    if (dynamic_cast<Volume3xInt16*>(volume)!=0) return "3 x int16";
+    if (dynamic_cast<Volume3xFloat*>(volume)!=0) return "3 x float";
+    if (dynamic_cast<Volume3xDouble*>(volume)!=0) return "3 x double";
+    if (dynamic_cast<Volume4xFloat*>(volume)!=0) return "4 x float";
+    if (dynamic_cast<Volume4xDouble*>(volume)!=0) return "4 x double";
     if (dynamic_cast<BrickedVolume*>(volume)!=0) {
         std::stringstream out;
         out << getVolumeType(dynamic_cast<BrickedVolume*>(volume)->getPackedVolume()) << " bricked";
@@ -156,7 +158,7 @@ std::string VolumeViewHelper::volumeInfoString(VolumeHandle* handle) {
             +type+"</td></tr><tr><td>dimension </td><td>" \
             +dimension+"</td></tr><tr><td>spacing </td><td>" \
             +spacing+"</td></tr><tr><td>memSize </td><td>" \
-    +getVolumeBytes(volume)+" bytes</td></tr> </table>";
+    +getVolumeMemorySize(volume)+" bytes</td></tr> </table>";
 
     }
     else {
@@ -205,7 +207,7 @@ std::string VolumeViewHelper::getVolumePath(VolumeHandle* handle) {
 }
 
 std::string VolumeViewHelper::getVolumeDimension(Volume* volume) {
-    std::stringstream out;    
+    std::stringstream out;
 
     BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
     if (brick) {
@@ -224,19 +226,19 @@ std::string VolumeViewHelper::getVolumeSpacing(Volume* volume) {
     return out.str();
 }
 
-std::string VolumeViewHelper::getVolumeBytes(Volume* volume) {
+std::string VolumeViewHelper::getVolumeMemorySize(Volume* volume) {
     std::stringstream out;
 
     BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
     if (brick) {
-        out << getVolumeBytes(brick->getEepVolume()) << " (using "
-            << getVolumeBytes(brick->getPackedVolume()) << ")";
+        out << getVolumeMemorySize(brick->getEepVolume()) << " (using "
+            << getVolumeMemorySize(brick->getPackedVolume()) << ")";
         return out.str();
     }
 
     long bytes = volume->getNumBytes();
     float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-    float kb = tgt::round(bytes/102.4f) / 10.f; 
+    float kb = tgt::round(bytes/102.4f) / 10.f;
     if (mb >= 0.5f) {
         out << mb << " MB";
     }

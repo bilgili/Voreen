@@ -1,9 +1,38 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifdef VRN_MODULE_FLOWREEN
 
 #include "voreen/modules/flowreen/flowmath.h"
 #include "voreen/modules/flowreen/streamlinerenderer3d.h"
 #include "voreen/modules/flowreen/volumeflow3d.h"
-#include "voreen/core/vis/interaction/camerainteractionhandler.h"
+#include "voreen/core/interaction/camerainteractionhandler.h"
 
 #include "tgt/gpucapabilities.h"
 
@@ -16,7 +45,7 @@ StreamlineRenderer3D::StreamlineRenderer3D()
     geometrySpacingProp_("geometrySpacing", "spacing for geometry: ", 4, 1),
     geometrySizeProp_("geometrySizeProp", "geometry size: ", 1, 1),
     useAlphaBlendingProp_("useAlphaBlendingProp", "fade off distant objects: ", true),
-    camProp_("camera", "Camera", new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), 
+    camProp_("camera", "Camera", new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f),
         tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
     cameraHandler_(0),
     currentStyle_(STYLE_LINES),
@@ -65,7 +94,7 @@ StreamlineRenderer3D::StreamlineRenderer3D()
     addProperty(useCoordinateAxisProp_);
     addProperty(useAlphaBlendingProp_);
     addProperty(camProp_);
-    cameraHandler_ = new CameraInteractionHandler(&camProp_);
+    cameraHandler_ = new CameraInteractionHandler("cameraHandler", "Camera Handler", &camProp_);
     addInteractionHandler(cameraHandler_);
 
     addPort(volInport_);
@@ -86,12 +115,13 @@ StreamlineRenderer3D::~StreamlineRenderer3D() {
 
     if ((shader_ != 0) && (shader_->isActivated() == true))
         shader_->deactivate();
-    ShdrMgr.dispose(shader_);
+    if(shader_)
+        ShdrMgr.dispose(shader_);
 
     delete cameraHandler_;
 }
 
-const std::string StreamlineRenderer3D::getProcessorInfo() const {
+std::string StreamlineRenderer3D::getProcessorInfo() const {
     return "Renders streamline objects from 3D vector fields for visualizing flow";
 }
 

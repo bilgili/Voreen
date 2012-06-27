@@ -17,7 +17,6 @@ def benchmark():
     angle = 0.0
     angleIncr = math.pi / cycles  # do a half rotation
 
-    # used for interpolating the transfer functions
     t = 0.0
     tIncr = 1.0 / cycles
 
@@ -33,7 +32,7 @@ def benchmark():
     while (counter < cycles):
         voreen.rotateCamera(angleIncr, 0.0, 1.0, 0.0)
 
-        # increment neccessary variables
+        # increment necessary variables
         counter = counter + 1
         t = t + tIncr
         angle = angle + angleIncr

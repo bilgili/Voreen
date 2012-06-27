@@ -50,6 +50,11 @@ Camera::Camera(const vec3& position, const vec3& focus, const vec3& up,
 Camera::~Camera() {
 }
 
+Camera* Camera::clone() const {
+    return new Camera(position_, focus_, upVector_, frust_.getFovy(), 
+        frust_.getRatio(), frust_.getNearDist(), frust_.getFarDist());
+}
+
 // This is called to set up the Camera-View
 void Camera::look(Eye eye) {
     if (eye == EYE_MIDDLE) {

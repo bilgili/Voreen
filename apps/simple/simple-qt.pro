@@ -9,9 +9,9 @@ QT += opengl
 include(../../config.txt)
 
 # Include common configuration
-include(../../commonconf.txt)
+include(../../commonconf.pri)
 
-include(../voreenapp.txt)
+include(../voreenapp.pri)
 
 HEADERS += ../../ext/tgt/qt/qtcanvas.h
 

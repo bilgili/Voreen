@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,6 +33,7 @@
 #include "voreenvisualization.h"
 
 #include <QtGui>
+#include <QSplashScreen>
 
 namespace tgt {
     class QtCanvas;
@@ -40,7 +41,6 @@ namespace tgt {
 
 namespace voreen {
 
-class Workspace;
 class ConsolePlugin;
 class NetworkEvaluator;
 class PropertyListWidget;
@@ -51,10 +51,25 @@ class VolumeContainer;
 class VolumeContainerWidget;
 class VoreenToolWindow;
 class VoreenToolDockWindow;
-class WidgetPlugin;
-class ShortcutPreferencesWidget;
-class RenderTargetDebugWidget;
-class AnimationPlugin;
+class InputMappingDialog;
+class RenderTargetViewer;
+class LinkingScriptManager;
+class AnimationEditor;
+
+//---------------------------------------------------------------------------
+
+class VoreenSplashScreen : public QSplashScreen {
+public:
+    VoreenSplashScreen();
+    ~VoreenSplashScreen();
+
+    void drawContents(QPainter* painter);
+    void showMessage(const QString& message);
+
+protected:
+    QPixmap* pixmap_;
+    QString message_;
+};
 
 //---------------------------------------------------------------------------
 
@@ -84,7 +99,7 @@ public:
     VoreenMainWindow(const std::string& workspace = "", const std::string& dataset = "");
     ~VoreenMainWindow();
 
-    void init();
+    void init(VoreenSplashScreen* splash = 0);
 
 signals:
     void closeMainWindow();
@@ -108,6 +123,7 @@ public slots:
 
     // dataset
     void openDataset();
+    void openRawDataset();
     void openRecentFile();
 
     void buttonAddDICOMClicked();
@@ -123,8 +139,9 @@ public slots:
     void setReuseTargets();
 
     // help menu
-    void helpAbout();
     void helpFirstSteps();
+    void helpWebsite();
+    void helpAbout();
 
     // further slots
     void networkModified();
@@ -141,7 +158,7 @@ protected slots:
 
     /// Adjust snapshot tool menu to network.
     void adjustSnapshotMenu();
-    
+
 private:
     //
     // GUI setup
@@ -165,7 +182,7 @@ private:
      * @return the newly created window
      */
     VoreenToolWindow* addToolDockWindow(QAction* action, QWidget* widget, const QString& name = "",
-                                        Qt::DockWidgetArea dockarea = Qt::LeftDockWidgetArea, 
+                                        Qt::DockWidgetArea dockarea = Qt::LeftDockWidgetArea,
                                         Qt::DockWidgetAreas allowedAreas = Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea ,
                                         bool basic = true);
 
@@ -180,6 +197,11 @@ private:
     void loadSettings();
     void loadWindowSettings();
     void saveSettings();
+
+    //
+    // startUp management
+    //
+    void startupComplete(const std::string& phaseName);
 
     //
     // further methods
@@ -201,12 +223,14 @@ private:
     void setGuiMode(GuiMode guiMode);
 
     GuiMode guiMode_;
+    AnimationEditor* animationEditor_;
 
     tgt::QtCanvas* sharedContext_;
     VolumeContainerWidget* volumeContainerWidget_;
     NetworkEditor* networkEditorWidget_;
-    ShortcutPreferencesWidget* shortcutPrefWidget_;
-    RenderTargetDebugWidget* renderTargetDebugWidget_;
+    InputMappingDialog* inputMappingDialog_;
+    RenderTargetViewer* renderTargetViewer_;
+    LinkingScriptManager* linkingScriptManager_;
 
     VoreenVisualization* vis_;
 
@@ -215,7 +239,6 @@ private:
     QToolBar* toolsToolBar_;
     QToolBar* actionToolBar_;
     QList<VoreenToolWindow*> toolWindows_;
-    QList<std::pair<WidgetPlugin*, QAction*> > tools_;
 
     VoreenToolWindow* propertyListTool_;
     PropertyListWidget* propertyListWidget_;
@@ -223,13 +246,10 @@ private:
     VoreenToolWindow* processorListTool_;
     VoreenToolWindow* volumeContainerTool_;
     VoreenToolWindow* consoleTool_;
-    VoreenToolWindow* animationTool_;
 
     QSettings settings_;
     QByteArray visualizationModeState_;
     QByteArray networkModeState_;
-    QByteArray renderWindowStateNetworkMode_;
-    QByteArray renderWindowStateVisualizationMode_;
     QByteArray networkEditorWindowState_;
 
     QMdiArea* mdiArea_;
@@ -253,6 +273,7 @@ private:
     QAction* aboutAction_;
     QAction* helpFirstStepsAct_;
     QAction* openDatasetAction_;
+    QAction* openRawDatasetAction_;
     QAction* importNetworkAction_;
     QAction* exportNetworkAction_;
     QAction* showShortcutPreferencesAction_;
@@ -261,7 +282,6 @@ private:
 
     QAction* workspaceExtractAction_;
 
-    QAction* setReuseTargetsAction_;
     QAction* rebuildShadersAction_;
     QAction* loadLastWorkspaceAct_;
     QAction* scriptAction_;
@@ -292,6 +312,9 @@ private:
     tgt::ivec2 canvasSize_;
 
     bool ignoreWindowTitleModified_; ///< will not add * to the window title when this is set
+
+    // startUp
+    bool startupWorkspace_;
 };
 
 } // namespace

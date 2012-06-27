@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,9 +30,6 @@
 #include "voreen/core/io/serialization/xmlserializationconstants.h"
 
 namespace voreen {
-
-const std::ios::fmtflags XmlSerializationConstants::FLOATFORMAT = std::ios::fixed;
-const int XmlSerializationConstants::FLOATPRECISION = 6;
 
 const std::string XmlSerializationConstants::XMLVERSION = "1.0";
 const std::string XmlSerializationConstants::XMLENCODING = "";

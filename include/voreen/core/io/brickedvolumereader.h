@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,13 +31,15 @@
 #define VRN_BRICKEDVOLUMEREADER_H
 
 #include "voreen/core/io/volumereader.h"
-#include "voreen/core/volume/bricking/brickinginformation.h"
+#include "voreen/core/datastructures/volume/bricking/brickinginformation.h"
 
 namespace voreen {
 
     class BrickedVolumeReader : public VolumeReader {
     public:
         BrickedVolumeReader(IOProgress* progress = 0);
+
+        virtual VolumeReader* create(IOProgress* progress = 0) const;
 
         /**
         * Opens the Information file (bvi = bricked volume information) and
@@ -65,6 +67,9 @@ namespace voreen {
         void resetBpiFilePosition();
 
         BrickingInformation getBrickingInformation();
+
+        virtual VolumeHandle* read(const VolumeOrigin& origin)
+            throw (tgt::FileException, std::bad_alloc);
 
         virtual VolumeCollection* read(const std::string& fileName)
             throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
@@ -107,7 +112,7 @@ namespace voreen {
         uint64_t errorArrayPosition_;
 
         bool persistent_;
-        
+
         static IOProgress* ioProgress_;
 
     private:

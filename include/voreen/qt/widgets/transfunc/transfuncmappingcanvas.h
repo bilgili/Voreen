@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,7 +32,7 @@
 
 #include "tgt/vector.h"
 
-#include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumehandle.h"
 
 #include <QWidget>
 #include <QMenu>
@@ -56,14 +56,9 @@ class VolumeHandle;
  * Background thread for calculating a histogram.
  */
 class HistogramThread : public QThread {
-    Q_OBJECT
+Q_OBJECT
 public:
-    HistogramThread(Volume* volume, int count, QObject* parent = 0)
-        : QThread(parent), volume_(volume), count_(count)
-        {
-            tgtAssert(volume, "No volume");
-        }
-
+    HistogramThread(Volume* volume, int count, QObject* parent = 0);
     void run();
 
 signals:
@@ -88,7 +83,7 @@ private:
  * can also be changed.
  */
 class TransFuncMappingCanvas : public QWidget, public VolumeHandleObserver {
-    Q_OBJECT
+Q_OBJECT
 public:
     /**
      * Constructor
@@ -387,6 +382,11 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
     /**
+     * Triggers calculation of the histogram if necessary when canvas is shown.
+     */
+    virtual void showEvent(QShowEvent* event);
+
+    /**
      * Helper function for calculation of pixel coordinates from relative coordinates.
      *
      * @param p relative coordinates in the interval [0,1]
@@ -430,6 +430,11 @@ protected:
      * @param values values that are displayed in the tooltip
      */
     void updateCoordinates(QPoint pos, tgt::vec2 values);
+
+    /**
+     * Re-calculated the histogram if necessary, i.e., the volume was changed.
+     */
+    void updateHistogram();
 
     TransFuncIntensity* tf_;             ///< pointer to the transfer function that is displayed
     HistogramPainter* histogramPainter_; ///< painter that draws the histogram onto this widget
@@ -475,6 +480,7 @@ protected:
     QAction* resetAction_;      ///< action for reset transfer function context menu entry
 
     HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
+    bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated
 
     VolumeHandle* volumeHandle_; ///< the currently assigned volume handle
 };

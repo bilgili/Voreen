@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,108 +28,220 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/eventpropertywidget.h"
-#include "voreen/core/vis/properties/eventproperty.h"
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/processors/processor.h"
 #include "voreen/qt/widgets/keydetectorwidget.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QCheckBox>
 
 namespace voreen {
 
-EventPropertyWidget::EventPropertyWidget(EventProperty* property, QWidget* parent)
+EventPropertyWidget::EventPropertyWidget(EventPropertyBase* property, QWidget* parent)
     : QWidget(parent)
+    , PropertyWidget()
     , property_(property)
+    , checkEnabled_(0)
+    , modifierWidget_(0)
+    , keyWidget_(0)
+    , buttonBox_(0)
+    , checkSharing_(0)
+    , disconnected_(false)
 {
+    tgtAssert(property, "No property");
+
     layout_ = new QHBoxLayout(this);
+    layout_->setContentsMargins(2,2,2,2);
 
-    QLabel* name = new QLabel(QString::fromStdString(property->getOwner()->getName() + "." + property->getGuiText()));
-    layout_->addWidget(name);
-    layout_->addSpacing(20);
+    createEnabledBox();
 
-    if (dynamic_cast<MouseEventProperty*>(property))
+    if (property->receivesMouseEvents())
         createMouseWidgets();
-    if (dynamic_cast<KeyboardEventProperty*>(property))
+    if (property->receivesKeyEvents())
         createKeyWidgets();
+
+    layout_->addSpacing(5);
+    createSharingBox();
+
+    enabledChanged(property->isEnabled());
+    if (!property->isVisible())
+        setVisible(false);
+}
+
+EventPropertyWidget::~EventPropertyWidget() {
+    if (!disconnected_ && property_) {
+        property_->removeWidget(this);
+        property_ = 0;
+    }
 }
 
 void EventPropertyWidget::createMouseWidgets() {
-    ModifierDetectorWidget* modifierWidget = new ModifierDetectorWidget;
-    modifierWidget->setText(ModifierDetectorWidget::getStringForModifier(ModifierDetectorWidget::getQtModifierFromTGT(property_->getModifier())));
-    modifierWidget->setMinimumWidth(50);
-    connect(modifierWidget, SIGNAL(modifierChanged(Qt::KeyboardModifiers)), this, SLOT(modifierChanged(Qt::KeyboardModifiers)));
-    layout_->addWidget(modifierWidget);
+    modifierWidget_ = new ModifierDetectorWidget;
+    modifierWidget_->setText(ModifierDetectorWidget::getStringForModifier(ModifierDetectorWidget::getQtModifierFromTGT(property_->getModifier())));
+    modifierWidget_->setFixedWidth(60);
+    connect(modifierWidget_, SIGNAL(modifierChanged(Qt::KeyboardModifiers)), this, SLOT(modifierChanged(Qt::KeyboardModifiers)));
+    layout_->addWidget(modifierWidget_);
 
-    QComboBox* buttonBox = new QComboBox;
-    buttonBox->addItem("Left mouse button");
-    buttonBox->addItem("Middle mouse button");
-    buttonBox->addItem("Right mouse button");
-    buttonBox->addItem("Mouse wheel up");
-    buttonBox->addItem("Mouse wheel down");
-    buttonBox->addItem("All buttons");
-    switch (static_cast<MouseEventProperty*>(property_)->getMouseButtons()) {
+    buttonBox_ = new QComboBox;
+    buttonBox_->addItem("Left mouse button");
+    buttonBox_->addItem("Middle mouse button");
+    buttonBox_->addItem("Right mouse button");
+    buttonBox_->addItem("Mouse wheel");
+    buttonBox_->addItem("Any mouse button");
+    buttonBox_->addItem("No mouse button");
+    switch (property_->getMouseButtons()) {
         case tgt::MouseEvent::MOUSE_BUTTON_LEFT:
-            buttonBox->setCurrentIndex(0);
+            buttonBox_->setCurrentIndex(0);
             break;
         case tgt::MouseEvent::MOUSE_BUTTON_MIDDLE:
-            buttonBox->setCurrentIndex(1);
+            buttonBox_->setCurrentIndex(1);
             break;
         case tgt::MouseEvent::MOUSE_BUTTON_RIGHT:
-            buttonBox->setCurrentIndex(2);
+            buttonBox_->setCurrentIndex(2);
             break;
         case tgt::MouseEvent::MOUSE_WHEEL_UP:
-            buttonBox->setCurrentIndex(3);
+            buttonBox_->setCurrentIndex(3);
             break;
         case tgt::MouseEvent::MOUSE_WHEEL_DOWN:
-            buttonBox->setCurrentIndex(4);
+            buttonBox_->setCurrentIndex(3);
             break;
-        case tgt::MouseEvent::MOUSE_ALL:
+        case tgt::MouseEvent::MOUSE_WHEEL:
+            buttonBox_->setCurrentIndex(3);
+            break;
+        case tgt::MouseEvent::MOUSE_BUTTON_ALL:
+            buttonBox_->setCurrentIndex(4);
+            break;
+        case tgt::MouseEvent::MOUSE_BUTTON_NONE:
         default:
-            buttonBox->setCurrentIndex(5);
+            buttonBox_->setCurrentIndex(5);
             break;
     }
-    connect(buttonBox, SIGNAL(currentIndexChanged(int)), this, SLOT(buttonChanged(int)));
-    layout_->addWidget(buttonBox);
+    connect(buttonBox_, SIGNAL(currentIndexChanged(int)), this, SLOT(buttonChanged(int)));
+    layout_->addWidget(buttonBox_);
+    layout_->addStretch();
+
+    buttonBox_->setFixedWidth(125);
 }
 
 void EventPropertyWidget::createKeyWidgets() {
-    KeyDetectorWidget* keyWidget = new KeyDetectorWidget;
-    keyWidget->setText(KeyDetectorWidget::getStringForKey(KeyDetectorWidget::getQtKeyFromTGT(static_cast<KeyboardEventProperty*>(property_)->getKeyCode())));
-    connect(keyWidget, SIGNAL(key(int)), this, SLOT(keyChanged(int)));
-    layout_->addWidget(keyWidget);
+    keyWidget_ = new KeyDetectorWidget;
+    keyWidget_->setText(KeyDetectorWidget::getStringForKey(KeyDetectorWidget::getQtKeyFromTGT(property_->getKeyCode())));
+    keyWidget_->setFixedWidth(60);
+
+    // ====================================== please review =======================================
+    // connect(keyWidget, SIGNAL(key(int)), this, SLOT(keyChanged(int)));
+    connect(keyWidget_, SIGNAL(keyChanged(int)), this, SLOT(keyChanged(int)));
+    // ============================================================================================
+
+    layout_->addWidget(keyWidget_);
+    layout_->addStretch();
+}
+
+void EventPropertyWidget::createEnabledBox() {
+    tgtAssert(property_, "No property");
+    checkEnabled_ = new QCheckBox(QString::fromStdString(property_->getGuiName()));
+    checkEnabled_->setChecked(property_->isEnabled());
+    checkEnabled_->setFixedWidth(150);
+    connect(checkEnabled_, SIGNAL(toggled(bool)), this, SLOT(enabledChanged(bool)));
+    layout_->addWidget(checkEnabled_);
+}
+
+void EventPropertyWidget::createSharingBox() {
+    tgtAssert(property_, "No property");
+    checkSharing_ = new QCheckBox("sharing");
+    checkSharing_->setChecked(property_->isSharing());
+    connect(checkSharing_, SIGNAL(toggled(bool)), this, SLOT(sharingChanged(bool)));
+    layout_->addWidget(checkSharing_);
 }
 
 void EventPropertyWidget::modifierChanged(Qt::KeyboardModifiers modifier) {
+    if (disconnected_)
+        return;
+
     tgt::Event::Modifier m = ModifierDetectorWidget::getTGTModifierFromQt(modifier);
     property_->setModifier(m);
 }
 
 void EventPropertyWidget::keyChanged(int key) {
-    static_cast<KeyboardEventProperty*>(property_)->setKeyCode(KeyDetectorWidget::getTGTKeyFromQt(key));
+    if (disconnected_)
+        return;
+
+    property_->setKeyCode(KeyDetectorWidget::getTGTKeyFromQt(key));
 }
 
 void EventPropertyWidget::buttonChanged(int button) {
+    if (disconnected_)
+        return;
+
     switch (button) {
     case 0:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_LEFT);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_LEFT);
         break;
     case 1:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_MIDDLE);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_MIDDLE);
         break;
     case 2:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_RIGHT);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_RIGHT);
         break;
     case 3:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_UP);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL);
         break;
     case 4:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_WHEEL_DOWN);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_ALL);
         break;
     case 5:
-        static_cast<MouseEventProperty*>(property_)->setMouseButtons(tgt::MouseEvent::MOUSE_ALL);
+        property_->setMouseButtons(tgt::MouseEvent::MOUSE_BUTTON_NONE);
         break;
     }
+}
+
+void EventPropertyWidget::enabledChanged(bool enabled) {
+    if (disconnected_)
+        return;
+
+    property_->setEnabled(enabled);
+    if (modifierWidget_)
+        modifierWidget_->setEnabled(enabled);
+    if (keyWidget_)
+        keyWidget_->setEnabled(enabled);
+    if (buttonBox_)
+        buttonBox_->setEnabled(enabled);
+    if (checkSharing_)
+        checkSharing_->setEnabled(enabled);
+}
+
+void EventPropertyWidget::sharingChanged(bool shared) {
+    if (disconnected_)
+        return;
+
+    property_->setSharing(shared);
+}
+
+void EventPropertyWidget::adjustWidgetState() {
+
+}
+
+void EventPropertyWidget::setEnabled(bool enabled) {
+    QWidget::setEnabled(enabled);
+}
+
+void EventPropertyWidget::setVisible(bool state) {
+    QWidget::setVisible(state);
+}
+
+void EventPropertyWidget::disconnect() {
+    disconnected_ = true;
+    property_ = 0;
+}
+
+void EventPropertyWidget::updateFromProperty() {
+    if (disconnected_)
+        return;
+
+    setEnabled(property_->isEnabled());
+    setVisible(property_->isVisible());
 }
 
 } // namespace

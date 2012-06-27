@@ -95,7 +95,7 @@ const std::string ResourceManager<T>::loggerCat_("tgt.Manager");
 
 template <class T>
 void ResourceManager<T>::reg(T* ptr, const std::string& filename) {
-    if (!cacheResources_ && isLoaded(filename)) {
+    if (cacheResources_ && isLoaded(filename)) {
         Resource* r = resourcesByFilename_[filename];
         r->data_ = ptr;
         r->usedBy_++;
@@ -126,8 +126,8 @@ template <class T>
 ResourceManager<T>::~ResourceManager() {
     while (!resourcesByFilename_.empty()) {
 #ifdef TGT_DEBUG
-        LDEBUG("Un-disposed Resource: " << (*resourcesByFilename_.begin()).second->filename_
-               << " in use by " << (*resourcesByFilename_.begin()).second->usedBy_);
+        LWARNING("Un-disposed Resource: " << (*resourcesByFilename_.begin()).second->filename_
+                 << " in use by " << (*resourcesByFilename_.begin()).second->usedBy_);
 #endif
         delete resourcesByFilename_.begin()->second->data_;
         delete resourcesByFilename_.begin()->second;
@@ -142,7 +142,7 @@ bool ResourceManager<T>::isLoaded(const std::string& filename) {
 
 template <class T>
 void ResourceManager<T>::dispose(T* ptr) {
-    if (ptr == 0 || resourcesByPtr_.find(ptr) == resourcesByPtr_.end())
+    if (ptr == 0 || resourcesByPtr_.find(ptr) == resourcesByPtr_.end()) 
         return;
 
     Resource* r = resourcesByPtr_[ptr];
@@ -185,6 +185,9 @@ void ResourceManager<T>::removePath(std::string path) {
 template <class T>
 std::string ResourceManager<T>::completePath(std::string filename) {
     std::string cplFileName = filename;
+
+	if(FileSys.exists(filename))
+		return filename;
 
     bool foundFile = false;
     if (!cplFileName.empty()) {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifndef VRN_APPLICATIONQT_H
 #define VRN_APPLICATIONQT_H
 
-#include "voreen/core/application.h"
+#include "voreen/core/voreenapplication.h"
 
 #include "voreen/qt/ioprogressdialog.h"
 
@@ -45,6 +45,8 @@ public:
     VoreenApplicationQt(const std::string& name, const std::string& displayName,
                         int argc, char** argv, ApplicationType appType = APP_DEFAULT);
     virtual void init();
+
+    virtual void initGL();
 
     /**
      * Allows access to the global instance of this class.
@@ -68,9 +70,16 @@ public:
      */
     virtual IOProgressDialog* createProgressDialog() const;
 
+    /**
+     * Constructs an absolute path consisting of the VoreenQt shader source directory
+     * and the given filename.
+     */
+    virtual std::string getShaderPathQt(const std::string& filename = "") const;
+
 private:
     static VoreenApplicationQt* qtApp_;
     QMainWindow* mainWindow_;
+    std::string shaderPathQt_;
 };
 
 } // namespace

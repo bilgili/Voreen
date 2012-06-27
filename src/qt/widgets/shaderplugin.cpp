@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -57,7 +57,11 @@ void ShaderPlugin::createWidgets() {
     undoBt_ = new QToolButton();
     undoBt_->setIcon(QIcon(":/icons/revert.png"));
     undoBt_->setIconSize(QSize(24, 24));
-    undoBt_->setToolTip("Revert to original source");
+    undoBt_->setToolTip("Revert to last loaded source");
+    fullUndoBt_ = new QToolButton();
+    fullUndoBt_->setIcon(QIcon(":/icons/revert.png"));
+    fullUndoBt_->setIconSize(QSize(24, 24));
+    fullUndoBt_->setToolTip("Revert to original source");
     openBt_ = new QToolButton();
     openBt_->setIcon(QIcon(":/icons/open.png"));
     openBt_->setIconSize(QSize(24, 24));
@@ -71,41 +75,41 @@ void ShaderPlugin::createWidgets() {
     hbox->setContentsMargins(0,0,0,0);
     hbox->addWidget(updateBt_);
     hbox->addWidget(undoBt_);
+    hbox->addWidget(fullUndoBt_);
     hbox->addWidget(openBt_);
     hbox->addWidget(saveBt_);
     hbox->addStretch();
     QWidget* toolButtonBar = new QWidget();
     toolButtonBar->setLayout(hbox);
 
-    textEdit_ = new QTextEdit();
+    codeEdit_ = new CodeEdit();
+    highlighter_ = new GLSLHighlighter(codeEdit_->document());
+
+    compilerLogWidget_ = new QTextEdit();
     QFont font;
     font.setFamily("Courier");
     font.setFixedPitch(true);
     font.setPointSize(10);
-    textEdit_->setFont(font);
-	QFontMetrics metrics(font);
-	textEdit_->setTabStopWidth(metrics.width(" ")*4);
-    textEdit_->setText(QString(property_->getSource().c_str()));
-    highlighter_ = new GLSLHighlighter(textEdit_->document());
-
-    compilerLogWidget_ = new QTextEdit();
     compilerLogWidget_->setFont(font);
     compilerLogWidget_->setReadOnly(true);
     compilerLogWidget_->setFixedHeight(150);
 
     QVBoxLayout* vbox = new QVBoxLayout();
     vbox->addWidget(toolButtonBar);
-    vbox->addWidget(textEdit_);
+    vbox->addWidget(codeEdit_);
     vbox->addWidget(compilerLogWidget_);
     setLayout(vbox);
+
+    updateFromProperty();
 }
 
 void ShaderPlugin::createConnections() {
     connect(undoBt_, SIGNAL(clicked()), this, SLOT(undoShader()));
+    connect(fullUndoBt_, SIGNAL(clicked()), this, SLOT(fullUndoShader()));
     connect(openBt_, SIGNAL(clicked()), this, SLOT(openShader()));
     connect(saveBt_, SIGNAL(clicked()), this, SLOT(saveShader()));
     connect(updateBt_, SIGNAL(clicked()), this, SLOT(setProperty()));
-    connect(textEdit_, SIGNAL(textChanged()), this, SIGNAL(modified()));
+    connect(codeEdit_, SIGNAL(textChanged()), this, SIGNAL(modified()));
 }
 
 const QString ShaderPlugin::getOpenFileName(QString filter) {
@@ -163,13 +167,11 @@ const QString ShaderPlugin::getSaveFileName(QStringList filters) {
 }
 
 void ShaderPlugin::undoShader() {
-    QFile inputFile(QString::fromStdString(ShdrMgr.completePath(property_->getFileName())));
-    inputFile.open(QIODevice::ReadOnly);
-    QTextStream in(&inputFile);
-    QString content = in.readAll();
-    inputFile.close();
-    textEdit_->setText(content);
-    setProperty();
+    property_->resetFragmentShader();
+}
+
+void ShaderPlugin::fullUndoShader() {
+    property_->resetFragmentFilename();
 }
 
 void ShaderPlugin::openShader() {
@@ -177,15 +179,8 @@ void ShaderPlugin::openShader() {
     QString filter = "Shader Program (*.vert *.geom *.frag)";
     QString fileName = getOpenFileName(filter);
     if (!fileName.isEmpty()) {
-        QFile inputFile(fileName);
-        inputFile.open(QIODevice::ReadOnly);
-        QTextStream in(&inputFile);
-        QString content = in.readAll();
-        inputFile.close();
-        textEdit_->setText(content);
-        setProperty();
+        property_->setFragmentFilename(fileName.toStdString());
     }
-
 }
 
 void ShaderPlugin::saveShader() {
@@ -200,14 +195,28 @@ void ShaderPlugin::saveShader() {
         //save shader to disk
         QFile outputFile(fileName);
         outputFile.open(QIODevice::WriteOnly);
-        outputFile.write(textEdit_->toPlainText().toStdString().c_str(), textEdit_->toPlainText().size());
+        outputFile.write(codeEdit_->toPlainText().toStdString().c_str(), codeEdit_->toPlainText().size());
         outputFile.close();
     }
 }
 
 void ShaderPlugin::setProperty() {
-    property_->setSource(textEdit_->toPlainText().toStdString());
-    compilerLogWidget_->setText(QString(property_->get()->getCompilerLog().c_str()));
+    property_->setFragmentSource(codeEdit_->toPlainText().toStdString());
+}
+
+void ShaderPlugin::updateFromProperty() {
+    if(codeEdit_->toPlainText() != QString(property_->get().fragmentSource_.c_str()))
+        codeEdit_->setPlainText(property_->get().fragmentSource_.c_str());
+
+    const tgt::ShaderObject* frag = property_->getFragmentObject();
+    if(frag)
+        compilerLogWidget_->setText(frag->getCompilerLog().c_str());
+
+    std::string mod = "";
+    if(property_->get().fragmentModified_)
+        mod = "original source: ";
+
+    window()->setWindowTitle(QString::fromStdString(property_->getOwner()->getName() + " - " + property_->getGuiName() + " (" + mod + property_->get().fragmentFilename_ + ")"));
 }
 
 } // namespace voreen

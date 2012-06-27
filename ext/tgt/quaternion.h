@@ -439,7 +439,7 @@ inline Quaternion<T> squadQuat(const Quaternion<T>& p, const Quaternion<T>& q,
 {
     tgtAssert(!((t < 0.0) || (t > 1.0)), "running-parameter must be between 0 and 1");
 
-    return slerpQuat<T>(slerpQuat<T>(p, q, t), slerpQuat<T>(a, b, t), 2.f*t*(1.f - t), false);
+    return slerpQuat<T>(slerpQuat<T>(p, q, static_cast<T>(t)), slerpQuat<T>(a, b, static_cast<T>(t)), static_cast<T>(2.0*t*(1.0 - t)), false);
 }
 
 /**
@@ -450,7 +450,7 @@ template<class T>
 inline Quaternion<T> splineQuat(const Quaternion<T>& pa, const Quaternion<T>& p, const Quaternion<T>& pb) {
     Quaternion<T> pinvert = conjugate(p);
 
-    return p * expQuat((logQuat(pa*pinvert) + logQuat(pb*pinvert)) * -0.25f);
+    return p * expQuat((logQuat(pa*pinvert) + logQuat(pb*pinvert)) * static_cast<T>(-0.25));
 }
 
 /**

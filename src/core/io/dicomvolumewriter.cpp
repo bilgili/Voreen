@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,7 +30,7 @@
 #ifdef VRN_WITH_DCMTK
 
 #include "voreen/core/io/dicomvolumewriter.h"
-#include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeatomic.h"
 
 #ifdef WIN32
 #define HAVE_SSTREAM_H 1

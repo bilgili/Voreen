@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,6 +29,9 @@
 
 #include "voreen/qt/widgets/property/floatvec2propertywidget.h"
 
+#include <QMenu>
+#include <QMouseEvent>
+
 namespace voreen {
 
 FloatVec2PropertyWidget::FloatVec2PropertyWidget(FloatVec2Property* prop, QWidget* parent)
@@ -36,15 +39,35 @@ FloatVec2PropertyWidget::FloatVec2PropertyWidget(FloatVec2Property* prop, QWidge
 {
     connect((const QObject*)widgets_[0], SIGNAL(valueChanged(double)), this, SLOT(setProperty(double)));
     connect((const QObject*)widgets_[1], SIGNAL(valueChanged(double)), this, SLOT(setProperty(double)));
+    updateFromProperty();
 }
 
 void FloatVec2PropertyWidget::setProperty(double value) {
     if (disconnected_)
         return;
-    
+
     FloatVec2Property::ElemType newValue = setPropertyComponent(sender(), static_cast<float>(value));
     emit valueChanged(newValue);
-    emit modified();   
+    emit modified();
+}
+
+void FloatVec2PropertyWidget::mousePressEvent(QMouseEvent* event) {
+    if(event->button() == Qt::RightButton) {
+        QMenu* precisionMenu = new QMenu(this);
+        QAction* normalAction = precisionMenu->addAction("Normal Precision");
+        QAction* highAction = precisionMenu->addAction("High Precision");
+        QAction* prec = precisionMenu->exec(QCursor::pos());
+        if(prec == normalAction) {
+            vectorProp_->setStepping(tgt::vec2(0.05f));
+            vectorProp_->setNumDecimals(2);
+        }
+        else if(prec == highAction){
+            vectorProp_->setStepping(tgt::vec2(0.0001f));
+            vectorProp_->setNumDecimals(4);
+        }
+        updateFromProperty();
+    }
+    QWidget::mousePressEvent(event);
 }
 
 } // namespace voreen

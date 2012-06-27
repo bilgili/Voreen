@@ -1,22 +1,41 @@
-//=============================================================================
-/** @file        highlighter.cpp
- *
- * Implements a GLSL syntax highlighter.
- *
-    @internal
-    created:    2007-12-06
-    last mod:    2008-01-03
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
 
-    Shader Maker - a cross-platform GLSL editor.
-    Copyright (C) 2007-2008 Markus Kramer
-
-=============================================================================*/
+// This class is based on the GLSL syntax highlighter written by Markus Kramer for
+// Shader Maker - a cross-platform GLSL editor
 
 #include "voreen/qt/widgets/glslhighlighter.h"
 
-// construction
-GLSLHighlighter::GLSLHighlighter( QTextDocument* doc )
- : QSyntaxHighlighter( doc )
+namespace voreen {
+
+GLSLHighlighter::GLSLHighlighter(QTextDocument* doc)
+    : SyntaxHighlighter(doc)
 {
     setupKeywords();
     setupReservedKeywords();
@@ -27,134 +46,55 @@ GLSLHighlighter::GLSLHighlighter( QTextDocument* doc )
     setupComments();
 }
 
-
-/*
-========================
-highlightBlock
-========================
-*/
-void GLSLHighlighter::highlightBlock( const QString & text )
-{
-    // check out all rules
-    foreach( highlightRule_t rule, m_rules )
-    {
-            QRegExp expression(rule.pattern);
-            int index = text.indexOf(expression);
-
-            while( index >= 0 )
-            {
-                int length = expression.matchedLength();
-                setFormat( index, length, rule.format );
-                index = text.indexOf( expression, index + length );
-            }
-    }
-
-    setCurrentBlockState(0);
-
-    int startIndex = 0;
-    if( previousBlockState() != 1 )
-    {
-        startIndex = text.indexOf( m_commentStartExpression );
-    }
-
-    while( startIndex >= 0 )
-    {
-        int endIndex = text.indexOf( m_commentEndExpression, startIndex );
-        int commentLength;
-
-        if( endIndex == -1 )
-        {
-            setCurrentBlockState( 1 );
-            commentLength = text.length() - startIndex;
-        }
-        else
-        {
-            commentLength = endIndex - startIndex
-                            + m_commentEndExpression.matchedLength();
-        }
-
-        setFormat( startIndex, commentLength, m_multiLineCommentFormat );
-        startIndex = text.indexOf( m_commentStartExpression, startIndex + commentLength );
-    }
-}
-
-
-/*
-========================
-setupComments
-========================
-*/
-void GLSLHighlighter::setupComments( void )
-{
+void GLSLHighlighter::setupComments() {
     highlightRule_t rule;
 
-    m_singleLineCommentFormat.setForeground( Qt::darkGreen );
-    m_singleLineCommentFormat.setFontItalic( true );
+    m_singleLineCommentFormat.setForeground(Qt::darkGreen);
+    m_singleLineCommentFormat.setFontItalic(true);
 
-    rule.pattern = QRegExp( "//[^\n]*" );
+    rule.pattern = QRegExp("//[^\n]*");
     rule.format = m_singleLineCommentFormat;
-    m_rules.append( rule );
+    m_rules.append(rule);
 
-    m_multiLineCommentFormat.setForeground( Qt::darkGreen );
-    m_multiLineCommentFormat.setFontItalic( true );
+    m_multiLineCommentFormat.setForeground(Qt::darkGreen);
+    m_multiLineCommentFormat.setFontItalic(true);
 
-    m_commentStartExpression = QRegExp( "/\\*" );
-    m_commentEndExpression = QRegExp( "\\*/" );
+    m_commentStartExpression = QRegExp("/\\*");
+    m_commentEndExpression = QRegExp("\\*/");
 }
 
-
-/*
-========================
-setupPreprocessor
-========================
-*/
-void GLSLHighlighter::setupPreprocessor( void )
-{
-    m_preprocessorFormat.setForeground( Qt::blue );
+void GLSLHighlighter::setupPreprocessor() {
+    m_preprocessorFormat.setForeground(Qt::blue);
 
     // highlight each line beginning with #
     highlightRule_t rule;
-    rule.pattern = QRegExp( "#[^\n]*" );
+    rule.pattern = QRegExp("#[^\n]*");
     rule.format = m_preprocessorFormat;
-    m_rules.append( rule );
+    m_rules.append(rule);
 }
 
-
-/*
-========================
-setupNumberRules
-========================
-*/
-void GLSLHighlighter::setupNumberRules( void )
-{
+void GLSLHighlighter::setupNumberRules() {
     highlightRule_t rule;
 
-    m_integerFormat.setForeground( Qt::magenta );
-    m_floatFormat.setForeground( Qt::darkBlue );
+    m_integerFormat.setForeground(Qt::magenta);
+    m_floatFormat.setForeground(Qt::darkBlue);
 
-    rule.pattern = QRegExp( "\\b[0-9]+\\b" );
+    rule.pattern = QRegExp("\\b[0-9]+\\b");
     rule.format = m_integerFormat;
-    m_rules.append( rule );
+    m_rules.append(rule);
 
     // must be appended after integer rule to "overwrite" it.
-    rule.pattern = QRegExp( "\\b[0-9]\\.[0-9]+\\b" );
+    rule.pattern = QRegExp("\\b[0-9]\\.[0-9]+\\b");
     rule.format = m_floatFormat;
-    m_rules.append( rule );
+    m_rules.append(rule);
 }
 
-
-/*
-========================
-setupRegisters
-========================
-*/
-void GLSLHighlighter::setupRegisters( void )
-{
+void GLSLHighlighter::setupRegisters() {
     highlightRule_t rule;
     QStringList keywordPatterns;
 
-    m_registerFormat.setForeground( Qt::darkBlue );
-    m_registerFormat.setFontWeight( QFont::Bold );
+    m_registerFormat.setForeground(Qt::darkBlue);
+    m_registerFormat.setFontWeight(QFont::Bold);
 
     //
     // built-in uniforms/attributes
@@ -250,28 +190,19 @@ void GLSLHighlighter::setupRegisters( void )
                     << "\\bgl_ClipVertexIn\\b"
                     ;
 
-    foreach( QString pattern, keywordPatterns )
-    {
+    foreach(QString pattern, keywordPatterns) {
         rule.pattern = QRegExp(pattern);
         rule.format = m_registerFormat;
         m_rules.append(rule);
     }
 }
 
-
-/*
-========================
-setupBuiltInFunctions
-========================
-*/
-void GLSLHighlighter::setupBuiltInFunctions( void )
-{
+void GLSLHighlighter::setupBuiltInFunctions() {
     highlightRule_t rule;
     QStringList keywordPatterns;
 
-    m_builtInFunctionFormat.setForeground( Qt::darkBlue );
-    m_builtInFunctionFormat.setFontWeight( QFont::Bold );
-
+    m_builtInFunctionFormat.setForeground(Qt::darkBlue);
+    m_builtInFunctionFormat.setFontWeight(QFont::Bold);
 
     keywordPatterns // trigonometry
                     << "\\bradians\\b"
@@ -363,26 +294,18 @@ void GLSLHighlighter::setupBuiltInFunctions( void )
                     << "\\bEndPrimitive\\b"
                     ;
 
-    foreach( QString pattern, keywordPatterns )
-    {
+    foreach(QString pattern, keywordPatterns) {
         rule.pattern = QRegExp(pattern);
         rule.format = m_builtInFunctionFormat;
         m_rules.append(rule);
     }
 }
 
-
-/*
-========================
-setupKeywords
-========================
-*/
-void GLSLHighlighter::setupKeywords( void )
-{
+void GLSLHighlighter::setupKeywords() {
     highlightRule_t rule;
     QStringList keywordPatterns;
 
-    m_keywordFormat.setForeground( Qt::blue );
+    m_keywordFormat.setForeground(Qt::blue);
 
     //
     // used keywords
@@ -407,27 +330,19 @@ void GLSLHighlighter::setupKeywords( void )
                     << "\\bsamplerCube\\b" << "\\bsampler1DShadow\\b" << "\\bsampler2DShadow\\b"
                     << "\\bstruct\\b";
 
-    foreach( QString pattern, keywordPatterns )
-    {
+    foreach(QString pattern, keywordPatterns) {
         rule.pattern = QRegExp(pattern);
         rule.format = m_keywordFormat;
         m_rules.append(rule);
     }
 }
 
-
-/*
-========================
-setupReservedKeywords
-========================
-*/
-void GLSLHighlighter::setupReservedKeywords( void )
-{
+void GLSLHighlighter::setupReservedKeywords() {
     highlightRule_t rule;
     QStringList keywordPatterns;
 
-    m_reservedKeywordFormat.setForeground( Qt::red );
-    m_reservedKeywordFormat.setFontWeight( QFont::Bold );
+    m_reservedKeywordFormat.setForeground(Qt::red);
+    m_reservedKeywordFormat.setFontWeight(QFont::Bold);
 
     //
     // reserved keywords
@@ -449,16 +364,11 @@ void GLSLHighlighter::setupReservedKeywords( void )
                     << "\\bsampler2DRect\\b" << "\\bsampler3DRect\\b" << "\\bsampler2DRectShadow\\b"
                     << "\\bsizeof\\b" << "\\bcast\\b" << "\\bnamespace\\b" << "\\busing\\b";
 
-    foreach( QString pattern, keywordPatterns )
-    {
+    foreach(QString pattern, keywordPatterns) {
         rule.pattern = QRegExp(pattern);
         rule.format = m_reservedKeywordFormat;
         m_rules.append(rule);
     }
 }
 
-
-
-
-
-
+} // namespace

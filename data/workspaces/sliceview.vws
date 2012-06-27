@@ -1,0 +1,134 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" readonly="true">
+        <VolumeContainer>
+            <VolumeHandles>
+                <VolumeHandle modality="unknown" timestep="0" id="ref3">
+                    <Origin filename="../volumes/walnut.dat" />
+                </VolumeHandle>
+            </VolumeHandles>
+        </VolumeContainer>
+        <ScriptManagerLinking>
+            <pythonFunctionScriptMap />
+        </ScriptManagerLinking>
+        <ProcessorNetwork version="6">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="SliceViewer" ref="ref1" />
+                    </values>
+                </MetaItem>
+                <MetaItem name="Zoom" type="ZoomMetaData">
+                    <transform.row0 x="0.96835440397262573" y="0" z="0" />
+                    <transform.row1 x="0" y="0.96835440397262573" z="0" />
+                    <transform.row2 x="-295.83084106445312" y="203.72955322265625" z="1" />
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-117" y="-375" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeHandle">
+                            <value ref="ref3" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SliceViewer" name="SliceViewer" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-253" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="boundaryColor">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="filterTexture" value="true" />
+                        <Property name="fontSize" value="14" />
+                        <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                        <Property name="mouseEvent.cursorPositionMove" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
+                        <Property name="mouseEvent.cursorPositionPress" lod="1" enabled="true" mouseAction="19" mouseButtons="3" keyCode="0" modifier="0" shareEvents="true" />
+                        <Property name="numSlicesPerCol" value="1" />
+                        <Property name="numSlicesPerRow" value="1" />
+                        <Property name="pickingMatrix">
+                            <value.row0 x="1" y="0" z="0" w="0" />
+                            <value.row1 x="0" y="1" z="0" w="0" />
+                            <value.row2 x="0" y="0" z="1" w="0" />
+                            <value.row3 x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="renderSliceBoundaries" value="true" />
+                        <Property name="showCursorInformation" value="onMove" />
+                        <Property name="showSliceNumber" value="true" />
+                        <Property name="sliceAlignmentProp" value="xy-plane" />
+                        <Property name="sliceIndex" value="50" />
+                        <Property name="transferFunction">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.13265306" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                            </TransferFunction>
+                        </Property>
+                        <Property name="voxelOffset">
+                            <value x="0" y="0" />
+                        </Property>
+                        <Property name="zoomFactor" value="1" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                        <Handler name="zoomHandler">
+                            <Properties>
+                                <Property name="zoomHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="2" keyCode="0" modifier="1" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-125" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="327" y="88" width="450" height="365" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="450" y="365" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="SliceViewer" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.outport">
+                        <Processor type="SliceViewer" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

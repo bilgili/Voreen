@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,60 +31,57 @@
 
 #include "voreen/qt/widgets/voreentoolwindow.h"
 #include "voreen/qt/widgets/shaderplugin.h"
-#include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/properties/shaderproperty.h"
+#include "voreen/core/processors/processor.h"
+#include "voreen/core/properties/shaderproperty.h"
 
-#include <QAction>
-#include <QApplication>
-#include <QMainWindow>
 #include <QPushButton>
-#include <QDesktopWidget>
 
 namespace voreen {
 
 ShaderPropertyWidget::ShaderPropertyWidget(ShaderProperty* prop, QWidget* parent)
-    : QPropertyWidget(prop, parent)
+    : QPropertyWidgetWithEditorWindow(prop, parent)
     , plugin_(0)
     , property_(prop)
-    , window_(0)
     , editBt_(new QPushButton(tr("edit")))
 {
 
     if (editorVisibleOnStartup())
-        createEditorWindow();
+        createEditorWindow(Qt::LeftDockWidgetArea, QString::fromStdString(" (original source: " + property_->get().fragmentFilename_ + ")"), 700, 700);
 
     addWidget(editBt_);
 
     connect(editBt_, SIGNAL(clicked()), this, SLOT(setProperty()));
+    connect(editBt_, SIGNAL(clicked()), this, SIGNAL(widgetChanged()));
 
     addVisibilityControls();
-}
 
-ShaderPropertyWidget::~ShaderPropertyWidget() {
-    delete window_;
+    QFontInfo fontInfo(font());
+    editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
 void ShaderPropertyWidget::updateFromProperty() {
-    if (plugin_)
+    if (plugin_) {
+        plugin_->updateFromProperty();
         plugin_->update();
+    }
 }
 
 void ShaderPropertyWidget::setProperty() {
     if (!disconnected_) {
         // lazy instantiation of shader editor window
-        if (!window_) {
-            createEditorWindow();
-            tgtAssert(window_, "Shader editor not instantiated");
+        if (!editorWindow_) {
+            createEditorWindow(Qt::LeftDockWidgetArea, QString::fromStdString(" (original source: " + property_->get().fragmentFilename_ + ")"), 700, 700);
+
+            tgtAssert(editorWindow_, "Shader editor not instantiated");
         }
 
-        if (window_->isVisible()) {
+        if (editorWindow_->isVisible()) {
             //close widget
-            window_->close();
+            editorWindow_->close();
         }
         else {
             //open Widget
-            window_->showNormal();
+            editorWindow_->showNormal();
         }
     }
 }
@@ -95,73 +92,20 @@ void ShaderPropertyWidget::disconnect() {
         plugin_->disconnect();
 }
 
-void ShaderPropertyWidget::createEditorWindow() {
-    tgtAssert(!window_ && !plugin_, "Shader editor already instantiated");
-
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
+QWidget* ShaderPropertyWidget::createEditorWindowWidget() {
     plugin_ = new ShaderPlugin(property_, parentWidget());
     plugin_->createWidgets();
     plugin_->createConnections();
     connect(plugin_, SIGNAL(modified()), this, SIGNAL(modified()));
 
-    QString title;
-    if (property_->getOwner()) {
-        title.append(property_->getOwner()->getName().c_str());
-        title.append(" - ");
-    }
-    title.append(QString::fromStdString(property_->getGuiText()));
-    title.append(" (original source: ");
-    title.append(QString::fromStdString(property_->getFileName()));
-    title.append(")");
-    QMainWindow* mainWindow = VoreenApplicationQt::qtApp()->getMainWindow();
-    window_ = new VoreenToolWindow(new QAction(title, 0), mainWindow, plugin_, title, false);
-    mainWindow->addDockWidget(Qt::LeftDockWidgetArea, window_);
-
-    // set default size, might be overwriten by meta data
-    window_->resize(700, 700);
-    
-    WindowStateMetaData* meta = dynamic_cast<WindowStateMetaData*>(property_->getMetaDataContainer().getMetaData("EditorWindow"));
-    if (meta) {
-        // check whether serialized left-top corner of lies inside the available screen geometry
-        QRect screenGeometry = QApplication::desktop()->availableGeometry(QPoint(meta->getX(), meta->getY()));
-        if (screenGeometry.contains(QPoint(meta->getX(), meta->getY())))
-            window_->move(meta->getX(), meta->getY());
-
-        if (meta->getWidth() > 0 && meta->getHeight() > 0)
-            window_->resize(meta->getWidth(), meta->getHeight());
-
-        window_->setVisible(meta->getVisible());
-    }
-
-    QApplication::restoreOverrideCursor();
+    return plugin_;
 }
 
-MetaDataBase* ShaderPropertyWidget::getWidgetMetaData() const {
-    WindowStateMetaData* meta;
-    if (window_) {
-        meta = new WindowStateMetaData(
-            window_->isVisible(),
-            window_->pos().x(),
-            window_->pos().y(),
-            window_->width(),
-            window_->height());
-    }
-    else
-        meta = new WindowStateMetaData(false);
-
-    property_->getMetaDataContainer().addMetaData("EditorWindow", meta);
-
-    return meta;
+void ShaderPropertyWidget::customizeEditorWindow() {
 }
 
-bool ShaderPropertyWidget::editorVisibleOnStartup() const {
-    WindowStateMetaData* meta = dynamic_cast<WindowStateMetaData*>(property_->getMetaDataContainer().getMetaData("EditorWindow"));
-    if (!meta)
-        return false;
-
-    return meta->getVisible();
+Property* ShaderPropertyWidget::getProperty() {
+    return property_;
 }
-
 
 } // namespace voreen

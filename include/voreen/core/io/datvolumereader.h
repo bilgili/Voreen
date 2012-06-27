@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -35,12 +35,7 @@
 namespace voreen {
 
 /**
- * Reader for <tt>.dat</tt> files. These files can either be volume description files (the actual
- * volume data is contained in a corresponding <tt>.raw</tt>) or they may be volumes of their own.
- * These two types can be distinguished by their size and the contents of the first 6 bytes. The
- * format used for the .dat-volumes says that the first six bytes contain the information about
- * the dimension of the volume. If the file size is different from the multiplicated value of these
- * dimensions, it must be a meta description file.
+ * Reader for <tt>.dat</tt> files.
  *
  * The following tags are understood by the reader:
  * - <tt>ObjectFileName</tt>: Name of the corresponding <tt>.raw</tt> file. The name may not
@@ -76,6 +71,8 @@ class DatVolumeReader : public VolumeReader {
 public:
     DatVolumeReader(IOProgress* progress = 0);
 
+    virtual VolumeReader* create(IOProgress* progress = 0) const;
+
     /**
      * Reads the file name called 'ObjectFileName' from the .dat file and
      * returns it. This is particular useful to determine the correct name
@@ -84,13 +81,13 @@ public:
      */
     static std::string getRelatedRawFileName(const std::string& fileName);
 
-    virtual VolumeCollection* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeCollection* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+    virtual VolumeCollection* readSlices(const std::string& url, size_t firstSlice=0, size_t lastSlice=0)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeCollection* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
 private:

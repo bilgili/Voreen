@@ -12,24 +12,57 @@ QT += opengl
 }
 
 # Include common configuration
-include(../../commonconf.txt)
+include(../../commonconf.pri)
 
 # Include generic app configuration
-include(../voreenapp.txt)
+include(../voreenapp.pri)
 
 HEADERS += \
     voreenmainwindow.h \
-    voreenvisualization.h
+    voreenvisualization.h \
+    networkeditor/aggregationgraphicsitem.h \
+    networkeditor/arrowgraphicsitem.h \
+    networkeditor/hastooltip.h \
+    networkeditor/linkarrowgraphicsitem.h \
+    networkeditor/linkarrowgraphicsitemstub.h \
+    networkeditor/linkdialogarrowgraphicsitem.h \
+    networkeditor/linkdialoggraphicsview.h \
+    networkeditor/linkdialogprocessorgraphicsitem.h \
+    networkeditor/linkdialogpropertygraphicsitem.h \
+    networkeditor/networkeditor.h \
+    networkeditor/networkeditor_common.h \
+    networkeditor/openpropertylistbutton.h \
+    networkeditor/portarrowgraphicsitem.h \
+    networkeditor/portgraphicsitem.h \
+    networkeditor/processorgraphicsitem.h \
+    networkeditor/propertygraphicsitem.h \
+    networkeditor/propertylinkdialog.h \
+    networkeditor/propertylistgraphicsitem.h \
+    networkeditor/rootgraphicsitem.h \
+    networkeditor/textgraphicsitem.h
 
 SOURCES += \
     main.cpp \
     voreenmainwindow.cpp \
-    voreenvisualization.cpp
-
-# for compiled-in files (see Qt resource system)
-!contains(DEFINES, VRN_SNAPSHOT) {
-   RESOURCES += voreenve.qrc 
-}
+    voreenvisualization.cpp \
+    networkeditor/aggregationgraphicsitem.cpp \
+    networkeditor/arrowgraphicsitem.cpp \
+    networkeditor/linkarrowgraphicsitem.cpp \
+    networkeditor/linkarrowgraphicsitemstub.cpp \
+    networkeditor/linkdialogarrowgraphicsitem.cpp \
+    networkeditor/linkdialoggraphicsview.cpp \
+    networkeditor/linkdialogprocessorgraphicsitem.cpp \
+    networkeditor/linkdialogpropertygraphicsitem.cpp \
+    networkeditor/networkeditor.cpp \
+    networkeditor/openpropertylistbutton.cpp \
+    networkeditor/portarrowgraphicsitem.cpp \
+    networkeditor/portgraphicsitem.cpp \
+    networkeditor/processorgraphicsitem.cpp \
+    networkeditor/propertygraphicsitem.cpp \
+    networkeditor/propertylinkdialog.cpp \
+    networkeditor/propertylistgraphicsitem.cpp \
+    networkeditor/rootgraphicsitem.cpp \
+    networkeditor/textgraphicsitem.cpp
 
 win32 {
     # icon description file for windows-exe
@@ -53,20 +86,6 @@ unix {
    DEFINES += QT_CLEAN_NAMESPACE
 
    UI_DIR = .ui
-
-   # Build new tar archive with shader file with "make shaders.tar"
-   shaders_tar.target = shaders.tar
-   shaders_tar.commands = cd ../../src/core/vis/glsl/ && \
-                          tar -cf $$PWD/shaders.tar * \
-                              --owner root --group 0 --exclude \*.svn && \
-			  cd ../../../modules/flowreen/glsl &&\
-                          tar -rf $$PWD/shaders.tar * \
-                              --owner root --group 0 --exclude \*.svn
-   QMAKE_EXTRA_TARGETS += shaders_tar
-}
-
-contains(DEFINES, VRN_WITH_CLOSEUP_RENDERER) {
-   LIBS += -lBox2D
 }
 
 win32-g++ {

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,14 +32,15 @@
 
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/io/dicomseriesinfo.h"
-#include "voreen/core/volume/volume.h"
-#include "voreen/core/volume/modality.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/modality.h"
 
 #include <string>
 #include <vector>
 
 class DcmFileFormat;
 class DicomImage;
+class DiDocument;
 
 namespace voreen {
 
@@ -50,14 +51,16 @@ namespace voreen {
 class DicomVolumeReader : public VolumeReader {
 public:
     DicomVolumeReader(IOProgress* progress = 0);
-    virtual ~DicomVolumeReader() {}
+    virtual ~DicomVolumeReader();
+
+    virtual VolumeReader* create(IOProgress* progress = 0) const;
 
     void setSecurityOptions(const DicomSecurityOptions& security);
 
     /**
      * Loads a Dicom volume dataset.
      *
-     * @param fileName Specifies the Dicom dataset. This can be:
+     * @param url Specifies the Dicom dataset. This can be:
      * <ul>
      *
      *   <li>Filename of a single Dicom image. (This is not very
@@ -83,34 +86,85 @@ public:
      *
      * @return Volume or 0 if an error occured.
      */
-    virtual VolumeCollection* read(const std::string& fileName)
+    virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
-     * Loads a single Dicom slice into a 2D-tgt::Texture.
-     *
-     */
-    tgt::Texture* readSingleSliceIntoTex(const std::string& sliceFileName);
-
-    /**
-     * Extracts a single slice from a Dicom-Loop and returns it in the form of a 2D-Texture.
-     *
-     */
-    tgt::Texture* readDicomLoopSlice(DcmFileFormat* dfile , unsigned int frame);
-
-    /**
-     * Initialises a Dicom Loop-Dataset and finds out the frame number and the used framerate.
-     *
-     */
-    DcmFileFormat* initDicomLoop(const std::string& fileName, unsigned int& frameCount, unsigned int& fps);
-
-    /**
-     * Loads a Dicom volume dataset.
+     * Loads a Dicom volume dataset stored in a file series.
      *
      * @fileNames List of Dicom file names
      * @return Volume or 0 if an error occured.
      */
     virtual Volume* read(const std::vector<std::string>& fileNames);
+
+    /**
+     * Loads a single slice from a Dicom file into a 2D tgt::Texture.
+     *
+     * @see readSliceSequence
+     * @see readDicomImage
+     *
+     * @param fileName the Dicom file to read from.
+     * @param frame the frame to extract.
+     *
+     * @return the texture created from the frame, or 0 if the file could not
+     *  be read or the frame number if invalid.
+     */
+    tgt::Texture* readSingleSlice(const std::string& fileName, int frame = 0);
+
+    /**
+     * Loads a slice sequence from a Dicom file into a vector of 2D tgt::Textures.
+     *
+     * @see readDicomImage
+     *
+     * @param fileName the Dicom file to read from.
+     * @param startFrame the start frame of the sequence to extract.
+     * @param numFrames the number of frames to extracts. Must be >= 0.
+     *  The default value 0 corresponds to the last slice contained by the file.
+     *
+     * @return the texture sequence. May be empty if the passed frame parameters are invalid,
+     *  or if the pixel data could not be extracted.
+     */
+    std::vector<tgt::Texture*> readSliceSequence(const std::string& fileName, int startFrame = 0, int numFrames = 0);
+
+    /**
+     * Reads a Dicom file from the passed location and creates a DicomImage from it,
+     * which can be used for extracting image data.
+     *
+     * @param startFrame start frame of the sequence to be loaded.
+     * @param numFrames number of frames to be loaded.
+     *
+     * @return The created DicomImage, may be null. Deleting it is up to the caller.
+     */
+    DicomImage* readDicomImage(const std::string& fileName, int startFrame = 0, int numFrames = 0);
+
+    /**
+     * Loads a single slice from a DicomImage into a 2D tgt::Texture.
+     *
+     * @see readDicomImage
+     *
+     * @param dicomImage the Dicom image object to read from. Must not be null.
+     * @param frame the frame to extract.
+     *
+     * @return the texture created from the frame, or 0 if the passed frame number is invalid,
+     *  i.e. negative or greater/equal the number of slices contained by the file,
+     *  or if the pixel data could not be extracted.
+     */
+    tgt::Texture* readSingleSlice(DicomImage* dicomImage, int frame = 0);
+
+    /**
+     * Loads a slice sequence from a DicomImage into a vector of 2D tgt::Textures.
+     *
+     * @see readDicomImage
+     *
+     * @param dicomImage the Dicom image object to read from. Must not be null.
+     * @param startFrame the start frame of the sequence to extract.
+     * @param numFrames the number of frames to extracts. Must be >= 0.
+     *  The default value 0 corresponds to the last slice contained by the file.
+     *
+     * @return the texture sequence. May be empty if the passed frame parameters are invalid,
+     *  or if the pixel data could not be extracted.
+     */
+    std::vector<tgt::Texture*> readSliceSequence(DicomImage* dicomImage, int startFrame = 0, int numFrames = 0);
 
     /**
      * Lists all series found in a file/dicomdir/PACS.
@@ -205,15 +259,10 @@ private:
      */
     virtual int loadSlice(const std::string& fileName, size_t posScalar);
 
-    /**
-     * Generates a 2D-Texture from a DicomImage.
-     *
-     */
-    tgt::Texture* generate2DTextureFromDcmImage(DicomImage* image);
-
     uint8_t* scalars_;
     int dx_, dy_, dz_;
-    int bits_;
+    int bitsStored_;
+    int samplesPerPixel_;
     int bytesPerVoxel_;
     Modality modality_;
     DicomSecurityOptions security_;

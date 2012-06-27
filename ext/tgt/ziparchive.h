@@ -2,6 +2,9 @@
 #define TGT_ZIPARCHIVE_H
 
 #include "tgt/filesystem.h"
+#include "tgt/types.h"
+
+#include <cstring>
 #include <map>
 
 namespace tgt {
@@ -329,13 +332,13 @@ private:
 
 private:
     static const std::string loggerCat_;
-    static const size_t MAX_BUFFER_SIZE;    /** Controls memory consumption during (de-)compression */
-    static const uint16_t ZIP_VERSION;      /** Version of zip format this archive can understand (2.0). */
+    static const size_t MAX_BUFFER_SIZE;    /**< Controls memory consumption during (de-)compression */
+    static const uint16_t ZIP_VERSION;      /**< Version of zip format this archive can understand (2.0). */
 
-    File* archive_;                     /** Handle to the archived if opened */
-    const std::string archiveName_;     /** The archive's names */
-    bool archiveAltered_;               /** Indicates whether the archive was altered. */
-    bool archiveExists_;                /** Indicates whether this archive's file existed. */
+    File* archive_;                     /**< Handle to the archived if opened */
+    const std::string archiveName_;     /**< The archive's names */
+    bool archiveAltered_;               /**< Indicates whether the archive was altered. */
+    bool archiveExists_;                /**< Indicates whether this archive's file existed. */
 
     typedef std::map<std::string, ArchivedFile> ArchiveMap;
     ArchiveMap files_;

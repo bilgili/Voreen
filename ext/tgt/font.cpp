@@ -27,14 +27,34 @@
 
 #ifdef TGT_HAS_FTGL
 #include <FTGL/ftgl.h>
+#include "tgt/tgt_gl.h"
 #endif
 
 namespace tgt {
 
 #ifdef TGT_HAS_FTGL
 
-Font::Font(const std::string& fontName, const int size) {
-    font_ = new FTTextureFont(fontName.c_str());
+Font::Font(const std::string& fontName, const int size, FontType fontType) {
+    switch(fontType) {
+        case BitmapFont:
+            font_ = new FTBitmapFont(fontName.c_str()); break;
+        case BufferFont:
+            font_ = new FTBufferFont(fontName.c_str()); break;
+        case ExtrudeFont:
+            font_ = new FTExtrudeFont(fontName.c_str()); break;
+        case OutlineFont:
+            font_ = new FTOutlineFont(fontName.c_str()); break;
+        case PixmapFont: 
+            font_ = new FTPixmapFont(fontName.c_str()); break;
+        case PolygonFont: 
+            font_ = new FTPolygonFont(fontName.c_str()); break;
+        case TextureFont: 
+            font_ = new FTTextureFont(fontName.c_str()); break;
+        default:
+            LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
+            font_ = new FTTextureFont(fontName.c_str());
+    }
+
     if (!font_->Error())
         font_->FaceSize(size);
     else {
@@ -42,10 +62,40 @@ Font::Font(const std::string& fontName, const int size) {
         font_ = 0;
         LERRORC("tgt.Font", "Font file could not be loaded: " << fontName);
     }
+
+    simpleLayout_ = new FTSimpleLayout();
+    simpleLayout_->SetFont(font_);
+    simpleLayout_->SetLineLength(1000.0f);
 }
 
 Font::~Font() {
     delete font_;
+    delete simpleLayout_;
+}
+
+float Font::getLineHeight() {
+    return font_->LineHeight();
+}
+
+void Font::setLineWidth(const float lineWidth) {
+    if(simpleLayout_)
+        simpleLayout_->SetLineLength(lineWidth);
+}
+
+void Font::setTextAlignment(TextAlignment textAlignment) {
+    FTGL::TextAlignment alignment = FTGL::ALIGN_LEFT;
+    switch(textAlignment) {
+        case Left:
+            alignment = FTGL::ALIGN_LEFT;
+            break;
+        case Center:
+            alignment = FTGL::ALIGN_CENTER;
+            break;
+        case Right:
+            alignment = FTGL::ALIGN_RIGHT;
+            break;
+    }
+    simpleLayout_->SetAlignment(alignment);
 }
 
 void Font::setSize(const int size) {
@@ -54,12 +104,20 @@ void Font::setSize(const int size) {
 }
 
 void Font::render(const tgt::vec3& pos, const std::string& text) {
-    if (font_)
+    if (font_) {
+        glRasterPos2f(pos.x, pos.y);
         font_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
+    }
+}
+
+void Font::renderWithLayout(const tgt::vec3& pos, const std::string& text) {
+    if (simpleLayout_) {
+        glRasterPos2f(pos.x, pos.y);
+        simpleLayout_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
+    }
 }
 
 tgt::Bounds Font::getBounds(const tgt::vec3& pos, const std::string& text) {
-
     if (!font_)
         return tgt::Bounds();
 
@@ -78,13 +136,23 @@ tgt::Bounds Font::getBounds(const tgt::vec3& pos, const std::string& text) {
 
 #else
 
-Font::Font(const std::string& /*fontName*/, const int /*size*/) {}
+Font::Font(const std::string& /*fontName*/, const int /*size*/, FontType /*fontType*/) {}
 
 Font::~Font() {}
 
+float Font::getLineHeight() {
+    return 0.f;
+}
+
+void Font::setLineWidth(const float /*lineWidth*/) {}
+
 void Font::setSize(const int /*size*/) {}
 
+void Font::setTextAlignment(TextAlignment /*textAlignment*/) {}
+
 void Font::render(const tgt::vec3& /*pos*/, const std::string& /*text*/) {}
+
+void Font::renderWithLayout(const tgt::vec3& /*pos*/, const std::string& /*text*/) {}
 
 tgt::Bounds Font::getBounds(const tgt::vec3& /*pos*/, const std::string& /*text*/) {
     return tgt::Bounds();

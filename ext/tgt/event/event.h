@@ -35,24 +35,15 @@ namespace tgt {
 class Event {
 public:
     enum Modifier {
-        NONE  = 0x0000,
-        LSHIFT= 0x0001,
-        RSHIFT= 0x0002,
-        LCTRL = 0x0040,
-        RCTRL = 0x0080,
-        LALT  = 0x0100,
-        RALT  = 0x0200,
-        LMETA = 0x0400,
-        RMETA = 0x0800,
-        NUM   = 0x1000,
-        CAPS  = 0x2000,
-        MODE  = 0x4000,
-        RESERVED = 0x8000,
-        SHIFT = LSHIFT | RSHIFT,
-        CTRL = LCTRL | RCTRL,
-        ALT = LALT | RALT,
-        ALTGR = CTRL | ALT,
-        META = LMETA | RMETA
+        MODIFIER_NONE   = 0x0000,
+        SHIFT           = 0x0001,
+        CTRL            = 0x0002,
+        ALT             = 0x0004,
+        META            = 0x0008,
+        NUM             = 0x0010,
+        CAPS            = 0x0020,
+        MODE            = 0x0040,
+        RESERVED        = 0x8000,
     };
 
     /*

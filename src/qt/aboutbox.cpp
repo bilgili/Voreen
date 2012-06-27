@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -46,13 +46,13 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     s = ui.labelLeft->text();
     s.replace("__VERSION__", QString(VoreenVersion::getVersion().c_str()));
     s.replace("__APPLICATION__", description);
-    s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 The Voreen team"));
+    s.replace("__COPYRIGHT__", QString(VoreenVersion::getCopyright().c_str()));
     ui.labelLeft->setText(s);
 
 
     s = ui.labelRight->text();
     if (!VoreenVersion::getRevision().empty())
-        s.replace("__SVNVERSION__", "svn version " + QString(VoreenVersion::getRevision().c_str()));
+        s.replace("__SVNVERSION__", "SVN revision: " + QString(VoreenVersion::getRevision().c_str()));
     else
         s.replace("__SVNVERSION__", "");
     ui.labelRight->setText(s);
@@ -62,12 +62,15 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     developers << QString::fromLatin1("Benjamin Bolte");
     developers << QString::fromLatin1("Christian Döring");
     developers << QString::fromLatin1("Jan Esser");
+    developers << QString::fromLatin1("André Exeler");
     developers << QString::fromLatin1("Dirk Feldmann");
+    developers << QString::fromLatin1("Alejandro Figueroa Meana");
     developers << QString::fromLatin1("Timo Griese");
+    developers << QString::fromLatin1("Dieter Janzen");
     developers << QString::fromLatin1("Jens Kasten");
     developers << QString::fromLatin1("Daniel Kirsch");
+    developers << QString::fromLatin1("Rico Lehmann");
     developers << QString::fromLatin1("Roland Leißa");
-    developers << QString::fromLatin1("Florian Lindemann");
     developers << QString::fromLatin1("Markus Madeja");
     developers << QString::fromLatin1("Borislav Petkov");
     developers << QString::fromLatin1("Stephan Rademacher");
@@ -75,12 +78,16 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     developers << QString::fromLatin1("Mona Riemenschneider");
     developers << QString::fromLatin1("Christoph Rosemann");
     developers << QString::fromLatin1("Jan Roters");
+    developers << QString::fromLatin1("Sönke Schmid");
     developers << QString::fromLatin1("Michael Specht");
     developers << QString::fromLatin1("Fabian Spiegel");
+    developers << QString::fromLatin1("David Terbeek");
     developers << QString::fromLatin1("Christian Vorholt");
+    developers << QString::fromLatin1("Carolin Walter");
+    developers << QString::fromLatin1("Michael Weinkath");
     developers << QString::fromLatin1("Frank Wisniewski");
+//    developers.replaceInStrings(" ", "&nbsp;");
 
-    developers.replaceInStrings(" ", "&nbsp;");
 
     QString developersString;
     for (int i=0; i < developers.size(); i++) {
@@ -88,19 +95,37 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
             developersString += ", ";
         developersString += developers[i];
     }
-
     s = ui.labelDevelopers->text();
     s.replace("__DEVELOPERS__", developersString);
     ui.labelDevelopers->setText(s);
 
+    QStringList mainDevelopers;
+    mainDevelopers << QString::fromLatin1("Stefan Diepenbrock");
+    mainDevelopers << QString::fromLatin1("Florian Lindemann");
+    mainDevelopers << QString::fromLatin1("Jörg Mensmann");
+    mainDevelopers << QString::fromLatin1("Jennis Meyer-Spradow");
+    mainDevelopers << QString::fromLatin1("Jörg-Stefan Praßni");
+    mainDevelopers << QString::fromLatin1("Timo Ropinski");
+//    mainDevelopers.replaceInStrings(" ", "&nbsp;");
+
+    QString mainDevelopersString;
+    for (int i=0; i < mainDevelopers.size(); i++) {
+        if (i > 0)
+            mainDevelopersString += ", ";
+        mainDevelopersString += mainDevelopers[i];
+    }
+    s = ui.labelMainDevelopers->text();
+    s.replace("__MAINDEVELOPERS__", mainDevelopersString);
+    ui.labelMainDevelopers->setText(s);
+
     setWindowTitle(tr("About %1...").arg(application));
 
-#if (QT_VERSION >= 0x040400) && !defined(__APPLE__) && !defined(VRN_NO_STYLESHEET)   
+#if (QT_VERSION >= 0x040400) && !defined(__APPLE__) && !defined(VRN_NO_STYLESHEET)
     setStyleSheet("QDialog { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #444444, stop:1 #aaaaaa) }\n"
                   "QFrame#frame { background-color: #8E8E8E }");
 #endif
 
-    
+
     adjustSize();
 }
 

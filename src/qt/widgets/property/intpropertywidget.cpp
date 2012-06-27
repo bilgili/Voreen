@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/property/intpropertywidget.h"
 
-#include "voreen/core/vis/properties/intproperty.h"
+#include "voreen/core/properties/intproperty.h"
 #include "voreen/qt/widgets/sliderspinboxwidget.h"
 
 #include <QHBoxLayout>
@@ -47,6 +47,7 @@ IntPropertyWidget::IntPropertyWidget(IntProperty* prop, QWidget* parent, bool ad
 
     connect(widget_, SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
     connect(widget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
+    connect(widget_, SIGNAL(valueChanged(int)), this, SIGNAL(widgetChanged()));
 
     if (addVisibilityControl == true)
         QPropertyWidget::addVisibilityControls();

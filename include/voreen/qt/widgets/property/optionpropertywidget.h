@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -47,9 +47,6 @@ public:
 
 public slots:
     void setProperty(int index);
-
-protected:
-    size_t indexOf(const std::string& s, const std::vector<std::string>& v);
 
 protected:
     OptionPropertyBase* property_;

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -29,7 +29,7 @@
 
 #include "voreen/qt/widgets/property/boolpropertywidget.h"
 
-#include "voreen/core/vis/properties/boolproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 
 #include <QCheckBox>
 
@@ -44,6 +44,7 @@ BoolPropertyWidget::BoolPropertyWidget(BoolProperty* prop, QWidget* parent)
     addWidget(chkBox_);
 
     connect(chkBox_, SIGNAL(toggled(bool)), this, SLOT(setProperty(bool)));
+    connect(chkBox_, SIGNAL(toggled(bool)), this, SIGNAL(widgetChanged()));
 
     addVisibilityControls();
 }

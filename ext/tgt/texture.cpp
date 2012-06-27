@@ -23,6 +23,7 @@
  **********************************************************************/
 
 #include "tgt/texture.h"
+#include "tgt/types.h"
 
 #include "tgt/gpucapabilities.h"
 #include "tgt/filesystem.h"
@@ -97,7 +98,7 @@ void Texture::init(bool allocData, bool textureRectangle) {
 #endif
 
     calcType(textureRectangle);
-    calcBpp();
+    bpp_ = calcBpp(format_, dataType_);
 
     generateId();
 
@@ -107,10 +108,10 @@ void Texture::init(bool allocData, bool textureRectangle) {
     applyFilter();
 }
 
-int Texture::calcBpp() {
+int Texture::calcBpp(GLint format, GLenum dataType) {
     int typeSize = 0;
 
-    switch (dataType_) {
+    switch (dataType) {
         case GL_BYTE:
         case GL_UNSIGNED_BYTE:
             typeSize = 1;
@@ -133,7 +134,7 @@ int Texture::calcBpp() {
 
     int numComponents = 0;
 
-    switch (format_) {
+    switch (format) {
         case 1:
         case GL_COLOR_INDEX:
         case GL_RED:
@@ -169,11 +170,10 @@ int Texture::calcBpp() {
             tgtAssert( false, "unsupported format" );
     }
 
-    bpp_ = typeSize * numComponents;
-    return bpp_;
+    return typeSize * numComponents;
 }
 
-int Texture::getSizeOnGPU() {
+int Texture::getSizeOnGPU() const {
 	int bpp = 0;
     switch (internalformat_) {
         case 1:
@@ -319,6 +319,101 @@ void Texture::uploadTexture() {
     }
 }
 
+tgt::Color Texture::texelAsFloat(size_t x, size_t y) const {
+	tgt::Color ret = tgt::Color(0.0f);
+	switch(format_) {
+        case GL_RGBA:
+			switch(dataType_) {
+				case GL_UNSIGNED_BYTE: {
+					tgt::Vector4<uint8_t> t = texel< tgt::Vector4<uint8_t> >(x,y);
+					ret.x = (float )t.x / 0xFF;
+					ret.y = (float )t.y / 0xFF;
+					ret.z = (float )t.z / 0xFF;
+					ret.w = (float )t.w / 0xFF;
+					break;
+				}
+				case GL_UNSIGNED_SHORT: {
+					tgt::Vector4<uint16_t> t = texel< tgt::Vector4<uint16_t> >(x,y);
+					ret.x = (float )t.x / 0xFFFF;
+					ret.y = (float )t.y / 0xFFFF;
+					ret.z = (float )t.z / 0xFFFF;
+					ret.w = (float )t.w / 0xFFFF;
+					break;
+				}
+				case GL_FLOAT:
+					ret = texel<tgt::Color>(x,y);
+					break;
+				default:
+					LWARNINGC("tgt.texture", "texelAsFloat: Unknown data type!");
+			}
+			break;
+        case GL_RGB:
+			switch(dataType_) {
+				case GL_UNSIGNED_BYTE: {
+					tgt::Vector3<uint8_t> t = texel< tgt::Vector3<uint8_t> >(x,y);
+					ret.x = (float )t.x / 0xFF;
+					ret.y = (float )t.y / 0xFF;
+					ret.z = (float )t.z / 0xFF;
+					ret.w = 1.0f;
+					break;
+				}
+				case GL_UNSIGNED_SHORT: {
+					tgt::Vector3<uint16_t> t = texel< tgt::Vector3<uint16_t> >(x,y);
+					ret.x = (float )t.x / 0xFFFF;
+					ret.y = (float )t.y / 0xFFFF;
+					ret.z = (float )t.z / 0xFFFF;
+					ret.w = 1.0f;
+					break;
+				}
+				case GL_FLOAT: {
+					tgt::Vector3f t = texel<tgt::Vector3f>(x,y);
+					ret.x = t.x;
+					ret.y = t.y;
+					ret.z = t.z;
+					ret.w = 1.0f;
+					break;
+				}
+				default:
+					LWARNINGC("tgt.texture", "texelAsFloat: Unknown data type!");
+			}
+			break;
+        case GL_LUMINANCE:
+            switch(dataType_) {
+                case GL_UNSIGNED_BYTE: {
+                    tgt::Vector3<uint8_t> t = tgt::vec3(texel<uint8_t>(x,y));
+                    ret.x = (float )t.x / 0xFF;
+                    ret.y = (float )t.y / 0xFF;
+                    ret.z = (float )t.z / 0xFF;
+                    ret.w = 1.0f;
+                    break;
+                                       }
+                case GL_UNSIGNED_SHORT: {
+                    tgt::Vector3<uint16_t> t = tgt::vec3(texel<uint16_t>(x,y));
+                    ret.x = (float )t.x / 0xFFFF;
+                    ret.y = (float )t.y / 0xFFFF;
+                    ret.z = (float )t.z / 0xFFFF;
+                    ret.w = 1.0f;
+                    break;
+                                        }
+                case GL_FLOAT: {
+                    tgt::Vector3f t = tgt::vec3(texel<GLfloat>(x,y));
+                    ret.x = t.x;
+                    ret.y = t.y;
+                    ret.z = t.z;
+                    ret.w = 1.0f;
+                    break;
+                }
+                default:
+                    LWARNINGC("tgt.texture", "texelAsFloat: Unknown data type!");
+        }
+        break;
+
+		default:
+			LWARNINGC("tgt.texture", "texelAsFloat: Unknown format!");
+	}
+	return ret;
+}
+
 void Texture::downloadTexture() {
     bind();
 
@@ -338,7 +433,17 @@ GLubyte* Texture::downloadTextureToBuffer() const {
     return pixels;
 }
 
-bool Texture::isTextureRectangle() {
+GLubyte* Texture::downloadTextureToBuffer(GLint format, GLenum dataType) const {
+    bind();
+
+    int arraySize = hmul(dimensions_) * calcBpp(format, dataType);
+    GLubyte* pixels = new GLubyte[arraySize];
+
+    glGetTexImage(type_, 0, format, dataType, pixels);
+    return pixels;
+}
+
+bool Texture::isTextureRectangle() const {
 #ifdef GL_TEXTURE_RECTANGLE_ARB
     return (type_ == GL_TEXTURE_RECTANGLE_ARB);
 #else

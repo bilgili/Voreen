@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -34,11 +34,12 @@
 #include "tgt/camera.h"
 #include "tgt/shadermanager.h"
 
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/network/networkevaluator.h"
-#include "voreen/core/vis/workspace/workspace.h"
-#include "voreen/core/vis/processors/image/canvasrenderer.h"
+#include "voreen/core/utils/voreenpainter.h"
+#include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/network/workspace.h"
+#include "voreen/core/processors/canvasrenderer.h"
 #include "voreen/qt/voreenapplicationqt.h"
+#include "voreen/modules/moduleregistration.h"
 
 using namespace voreen;
 
@@ -47,24 +48,22 @@ using namespace voreen;
     dataset which can be rotated and zoomed using the mouse.  This is the qt-version of this sample,
     there are others in the simple/-folder, like a glut-version.
 */
-int main( int argc, char* argv[] ) {
+int main(int argc, char* argv[]) {
     // a QApplication is always needed
     QApplication myapp(argc, argv);
 
-    VoreenApplicationQt vapp("simple-QT", "simple-QT", argc, argv);
+    VoreenApplicationQt vapp("simple-Qt", "simple-Qt", argc, argv);
     vapp.init();
+    addAllModules(&vapp);
 
     // this is the actual canvas we will paint on
-    tgt::QtCanvas* canvas = new tgt::QtCanvas();
+    tgt::QtCanvas* canvas = new tgt::QtCanvas("Voreen - The Volume Rendering Engine");
     canvas->show();
 
-    tgt::initGL();
-
-    // add shader path to the shader manager
-    ShdrMgr.addPath(VoreenApplication::app()->getShaderPath());
+    vapp.initGL();
 
     Workspace* workspace = new Workspace();
-    workspace->load(VoreenApplication::app()->getWorkspacePath() + "/standard.vws");
+    workspace->load(VoreenApplication::app()->getWorkspacePath("/standard.vws"));
 
     // initialize the network evaluator, which -among others- tests the network for errors
     NetworkEvaluator* networkEvaluator = new NetworkEvaluator();
@@ -88,9 +87,5 @@ int main( int argc, char* argv[] ) {
     delete painter;
     delete workspace;
     delete networkEvaluator;
-
-    // now deinit everything
-    tgt::deinitGL();
     delete canvas;
-    tgt::deinit();
 }

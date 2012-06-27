@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,7 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/io/brickedvolumereader.h"
-#include "voreen/core/volume/bricking/brickingmanager.h"
+#include "voreen/core/datastructures/volume/bricking/brickingmanager.h"
 
 #include <fstream>
 #include <iostream>
@@ -39,7 +39,7 @@
 
 #include "voreen/core/io/textfilereader.h"
 #include "voreen/core/io/rawvolumereader.h"
-#include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/io/ioprogress.h"
 
 using tgt::vec3;
@@ -55,15 +55,16 @@ BrickedVolumeReader::BrickedVolumeReader(voreen::IOProgress* progress)
     : VolumeReader(progress),
       persistent_(false)
 {
-        if (progress != 0)
-            ioProgress_ = progress;
+    if (progress != 0)
+        ioProgress_ = progress;
 
-        extensions_.push_back("bvi");
-        bpiStream_ = 0;
-        bvFile_ = 0;
+    extensions_.push_back("bvi");
+    protocols_.push_back("bvi");
+    bpiStream_ = 0;
+    bvFile_ = 0;
 
-        currentBrick_ = 0;
-        errorArrayPosition_ = 0;
+    currentBrick_ = 0;
+    errorArrayPosition_ = 0;
 }
 
 bool BrickedVolumeReader::openFile(std::string filename) {
@@ -326,9 +327,47 @@ VolumeCollection* BrickedVolumeReader::readSlices(const std::string & filename, 
 
     if (largeVolumeManager)
         persistent_ = true;
-    
+
     brickedHandle->setLargeVolumeManager(largeVolumeManager);
+
+    // encode parameters into search string
+    std::ostringstream searchStream;
+    searchStream << "maxMemory=" << LargeVolumeManager::getMaxMemory() << "&";
+    searchStream << "maxGpuMemory=" << LargeVolumeManager::getMaxGpuMemory();
+    brickedHandle->setOrigin(VolumeOrigin("bvi", filename, searchStream.str()));
+
     return volumeCollection;
+}
+
+VolumeHandle* BrickedVolumeReader::read(const VolumeOrigin& origin)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    // read parameters from origin
+    std::string filename = origin.getPath();
+
+    int maxMem = 0;
+    std::istringstream s1(origin.getSearchParameter("maxMemory"));
+    s1 >> maxMem;
+    if (maxMem > 0)
+        LargeVolumeManager::setMaxMemory(maxMem);
+
+    int maxGpuMem = 0;
+    std::istringstream s2(origin.getSearchParameter("maxGpuMemory"));
+    s2 >> maxGpuMem;
+    if (maxGpuMem > 0)
+        LargeVolumeManager::setMaxGpuMemory(maxGpuMem);
+
+    VolumeHandle* handle = 0;
+    VolumeCollection* collection = read(filename);
+    if (!collection->empty())
+        handle = collection->first();
+
+    delete collection;
+    return handle;
+}
+
+VolumeReader* BrickedVolumeReader::create(IOProgress* progress) const {
+    return new BrickedVolumeReader(progress);
 }
 
 IOProgress* BrickedVolumeReader::ioProgress_ = 0;

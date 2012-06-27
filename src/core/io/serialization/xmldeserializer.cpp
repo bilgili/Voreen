@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -56,7 +56,7 @@ std::string XmlDeserializer::getDocumentPath() const {
 }
 
 void XmlDeserializer::deserialize(const std::string& key, bool& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     std::string boolValue;
     deserializeSimpleTypes(key, boolValue);
@@ -72,139 +72,218 @@ void XmlDeserializer::deserialize(const std::string& key, bool& data)
 }
 
 void XmlDeserializer::deserialize(const std::string& key, char& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, signed char& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, unsigned char& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, signed short& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, unsigned short& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, signed int& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, unsigned int& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, signed long& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, unsigned long& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, float& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, double& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, long double& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, std::string& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::vec2& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::vec3& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::vec4& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
+void XmlDeserializer::deserialize(const std::string& key, tgt::dvec2& data)
+    throw (SerializationException)
+{
+    deserializeTgtVector(key, data);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::dvec3& data)
+    throw (SerializationException)
+{
+    deserializeTgtVector(key, data);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::dvec4& data)
+    throw (SerializationException)
+{
+    deserializeTgtVector(key, data);
+}
+
+
 void XmlDeserializer::deserialize(const std::string& key, tgt::ivec2& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::ivec3& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::ivec4& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::col3& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data, true);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, tgt::col4& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeTgtVector(key, data, true);
 }
 
+void XmlDeserializer::deserialize(const std::string& key, tgt::mat2& data)
+    throw (SerializationException)
+{
+    tgt::vec2 row0, row1;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    data = tgt::mat2(row0, row1);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::mat3& data)
+    throw (SerializationException)
+{
+    tgt::vec3 row0, row1, row2;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    deserializeTgtVector(key+".row2", row2);
+    data = tgt::mat3(row0, row1, row2);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::mat4& data)
+    throw (SerializationException)
+{
+    tgt::vec4 row0, row1, row2, row3;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    deserializeTgtVector(key+".row2", row2);
+    deserializeTgtVector(key+".row3", row3);
+    data = tgt::mat4(row0, row1, row2, row3);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::Matrix2d& data)
+    throw (SerializationException)
+{
+    tgt::dvec2 row0, row1;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    data = tgt::Matrix2d(row0, row1);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::Matrix3d& data)
+    throw (SerializationException)
+{
+    tgt::dvec3 row0, row1, row2;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    deserializeTgtVector(key+".row2", row2);
+    data = tgt::Matrix3d(row0, row1, row2);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, tgt::Matrix4d& data)
+    throw (SerializationException)
+{
+    tgt::dvec4 row0, row1, row2, row3;
+    deserializeTgtVector(key+".row0", row0);
+    deserializeTgtVector(key+".row1", row1);
+    deserializeTgtVector(key+".row2", row2);
+    deserializeTgtVector(key+".row3", row3);
+    data = tgt::Matrix4d(row0, row1, row2, row3);
+}
+
 void XmlDeserializer::deserialize(const std::string& key, Serializable& data)
-    throw (XmlSerializationNoSuchDataException, XmlSerializationFormatException, XmlSerializationDuplicateIdException)
+    throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
 TiXmlElement* XmlDeserializer::getNextXmlElement(const std::string& key)
-    throw (XmlSerializationNoSuchDataException)
+    throw (SerializationException)
 {
     TiXmlElement* element = node_->FirstChildElement(key);
     while (element) {
@@ -256,7 +335,7 @@ XmlDeserializer::ReferenceIdListType XmlDeserializer::findUnresolvableReferences
 }
 
 void XmlDeserializer::read(std::istream& stream, XmlProcessor* xmlProcessor)
-    throw (XmlSerializationFormatException, XmlSerializationVersionMismatchException, XmlSerializationReferenceResolvingException)
+    throw (SerializationException)
 {
     // Read input stream...
     std::stringbuf buffer;

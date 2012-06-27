@@ -46,7 +46,8 @@ inline void loadMatrix(const mat4& m) {
 #if defined(__APPLE__) || defined(TGT_WORKAROUND_GLLOADTRANSPOSEMATRIXF)
     glLoadMatrixf(transpose(m).elem);
 #else
-    glLoadTransposeMatrixf(m.elem);
+    //glLoadTransposeMatrixf(m.elem);
+    glLoadMatrixf(transpose(m).elem);
 #endif
 }
 

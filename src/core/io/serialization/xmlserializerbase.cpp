@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -76,7 +76,7 @@ void XmlSerializerBase::removeLastError() {
         errors_.pop_back();
 }
 
-ErrorListType XmlSerializerBase::getErrors() const {
+std::vector<std::string> XmlSerializerBase::getErrors() const {
     return errors_;
 }
 
@@ -152,6 +152,55 @@ bool XmlSerializerBase::getUseAttributes() const {
 
 bool XmlSerializerBase::getUsePointerContentSerialization() const {
     return usePointerContentSerialization_;
+}
+
+
+std::string XmlSerializerBase::convertDataToString(const float& data) {
+    std::stringstream stream;
+    stream.precision(8);
+    stream.setf(std::ios::fixed);
+
+    stream << data;
+    std::string s = stream.str();
+
+    // remove trailing zeros and decimal point
+    size_t point_pos = s.find('.');
+    if (point_pos != std::string::npos) {
+        size_t new_size = s.size();
+        for (size_t i = s.size() - 1; i >= point_pos; i--) {
+            if (s[i] == '0' || s[i] == '.')
+                new_size--;
+            else
+                break;
+        }
+        s.resize(new_size);
+    }
+
+    return s;
+}
+
+std::string XmlSerializerBase::convertDataToString(const double& data) {
+    std::stringstream stream;
+    stream.precision(17);
+    stream.setf(std::ios::fixed);
+
+    stream << data;
+    std::string s = stream.str();
+
+    // remove trailing zeros and decimal point
+    size_t point_pos = s.find('.');
+    if (point_pos != std::string::npos) {
+        size_t new_size = s.size();
+        for (size_t i = s.size() - 1; i >= point_pos; i--) {
+            if (s[i] == '0' || s[i] == '.')
+                new_size--;
+            else
+                break;
+        }
+        s.resize(new_size);
+    }
+
+    return s;
 }
 
 } // namespace

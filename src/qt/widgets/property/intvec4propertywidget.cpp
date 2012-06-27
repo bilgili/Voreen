@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,12 +38,13 @@ IntVec4PropertyWidget::IntVec4PropertyWidget(IntVec4Property* prop, QWidget* par
     connect((const QObject*)widgets_[1], SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
     connect((const QObject*)widgets_[2], SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
     connect((const QObject*)widgets_[3], SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
+    updateFromProperty();
 }
 
 void IntVec4PropertyWidget::setProperty(int value) {
     if (disconnected_)
         return;
-    
+
     IntVec4Property::ElemType newValue = setPropertyComponent(sender(), value);
     emit valueChanged(newValue);
     emit modified();

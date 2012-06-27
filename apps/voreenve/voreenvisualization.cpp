@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -32,20 +32,20 @@
 #include "tgt/gpucapabilities.h"
 #include "tgt/ziparchive.h"
 
-#include "voreen/core/vis/workspace/workspace.h"
-#include "voreen/core/vis/network/networkevaluator.h"
-#include "voreen/core/volume/volumecontainer.h"
-#include "voreen/core/vis/properties/link/linkevaluatorid.h"
+#include "voreen/core/network/workspace.h"
+#include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+#include "voreen/core/properties/link/linkevaluatorid.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/qt/widgets/animationplugin.h"
-#include "voreen/qt/widgets/volumecontainerwidget.h"
-#include "voreen/qt/widgets/animationplugin.h"
-#include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
 
-#include "voreen/qt/widgets/network/processorlistwidget.h"
-#include "voreen/qt/widgets/network/propertylistwidget.h"
-#include "voreen/qt/widgets/network/editor/networkeditor.h"
+#include "voreen/qt/widgets/volumecontainerwidget.h"
+#include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
+#include "voreen/qt/widgets/processorlistwidget.h"
+#include "voreen/qt/widgets/propertylistwidget.h"
+#include "networkeditor/networkeditor.h"
+#include "voreen/qt/widgets/inputmappingdialog.h"
+
 
 #include <QString>
 
@@ -56,12 +56,12 @@ const std::string VoreenVisualization::loggerCat_ = "voreenve.VoreenVisualizatio
 VoreenVisualization::VoreenVisualization(tgt::GLCanvas* sharedContext)
     : QObject()
     , evaluator_(new NetworkEvaluator(sharedContext))
-    , workspace_(new Workspace())
+    , workspace_(new Workspace(sharedContext))
     , sharedContext_(sharedContext)
     , networkEditorWidget_(0)
     , propertyListWidget_(0)
     , processorListWidget_(0)
-    , animationPlugin_(0)
+    , inputMappingDialog_(0)
     , readOnlyWorkspace_(false)
     , modified_(false)
 {
@@ -72,22 +72,23 @@ VoreenVisualization::VoreenVisualization(tgt::GLCanvas* sharedContext)
 
 VoreenVisualization::~VoreenVisualization() {
     cleanupTempFiles();
+    evaluator_->setProcessorNetwork(0, true);
     delete evaluator_;
+    workspace_->clear();
     delete workspace_;
 }
 
 void VoreenVisualization::createConnections() {
-
     // create connections
     if (networkEditorWidget_) {
         if (processorListWidget_)  {
-            connect(networkEditorWidget_, SIGNAL(processorsSelected(const std::vector<Processor*>&)),
-                    processorListWidget_, SLOT(processorsSelected(const std::vector<Processor*>&)));
-            connect(networkEditorWidget_, SIGNAL(processorsSelected(const std::vector<Processor*>&)),
-                    propertyListWidget_, SLOT(processorsSelected(const std::vector<Processor*>&)));
+            connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
+                    processorListWidget_, SLOT(processorsSelected(const QList<Processor*>&)));
+            connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
+                    propertyListWidget_, SLOT(processorsSelected(const QList<Processor*>&)));
             connect(propertyListWidget_, SIGNAL(modified()), this, SLOT(setModified()));
         }
-        else 
+        else
             LWARNINGC("VoreenVisualization", "init(): PropertyListWidget not assigned");
     }
     else {
@@ -107,6 +108,10 @@ void VoreenVisualization::setVolumeContainerWidget(VolumeContainerWidget* volume
     volumeContainerWidget_ = volumeContainerWidget;
 }
 
+void VoreenVisualization::setInputMappingDialog(InputMappingDialog* inputMappingDialog) {
+    inputMappingDialog_ = inputMappingDialog;
+}
+
 void VoreenVisualization::openNetwork(const std::string& filename)
     throw (SerializationException)
 {
@@ -119,11 +124,9 @@ void VoreenVisualization::openNetwork(const std::string& filename)
 
 }
 
-void VoreenVisualization::saveNetwork(const std::string& filename, bool reuseTCTargets)
+void VoreenVisualization::saveNetwork(const std::string& filename)
     throw (SerializationException)
 {
-    workspace_->getProcessorNetwork()->setReuseTargets(reuseTCTargets);
-
     try {
         NetworkSerializer().writeNetworkToFile(workspace_->getProcessorNetwork(), filename);
     } catch (SerializationException&) {
@@ -153,24 +156,20 @@ void VoreenVisualization::importZippedWorkspace(const std::string& archiveName, 
     if (!zip.archiveExists()) {
         LERROR("Archive does not exist: " << archiveName);
         throw SerializationException("Archive does not exist: " + archiveName);
-        return;
     }
 
     // Extract files from the archive and enforce overwriting existing ones only
     // if they are extracted for temporary purpose.
-    //
     size_t numFiles = zip.extractFilesToDirectory(path, deflateTemporarily);
     if (numFiles != zip.getNumFilesInArchive()) {
-        LERROR("An error occured while extracting files from '" << archiveName << "' to " << path << "!");
-        LERROR("Aborting.");
+        LERROR("An error occured while extracting files from '" << archiveName << "' to " << path << "!"
+               << "Aborting.");
         throw SerializationException("An error occured while extracting files from '" + archiveName + "' to " + path + "!");
-        return;
     }
 
     if (numFiles == 0) {
         LWARNING("Archive does not contain any files: " << archiveName);
         throw SerializationException("Archive does not contain any files: " + archiveName);
-        return;
     }
 
     std::vector<std::string> files = zip.getContainedFileNames();
@@ -216,35 +215,46 @@ void VoreenVisualization::importZippedWorkspace(const std::string& /*archiveName
 #endif
 
 void VoreenVisualization::newWorkspace() {
+    tgtAssert(evaluator_, "No network evaluator");
+
     cleanupTempFiles();
 
     readOnlyWorkspace_ = false;
 
-    // clear workspace resources and new ones
-    sharedContext_->getGLFocus();
+    // clear workspace resources
+    evaluator_->setProcessorNetwork(0, true);
     workspace_->clear();
+
+    // generate new resources
     workspace_->setProcessorNetwork(new ProcessorNetwork());
     workspace_->setVolumeContainer(new VolumeContainer());
 
+    // propagate resources
     propagateVolumeContainer();
     propagateNetwork();
 }
 
-void VoreenVisualization::openWorkspace(const QString& filename)
-    throw (SerializationException)
-{
+void VoreenVisualization::openWorkspace(const QString& filename) throw (SerializationException) {
     LINFO("Loading workspace " << filename.toStdString());
     if (!VoreenApplication::app()->getProcessorWidgetFactory())
         LWARNING("No ProcessorWidgetFactory assigned to VoreenApplication: No ProcessorWidgets are generated!");
 
     cleanupTempFiles();
 
-    sharedContext_->getGLFocus();
-    // zipped workspace?
-    if (filename.endsWith(".zip", Qt::CaseInsensitive))
-        importZippedWorkspace(filename.toStdString(), VoreenApplication::app()->getTemporaryPath(), true);
-    else
-        workspace_->load(filename.toStdString());
+    // clear workspace resources
+    evaluator_->setProcessorNetwork(0, true);
+    workspace_->clear();
+
+    try {
+        // zipped workspace?
+        if (filename.endsWith(".zip", Qt::CaseInsensitive))
+            importZippedWorkspace(filename.toStdString(), VoreenApplication::app()->getTemporaryPath(), true);
+        else
+            workspace_->load(filename.toStdString());
+    } catch (SerializationException& e) {
+        LERROR("Could not open workspace: " << e.what());
+        throw;
+    }
 
     workspaceErrors_ = workspace_->getErrors();
     readOnlyWorkspace_ = workspace_->readOnly();
@@ -253,17 +263,19 @@ void VoreenVisualization::openWorkspace(const QString& filename)
     propagateNetwork();
 }
 
-void VoreenVisualization::saveWorkspace(const std::string& filename, bool reuseTCTargets, bool overwrite)
-    throw (SerializationException)
-{
+void VoreenVisualization::saveWorkspace(const std::string& filename, bool overwrite) throw (SerializationException) {
     readOnlyWorkspace_ = false;
-    workspace_->getProcessorNetwork()->setReuseTargets(reuseTCTargets);
 
-    // zipped workspace?
-    if (QString::fromStdString(filename).endsWith(".zip", Qt::CaseInsensitive))
-        exportWorkspaceAsZip(filename, overwrite);
-    else
-        workspace_->save(filename, overwrite);
+    try {
+        // zipped workspace?
+        if (QString::fromStdString(filename).endsWith(".zip", Qt::CaseInsensitive))
+            exportWorkspaceAsZip(filename, overwrite);
+        else
+            workspace_->save(filename, overwrite);
+    } catch (SerializationException& e) {
+        LERROR("Could not save workspace: " << e.what());
+        throw;
+    }
 }
 
 void VoreenVisualization::cleanupTempFiles() {
@@ -271,12 +283,10 @@ void VoreenVisualization::cleanupTempFiles() {
         return;
 
     // Delete all temporary files.
-    //
     for (size_t i = 0; i < tmpFiles_.size(); ++i) {
         tgt::FileSystem::deleteFile(tmpPath_ + "/" + tmpFiles_[i]);
 
         // Remove file name to obtain the remaing path
-        //
         size_t pos = tmpFiles_[i].rfind("/");
         if (pos == std::string::npos)
             pos = 0;
@@ -288,7 +298,6 @@ void VoreenVisualization::cleanupTempFiles() {
     // If it is not empty, the directory path will then be deleted piecewise,
     // and the remaining "file name" will be reduced until all file names are
     // empty, e.g. "/data/foo" => "/data" => "".
-    //
     bool foundNonEmptyString = true;
     while (foundNonEmptyString == true) {
         foundNonEmptyString = false;
@@ -320,30 +329,30 @@ void VoreenVisualization::propagateNetwork() {
         workspace_->getProcessorNetwork()->addObserver(this);
     }
 
-    // assign network to network editor
     if (networkEditorWidget_) {
-        networkEditorWidget_->newNetwork();
+        networkEditorWidget_->setProcessorNetwork(workspace_->getProcessorNetwork());
         qApp->processEvents();
     }
+
+    if (propertyListWidget_) {
+        propertyListWidget_->setProcessorNetwork(workspace_->getProcessorNetwork());
+        qApp->processEvents();
+    }
+
+    networkEditorWidget_->selectPreviouslySelectedProcessors();
 
     // assign network to evaluator, also initializes the network
     evaluator_->setProcessorNetwork(workspace_->getProcessorNetwork());
     qApp->processEvents();
 
-    // assign network to propertylist widget at last, since
-    // property widget generation might be time consuming
-    if (propertyListWidget_) {
-        propertyListWidget_->setNetwork(workspace_->getProcessorNetwork());
+    // assign network to input mapping dialog
+    if (inputMappingDialog_) {
+        inputMappingDialog_->setProcessorNetwork(workspace_->getProcessorNetwork());
         qApp->processEvents();
     }
 
-    // propagate new network to AnimationPlugin
-    if (animationPlugin_)
-        animationPlugin_->setNetwork(workspace_->getProcessorNetwork());
-
     sharedContext_->getGLFocus();
-
-    emit newNetwork(workspace_->getProcessorNetwork());
+    emit(newNetwork(workspace_->getProcessorNetwork()));
 }
 
 void VoreenVisualization::propagateVolumeContainer() {
@@ -395,10 +404,6 @@ std::vector<std::string> VoreenVisualization::getWorkspaceErrors() {
 
 void VoreenVisualization::setProcessorListWidget(ProcessorListWidget* processorListWidget) {
     processorListWidget_ = processorListWidget;
-}
-
-void VoreenVisualization::setAnimationPlugin(AnimationPlugin* animationPlugin) {
-    animationPlugin_ = animationPlugin;
 }
 
 NetworkEvaluator* VoreenVisualization::getEvaluator() const {

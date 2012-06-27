@@ -79,19 +79,19 @@ public:
 	virtual bool isOpen() = 0;
 
     /// Returns if the messages are time-stamped.
-	inline bool getTimeStamping() { return timeStamping_; }
+	inline bool getTimeStamping() const { return timeStamping_; }
 	inline void setTimeStamping(const bool timeStamping) { timeStamping_ = timeStamping; }
 
     /// Returns if the messages are date-stamped.
-	inline bool getDateStamping() { return dateStamping_; }
+	inline bool getDateStamping() const { return dateStamping_; }
  	inline void setDateStamping(const bool dateStamping) { dateStamping_ = dateStamping; }
 
     /// Returns if the category is printed along with the messages
-	inline bool getShowCat() { return showCat_; }
+	inline bool getShowCat() const { return showCat_; }
 	inline void setShowCat(const bool showCat) { showCat_ = showCat; }
 
     /// Returns if the LogLevel is printed along with the messages.
-	inline bool getShowLevel() { return showLevel_; }
+	inline bool getShowLevel() const { return showLevel_; }
 	inline void setShowLevel(const bool showLevel) { showLevel_ = showLevel; }
 
 protected:
@@ -171,16 +171,19 @@ public:
 
     /// Initialize logmanager, put all logfiles in logDir
 	void reinit(const std::string& logDir);
-	std::string getLogDir() { return logDir_; }
+	std::string getLogDir() const { return logDir_; }
 
     /// Log message
 	void log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
 
-    /// Add a log to the manager, from now all messages recieved by the manager are also distributed to this log.
-    /// All logs are deleted upon destruction of the manager!
+    /// Add a log to the manager, from now all messages received by the manager are also distributed to this log.
+    /// All logs are deleted upon destruction of the manager.
     /// If a ConsoleLog is added it will replace an existing one, the old one will be deleted.
 	void addLog(Log* log);
 
+    // Remove a log from the manager.
+	void removeLog(Log* log);
+    
     /// Return the ConsoleLog (or 0 if there is none)
     ConsoleLog* getConsoleLog() { return consoleLog_; }
 

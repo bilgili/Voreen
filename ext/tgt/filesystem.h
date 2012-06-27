@@ -397,8 +397,8 @@ public:
      *          If the directory does not exist, the returned vector is empty.
      */
     static std::vector<std::string> readDirectory(const std::string& directory, 
-                                                  const bool sort = true,
-                                                  const bool recursiveSearch = true);
+                                                  const bool sort = false,
+                                                  const bool recursiveSearch = false);
     /**
      * Renames the file given by filename, if it exists to the name given in
      * newName. If ignorePath is true (default), the file will only be renamed, 

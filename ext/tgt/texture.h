@@ -121,11 +121,11 @@ public:
         pixels_ = 0;// so nothing really nasty can happen
     }
 
-    /// calculates the bytes per pixel from dataType and internalformat
-    int calcBpp();
+    /// calculates the bytes per pixel from format dataType and dataType
+    static int calcBpp(GLint format, GLenum dataType);
 
 	///calculates size on the GPU (using internalformat)
-	int getSizeOnGPU();
+	int getSizeOnGPU() const;
 
     /**
      * calculates the type_ (GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D or GL_TEXTURE_RECTANGLE_ARB) from
@@ -260,7 +260,7 @@ public:
     /// Applies the textur wrapping mode once againg. Binds the texture.
     void applyWrapping();
     
-    Wrapping getWrapping() { return wrapping_; }
+    Wrapping getWrapping() const { return wrapping_; }
 
     /**
      * Upload Texture to graphics-card. Binds the texture.
@@ -269,7 +269,6 @@ public:
      * be set before calling this method.
      */
     void uploadTexture();
-
 
     /**
      * Download Texture from graphics-card. Binds the texture.
@@ -289,9 +288,15 @@ public:
     GLubyte* downloadTextureToBuffer() const;
 
     /**
+     * Download texture from the GPU to a newly allocated buffer with
+     * the passed format/data type and the texture's dimensions.
+     */
+    GLubyte* downloadTextureToBuffer(GLint format, GLenum dataType) const;
+
+    /**
      * Returns, wether texture is a texture rectangle (GL_TEXTURE_RECTANGLE_ARB)
      */
-    bool isTextureRectangle();
+    bool isTextureRectangle() const;
 
 /*
     1D access, always possible
@@ -373,6 +378,9 @@ public:
         return ((T*) pixels_)[pos.z*dimensions_.x*dimensions_.y + pos.y*dimensions_.x + pos.x];
     }
 
+    ///Return texel as tgt::Color (slow!), downloadTexture() needs to be called first
+	tgt::Color texelAsFloat(size_t x, size_t y) const;
+	tgt::Color texelAsFloat(tgt::svec2 p) const { return texelAsFloat(p.x, p.y); }
 protected:
     tgt::ivec3 dimensions_;
     GLint format_;          ///< GL_RGB...

@@ -2,7 +2,7 @@
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
  *                                                                    *
- * Copyright (C) 2005-2009 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,11 +30,13 @@
 #ifndef VRN_QPROPERTYWIDGET_H
 #define VRN_QPROPERTYWIDGET_H
 
-#include "voreen/core/vis/properties/propertywidget.h"
+#include "voreen/core/properties/propertywidget.h"
 
 #include <QWidget>
 #include <QBoxLayout>
 #include <QToolButton>
+
+class QLabel;
 
 namespace voreen {
 
@@ -52,25 +54,37 @@ public:
 
     void hideLODControls();
     void showLODControls();
+    std::string getPropertyGuiName();
+    virtual const QLabel* getNameLabel() const;
+
+    // this is a static variable for the font size used in all propertywidgets
+    static const int fontSize_;
 
 public slots:
     virtual void setLevelOfDetail(bool value);
     virtual void setLevelOfDetail(Property::LODSetting value);
     virtual void toggleInteractionMode(bool im);
+    virtual void showNameLabel(bool);
 
 signals:
     void modified();
     void levelOfDetailChanged(Property::LODSetting);
+    void mouseClicked();
+    void widgetChanged();
 
 protected:
     void addWidget(QWidget* widget);
     void addLayout(QLayout* layout);
     void addVisibilityControls();
+    void mouseMoveEvent(QMouseEvent*);
 
     bool disconnected_;
     QBoxLayout* layout_;
     Property* prop_;
     QToolButton* lodControl_;
+
+    mutable QLabel* nameLabel_;
+    bool showNameLabel_;
 };
 
 } // namespace

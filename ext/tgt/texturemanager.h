@@ -59,8 +59,8 @@ public:
      *   Init texturemanager.
      */
     TextureManager();
-    ~TextureManager();
-
+    virtual ~TextureManager();
+    
     /**
     *   Register TextureReader for use in Manager
     */
