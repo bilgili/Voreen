@@ -1,0 +1,242 @@
+####################################################
+# Configurations common for all projects
+####################################################
+
+CONFIG += stl thread
+
+# we don't use tgt's build system
+DEFINES += TGT_WITHOUT_DEFINES
+
+contains( DEFINES, VRN_WITH_DEVIL ) {
+  DEFINES += TGT_HAS_DEVIL
+}
+
+contains( DEFINES, VRN_WITH_ZIP) {
+#  DEFINES += TGT_ZLIB
+}
+
+contains( DEFINES, VRN_WITH_PYTHON) {
+  DEFINES += TGT_USE_PYTHON
+}
+
+contains( DEFINES, VRN_WITH_TRACKING) {
+  DEFINES += TGT_WITH_TRACKING
+}
+
+contains( DEFINES, VRN_DEBUG) {
+  DEFINES += TGT_DEBUG
+}
+
+precompile_header : contains(QMAKE_CC, "icc") {
+  warning("Disabled precompiled headers because compiler is icc.")
+  CONFIG -= precompile_header
+}
+
+DEFINES -= UNICODE
+
+win32: {
+  CONFIG(debug, debug|release) {
+    DEFINES += _DEBUG
+  }
+  
+  # for CoInitializeSecurity() to be defined
+  contains(DEFINES, VRN_WITH_WMI) {
+    DEFINES += _WIN32_DCOM
+  }
+
+}
+else {
+  debug : DEFINES += _DEBUG
+}
+
+INCLUDEPATH += \
+  $${VRN_HOME}/include \
+  $${VRN_HOME}/ext
+
+# This variable contains the list of all directories to look in to resolve
+# dependencies. This will be used when crawling through included files.
+DEPENDPATH += \
+  $${VRN_HOME}/include \
+  $${VRN_HOME}/ext
+
+DEFINES += TIXML_USE_STL
+
+# some definitions for modules
+VRN_MODULE_SRC_DIR=$${VRN_HOME}/src/modules
+VRN_MODULE_INC_DIR=$${VRN_HOME}/include/voreen/modules
+
+# Include modules which are selected in local configuration. The entry
+# 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
+# file 'foo_common.pri' there.
+for(i, VRN_MODULES) : include(src/modules/$${i}/$${i}_common.pri)
+
+
+####################################################
+# Platform-dependant configuration
+####################################################
+
+win32 {
+
+  CONFIG -= release debug
+  CONFIG += debug_and_release
+
+  CONFIG -= flat
+  DEFINES += _WINDOWS
+
+  # disable vc 2005 deprecated warnings
+  DEFINES += _CRT_SECURE_NO_DEPRECATE
+
+  # we don't like the windows.h min/max macros
+  DEFINES += NOMINMAX
+
+  # use static libraries
+  DEFINES += GLEW_STATIC
+
+  INCLUDEPATH += \
+    $${VRN_HOME}/ext/glew/include
+
+  contains(DEFINES, VRN_WITH_DEVIL) {
+    INCLUDEPATH += $${DEVIL_DIR}/include
+  }
+
+  contains(DEFINES, VRN_WITH_MATLAB) {
+    INCLUDEPATH += $${MATLAB_DIR}/extern/include
+  }
+
+  contains(DEFINES, VRN_WITH_TIFF) {
+    INCLUDEPATH += $${TIFF_DIR}/include
+  }
+
+  contains(DEFINES, VRN_WITH_FREETYPE) {
+    INCLUDEPATH += $${FREETYPE_DIR}/include/freetype2
+    INCLUDEPATH += $${FREETYPE_DIR}/include
+  }
+
+  contains(DEFINES, VRN_WITH_FTGL) {
+    INCLUDEPATH += $${FTGL_DIR}/include
+  }
+
+  contains(DEFINES, VRN_WITH_ZIP) {
+    INCLUDEPATH += $${VRN_HOME}/ext/ziparchive/include
+  }
+  contains(DEFINES, VRN_WITH_DCMTK) {
+    INCLUDEPATH += $${DCMTK_DIR}/include \
+                   $${VRN_HOME}/ext/openssl/include
+  }
+  contains(DEFINES, VRN_WITH_PYTHON) {
+    INCLUDEPATH += $${PYTHON_DIR}/include
+  }
+
+  contains(DEFINES, VRN_WITH_BUGTRAP) {
+    INCLUDEPATH += $${BUGTRAP_DIR}/Win32/BugTrap
+  }
+
+  contains(DEFINES, VRN_WITH_BOOST) {
+    INCLUDEPATH += $${VRN_HOME}/ext/boost/include
+    # link boost libs dynamically
+    DEFINES += BOOST_ALL_DYN_LINK
+  }
+
+  contains(DEFINES, VRN_WITH_BOX2D) {
+    INCLUDEPATH += $${BOX2D_DIR}/Include
+    LIBS += box2d.lib
+  }
+
+  # Disable warnings
+  # C4305: 'identifier' : truncation from 'type1' to 'type2'
+  # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning
+  # C4290: C++ exception specification ignored except to indicate a function is
+  #       not __declspec(nothrow)
+  QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 
+
+
+  # Shift warning
+  # C4706: assignment within conditional expression
+  # to warning level 3 which is used for compiling Voreen
+  QMAKE_CXXFLAGS += /w34706
+
+  # Disable optimization in debug build
+  QMAKE_CXXFLAGS_DEBUG += /Od /GR
+
+  # Enable edit and continue in debug build
+  QMAKE_CXXFLAGS_DEBUG -= /Zi
+  QMAKE_CXXFLAGS_DEBUG += /ZI
+
+  debug {
+    OBJECTS_DIR = Debug
+    DESTDIR = Debug
+  }
+
+  release {
+    OBJECTS_DIR = Release
+    DESTDIR = Release
+  }
+
+  QMAKE_LFLAGS += /MACHINE:X86
+  
+  # Disable optimizations for builds with bugtrap support
+  contains (DEFINES, VRN_WITH_BUGTRAP) {
+    QMAKE_CXXFLAGS_RELEASE -= /O2
+    QMAKE_CXXFLAGS_RELEASE += /Od /Zi
+    QMAKE_LFLAGS_RELEASE += /DEBUG
+
+  }
+  # Enable parallel compiler processes with VS2008
+  MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+  contains(MSC_VER, "_MSC_VER=1500") {
+    QMAKE_CXXFLAGS += /MP4
+  }
+}
+
+unix {
+  DEFINES += UNIX
+  
+  LIBDIR += $${VRN_HOME}
+  QMAKE_RPATHDIR += $${LIBDIR}
+
+  for(dir, LIBDIR) {
+    LIBS  += "-L$$dir"
+  }
+
+  isEmpty(OBJECTS_DIR) {
+    OBJECTS_DIR = .obj
+  }
+  MOC_DIR = .moc
+  contains (DEFINES, VRN_WITH_OPENMP) {
+    QMAKE_CFLAGS += -openmp
+    QMAKE_CXXFLAGS += -openmp
+    QMAKE_LFLAGS += -openmp -L$${VRN_HOME}
+  }
+
+  contains (DEFINES, VRN_WITH_FREETYPE) {
+    INCLUDEPATH += $${FREETYPE_DIR}
+  }
+
+  contains (DEFINES, VRN_WITH_PYTHON) {
+    INCLUDEPATH += $${PYTHON_DIR}
+    LIBS += $${PYTHON_LIBS}
+  }
+}
+
+contains(DEFINES, VRN_WITH_SVNVERSION) {
+  unix {
+    QMAKE_EXTRA_TARGETS += revtarget
+    revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
+    revtarget.commands   = $${VRN_HOME}/svnversion.sh $${VRN_HOME} $${revtarget.target}
+    PRE_TARGETDEPS      += $${revtarget.target}
+  }
+
+  win32 {
+    QMAKE_EXTRA_TARGETS += revtarget
+    revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
+    revtarget.commands   = $${VRN_HOME}/svnversion.bat $${VRN_HOME} $${revtarget.target}
+    PRE_TARGETDEPS      += $${revtarget.target}
+  }
+
+  # The following must be placed in the .pro file, after all source and header file have been added
+  # contains(DEFINES, VRN_WITH_SVNVERSION) : revtarget.depends = $$SOURCES $$HEADERS $$FORMS
+}
+
+### Local Variables:
+### mode:conf-unix
+### End:

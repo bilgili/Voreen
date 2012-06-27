@@ -1,0 +1,118 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
+#include "voreen/qt/helpbrowser.h"
+
+#include <QToolBar>
+#include <QAction>
+
+namespace voreen {
+
+HelpBrowser::HelpBrowser(QWidget* parent)
+    : QMainWindow(parent)
+{
+    browser_ = new QTextBrowser(this);
+    browser_->createStandardContextMenu();
+    setCentralWidget(browser_);
+
+    setWindowIcon(QIcon(":/icons/bulb.png"));
+    setWindowTitle("VoreenHelpBrowser");
+
+    createAndConnectToolbar();
+}
+
+HelpBrowser::HelpBrowser(QUrl startPage, QWidget* parent)
+    : QMainWindow(parent)
+{
+    browser_ = new QTextBrowser(this);
+    browser_->setSource(startPage);
+    browser_->createStandardContextMenu();
+    setCentralWidget(browser_);
+
+    setWindowIcon(QIcon(":/icons/bulb.png"));
+    setWindowTitle("VoreenHelpBrowser");
+
+    createAndConnectToolbar();
+}
+
+HelpBrowser::~HelpBrowser() {
+    delete browser_;
+}
+
+void HelpBrowser::createAndConnectToolbar() {
+    // create toolbar
+    QToolBar* toolBar = new QToolBar(tr("Navigation"), this);
+
+    // backward
+    QAction* backwardAction = new QAction(QIcon(":/icons/player_rew.png"), tr("&Backward"), this);
+    backwardAction->setStatusTip(tr("Show previous page"));
+    backwardAction->setToolTip(tr("Show previous page"));
+    backwardAction->setShortcut(tr("Ctrl+B"));
+    toolBar->addAction(backwardAction);
+
+    // home
+    QAction* homeAction = new QAction(QIcon(":/icons/player_stop.png"), tr("&Home"), this);
+    homeAction->setStatusTip(tr("Show index"));
+    homeAction->setToolTip(tr("Show first page"));
+    homeAction->setShortcut(tr("Ctrl+H"));
+    toolBar->addAction(homeAction);
+
+    // forward
+    QAction* forwardAction = new QAction(QIcon(":/icons/player_fwd.png"), tr("&Forward"), this);
+    forwardAction->setStatusTip(tr("Show next page"));
+    forwardAction->setToolTip(tr("Show next page"));
+    forwardAction->setShortcut(tr("Ctrl+F"));
+    toolBar->addAction(forwardAction);
+
+    // separator
+    toolBar->addSeparator();
+
+    // quit browser
+    QAction* quitBrowserAction = new QAction(QIcon(":/icons/cancel_medium.png"), tr("&Quit"), this);
+    quitBrowserAction->setStatusTip(tr("Exit Help"));
+    quitBrowserAction->setToolTip(tr("Exit Help"));
+    quitBrowserAction->setShortcut(tr("Ctrl+Q"));
+    toolBar->addAction(quitBrowserAction);
+
+
+    //fileMenu_->addAction(saveFileAsAction_);
+    // add a separator
+
+    //setMenuBar(menuBar_);
+    addToolBar(toolBar);
+
+    // CONNECT ACTIONS
+    // file menu
+    connect(backwardAction, SIGNAL(triggered()), browser_, SLOT(backward()));
+    connect(homeAction, SIGNAL(triggered()), browser_, SLOT(home()));
+    connect(forwardAction, SIGNAL(triggered()), browser_, SLOT(forward()));
+    connect(quitBrowserAction, SIGNAL(triggered()), this, SLOT(close()));
+}
+
+} // namespace voreen

@@ -1,0 +1,180 @@
+####################################################
+# Configuration file for Voreen:
+# Rename this file to 'config.txt' and edit.
+####################################################
+
+#
+# General configuration
+#
+CONFIG += warn_on
+
+#
+# External libraries 
+#
+# You can adjust the paths in the section "Paths" at the bottom of this file.
+#
+
+# Do we have the dcmtk libraries (DICOM support)?
+#DEFINES += VRN_WITH_DCMTK
+
+# Do we have the fboClass?
+DEFINES += VRN_WITH_FBO_CLASS
+
+# Do we have the renderToTexture class?
+DEFINES += VRN_WITH_RENDER_TO_TEXTURE
+
+# Do we have the devil library?
+DEFINES += VRN_WITH_DEVIL
+
+# Do we have the freetype library?
+#DEFINES += VRN_WITH_FREETYPE
+
+# Do we have the ftgl library?
+#DEFINES += VRN_WITH_FTGL
+
+# Enable reader for Matlab files
+#DEFINES += VRN_WITH_MATLAB
+
+# Use openmp?
+#DEFINES += VRN_WITH_OPENMP
+
+# Python support
+#DEFINES += VRN_WITH_PYTHON
+
+# Do we want support for 3D-tracking?
+#DEFINES += VRN_WITH_TRACKING
+
+# Use the pvm code from Stefan Roettger?
+DEFINES += VRN_WITH_PVM
+
+# Do we have the libtiff?
+DEFINES += VRN_WITH_TIFF
+
+# Do we have zip support?
+#DEFINES += VRN_WITH_ZIP
+
+# Do we have the clibpdf library?
+#DEFINES += VRN_WITH_CLIBPDF
+
+# Do we have the tinyxml library
+DEFINES += VRN_WITH_TINYXML
+
+# Do we have the bugtrap library? (windows only)
+#DEFINES += VRN_WITH_BUGTRAP
+
+# Use Windows Management Instrumentation (WMI) 
+# for hardware detection on Windows?
+#DEFINES += VRN_WITH_WMI
+
+# Use Qt Widgets for Technical Applications (Qwt)?
+# (qt toolkit for scientific plotting)
+#DEFINES += VRN_WITH_QWT
+
+# Use the Boost library? 
+#DEFINES += VRN_WITH_BOOST
+
+# Use the Box2D physics library? 
+#DEFINES += VRN_WITH_BOX2D
+
+
+#
+# Additional settings
+#
+
+# Show splash screen
+DEFINES += VRN_SPLASHSCREEN
+
+# Enable multimodal closeups
+# (requires VRN_WITH_FREETYPE and VRN_WITH_FTGL)
+#VRN_MODULES += closeups
+
+# Enable glyphs for volume data
+#VRN_MODULES += glyphs
+
+# Enable glyphs on Meshs
+# (requires glyphs Module)
+#VRN_MODULES += glyphs_mesh
+
+# Use additional debug code in voreen
+#DEFINES += VRN_DEBUG
+
+# Write log output into a file
+#DEFINES += VRN_ADD_FILE_LOGGER
+
+DEFINES += TGT_COMPILED_FOR_VOREEN
+
+# Disable this line in case of problems with PCH
+CONFIG += precompile_header
+
+# Add additional include paths
+INCLUDEPATH += 
+
+# Add additional library search paths
+LIBDIR += 
+
+# To build a shared library (DLL) instead of a static one uncomment the
+# following two lines.
+#CONFIG -= staticlib
+#CONFIG += dll
+
+# Extract SVN revision from working copy into svnversion.h
+#DEFINES += VRN_WITH_SVNVERSION
+
+# Use GUI translations if available?
+#DEFINES += VRN_USE_TRANSLATIONS
+
+#
+# Settings for Linux
+#
+unix {
+  CONFIG -= release
+  CONFIG += debug
+}  
+
+# For Linux@math use:
+#INCLUDEPATH += /share/voreen/linux/include
+#LIBDIR += /share/voreen/linux/lib
+#CONFIG += without_libwrap
+
+# Disable optimization (useful for debugging)
+#QMAKE_CXXFLAGS -= -O2
+#QMAKE_CXXFLAGS += -O0
+
+
+# For debug of shaders with includes. Saves a copy of the Shader which 
+# really runs (without includes) in the voreen path.
+#DEFINES += TGT_SHADER_INCLUDE_DEBUG
+
+#
+# Paths
+#
+# Normally you do not need to change them.
+#
+
+# Path to voreen home
+VRN_HOME = $$PWD
+
+win32 {
+  BOX2D_DIR    = $${VRN_HOME}/ext/box2d
+  BUGTRAP_DIR  = d:/libraries/bugtrap
+  DCMTK_DIR    = $${VRN_HOME}/ext/dcmtk
+  DEVIL_DIR    = $${VRN_HOME}/ext/il
+  FREETYPE_DIR = $${VRN_HOME}/ext/freetype
+  FTGL_DIR     = $${VRN_HOME}/ext/ftgl
+  MATLAB_DIR   = c:/Programme/Matlab/7.2
+  PYTHON_DIR   = $${VRN_HOME}/ext/python
+  TIFF_DIR     = $${VRN_HOME}/ext/tiff
+  TINYXML_DIR  = $${VRN_HOME}/ext/tinyxml
+}
+
+unix {
+  FREETYPE_DIR = /usr/include/freetype2
+  PYTHON_DIR = /usr/include/python
+  PYTHON_LIBS = -lpython2.5
+}
+
+DEFINES += VRN_SNAPSHOT
+
+### Local Variables:
+### mode:conf-unix
+### End:

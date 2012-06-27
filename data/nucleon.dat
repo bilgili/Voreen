@@ -1,0 +1,15 @@
+ObjectFileName: nucleon.raw
+TaggedFileName: ---
+Resolution:     41 41 41
+SliceThickness: 1.0 1.0 1.0
+Format:         UCHAR
+NbrTags:        0
+ObjectType:     TEXTURE_VOLUME_OBJECT
+ObjectModel:    I
+GridType:       EQUIDISTANT
+Unit:           fm
+Measuring:      0.025
+Modality:       unknown
+TimeStep:       0
+
+

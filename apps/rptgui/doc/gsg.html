@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>VoreenVE - Getting Started Guide</title>
+</head>
+<body>
+<h1>VoreenVE - Getting Started</h1>
+VE is an acronym for "visualization environment". The VoreenVE is a useful tool to construct processor networks for Voreen by providing a comfortable graphical user interface. It allows to create complex rendering networks with the mouse by simply dragging the desired processors into the workspace and linking them by drawing the required connections. Due to the VoreenVE there is no need for users to construct rendering networks by writing program code
+
+<a name="toc"<h2>Table of Contents</h2></a>
+<ul>
+<li><a href="#main_window">Main Window</a></li>
+<li><a href="#menu">Menu and Toolbar</a></li>
+<li><a href="#scene">The Workspace</a></li>
+<li><a href="#output">The Output Area</a></li>
+<li><a href="gsg.html#processor">The Processor Area</a></li>
+</ul>
+
+
+<a name="main_window"><h2>Main Window</h2></a>
+
+The following window appears by starting the VoreenVE application:
+<br>
+<br>
+<img src="images/image_numbers.jpg" alt="main window">
+<ul>
+<li>The blue box shows the menu and toolbar of the VoreenVE.</li>
+
+<li>The red numbers indicate the main components:
+	<ol>
+	<li>The <i>workspace</i> shows the current network and lets the user change it interactively.</li>
+	<li>The <i>preview</i> visualizes the output produced by the current network (you need to press the evaluate button <img src="images/eval.jpg" /> to start the rendering).</li>
+	<li>The processors and their properties are placed here.</li>
+</ol>
+</ul>
+
+<a name="menu"><h2>Menu and Toolbar</h2></a>
+<p>The menu and the toolbar offer actions for the network handling. Commonly used actions are not only accesible via the menu but have additionally shortcut buttons in the toolbar. The pictures below show the toolbar entries and their function.</p>
+<img src="images/image_menu_crop.jpg" />
+<ul>
+<li><b>New Network:</b> unload the current network and clear the workspace.</li>
+<li><b>Open Network:</b> start the "open file" dialog for loading a network.</li>
+<li><b>Save Current Network:</b> save the current network. If there is no network to overwrite the "save file as" dialog asks for a new  file name.</li>
+<li><b>Load Data Set:</b> load a data set with the "open data set" file dialog.</li>
+<li><b>Delete:</b> delete the selected item(s).</li>
+<li><b>Rebuild Shaders:</b> rebuild all currently loaded GLSL shaders.</li>
+<li><b>Connect:</b> connect ports obviously belonging together automatically. </li>
+<li><b>Evaluate:</b> start the current network and displays its output in the preview area.</li>
+</ul>
+<p>The menu contains some further actions:
+<br><br>
+<table><tr>
+	<td valign=top><img src="images/menu_file.jpg" /></td>
+	<td><ul>
+                <hr />
+		<li><b>Open DICOM Data Set:</b> Open a data set in DICOM format. Either a DICOMDIR file can be used or the content of a whole directory can be loaded.</li>
+		<hr />
+		<li>The <b>Recent Files List:</b> stores the five last opened (and saved) networks for quick access.</li>
+	</ul></td>
+</tr></table>
+
+<table><tr>
+	<td valign=top><img src="images/menu_edit.jpg" /></td>
+	<td><ul>
+	<li><b>Select All:</b> select all processor items in the working area.</li>
+	<li><b>Copy:</b> copy the selected items into the clipboard.</li>
+	<li><b>Paste:</b> paste items stored in the clipboard into the workspace.</li>
+        <hr />
+	<li><b>Aggregate:</b> merge the selected items into an <i>aggregation</i>.</li>
+	<li><b>Show Aggregation Content:</b> if checked, the items contained in an <i>aggregation</i> are shown in a yellow box.</li>
+	<li><b>Deaggregate:</b> detach processors from an aggregation and delete it.</li>
+	<hr />
+	<li><b>Create Property Set:</b> create a <i>property set</i> containing all properties the selected processors have in common (see section 3). </li>
+	</ul></td>
+</tr></table>
+
+<table><tr>
+	<td valign=top><img src="images/menu_option.jpg" /></td>
+	<td><ul>
+	<li><b>Reuse TC Targets</b> enables/disables the reuse of intermediate results stored in textures (internally called <b>t</b>exture <b>c</b>ontainer <b>targets</b>).</li>
+	</ul></td>
+</tr></table>
+
+</p>
+
+<a name="scene"><h2>The Workspace</h2></a>
+<h3>First Steps</h3>
+<p>
+In the workspace the graphical representation of the current network is shown. In order to build a rendering network, you can simply add new processors by drag'n'drop them from the processor list into the workspace. The ports have to be connected taking into account that rendering networks for Voreen are directed and that their port types have to match (different types are identifiable by their colors).
+</p>
+<p>
+Ports are connected by pressing the left mouse button over an outport and dragging the appearing arrow to an inport. The arrow indicates whether a connection to the inport at the current mouse position is possible or not by changing its color to green respective red. Releasing the mouse button over a valid inport (green arrow) creates a connection.
+</p>
+
+<h3>Processors</h3>
+
+This image shows how a processor is visualized in Voreen: <br />
+<img src="images/processor.jpg" /><br />
+<p>
+As you have noticed, there are several kinds of ports: inports are placed on the upper side of each processor item, outports on the lower side and coports on the side. Coports are used for processors which cannot work alone; a proxy geometry processor for example cannot work without a entry/exit points processor.
+</p>
+
+<h3>Working with Networks</h3>
+
+<p>
+In the following the editing of networks is explained. Some of the actions can also be achieved by using the corresponding entries of the toolbar or the menu. Speaking about items covers processors and aggregations.
+</p>
+<ul>
+<li>An item can be <b>moved</b> by clicking on it, moving it to the desired position and releasing the mouse button.</li>
+<li>You can <b>select</b> an item by simply left-clicking it. Multiple items can be selected by pressing <i>ctrl</i> and selecting another one or by spanning a rectangle over the items using the left mouse button beside all items (thus clicking on empty space within in the workspace).</li>
+<li><b>Naming/Renaming</b> a processor or an aggregation can be done using the context menu.</li>
+<li>Item(s) can be <b>deleted</b> by selecting them and either using the delete entry from the context menu or just pressing <i>del</i>.</li>
+<li><b>Aggregating</b> multiple processors into a single unit is done by selecting all processors to be aggregated, right-clicking on one of them and choosing "Aggregate" from the context menu. The aggregation shows only the inport and outports needed for interacting with other processors and hides all internal connections. The context menu provides some additional functions:
+	<ul>
+	<li>You can display the <b>content</b> of an aggregation by double clicking it or using the corresponding context menu entry.</li>
+	<li>To <b>deaggregate</b> simply use the proper context menu entry.</li>
+	<li>You can <b>Save</b> an aggregation via the context menu. After this, the aggregation will appear in the aggregations list of the processor area (see section 3). </li>
+	</ul>
+</li>
+<li>The workspace can be <b>zoomed in and out</b> via the mouse wheel.</li>
+<li>You can <b>move the workspacce</b> using the <i>shift</i> key in combination with the left mouse button and mouse movement (click on empty space).</li>
+<li>You can <b>copy'n paste</b> selected item(s) using the context menu of the workspace.</li>
+</ul>
+<br />
+<p>
+After building a network you can start it bei <i>evaluating</i> it using <img src="images/eval.jpg" alt="the evaluate button"/> from the toolbar. If no error occurs, an output image is rendered and displayed in the output area (described in the next section).
+</p>
+<p>
+Connections handling image data provide tooltips for showing the images. You just have to pause the mouse over an arrow. (This works properly only if you disable the "Reuse TC targets" option. Otherwise intermediate reults will be overwritten.).
+</p>
+<img src="images/tooltip.jpg" /><br />
+
+<a name="output"><h2>The Output Area</h2></a>
+
+<p>
+After setting up a valid network you can start it by clicking on the toolbar item <img src="images/eval.jpg" alt="evaluate button"/>. The output of the network is then visualized in the output area. You can rotate the visualization by moving the mouse in the area while pressing the left mouse button. Using the mouse wheel or moving the mouse up and down while pressing the right mouse button, zooms the visualization. Pressing <i>shift</i> and the left button moves the scene.
+</p>
+<img src="images/preview.jpg" />
+
+<p>
+The second tab shows the content of the textures containing all image data. A left-click enlarge a texture, a second click shrinks it again. With the context menu, alpha-channels and depth buffers are accessible.
+</p>
+<img src="images/tc.jpg" />
+
+<a name="processor"><h2>The Processor Area</h2></a>
+
+<p>
+The processor area provides several tabs dealing with properties, information and aggregation of processor items.
+</p>
+<img src="images/property.jpg" /><br /><br />
+
+<h3>Processors</h3>
+<p>
+The first tab, the "Processors" tab, contains three columns. In the left column a list of all available processors is shown. Aggregations are placed in the middle&mdash;here appear aggregations saved by the user. In the right column information is given describing briefly function and features of selected processors. Processors selected within the workspace are indicated by green captions, processors picked from the list are displayed black. After evaluating the network a detailed description of the entire network and its connections appears here as well.
+</p>
+<img src="images/processor_tab.jpg" />
+<p>
+You can add processors and aggregations to your network simply by drag'n drop them from the lists.
+</p>
+
+<h3>Properties</h3>
+
+<p>
+This tab deals with properties and attributes of the network and its elements. It gets the focus by choosing the tab or by double-clicking an item in the workspace.
+</p>
+<p>
+In the left column all properties (excep the transfer function) of a selected processor are available and can be modified. If a processor uses a transfer function or thresholds, these can be modified with the transfer function editor in the right area.
+</p>
+
+<h3>VolumeSets</h3>
+
+This tab displays the currently loaded data sets. They can be selected using the properties of a VolumeSetSource processor.
+
+<h3>Glyphs</h3>
+This tab provides some special parameters for glyph visualization.
+
+
+</body></html>

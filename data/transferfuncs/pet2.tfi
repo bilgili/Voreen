@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<TransFuncIntensityKeys>
+    <key intensity="0.000000" split="0">
+        <col4 r="0" g="0" b="255" a="255" />
+    </key>
+    <key intensity="0.166600" split="0">
+        <col4 r="2" g="243" b="255" a="255" />
+    </key>
+    <key intensity="0.333000" split="0">
+        <col4 r="0" g="255" b="0" a="255" />
+    </key>
+    <key intensity="0.500000" split="0">
+        <col4 r="255" g="255" b="255" a="255" />
+    </key>
+    <key intensity="0.583300" split="0">
+        <col4 r="253" g="246" b="33" a="255" />
+    </key>
+    <key intensity="0.66660" split="0">
+        <col4 r="252" g="234" b="2" a="255" />
+    </key>
+    <key intensity="0.750000" split="0">
+        <col4 r="254" g="177" b="3" a="255" />
+    </key>
+    <key intensity="0.833330" split="0">
+        <col4 r="255" g="121" b="0" a="255" />
+    </key>
+    <key intensity="0.916666" split="0">
+        <col4 r="250" g="64" b="5" a="255" />
+    </key>
+    <key intensity="1.000000" split="0">
+        <col4 r="196" g="7" b="87" a="255" />
+    </key>
+
+</TransFuncIntensityKeys>

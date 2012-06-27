@@ -1,0 +1,1151 @@
+/**********************************************************************
+ *                                                                    *
+ * tgt - Tiny Graphics Toolbox                                        *
+ *                                                                    *
+ * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the tgt library. This library is free         *
+ * software; you can redistribute it and/or modify it under the terms *
+ * of the GNU Lesser General Public License version 2.1 as published  *
+ * by the Free Software Foundation.                                   *
+ *                                                                    *
+ * This library is distributed in the hope that it will be useful,    *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU Lesser General Public License for more details.                *
+ *                                                                    *
+ * You should have received a copy of the GNU Lesser General Public   *
+ * License in the file "LICENSE.txt" along with this library.         *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ **********************************************************************/
+
+#ifndef TGT_MATRIX_H
+#define TGT_MATRIX_H
+
+#include <cstring>
+
+#include "tgt/config.h"
+#include "tgt/vector.h"
+#include "tgt/assert.h"
+
+/*
+    FIXME build a SSE-optimized mat4
+*/
+
+/*
+    Performance remarks:
+
+    - Most functions and operators are programmed with loops.
+    Compilers can unroll that.
+    gcc for instance will do this with -funroll-loops.
+
+    - Modern compilers (gcc 4.x and icc) can even vectorize these loops
+    and do these caclulations with SIMD-instructions.
+
+    - Almost all functions are inline!
+    This can have signifcant advantages in codegeneration
+
+    - The return-value optimization which is supported by all
+    modern compilers (gcc, icc and msvc for instance)
+    will optimize unnecessary constructor-overhead away.
+
+    - it could be usefull to use options like -funroll-loops
+*/
+
+namespace tgt {
+
+/**
+    Matrix2 class. Works basicly like the matrix stuff in GLSL.
+    But remember that this is a ROW-MATRIX and NOT a COL-MATRIX
+    like in OpenGL or GLSL respectively.
+*/
+template<class T>
+struct Matrix2 {
+    enum {
+        size = 4,
+        cols = 2,
+        rows = 2
+    };
+    typedef Vector2<T> RowType;
+
+    union {
+        struct {
+            T t00, t01;
+            T t10, t11;
+        };
+        T elemRowCol[2][2];
+        T elem[4];
+    };
+
+/*
+    constructors
+*/
+    /// default constructor
+    Matrix2() {}
+    /// Init all elements with the same value
+    explicit Matrix2(T t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t;
+    }
+    /// Init with another Matrix of another type
+    template<class U>
+    Matrix2(const Matrix2<U>& m) {
+        for (size_t i = 0; i < m.size; ++i)
+            elem[i] = T(m.elem[i]);
+    }
+    /// Init from array with equal size
+    explicit Matrix2(const T* t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t[i];
+    }
+    /// Init componentwisely
+    Matrix2(T _t00, T _t01,
+            T _t10, T _t11) {
+        t00 = _t00; t01 = _t01;
+        t10 = _t10; t11 = _t11;
+    }
+    /// Init with two Vector2
+    Matrix2(const Vector2<T>& v1, const Vector2<T>& v2) {
+        for (size_t i = 0; i < v1.size; ++i)
+            elem[0*rows + i] = v1.elem[i];
+        for (size_t i = 0; i < v2.size; ++i)
+            elem[1*rows + i] = v2.elem[i];
+    }
+
+/*
+    create special matrices
+*/
+
+    static const Matrix2<T> zero;
+    static const Matrix2<T> identity;
+
+    static Matrix2<T> createZero() {
+        return zero;
+    }
+
+    static Matrix2<T> createIdentity() {
+        return identity;
+    }
+
+    static Matrix2<T> createScale(const Vector2<T>& v) {
+        Matrix2<T> result = identity;
+        result.t00 = v.elem[0];
+        result.t11 = v.elem[1];
+        return result;
+    }
+
+    /**
+     * Creates a planar rotation with a given \p angle in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix2<T> createRotation(T angle) {
+        Matrix2<T> result = identity;
+        result.t00 =  cos(angle);
+        result.t01 = -sin(angle);
+        result.t10 =  sin(angle);
+        result.t11 =  cos(angle);
+        return result;
+    }
+
+/*
+    index operators
+*/
+    /*
+        The C++ standard forbids classes with non trivial constructors
+        as union members. Thus this hack provides functionality similar
+        to the GLSL matrix index operator.
+    */
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    const Vector2<T>& operator [] (size_t i) const {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector2<T>*) elemRowCol[i]);
+    }
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    Vector2<T>& operator [] (size_t i) {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector2<T>*) elemRowCol[i]);
+    }
+};
+
+/*
+    init statics
+*/
+
+template<class T>
+const Matrix2<T> Matrix2<T>::zero = Matrix2<T>
+(
+    T(0), T(0),
+    T(0), T(0)
+);
+
+template<class T>
+const Matrix2<T> Matrix2<T>::identity = Matrix2<T>
+(
+    T(1), T(0),
+    T(0), T(1)
+);
+
+//------------------------------------------------------------------------------
+
+/**
+    Matrix3 class. Works basicly like the matrix stuff in GLSL.
+    But remember that this is a ROW-MATRIX and NOT a COL-MATRIX
+    like in OpenGL or GLSL respectively.
+*/
+template<class T>
+struct Matrix3 {
+    enum {
+        size = 9,
+        cols = 3,
+        rows = 3
+    };
+    typedef Vector3<T> RowType;
+
+    union {
+        struct {
+            T t00, t01, t02;
+            T t10, t11, t12;
+            T t20, t21, t22;
+        };
+        T elemRowCol[3][3];
+        T elem[9];
+    };
+
+/*
+    constructors
+*/
+
+    /// default constructor
+    Matrix3() {}
+    /// Init all elements with the same value
+    explicit Matrix3(T t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t;
+    }
+    /// Init with another Matrix of another type
+    template<class U>
+    Matrix3(const Matrix3<U>& m) {
+        for (size_t i = 0; i < m.size; ++i)
+            elem[i] = T(m.elem[i]);
+    }
+    /// Init from array with equal size
+    explicit Matrix3(const T* t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t[i];
+    }
+    /// Init componentwisely
+    Matrix3(T _t00, T _t01, T _t02,
+            T _t10, T _t11, T _t12,
+            T _t20, T _t21, T _t22) {
+        t00 = _t00; t01 = _t01; t02 = _t02;
+        t10 = _t10; t11 = _t11; t12 = _t12;
+        t20 = _t20; t21 = _t21; t22 = _t22;
+    }
+    /// Init with three Vector3
+    Matrix3(const Vector3<T>& v1, const Vector3<T>& v2, const Vector3<T>& v3) {
+        for (size_t i = 0; i < v1.size; ++i)
+            elem[0*rows + i] = v1.elem[i];
+        for (size_t i = 0; i < v2.size; ++i)
+            elem[1*rows + i] = v2.elem[i];
+        for (size_t i = 0; i < v3.size; ++i)
+            elem[2*rows + i] = v3.elem[i];
+    }
+
+/*
+    create special matrices
+*/
+    static const Matrix3<T> zero;
+    static const Matrix3<T> identity;
+
+    static Matrix3<T> createZero() {
+        return zero;
+    }
+
+    static Matrix3<T> createIdentity() {
+        return identity;
+    }
+
+    static Matrix3<T> createTranslation(const Vector2<T>& v) {
+        Matrix3<T> result = identity;
+        result.t02 = v.elem[0];
+        result.t12 = v.elem[1];
+        return result;
+    }
+
+    static Matrix3<T> createScale(const Vector3<T>& v) {
+        Matrix3<T> result = identity;
+        result.t00 = v.elem[0];
+        result.t11 = v.elem[1];
+        result.t22 = v.elem[2];
+        return result;
+    }
+
+    /**
+     * Rotation the x-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix3<T> createRotationX(T angle) {
+        Matrix3<T> result = identity;
+        result.t11 =  cos(angle);
+        result.t12 = -sin(angle);
+        result.t21 =  sin(angle);
+        result.t22 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Rotation the y-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix3<T> createRotationY(T angle) {
+        Matrix3<T> result = identity;
+        result.t00 =  cos(angle);
+        result.t02 =  sin(angle);
+        result.t20 = -sin(angle);
+        result.t22 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Rotation the z-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix3<T> createRotationZ(T angle) {
+        Matrix3<T> result = identity;
+        result.t00 =  cos(angle);
+        result.t01 = -sin(angle);
+        result.t10 =  sin(angle);
+        result.t11 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Simliar to glRotate but \p angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle in \em radian.
+     * @param axis The axis of rotation. Needn't be in unit length.
+     */
+    static Matrix3<T> createRotation(T angle, Vector3<T> axis);
+
+/*
+    index operator
+*/
+    /*
+        The C++ standard forbids classes with non trivial constructors
+        as union members. Thus this hack provides functionality similar
+        to the GLSL matrix index operator.
+    */
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    const Vector3<T>& operator [] (size_t i) const {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector3<T>*) elemRowCol[i]);
+    }
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    Vector3<T>& operator [] (size_t i) {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector3<T>*) elemRowCol[i]);
+    }
+};
+
+/*
+    init statics
+*/
+
+/// init statics
+template<class T>
+const Matrix3<T> Matrix3<T>::zero = Matrix3<T>
+(
+    T(0), T(0), T(0),
+    T(0), T(0), T(0),
+    T(0), T(0), T(0)
+);
+
+template<class T>
+const Matrix3<T> Matrix3<T>::identity = Matrix3<T>
+(
+    T(1), T(0), T(0),
+    T(0), T(1), T(0),
+    T(0), T(0), T(1)
+);
+
+//------------------------------------------------------------------------------
+
+/**
+    Matrix4 class. Works basicly like the matrix stuff in GLSL.
+    But remember that this is a ROW-MATRIX and NOT a COL-MATRIX
+    like in OpenGL or GLSL respectively.
+*/
+template<class T>
+struct Matrix4 {
+    enum {
+        size = 16,
+        cols = 4,
+        rows = 4
+    };
+    typedef Vector4<T> RowType;
+
+    union {
+        struct {
+            T t00, t01, t02, t03;
+            T t10, t11, t12, t13;
+            T t20, t21, t22, t23;
+            T t30, t31, t32, t33;
+        };
+        T elemRowCol[4][4];
+        T elem[16];
+    };
+
+/*
+    constructors
+*/
+    /// default constructor
+    Matrix4() {}
+    /// Init all elements with the same value
+    explicit Matrix4(T t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t;
+    }
+    /// Init with another Matrix of another type
+    template<class U>
+    Matrix4(const Matrix4<U>& m) {
+        for (size_t i = 0; i < m.size; ++i)
+            elem[i] = T(m.elem[i]);
+    }
+    /// Init from array with equal size
+    explicit Matrix4(const T* t) {
+        for (size_t i = 0; i < size; ++i)
+            elem[i] = t[i];
+    }
+    /// Init componentwisely
+    Matrix4(T _t00, T _t01, T _t02, T _t03,
+            T _t10, T _t11, T _t12, T _t13,
+            T _t20, T _t21, T _t22, T _t23,
+            T _t30, T _t31, T _t32, T _t33) {
+        t00 = _t00; t01 = _t01; t02 = _t02; t03 = _t03;
+        t10 = _t10; t11 = _t11; t12 = _t12; t13 = _t13;
+        t20 = _t20; t21 = _t21; t22 = _t22; t23 = _t23;
+        t30 = _t30; t31 = _t31; t32 = _t32; t33 = _t33;
+    }
+    /// Init with four Vector4
+    Matrix4(const Vector4<T>& v1, const Vector4<T>& v2,
+            const Vector4<T>& v3, const Vector4<T>& v4) {
+        for (size_t i = 0; i < v1.size; ++i)
+            elem[0*rows + i] = v1.elem[i];
+        for (size_t i = 0; i < v2.size; ++i)
+            elem[1*rows + i] = v2.elem[i];
+        for (size_t i = 0; i < v3.size; ++i)
+            elem[2*rows + i] = v3.elem[i];
+        for (size_t i = 0; i < v4.size; ++i)
+            elem[3*rows + i] = v4.elem[i];
+    }
+
+    /// Return the upper left 3x3-submatrix in a 4x4 matrix
+    Matrix4<T> getRotationalPart() const {
+        Matrix4<T> result(T(0));
+        result.t00 = t00; result.t01  = t01; result.t02 = t02;
+        result.t10 = t10; result.t11  = t11; result.t12 = t12;
+        result.t20 = t20; result.t21  = t21; result.t22 = t22;
+        result.t33 = T(1);
+        return result;
+    }
+
+    /// Return the main diagonal of the upper left 3x3-submatrix
+    Vector3<T> getScalingPart() const {
+        Vector3<T> result(T(0));
+        result.elem[0] = t00;
+        result.elem[1] = t11;
+        result.elem[2] = t22;
+        return result;
+    }
+/*
+    create special matrices
+*/
+    static const Matrix4<T> zero;
+    static const Matrix4<T> identity;
+
+    static Matrix4<T> createZero() {
+        return zero;
+    }
+
+    static Matrix4<T> createIdentity() {
+        return identity;
+    }
+
+    static Matrix4<T> createTranslation(const Vector3<T>& v) {
+        Matrix4<T> result = identity;
+        result.t03 = v.elem[0];
+        result.t13 = v.elem[1];
+        result.t23 = v.elem[2];
+        return result;
+    }
+
+    static Matrix4<T> createScale(const Vector3<T>& v) {
+        Matrix4<T> result = identity;
+        result.t00 = v.elem[0];
+        result.t11 = v.elem[1];
+        result.t22 = v.elem[2];
+        return result;
+    }
+
+    /**
+     * Rotation the x-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix4<T> createRotationX(T angle) {
+        Matrix4<T> result = identity;
+        result.t11 =  cos(angle);
+        result.t12 = -sin(angle);
+        result.t21 =  sin(angle);
+        result.t22 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Rotation the y-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix4<T> createRotationY(T angle) {
+        Matrix4<T> result = identity;
+        result.t00 =  cos(angle);
+        result.t02 =  sin(angle);
+        result.t20 = -sin(angle);
+        result.t22 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Rotation the z-axis as rotation axis.
+     * The angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle of rotation in \em radian.
+     */
+    static Matrix4<T> createRotationZ(T angle) {
+        Matrix4<T> result = identity;
+        result.t00 =  cos(angle);
+        result.t01 = -sin(angle);
+        result.t10 =  sin(angle);
+        result.t11 =  cos(angle);
+        return result;
+    }
+
+    /**
+     * Simliar to glRotate but \p angle is in \em RADIAN AND NOT \em DEGREE.
+     *
+     * @param angle The angle in \em radian.
+     * @param axis The axis of rotation. Needn't be in unit length.
+     */
+    static Matrix4<T> createRotation(T angle, Vector3<T> axis);
+
+    /**
+    * This function returns the Matrix that gluLookAt would create and put onto the OpenGL
+    * Matrix-Stack, given the position, focus-point, and up-Vector of a camera.
+    */
+    static Matrix4<T> createLookAt(const Vector3<T>& eye, const Vector3<T>& focus, const Vector3<T>& up);
+
+    /**
+     * This function provides a glFrustum() replacement.  In case you just need the matrix that glFrustum would
+     * produce, you can use this function instead of putting the matrix on the OpenGL stack and then reading it.
+     */
+    static Matrix4<T> createFrustum(T left, T right, T top, T bottom, T pnear, T pfar);
+
+    /**
+     * This function provides a gluPerspective() replacement.
+     * See its documentation for an explanation of the parameters. \em BUT:
+     * \p fov expects \em RADIAN and not \em DEGREE.
+     */
+    static Matrix4<T> createPerspective(T fov, T aspect, T pnear, T pfar);
+
+    static Matrix4<T> createOrtho(T left, T right, T top, T bottom, T pnear, T pfar);
+
+/*
+    index operator
+*/
+
+   /*
+        The C++ standard forbids classes with non trivial constructors
+        as union members. Thus this hack provides functionality similar
+        to the GLSL matrix index operator.
+    */
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    const Vector4<T>& operator [] (size_t i) const {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector4<T>*) elemRowCol[i]);
+    }
+    /// return arbitrary row-vector similar to GLSL. <br>
+    /// BUT REMEMBER: GLSL gives you COLS NOT ROWS!
+    Vector4<T>& operator [] (size_t i) {
+        tgtAssert(i < size, "i must be less than size");
+        return *((Vector4<T>*) elemRowCol[i]);
+    }
+
+    /**
+     * inverts the matrix.
+     * @return true - if successful -- otherwise false
+    */
+    bool invert(Matrix4<T>& result) const;
+};
+
+/*
+    init statics
+*/
+template<class T>
+const Matrix4<T> Matrix4<T>::zero = Matrix4<T>
+(
+    T(0), T(0), T(0), T(0),
+    T(0), T(0), T(0), T(0),
+    T(0), T(0), T(0), T(0),
+    T(0), T(0), T(0), T(0)
+);
+
+template<class T>
+const Matrix4<T> Matrix4<T>::identity = Matrix4<T>
+(
+    T(1), T(0), T(0), T(0),
+    T(0), T(1), T(0), T(0),
+    T(0), T(0), T(1), T(0),
+    T(0), T(0), T(0), T(1)
+);
+
+
+/*
+    typedefs for easy usage
+*/
+
+typedef Matrix2<float>  Matrix2f;
+typedef Matrix2<double> Matrix2d;
+typedef Matrix3<float>  Matrix3f;
+typedef Matrix3<double> Matrix3d;
+typedef Matrix4<float>  Matrix4f;
+typedef Matrix4<double> Matrix4d;
+
+typedef Matrix4f        Matrix;
+
+/*
+    types like in GLSL
+*/
+typedef Matrix2f        mat2;
+typedef Matrix3f        mat3;
+typedef Matrix4f        mat4;
+
+typedef Matrix2<bool>   bmat2;
+typedef Matrix3<bool>   bmat3;
+typedef Matrix4<bool>   bmat4;
+
+/*
+    Prepare to implement 3 * 5 * 7 = 105 operators and a couple of functions
+    the lazy way with evil voodoo macro magic
+*/
+
+#define MAT_TRANSPOSE \
+template<class T> inline BASE_TYPE<T> transpose(const BASE_TYPE<T>& m) { \
+    BASE_TYPE<T> mRes; \
+    for(size_t row = 0; row < m.rows; ++row) \
+        for (size_t col = 0; col < m.cols; ++col) \
+            mRes.elemRowCol[col][row] = m.elemRowCol[row][col]; \
+    return mRes; \
+}
+
+/*
+    Similar to GLSL make an exception with the
+    Matrix-Matrix, Vector-Matrix and Matrix-Vector multiplication.
+    These are "correct" operations and do not go componentwisely
+*/
+
+#define MAT_MUL_VEC \
+template<class T> inline typename BASE_TYPE<T>::RowType operator * (const BASE_TYPE<T>& m, const typename BASE_TYPE<T>::RowType& v) { \
+    typename BASE_TYPE<T>::RowType vRes; \
+    for (size_t i = 0; i < v.size; ++i) \
+        vRes[i] = dot(m[i], v); \
+    return vRes; \
+}
+
+#define VEC_MUL_MAT \
+template<class T> inline typename BASE_TYPE<T>::RowType operator * (const typename BASE_TYPE<T>::RowType& v, const BASE_TYPE<T>& m) { \
+    typename BASE_TYPE<T>::RowType vRes; \
+    BASE_TYPE<T> transposed = transpose(m); \
+    for (size_t i = 0; i < v.size; ++i) \
+        vRes[i] = dot(v, transposed[i]); \
+    return vRes; \
+}
+
+#define MAT_MUL_MAT \
+template<class T> inline BASE_TYPE<T> operator * (const BASE_TYPE<T>& m1, const BASE_TYPE<T>& m2) { \
+    BASE_TYPE<T> mRes; \
+    BASE_TYPE<T> transposed = transpose(m2); \
+    for (size_t row = 0; row < m1.rows; ++row) \
+        for (size_t col = 0; col < m1.cols; ++col) \
+            mRes.elemRowCol[row][col] = \
+                dot(m1[row], transposed[col]); \
+    return mRes; \
+}
+
+#define MAT_MULEQ_MAT \
+template<class T> inline BASE_TYPE<T>& operator *= (BASE_TYPE<T>& m1, const BASE_TYPE<T>& m2) { \
+    BASE_TYPE<T> temp = m1; \
+    m1 = temp * m2; \
+    return m1; \
+}
+
+#define MAT_COMP_MUL \
+template<class T> inline BASE_TYPE<T> matrixCompMult (const BASE_TYPE<T>& v1, const BASE_TYPE<T>& v2) { \
+    BASE_TYPE<T> vRes; \
+    for (size_t i = 0; i < v1.size; ++i) \
+        vRes.elem[i] = v1.elem[i] * v2.elem[i]; \
+    return vRes; \
+}
+
+/*
+det
+m[0][0] * m[1][1] * m[2][2]
++ m[0][1] * m[1][2] * m[2][0]
++ m[0][2] * m[1][0] * m[2][1]
+- m[0][2] * m[1][1] * m[2][0]
+- m[0][1] * m[1][0] * m[2][2]
+- m[0][0] * m[1][2] * m[2][1]
+*/
+
+#define IMPLEMENT_MAT_FUNCTIONS \
+    VEC_UNARY_MINUS \
+    VEC_MIN \
+    VEC_MAX \
+    VEC_FLOOR \
+    VEC_CEIL \
+    VEC_MIN_SINGLE \
+    VEC_MAX_SINGLE \
+    VEC_MIN_SELF \
+    VEC_MAX_SELF \
+    VEC_CLAMP \
+    VEC_CLAMP_SINGLE \
+    VEC_HADD \
+    VEC_HSUB \
+    VEC_HMUL \
+    VEC_HDIV \
+    VEC_HMOD \
+    VEC_HAND \
+    VEC_HOR \
+    VEC_HXOR \
+    VEC_REL_OP_EQUAL  \
+    VEC_REL_OP_NOT_EQUAL \
+    VEC_LESS_THAN \
+    VEC_LESS_THAN_EQUAL \
+    VEC_GREATER_THAN \
+    VEC_GREATER_THAN_EQUAL \
+    VEC_EQUAL \
+    VEC_NOT_EQUAL \
+    MAT_TRANSPOSE \
+    MAT_COMP_MUL \
+    MAT_MUL_VEC \
+    VEC_MUL_MAT \
+    MAT_MUL_MAT \
+    MAT_MULEQ_MAT
+
+/*
+    Implementation of Matrix2<T> operators
+*/
+
+#define BASE_TYPE Matrix2
+    #define VEC_OP +
+    #define VEC_OPEQ +=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP -
+    #define VEC_OPEQ -=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP *
+    #define VEC_OPEQ *=
+        /*
+            According to GLSL matrix * matrix should be exceptionally a
+            "correct" algebraic multiplication.
+            Instead use matrixCompMult if you need this operatrion.
+        */
+        VEC_OP_BASE
+        BASE_OP_VEC
+        VEC_OPEQ_BASE
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP /
+    #define VEC_OPEQ /=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP &
+    #define VEC_OPEQ &=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP |
+    #define VEC_OPEQ |=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP ^
+    #define VEC_OPEQ ^=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    IMPLEMENT_MAT_FUNCTIONS
+#undef BASE_TYPE
+
+/*
+    Implementation of Matrix3<T> operators
+*/
+
+#define BASE_TYPE Matrix3
+    #define VEC_OP +
+    #define VEC_OPEQ +=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP -
+    #define VEC_OPEQ -=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP *
+    #define VEC_OPEQ *=
+        /*
+            According to GLSL matrix * matrix should be exceptionally a
+            "correct" algebraic multiplication.
+            Instead use matrixCompMult if you need this operatrion.
+        */
+        VEC_OP_BASE
+        BASE_OP_VEC
+        VEC_OPEQ_BASE
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP /
+    #define VEC_OPEQ /=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP &
+    #define VEC_OPEQ &=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP |
+    #define VEC_OPEQ |=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP ^
+    #define VEC_OPEQ ^=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    IMPLEMENT_MAT_FUNCTIONS
+#undef BASE_TYPE
+
+/*
+    Implementation of Matrix4<T> operators
+*/
+
+#define BASE_TYPE Matrix4
+    #define VEC_OP +
+    #define VEC_OPEQ +=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP -
+    #define VEC_OPEQ -=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP *
+    #define VEC_OPEQ *=
+        /*
+            According to GLSL matrix * matrix should be exceptionally a
+            "correct" algebraic multiplication.
+            Instead use matrixCompMult if you need this operatrion.
+        */
+        VEC_OP_BASE
+        BASE_OP_VEC
+        VEC_OPEQ_BASE
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP /
+    #define VEC_OPEQ /=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP &
+    #define VEC_OPEQ &=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP |
+    #define VEC_OPEQ |=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    #define VEC_OP ^
+    #define VEC_OPEQ ^=
+        IMPLEMENT_OPERATORS
+    #undef  VEC_OP
+    #undef  VEC_OPEQ
+
+    IMPLEMENT_MAT_FUNCTIONS
+#undef BASE_TYPE
+
+//------------------------------------------------------------------------------
+// Non inline implementation
+//------------------------------------------------------------------------------
+
+/*
+    createRotation for Matrix3<T> and Matrix4<T>
+*/
+
+template<class T>
+Matrix3<T> Matrix3<T>::createRotation(T angle, Vector3<T> axis) {
+    axis = normalize(axis);
+    T s = sin(angle);
+    T c = cos(angle);
+    T x = axis.x;
+    T y = axis.y;
+    T z = axis.z;
+
+    Matrix3<T> result
+    (
+        x*x*(1-c) + c,      x*y*(1-c) - z*s,    x*z*(1-c) + y*s,
+        x*y*(1-c) + z*s,    y*y*(1-c) + c,      y*z*(1-c) - x*s,
+        x*z*(1-c) - y*s,    y*z*(1-c) + x*s,    z*z*(1-c) + c
+    );
+
+    return result;
+}
+
+template<class T>
+Matrix4<T> Matrix4<T>::createRotation(T angle, Vector3<T> axis) {
+    axis = normalize(axis);
+    T s = sin(angle);
+    T c = cos(angle);
+    T x = axis.x;
+    T y = axis.y;
+    T z = axis.z;
+
+    Matrix4<T> result
+    (
+        x*x*(1-c) + c,      x*y*(1-c) - z*s,    x*z*(1-c) + y*s, T(0),
+        x*y*(1-c) + z*s,    y*y*(1-c) + c,      y*z*(1-c) - x*s, T(0),
+        x*z*(1-c) - y*s,    y*z*(1-c) + x*s,    z*z*(1-c) + c,   T(0),
+        T(0),               T(0),               T(0),            T(1)
+    );
+
+    return result;
+}
+
+/*
+    createFrustum, createPerspective and createLookAt
+*/
+
+template<class T>
+Matrix4<T> Matrix4<T>::createLookAt(const Vector3<T>& eye, const Vector3<T>& focus, const Vector3<T>& up) {
+
+    Vector3<T> look   = normalize(focus - eye);
+    Vector3<T> strafe = normalize(cross(look, normalize(up)));
+    Vector3<T> up2    = cross(strafe, look);
+
+    Matrix4<T> m;
+    m[0] = Vector4<T>( strafe, T(0) );
+    m[1] = Vector4<T>( up2, T(0) );
+    m[2] = Vector4<T>( -look, T(0) );
+    m[3] = Vector4<T>( T(0), T(0), T(0), T(1) );
+
+    return m * Matrix4<T>::createTranslation(-eye);
+}
+
+template<class T>
+Matrix4<T> Matrix4<T>::createFrustum(T left, T right, T top, T bottom, T pnear, T pfar) {
+#ifdef TGT_DEBUG
+    if ((pnear == pfar) || (left == right) || (top == bottom)) {
+        tgtAssert(false, "The parameters passed to createFrustum cannot be used to form a projection matrix.");
+        return Matrix4<T>::identity;
+    }
+#endif // TGT_DEBUG
+
+    Matrix4<T> m(
+        T(2)*pnear/(right-left),        T(0),               (right+left)/(right-left),             T(0),
+                T(0),           T(2)*pnear/(top-bottom),    (top+bottom)/(top-bottom),             T(0),
+                T(0),                   T(0),               (pfar+pnear)/(pfar-pnear),  T(2)*pfar*pnear/(pfar-pnear),
+                T(0),                   T(0),                          -T(1),                      T(0)
+    );
+
+    return m;
+}
+
+template<class T>
+Matrix4<T> Matrix4<T>::createPerspective(T fov, T aspect, T pnear, T pfar) {
+#ifdef TGT_DEBUG
+    if ((pnear == pfar) || (rad2deg(fov) > T(355)) || (rad2deg(fov) < T(5)) || (aspect == T(0))) {
+        tgtAssert(false, "The parameters passed to createPerspective cannot be used to form a projection matrix.");
+        return Matrix4<T>::identity;
+    }
+#endif // TGT_DEBUG
+
+    T f = T(1) / tanf( fov/T(2) );
+    Matrix4<T> m(
+        f / aspect,         T(0),            T(0),                          T(0),
+            T(0),             f,             T(0),                          T(0),
+            T(0),           T(0),   (pnear+pfar)/(pnear-pfar),  (T(2)*pfar*pnear)/(pnear-pfar),
+            T(0),           T(0),           -T(1),                          T(0)
+    );
+
+    return m;
+}
+
+template<class T>
+Matrix4<T> Matrix4<T>::createOrtho(T left, T right, T top, T bottom, T pnear, T pfar) {
+#ifdef TGT_DEBUG
+    if ((pnear == pfar) || (left == right) || (top == bottom)) {
+        tgtAssert(false, "The parameters passed to createOrthogonal cannot be used to form a projection matrix.");
+        return Matrix4<T>::identity;
+    }
+#endif // TGT_DEBUG
+    
+    Matrix4<T> m(
+        T(2)/(right-left),      T(0),              T(0),         -(right+left)/(right-left),
+             T(0),         T(2)/(top-bottom),      T(0),         -(top+bottom)/(top-bottom),
+             T(0),              T(0),         T(2)/(pfar-pnear), -(pfar+pnear)/(pfar-pnear),
+             T(0),              T(0),              T(0),                      T(1)
+    );
+
+    return m;
+}
+
+/*
+    ostream operators
+*/
+
+/// ostream-operator
+template<class T>
+std::ostream& operator << (std::ostream& s, const Matrix2<T>& m) {
+    return (s
+        << "| " << m.elem[0] << " " << m.elem[1] << " |" << std::endl
+        << "| " << m.elem[2] << " " << m.elem[3] << " |" << std::endl);
+}
+
+/// ostream-operator
+template<class T>
+std::ostream& operator << (std::ostream& s, const Matrix3<T>& m) {
+    return (s
+        << "| " << m.elem[0] << " " << m.elem[1] << " " << m.elem[2] << " |" << std::endl
+        << "| " << m.elem[3] << " " << m.elem[4] << " " << m.elem[5] << " |" << std::endl
+        << "| " << m.elem[6] << " " << m.elem[7] << " " << m.elem[8] << " |" << std::endl);
+}
+
+/// ostream-operator
+template<class T>
+std::ostream& operator << (std::ostream& s, const Matrix4<T>& m) {
+    return (s
+        << "| " << m.elem[ 0] << " " << m.elem[ 1] << " " << m.elem[ 2] << " " << m.elem[ 3] << " |" << std::endl
+        << "| " << m.elem[ 4] << " " << m.elem[ 5] << " " << m.elem[ 6] << " " << m.elem[ 7] << " |" << std::endl
+        << "| " << m.elem[ 8] << " " << m.elem[ 9] << " " << m.elem[10] << " " << m.elem[11] << " |" << std::endl
+        << "| " << m.elem[12] << " " << m.elem[13] << " " << m.elem[14] << " " << m.elem[15] << " |" << std::endl);
+}
+
+/// This operator is not available in GLSL but very usefull: A mat4 * vec3 operator, returning a vec3
+template<class T>
+Vector3<T> operator * (const Matrix4<T>& m, const Vector3<T>& v) {
+    Vector4<T> v4(v, 1);
+    v4 = m * v4;
+    return Vector3<T>(v4.elem);
+}
+
+// addtional matrix functions
+
+template<class T>
+bool Matrix4<T>::invert(Matrix4<T>& result) const {
+    float t;
+    Matrix4<T> tmp = *this;
+    result = Matrix4<T>::identity;
+
+    for (size_t i = 0; i < 4; ++i) {
+        // Look for largest element in column
+        size_t swap = i;
+        for (size_t j = i + 1; j < 4; ++j) {
+            if (fabs(tmp.elemRowCol[j][i]) > fabs(tmp.elemRowCol[i][i]))
+                swap = j;
+        }
+
+        if (swap != i) {
+            // Swap rows.
+            for (size_t k = 0; k < 4; ++k) {
+                t = tmp.elemRowCol[i][k];
+                tmp.elemRowCol[i][k] = tmp.elemRowCol[swap][k];
+                tmp.elemRowCol[swap][k] = t;
+
+                t = result.elem[i*4+k];
+                result.elem[i*4+k] = result.elem[swap*4+k];
+                result.elem[swap*4+k] = t;
+            }
+        }
+
+        if (tmp.elemRowCol[i][i] == 0) {
+            // The matrix is singular
+            return false;
+        }
+
+        t = tmp.elemRowCol[i][i];
+        for (size_t k = 0; k < 4; k++) {
+            tmp.elemRowCol[i][k] /= t;
+            result.elem[i*4+k] /= t;
+        }
+        for (size_t j = 0; j < 4; j++) {
+            if (j != i) {
+                t = tmp.elemRowCol[j][i];
+
+                for (size_t k = 0; k < 4; k++) {
+                    tmp.elemRowCol[j][k] -= tmp.elemRowCol[i][k]*t;
+                    result.elem[j*4+k] -= result.elem[i*4+k]*t;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+};
+
+#endif //TGT_MATRIX_H

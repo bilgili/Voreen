@@ -1,0 +1,22 @@
+The Voreen project team at VisCG (alphabetically):
+
+Alexander Bock
+Stefan Diepenbrock
+Christian Döring
+Dirk Feldmann
+Jens Kasten
+Daniel Kirsch
+Roland Leißa
+Florian Lindemann
+Jörg Mensmann
+Jennis Meyer-Spradow
+Borislav Petkov
+Jörg-Stefan Praßni
+Stephan Rademacher
+Rainer Reich
+Timo Ropinski
+Jan Roters
+Christoph Rosemann
+Michael Specht
+Christian Vorholt
+Frank Wisniewski

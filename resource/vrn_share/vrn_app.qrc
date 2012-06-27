@@ -1,0 +1,18 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/vrn_app" >
+        <file>icons/about.png</file>
+        <file>icons/close.png</file>
+        <file>icons/eraser.png</file>
+        <file>icons/exit.png</file>
+        <file>icons/icon-64.png</file>
+        <file>icons/info.png</file>
+        <file>icons/open.png</file>
+        <file>icons/openNetwork.png</file>
+        <file>icons/open_add.png</file>
+        <file>icons/open_dicom.png</file>
+        <file>icons/save.png</file>
+        <file>icons/wizard.png</file>
+        <file>image/aboutbox.png</file>
+        <file>image/splash.png</file>
+    </qresource>
+</RCC>

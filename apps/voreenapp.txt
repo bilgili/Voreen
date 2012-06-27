@@ -1,0 +1,146 @@
+####################################################
+# Generic project file for all Voreen applications
+####################################################
+
+# common resource files
+RESOURCES = $${VRN_HOME}/resource/vrn_share/vrn_app.qrc
+
+####################################################
+# Platform-dependant configuration
+####################################################
+
+
+win32 {
+  MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+
+  QMAKE_LIBDIR += \
+        $${VRN_HOME}/ext/glew/lib
+
+  LIBS += $${VRN_HOME}/$(ConfigurationName)/voreen_qt.lib \
+          $${VRN_HOME}/$(ConfigurationName)/voreen_core.lib \
+          $${VRN_HOME}/ext/glew/lib/$(ConfigurationName)/glew32s.lib
+
+  # no libc for vc++ since we build a multithreaded executable
+  !isEmpty(MSC_VER) {
+    LIBS += /NODEFAULTLIB:libc.lib
+  }
+
+  contains(DEFINES, VRN_WITH_DCMTK) {
+    QMAKE_LIBDIR += $${DCMTK_DIR}/lib/$(ConfigurationName)
+  }
+
+  contains(DEFINES, VRN_WITH_DEVIL) {
+    QMAKE_LIBDIR += $${DEVIL_DIR}/lib
+    LIBS += -lDevIL -lILU -lILUT
+  }
+
+  contains(DEFINES, VRN_WITH_MATLAB) {
+    QMAKE_LIBDIR += $${MATLAB_DIR}/extern/lib/win32/microsoft
+    LIBS += -llibeng -llibmat -llibut -llibmx
+  }
+
+  contains(DEFINES, VRN_WITH_TIFF) {
+    QMAKE_LIBDIR += $${TIFF_DIR}/lib
+    LIBS += -llibtiff
+  }
+  contains(DEFINES, VRN_WITH_ZIP) {
+    contains(MSC_VER, "_MSC_VER=1400") {
+      LIBS += $${VRN_HOME}/ext/ziparchive/lib/$(ConfigurationName)/ziparch_vc2005_S.lib
+    }
+    else {
+      LIBS += $${VRN_HOME}/ext/ziparchive/lib/$(ConfigurationName)/ziparchS.lib
+    }
+  }
+  contains(DEFINES, VRN_WITH_PYTHON) {
+      LIBS += $${PYTHON_DIR}/lib/$(ConfigurationName)/python25.lib
+  }
+  contains(DEFINES, VRN_WITH_FREETYPE) {
+    LIBS += $${FREETYPE_DIR}/lib/freetype.lib
+  }
+  contains(DEFINES, VRN_WITH_FTGL) {
+    !contains(DEFINES, VRN_WITH_FREETYPE) {
+      error("VRN_WITH_FTGL need VRN_WITH_FREETYPE. Exiting.")
+    }
+    LIBS += $${FTGL_DIR}/lib/ftgl_dynamic_MT.lib
+    INCLUDEPATH += $${FTGL_DIR}/include
+  }
+  contains(DEFINES, VRN_WITH_DCMTK) {
+    LIBS += $${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkeay.lib
+    LIBS += $${VRN_HOME}/ext/openssl/lib/$(ConfigurationName)/dcmtkssl.lib
+  }
+
+  contains(DEFINES, VRN_WITH_BUGTRAP) {
+    LIBS += $${BUGTRAP_DIR}/Win32/BugTrap/BugTrap.lib
+  }
+
+  contains(DEFINES, VRN_WITH_BOX2D) {
+    QMAKE_LIBDIR  += $${BOX2D_DIR}/Library
+  }
+
+
+  LIBS += -lnetapi32 -lopengl32 -lglu32
+
+  # For reading file version, file date and making registry calls
+  # via Windows API
+  LIBS += -lVersion
+
+  # Windows Management Instrumentation (WMI) for hardware detection
+  contains(DEFINES, VRN_WITH_WMI) {
+    LIBS += -lWbemUuid
+  }
+
+  contains(DEFINES, VRN_WITH_QWT) {
+    INCLUDEPATH += $${VRN_HOME}/ext/qwt/include
+    LIBS += $${VRN_HOME}/ext/qwt/lib/$(ConfigurationName)/qwt5.lib
+    DEFINES += QWT_DLL
+  }
+
+  contains(DEFINES, VRN_WITH_BOOST) {
+    QMAKE_LIBDIR += $${VRN_HOME}/ext/boost/lib/debug
+    QMAKE_LIBDIR += $${VRN_HOME}/ext/boost/lib/release
+  }
+}
+
+unix {
+  DEFINES += LINUX
+
+  contains(DEFINES, VRN_WITH_DCMTK) {
+    LIBS += -lz -lssl
+    !without_libwrap: LIBS += -lwrap
+  }
+
+  !macx: LIBS += -lGL -lGLU
+  LIBS += -lGLEW
+  LIBS += -lvoreen_qt -lvoreen_core
+
+  contains(DEFINES, VRN_WITH_DEVIL) {
+    LIBS += -lIL -lILU -lILUT
+  }
+  contains(DEFINES, VRN_WITH_TIFF) {
+    LIBS += -ltiff
+  }
+  contains(DEFINES, VRN_WITH_ZIP) {
+    LIBS += -lziparch
+  }
+  contains(DEFINES, VRN_WITH_CLIBPDF) {
+    LIBS += -lcpdf
+  }
+  contains(DEFINES, VRN_WITH_FTGL) {
+    LIBS += -lftgl
+  }
+  contains(DEFINES, VRN_WITH_FREETYPE) {
+    LIBS += -lfreetype
+  }
+
+}
+
+contains(DEFINES, VRN_WITH_DCMTK) {
+    LIBS += -ldcmimage -ldcmimgle -ldcmnet -ldcmdata \
+            -ldcmjpeg -lijg8 -lijg12 -lijg16 -lofstd
+
+    LIBS += -ldcmtls
+}
+
+### Local Variables:
+### mode:conf-unix
+### End:
