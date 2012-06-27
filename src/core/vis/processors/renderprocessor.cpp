@@ -175,12 +175,14 @@ void RenderProcessor::renderQuad() {
 }
 
 std::string RenderProcessor::generateHeader() {
-    std::string header = "";
+    std::string header;
 
     // use highest available shading language version up to version 1.30
     using tgt::GpuCapabilities;
-    if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130)
+    if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
         header += "#version 130\n";
+        header += "precision highp float;\n";
+    }
     else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_120)
         header += "#version 120\n";
     else if (GpuCaps.getShaderVersion() == GpuCapabilities::GlVersion::SHADER_VERSION_110)
@@ -202,6 +204,18 @@ std::string RenderProcessor::generateHeader() {
             header += "#define VRN_MAX_PROGRAM_LOOP_COUNT " + o.str() + "\n";
         }
     }
+
+    //
+    // add some defines needed for workarounds in the shader code
+    //
+    if (GLEW_ARB_draw_buffers)
+        header += "#define VRN_GLEW_ARB_draw_buffers\n";
+
+#ifdef __APPLE__
+    header += "#define VRN_OS_APPLE\n";
+    if (GpuCaps.getVendor() == GpuCaps.GPU_VENDOR_ATI)
+        header += "#define VRN_VENDOR_ATI\n";
+#endif
 
     return header;
 }

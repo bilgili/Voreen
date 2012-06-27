@@ -1,7 +1,3 @@
-debug {
-    DEFINES += tgtDEBUG
-}
-
 unix : contains(DEFINES, tgtZLIB) {
   LIBS += -lz
 }

@@ -8,6 +8,16 @@ VERSION = 1.0
 CONFIG += static thread
 CONFIG -= dll
 
+# Include local configuration
+!include(../../config.txt) {
+  warning("config.txt not found! Using config-default.txt instead.")
+  warning("For custom behavior, copy config-default.txt to config.txt and edit!")
+  include(../../config-default.txt)
+}
+
+# Include common configuration
+include(../../commonconf.txt)
+
 unix: DESTDIR = ../..
 win32: {
   CONFIG(debug, debug|release) {
@@ -18,16 +28,7 @@ win32: {
   }
 }
 
-# Include local configuration
-!include(../../config.txt) {
-  error("config.txt not found! copy config-default.txt to config.txt and edit!")
-}
-
-# Include common configuration
-include(../../commonconf.txt)
-
 # Include tgt
-#define TGT_COMPILED_FOR_VOREEN
 include(tgt.pro)
 
 # Include modules which are selected in local configuration. The entry
@@ -282,10 +283,7 @@ SHADER_SOURCES_MODS_BRICK += \
     vis/glsl/modules/bricking/mod_math.frag \
     vis/glsl/modules/bricking/mod_uniforms.frag
 
-win32 {
-    MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
-    !isEmpty(MSC_VER): SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_MODS $$SHADER_SOURCES_MODS_BRICK
-}
+visual_studio: SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_MODS $$SHADER_SOURCES_MODS_BRICK
 
 HEADERS += \
     ../../include/voreen/core/application.h \

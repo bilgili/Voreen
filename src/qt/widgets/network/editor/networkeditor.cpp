@@ -431,7 +431,8 @@ void NetworkEditor::mouseDoubleClickEvent(QMouseEvent* event) {
 void NetworkEditor::keyReleaseEvent(QKeyEvent* event) {
     QGraphicsView::keyReleaseEvent(event);
 
-    if (!event->isAccepted() && event->key() == Qt::Key_Delete)
+    if (!event->isAccepted() &&
+        (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace))
         deleteActionSlot();
 
     if (event->key() == Qt::Key_Plus) {

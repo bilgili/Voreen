@@ -449,11 +449,21 @@ void TransFuncIntensityGradientPainter::createHistogram() {
         bucketsi = bucketsg;
     }
     else {
+        
         // calculate 8 bit gradients
-        gradientVolume = calcGradients<tgt::col3>(volume_);
-        intensityVolume = volume_;
+        if (tgt::max(volume_->getDimensions()) <= 128) {
+            intensityVolume = volume_;
+        }
+        else {
+            // HACK!
+            tgt::ivec3 newDims = tgt::ivec3(tgt::vec3(volume_->getDimensions()) / (tgt::max(volume_->getDimensions()) / 128.f));
+            intensityVolume = volume_->scale(newDims, Volume::LINEAR);
+            gradientVolume = calcGradients<tgt::col3>(intensityVolume);
+        }
+        
+        gradientVolume = calcGradients<tgt::col3>(intensityVolume);
         bucketsg = 256;
-        if ((volume_->getBitsStored() / numChannels) > 8)
+        if ((intensityVolume->getBitsStored() / numChannels) > 8)
             bucketsi = 512;
         else
             bucketsi = 256;
@@ -465,6 +475,9 @@ void TransFuncIntensityGradientPainter::createHistogram() {
 
     if (numChannels != 4)
         delete gradientVolume;
+
+    if (intensityVolume != volume_)
+        delete intensityVolume;
 }
 
 void TransFuncIntensityGradientPainter::createHistogramTexture() {

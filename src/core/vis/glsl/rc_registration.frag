@@ -47,8 +47,6 @@ uniform float borderThickness_;
 #include "modules/mod_depth.frag"
 #include "modules/mod_transfunc.frag"
 
-//#extension GL_ARB_draw_buffers : enable
-
 /***
  * Performs direct volume rendering and
  * returns the final fragment color.

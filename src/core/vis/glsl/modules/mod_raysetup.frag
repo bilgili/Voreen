@@ -66,6 +66,22 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
     }
 }
 
+#if defined(VRN_OS_APPLE) && defined(VRN_VENDOR_ATI)
+  // We do manual inlining in order to deal with older ATI boards on Mac where these function
+  // calls seem to drastically reduce rendering speed (triggering fallback to software mode).
+  #define RC_EARLY_RAY_TERMINATION(opacity, maxOpacity, finished) \ 
+    if (opacity >= maxOpacity) {                                  \
+        opacity = 1.0;                                            \
+        finished = true;                                          \
+    }                                                           
+#else
+  // Just wrap the usual functions
+  #define RC_EARLY_RAY_TERMINATION(opacity, maxOpacity, finished) \
+    finished = earlyRayTermination(opacity, maxOpacity)
+  #define WRITE_DEPTH_VALUE(t, tEnd, entryPointsDepth, exitPointsDepth) \
+    gl_FragDepth = getDepthValue(t, tEnd, entryPointsDepth, exitPointsDepth);
+#endif
+
 /***
  * The beginning of a typical raycasting loop.
  */
@@ -82,22 +98,20 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
  */
 #ifdef ADAPTIVE_SAMPLING
 #define RC_END_LOOP(result)									\
-			finished = earlyRayTermination(result.a, 0.9);	\
+			RC_EARLY_RAY_TERMINATION(result.a, 0.9, finished); \
 			t += (tIncr * float(numberOfSkippedSamples));				\
     		finished = finished || (t > tEnd);				\
 		}													\
 	}														\
-	gl_FragDepth = getDepthValue(tDepth, tEnd,				\
-					entryPointsDepth_, exitPointsDepth_);
+    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, exitPointsDepth_);
 #else
 #define RC_END_LOOP(result)									\
-			finished = earlyRayTermination(result.a, 0.9);	\
+			RC_EARLY_RAY_TERMINATION(result.a, 0.9, finished); \
 			t += tIncr;				                        \
     		finished = finished || (t > tEnd);				\
 		}													\
 	}														\
-	gl_FragDepth = getDepthValue(tDepth, tEnd,				\
-					entryPointsDepth_, exitPointsDepth_);
+    WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, exitPointsDepth_);
 #endif
 
 /**

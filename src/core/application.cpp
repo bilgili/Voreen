@@ -42,7 +42,9 @@
 
 #include "tgt/gpucapabilities.h"
 #ifdef WIN32
+#ifdef _MSC_VER
     #include "tgt/gpucapabilitieswindows.h"
+#endif
     #include <shlobj.h>
 #else
     #include <stdlib.h>
@@ -300,7 +302,7 @@ void VoreenApplication::init() {
 void VoreenApplication::initGL() {
     tgt::initGL();
 
-#ifdef WIN32
+#ifdef _MSC_VER
     GpuCapsWin.logCapabilities(false, true);
 #else
     GpuCaps.logCapabilities(false, true);

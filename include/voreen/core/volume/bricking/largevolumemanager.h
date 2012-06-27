@@ -83,10 +83,29 @@ public:
     */
     virtual void addBoxBrickingRegion(int prio, tgt::vec3 clipLLF, tgt::vec3 clipURB);
 
+    /**
+     * Sets the maximum amount of main memory to use (in megabytes).
+     */
+    static void setMaxMemory(size_t max) { maxMemory_ = max; }
+
+    /**
+     * Sets the maximum amount of GPU memory to use (in megabytes).
+     * A value of 0 means unlimited.
+     */
+    static void setMaxGpuMemory(size_t max = 0) { maxGpuMemory_ = max; }
+
+    /**
+     * Tries to calculate how much GPU memory can be used (in megabytes).
+     * This is completely independant of setMaxMemory().
+     */ 
+    static size_t estimateMaxGpuMemory();
+
+    static size_t getMaxMemory() { return maxMemory_; }
+    static size_t getMaxGpuMemory() { return maxGpuMemory_; }
+    
 protected:
-
-private:
-
+    static size_t maxMemory_;
+    static size_t maxGpuMemory_;
 };
 
 

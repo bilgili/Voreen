@@ -30,6 +30,8 @@
 #ifndef TGT_GPUCAPABILITIESWINDOWS_H
 #define TGT_GPUCAPABILITIESWINDOWS_H
 
+#ifdef _MSC_VER
+
 #include "gpucapabilities.h"
 #include "tgt/singleton.h"
 
@@ -228,5 +230,7 @@ private:
 } // namespace tgt
 
 #define GpuCapsWin tgt::Singleton<tgt::GpuCapabilitiesWindows>::getRef()
+
+#endif //_MSC_VER
 
 #endif // TGT_GPUCAPABILITIESWINDOWS_H

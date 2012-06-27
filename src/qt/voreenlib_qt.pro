@@ -12,17 +12,6 @@ QT += network
 CONFIG += static thread
 CONFIG -= dll
 
-macx: DESTDIR = ../..
-unix: DESTDIR = ../..
-win32: {
-  CONFIG(debug, debug|release) {
-    DESTDIR = ../../Debug
-  }
-  else {
-    DESTDIR = ../../Release
-  }
-}
-
 # Check Qt version:
 # Use a regex that matches all invalid version numbers, i.e, X.*.*
 # with X <= 3 and 4.Y.* with Y <= 2.
@@ -33,11 +22,24 @@ VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[12])\..*$")
 
 # Include local configuration
 !include(../../config.txt) {
-  error("config.txt not found! copy config-default.txt to config.txt and edit!")
+  warning("config.txt not found! Using config-default.txt instead.")
+  warning("For custom behavior, copy config-default.txt to config.txt and edit!")
+  include(../../config-default.txt)
 }
 
 # Include common configuration
 include(../../commonconf.txt)
+
+macx: DESTDIR = ../..
+unix: DESTDIR = ../..
+win32: {
+  CONFIG(debug, debug|release) {
+    DESTDIR = ../../Debug
+  }
+  else {
+    DESTDIR = ../../Release
+  }
+}
 
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a

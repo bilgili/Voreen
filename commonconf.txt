@@ -20,6 +20,23 @@ unix: !isEmpty(INSTALL_PREFIX) {
   INSTALLPATH_DOC = $$INSTALL_PREFIX/share/doc/voreen
 }
 
+# detect Microsoft Compiler
+MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+!isEmpty(MSC_VER) {
+  # usually something like win32-msvc2008 is defined, we add this to 
+  # match all versions
+  CONFIG += win32-msvc
+
+  # are we running through Visual Studio or nmake?
+  contains(TEMPLATE, "vcapp") {
+    CONFIG += visual_studio
+  }  else:contains(TEMPLATE, "vclib") {
+    CONFIG += visual_studio
+  } else {
+    CONFIG += nmake
+  }
+}
+
 # we don't use tgt's build system
 DEFINES += TGT_WITHOUT_DEFINES
 
@@ -68,12 +85,9 @@ precompile_header : contains(QMAKE_CC, "icc") {
 
 DEFINES -= UNICODE
 
-win32: {
-  CONFIG(debug, debug|release) {
-    DEFINES += _DEBUG
-  }
-}
-else {
+win32 {
+  CONFIG(debug, debug|release): DEFINES += _DEBUG
+} else {
   debug : DEFINES += _DEBUG
 }
 
@@ -115,8 +129,10 @@ for(i, VRN_MODULES) : include(src/modules/$${i}/$${i}_common.pri)
 # Windows settings #
 ####################
 win32 {
-  CONFIG -= release debug
-  CONFIG += debug_and_release
+#  win32-msvc {
+#    CONFIG -= release debug
+#    CONFIG += debug_and_release
+#  }
 
   CONFIG -= flat
   DEFINES += _WINDOWS
@@ -175,37 +191,40 @@ win32 {
     LIBS += box2d.lib
   }
 
-  # Disable warnings
-  # C4305: 'identifier' : truncation from 'type1' to 'type2'
-  # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning
-  # C4290: C++ exception specification ignored except to indicate a function is
-  #       not __declspec(nothrow)
-  QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290
+  win32-msvc {
+    # Disable warnings for Microsoft compiler:
+    # C4305: 'identifier' : truncation from 'type1' to 'type2'
+    # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning
+    # C4290: C++ exception specification ignored except to indicate a function is
+    #       not __declspec(nothrow)
+    # C4355: 'this' : used in base member initializer list (occurs in processors' constructors)
+    QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 /wd4355
+  
+    # Shift warning
+    # C4706: assignment within conditional expression
+    # to warning level 3 which is used for compiling Voreen
+    QMAKE_CXXFLAGS += /w34706
+  
+    # Disable optimization in debug build
+    QMAKE_CXXFLAGS_DEBUG += /Od /GR
+  
+    # Enable edit and continue in debug build
+    QMAKE_CXXFLAGS_DEBUG -= /Zi
+    QMAKE_CXXFLAGS_DEBUG += /ZI
 
+    QMAKE_LFLAGS += /MACHINE:X86
 
-  # Shift warning
-  # C4706: assignment within conditional expression
-  # to warning level 3 which is used for compiling Voreen
-  QMAKE_CXXFLAGS += /w34706
-
-  # Disable optimization in debug build
-  QMAKE_CXXFLAGS_DEBUG += /Od /GR
-
-  # Enable edit and continue in debug build
-  QMAKE_CXXFLAGS_DEBUG -= /Zi
-  QMAKE_CXXFLAGS_DEBUG += /ZI
-
-  debug {
+    # Enable parallel compiler processes with Visual Studio
+    QMAKE_CXXFLAGS += /MP 
+  }
+  
+  CONFIG(debug, debug|release) {
     OBJECTS_DIR = Debug
     DESTDIR = Debug
-  }
-
-  release {
+  } else {
     OBJECTS_DIR = Release
     DESTDIR = Release
   }
-
-  QMAKE_LFLAGS += /MACHINE:X86
 
   # Disable optimizations for builds with bugtrap support
   contains (DEFINES, VRN_WITH_BUGTRAP) {
@@ -213,11 +232,6 @@ win32 {
     QMAKE_CXXFLAGS_RELEASE += /Od /Zi
     QMAKE_LFLAGS_RELEASE += /DEBUG
 
-  }
-  # Enable parallel compiler processes with VS2008
-  MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
-  contains(MSC_VER, "_MSC_VER=1500") {
-    QMAKE_CXXFLAGS += /MP4
   }
 }
 
@@ -231,8 +245,11 @@ unix {
   # set to the library position in to source directory only when we
   # are not installing, i.e., the INSTALL_PREFIX is not set.
   QMAKE_RPATHDIR += $${LIBDIR}
-  isEmpty(INSTALL_PREFIX): QMAKE_RPATHDIR += $${VRN_HOME}
-  !isEmpty(INSTALL_PREFIX): QMAKE_RPATHDIR += $${INSTALLPATH_LIB}
+  isEmpty(INSTALL_PREFIX) {
+    QMAKE_RPATHDIR += $${VRN_HOME}
+  } else {
+    QMAKE_RPATHDIR += $${INSTALLPATH_LIB}
+  }
 
   LIBDIR += $${VRN_HOME}
 

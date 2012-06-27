@@ -144,7 +144,8 @@ public:
         OS_WIN_VISTA,
         OS_WIN_SERVER_2003,
         OS_WIN_SERVER_2008,
-        OS_POSIX    ///< For Linux and other POSIX-like OS. Have a look at getOSVersionString for details.
+        OS_WIN_7,
+        OS_POSIX     ///< For Linux and other POSIX-like OS. Have a look at getOSVersionString for details.
     };
 
     /**

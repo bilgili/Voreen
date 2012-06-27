@@ -134,7 +134,7 @@ public:
         MODE_NETWORK
     };
     
-    VoreenMainWindow(const std::string& network = "", const std::string& dataset = "");
+    VoreenMainWindow(const std::string& workspace = "", const std::string& dataset = "");
     ~VoreenMainWindow();
 
     void init();

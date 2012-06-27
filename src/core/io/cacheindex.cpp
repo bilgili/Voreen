@@ -369,9 +369,9 @@ std::string CacheIndex::insert(Processor* const processor, Port* const port,
     return "";
 }
 
-inline CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const processor,
-                                                              Port* const port,
-                                                              const std::string& inportConfig)
+CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const processor,
+                                                       Port* const port,
+                                                       const std::string& inportConfig)
 {
     if ((processor == 0) || (port == 0))
         return IndexKey("", "");

@@ -219,7 +219,6 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     features << "Shaders:             " << (areShadersSupported() ? "yes (OpenGL 2.0)" : "no");
 
     if (areShadersSupported()) {
-
         features << ", GLSL Version " << shaderVersion_;
 
         features << ", Shader Model ";
@@ -235,7 +234,21 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         else {
             features << "unknown";
         }
+
+        if (GLEW_NV_fragment_program2) {
+            LINFO(features.str());
+            features.clear();
+            features.str("");
+            features << "Shader Capabilities: ";
+            
+            GLint i = -1;
+            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
+            features << "MAX_PROGRAM_LOOP_COUNT=" << i;
+            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV, &i);
+            features << ", MAX_PROGRAM_EXEC_INSTRUCTIONS=" << i;
+        }        
     }
+    
     LINFO(features.str());
 }
 
@@ -286,7 +299,7 @@ void GpuCapabilities::detectCapabilities() {
         LERROR("Malformed GLSL version string: " << glslVersionString_);
     }
 
-#ifndef __APPLE__
+    // Shader model
     // see http://www.opengl.org/wiki/index.php/Shading_languages:_How_to_detect_shader_model%3F
     // for information about shader models in OpenGL
     if (isExtensionSupported("GL_EXT_geometry_shader4"))
@@ -298,10 +311,6 @@ void GpuCapabilities::detectCapabilities() {
         shaderModel_ = SHADER_MODEL_2;
     else
         shaderModel_ = SHADER_MODEL_UNKNOWN;
-#else
-    LWARNING("ASSUMING ShaderModel 3.0 is supported on Apple!");
-    shaderModel_ = SHADER_MODEL_3;
-#endif
 
     // Texturing
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &maxTexSize_);
@@ -328,6 +337,25 @@ void GpuCapabilities::detectCapabilities() {
         glGetIntegerv(GL_MAX_TEXTURE_UNITS, (GLint *) &numTextureUnits_);
 
     npotTextures_ = (isExtensionSupported("GL_ARB_texture_non_power_of_two"));
+#ifdef __APPLE__
+    // No NPOT support on older ATI Macs.
+    // ATI cards up to X1900 report they support this extension, but only do so under certain
+    // circumstances, else falling back to software.
+    // See this thread for details:
+    // http://www.mailinglistarchive.com/mac-opengl@lists.apple.com/msg04204.html
+    // Therefore we disable it for all Radeon 9*** and X*** cards.
+    if (getVendor() == GPU_VENDOR_ATI && npotTextures_ &&
+        (glRendererString_.find("Radeon X") != string::npos ||
+         glRendererString_.find("RADEON X") != string::npos ||
+         glRendererString_.find("Radeon 9") != string::npos ||
+         glRendererString_.find("RADEON 9") != string::npos))
+    {
+        LWARNING("Disabling extension ARB_texture_non_power_of_two because it is "
+                 "reported unreliable for ATI cards up to Radeon X1900.");
+        npotTextures_ = false;
+    }
+#endif
+
     textureRectangles_ = (isExtensionSupported("GL_ARB_texture_rectangle"));
     anisotropicFiltering_ = (isExtensionSupported("GL_EXT_texture_filter_anisotropic"));
     if (anisotropicFiltering_)
@@ -380,6 +408,10 @@ void GpuCapabilities::detectOS() {
     else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0) {
         osVersion_ = OS_WIN_2000;
         oss << "Windows 2000";
+    }
+    else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1) {
+        osVersion_ = OS_WIN_7;
+        oss << "Windows 7";
     }
     else {
         oss << "unknown Windows version " << osvi.dwMajorVersion << "." << osvi.dwMinorVersion;

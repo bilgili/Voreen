@@ -71,6 +71,8 @@ protected:
     virtual std::string generateHeader();
     virtual void compile();
 
+    void raycastingQualityChanged();
+    
 private:
     TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
 
@@ -78,7 +80,7 @@ private:
     EnumProp* compositingMode2_;    ///< What compositing mode should be applied for third outport
 
     bool destActive_[2];
-
+    GLint maxProgramExecInstructions_; ///< maximum number of shader instruction supported by GPU
 };
 
 

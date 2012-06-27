@@ -38,6 +38,7 @@ namespace voreen {
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
     , transferFunc_(setTransFunc_, "Transfer function")
+    , maxProgramExecInstructions_(-1)
 {
     setName("SingleVolumeRaycaster");
 
@@ -63,6 +64,10 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     addProperty(&lightDiffuse_);
     addProperty(&lightSpecular_);
 
+    raycastingQualityFactor_->onChange(
+        CallMemberAction<SingleVolumeRaycaster>(this,
+                                                &SingleVolumeRaycaster::raycastingQualityChanged));
+
     destActive_[0] = false;
     destActive_[1] = false;
     destActive_[2] = false;
@@ -85,6 +90,10 @@ const std::string SingleVolumeRaycaster::getProcessorInfo() const {
 int SingleVolumeRaycaster::initializeGL() {
     loadShader();
     initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;
+
+    if (GLEW_NV_fragment_program2)
+        glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV,
+                          &maxProgramExecInstructions_);
 
     return initStatus_;
 }
@@ -311,6 +320,16 @@ std::string SingleVolumeRaycaster::generateHeader() {
     }
 
     return headerSource;
+}
+
+void SingleVolumeRaycaster::raycastingQualityChanged() {
+    if (raycastingQualityFactor_->getValue() > 2.f) {
+        if (maxProgramExecInstructions_ >= 0 && maxProgramExecInstructions_ <= 1024*1024) {
+            LWARNING("Raycasting quality '" << raycastingQualityFactor_->getId()
+                     << "' might be too high for this GPU, "
+                     << "rendering artifacts may appear.");
+        }
+    }
 }
 
 } // namespace

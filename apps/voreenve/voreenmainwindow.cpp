@@ -409,7 +409,7 @@ protected:
 
 } // namespace
 
-VoreenMainWindow::VoreenMainWindow(const std::string& network, const std::string& dataset)
+VoreenMainWindow::VoreenMainWindow(const std::string& workspace, const std::string& dataset)
     : QMainWindow()
     , guiMode_(MODE_NONE)
     , resetSettings_(false)
@@ -424,8 +424,8 @@ VoreenMainWindow::VoreenMainWindow(const std::string& network, const std::string
         setMenuBar(new FancyMenuBar());
     
     loadSettings();
-    if (!network.empty())
-        currentNetwork_ = network.c_str();
+    if (!workspace.empty())
+        currentWorkspace_ = workspace.c_str();
     if (!dataset.empty())
         defaultDataset_ = dataset.c_str();
 
@@ -556,28 +556,26 @@ void VoreenMainWindow::init() {
     //
     // now the GUI is complete
     //
-
-    if (!lastWorkspace_.isEmpty() && loadLastWorkspace_) {
+    if (!currentWorkspace_.isEmpty()) {
+        // load an initial worksspace
+        openWorkspace(currentWorkspace_);
+    }
+    else if (!lastWorkspace_.isEmpty() && loadLastWorkspace_) {
         // load last workspace
         openWorkspace(lastWorkspace_);
     } 
     else {
-        if (!currentNetwork_.isEmpty()) {
-            // load an initial network
-            openNetwork(currentNetwork_);
-        }
-        else {
-            // load an initial worksspace
-            openWorkspace(VoreenApplication::app()->getWorkspacePath("standard.vws").c_str());
-        }
-
-        // load an initial dataset
-        if (!defaultDataset_.isEmpty())
-            loadDataset(defaultDataset_.toStdString(), false);
+        // load an initial workspace
+        openWorkspace(VoreenApplication::app()->getWorkspacePath("standard.vws").c_str()); 
     }
 
+    // load an initial dataset
+    if (!defaultDataset_.isEmpty())
+        loadDataset(defaultDataset_.toStdString(), false);
+    
     // now we can activate rendering in the widget
     canvasWidget_->setUpdatesEnabled(true);
+
     setUpdatesEnabled(true);
 }
 
@@ -1015,7 +1013,7 @@ void VoreenMainWindow::saveSettings() {
 	settings_.setValue("pos", pos());
 	settings_.setValue("maximized", (windowState() & Qt::WindowMaximized) != 0);
     settings_.setValue("workspace", lastWorkspace_);
-    settings_.setValue("loadLastworkspace", loadLastWorkspace_);
+    settings_.setValue("loadLastWorkspace", loadLastWorkspace_);
     settings_.setValue("visualizationModeState", visualizationModeState_);
     settings_.setValue("networkModeState", networkModeState_);
     settings_.setValue("renderWindowStateVisualizationMode", renderWindowStateVisualizationMode_);
@@ -1405,7 +1403,7 @@ void VoreenMainWindow::runScript() {
         if (script->compile()) {
             if (!script->run())
                 QMessageBox::warning(this, "Voreen", tr("Python runtime error (see stdout)"));
-
+            
         } else {
             QMessageBox::warning(this, "Voreen", tr("Python compile error (see stdout)"));
         }

@@ -34,7 +34,7 @@
 #include "tgt/assert.h"
 #include "tgt/singleton.h"
 #include "tgt/gpucapabilities.h"
-#ifdef WIN32
+#ifdef _MSC_VER
     #include "tgt/gpucapabilitieswindows.h"
 #endif
 #include "tgt/modelmanager.h"
@@ -113,7 +113,7 @@ void initGL(InitFeature::Features featureset) {
 
     if (featureset & InitFeature::GPU_PROPERTIES )
         Singleton<GpuCapabilities> ::init(new GpuCapabilities());
-#ifdef WIN32
+#ifdef _MSC_VER
         Singleton<GpuCapabilitiesWindows> ::init(new GpuCapabilitiesWindows());
 #endif
     if (featureset & InitFeature::TESSELATOR)
@@ -144,7 +144,7 @@ void initGL(InitFeature::Features featureset) {
 void deinitGL() {
     if (Singleton<GpuCapabilities> ::isInited())
         Singleton<GpuCapabilities> ::deinit();
-#ifdef WIN32
+#ifdef _MSC_VER
     if (Singleton<GpuCapabilitiesWindows> ::isInited())
         Singleton<GpuCapabilitiesWindows> ::deinit();
 #endif

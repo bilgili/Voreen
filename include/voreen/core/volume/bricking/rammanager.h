@@ -52,9 +52,13 @@ namespace voreen {
 		BrickedVolumeReader* getBrickedVolumeReader();
 
 		void setBrickedVolumeReader(BrickedVolumeReader* brickedVolumeReader);
+
+        /**
+         * Deletes all bricks from RAM
+         */
+        void freeAll();
 	
 	protected:
-
 		/**
 		* Calculates how many bytes will be needed to store the brick in RAM.
 		*/
@@ -178,6 +182,30 @@ namespace voreen {
 		
 		return true;
 
+	}
+
+	template<class T>
+    void RamManager<T>::freeAll() {
+		size_t bytesFreed = 0;
+		
+		while (volumesInRam_.size() > 0) {
+			std::pair<VolumeBrick<T>* , size_t> element = volumesInRam_.front();
+
+			//Delete the volume. This is done in the deleteLodVolume function of
+			//the VolumeBrick, so that the brick knows that that lod isn't there anymore
+			element.first->deleteLodVolume(element.second);
+
+			//Remove the entry from the list, because it's no longer in RAM.
+			volumesInRam_.pop_front();
+
+			int newBytesFreed = brickingInformation_.numVoxelsInBrick / 
+				static_cast<int> ( pow(8.0f,(float)element.second) );
+
+			newBytesFreed = newBytesFreed * brickingInformation_.originalVolumeBytesAllocated;
+			
+			bytesFreed += newBytesFreed;
+		}
+		usedRamInByte_ = usedRamInByte_ - bytesFreed;
 	}
 
 	template<class T>

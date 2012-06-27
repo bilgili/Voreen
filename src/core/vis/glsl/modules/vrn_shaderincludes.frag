@@ -27,8 +27,11 @@
  *                                                                    *
  **********************************************************************/
 
-// enable support for multiple render targets
+// Enable extension GL_ARB_draw_buffers only if it is not yet directly supported
+// by this GLSL version and the extension was detected by GLEW.
+#if __VERSION__ < 120 && defined(VRN_GLEW_ARB_draw_buffers)
 #extension GL_ARB_draw_buffers : enable
+#endif
 
 // include required shader modules
 #include "modules/mod_sampler2d.frag"

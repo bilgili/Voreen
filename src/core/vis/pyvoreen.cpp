@@ -29,6 +29,13 @@
 
 #ifdef VRN_WITH_PYTHON
 
+// Ignore "dereferencing type-punned pointer will break strict-aliasing rules" warnings on gcc
+// caused by Py_RETURN_TRUE and such. The problem lies in Python so we don't want the warning
+// here.
+#if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+
 // Do this at very first
 #include "tgt/scriptmanager.h"
 

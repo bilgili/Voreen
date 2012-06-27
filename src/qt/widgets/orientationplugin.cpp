@@ -74,6 +74,7 @@ SchematicOverlayObject::~SchematicOverlayObject() {
     TexMgr.dispose(rightTex_);
 }
 
+#ifdef VRN_WITH_DEVIL    
 void SchematicOverlayObject::loadTextures(Identifier set) {
     TexMgr.dispose(frontTex_);
     TexMgr.dispose(backTex_);
@@ -132,6 +133,10 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
     else
         rightTex_ = 0;
 }
+#else
+void SchematicOverlayObject::loadTextures(Identifier /*set*/) {
+}
+#endif //VRN_WITH_DEVIL
 
 void SchematicOverlayObject::setShowTextures(bool show) {
     showTextures_ = show;

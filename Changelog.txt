@@ -1,6 +1,47 @@
 Voreen Changelog
 ----------------
 
+2009-11-20: Snapshot r25 (voreen-8050)
+--------------------------------------
+
+   * Large data set rendering (bricking):
+     o User is asked to specifiy amount of main memory and GPU memory to be
+       used for bricking when loading a bricked data set (.bvi).
+     o Bricking now uses about 30% less main memory.
+     o Take maximum texture dimensions supported by GPU into account when
+       allocating memory for bricking.
+
+  * Minor feature improvements:
+     o Voreen can be built using MinGW and Qt Creator (as included in the
+       Open Source Qt SDK).
+     o Fixed building with nmake.
+     o Improved mac deployment script and added installer target.
+     o VoreenVE supports new command line option -w for loading workspaces
+     o Log warning message when raycasting quality is chosen too high for the
+       GPU (because MAX_PROGRAM_EXEC_INSTRUCTIONS is not large enough) and
+       artifacts might appear (Nvidia only).
+     o UPDATE DevIL libs to version 1.7.8.
+
+   * General bugfixes:
+     o Define "precision highp float" when using GLSL 1.30 as required by newer
+       ATI drivers.
+     o Fix problems with the GLSL extension GL_ARB_draw_buffers (would report
+       extension as unsupport in shader, although it is there).
+     o Removed some runtime warnings when running without DevIL image library.
+     o Workaround for slow histogram computation when using 2D gradient-based 
+       transfer functions.
+
+   * Mac bugfixes:
+     o Do manual inlining of some shader code to prevent fallback to (very slow)
+       software rendering mode for ATI cards on Mac.
+     o Disable non-power-of-two (NPOT) textures for ATI Radeon 9* and X* on Mac,
+	   as they are not correctly supported there (would trigger fallback to
+	   software mode, with extremely slow rendering).
+     o Add backspace as an additional key for deleting objects in the network
+       editor, to support MacBook keyboards.
+     o Last opened workspace is correctly restored on application startup.
+
+
 2009-08-04: Snapshot r24 (voreen-7062)
 --------------------------------------
 

@@ -53,14 +53,15 @@ public:
     virtual void prepareCommandParser() {
         VoreenApplicationQt::prepareCommandParser();
 
-        getCommandLineParser()->addCommand(new Command_LoadDatasetSingle(&datasetFilename_));
-        getCommandLineParser()->addCommandForNamelessArguments(new Command_LoadDatasetSingle(&datasetFilename_));
+        CommandlineParser* p = getCommandLineParser();        
+        p->addCommand(new Command_LoadDatasetSingle(&datasetFilename_));
+        p->addCommandForNamelessArguments(new Command_LoadDatasetSingle(&datasetFilename_));
 
-        getCommandLineParser()->addCommand(new Command_LoadNetworkSingle(&networkFilename_));
+        p->addCommand(new SingleCommand<std::string>(&workspaceFilename_, "--workspace", "-w", "Load a workspace", "<workspace file>"));
     }
 
     std::string datasetFilename_;
-    std::string networkFilename_;
+    std::string workspaceFilename_;
 };
 
 int main(int argc, char** argv) {
@@ -91,7 +92,6 @@ int main(int argc, char** argv) {
     // initialize virtual file system for shaders
     // (only in distribution mode)
 #ifdef VRN_DISTRIBUTION
-    #pragma message("NOTICE: Using 'shaders.tar'. Is it up to date?")
     LINFOC("voreenve.main", "Loading shaders.tar into virtual file system ...");
     #ifndef __APPLE__
     	FileSys.addPackage(vapp.getBasePath() + "/shaders.tar", "/src/core/vis/glsl/");
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     #endif
 #endif
 
-    VoreenMainWindow mainWindow(vapp.networkFilename_, vapp.datasetFilename_);
+    VoreenMainWindow mainWindow(vapp.workspaceFilename_, vapp.datasetFilename_);
     mainWindow.show();
 
     vapp.initGL();

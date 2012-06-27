@@ -27,7 +27,7 @@
  *                                                                    *
  **********************************************************************/
 
-#ifdef WIN32
+#ifdef _MSC_VER
 
 #include "gpucapabilitieswindows.h"
 
@@ -197,7 +197,8 @@ char* GpuCapabilitiesWindows::findPrimaryDevicesKey() {
             }
         }
         ++count;
-    }while( res != FALSE );
+    }
+    while (res != FALSE);
 
     return devicesKey;
 }
@@ -414,27 +415,29 @@ VARIANT* GpuCapabilitiesWindows::WMIquery(std::string wmiClass, std::string attr
     // Step 7: -------------------------------------------------
     // Get the data from the query in step 6 -------------------
  
-    IWbemClassObject *pclsObj;
+    IWbemClassObject* pclsObj = 0;
     ULONG uReturn = 0;
    
-    while (pEnumerator && !result) {
+    if (pEnumerator) {
         HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, 
             &pclsObj, &uReturn);
 
-        if(uReturn) {
-            // Get the value of the attribute and stored it in result
+        if (uReturn) {
+            // Get the value of the attribute and store it in result
             result = new VARIANT;
             hr = pclsObj->Get(LPCWSTR(str2wstr(attribute).c_str()), 0, result, 0, 0);
         }
     }
 
-    if(!uReturn) {
-		LWARNING("ERROR: No WMI query result");
+    if (!result) {
+		LWARNING("No WMI query result");
     }
 
     // Clean enumerator and pclsObject
-    pEnumerator->Release();
-    pclsObj->Release();
+    if (pEnumerator)
+        pEnumerator->Release();
+    if (pclsObj)
+        pclsObj->Release();
 
     return result;
 

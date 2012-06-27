@@ -90,7 +90,7 @@
     #define TGT_UNUSED
 #endif
 
-#ifdef WIN32
+#ifdef _MSC_VER
     #pragma warning( disable : 4100 )
 #endif
 
@@ -104,13 +104,12 @@
 /// ulong for 32 or 64 bit sizes. This depends on your arch and/or OS
 typedef unsigned long ulong;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || (defined(WIN32) && defined(__GNUC__))
 	/* unsigned int type */
 	typedef unsigned int uint;
 #endif
 
-#ifdef WIN32
-
+#ifdef _MSC_VER
     // For nasty microsoft compiler
     #define _USE_MATH_DEFINES
 

@@ -55,11 +55,8 @@
 #include <math.h>
 #include <time.h>
 
-#include "tgt/gpucapabilities.h"
-#ifdef WIN32
-#include "tgt/gpucapabilitieswindows.h"
-#endif
 #include "tgt/camera.h"
+#include "tgt/gpucapabilities.h"
 
 namespace voreen {
 
@@ -364,7 +361,7 @@ namespace voreen {
         //This ugly code line calculates how many different resolution levels there are, for example,
         //if the bricksize is 32, there are a 6 different resolution levels (32 16 8 4 2 1). 
         brickingInformation_.totalNumberOfResolutions = static_cast<int> ( ( log( 
-            (float)brickingInformation_.brickSize) / log (2.0) ) + 1);
+            (float)brickingInformation_.brickSize) / log(2.0) ) + 1);
 
 		brickingInformation_.numVoxelsInBrick = brickingInformation_.brickSize * 
             brickingInformation_.brickSize * brickingInformation_.brickSize;
@@ -382,6 +379,9 @@ namespace voreen {
 
 		brickingInformation_.originalVolumeSizeMB = static_cast<int>(temp); 
 
+        LINFO("original volume size: " << brickingInformation_.originalVolumeDimensions << " ("
+              << brickingInformation_.originalVolumeSizeMB << " MB)");
+        
 		tgt::ivec3 bricksize = tgt::ivec3(brickingInformation_.brickSize);
 		
 		for (int i=0; i<brickingInformation_.totalNumberOfResolutions; i++) {
@@ -390,22 +390,19 @@ namespace voreen {
 		}
 
 		brickingInformation_.camera=0;
-
-        /*
-        * TODO: These values should be passed as a parameter instead of hardcoding them here.
-        */
-        brickingInformation_.gpuMemoryReserve = 100;
-        brickingInformation_.gpuMemorySize = 512;
-#ifdef WIN32
-        if (GpuCapsWin.getVideoRamSize() > 100)
-            brickingInformation_.gpuMemorySize = std::min(GpuCapsWin.getVideoRamSize(), 512);
-#endif
-		brickingInformation_.gpuAvailableMemory = 
-            brickingInformation_.gpuMemorySize - brickingInformation_.gpuMemoryReserve;
-        
         brickingInformation_.regionManager = 0;
-		
 
+        if (maxGpuMemory_ == 0) {
+            brickingInformation_.gpuAvailableMemory = estimateMaxGpuMemory();
+            LINFO("GPU memory available for bricking (estimated): "
+                  << brickingInformation_.gpuAvailableMemory << " MB");
+        } else {
+            brickingInformation_.gpuAvailableMemory = maxGpuMemory_;
+            LINFO("GPU memory available for bricking (user-specified): "
+                  << brickingInformation_.gpuAvailableMemory << " MB");
+        }
+
+        LINFO("brick size: " << brickingInformation_.brickSize);
 	}
 
 	template<class T>
@@ -449,18 +446,35 @@ namespace voreen {
 	template<class T>
 	tgt::ivec3 BrickingManager<T>::calculateOptimalTextureDims() {
 	
-        int gpuMemorySizeInByte = brickingInformation_.gpuAvailableMemory * 1024 * 1024;
+        uint64_t gpuMemorySizeInByte = brickingInformation_.gpuAvailableMemory * 1024 * 1024;
+
+        uint64_t originalVolumeVoxelSizeInByte =
+            (uint64_t)brickingInformation_.originalVolumeVoxelSizeInByte *
+            brickingInformation_.originalVolumeNumVoxels;
+        
+        if (originalVolumeVoxelSizeInByte < (uint64_t)gpuMemorySizeInByte) {
+            LINFO("original volume is smaller than memory available for bricking");
+            gpuMemorySizeInByte = originalVolumeVoxelSizeInByte;
+        }
+        LINFO("using " << gpuMemorySizeInByte / (1024*1024) << " MB for bricking");
+        
         int voxelSize = brickingInformation_.originalVolumeBytesAllocated;
         int brickSize = brickingInformation_.brickSize;
         int maxDim = GpuCaps.getMax3DTextureSize();
 
+        if ((uint64_t)maxDim*maxDim*maxDim*brickingInformation_.originalVolumeVoxelSizeInByte < gpuMemorySizeInByte) {
+            gpuMemorySizeInByte = (uint64_t)maxDim*maxDim*maxDim*brickingInformation_.originalVolumeVoxelSizeInByte;
+            LINFO("maximum texture dimension " << maxDim << " reduces usable memory to "
+                  << gpuMemorySizeInByte / (1024*1024) << " MB"); 
+        }
+
         int xDim,yDim,zDim;
 		xDim = yDim = zDim = brickSize;
         	
-		int memoryUsed = xDim*yDim*zDim * voxelSize;
+		uint64_t memoryUsed = xDim*yDim*zDim * voxelSize;
 
         //Increase the texture's x-dimension if possible, otherwise try y, then z.
-		while ( memoryUsed < gpuMemorySizeInByte) {
+		while (memoryUsed < gpuMemorySizeInByte) {
             if (xDim + brickSize <= maxDim) {
 				xDim = xDim+brickSize;
 			} else if (yDim + brickSize <= maxDim) {
@@ -469,7 +483,7 @@ namespace voreen {
 				zDim = zDim + brickSize;
             } else {
                 std::stringstream s;
-                s << "Max 3d texture sizes don't allow creation of a texture holding" << gpuMemorySizeInByte << "bytes.";
+                s << "Max 3d texture sizes doesn't allow creation of a texture holding " << gpuMemorySizeInByte << " bytes.";
                 LINFO(s.str() );
                 break;
             }
@@ -763,6 +777,13 @@ namespace voreen {
 
 		eepVolume_->meta().setBrickSize(brickingInformation_.brickSize);
         eepVolume_->meta().setFileName("bricking eep volume");
+
+
+        tgt::ivec3 dims = brickingInformation_.packedVolumeDimensions;
+        LINFO("size for packed volume: " << dims << " ("
+              << (((long)dims.x*(long)dims.y*(long)dims.z) / (1024*1024))
+              * brickingInformation_.originalVolumeVoxelSizeInByte<< " MB)");
+
         
         packedVolume_ = new VolumeAtomic<T>(brickingInformation_.packedVolumeDimensions,
 											brickingInformation_.originalVolumeSpacing,
@@ -774,7 +795,7 @@ namespace voreen {
 
 		createPackingBricks(brickingInformation_.packedVolumeDimensions,packedVolume_);
 
-		ramManager_ = new RamManager<T>(brickingInformation_,brickedVolumeReader_,600);
+		ramManager_ = new RamManager<T>(brickingInformation_, brickedVolumeReader_, maxMemory_);
 
 		packingBrickAssigner_ = new PackingBrickAssigner<T>(brickingInformation_,indexVolume_);
 
@@ -827,6 +848,11 @@ namespace voreen {
 		fillPackingBricks();
 		
 		writeVolumeDataToPackedVolume();
+
+        // Immediately free all bricks after the packed volume has been written. This is done
+        // to prevent storing three copies in RAM (one in RamManager, one in packed volume, one
+        // by OpenGL), this way they are only stored twice.
+        ramManager_->freeAll();
 
 		brickedVolume_ = new BrickedVolume(indexVolume_,packedVolume_,eepVolume_);
 		volumeHandle_->setVolume(brickedVolume_);

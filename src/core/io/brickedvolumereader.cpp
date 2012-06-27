@@ -269,10 +269,10 @@ void BrickedVolumeReader::readBrick(Brick *brick, char* volumeData, int numBytes
 		}
 	}
 
-    #ifdef UNIX 
-        fseek(bvFile_,positionInFile,SEEK_SET);
-    #else
+    #ifdef _MSC_VER
         _fseeki64(bvFile_,positionInFile,SEEK_SET);
+    #else
+        fseek(bvFile_,positionInFile,SEEK_SET);
     #endif
 
     if (fread(volumeData, 1, numBytes, bvFile_) <= 0)

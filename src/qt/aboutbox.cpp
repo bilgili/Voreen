@@ -44,7 +44,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QString s;
     s = ui.labelLeft->text();
-    s.replace("__VERSION__", "1.7");
+    s.replace("__VERSION__", "1.71");
     s.replace("__APPLICATION__", description + " " + version);
     s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 University of Münster"));
     ui.labelLeft->setText(s);

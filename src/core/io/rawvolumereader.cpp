@@ -200,10 +200,10 @@ VolumeSet* RawVolumeReader::readSlices(const std::string &fileName, size_t first
     //Now add that to the offset we might have received
 	offset_ = offset_ + skip;
 
-    #ifdef UNIX 
-        fseek(fin,offset_,SEEK_SET);
-    #else
+    #ifdef _MSC_VER
         _fseeki64(fin,offset_,SEEK_SET);
+    #else
+        fseek(fin,offset_,SEEK_SET);
     #endif
 
 	volume->clear();
@@ -362,10 +362,10 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
 
     initialSeekPos = initialSeekPos + offset_;
 
-    #ifdef UNIX 
-        fseek(fin, initialSeekPos, SEEK_SET);
-    #else
+    #ifdef _MSC_VER
         _fseeki64(fin, initialSeekPos, SEEK_SET);
+    #else
+        fseek(fin, initialSeekPos, SEEK_SET);
     #endif
 
         for (int i=0; i < brickSize; i++) {
@@ -374,16 +374,16 @@ VolumeSet* RawVolumeReader::readBrick(const std::string &fileName, tgt::ivec3 br
                 volumePos = volumePos*voxelSize;
                 if (fread(reinterpret_cast<char*>(volume->getData()) + volumePos, 1, brickSize*voxelSize, fin) == 0)
                     LWARNING("fread() failed");                    
-                #ifdef UNIX 
-                    fseek(fin, (datasetDims.x - brickSize)*voxelSize, SEEK_CUR);
-                #else
+                #ifdef _MSC_VER
                     _fseeki64(fin, (datasetDims.x - brickSize)*voxelSize, SEEK_CUR);
+                #else
+                    fseek(fin, (datasetDims.x - brickSize)*voxelSize, SEEK_CUR);
                 #endif
             }
-            #ifdef UNIX 
-                fseek(fin, (datasetDims.y - brickSize)*datasetDims.x*voxelSize, SEEK_CUR);
-            #else
+            #ifdef _MSC_VER
                 _fseeki64(fin, (datasetDims.y - brickSize)*datasetDims.x*voxelSize, SEEK_CUR);
+            #else
+                fseek(fin, (datasetDims.y - brickSize)*datasetDims.x*voxelSize, SEEK_CUR);
             #endif
         }
 

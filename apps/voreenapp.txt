@@ -12,19 +12,37 @@ qt : PRECOMPILED_HEADER = ../pch_qtapp.h
 ####################################################
 
 win32 {
-  MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+  CONFIG(debug, debug|release) {
+    MSC_CONFIG = Debug
+  } else {
+    MSC_CONFIG = Release
+  }
 
-  QMAKE_LIBDIR += \
-        "$${VRN_HOME}/ext/glew/lib"
+  visual_studio {
+    # Contains "Release" or "Debug" as selected in the IDE
+    MSC_CONFIG = $(ConfigurationName)
+  }
 
-  qt : LIBS += "$${VRN_HOME}/$(ConfigurationName)/voreen_qt.lib"
-  qt : LIBS += -lqtmain
+  QMAKE_LIBDIR += "$${VRN_HOME}/ext/glew/lib"
 
-  LIBS += "$${VRN_HOME}/$(ConfigurationName)/voreen_core.lib" \
-          "$${VRN_HOME}/ext/glew/lib/$(ConfigurationName)/glew32s.lib"
+  win32-msvc {
+    # these libs are not automatically added when building with nmake
+    nmake: LIBS *= advapi32.lib shell32.lib
+
+    qt: LIBS += "$${VRN_HOME}/$${MSC_CONFIG}/voreen_qt.lib" -lqtmain
+
+    LIBS += "$${VRN_HOME}/$${MSC_CONFIG}/voreen_core.lib"
+  }
+
+  win32-g++ {
+    qt: LIBS += "$${VRN_HOME}/$${MSC_CONFIG}/libvoreen_qt.a"
+    LIBS += "$${VRN_HOME}/$${MSC_CONFIG}/libvoreen_core.a" \
+  }
+
+  LIBS += "$${VRN_HOME}/ext/glew/lib/$${MSC_CONFIG}/glew32s.lib"
 
   # no libc for vc++ since we build a multithreaded executable
-  !isEmpty(MSC_VER) {
+  win32-msvc {
     LIBS += /NODEFAULTLIB:libc.lib
   }
 
@@ -57,26 +75,22 @@ win32 {
   }
 
   contains(DEFINES, VRN_WITH_ZIP) {
-    contains(MSC_VER, "_MSC_VER=1400") {
-      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2005/ZipArchive.lib"
-    }
-    contains(MSC_VER, "_MSC_VER=1500") {
-      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2008/$(ConfigurationName)/ZipArchive.lib"
-    }
+    win32-msvc2005: LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2005/ZipArchive.lib"
+    win32-msvc2008: LIBS += "$${VRN_HOME}/ext/ziparchive/lib/VS2008/$${MSC_CONFIG}/ZipArchive.lib"
+    win32-g++:      LIBS += "$${VRN_HOME}/ext/ziparchive/lib/mingw/libziparchive.lib"
   }
 
   contains(DEFINES, VRN_WITH_PYTHON) {
-     contains(MSC_VER, "_MSC_VER=1400") {
-      LIBS += "$${VRN_HOME}/ext/python/lib/$(ConfigurationName)/VS2005/python26.lib"
-    }
-    contains(MSC_VER, "_MSC_VER=1500") {
-      LIBS += "$${VRN_HOME}/ext/python/lib/$(ConfigurationName)/python26.lib"
-    }
+    win32-msvc2005: LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/VS2005/python26.lib"
+    win32-msvc2008: LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/python26.lib"
+    win32-g++:      LIBS += "$${VRN_HOME}/ext/python/lib/$${MSC_CONFIG}/VS2005/python26.lib"
   }
 
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
-    LIBS += "$${FREETYPE_DIR}/lib/freetype.lib"
-    LIBS += "$${FTGL_DIR}/lib/ftgl.lib"
+    win32-msvc: LIBS += "$${FREETYPE_DIR}/lib/freetype.lib"
+    win32-g++:  LIBS += "$${FREETYPE_DIR}/lib/mingw/freetype.lib"
+    win32-msvc: LIBS += "$${FTGL_DIR}/lib/ftgl.lib"
+    win32-g++:  LIBS += "$${FTGL_DIR}/lib/mingw/ftgl.lib"
     INCLUDEPATH += "$${FTGL_DIR}/include"
   }
 

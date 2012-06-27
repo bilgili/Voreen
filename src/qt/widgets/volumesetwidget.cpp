@@ -32,6 +32,7 @@
 #include <QDir>
 #include <QDragEnterEvent>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QMessageBox>
@@ -45,6 +46,10 @@
 #include "voreen/core/volume/volumesetcontainer.h"
 #include "voreen/qt/ioprogressdialog.h"
 #include "voreen/qt/widgets/volumesetwidget.h"
+#include "voreen/core/volume/bricking/largevolumemanager.h"
+#ifdef _MSC_VER
+#include "tgt/gpucapabilitieswindows.h"
+#endif
 
 #include <sstream>
 
@@ -443,6 +448,42 @@ VolumeSet* VolumeSetWidget::loadVolumeSet(const std::string& filename, const boo
     if (volumeSetContainer_ == 0 || filename.empty())
         return 0;
 
+    if (tgt::FileSystem::fileExtension(filename, true) == "bvi") {
+        bool ok;
+        int i = QInputDialog::getInteger(this, tr("Bricked Volume"),
+                                         tr("Please specify the maximum amount of <b>main memory</b><br />"
+                                            "to be used for rendering this bricked data set (in MB).<br />"
+                                            "If the value is chosen too large, the application may crash<br />"
+                                            "with an 'out of memory' exception.<br >"
+                                            "Select 'Cancel' if you don't want to load this data set right now."),
+                                         LargeVolumeManager::getMaxMemory(), 10, 16000, 1, &ok);
+        if (ok)
+            LargeVolumeManager::setMaxMemory(i);
+        else
+            return 0;
+
+        QString gpuMem;
+#ifdef _MSC_VER
+        if (GpuCapsWin.getVideoRamSize() > 100)
+            gpuMem = QString(" (estimated as %1 MB on this<br />"
+                             "system, which may be inaccurate)").arg(LargeVolumeManager::estimateMaxGpuMemory());
+#endif
+        
+        i = QInputDialog::getInteger(this, tr("Bricked Volume"),
+                                     tr("Please specify the maximum amount of <b>graphics card</b><br />"
+                                        "<b>memory</b> to be used for rendering this bricked data set (in MB).<br />"
+                                        "This value must be smaller than the chosen amount of main memory and<br />"
+                                        "smaller than the usable free GPU memory%1.<br />"
+                                        "Select 'Cancel' if you don't want to load this data set right now.")
+                                     .arg(gpuMem), i, 0, i, 1, &ok);
+        if (ok)
+            LargeVolumeManager::setMaxGpuMemory(i);
+        else
+            return 0;
+    }
+        
+
+    
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if (useProgress_)
         progress_->show(filename);
