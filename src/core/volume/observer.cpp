@@ -176,12 +176,13 @@ void Observable::notifyObservers() const {
     if (observers_.empty())
         return;
 
-    std::set<Observer*>::const_iterator it = observers_.begin();
-    for (std::set<Observer*>::const_iterator it = observers_.begin();
-        it != observers_.end(); ++it)
+    // must work on a copy as notify() might delete elements
+    std::set<Observer*> observers = observers_;   
+    std::set<Observer*>::const_iterator it = observers.begin();
+    for (std::set<Observer*>::const_iterator it = observers.begin();
+        it != observers.end(); ++it)
     {
-        if (*it != 0)
-            (*it)->notify(this);
+        (*it)->notify(this);
     }
 }
 

@@ -298,9 +298,9 @@ protected:
 public:
     KeyEvent(KeyCode keyCode, int mod, bool pressed);
 
-    KeyCode keyCode() { return keyCode_; };
-    int modifiers() { return mod_; };
-    bool pressed() { return pressed_; };
+    KeyCode keyCode();
+    int modifiers();
+    bool pressed();
 	virtual int getEventType();
 };
 

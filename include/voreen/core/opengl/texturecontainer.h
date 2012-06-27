@@ -267,6 +267,14 @@ public:
     virtual tgt::ivec2 getSize();
 
     /**
+     * Returns the capacity of the TextureContainer.
+     *
+     * @return  number of allocated textures, including the one
+     *          for the framebuffer.
+     */
+    int getCapacity() const;
+
+    /**
      * Returns the number of available targets.
      *
      * @return number of available targets.

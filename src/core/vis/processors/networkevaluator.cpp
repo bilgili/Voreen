@@ -32,17 +32,19 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/geometry/geometrycontainer.h"
 #include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/volume/volumesetcontainer.h"
 #include "voreen/core/vis/exception.h"
 #include "voreen/core/vis/idmanager.h"
 #include "voreen/core/vis/voreenpainter.h"
+
 #include "voreen/core/vis/processors/portmapping.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
 #include "voreen/core/vis/processors/volumesetsourceprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometryprocessor.h"
 #include "voreen/core/vis/processors/image/cacherenderer.h"
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
 #include "voreen/core/vis/processors/image/coarsenessrenderer.h"
-#include "voreen/core/vis/processors/image/geometryprocessor.h"
 #include "voreen/core/vis/processors/image/nullrenderer.h"
 #include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
 
@@ -62,6 +64,7 @@ NetworkEvaluator::NetworkEvaluator()
     : readyToEvaluate_(false)
     , tc_(0)
     , geoContainer_(0)
+    , volumeSetContainer_(0)
     , reuseTextureContainerTargets_(false)
     , currentViewportSize_(0)
     , coarsenessActive_(false)
@@ -72,12 +75,9 @@ NetworkEvaluator::NetworkEvaluator()
 {
     setTag("evaluator");
 
-#ifdef DEBUG
+#ifdef VRN_DEBUG
     // add process wrapper for checking OpenGL state
     addProcessWrapper(new CheckOpenGLStateProcessWrapper());
-#endif
-#ifndef VRN_WITH_VOLUMECACHING
-    volumeCache_.setEnabled(false);
 #endif
 }
 
@@ -92,12 +92,9 @@ NetworkEvaluator::NetworkEvaluator(std::vector<Processor*> processors)
 {
     setTag("evaluator");
 
-#ifdef DEBUG
+#ifdef VRN_DEBUG
     // add process wrapper for checking OpenGL state
     addProcessWrapper(new CheckOpenGLStateProcessWrapper());
-#endif
-#ifdef VRN_WITH_VOLUMECACHING
-    volumeCache_.setEnabled(false);
 #endif
 }
 
@@ -116,10 +113,18 @@ int NetworkEvaluator::analyze() {
     readyToEvaluate_ = false;
 
     std::vector<Processor*> endProcessors;
-    //go through all processors and propagate tc and camera to them
+    //go through all processors and propagate volumecontainer, tc and camera to them
     for (size_t i = 0; i < processors_.size(); ++i) {
-        processors_[i]->setGeometryContainer(geoContainer_);
-        processors_[i]->setTextureContainer(tc_);
+        VolumeSetSourceProcessor* vss = dynamic_cast<VolumeSetSourceProcessor*>(processors_[i]);
+        if (vss)
+            vss->setVolumeSetContainer(volumeSetContainer_);
+
+		RenderProcessor* rp = dynamic_cast<RenderProcessor*>(processors_[i]);
+		if(rp) {
+			rp->setGeometryContainer(geoContainer_);
+			rp->setTextureContainer(tc_);
+            rp->setSize(currentViewportSize_);
+		}
 
         if (processors_[i]->isEndProcessor())
             endProcessors.push_back(processors_[i]);
@@ -189,6 +194,10 @@ TextureContainer* NetworkEvaluator::getTextureContainer() {
     return tc_;
 }
 
+VolumeSetContainer* NetworkEvaluator::getVolumeSetContainer() {
+    return volumeSetContainer_;
+}
+
 GeometryContainer* NetworkEvaluator::getGeometryContainer() {
     return geoContainer_;
 }
@@ -208,6 +217,9 @@ std::map<Processor*,int> NetworkEvaluator::getPriorityMap() {
 //TODO: return void (can use getter instead)
 TextureContainer* NetworkEvaluator::initTextureContainer(int finalTarget) {
     tc_ = TextureContainer::createTextureContainer(finalTarget + 1);
+    if (!tc_)
+        return 0;
+
     tc_->setFinalTarget(finalTarget);
 
     if (!tc_->initializeGL()) {
@@ -240,6 +252,10 @@ void NetworkEvaluator::clearLocalPortMap() {
 }
 
 void NetworkEvaluator::doPortMapping() {
+    
+    if (!tc_)
+        return;
+
     if (geoContainer_)
         geoContainer_->clear();
 
@@ -311,12 +327,11 @@ void NetworkEvaluator::doPortMapping() {
             // occur because the Port's dtor will delete the PortData. (dirk)
             //
             PortData* portData = port->getPortData();
-            if (portData == 0) {
-                if ((port->getType().getSubString(0) == "geometry") && (geoContainer_ != 0)) {
-                    const int geometryContainerNumber = geoContainer_->getNextID();
-                    portData = new PortDataGeometry(geometryContainerNumber);
-                }
-                else if (port->getType().getSubString(0) == "volumehandle") {
+
+            if ((port->getType() == Port::PORT_TYPE_GEOMETRY) && (geoContainer_ != 0)) {
+                portData = new PortDataGeometry(geoContainer_->getNextID());
+            } else if (port->getType() == Port::PORT_TYPE_VOLUMEHANDLE) { 
+                if (portData == 0) {
                     // the processor knows the pointer to the volume because
                     // the current port is the outport of the current processor!
                     if (typeid(*processor) == typeid(VolumeSelectionProcessor)) {
@@ -326,50 +341,51 @@ void NetworkEvaluator::doPortMapping() {
                     }
                     LWARNING("processor '" << processor->getName() <<"' created a VolumeHandle outport "
                         << "probably not using createGenericOutport()!");
-                } else {
-                    // Do PortMapping for "normal" ports
-                    // newPortEntry() creates a new entry in the portEntries_ map for the current port, saving
-                    // the port together with its connected ports. This is needed to determine when to free
-                    // the TC target this port renders to. If the port is set to persistent, no entry is made
-                    // and as a result the target is never freed.
+                }
+            } else if (port->getType() == Port::PORT_TYPE_IMAGE) {
+                // Do PortMapping for "normal" ports
+                // newPortEntry() creates a new entry in the portEntries_ map for the current port, saving
+                // the port together with its connected ports. This is needed to determine when to free
+                // the TC target this port renders to. If the port is set to persistent, no entry is made
+                // and as a result the target is never freed.
 
-                    // If the port isn't connected to another port, it is unused and doesn't need target. If
-                    // you want a target even though the port isn't connected, get a private port.
-                    if (port->getConnected().size() > 0) {
-                        bool isPortForbiddenForOtherEvaluators = false;
-                        if (!port->getIsPersistent())
-                            newPortEntry(port);
-                        else
-                            isPortForbiddenForOtherEvaluators = true;
+                // If the port isn't connected to another port, it is unused and doesn't need target. If
+                // you want a target even though the port isn't connected, get a private port.
+                portData = 0;
+                if (port->getConnected().size() > 0) {
+                    bool isPortForbiddenForOtherEvaluators = false;
+                    if (!port->isPersistent())
+                        newPortEntry(port);
+                    else
+                        isPortForbiddenForOtherEvaluators = true;
 
-                        if (processor->getOutportToInportMap()[port] != 0) {
-                            Port* tempPort = processor->getOutportToInportMap()[port];
-                            std::vector<PortData*> portDataTemp = portMap_[tempPort];
-                            if (portDataTemp.size() > 0) {
-                                target = dynamic_cast<PortDataTexture*>(portDataTemp.at(0))->getData();
-                                if (isPortForbiddenForOtherEvaluators)
-                                    tempForbiddenTargets_.push_back(target);
-                            } else {
-                                target = targetList.top();
-                                if (isPortForbiddenForOtherEvaluators)
-                                    tempForbiddenTargets_.push_back(target);
-                                //remove the target from the queue, thereby indicating that it is used
-                                targetList.pop();
-                            }
+                    if (processor->getOutportToInportMap()[port] != 0) {
+                        Port* tempPort = processor->getOutportToInportMap()[port];
+                        std::vector<PortData*> portDataTemp = portMap_[tempPort];
+                        if (portDataTemp.size() > 0) {
+                            target = dynamic_cast<PortDataTexture*>(portDataTemp.at(0))->getData();
+                            if (isPortForbiddenForOtherEvaluators)
+                                tempForbiddenTargets_.push_back(target);
                         } else {
-                            if (targetList.empty())
-                                throw VoreenException("No more free targets available. Try to enable the target reusing.");
                             target = targetList.top();
                             if (isPortForbiddenForOtherEvaluators)
                                 tempForbiddenTargets_.push_back(target);
                             //remove the target from the queue, thereby indicating that it is used
                             targetList.pop();
                         }
+                    } else {
+                        if (targetList.empty())
+                            throw VoreenException("No more free targets available. Try to enable the target reusing.");
+                        target = targetList.top();
+                        if (isPortForbiddenForOtherEvaluators)
+                            tempForbiddenTargets_.push_back(target);
+                        //remove the target from the queue, thereby indicating that it is used
+                        targetList.pop();
+                    }
 
-                         portData = new PortDataTexture(target);
-                    }   // if (port->getConnected() > 0)
-                }   // else (port type identification)
-            }   // if (portData == 0)
+                     portData = new PortDataTexture(target);
+                }   // if (port->getConnected() > 0)
+            }   // else (port type identification)
 
             // No part data was mapped to this port - ignore
             if (portData == 0)
@@ -544,7 +560,8 @@ void NetworkEvaluator::doPortMapping() {
         localPortMap_.insert(std::make_pair(processors_[i], localMapping));
     }
 
-    LINFO("portmapping created, using " << (numTargets - targetList.size()) << " render targets");
+    LINFO("portmapping created, using " << (numTargets - targetList.size())
+          << "/" << numTargets << " render targets");
 }
 
 void NetworkEvaluator::initializeCaching() {
@@ -840,13 +857,16 @@ int NetworkEvaluator::evaluate() {
 
                     // run the Processor when its initialized correctly
                     if (currentProcessor->getInitStatus() == Processor::VRN_OK) {
-                        //viewport does not match size of processor
-                        //-> adjust viewport and remember new size
-                        if (currentViewportSize_ != currentProcessor->getSize()) {
-                            glViewport(0, 0, currentProcessor->getSize().x,
-                                             currentProcessor->getSize().y);
-                            currentViewportSize_ = currentProcessor->getSize();
-                        }
+						RenderProcessor* rp = dynamic_cast<RenderProcessor*>(currentProcessor);
+						if(rp) {
+							//viewport does not match size of processor
+							//-> adjust viewport and remember new size
+							if (currentViewportSize_ != rp->getSize()) {
+								glViewport(0, 0, rp->getSize().x,
+										rp->getSize().y);
+								currentViewportSize_ = rp->getSize();
+							}
+						}
 
                         currentProcessor->process(localPortMap_[currentProcessor]);
                     }
@@ -942,15 +962,18 @@ void NetworkEvaluator::sortProcessorsByPriority() {
     }
 }
 
-void NetworkEvaluator::setProcessors(std::vector<Processor*> processors) {
+void NetworkEvaluator::setProcessors(const std::vector<Processor*>& processors) {
     processors_.clear();
     processors_ = processors;
     canvas_ = 0;
-    
+
     for (size_t i=0; i < processors_.size(); i++) {
-        processors_[i]->setTextureContainer(getTextureContainer());
-        if (camera_)
-            processors_[i]->setCamera(camera_);        
+		RenderProcessor* rp = dynamic_cast<RenderProcessor*>(processors_[i]);
+		if(rp) {
+			rp->setTextureContainer(getTextureContainer());
+			if (camera_)
+				rp->setCamera(camera_);        
+		}
     }
     
     readyToEvaluate_ = false;
@@ -959,6 +982,10 @@ void NetworkEvaluator::setProcessors(std::vector<Processor*> processors) {
     targetsToRemove.tc = tc_;
     targetsToRemove.forbiddenTargets = forbiddenTargets_;
     MsgDistr.postMessage(new ForbiddenTargetsMsg(removeForbiddenTargets_, targetsToRemove));
+}
+
+void NetworkEvaluator::setVolumeSetContainer(VolumeSetContainer* const volSetContainer) {
+    volumeSetContainer_ = volSetContainer;
 }
 
 void NetworkEvaluator::setGeometryContainer(GeometryContainer* const geoContainer) {
@@ -984,6 +1011,7 @@ int NetworkEvaluator::initializeGL() {
                    << " (" << processors_[i]->getName() << ")");
             // don't break, try to initialize the other processors even if one failed
             failed = true;
+            readyToEvaluate_ = false;
         }
     }
     return (failed ? Processor::VRN_ERROR : Processor::VRN_OK);
@@ -993,8 +1021,12 @@ void NetworkEvaluator::setSize(const tgt::ivec2& size) {
     // the viewport in OpenGL is already set to new size in voreenpainter (calls this method)
     // so only save new viewportsize
     currentViewportSize_ = size;
-    for (size_t i=0; i < processors_.size(); ++i)
-        processors_[i]->setSize(size);
+    for (size_t i=0; i < processors_.size(); ++i) {
+		RenderProcessor* rp = dynamic_cast<RenderProcessor*>(processors_[i]);
+		if(rp) {
+			rp->setSize(size);
+		}
+	}
 }
 
 void NetworkEvaluator::switchCoarseness(bool active) {
@@ -1027,8 +1059,11 @@ void NetworkEvaluator::switchCoarseness(bool active) {
         // iterate through all processors and set new size according to coarseness factor
         std::vector<Processor*>::iterator it;
         for (it = visitedProcessors.begin(); it != visitedProcessors.end(); ++it) {
-            // set new size in processor, need float size here
-            (*it)->setSize((*it)->getSizeFloat() * coarseFactor);
+			RenderProcessor* rp = dynamic_cast<RenderProcessor*>((*it));
+			if(rp) {
+				// set new size in processor, need float size here
+				rp->setSize(rp->getSizeFloat() * coarseFactor);
+			}
         }
     }
 }
@@ -1114,7 +1149,6 @@ void NetworkEvaluator::updateCachingStatus(Processor* processor) {
     }
 }
 
-
 NetworkEvaluator::CacheState NetworkEvaluator::handleVolumeCaching(Processor* const processor) {
     // at first test for the two simplest cases
     //
@@ -1171,7 +1205,8 @@ bool NetworkEvaluator::remapVolumeHandlePortMapping(Processor* const processor) 
         // doPortMapping() basically does the same, but it takes the VolumeHandle** rather from
         // the processor directly than from the cache. (dirk)
         //
-        VolumeHandle** handleAddr = portMapping->getGenericData<VolumeHandle**>(outports[i]->getType());
+        VolumeHandle** handleAddr = 
+            portMapping->getGenericData<VolumeHandle**>(outports[i]->getTypeIdentifier());
         if (handleAddr != 0)
             *handleAddr = handle;
     }
@@ -1231,7 +1266,7 @@ void NetworkEvaluator::addRenderTargetsUsedInCaching() {
         for (size_t j = 0; j < outports.size(); ++j) {
             Port* currentPort = outports[j];
             if (currentPort->getConnected().size() > 0) {
-                std::string portType = currentPort->getType().getSubString(0);
+                std::string portType = currentPort->getTypeIdentifier().getSubString(0);
                 // TODO: why not take the only allowed kind of ports "image"? 
                 // anything else would not work (df)
                 //
@@ -1365,3 +1400,4 @@ void NetworkEvaluator::removeProcessWrappers() {
 }
 
 } // namespace voreen
+

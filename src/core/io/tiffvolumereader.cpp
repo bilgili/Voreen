@@ -264,7 +264,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
         return 0;
     }
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
     VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     for ( int i = 0; i < band; i++ ) {

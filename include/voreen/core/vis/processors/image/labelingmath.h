@@ -402,7 +402,7 @@ public:
         channels_ = channels;
     };
 
-    /// Creates a bitmap by providing the data as an array and specifieing
+    /// Creates a bitmap by providing the data as an array and specifying
     /// its dimensions and channels count.
     Bitmap(T* data, int width, int height, int channels = 1) {
         data_ = data;
@@ -412,17 +412,14 @@ public:
     };
 
     ~Bitmap(){
-        if (data_ != NULL){
-            delete data_;
-            data_ = NULL;
-        }
+        delete[] data_;
+        data_ = 0;
     }
 
     /// Sets the bitmap's data by providing the data array and
     /// its dimensions and channels count.
     void setData(T* data, int width, int height, int channels = 1){
-        if (data_ != NULL)
-            delete data_;
+        delete[] data_;
         data_ = data;
         width_ = width;
         height_ = height;
@@ -549,10 +546,8 @@ public:
 
     /// Deletes the bitmap's data array.
     void freeData(){
-        if (data_ != NULL){
-            delete data_;
-            data_ = NULL;
-        }
+        delete[] data_;
+        data_ = 0;
     }
 
     /// Returns the bitmap's width
@@ -567,9 +562,7 @@ public:
     /// Sets image's dimension to width, height
     /// image data is cleared!
     void setDim(int width, int height, int channels=1){
-        if (data_ != NULL){
-            delete data_;
-        }
+        delete[] data_;
         data_ = new T[width*height*channels];
         width_ = width;
         height_ = height;

@@ -38,25 +38,23 @@
 
 namespace voreen {
 
-//TODO: merge EntryExitPoints and CubeEntryExitPoints
-//TODO: possibly move jittering into extra class
-//TODO: move scaling/translation into ProxyGeometry
-
 /**
  * Calculates the entry and exit points for GPU raycasting. The parameters are stored in
  * (float) textures. The textures are provided by the class TextureContainer.
  */
 class EntryExitPoints : public VolumeRenderer {
 public:
+
     /**
      *   Constructor
      */
     EntryExitPoints();
     virtual ~EntryExitPoints();
 
-    /**
-     * Initialize the shader program.
-     */
+    virtual const Identifier getClassName() const { return "EntryExitPoints.EntryExitPoints"; }
+
+    virtual Processor* create() const { return new EntryExitPoints(); }
+
     virtual int initializeGL();
 
     virtual void process(LocalPortMapping* portMapping);
@@ -67,28 +65,8 @@ public:
     */
     virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
-    ///Set a Transformationmatrix that will be multiplied with current modelView-Matrix
-    ///before rendering of Proxygeometry
-    void setTransformationMatrix(tgt::mat4 trans);
-
-    ///Set scaling of entryExitParams in x, y, and z-direction
-    void setScaling(tgt::vec3 scale);
-
-    ///Set translation of entryExitParams in x,y and z-direction
-    void setTranslation(tgt::vec3 trans);
-
-    ///Set angle of rotation around x-axis
-    void setRotationX(float angle);
-
-    ///Set angle of rotation around y-axis
-    void setRotationY(float angle);
-
-    ///Set angle of rotation around z-axis
-    void setRotationZ(float angle);
-
-    void setPropertyDestination(Identifier tag);
-
 protected:
+
     /// Complements the parts of the entry points texture clipped by the near plane.
     void complementClippedEntryPoints(LocalPortMapping* portMapping);
 
@@ -103,8 +81,6 @@ protected:
     void generateJitterTexture();
 
     void onFilterJitterTextureChange();
-    void onSetScaleChange();
-    void onSetTranslationChange();
 
     tgt::Shader* shaderProgram_;
     tgt::Shader* shaderProgramJitter_;
@@ -114,16 +90,12 @@ protected:
     static const Identifier exitPointsTexUnit_;
     static const Identifier jitterTexUnit_;
 
-    //properties for gui generation:
+    // processor properties
     BoolProp supportCameraInsideVolume_;
-
     BoolProp jitterEntryPoints_;
     BoolProp filterJitterTexture_;
     FloatProp jitterStepLength_;
     tgt::Texture* jitterTexture_;
-
-    tgt::mat4 transformationMatrix_;
-    bool switchFrontAndBackFaces_;
 
     static const std::string loggerCat_;
 };

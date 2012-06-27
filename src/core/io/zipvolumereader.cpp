@@ -125,7 +125,7 @@ VolumeSet* ZipVolumeReader::read(const std::string& fileName)
         
         // Load the volumes with the help of a temporary multivolumereader
         VolumeSet* volumeSet = MultiVolumeReader(populator_, getProgress()).read(indexFilePath);
-        volumeSet->setName(tgt::File::fileName(fileName));
+        volumeSet->setName(tgt::FileSystem::fileName(fileName));
 
         // Set the correct origins
         for (size_t iter = 0; iter < volumeSet->getAllVolumeHandles().size(); ++iter) {

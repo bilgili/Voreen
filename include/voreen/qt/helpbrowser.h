@@ -30,28 +30,25 @@
 #ifndef VRN_HELPBROWSER_H
 #define VRN_HELPBROWSER_H
 
-#include <QTextBrowser>
 #include <QMainWindow>
-#include <QDir>
+#include <QUrl>
+
+class QTextBrowser;
 
 namespace voreen {
 
 /**
- * Documentation available soon...otherwise ask me (f_wisn01)
+ * A simple HTML browser
  */
 class HelpBrowser : public QMainWindow {
     Q_OBJECT
 public:
-    HelpBrowser(QWidget* parent = 0);
-    HelpBrowser(QUrl startPage, QWidget* parent = 0);
-    ~HelpBrowser();
+    HelpBrowser(const QUrl& startPage = QUrl(), const QString& title ="", QWidget* parent = 0);
 
     void createAndConnectToolbar();
-
+    
 private:
-
     QTextBrowser* browser_;
-
 };
 
 } // namespace voreen

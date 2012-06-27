@@ -33,7 +33,7 @@ namespace voreen {
 
 SimpleRaycaster::SimpleRaycaster()
     : VolumeRaycaster()
-    , transferFunc_(setTransFunc_, "Transfer Function")
+    , transferFunc_(setTransFunc_, "Transfer function")
 {
     setName("SimpleRaycaster");
 
@@ -73,7 +73,6 @@ void SimpleRaycaster::compile() {
 }
 
 void SimpleRaycaster::process(LocalPortMapping* portMapping) {
-
     int entryParams = portMapping->getTarget("image.entrypoints");
     int exitParams = portMapping->getTarget("image.exitpoints");
 
@@ -82,11 +81,16 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle")) == false)
+    bool handleChanged;
+    if (!VolumeRaycaster::checkVolumeHandle(currentVolumeHandle_,
+                                           portMapping->getVolumeHandle("volumehandle.volumehandle"),&handleChanged))
     {
         return;
     }
+
+    if (handleChanged) {
+		invalidateShader();
+	}
 
     transferFunc_.setVolumeHandle(currentVolumeHandle_);
 
@@ -118,6 +122,8 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping) {
         "volume_",
         "volumeParameters_")
     );
+
+    addBrickedVolumeModalities(volumeTextures);
 
        // segmentation volume
     VolumeGL* volumeSeg = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
@@ -162,6 +168,8 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping) {
     if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
         raycastPrg_->setUniform("segment_" , static_cast<float>(segment_.get()));
 
+    setBrickedVolumeUniforms();
+
     renderQuad();
 
     raycastPrg_->deactivate();
@@ -170,7 +178,7 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping) {
 }
 
 std::string SimpleRaycaster::generateHeader() {
-    std::string header = VolumeRenderer::generateHeader();
+    std::string header = VolumeRaycaster::generateHeader(getVolumeHandle());
 
     header += transferFunc_.get()->getShaderDefines();
 

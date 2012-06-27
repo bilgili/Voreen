@@ -57,6 +57,8 @@ void HistogramThread::run() {
     emit setHistogram(hist);
 }
 
+//-----------------------------------------------------------------------------
+
 TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFuncIntensity* tf, bool noColor,
                                                bool clipThresholds, QString xAxisText,
                                                QString yAxisText)
@@ -850,20 +852,27 @@ void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
 
 void TransFuncMappingCanvas::volumeChanged(Volume* volume, int count) {
     if (histogramThread_) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         histogramThread_->wait(); // wait for old thread to finish before deleting
         delete histogramThread_;
+        histogramThread_ = 0;
+        QApplication::restoreOverrideCursor();
     }
     histogramPainter_->setHistogram(0);
 
-    // calculate new histogram in background thread and propagate to HistogramPainter
-    histogramThread_ = new HistogramThread(volume, count, this);
-    connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
-            histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
-    connect(histogramThread_, SIGNAL(finished()),
-            this, SLOT(update()));
-    update();
-    histogramThread_->start();
-
+    if (volume) {
+        // calculate new histogram in background thread and propagate to HistogramPainter
+        histogramThread_ = new HistogramThread(volume, count, this);
+        connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
+                histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
+        connect(histogramThread_, SIGNAL(finished()),
+                this, SLOT(update()));
+        update();
+        histogramThread_->start();
+    } else {
+        update();
+    }
+    
     maximumIntensity_ = count - 1;
 }
 

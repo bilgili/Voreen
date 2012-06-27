@@ -55,7 +55,7 @@ const Identifier SliceRendererBase::volTexUnit_("volTexUnit");
 
 SliceRendererBase::SliceRendererBase()
     : VolumeRenderer(),
-    transferFunc_(setTransFunc_, "Transfer Function"),
+    transferFunc_(setTransFunc_, "Transfer function"),
     transferFuncShader_(0)
 {
     std::vector<Identifier> units;

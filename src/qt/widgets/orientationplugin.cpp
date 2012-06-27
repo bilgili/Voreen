@@ -31,6 +31,8 @@
 
 #include <vector>
 
+#include "voreen/core/application.h"
+
 #include "tgt/quaternion.h"
 #include "tgt/quadric.h"
 #include "tgt/glmath.h"
@@ -80,15 +82,24 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
     TexMgr.dispose(topTex_);
     TexMgr.dispose(rightTex_);
 
-    //TODO: This is only used in the VoreenGlyph application. Should have some textures for the
-    //default case, too.
+    std::string texturePath = VoreenApplication::app()->getTexturePath();
+    
     if (set == "cardiac") {
         textureNames_[Front] = "";
         textureNames_[Back] = "";
-        textureNames_[Bottom] = "anterior2.png";
-        textureNames_[Left] = "septal2.png";
-        textureNames_[Top] = "inferior2.png";
-        textureNames_[Right] = "lateral2.png";
+        textureNames_[Bottom] = texturePath + "/anterior2.png";
+        textureNames_[Left] = texturePath + "/septal2.png";
+        textureNames_[Top] = texturePath + "/inferior2.png";
+        textureNames_[Right] = texturePath + "/lateral2.png";
+    }
+
+    if (set == "standard") {
+        textureNames_[Front] = texturePath + "/axial_t.png";
+        textureNames_[Back] = texturePath + "/axial_b.png";
+        textureNames_[Bottom] = texturePath + "/coronal_f.png";
+        textureNames_[Left] = texturePath + "/sagittal_r.png";
+        textureNames_[Top] = texturePath + "/coronal_b.png";
+        textureNames_[Right] = texturePath + "/sagittal_l.png";
     }
 
     if (textureNames_[Front] != "")
@@ -248,8 +259,11 @@ void SchematicOverlayObject::renderCubeToBuffer() {
 
 void SchematicOverlayObject::renderCube() {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glEnable(GL_TEXTURE_2D);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    if (showTextures_) {    
+        glEnable(GL_TEXTURE_2D);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    }
 
     //top
     if (showTextures_ && topTex_) {
@@ -826,13 +840,13 @@ void OrientationPlugin::applyOrientation(const quat& q) {
     keyframe.push_back(q.w);
     keyframe.push_back(slDistance_->value() / CAM_DIST_SCALE_FACTOR);
     std::string message;
-/*    if (checkAnimation_->isChecked()) {
-        message = "set.cameraApplyOrientationAndDistanceAnimated";
-    } else {
-        message = "set.cameraApplyOrientation";
-    } */
-    //message = "set.cameraApplyOrientationAndDistanceAnimated";
-    message = "set.cameraApplyOrientation";
+//     if (checkAnimation_->isChecked()) {
+//         message = "set.cameraApplyOrientationAndDistanceAnimated";
+//     } else {
+//         message = "set.cameraApplyOrientation";
+//     }
+    message = "set.cameraApplyOrientationAndDistanceAnimated";
+//     message = "set.cameraApplyOrientation";
 
     MsgDistr.postMessage(new TemplateMessage<std::vector<float> >(message, keyframe),
         MsgDistr.getCurrentViewId());

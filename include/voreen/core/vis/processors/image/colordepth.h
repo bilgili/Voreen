@@ -30,7 +30,7 @@
 #ifndef VRN_COLORDEPTHPP_H
 #define VRN_COLORDEPTHPP_H
 
-#include "voreen/core/vis/processors/image/imageprocessor.h"
+#include "voreen/core/vis/processors/image/imageprocessordepth.h"
 
 namespace voreen {
 
@@ -38,7 +38,7 @@ namespace voreen {
  * Performs a color filtering which encodes depth information.
  *
  */
-class ColorDepth : public ImageProcessor {
+class ColorDepth : public ImageProcessorDepth {
 public:
     /**
      * The Constructor.

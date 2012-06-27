@@ -215,7 +215,7 @@ tgt::MouseEvent::MouseButtons QtCanvas::getButtons(QMouseEvent* e) {
     return static_cast<tgt::MouseEvent::MouseButtons>(buttons);
 }
 
-int QtCanvas::getModifier(QInputEvent* e) {
+tgt::Event::Modifier QtCanvas::getModifier(QInputEvent* e) {
     int result = 0;
     if (e->modifiers() & Qt::ControlModifier)
         result |= int(tgt::Event::CTRL);
@@ -227,11 +227,10 @@ int QtCanvas::getModifier(QInputEvent* e) {
         result |= int(tgt::Event::META);
     if (e->modifiers() == Qt::NoModifier)
         result = int(tgt::Event::NONE);
-    return result;
+    return tgt::Event::Modifier(result);
 }
 
 QGLFormat QtCanvas::getQGLFormat(const Buffers buffers) {
-
     QGLFormat format = QGLFormat();
     format.setAlpha(buffers & GLCanvas::ALPHA_BUFFER);
     format.setDepth(buffers & GLCanvas::DEPTH_BUFFER);

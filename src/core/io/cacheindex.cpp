@@ -15,6 +15,9 @@ using tgt::FileSystem;
 
 namespace voreen {
 
+// Implementations for class CacheIndexSubEntry
+//
+
 CacheIndex::CacheIndexEntry::CacheIndexSubEntry::CacheIndexSubEntry(const std::string& processorState, 
                                                                     const std::string& processorInportConfig,
                                                                     const std::string& filename)
@@ -74,6 +77,9 @@ TiXmlElement* CacheIndex::CacheIndexEntry::CacheIndexSubEntry::serializeToXml() 
 }
 
 // ----------------------------------------------------------------------------
+
+// Implementations for class CacheIndexEntry
+//
 
 const std::string CacheIndex::CacheIndexEntry::loggerCat_ = "CacheIndexEntry";
 
@@ -245,13 +251,15 @@ size_t CacheIndex::CacheIndexEntry::freeDataRefCount() {
 
 // ----------------------------------------------------------------------------
 
+// Implementations for class CacheIndex
+//
+
 const std::string CacheIndex::loggerCat_("CacheIndex");
 const std::string CacheIndex::indexFilename_("cacheindex.xml");
     
 CacheIndex::~CacheIndex() {
-#ifdef VRN_WITH_VOLUMECACHING
-    writeIndexFile();
-#endif
+    if (CacheBase::isCachingEnabled() == true)
+        writeIndexFile();
 }
 
 std::vector<std::pair<std::string, std::string> > CacheIndex::cleanup() {
@@ -316,7 +324,7 @@ std::string CacheIndex::insert(Processor* const processor, Port* const port,
                                            const std::string& filename)
 {
     CacheIndex::CacheIndexEntry cie(processor->getClassName().getName(), processor->getName(), 
-        port->getType().getName(), objectClassName);
+        port->getTypeIdentifier().getName(), objectClassName);
     std::string entryKey = cie.makeKey();
 
     // If the key is a new one and needs to be inserted, check whether the threshold for 
@@ -369,7 +377,7 @@ inline CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const p
         return IndexKey("", "");
 
     return IndexKey(std::string("Processor{" + processor->getClassName().getName() 
-        + "}.Outport{" + port->getType().getName() + "}"),
+        + "}.Outport{" + port->getTypeIdentifier().getName() + "}"),
         std::string ("InportConfig{" + inportConfig
         + "}.State{" + processor->getState() + "}"));
 }
@@ -380,10 +388,15 @@ inline CacheIndex::IndexKey CacheIndex::generateCacheIndexKey(Processor* const p
 CacheIndex::CacheIndex() 
     : cacheFolder_(VoreenApplication::app()->getCachePath())
 {
-#ifdef VRN_WITH_VOLUMECACHING
-    if (prepareCacheFolder())
-        readIndexFile();
-#endif
+    if (CacheBase::isCachingEnabled() == true) {
+        if (prepareCacheFolder() == true)
+            readIndexFile();
+        else {
+            LINFO("Failed to prepare the directory used for cached data. The cache will be disabled.");
+            LINFO("Please check your rights to access the local file system.");
+            CacheBase::setCachingEnabled(false);
+        }
+    }
 }
 
 size_t CacheIndex::freeEntriesRefCount() {
@@ -408,10 +421,15 @@ size_t CacheIndex::freeEntriesRefCount() {
 }
 
 bool CacheIndex::prepareCacheFolder() {
-    if (FileSystem::directoryExists(cacheFolder_))
+    if (FileSystem::dirExists(cacheFolder_))
         return true;
-    else
-        return FileSystem::createDirectory(cacheFolder_);
+    else {
+        LINFO("Cache directory '" << cacheFolder_ << "' seems to not exist. Trying to create it...");
+        bool res = FileSystem::createDirectory(cacheFolder_);
+        if (res)
+            LINFO("Directory '" << cacheFolder_ << "' created successfully!");
+        return res;
+    }
 }
 
 bool CacheIndex::readIndexFile() {

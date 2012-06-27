@@ -26,7 +26,10 @@ unix {
     LIBS += -lILU
   }
 }
-
+macx {
+  LIBS += -framework OpenGL
+  LIBS += -framework ApplicationServices
+}
 
 
 SOURCES	+= voltool.cpp \

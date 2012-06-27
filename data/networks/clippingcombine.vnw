@@ -107,7 +107,7 @@
             <Processor id="1" port="image.inport" />
         </Outport>
     </Processor>
-    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="9">
+    <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="9">
         <MetaData>
             <RptProcessorItem x="-250" y="-309" />
         </MetaData>
@@ -251,7 +251,7 @@
             <Processor id="15" port="coprocessor.proxygeometry" />
         </Outport>
     </Processor>
-    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="15">
+    <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="15">
         <MetaData>
             <RptProcessorItem x="-84" y="-407" />
         </MetaData>

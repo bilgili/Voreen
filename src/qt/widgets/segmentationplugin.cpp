@@ -31,10 +31,10 @@
 
 #include "voreen/core/vis/processors/render/volumeraycaster.h"
 #include "voreen/core/vis/voreenpainter.h"
+
 #include "voreen/core/vis/processors/networkevaluator.h"
+
 #include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
-#include "voreen/qt/widgets/thresholdwidget.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -51,6 +51,7 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QApplication>
 
 namespace voreen {
 
@@ -59,14 +60,11 @@ using tgt::ivec2;
 SegmentationPlugin::SegmentationPlugin(QWidget* parent, NetworkEvaluator* evaluator)
     : WidgetPlugin(parent, 0),
       evaluator_(evaluator),
-      transFuncProp_("Segmentation Plugin TF", "Transfer Function"),
       intensityEditor_(0)
 {
     setObjectName(tr("Segmentation"));
     icon_ = QIcon(":/icons/segmentation.png");
 
-    transFuncProp_.disableEditor(TransFuncProp::Editors(TransFuncProp::ALL & ~TransFuncProp::INTENSITY));
-    transFuncProp_.onChange(CallMemberAction<SegmentationPlugin>(this, &SegmentationPlugin::transFuncChanged));
     MsgDistr.insert(this);
 
     createWidgets();
@@ -90,7 +88,6 @@ bool SegmentationPlugin::usable(const std::vector<Processor*>& processors) {
 }
 
 void SegmentationPlugin::createWidgets() {
-
     QVBoxLayout* mainLayout = new QVBoxLayout();
 
     //
@@ -109,13 +106,9 @@ void SegmentationPlugin::createWidgets() {
     // current segment
     spinCurrentSegment_ = new QSpinBox;
     spinCurrentSegment_->setRange(0, 1024);
-    hboxLayout->addWidget(new QLabel(tr("Current Segment: ")));
+    hboxLayout->addWidget(labelCurrentSegment_ = new QLabel(tr("Current Segment: ")));
     hboxLayout->addWidget(spinCurrentSegment_);
     hboxLayout->addSpacing(20);
-
-    // segment visible
-    checkSegmentVisible_ = new QCheckBox(tr("Segment Visible"));
-    hboxLayout->addWidget(checkSegmentVisible_);
     hboxLayout->addStretch();
 
     vboxLayout->addItem(hboxLayout);
@@ -126,7 +119,7 @@ void SegmentationPlugin::createWidgets() {
     vboxLayout->addWidget(line);
 
     // tf editor
-    intensityEditor_ = new TransFuncEditorIntensity(&transFuncProp_);
+    intensityEditor_ = new TransFuncEditorIntensity(new TransFuncProp("dummy","dummy"));
     intensityEditor_->createWidgets();
     intensityEditor_->createConnections();
     vboxLayout->addWidget(intensityEditor_);
@@ -212,17 +205,9 @@ void SegmentationPlugin::createWidgets() {
     hboxLayout->addWidget(saveSegmentationButton_);
     hboxLayout->addSpacing(5);
     loadSegmentationButton_ = new QPushButton(tr(" Load Segmentation "));
-    loadSegmentationButton_->setEnabled(false);
     hboxLayout->addWidget(loadSegmentationButton_);
     hboxLayout->addStretch();
     vboxLayout->addItem(hboxLayout);
-
-    // threshold widget
-    /*thresholdWidget_ = new ThresholdWidget(this);
-    thresholdWidget_->setMinValue(0);
-    thresholdWidget_->setMaxValue(0xFFFF);
-    thresholdWidget_->setValues(0, 0xFFFF);
-    vboxLayout->addWidget(thresholdWidget_);*/
 
     regionGrowingBox_->setLayout(vboxLayout);
     mainLayout->addWidget(regionGrowingBox_);
@@ -236,20 +221,26 @@ void SegmentationPlugin::createConnections() {
     // connections
     connect(checkApplySegmentation_, SIGNAL(toggled(bool)), this, SLOT(toggleApplySegmentation(bool)));
     connect(spinCurrentSegment_, SIGNAL(valueChanged(int)), this, SLOT(setCurrentSegment(int)));
-    connect(checkSegmentVisible_, SIGNAL(toggled(bool)), this, SLOT(toggleSegmentVisible(bool)));
 
     connect(clearSegmentButton_, SIGNAL(clicked()), this, SLOT(clearSegment()));
     connect(undoButton_, SIGNAL(clicked()), this, SLOT(undoSegment()));
     connect(markSeedButton_, SIGNAL(clicked(bool)), this, SLOT(setSeed(bool)));
 
     connect(saveSegmentationButton_, SIGNAL(clicked()), this, SLOT(saveSegmentation()));
+    connect(loadSegmentationButton_, SIGNAL(clicked()), this, SLOT(loadSegmentation()));
     connect(clearSegmentationButton_, SIGNAL(clicked()), this, SLOT(clearSegmentation()));
 
-    //connect(thresholdWidget_, SIGNAL(valuesChanged(int, int)), this, SLOT(setThresholds(int, int)));
+    connect(intensityEditor_, SIGNAL(transferFunctionChanged()), this, SLOT(repaintCanvas()));
+
 }
 
 void SegmentationPlugin::processMessage(Message* msg, const Identifier& /*dest*/) {
     if (msg->id_ == "evaluatorUpdated") {
+        SegmentationRaycaster* segmentationRaycaster = getSegmentationRaycaster(true);
+        if (segmentationRaycaster) {
+            registerAsListener();
+            applySegmentationToggled();
+        }
     }
 }
 
@@ -259,57 +250,37 @@ void SegmentationPlugin::toggleApplySegmentation(bool useSegmentation) {
         return;
 
     getSegmentationRaycaster()->getApplySegmentationProp().set(useSegmentation);
-    synchronizeTransFuncs(PULL);
-    checkSegmentVisible_->setChecked(getSegmentationRaycaster()->getSegmentVisibleProp().get());
 
-    repaintCanvases();
-
+    repaintCanvas();
 }
 
-void SegmentationPlugin::setCurrentSegment(int segment) {
-    if (getSegmentationRaycaster()) {
-        getSegmentationRaycaster()->getCurrentSegmentProp().set(segment);
-        synchronizeTransFuncs(PULL);
-        checkSegmentVisible_->setChecked(getSegmentationRaycaster()->getSegmentVisibleProp().get());
-    }
-}
-
-void SegmentationPlugin::toggleSegmentVisible(bool visible) {
-    if (getSegmentationRaycaster() && getSegmentationRaycaster()->getApplySegmentationProp().get()) {
-        getSegmentationRaycaster()->getSegmentVisibleProp().set(visible);
-        repaintCanvases();
-    }
+void SegmentationPlugin::setCurrentSegment(int /*segment*/) {
+    updateIntensityEditor();
 }
 
 void SegmentationPlugin::undoSegment() {
-
     if (getRegionGrowingProcessor()) {
         getRegionGrowingProcessor()->undoLastGrowing();
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
 void SegmentationPlugin::clearSegment() {
-
     if (getRegionGrowingProcessor()) {
         getRegionGrowingProcessor()->clearSegment(outputSegment_->value());
-        repaintCanvases();
+        repaintCanvas();
     }
-
 }
 
 void SegmentationPlugin::setSeed(bool checked) {
-
     if (!getRegionGrowingProcessor()) {
         if (checked)
             markSeedButton_->setChecked(false);
         return;
     }
-
 }
 
 void SegmentationPlugin::mousePressEvent(tgt::MouseEvent* e) {
-
     e->ignore();
 
     if (e->button() != tgt::MouseEvent::MOUSE_BUTTON_LEFT ||
@@ -339,32 +310,35 @@ void SegmentationPlugin::mousePressEvent(tgt::MouseEvent* e) {
     getRegionGrowingProcessor()->startGrowing(ivec2(e->coord().x, tcDims.y - e->coord().y), outputSegment_->value());
     QApplication::restoreOverrideCursor();
 
-    repaintCanvases();
-}
-
-void SegmentationPlugin::setThresholds(int /*lower*/, int /*upper*/) {
-
-   /* WidgetPlugin::postMessage(new FloatMsg(VolumeRenderer::setLowerThreshold_,
-                             (float)lower / thresholdWidget_->getMaxValue()));
-    WidgetPlugin::postMessage(new FloatMsg(VolumeRenderer::setUpperThreshold_,
-                             (float)upper / thresholdWidget_->getMaxValue()));
-    repaintCanvases(); */
+    repaintCanvas();
 }
 
 void SegmentationPlugin::saveSegmentation() {
-
     if (!getRegionGrowingProcessor())
         return;
 
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save Segmentation"),
-                                                    QDir::currentPath() + "/../../data/segtest.dat",
+                                                    QDir::currentPath() + "/../../data/segmentation.dat",
                                                     tr("Volumes (*.dat)"));
     if (!fileName.isEmpty())
         getRegionGrowingProcessor()->saveSegmentation(fileName.toStdString());
 }
 
-SegmentationRaycaster* SegmentationPlugin::getSegmentationRaycaster() {
+void SegmentationPlugin::loadSegmentation() {
+    if (!getRegionGrowingProcessor())
+        return;
 
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Load Segmentation"),
+        QDir::currentPath() + "/../../data/segmentation.dat",
+        tr("Volumes (*.dat)"));
+    if (!fileName.isEmpty()) {
+        getRegionGrowingProcessor()->loadSegmentation(fileName.toStdString());
+        repaintCanvas();
+    }
+}
+
+
+SegmentationRaycaster* SegmentationPlugin::getSegmentationRaycaster(bool suppressWarning) {
     if (!evaluator_) {
         LERRORC("voreen.qt.SegmentationPlugin", "No network evaluator.");
         return 0;
@@ -377,14 +351,13 @@ SegmentationRaycaster* SegmentationPlugin::getSegmentationRaycaster() {
             break;
     }
 
-    if (!segproc)
+    if (!segproc && !suppressWarning)
         QMessageBox::warning(this, tr("No SegmentationRaycaster"), tr("No SegmentationRaycaster found in the current network."));
 
     return segproc;
 }
 
-RegionGrowingProcessor* SegmentationPlugin::getRegionGrowingProcessor() {
-
+RegionGrowingProcessor* SegmentationPlugin::getRegionGrowingProcessor(bool suppressWarning) {
     if (!evaluator_) {
         LERRORC("voreen.qt.SegmentationPlugin", "No network evaluator.");
         return 0;
@@ -397,71 +370,25 @@ RegionGrowingProcessor* SegmentationPlugin::getRegionGrowingProcessor() {
             break;
     }
 
-    if (!regionGrowing)
-        QMessageBox::warning(this, tr("No RegionGrowing processor"), tr("No RegionGrowing processor found in the current network."));
+    if (!regionGrowing && !suppressWarning)
+        QMessageBox::warning(this, tr("No RegionGrowing processor"), 
+            tr("No RegionGrowing processor found in the current network."));
 
     return regionGrowing;
 }
 
-void SegmentationPlugin::transFuncChanged() {
-    synchronizeTransFuncs(PUSH);
-}
-
-void SegmentationPlugin::synchronizeTransFuncs(TransFuncSyncDirection syncDir) {
-
-    if (!getSegmentationRaycaster())
-        return;
-
-    TransFuncProp& tfProp = getSegmentationRaycaster()->getTransFunc();
-    TransFuncIntensity* tfIntensitySegmentation = dynamic_cast<TransFuncIntensity*>(tfProp.get());
-    TransFuncIntensity* tfIntensity = dynamic_cast<TransFuncIntensity*>(transFuncProp_.get());
-
-    if (tfIntensity && tfIntensitySegmentation) {
-
-        TransFuncIntensity* sourceTF;
-        TransFuncIntensity* destTF;
-        if (syncDir == PULL) {
-            sourceTF = tfIntensitySegmentation;
-            destTF = tfIntensity;
-        }
-        else {
-            sourceTF = tfIntensity;
-            destTF = tfIntensitySegmentation;
-        }
-
-        const std::vector<TransFuncMappingKey*> keys = sourceTF->getKeys();
-        destTF->clearKeys();
-        for (size_t i=0; i<keys.size(); i++)
-            destTF->addKey( new TransFuncMappingKey(*keys[i]) );
-
-        tgt::vec2 thresholds = sourceTF->getThresholds();
-        if (syncDir == PULL) {
-            intensityEditor_->thresholdChanged(thresholds.x, thresholds.y);
-            intensityEditor_->update();
-        }
-        else {
-            destTF->setThresholds(thresholds);
-            tfProp.updateWidgets();
-            tfProp.notifyChange();
-            repaintCanvases();
-        }
-
-    }
-    else {
-        LWARNINGC("voreen.qt.SegmentationPlugin", "1D transfer functions expected.");
-    }
-
+void SegmentationPlugin::transFuncChangedExternally() {
+    intensityEditor_->update();
 }
 
 void SegmentationPlugin::clearSegmentation() {
     if (getRegionGrowingProcessor()) {
         getRegionGrowingProcessor()->clearSegmentation();
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
 void SegmentationPlugin::propagateRegionGrowingParams() {
-
     if (!getRegionGrowingProcessor())
         return;
 
@@ -470,12 +397,69 @@ void SegmentationPlugin::propagateRegionGrowingParams() {
     getRegionGrowingProcessor()->getMaxSeedDistanceProp().set(spinMaxSeedDist_->value());
     getRegionGrowingProcessor()->getAdaptiveProp().set(checkAdaptive_->isChecked());
     if (checkApplyThresholds_->isChecked()) {
-        TransFuncIntensity* tfIntensity = dynamic_cast<TransFuncIntensity*>(transFuncProp_.get());
+/*        TransFuncIntensity* tfIntensity = dynamic_cast<TransFuncIntensity*>(transFuncProp_.get());
         if (tfIntensity)
-            getRegionGrowingProcessor()->getThresholdProp().set(tfIntensity->getThresholds());
+            getRegionGrowingProcessor()->getThresholdProp().set(tfIntensity->getThresholds());*/
     }
     getRegionGrowingProcessor()->getThresholdFillingProp().set(checkApplyThresholds_->isChecked());
 
+}
+
+void SegmentationPlugin::applySegmentationToggled() {
+    if (!getSegmentationRaycaster())
+        return;
+
+    bool applySegmentation = getSegmentationRaycaster()->getApplySegmentationProp().get();
+
+    checkApplySegmentation_->setChecked(applySegmentation);
+    labelCurrentSegment_->setEnabled(applySegmentation);
+    spinCurrentSegment_->setEnabled(applySegmentation);
+        
+    updateIntensityEditor();
+
+}
+
+void SegmentationPlugin::updateIntensityEditor() {
+    if (!getSegmentationRaycaster())
+        return;
+
+    bool useSegmentation = getSegmentationRaycaster()->getApplySegmentationProp().get();
+
+    if (useSegmentation) {
+        PropertyVector& segmentationTransFuncs = getSegmentationRaycaster()->getSegmentationTransFuncs();
+        int currentSegment = spinCurrentSegment_->value();
+        if (currentSegment >= 0 && currentSegment < segmentationTransFuncs.getNumProperties()) {
+            TransFuncProp* segTransFuncProp = segmentationTransFuncs.getProperty<TransFuncProp>(currentSegment);
+            if (segTransFuncProp)
+                intensityEditor_->setTransFuncProp(segTransFuncProp);
+        }
+    }
+    else {
+        intensityEditor_->setTransFuncProp(&getSegmentationRaycaster()->getTransFunc());
+    }
+}
+
+void SegmentationPlugin::registerAsListener() {
+    SegmentationRaycaster* segmentationRaycaster = getSegmentationRaycaster();
+    if (!segmentationRaycaster)
+        return;
+
+    // register as change listener of segmentation raycaster's transfunc prop      
+    segmentationRaycaster->getTransFunc().onChange(
+        CallMemberAction<SegmentationPlugin>(this, &SegmentationPlugin::transFuncChangedExternally));
+
+    // register as change listener of segmentation raycaster's segmentation transfunc props
+    PropertyVector& segTransFuncs = segmentationRaycaster->getSegmentationTransFuncs();
+    for (int i=0; i<segTransFuncs.getNumProperties(); ++i) {
+        TransFuncProp* tfProp = segTransFuncs.getProperty<TransFuncProp>(i);
+        if (tfProp)
+            tfProp->onChange(CallMemberAction<SegmentationPlugin>(this, 
+            &SegmentationPlugin::transFuncChangedExternally));
+    }
+
+    // register as listener of the segmentation raycaster's apply segmentation prop
+    segmentationRaycaster->getApplySegmentationProp().onChange(
+        CallMemberAction<SegmentationPlugin>(this, &SegmentationPlugin::applySegmentationToggled));
 }
 
 } // namespace voreen

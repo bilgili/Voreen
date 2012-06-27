@@ -40,8 +40,8 @@
 namespace voreen {
 
 VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::string& displayName,
-                                         int argc, char** argv, ApplicationType appType, const std::string& logDir)
-    : VoreenApplication(name, displayName, argc, argv, appType, logDir)
+                                         int argc, char** argv, ApplicationType appType)
+    : VoreenApplication(name, displayName, argc, argv, appType)
 {
     QApplication::setOrganizationName("Voreen");
     QApplication::setOrganizationDomain("voreen.org");

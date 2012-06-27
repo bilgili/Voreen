@@ -31,6 +31,7 @@
 #define VRN_WORKSPACE_H
 
 #include "voreen/core/vis/processors/networkserializer.h"
+#include "voreen/core/vis/processors/processornetwork.h"
 
 namespace voreen {
 
@@ -102,8 +103,10 @@ protected:
 
 class VoreenWorkspace {
 public:
-    VoreenWorkspace(RptNetwork* network, tgt::Camera* camera, VoreenMainWindow* mainwindow)
-        : version_(1), network_(network), camera_(camera), mainwindow_(mainwindow), readOnly_(false)
+    VoreenWorkspace(ProcessorNetwork* network, VolumeSetContainer* volumeSetContainer, 
+                    tgt::Camera* camera, VoreenMainWindow* mainwindow)
+        : version_(1), network_(network), volumeSetContainer_(volumeSetContainer), camera_(camera), 
+          mainwindow_(mainwindow), readOnly_(false)
 
     {
     }
@@ -111,7 +114,6 @@ public:
     void serializeToXml(const std::string& filename)
         throw (SerializerException)
     {
-        ProcessorNetwork* procnet = RptNetworkSerializerGui::makeProcessorNetwork(network_);
 
         TiXmlDocument doc;
         TiXmlDeclaration* declNode = new TiXmlDeclaration("1.0", "ISO-8859-1", "");
@@ -129,19 +131,18 @@ public:
         
         // Serialize the network
         Serializable::setIgnoreIsSerializable(true);
-        TiXmlElement* networkElem = procnet->serializeToXml();
+        TiXmlElement* networkElem = network_->serializeToXml();
         workspaceElem->LinkEndChild(networkElem);
         Serializable::setIgnoreIsSerializable(false);
 
         // Serialize the volumes
-        VolumeHandle::Origin::setBasePath(tgt::File::dirName(filename));
-        TiXmlElement* volumesElem = network_->volumeSetContainer->serializeToXml();
+        VolumeHandle::Origin::setBasePath(tgt::FileSystem::dirName(filename));
+        TiXmlElement* volumesElem = volumeSetContainer_->serializeToXml();
         workspaceElem->LinkEndChild(volumesElem);        
         VolumeHandle::Origin::setBasePath("");
         
         doc.LinkEndChild(workspaceElem);
         
-        delete procnet;
         if (!doc.SaveFile(filename))
             throw SerializerException("Could not write to file " + filename);
     }
@@ -175,14 +176,15 @@ public:
             // Some backward compatiblity
             if (!volumesElem)
                 volumesElem = processorElem->FirstChildElement(VolumeSetContainer::XmlElementName);
-                
+  
+
             if (volumesElem) {
-                if (!net->volumeSetContainer)
-                    net->volumeSetContainer = new VolumeSetContainer();
+                if (!volumeSetContainer_)
+                    volumeSetContainer_ = new VolumeSetContainer();
 
                 try {
-                    VolumeHandle::Origin::setBasePath(tgt::File::dirName(filename));
-                    net->volumeSetContainer->updateFromXml(volumesElem);
+                    VolumeHandle::Origin::setBasePath(tgt::FileSystem::dirName(filename));
+                    volumeSetContainer_->updateFromXml(volumesElem);
                     VolumeHandle::Origin::setBasePath("");
                 }
                 catch (std::exception& e) {
@@ -193,8 +195,8 @@ public:
                 }
             }
             
-            mainwindow_->setNetwork(RptNetworkSerializerGui::makeRptNetwork(net));
-            delete net;
+            mainwindow_->setVolumeSetContainer(volumeSetContainer_);
+            mainwindow_->setNetwork(net);
         }
        
         VoreenCamera cam(camera_);
@@ -208,7 +210,8 @@ public:
     
 protected:
     int version_;
-    RptNetwork* network_;
+    ProcessorNetwork* network_;
+    VolumeSetContainer* volumeSetContainer_;
     tgt::Camera* camera_;    
     VoreenMainWindow* mainwindow_;
     bool readOnly_;

@@ -28,7 +28,9 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
+#include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/volume/volumeset.h"
+#include "voreen/core/volume/bricking/largevolumemanager.h"
 
 namespace voreen {
 
@@ -122,7 +124,23 @@ void VolumeSelectionProcessor::processMessage(Message* msg, const Identifier& de
             setVolumeHandle(0);
         }
         invalidate();
-    }
+    } else if (msg->id_ == VoreenPainter::switchCoarseness_) {
+        if (volumeHandle_) {
+		    LargeVolumeManager* lvm = volumeHandle_->getLargeVolumeManager();
+		    bool coarseness = msg->getValue<bool>();
+            if (lvm) {
+			    lvm->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_,coarseness));
+            }
+        }
+	} else if (msg->id_ == VoreenPainter::cameraChanged_) {
+		if (volumeHandle_) {
+			LargeVolumeManager* lvm = volumeHandle_->getLargeVolumeManager();	
+			tgt::Camera* camera = msg->getValue<tgt::Camera*>();
+            if (lvm) {
+				lvm->postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_,camera ) );
+            }
+		}
+	}
 }
 
 VolumeHandle** VolumeSelectionProcessor::getVolumeHandleAddress() {

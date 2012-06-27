@@ -69,6 +69,9 @@ public:
     static const Modality MODALITY_GRADIENTS;
     static const Modality MODALITY_GRADIENT_MAGNITUDES;
     static const Modality MODALITY_2ND_DERIVATIVES;
+	static const Modality MODALITY_INDEX_VOLUME;
+	static const Modality MODALITY_BRICKED_VOLUME;
+	static const Modality MODALITY_EEP_VOLUME;
 
 protected:
     std::string name_;

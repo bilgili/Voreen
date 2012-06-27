@@ -92,11 +92,11 @@ public:
     void addCommandForNamelessArguments(Command* cmd) throw (VoreenException);
 
     /// Returns the first commandline argument containing the path and the executable name
-    std::string getProgramPath() const { return programPath_; }
+    std::string getProgramPath() const;
 
     /// Sets the verbosity of the commandline parser. When set, each (command,argument) pair will be
     /// printed to std::cout
-    void setVerbosity(const bool verbosity) { verbosity_ = verbosity; }
+    void setVerbosity(const bool verbosity);
 
     /**
      * Prints the usage information to the std::cout.

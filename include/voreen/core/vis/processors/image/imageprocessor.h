@@ -30,7 +30,7 @@
 #ifndef VRN_IMAGEPROCESSOR_H
 #define VRN_IMAGEPROCESSOR_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -40,7 +40,7 @@ namespace voreen {
  * Normally in a derived class you have only to call the ctor with the
  * appropriate shader name and overwrite the render method.
  */
-class ImageProcessor : public Processor, public HasShader {
+class ImageProcessor : public RenderProcessor, public HasShader {
 public:
     /**
      * Constructor.
@@ -59,17 +59,15 @@ protected:
      */
     virtual void compile();
 
-    virtual void analyzeDepthBuffer(int source); ///< Read back depth buffer and determine min and max depth value.
-
-    FloatProp minDepth_; ///< Control the minimum depth value. (from what? (df))
-    FloatProp maxDepth_; ///< Control the maximum depth value.
-
     tgt::Shader* program_;
     std::string shaderFilename_;
 
     static const Identifier shadeTexUnit_;
     static const Identifier depthTexUnit_;
 };
+
+
+
 
 } // namespace voreen
 

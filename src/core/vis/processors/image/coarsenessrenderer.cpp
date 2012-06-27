@@ -37,7 +37,7 @@ namespace voreen {
 const Identifier CoarsenessRenderer::setCoarseness_("set.Coarseness");
 
 CoarsenessRenderer::CoarsenessRenderer()
-    : Processor()
+    : RenderProcessor()
     , useCoarseness_(false)
     , coarsenessFactor_(setCoarseness_, "Interaction Coarseness", 4, 1, 20)
     , raycastPrg_(0)

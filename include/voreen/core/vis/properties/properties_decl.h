@@ -57,6 +57,8 @@ class IntVec2Prop;
 class IntVec3Prop;
 class IntVec4Prop;
 class OptionPropertyBase;
+class PropertyVector;
+
 
 }   // namespace
 

@@ -198,7 +198,7 @@ VolumeSetWidget::VolumeSetWidget(VolumeSetContainer* const volumeSetContainer,
     , availableLevelsMask_(levels)
       //TODO: should ask the VolumeSerializerPopulator for extensions that it can handle
     , fileExtFilter_("Volume data (*.DAT *.I4D *.PVM *.RDM *.RDI *.HDR *.SW *.SEG *.TUV "
-                     "*.ZIP *.TIFF *.TIF *.MAT *.MV *.HV *.NRRD *.NHDR)")
+                     "*.ZIP *.TIFF *.TIF *.MAT *.MV *.HV *.NRRD *.NHDR *.BVI)")
     , currentDir_(VoreenApplication::app()->getVolumePath())
     , allowAddingMultipleFiles_(true)
     , progress_(new IOProgressDialog(parent))

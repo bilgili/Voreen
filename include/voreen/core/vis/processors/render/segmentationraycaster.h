@@ -52,15 +52,6 @@ public:
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new SegmentationRaycaster(); }
 
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - setTransferFunction, which sets the current transfer-function. Msg-Type: TransferFunc*
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
     virtual int initializeGL();
 
     /**
@@ -80,15 +71,9 @@ public:
 
     TransFuncProp& getTransFunc();
 
-    void setCurrentSegment(int id);
-    int getCurrentSegment() const;
-
-    void setSegmentVisible(int segment, bool visible);
-    bool isSegmentVisible(int segment) const;
+    PropertyVector& getSegmentationTransFuncs();
 
     BoolProp& getApplySegmentationProp();
-    IntProp& getCurrentSegmentProp();
-    BoolProp& getSegmentVisibleProp();
 
 protected:
     virtual std::string generateHeader();
@@ -97,54 +82,36 @@ protected:
 private:
 
     // callbacks for gui changes
-    void currentSegmentChanged();
-    void segmentVisibilityChanged();
     void applySegmentationChanged();
-    void transFuncChanged();
+    void segmentationTransFuncChanged(int segment);
     void transFuncResolutionChanged();
 
     // writes the contents of the transferFunc_ prop into the 2D transfer function at the position
     // corresponding to the passed segment id
     void updateSegmentationTransFuncTex(int segment);
 
-    // Saves/restores the segment's TransFuncKeys/visibility-flag to/from the maps (see below)
-    void saveSegmentTransFunc(int segment);
-    void saveStandardTransFunc();
-    void restoreSegmentTransFunc(int segment);
-    void restoreStandardTransFunc();
-    // Returns wether there are TransFuncKeys/visibility-flag available for the passed segment id
-    bool hasStoredSegmentTransFunc(int segment);
-    // Resets the transferFunc_ prop to a standard ramp
-    void generateStandardTransFunc();
-    // clears the cached segment transfunc keys
-    void clearSegmentTransFuncs();
+    // create the segmentation transfer function
+    void createSegmentationTransFunc();
+    // initializes the segmentation transfunc texture from the segmentatio transfer functions
+    void initializeSegmentationTransFuncTex();
 
-    void generateSegmentationTransFunc();
-
-    // The transfer function property used for the manipulation of the segment transfer functions
+    // The transfer function property used in non-segmentation mode
     TransFuncProp transferFunc_;
+
+    // Segmentation transfuncs used in segmentation mode
+    PropertyVector* segmentTransFuncs_;
 
     // 2D texture that contains the segments' 1D transfer functions in row-order
     tgt::Texture* segmentationTransFuncTex_;
+    // determines whether the segmentation transfunc has to be uploaded before next use
     bool segmentationTransFuncTexValid_;
 
     VolumeHandle* segmentationHandle_;
 
     BoolProp applySegmentation_;
-    IntProp currentSegment_;
-    BoolProp segmentVisible_;
     EnumProp* transFuncResolutionProp_;
     std::vector<std::string> transFuncResolutions_;
     int lastSegment_;
-
-    // these maps map from the segment id to the stored TransFuncKeys/visibility flag of a segment
-    std::map< int, std::vector<TransFuncMappingKey*> > segmentTransFuncKeys_;
-    std::map< int, tgt::vec2 > segmentThresholds_;
-    std::map< int, bool > segmentVisibilities_;
-
-    // TransFuncKeys of the 1D TF applied when no segmentation is applied
-    std::vector<TransFuncMappingKey*> standardTransFuncKeys_;
-    tgt::vec2 standardThresholds_;
 
     EnumProp* compositingMode1_;    ///< What compositing mode should be applied for second outport
     EnumProp* compositingMode2_;    ///< What compositing mode should be applied for third outport

@@ -43,15 +43,14 @@
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 #include "voreen/core/vis/properties/property.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/imageprocessor.h"
+#include "voreen/core/vis/processors/image/imageprocessordepth.h"
 
 namespace voreen {
 
 /**
  * Performs a depth of field rendering.
  */
-class DepthOfField : public ImageProcessor {
+class DepthOfField : public ImageProcessorDepth {
 public:
 
     /**

@@ -29,6 +29,8 @@
 
 #include "voreen/core/volume/volumemetadata.h"
 
+#include "tgt/filesystem.h"
+
 namespace voreen {
 
 /*
@@ -41,6 +43,8 @@ VolumeMetaData::VolumeMetaData(const std::string& str)
   , imagePositionZ_(0.f)
   , transformation_(tgt::mat4::identity)
   , size_(tgt::ivec2(0))
+  , parentVolumeDimensions_(tgt::ivec3(0) )
+  , brickSize_(0)
 {}
 
 /*
@@ -87,31 +91,28 @@ const tgt::ivec2& VolumeMetaData::getSize() const {
     return size_;
 }
 
+void VolumeMetaData::setParentVolumeDimensions(tgt::ivec3 parentVolumeDimensions) {
+    parentVolumeDimensions_ = parentVolumeDimensions;
+}
+
+tgt::ivec3 VolumeMetaData::getParentVolumeDimensions() {
+	return parentVolumeDimensions_;
+}
+
+void VolumeMetaData::setBrickSize(size_t bricksize) {
+    brickSize_ = bricksize;
+}
+
+size_t VolumeMetaData::getBrickSize() {
+	return brickSize_;
+} 
+
 void VolumeMetaData::setUnit(const std::string& unit) {
     unit_ = unit;
 }
 
 const std::string& VolumeMetaData::getUnit() const {
     return unit_;
-}
-
-/*
- * further methods
- */
-
-std::string VolumeMetaData::getFileNameWithoutPath(const std::string& fullpath) {
-    std::string filename = fullpath;
-    size_t pos = fullpath.find_last_of('/');
-
-    if ( (pos != std::string::npos) && (pos >= fullpath.find_last_of('\\') || fullpath.find_last_of('\\') == std::string::npos) )
-        filename = fullpath.substr(pos + 1);
-    else {
-        pos = fullpath.find_last_of('\\');
-        if (pos != std::string::npos)
-            filename = fullpath.substr(pos + 1);
-    }
-
-    return filename;
 }
 
 } // namespace voreen

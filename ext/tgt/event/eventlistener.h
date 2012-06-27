@@ -36,15 +36,15 @@ namespace tgt {
 class EventListener {
 public:
 	EventListener();
-    virtual ~EventListener() {}
+    virtual ~EventListener();
 
-    virtual void mousePressEvent(MouseEvent* e) { e->ignore(); }
-    virtual void mouseReleaseEvent(MouseEvent* e) { e->ignore(); }
-    virtual void mouseMoveEvent(MouseEvent* e) { e->ignore(); }
-    virtual void mouseDoubleClickEvent(MouseEvent* e) { e->ignore(); }
-    virtual void wheelEvent(MouseEvent* e) { e->ignore(); }
-    virtual void timerEvent(TimeEvent* e) { e->ignore(); }
-    virtual void keyEvent(KeyEvent* e) { e->ignore(); }
+    virtual void mousePressEvent(MouseEvent* e);
+    virtual void mouseReleaseEvent(MouseEvent* e);
+    virtual void mouseMoveEvent(MouseEvent* e);
+    virtual void mouseDoubleClickEvent(MouseEvent* e);
+    virtual void wheelEvent(MouseEvent* e);
+    virtual void timerEvent(TimeEvent* e);
+    virtual void keyEvent(KeyEvent* e);
 
     virtual void onEvent(Event* e);
     

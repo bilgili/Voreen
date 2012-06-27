@@ -32,30 +32,13 @@
 
 namespace voreen {
 
+
 PortMapping::PortMapping(std::map<Port*,std::vector<PortData*> > portMap)
     : portMap_(portMap)
 {}
 
 LocalPortMapping* PortMapping::createLocalPortMapping(Processor* processor) {
     return new LocalPortMapping(this, processor);
-}
-
-int PortMapping::getTarget(Processor* processor, const Identifier& ident, int pos)
-    throw (VoreenException)
-{
-    Port* p = getPortAndCheck(processor, ident);
-
-    std::vector<PortData*> targets = portMap_[p];
-
-    if (static_cast<int>(targets.size()) <= pos)
-        throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
-
-    PortDataTexture* pdt = dynamic_cast<PortDataTexture*>(targets.at(pos));
-
-    if (!pdt)
-        throw VoreenException("The data mapped to this is port is not a TextureContainer target.");
-
-    return pdt->getData();
 }
 
 std::vector<int> PortMapping::getAllTargets(Processor* processor, const Identifier& ident)
@@ -99,6 +82,24 @@ int PortMapping::getGeometryNumber(Processor* processor, const Identifier& ident
         throw VoreenException("The data mapped to this is port is not a geometry number.");
 
     return pdg->getData();
+}
+
+int PortMapping::getTarget(Processor* processor, const Identifier& ident, int pos)
+    throw (VoreenException)
+{
+    Port* p = getPortAndCheck(processor, ident);
+
+    std::vector<PortData*> targets = portMap_[p];
+
+    if (static_cast<int>(targets.size()) <= pos)
+        throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
+
+    PortDataTexture* pdt = dynamic_cast<PortDataTexture*>(targets.at(pos));
+
+    if (!pdt)
+        throw VoreenException("The data mapped to this is port is not a TextureContainer target.");
+
+    return pdt->getData();
 }
 
 std::vector<int> PortMapping::getAllGeometryNumbers(Processor* processor, const Identifier& ident)
@@ -209,5 +210,6 @@ std::vector<PortDataCoProcessor*> LocalPortMapping::getAllCoProcessorData(const 
 LocalPortMapping* LocalPortMapping::createLocalPortMapping(Processor *processor) throw (VoreenException)  {
     return new LocalPortMapping(portMapping_, processor);
 }
+
 
 } //namespace voreen

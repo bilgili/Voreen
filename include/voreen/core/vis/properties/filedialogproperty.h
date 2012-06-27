@@ -36,8 +36,14 @@ namespace voreen {
 
 class FileDialogProp : public TemplateProperty<std::string> {
 public:
+
+    enum FileMode {
+        FILE      = 0,
+        DIRECTORY = 1,
+    };
+
     FileDialogProp(const std::string& id, const std::string& guiText, const std::string& dialogCaption,
-                   const std::string& directory, const std::string& fileFilter,
+                   const std::string& directory, const std::string& fileFilter = "", FileMode fileMode = FILE,
                    bool invalidate = true, bool invalidateShader = false);
 
     virtual ~FileDialogProp() {}
@@ -45,6 +51,7 @@ public:
     const std::string& getDialogCaption() const { return dialogCaption_; }
     const std::string& getDirectory() const { return directory_; }
     const std::string& getFileFilter() const { return fileFilter_; }
+    FileMode getFileMode() const { return fileMode_; }
 
     TiXmlElement* serializeToXml() const;
     void updateFromXml(TiXmlElement* propElem);
@@ -55,6 +62,7 @@ public:
 protected:
     std::string dialogCaption_;
     std::string directory_;
+    FileMode fileMode_;
     std::string fileFilter_;
 };
 

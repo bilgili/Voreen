@@ -38,6 +38,8 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QDesktopWidget>
+
 
 namespace voreen {
 
@@ -45,13 +47,11 @@ QMainWindow* CompactTransFuncPropertyWidget::mainWin_ = 0;
 
 CompactTransFuncPropertyWidget::CompactTransFuncPropertyWidget(TransFuncProp* prop, QWidget* parent)
     : CompactPropertyWidget(prop, parent)
-    , plugin_(new TransFuncPlugin(prop, parent, Qt::Horizontal))
+    , plugin_(0)
     , property_(prop)
     , window_(0)
     , editBt_(new QPushButton(tr("edit")))
 {
-    plugin_->createWidgets();
-    plugin_->createConnections();
 
     // it should be sufficient to perform the search for the main window
     // (for what reason ever) once and store the result within the static
@@ -65,18 +65,12 @@ CompactTransFuncPropertyWidget::CompactTransFuncPropertyWidget(TransFuncProp* pr
         }
     }
 
-    QString title;
-    if (prop->getOwner())
-        title.append(prop->getOwner()->getName().c_str());
-    title.append(" - Editor for ");
-    title.append(prop->getGuiText().c_str());
-    window_ = new VoreenToolWindow(new QAction(title, 0), mainWin_, plugin_, "");
-    window_->adjustSize();
+    if (!prop->getLazyEditorInstantiation() || editorVisibleOnStartup())
+        createEditorWindow();
 
     addWidget(editBt_);
 
     connect(editBt_, SIGNAL(clicked()), this, SLOT(setProperty()));
-    connect(plugin_, SIGNAL(transferFunctionChanged()), this, SIGNAL(propertyChanged()));
 
     addVisibilityControls();
 }
@@ -92,6 +86,13 @@ void CompactTransFuncPropertyWidget::update() {
 
 void CompactTransFuncPropertyWidget::setProperty() {
     if (!disconnected_) {
+
+        // lazy instantiation of transfunc editor window
+        if (!window_) {
+            createEditorWindow();
+            tgtAssert(window_, "Transfunc editor not instantiated");
+        }
+        
         if (window_->isVisible()) {
             //close widget
             window_->close();
@@ -105,7 +106,93 @@ void CompactTransFuncPropertyWidget::setProperty() {
 
 void CompactTransFuncPropertyWidget::disconnect() {
     disconnected_ = true;
-    plugin_->disconnect();
+    if (plugin_)
+        plugin_->disconnect();
 }
+
+void CompactTransFuncPropertyWidget::createEditorWindow() {
+    
+    tgtAssert(!window_ && !plugin_, "Transfunc editor already instantiated");
+
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    plugin_ = new TransFuncPlugin(property_, parentWidget(), Qt::Horizontal);
+    plugin_->createWidgets();
+    plugin_->createConnections();
+    connect(plugin_, SIGNAL(transferFunctionChanged()), this, SIGNAL(propertyChanged()));
+
+    QString title;
+    if (property_->getOwner()) {
+        title.append(property_->getOwner()->getName().c_str());
+        title.append(" - ");
+    }
+    title.append(QString::fromStdString(property_->getGuiText()));
+    window_ = new VoreenToolWindow(new QAction(title, 0), mainWin_, plugin_, "");
+    window_->adjustSize();
+
+    // update window geometry from serialized meta data, if present
+    if (property_->getMetaData()) {
+        const TiXmlElement* editorElem = property_->getMetaData()->FirstChildElement("EditorWindow");
+        if (editorElem) {
+            
+            int visible = -1;
+            int x = -1;
+            int y = -1;
+            int width = -1;
+            int height = -1;
+            editorElem->QueryIntAttribute("visible", &visible);
+            editorElem->QueryIntAttribute("x", &x);
+            editorElem->QueryIntAttribute("y", &y);
+            editorElem->QueryIntAttribute("width", &width);
+            editorElem->QueryIntAttribute("height", &height);
+
+            // check whether serialized left-top corner of lies inside the available screen geometry
+            QRect screenGeometry = QApplication::desktop()->availableGeometry(QPoint(x,y));
+            if (screenGeometry.contains(QPoint(x,y)))
+                window_->move(x,y);
+
+            if (width > 0 && height > 0)
+                window_->resize(width, height);
+            
+            window_->setVisible(visible > 0);
+        }
+    }
+
+    QApplication::restoreOverrideCursor();
+
+}
+
+TiXmlElement* CompactTransFuncPropertyWidget::getWidgetMetaData() const {
+
+    // serialize the editor window's geometry
+    TiXmlElement* elem = new TiXmlElement("EditorWindow");
+    if (window_) {
+        elem->SetAttribute("visible", window_->isVisible());
+        elem->SetAttribute("x", window_->pos().x());
+        elem->SetAttribute("y", window_->pos().y());
+        elem->SetAttribute("width", window_->width());
+        elem->SetAttribute("height", window_->height());
+    }
+    else {
+        elem->SetAttribute("visible", false);
+    }
+
+    return elem;
+}
+
+bool CompactTransFuncPropertyWidget::editorVisibleOnStartup() const {
+
+    if (property_->getMetaData()) {
+        const TiXmlElement* editorElem = property_->getMetaData()->FirstChildElement("EditorWindow");
+        if (editorElem) {
+            int visible = -1;
+            editorElem->QueryIntAttribute("visible", &visible);
+            return (visible > 0);
+        }
+    }
+
+    return false;
+}
+
 
 } // namespace

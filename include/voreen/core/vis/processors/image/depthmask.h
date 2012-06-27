@@ -30,8 +30,7 @@
 #ifndef VRN_DEPTHMASK_H
 #define VRN_DEPTHMASK_H
 
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/imageprocessor.h"
+#include "voreen/core/vis/processors/image/imageprocessordepth.h"
 
 namespace voreen {
 
@@ -39,7 +38,7 @@ namespace voreen {
  * Performs unsharp masking the depth buffer
  * as presented by Luft et al. in 2006.
  */
-class DepthMask : public ImageProcessor {
+class DepthMask : public ImageProcessorDepth {
 public:
     /**
      * The Constructor.

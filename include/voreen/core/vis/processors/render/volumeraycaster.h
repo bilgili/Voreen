@@ -55,25 +55,23 @@ public:
     virtual ~VolumeRaycaster();
 
     /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - msg.invalidate, which forcefully invalidates the raycaster
-     *      - setSegment, which specifies the current segment that is supposed to be rendererd, Msg-Type: int
-     *      - switchSegmentation, which switches Segmentation-mode on/off, Msg-Type: bool
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
-    /**
      * Load the shader into memory.
      */
     virtual void loadShader() {}
 
+	virtual void setBrickedVolumeUniforms();
+
+	virtual void addBrickedVolumeModalities(std::vector<VolumeStruct>& volumeTextures);
+
+	bool checkVolumeHandle(VolumeHandle*& handle, VolumeHandle* const newHandle, 
+		bool* handleChanged = 0, const bool omitVolumeCheck = false);
+
+        virtual void processMessage(Message* msg, const Identifier& dest/*=Message::all_*/);
+
     /**
      * Generates header defines for the current raycastPrg_
      */
-    virtual std::string generateHeader();
+    virtual std::string generateHeader(VolumeHandle* volumehandle=0);
 
     virtual void setGlobalShaderParameters(tgt::Shader* shader);
 
@@ -93,6 +91,11 @@ protected:
 
     void setRaycastingQualityFactorEvt();
 
+	void showBrickingProperties(bool b);
+
+    void changeBrickResolutionCalculator(std::string);
+	void changeBrickingUpdateStrategy(std::string);
+    void changeBrickLodSelector(std::string);
     tgt::Shader* raycastPrg_; ///< The shader-program to be used with this raycaster.
 
     static const Identifier entryParamsTexUnit_;       ///< The texture unit used for entry-parameters
@@ -132,10 +135,22 @@ protected:
     std::vector<std::string> shadeModes_;
     EnumProp* compositingMode_;                        ///< What compositing mode should be applied
     std::vector<std::string> compositingModes_;
+    EnumProp* brickingInterpolationMode_;			///< Which interpolation method to use when rendering bricked volumes.
+    std::vector<std::string> brickingInterpolationModes_;
+    EnumProp* brickingStrategyMode_;				///< Which bricking strategy to use when rendering bricked volumes.
+    std::vector<std::string> brickingStrategyModes_;
+	EnumProp* brickingUpdateStrategy_;				///< When to update bricks when rendering bricked volumes.
+	std::vector<std::string> brickingUpdateStrategies_;
+    EnumProp* brickLodSelector_;				  
+	std::vector<std::string> brickLodSelectors_;
+    BoolProp useAdaptiveSampling_;
 
     IntProp segment_;                                ///< Controls the segment that is to be rendered
-    BoolProp useSegmentation_;                        ///< Controls whether or not
-                                                    ///< segmentation-mode is used. FIXME: deprecated
+    BoolProp useSegmentation_;                       ///< Controls whether or not
+                                                     ///< segmentation-mode is used. FIXME: deprecated
+
+    BoolProp useInterpolationCoarseness_;
+    bool coarsenessOn_;
 
     static const std::string loggerCat_; ///< category used in logging
 };

@@ -49,6 +49,9 @@ const Modality Modality::MODALITY_NORMALS("normals");
 const Modality Modality::MODALITY_GRADIENTS("gradients");
 const Modality Modality::MODALITY_GRADIENT_MAGNITUDES("gradient_magnitudes");
 const Modality Modality::MODALITY_2ND_DERIVATIVES("2nd_derivatives");
+const Modality Modality::MODALITY_INDEX_VOLUME("index volume");
+const Modality Modality::MODALITY_BRICKED_VOLUME("bricked volume");
+const Modality Modality::MODALITY_EEP_VOLUME("eep volume");
 
 
 Modality::Modality(const std::string& name)

@@ -31,6 +31,7 @@
 #include "voreen/core/vis/properties/condition.h"
 #include "voreen/core/vis/propertywidgetfactory.h"
 
+
 namespace voreen {
 
 BoolProp::BoolProp(const std::string& id, const std::string& guiText, bool value,
@@ -47,13 +48,13 @@ void BoolProp::updateFromXml(TiXmlElement* propElem) {
             errors_.store(e);
         }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 TiXmlElement* BoolProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
     propElem->SetAttribute("value", ((value_ == true) ? "true" : "false"));
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation())
         propElem->SetAttribute("class", "BoolProperty");
     return propElem;
 }

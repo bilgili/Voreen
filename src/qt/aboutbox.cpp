@@ -44,7 +44,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
 
     QString s;
     s = ui.labelLeft->text();
-    s.replace("__VERSION__", "1.6");
+    s.replace("__VERSION__", "1.7");
     s.replace("__APPLICATION__", description + " " + version);
     s.replace("__COPYRIGHT__", QString::fromLatin1("(C) 2004-2009 University of Münster"));
     ui.labelLeft->setText(s);
@@ -60,6 +60,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, const
     QStringList developers;
     developers << QString::fromLatin1("Alexander Bock");
     developers << QString::fromLatin1("Christian Döring");
+    developers << QString::fromLatin1("Jan Esser");
     developers << QString::fromLatin1("Dirk Feldmann");
     developers << QString::fromLatin1("Jens Kasten");
     developers << QString::fromLatin1("Daniel Kirsch");

@@ -53,6 +53,10 @@ public:
 
 protected slots:
     virtual void setLevelOfDetail(bool value);
+    virtual void setLevelOfDetail(Property::LODSetting value);
+
+signals:
+    void levelOfDetailChanged(Property::LODSetting);
 
 protected:
     void addWidget(QWidget* w);

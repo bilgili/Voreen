@@ -62,6 +62,12 @@ public:
     virtual ~TransFuncEditor();
 
     /**
+     * Assigns the passed property to the editor. The
+     * former property is replaced.
+     */
+    virtual void setTransFuncProp(TransFuncProp* prop);
+
+    /**
      * In this method the plugin will be layouted.
      */
     virtual void createWidgets() = 0;

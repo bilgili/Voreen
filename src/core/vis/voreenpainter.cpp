@@ -30,6 +30,7 @@
 #include "voreen/core/vis/voreenpainter.h"
 
 #include "voreen/core/vis/processors/networkevaluator.h"
+
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/trackballnavigation.h"
@@ -131,17 +132,6 @@ void VoreenPainter::invalidateRendering() {
 }
 
 void VoreenPainter::paint() {
-    if (evaluator_ && evaluator_->getTextureContainer() &&
-        evaluator_->getTextureContainer()->getSize() != getSize() && getSize() != tgt::ivec2(0))
-    {
-        //FIXME: should be handled differently
-        LINFO("VoreenPainter::paint(): resizing TextureContainer from "
-              << evaluator_->getTextureContainer()->getSize()
-              << " to " << getSize());
-        evaluator_->getTextureContainer()->setSize(getSize());
-        evaluator_->invalidateRendering();
-    }
-
     if (stereoMode_ == VRN_STEREOSCOPIC) { // TODO: resupport stereo
 //         glDrawBuffer(GL_BACK_LEFT);
 // //         camera->setStereo(true); <- TODO doesn't exist anymore, FL
@@ -172,7 +162,6 @@ void VoreenPainter::paint() {
 
         if (evaluator_)
             evaluator_->evaluate();
-
         if (overlayMgr_)
             overlayMgr_->paint();
 
@@ -411,7 +400,6 @@ void VoreenPainter::renderToEncoder() {
 	// read pixel data as floats as expected by <code>nextFrame(void*)</code>
     float* pixels = evaluator_->getTextureContainer()->getTargetAsFloats(canvas->getImageID());
 	getVideoEncoder()->nextFrame(pixels);
-    delete[] pixels;
 
 #else /* !defined(VRN_WITH_FFMPEG) */
 	LWARNING("FFMpeg is required for Video Encoding.");
@@ -431,7 +419,7 @@ void VoreenPainter::renderToSnapshot(tgt::ivec2 size, std::string fileName)
         throw tgt::FileException("Could not save snapshot to file " + fileName);
 
     ilDeleteImages(1, &img);
-    
+
 #else /* !defined(VRN_WITH_DEVIL) */
 void VoreenPainter::renderToSnapshot(tgt::ivec2, std::string) {
     LWARNING("DevIL is required for snapshot generation.");
@@ -457,7 +445,7 @@ ILuint VoreenPainter::renderToILImage(const tgt::ivec2& size) {
         // reset viewport size
         if (sizeModified)
             sizeChanged(getCanvas()->getSize());
-        
+
         throw; // throw it to the caller
     }
 

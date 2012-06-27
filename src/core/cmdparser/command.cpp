@@ -43,6 +43,32 @@ Command::Command(const std::string& name, const std::string& shortName, const st
 , allowMultipleCalls_(allowMultipleCalls)
 {}
 
+Command::~Command() {}
+
+const std::string Command::getName() {
+    return name_;
+}
+
+const std::string Command::getShortName() {
+    return shortName_;
+}
+
+const std::string Command::getParameterList() {
+    return parameterList_;
+}
+
+const std::string Command::getInfoText() {
+    return infoText_;
+}
+
+int Command::getArgumentNumber() {
+    return argumentNum_;
+}
+
+bool Command::getAllowMultipleCalls() {
+    return allowMultipleCalls_;
+}
+
 const std::string Command::usage() {
     std::string result = "[";
     if (getShortName() != "")

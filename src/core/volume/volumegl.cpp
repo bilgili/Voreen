@@ -124,6 +124,8 @@ VolumeGL::VolumeGL(Volume* volume, TransFunc* tf /*= 0*/, float alphaScale /*= 1
     else if (volumeType_ == typeid(VolumeUInt32)) {
         format_ = GL_ALPHA;
         internalFormat_ = GL_ALPHA;
+//         format_ = GL_ALPHA_INTEGER_EXT;
+//         internalFormat_ = GL_ALPHA32UI_EXT;
         dataType_ = GL_UNSIGNED_INT;
     }
     // VolumeIntX
@@ -282,7 +284,9 @@ VolumeGL::VolumeGL(Volume* volume, TransFunc* tf /*= 0*/, float alphaScale /*= 1
     // do not call generateTextures if tf is zero and tfSupport_ == SOFTWARE
     if (tf != 0 || tfSupport_ != SOFTWARE) {
         try {
-            generateTextures(tf, alphaScale);
+			//if (volume->getData() != 0) {
+				generateTextures(tf, alphaScale);
+			//}
         }
         catch (std::bad_alloc) {
             // release all resources
@@ -520,12 +524,12 @@ void VolumeGL::generateTextures(TransFunc* tf, float alphaScale /*= 1.f*/) throw
                 {
                 //float ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
 
-                try {
+               /* try {
                     volume_ = origVolume_->scale( ivec3(ratio * vec3(volumeDims)), filter);
                 }
                 catch (std::bad_alloc) {
                     throw;
-                }
+                }*/
 
                 // update new dims and spacing values
                 volumeDims = volume_->getDimensions();
@@ -800,7 +804,9 @@ void VolumeGL::uploadTexture(TransFunc* tf, float alphaScale /*= 1.f*/,
 
     vTex->bind();
     // call glTexImage3D
-    vTex->uploadTexture();
+	if (v->getData() != 0) {
+		vTex->uploadTexture();
+	}
     // set texture wrap to clamp
     vTex->setWrapping(tgt::Texture::CLAMP);
 

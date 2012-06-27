@@ -29,14 +29,15 @@
 
 #include "voreenmainwindow.h"
 
-#include "rptnetworkserializergui.h"
-#include "rptpainterwidget.h"
-#include "rptpropertylistwidget.h"
+#include "voreencanvaswidget.h"
 #include "workspace.h"
+#include "tgt/gpucapabilities.h"
 
 #include "voreen/core/geometry/geometrycontainer.h"
 #include "voreen/core/vis/idmanager.h"
 #include "voreen/core/vis/processors/processorfactory.h"
+
+#include "voreen/core/vis/processors/networkevaluator.h"
 
 #include "voreen/qt/aboutbox.h"
 #include "voreen/qt/helpbrowser.h"
@@ -44,9 +45,14 @@
 #include "voreen/qt/widgets/consoleplugin.h"
 #include "voreen/qt/widgets/orientationplugin.h"
 #include "voreen/qt/widgets/segmentationplugin.h"
+#include "voreen/qt/widgets/shortcutpreferenceswidget.h"
 #include "voreen/qt/widgets/showtexcontainerwidget.h"
 #include "voreen/qt/widgets/volumesetwidget.h"
 #include "voreen/qt/widgets/voreentoolwindow.h"
+
+#include "voreen/qt/widgets/network/processorlistwidget.h"
+#include "voreen/qt/widgets/network/propertylistwidget.h"
+#include "voreen/qt/widgets/network/editor/networkeditor.h"
 
 #include "voreen/core/application.h"
 #include "voreen/core/version.h"
@@ -59,6 +65,7 @@
 #ifdef VRN_WITH_PYTHON
 #include "tgt/scriptmanager.h"
 #endif // VRN_WITH_PYTHON
+
 
 namespace voreen {
 
@@ -77,15 +84,15 @@ const int WINDOW_STATE_VERSION = 10;
 
 VoreenVisualization::VoreenVisualization()
     : QObject()
-    , rptnet_(new RptNetwork())
-    , renderWidget_(0)
+    , processorNetwork_(new ProcessorNetwork())
+    , canvasWidget_(0)
     , networkEditorWidget_(0)
     , volumeSetWidget_(0)
     , readOnlyWorkspace_(false)
 {
     camera_ = new tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f));
-
     evaluator_ = new NetworkEvaluator();
+
     evaluator_->setCamera(camera_);
     MsgDistr.insert(evaluator_);
 
@@ -100,11 +107,11 @@ VoreenVisualization::~VoreenVisualization() {
     delete evaluator_;
     delete geoContainer_;
     delete volsetContainer_;
-    delete rptnet_;   
+    delete processorNetwork_;
 }
 
 void VoreenVisualization::init() {
-    renderWidget_->init(getEvaluator(), getCamera());
+    canvasWidget_->init(getEvaluator(), getCamera());
 
     // Setup the IDManager.
     // TODO: This actually just sets a static member variable... quite awkward. joerg
@@ -112,14 +119,12 @@ void VoreenVisualization::init() {
     id.setTC(getEvaluator()->getTextureContainer());
 }
 
-void VoreenVisualization::setRenderWidget(RptPainterWidget* renderWidget) {
-    renderWidget_ = renderWidget;
+void VoreenVisualization::setCanvasWidget(VoreenCanvasWidget* renderWidget) {
+    canvasWidget_ = renderWidget;
 }
 
-void VoreenVisualization::setNetworkEditorWidget(RptGraphWidget* networkEditorWidget) {
+void VoreenVisualization::setNetworkEditorWidget(NetworkEditor* networkEditorWidget) {
     networkEditorWidget_ = networkEditorWidget;
-    networkEditorWidget_->setNetwork(rptnet_);
-    connect(networkEditorWidget, SIGNAL(deleteSignal()), this, SLOT(deleteFromNetwork()));
 }
 
 void VoreenVisualization::setVolumeSetWidget(VolumeSetWidget* volumeSetWidget) {
@@ -129,24 +134,23 @@ void VoreenVisualization::setVolumeSetWidget(VolumeSetWidget* volumeSetWidget) {
 void VoreenVisualization::openNetwork(const std::string& filename, VoreenMainWindow* mainwindow)
     throw (SerializerException)
 {
-    RptNetwork* network = RptNetwork::load(filename);
-    mainwindow->setNetwork(network);
+    NetworkSerializer networkSerializer;
+    ProcessorNetwork* net = networkSerializer.readNetworkFromFile(filename);
+    
     qApp->processEvents();
-    emit(networkLoaded(network));
+    mainwindow->setNetwork(net);
 }
 
 void VoreenVisualization::saveNetwork(const std::string& filename, bool reuseTCTargets)
     throw (SerializerException)
 {
-    rptnet_->reuseTCTargets = reuseTCTargets;
-    rptnet_->volumeSetContainer = volsetContainer_;
-    rptnet_->serializeVolumeSetContainer = false;
-    ProcessorNetwork* procnet = RptNetworkSerializerGui::makeProcessorNetwork(rptnet_);
+
+    processorNetwork_->setReuseTargets(reuseTCTargets);
 
     try {
-        NetworkSerializer().serializeToXml(procnet, filename);
+        NetworkSerializer().serializeToXml(processorNetwork_, filename);
     } catch (SerializerException&) {
-        delete procnet;
+        delete processorNetwork_;
         throw;
     }
 }
@@ -158,44 +162,41 @@ void VoreenVisualization::newWorkspace() {
 void VoreenVisualization::openWorkspace(const std::string& filename, VoreenMainWindow* mainwindow)
     throw (SerializerException)
 {
-    VoreenWorkspace ws(0, camera_, mainwindow);
+    VoreenWorkspace ws(0, 0, camera_, mainwindow);
 
     readOnlyWorkspace_ = false;
     ws.loadFromXml(filename);
     readOnlyWorkspace_ = ws.readOnly();
 
-    renderWidget_->getTrackballNavigation()->getTrackball()->reinitializeCamera(camera_->getPosition(),
+    canvasWidget_->getTrackballNavigation()->getTrackball()->reinitializeCamera(camera_->getPosition(),
                                                                                 camera_->getFocus(),
                                                                                 camera_->getUpVector());
 
     MsgDistr.postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, camera_));
     MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-    emit(networkLoaded(rptnet_));
 }
 
 void VoreenVisualization::saveWorkspace(const std::string& filename, bool reuseTCTargets, VoreenMainWindow* mainwindow)
     throw (SerializerException)
 {
     readOnlyWorkspace_ = false;
-    rptnet_->reuseTCTargets = reuseTCTargets;
-    rptnet_->volumeSetContainer = volsetContainer_;
-    rptnet_->serializeVolumeSetContainer = false;
+    processorNetwork_->setReuseTargets(reuseTCTargets);
 
-    VoreenWorkspace(rptnet_, camera_, mainwindow).serializeToXml(filename);
+    VoreenWorkspace(processorNetwork_, volsetContainer_, camera_, mainwindow).serializeToXml(filename);
 }
 
 void VoreenVisualization::clearScene() {
-    if (rptnet_) {   
+    if (processorNetwork_) {   
         // Remove those processors from the EventHandler which were added to it because
         // they inherit from tgt::EventListener
         std::vector<Processor*> procs;
-        for (size_t i = 0; i < rptnet_->processorItems.size(); ++i)
-            procs.push_back(rptnet_->processorItems[i]->getProcessor());
+        for (int i = 0; i < processorNetwork_->getNumProcessors(); ++i)
+            procs.push_back(processorNetwork_->getProcessors()[i]);
 
         // remove processors from network evaluator
         evaluator_->setProcessors(std::vector<Processor*>());
         
-        NetworkSerializer::removeEventListenersFromHandler(renderWidget_->getEventHandler(), procs);
+        NetworkSerializer::removeEventListenersFromHandler(canvasWidget_->getEventHandler(), procs);
     }
 
     // clear containers from existing parts of
@@ -203,146 +204,101 @@ void VoreenVisualization::clearScene() {
     geoContainer_->clearDeleting();
     networkEditorWidget_->clearScene();
 
-    delete rptnet_;
-    rptnet_ = new RptNetwork();
-    networkEditorWidget_->setNetwork(rptnet_);
+    delete processorNetwork_;
+    processorNetwork_ = new ProcessorNetwork();
+    setNetwork(processorNetwork_);
 }
 
-void VoreenVisualization::setNetwork(RptNetwork* network) {
-    delete rptnet_;
-    rptnet_ = network;
-
-    // Use new VolumeSetContainer if there is one in the Network
-    if (rptnet_->volumeSetContainer) {
-        volumeSetWidget_->setVolumeSetContainer(rptnet_->volumeSetContainer);
-        delete volsetContainer_;
-        volsetContainer_ = rptnet_->volumeSetContainer;
-    }
+void VoreenVisualization::setNetwork(ProcessorNetwork* network) {
     
-    networkEditorWidget_->setNetwork(rptnet_);
+    if (network != processorNetwork_) {
+        if (processorNetwork_) {
+            NetworkSerializer::removeEventListenersFromHandler(canvasWidget_->getEventHandler(), processorNetwork_->getProcessors());
+            processorNetwork_->removeObserver(this);
+        }
+        delete processorNetwork_;
+        processorNetwork_ = network;
+        processorNetwork_->addObserver(this);
+    }
 
-	//setReuseTargetsAction_->setChecked(rptnet_->reuseTCTargets);
-	//setReuseTargets();
+    networkEditorWidget_->setNetwork(processorNetwork_);
+    emit(networkLoaded(processorNetwork_));
 
     // add all processors which inherit from tgt::EventListener to the canvas' EventHandler.
     std::vector<Processor*> procs;
-    for (size_t i = 0; i < rptnet_->processorItems.size(); ++i)
-        procs.push_back(rptnet_->processorItems[i]->getProcessor());
-    NetworkSerializer::connectEventListenersToHandler(renderWidget_->getEventHandler(), procs);
+    for (int i = 0; i < processorNetwork_->getNumProcessors(); ++i)
+        procs.push_back(processorNetwork_->getProcessors()[i]);
+    NetworkSerializer::connectEventListenersToHandler(canvasWidget_->getEventHandler(), procs, true);
+}
+
+void VoreenVisualization::setVolumeSetContainer(VolumeSetContainer* volumeSetContainer){
+    // Use new VolumeSetContainer if there is one in the Network
+    volumeSetWidget_->setVolumeSetContainer(volumeSetContainer);
+    delete volsetContainer_;
+    volsetContainer_ = volumeSetContainer;
 }
 
 std::vector<std::string> VoreenVisualization::getNetworkErrors() {
-    return rptnet_->errors;
+    return processorNetwork_->getErrors();
 }
 
 bool VoreenVisualization::evaluateNetwork() {
     // send processors to evaluator, they now can receive messages through MsgDistr
     std::vector<Processor*> processors;
-    if (rptnet_)
-        for (size_t i=0; i < rptnet_->processorItems.size(); i++)
-            processors.push_back(rptnet_->processorItems[i]->getProcessor());
+    if (processorNetwork_)
+        for (int i=0; i < processorNetwork_->getNumProcessors(); i++)
+            processors.push_back(processorNetwork_->getProcessors()[i]);
 
+    evaluator_->setVolumeSetContainer(volsetContainer_);
     evaluator_->setProcessors(processors);
-    
     MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, volsetContainer_));
-
     bool result = true;
     if (evaluator_->analyze() >= 0) {
-        renderWidget_->getGLFocus();
+        canvasWidget_->getGLFocus();
         // this sets the size of the processors in the network
-        evaluator_->setSize(renderWidget_->getSize());
+        evaluator_->setSize(canvasWidget_->getSize());
         if (evaluator_->initializeGL() != Processor::VRN_OK)
             result = false;
         else
-            renderWidget_->repaint();
+            canvasWidget_->repaint();
     }
-
-    MsgDistr.postMessage(new Message("evaluatorUpdated"));
 
     return result;
-}
 
-void VoreenVisualization::deleteFromNetwork() {
-   QList<QGraphicsItem*> selectedItems = networkEditorWidget_->scene()->selectedItems();
-   if (selectedItems.size() == 0)
-       return;
-
-   // sort selectedItems by their type to not delete a port/arrow-item
-   // that has already been deleted indirectly with the guiitem
-   // so at first kick out the ports:
-   for (int i=0; i < selectedItems.size(); i++) {
-       if (selectedItems.at(i)->type() == RptPortItem::Type)
-           selectedItems.removeAt(i--);
-   }
-   for (int i=0; i < selectedItems.size(); i++) {
-       if (selectedItems.at(i)->type() == RptPropertyPort::Type)
-           selectedItems.removeAt(i--);
-   }
-   for (int i=0; i < selectedItems.size(); i++) {
-       if (selectedItems.at(i)->type() == RptTextItem::Type)
-           selectedItems.removeAt(i--);
-   }
-
-    // next delete arrows
-    for (int i=0; i<selectedItems.size(); i++) {
-        QGraphicsItem* item = selectedItems[i];
-        if (selectedItems.at(i)->type() == RptArrow::Type) {
-
-            RptArrow* arrow = static_cast<RptArrow*>(item);
-            if (arrow->getDestNode() != 0) {
-                // arrow between ports or arrow between property set and guiitem
-                if (arrow->getDestNode()->type() == RptPortItem::Type) {
-                    static_cast<RptPortItem*>(arrow->getSourceNode())->getParent()
-                        ->disconnect(static_cast<RptPortItem*>(arrow->getSourceNode()),
-                                     static_cast<RptPortItem*>(arrow->getDestNode()));
-                }
-                else if (arrow->getSourceNode()->type() == RptPropertyPort::Type) {
-                    static_cast<RptPropertySetItem*>(arrow->getSourceNode()->parentItem())
-                        ->disconnectGuiItem(arrow->getDestNode());
-                }
-            }
-
-            selectedItems.removeAt(i--);
-        }
-    }
-
-    // eventually delete the guiitems
-    for (int i = 0; i < selectedItems.size(); i++) {
-        QGraphicsItem* item = selectedItems[i];
-        if (item->type() == RptProcessorItem::Type) {
-            RptProcessorItem* guiItem = static_cast<RptProcessorItem*>(item);
-            if (!(guiItem->parentItem() && guiItem->parentItem()->type() == RptAggregationItem::Type)) {
-                for (int j = (int)rptnet_->processorItems.size() - 1; j >= 0 ; j--) {
-                    if (rptnet_->processorItems[j] == guiItem) {
-                        std::vector<Processor*> procs;
-                        procs.push_back(guiItem->getProcessor());
-                        NetworkSerializer::removeEventListenersFromHandler(renderWidget_->getEventHandler(), procs);
-
-                        evaluator_->removeProcessor(guiItem->getProcessor());
-                        guiItem->disconnectAll(); // remove connected arrows
-                        emit(processorDeleted(guiItem->getProcessor()));
-                        delete guiItem;
-                        rptnet_->processorItems.erase(rptnet_->processorItems.begin() + j);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // restore focus for main canvas
-    // focus is lost when the 2d transfer function editor is deleted
-    renderWidget_->getGLFocus();
 }
 
 bool VoreenVisualization::rebuildShaders() {
     if (ShdrMgr.rebuildAllShadersFromFile()) {
         evaluator_->invalidateRendering();
-        renderWidget_->update();
+        canvasWidget_->update();
         return true;
     } else {
         return false;
     }
+}
+
+void VoreenVisualization::networkChanged() {
+    emit(networkModified(processorNetwork_));
+}
+
+void VoreenVisualization::processorAdded(Processor* processor) {
+    
+    // register processor as event listener, if it is of appropriate type
+    tgt::EventListener* listener = dynamic_cast<tgt::EventListener*>(processor);
+    if (listener)
+        canvasWidget_->getEventHandler()->addListenerToFront(listener);
+
+    emit(networkModified(processorNetwork_));
+}
+
+void VoreenVisualization::processorRemoved(Processor* processor) {
+
+    // remove event listener from canvas' event handler
+    tgt::EventListener* listener = dynamic_cast<tgt::EventListener*>(processor);
+    if (listener)
+        canvasWidget_->getEventHandler()->removeListener(listener);
+
+    emit(networkModified(processorNetwork_));
 }
 
 ////////// VoreenMdiSubWindow //////////////////////////////////////////////////////////
@@ -491,20 +447,20 @@ VoreenMainWindow::VoreenMainWindow(const std::string& network, const std::string
     // Disable rendering updates until initGL() is finished to prevent
     // rendering of garbage of Mac OS, happening when the widgets is
     // rendered with no painter attached.
-    renderWidget_ = new RptPainterWidget(this);
-    renderWidget_->setUpdatesEnabled(false); // will be enabled when fully initialized
-    vis_->setRenderWidget(renderWidget_);
+    canvasWidget_ = new VoreenCanvasWidget(this);
+    canvasWidget_->setUpdatesEnabled(false); // will be enabled when fully initialized
+    vis_->setCanvasWidget(canvasWidget_);
 
     mdiArea_ = new QMdiArea(this);
     mdiArea_->setOption(QMdiArea::DontMaximizeSubWindowOnActivation, true);
     setCentralWidget(mdiArea_);
 
-    renderWindow_ = new VoreenMdiSubWindow(renderWidget_, this);
+    renderWindow_ = new VoreenMdiSubWindow(canvasWidget_, this);
     mdiArea_->addSubWindow(renderWindow_, Qt::SubWindow | Qt::WindowStaysOnTopHint);
-    renderWidget_->setWindowTitle(tr("Visualization"));
+    canvasWidget_->setWindowTitle(tr("Visualization"));
     
     // update canvas when volume is loaded/removed/changed
-    connect(volumeSetWidget_, SIGNAL(volumeSetChanged()), renderWidget_, SLOT(update()));
+    connect(volumeSetWidget_, SIGNAL(volumeSetChanged()), canvasWidget_, SLOT(update()));
 
     createMenus();
     createToolBars();
@@ -515,27 +471,73 @@ VoreenMainWindow::~VoreenMainWindow() {
 
     delete propertyListWidget_; // needs to be deleted before properties and thus processors
     delete networkEditorWidget_;
-    delete renderWidget_;
+    delete canvasWidget_;
     delete vis_;
 }
 
 void VoreenMainWindow::init() {
-    vis_->init();
+    // some hardware/driver checks
+    if (GpuCaps.getVendor() != GpuCaps.GPU_VENDOR_NVIDIA && GpuCaps.getVendor() != GpuCaps.GPU_VENDOR_ATI) {
+        qApp->processEvents();
+        QMessageBox::warning(this, tr("Unsupported video card vendor"), 
+                             tr("Voreen was only tested with video cards from NVIDIA and ATI. "
+                                "The card in this system (reported vendor: '%1') is not supported and the application "
+                                "might not work properly.").arg(GpuCaps.getVendorAsString().c_str()));
+        qApp->processEvents();
+    }
+    if (!GpuCaps.isOpenGlVersionSupported(tgt::GpuCapabilities::GlVersion::TGT_GL_VERSION_2_0)) {
+        qApp->processEvents();
+        std::ostringstream glVersion;
+        glVersion << GpuCaps.getGlVersion();
+        QMessageBox::critical(this, tr("Incompatible OpenGL version"),
+                              tr("Voreen requires OpenGL version 2.0 or higher, which does not seem be "
+                                 "supported on this system (reported version: %1). Therefore, the application "
+                                 "will most likely not work properly.").arg(glVersion.str().c_str()));
+        qApp->processEvents();
+    }
+    if (!GpuCaps.areFramebufferObjectsSupported()) {
+        qApp->processEvents();
+        QMessageBox::critical(this, tr("Framebuffer objects missing"),
+                              tr("Voreen uses OpenGL framebuffer objects, which do not seem be supported "
+                                 "on this system. Therefore, the application will most likely not work properly."));
+        qApp->processEvents();
+    }
+    if (!GpuCaps.isShaderModelSupported(tgt::GpuCapabilities::SHADER_MODEL_3)) {
+        qApp->processEvents();
+        QMessageBox::critical(this, tr("Incompatible shader model"),
+                              tr("Voreen requires Shader Model 3 or higher, which does not seem be "
+                                 "supported on this system. Therefore, the application will most likely not work properly."));
+        qApp->processEvents();
+    }
+    if (GpuCaps.getShaderVersion() < tgt::GpuCapabilities::GlVersion::SHADER_VERSION_110) {
+        qApp->processEvents();
+        std::ostringstream glslVersion;
+        glslVersion << GpuCaps.getShaderVersion();
+        QMessageBox::critical(this, tr("Incompatible shader language version"), 
+                              tr("Voreen requires OpenGL shader language (GLSL) version 1.10, which does not "
+                                 "seem to be supported on this system (reported version: %1)."
+                                 "Therefore, the application will most likely not work properly.")
+                              .arg(QString::fromStdString(glslVersion.str())));
+        qApp->processEvents();
+    }    
 
+    vis_->init();
+    
     // network editor
-    networkEditorWidget_ = new RptGraphWidget(this, vis_->getEvaluator());
+    networkEditorWidget_ = new NetworkEditor(this, 0, vis_->getEvaluator());
     vis_->setNetworkEditorWidget(networkEditorWidget_);
     connect(networkEditorWidget_, SIGNAL(processorSelected(Processor*)), this, SLOT(processorSelected(Processor*)));
 
     networkEditorWidget_->setWindowTitle(tr("Processor Network"));
     networkEditorWindow_ = new VoreenMdiSubWindow(networkEditorWidget_, this);
+    networkEditorWindow_->setWindowState(networkEditorWindow_->windowState() | Qt::WindowFullScreen);
     mdiArea_->addSubWindow(networkEditorWindow_);
     
     // if item is double clicked, show properties
     connect(networkEditorWidget_, SIGNAL(showPropertiesSignal()), this, SLOT(showProperties()));
 
     // signals indicating a change in network
-    connect(networkEditorWidget_, SIGNAL(processorAdded(Identifier, QPoint)), this, SLOT(modified()));
+    connect(vis_, SIGNAL(networkModified(ProcessorNetwork*)), this, SLOT(modified()));
     connect(networkEditorWidget_, SIGNAL(pasteSignal()), this, SLOT(modified()));
     
     // create tool windows now, after everything is initialized
@@ -548,6 +550,8 @@ void VoreenMainWindow::init() {
         QMessageBox::information(this, tr("VoreenVE"), tr("Configuration reset."));
         resetSettings_ = false;
     }
+
+    qApp->processEvents();
     
     //
     // now the GUI is complete
@@ -556,10 +560,10 @@ void VoreenMainWindow::init() {
     if (!lastWorkspace_.isEmpty() && loadLastWorkspace_) {
         // load last workspace
         openWorkspace(lastWorkspace_);
-    } else {
+    } 
+    else {
         if (!currentNetwork_.isEmpty()) {
             // load an initial network
-            qApp->processEvents(); // workaround for initial rendering problem
             openNetwork(currentNetwork_);
         }
         else {
@@ -573,7 +577,7 @@ void VoreenMainWindow::init() {
     }
 
     // now we can activate rendering in the widget
-    renderWidget_->setUpdatesEnabled(true);
+    canvasWidget_->setUpdatesEnabled(true);
     setUpdatesEnabled(true);
 }
 
@@ -680,7 +684,7 @@ void VoreenMainWindow::createMenus() {
     actionMenu_->addAction(evaluatorAction_);
 
 #ifdef VRN_WITH_PYTHON
-    scriptAction_ = new QAction(tr("Run Python Script..."), this);
+    scriptAction_ = new QAction(QIcon(":/vrn_app/icons/python.png"), tr("Run Python Script..."), this);
     scriptAction_->setShortcut(tr("F7"));
     scriptAction_->setStatusTip(tr("Select and run a python script"));
     scriptAction_->setToolTip(tr("Run a python script"));
@@ -700,7 +704,6 @@ void VoreenMainWindow::createMenus() {
     //
     optionsMenu_ = menu_->addMenu(tr("&Options"));
 
-#ifndef VRN_SNAPSHOT
     navigationMenu_ = optionsMenu_->addMenu(tr("Select Camera Navigation..."));
     navigationGroup_ = new QActionGroup(this);
     connect(navigationGroup_, SIGNAL(triggered(QAction*)), this, SLOT(navigationChanged()));
@@ -717,7 +720,6 @@ void VoreenMainWindow::createMenus() {
     navigationGroup_->addAction(flythroughNaviAction_);
     
     optionsMenu_->addSeparator();
-#endif
     
     loadLastWorkspaceAct_ = new QAction(tr("&Load last workspace on startup"), this);
     loadLastWorkspaceAct_->setCheckable(true);
@@ -731,18 +733,22 @@ void VoreenMainWindow::createMenus() {
 //     connect(setReuseTargetsAction_, SIGNAL(triggered()), this, SLOT(setReuseTargets()));
 //     optionsMenu_->addAction(setReuseTargetsAction_);
 
+    //optionsMenu_->addSeparator();
+    //showShortcutPreferencesAction_ = new QAction(tr("Show shortcut preferences"), this);
+    //connect(showShortcutPreferencesAction_, SIGNAL(triggered()), this, SLOT(displayShortcutPreferences()));
+    //optionsMenu_->addAction(showShortcutPreferencesAction_);
+
     //
     // Help menu
     //
     helpMenu_ = menu_->addMenu(tr("&Help"));
 
-#ifndef VRN_SNAPSHOT
-    helpFirstStepsAct_ = new QAction(QIcon(":/vrn_app/icons/wizard.png"), tr("Getting Started..."), this);
+    helpFirstStepsAct_ = new QAction(QIcon(":/vrn_app/icons/wizard.png"), tr("&Getting Started..."), this);
+    helpFirstStepsAct_->setShortcut(tr("F1"));
     connect(helpFirstStepsAct_, SIGNAL(triggered()), this, SLOT(helpFirstSteps()));
     helpMenu_->addAction(helpFirstStepsAct_);
 
     helpMenu_->addSeparator();
-#endif
 
     aboutAction_ = new QAction(QIcon(":/vrn_app/icons/about.png"), tr("&About..."), this);
     connect(aboutAction_, SIGNAL(triggered()), this, SLOT(helpAbout()));
@@ -840,18 +846,18 @@ VoreenToolDockWindow* VoreenMainWindow::addToolDockWindow(QAction* action, QWidg
  
 void VoreenMainWindow::createToolWindows() {
     // processor list
-    processorListWidget_ = new RptProcessorListWidget();
+    processorListWidget_ = new ProcessorListWidget();
     networkEditorWidget_->addAllowedWidget(processorListWidget_);
     processorListWidget_->setMinimumSize(200, 200);
     processorListAction_ = new QAction(QIcon(":/vrn_app/icons/processor.png"), tr("Processors"), this);
     processorListTool_ = addToolDockWindow(processorListAction_, processorListWidget_, "ProcessorList");
 
     // property list
-    propertyListWidget_ = new RptPropertyListWidget(this, 0);
-    connect(propertyListWidget_, SIGNAL(repaintSignal()), renderWidget_, SLOT(repaint()));
-    connect(vis_, SIGNAL(networkLoaded(RptNetwork*)), propertyListWidget_, SLOT(newNetwork(RptNetwork*)));
-    connect(networkEditorWidget_, SIGNAL(processorAdded(RptProcessorItem*)), propertyListWidget_, SLOT(processorAdded(RptProcessorItem*)));
-    connect(vis_, SIGNAL(processorDeleted(Processor*)), propertyListWidget_, SLOT(processorDeleted(Processor*)));
+    propertyListWidget_ = new PropertyListWidget(this, 0);
+    connect(propertyListWidget_, SIGNAL(repaintSignal()), canvasWidget_, SLOT(repaint()));
+    connect(vis_, SIGNAL(networkLoaded(ProcessorNetwork*)), propertyListWidget_, SLOT(setNetwork(ProcessorNetwork*)));
+    connect(vis_, SIGNAL(networkLoaded(ProcessorNetwork*)), networkEditorWidget_, SLOT(setNetwork(ProcessorNetwork*)));
+    connect(networkEditorWidget_, SIGNAL(processorNameChanged(Processor*)), propertyListWidget_, SLOT(processorNameChanged(Processor*)));
     propertyListTool_ = addToolDockWindow(new QAction(QIcon(":/icons/information.png"), tr("Properties"), this),
                                           propertyListWidget_, "Properties", Qt::RightDockWidgetArea);
     
@@ -862,11 +868,11 @@ void VoreenMainWindow::createToolWindows() {
     // console
     QAction* consoleAction = new QAction(QIcon(":/icons/console.png"), tr("Debug Console"), this);
     consoleAction->setShortcut(tr("Ctrl+D"));
-    VoreenToolWindow* console = addToolWindow(consoleAction, consolePlugin_, "Console");
-    console->resize(700, 300);
+    consoleTool_ = addToolWindow(consoleAction, consolePlugin_, "Console");
+    consoleTool_->resize(700, 300);
 
     // texture container
-    ShowTexContainerWidget* texContainerWidget = new ShowTexContainerWidget(renderWidget_);
+    ShowTexContainerWidget* texContainerWidget = new ShowTexContainerWidget(canvasWidget_);
     texContainerWidget->setTextureContainer(vis_->getEvaluator()->getTextureContainer());
     texContainerWidget->setMinimumSize(200, 200);
     QAction* texContainerAction = new QAction(QIcon(":/icons/grid.png"),tr("Texture Container"), this);
@@ -876,16 +882,19 @@ void VoreenMainWindow::createToolWindows() {
     
     // orientation
     OrientationPlugin* orientationPlugin
-        = new OrientationPlugin(this, renderWidget_, renderWidget_->getTrackballNavigation()->getTrackball());
+        = new OrientationPlugin(this, canvasWidget_, canvasWidget_->getTrackballNavigation()->getTrackball());
     orientationPlugin->createWidgets();
     orientationPlugin->createConnections();
-    renderWidget_->getTrackballNavigation()->addReceiver(orientationPlugin);
+    //orientationPlugin->loadTextures("cardiac");
+    orientationPlugin->loadTextures("standard");
+    orientationPlugin->setShowTextures(true);
+    canvasWidget_->getTrackballNavigation()->addReceiver(orientationPlugin);
     addToolDockWindow(new QAction(QIcon(":/icons/trackball-reset-inverted.png"), tr("Camera Orientation"), this),
                       orientationPlugin, "Orientation", Qt::LeftDockWidgetArea, false);
     
 #ifdef VRN_WITH_DEVIL
     // snapshot
-    SnapshotPlugin* snapshotPlugin = new SnapshotPlugin(this, dynamic_cast<VoreenPainter*>(renderWidget_->getPainter()));
+    SnapshotPlugin* snapshotPlugin = new SnapshotPlugin(this, dynamic_cast<VoreenPainter*>(canvasWidget_->getPainter()));
     snapshotPlugin->createWidgets();
     snapshotPlugin->createConnections();
     addToolDockWindow(new QAction(QIcon(":/vrn_app/icons/snapshot.png"), tr("Snapshot"), this), snapshotPlugin, "Snapshot",
@@ -893,7 +902,8 @@ void VoreenMainWindow::createToolWindows() {
 #endif
 
     // animation
-    AnimationPlugin* animationPlugin = new AnimationPlugin(this, vis_->getCamera(), renderWidget_);
+    AnimationPlugin* animationPlugin = new AnimationPlugin(this, vis_->getCamera(),
+														   canvasWidget_, canvasWidget_->getTrackballNavigation()->getTrackball());
     animationPlugin->createWidgets();
     animationPlugin->createConnections();
     addToolDockWindow(new QAction(QIcon(":/vrn_app/icons/camera.png"), tr("Animation"), this), animationPlugin, "Animation",
@@ -940,7 +950,7 @@ void VoreenMainWindow::loadSettings() {
         settings_.endGroup();
     }
     if (windowSize.isNull()) {
-        resize(1024, 786);
+        resize(1024, 768);
     } else {
         resize(windowSize);
     }
@@ -1107,7 +1117,7 @@ bool VoreenMainWindow::saveNetworkAs() {
 
 bool VoreenMainWindow::askSave() {
     if (isWindowModified()) {
-        switch (QMessageBox::question(this, tr("VoreenVE"), tr("Save the the current workspace?"),
+        switch (QMessageBox::question(this, tr("VoreenVE"), tr("Save the current workspace?"),
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes))
         {
         case QMessageBox::Yes:
@@ -1136,28 +1146,32 @@ void VoreenMainWindow::newWorkspace() {
     clearScene();
 
     setWindowModified(false);    
-    renderWidget_->update();
+    canvasWidget_->update();
 }
 
 void VoreenMainWindow::openWorkspace(const QString& filename) {
     try {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         vis_->openWorkspace(filename.toStdString(), this);
     }
     catch (SerializerException e) {
         currentWorkspace_ = "";
         lastWorkspace_ = currentWorkspace_;
         updateWindowTitle();
+        QApplication::restoreOverrideCursor();
         QErrorMessage* errorMessageDialog = new QErrorMessage(this);
         errorMessageDialog->showMessage(tr("Could not open workspace:\n") + e.what());
         return;
     }
 
+    qApp->processEvents();
     evaluateNetwork();
     currentWorkspace_ = filename;
     lastWorkspace_ = currentWorkspace_;
     currentNetwork_ = "";
     updateWindowTitle();
     addToRecentFiles(currentWorkspace_);
+    QApplication::restoreOverrideCursor();
 }
 
 void VoreenMainWindow::openWorkspace() {
@@ -1279,14 +1293,19 @@ void VoreenMainWindow::clearScene() {
     propertyListWidget_->clear();
 }
 
-void VoreenMainWindow::setNetwork(RptNetwork* network) {
+void VoreenMainWindow::setNetwork(ProcessorNetwork* network) {
     clearScene();
     vis_->setNetwork(network);
     
     // placed here, because loading a network emits changed signals
     setWindowModified(false);
 
+    qApp->processEvents();
     showNetworkErrors();
+}
+
+void VoreenMainWindow::setVolumeSetContainer(VolumeSetContainer* volSetContainer){
+    vis_->setVolumeSetContainer(volSetContainer);
 }
 
 void VoreenMainWindow::showNetworkErrors() {
@@ -1309,6 +1328,8 @@ void VoreenMainWindow::evaluateNetwork() {
 
     if (!vis_->evaluateNetwork()) {
         QApplication::restoreOverrideCursor();
+        consoleTool_->show();
+        qApp->processEvents();
         QMessageBox::critical(this, tr("Error"),
                               tr("Initialization of one or more processors failed.\n"
                                  "Please check the console or log file for error messages."),
@@ -1326,6 +1347,8 @@ void VoreenMainWindow::evaluateNetwork() {
             toolWindow->setVisible(false);
     }
 
+    MsgDistr.postMessage(new Message("evaluatorUpdated"));
+
     QApplication::restoreOverrideCursor();
 }
 
@@ -1340,7 +1363,7 @@ void VoreenMainWindow::closeEvent(QCloseEvent *event) {
 
     //TODO: use isWindowModified()
     if (!currentWorkspace_.isEmpty() && !vis_->readOnlyWorkspace()) {
-        switch (QMessageBox::question(this, tr("VoreenVE"), tr("Save the the current workspace?"),
+        switch (QMessageBox::question(this, tr("VoreenVE"), tr("Save the current workspace?"),
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes))
         {
         case QMessageBox::Yes:
@@ -1402,14 +1425,18 @@ void VoreenMainWindow::rebuildShaders() {
         #ifdef WIN32
         Beep(100, 100);
         #endif
-    } else {
+    } 
+    else {
         LWARNINGC("VoreenMainWindow", "Shader reloading failed");
-        QMessageBox::critical(this, tr("Shader reloading"),
-                              tr("Shader reloading failed.\n"
-                                 "See the Debug Console for details."));
         #ifdef WIN32
         Beep(10000, 100);
         #endif
+        QApplication::restoreOverrideCursor();
+        consoleTool_->show();
+        qApp->processEvents();
+        QMessageBox::critical(this, tr("Shader reloading"),
+                              tr("Shader reloading failed.\n"
+                                 "See the Debug Console for details."));
     }        
     QApplication::restoreOverrideCursor();
 }
@@ -1420,13 +1447,18 @@ void VoreenMainWindow::rebuildShaders() {
 
 void VoreenMainWindow::navigationChanged() {
     if (trackballNaviAction_->isChecked())
-        renderWidget_->setCurrentNavigation(RptPainterWidget::TRACKBALL_NAVIGATION);
+        canvasWidget_->setCurrentNavigation(VoreenCanvasWidget::TRACKBALL_NAVIGATION);
     else
-        renderWidget_->setCurrentNavigation(RptPainterWidget::FLYTHROUGH_NAVIGATION);
+        canvasWidget_->setCurrentNavigation(VoreenCanvasWidget::FLYTHROUGH_NAVIGATION);
 }
 
 void VoreenMainWindow::setLoadLastWorkspace() {
     loadLastWorkspace_ = loadLastWorkspaceAct_->isChecked();
+}
+
+void VoreenMainWindow::displayShortcutPreferences() {
+    //QWidget* wdt = new ShortcutPreferencesWidget(&networkEditorWidget_->getEvaluator()->getProcessors());
+    //mdiArea_->addSubWindow(new VoreenMdiSubWindow(wdt, this));
 }
 
 void VoreenMainWindow::setReuseTargets() {
@@ -1438,15 +1470,16 @@ void VoreenMainWindow::setReuseTargets() {
 // Help menu
 //
 
+void VoreenMainWindow::helpFirstSteps() {
+    QString path(VoreenApplication::app()->getDocumentationPath("gettingstarted/gsg.html").c_str());
+    HelpBrowser* help = new HelpBrowser(QUrl::fromLocalFile(path), tr("VoreenVE Help"));
+    help->resize(925, 700);
+    help->show();
+}
+
 void VoreenMainWindow::helpAbout() {
     AboutBox about("VoreenVE", tr("VoreenVE Visualization Environment"), "1.0", this);
     about.exec();
-}
-
-void VoreenMainWindow::helpFirstSteps() {
-    HelpBrowser* help = new HelpBrowser("file:///" + QDir::currentPath() + "/doc/gsg.html");
-    help->resize(900, 600);
-    help->show();
 }
 
 ////////// further functions ///////////////////////////////////////////////////////////
@@ -1499,8 +1532,8 @@ void VoreenMainWindow::setGuiMode(GuiMode guiMode) {
     if (guiMode_ == guiMode)
         return;
 
-    renderWidget_->setUpdatesEnabled(false);
-    renderWidget_->setVisible(false); // hide the OpenGL widget to prevent flicker
+    canvasWidget_->setUpdatesEnabled(false);
+    canvasWidget_->setVisible(false); // hide the OpenGL widget to prevent flicker
 
     if (guiMode == MODE_VISUALIZATION) {
         if (guiMode_ == MODE_NETWORK) {
@@ -1525,7 +1558,7 @@ void VoreenMainWindow::setGuiMode(GuiMode guiMode) {
             renderWindow_->showMaximized();
         modeVisualizationAction_->setChecked(true);
 
-        propertyListWidget_->setState(RptPropertyListWidget::LIST, Property::USER);
+        propertyListWidget_->setState(PropertyListWidget::LIST, Property::USER);
         processorListAction_->setEnabled(false);        
     }
     else if (guiMode == MODE_NETWORK) {
@@ -1555,13 +1588,14 @@ void VoreenMainWindow::setGuiMode(GuiMode guiMode) {
         
         modeNetworkAction_->setChecked(true);
 
-        propertyListWidget_->setState(RptPropertyListWidget::SINGLE, Property::DEVELOPER);
+        propertyListWidget_->setState(PropertyListWidget::SINGLE, Property::DEVELOPER);
         processorListAction_->setEnabled(true);
     }
-    renderWidget_->setVisible(true);
-    renderWidget_->setUpdatesEnabled(true);
+    canvasWidget_->setVisible(true);
+    canvasWidget_->setUpdatesEnabled(true);
 
     guiMode_ = guiMode;
 }
+
 
 } // namespace

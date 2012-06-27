@@ -30,19 +30,17 @@
 #ifndef VRN_HISTOGRAMPAINTER_H
 #define VRN_HISTOGRAMPAINTER_H
 
-
 #include "tgt/vector.h"
-
 #include <QWidget>
 
 namespace voreen {
 
-//forward declaration
+// forward declaration
 class HistogramIntensity;
 
 /**
  * This class draws a polygon that shows the histogram of a volume dataset.
- * To use this painter you have to create an instance of this class with the parent set
+ * To use this painter you have to create an insta nce of this class with the parent set
  * to the widget where the histogram should be painted. Propagate the histogram that
  * should be painted via the method setHistogram(). The histogram is painted in the method
  * paintEvent() which is called by Qt automatically.
@@ -77,7 +75,7 @@ public:
      *
      * @param xRange new x range
      */
-    void setxRange(tgt::vec2 xRange);
+    void setxRange(const tgt::vec2& xRange);
 
 public slots:
     /**
@@ -94,7 +92,7 @@ private:
      * @param p relative coordinates in the interval [0,1]
      * @return pixel coordinates
      */
-    tgt::vec2 wtos(tgt::vec2 p);
+    inline tgt::vec2 wtos(const tgt::vec2& p) const;
 
     tgt::vec2 xRange_; ///< range in x direction
     tgt::vec2 yRange_; ///< range in y direction
@@ -103,7 +101,7 @@ private:
 
     HistogramIntensity* histogram_; ///< the histogram that is painted
 
-    QPixmap* cache_;
+    QPixmap* cache_;   ///< pixmap for caching the painted histogram
 };
 
 } // namespace voreen

@@ -29,6 +29,7 @@
 
 #include "voreen/qt/widgets/snapshotplugin.h"
 
+#include "voreen/core/application.h"
 #include "voreen/core/vis/voreenpainter.h"
 
 #include <QApplication>
@@ -39,6 +40,7 @@
 #include <QMessageBox>
 #include <QSpinBox>
 #include <QToolButton>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace voreen {
@@ -203,8 +205,12 @@ void SnapshotPlugin::makeSnapshot() {
     filedialog.setFilters(filter);
     filedialog.setAcceptMode(QFileDialog::AcceptSave);
 
+    QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getDocumentsPath().c_str());
+    filedialog.setSidebarUrls(urls);
+
     if (path_.isEmpty())
-        filedialog.setDirectory(QDir::homePath());       
+        filedialog.setDirectory(VoreenApplication::app()->getDocumentsPath().c_str());
     else
         filedialog.setDirectory(path_);
     filedialog.selectFile(tr("snapshot.png"));

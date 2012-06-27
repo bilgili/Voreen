@@ -46,31 +46,35 @@ using tgt::col4;
 
 SegmentationRaycaster::SegmentationRaycaster()
     : VolumeRaycaster()
-    , transferFunc_(setTransFunc_, "Transfer Function")
+    , transferFunc_("SegmentationRaycaster.TransFunc", "Transfer function")
     , segmentationTransFuncTex_(0)
     , segmentationTransFuncTexValid_(false)
     , segmentationHandle_(0)
     , applySegmentation_("SegmentationRaycatser.applySegmentation", "Apply Segmentation", true)
-    , currentSegment_("SegmentationRaycaster.currentSegment", "Current Segment", 0, 0, 10000, false, false)
-    , segmentVisible_("SegmentationRaycaster.segmentVisible", "Segment Visible", false)
     , lastSegment_(-1)
-    , standardThresholds_(-1.f, -1.f)
 {
     setName("SegmentationRaycaster");
+
+    transferFunc_.disableEditor(TransFuncProp::Editors(TransFuncProp::ALL & ~TransFuncProp::INTENSITY));
+    addProperty(&transferFunc_);
 
     applySegmentation_.onChange(CallMemberAction<SegmentationRaycaster>(this, &SegmentationRaycaster::applySegmentationChanged));
     addProperty(&applySegmentation_);
 
-    currentSegment_.onChange(CallMemberAction<SegmentationRaycaster>(this, &SegmentationRaycaster::currentSegmentChanged));
-    addProperty(&currentSegment_);
+    // Segment transfer functions
+    std::vector<Property*> transferFunctions;
+    for (int i=0; i<255; ++i) {
+        std::ostringstream segmentID;
+        segmentID << i;
+        TransFuncProp* tfProp = new TransFuncProp("SegmentationRaycaster.SegmentTransFunc" + segmentID.str(), "Segment " + segmentID.str(), 
+            true, false, static_cast<TransFuncProp::Editors>(TransFuncProp::INTENSITY | TransFuncProp::INTENSITY_RAMP), true);
+        tfProp->onChange(Call1ParMemberAction<SegmentationRaycaster, int>(this, &SegmentationRaycaster::segmentationTransFuncChanged, i));
+        transferFunctions.push_back(tfProp);
+    }
+    segmentTransFuncs_ = new PropertyVector("SegmentationRaycaster.SegmentTransFuncs", "Segment Transfer Functions:", transferFunctions);
+    addProperty(segmentTransFuncs_);
 
-    segmentVisible_.onChange(CallMemberAction<SegmentationRaycaster>(this, &SegmentationRaycaster::segmentVisibilityChanged));
-    addProperty(&segmentVisible_);
-
-    transferFunc_.disableEditor(TransFuncProp::Editors(TransFuncProp::ALL & ~TransFuncProp::INTENSITY));
-    transferFunc_.onChange(CallMemberAction<SegmentationRaycaster>(this, &SegmentationRaycaster::transFuncChanged));
-    addProperty(&transferFunc_);
-
+    // segmentation transfunc horizontal resolution
     transFuncResolutions_.push_back("128");
     transFuncResolutions_.push_back("256");
     transFuncResolutions_.push_back("512");
@@ -81,12 +85,12 @@ SegmentationRaycaster::SegmentationRaycaster()
     if (GpuCaps.getMaxTextureSize() >= 4096)
         transFuncResolutions_.push_back("4096");
     transFuncResolutionProp_ = new EnumProp("segmentationRaycaster.transFuncResolution",
-        "Transfer Function Resolution", transFuncResolutions_, 1);
+        "TransFunc Resolution", transFuncResolutions_, 1);
     transFuncResolutionProp_->onChange(CallMemberAction<SegmentationRaycaster>(this, &SegmentationRaycaster::transFuncResolutionChanged));
     addProperty(transFuncResolutionProp_);
 
     addProperty(gradientMode_);
-    addProperty(classificationMode_);
+    //addProperty(classificationMode_);
     addProperty(shadeMode_);
     addProperty(compositingMode_);
 
@@ -125,91 +129,18 @@ SegmentationRaycaster::SegmentationRaycaster()
 
 SegmentationRaycaster::~SegmentationRaycaster() {
 
-    clearSegmentTransFuncs();
-
-    vector<TransFuncMappingKey*>::iterator keyIter = standardTransFuncKeys_.begin();
-    for (; keyIter != standardTransFuncKeys_.end(); ++keyIter)
-        delete *keyIter;
-}
-
-void SegmentationRaycaster::setSegmentVisible(int segment, bool visible) {
-
-    assert(segment >= 0);
-
-    // if segment is current segment, just set visibility flag
-    if (segment == currentSegment_.get()) {
-        segmentVisible_.set(visible);
-    }
-    else {
-        // Insert visibility flag for segment into the map or edit it, if it is already present
-        map< int, bool >::iterator visIter = segmentVisibilities_.find(segment);
-        if ( visIter != segmentVisibilities_.end() ) {
-            visIter->second = visible;
-        }
-        else {
-            segmentVisibilities_.insert( std::pair<int,bool>(segment, visible));
-        }
-    }
-
-    invalidate();
-}
-
-bool SegmentationRaycaster::isSegmentVisible(int segment) const {
-
-    assert(segment >= 0);
-
-    if (segment == currentSegment_.get())
-        return segmentVisible_.get();
-    else {
-        map< int, bool >::const_iterator visIter = segmentVisibilities_.find(segment);
-        if ( visIter != segmentVisibilities_.end() )
-            return visIter->second;
-        else
-            return true;
-    }
-
+    delete segmentationTransFuncTex_;
+    delete segmentTransFuncs_;
+   
 }
 
 BoolProp& SegmentationRaycaster::getApplySegmentationProp() {
     return applySegmentation_;
 }
 
-IntProp& SegmentationRaycaster::getCurrentSegmentProp() {
-    return currentSegment_;
-}
-
-BoolProp& SegmentationRaycaster::getSegmentVisibleProp() {
-    return segmentVisible_;
-}
 
 const std::string SegmentationRaycaster::getProcessorInfo() const {
-    return "Performs a simple single pass raycasting with only some capabilites.";
-}
-
-void SegmentationRaycaster::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRaycaster::processMessage(msg, dest);
-    // send invalidate and update context, if lighting parameters have changed
-    if (msg->id_ == LightMaterial::setLightPosition_    ||
-        msg->id_ == LightMaterial::setLightAmbient_     ||
-        msg->id_ == LightMaterial::setLightDiffuse_     ||
-        msg->id_ == LightMaterial::setLightSpecular_    ||
-        msg->id_ == LightMaterial::setLightAttenuation_ ||
-        msg->id_ == LightMaterial::setMaterialAmbient_  ||
-        msg->id_ == LightMaterial::setMaterialDiffuse_  ||
-        msg->id_ == LightMaterial::setMaterialSpecular_ ||
-        msg->id_ == LightMaterial::setMaterialShininess_)
-    {
-        setLightingParameters();
-        invalidate();
-    }
-    else if (msg->id_ == "set.compositing1") {
-        compositingMode1_->set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "set.compositing2") {
-        compositingMode2_->set(msg->getValue<int>());
-        invalidate();
-    }
+    return "Renders a segmented dataset. Each segment can be assigned a 1D transfer functions";
 }
 
 int SegmentationRaycaster::initializeGL() {
@@ -219,7 +150,10 @@ int SegmentationRaycaster::initializeGL() {
 
     setLightingParameters();
 
-    generateSegmentationTransFunc();
+    createSegmentationTransFunc();
+    initializeSegmentationTransFuncTex();
+
+    invalidateShader();
 
     return initStatus_;
 }
@@ -241,8 +175,10 @@ void SegmentationRaycaster::process(LocalPortMapping* portMapping) {
             portMapping->getVolumeHandle("volumehandle.volume"), &volumeChanged) == false) {
         return;
     }
-    if (volumeChanged)
+    if (volumeChanged) {
         transferFunc_.setVolumeHandle(currentVolumeHandle_);
+        invalidateShader();
+    }
 
     bool segmentationChanged;
     try {
@@ -376,6 +312,8 @@ void SegmentationRaycaster::process(LocalPortMapping* portMapping) {
         transferFunc_.get()->bind();
     }
 
+    addBrickedVolumeModalities(volumeTextures);
+
 
     // initialize shader
     raycastPrg_->activate();
@@ -397,6 +335,8 @@ void SegmentationRaycaster::process(LocalPortMapping* portMapping) {
     else
         raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit("transferTexUnit"));
 
+    setBrickedVolumeUniforms();
+
     renderQuad();
 
     raycastPrg_->deactivate();
@@ -412,7 +352,7 @@ void SegmentationRaycaster::process(LocalPortMapping* portMapping) {
 
 std::string SegmentationRaycaster::generateHeader() {
 
-    std::string headerSource = VolumeRaycaster::generateHeader();
+    std::string headerSource = VolumeRaycaster::generateHeader(getVolumeHandle());
 
     if (transferFunc_.get())
         headerSource += transferFunc_.get()->getShaderDefines();
@@ -469,222 +409,16 @@ std::string SegmentationRaycaster::generateHeader() {
     return headerSource;
 }
 
-void SegmentationRaycaster::currentSegmentChanged() {
-
-    // discard event, if not in segmentation mode
-    if (applySegmentation_.get()) {
-
-        if (lastSegment_ != -1) {
-            saveSegmentTransFunc(lastSegment_);
-            updateSegmentationTransFuncTex(lastSegment_);
-        }
-
-        if (hasStoredSegmentTransFunc(currentSegment_.get())) {
-            restoreSegmentTransFunc(currentSegment_.get());
-        }
-        else {
-            generateStandardTransFunc();
-            segmentVisible_.set(true);
-            transferFunc_.updateWidgets();
-        }
-
-        lastSegment_ = currentSegment_.get();
-
-    }
-
-}
-
-void SegmentationRaycaster::segmentVisibilityChanged() {
-    updateSegmentationTransFuncTex(currentSegment_.get());
-}
-
-void SegmentationRaycaster::saveSegmentTransFunc(int segment) {
-
-    TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
-    if (!intensityTF) {
-        LERROR("1D transfer function expected");
-        return;
-    }
-
-    // create a copy of the transfer function's current keys
-    vector<TransFuncMappingKey*> keys;
-    for (size_t i=0; i<intensityTF->getKeys().size(); ++i) {
-        keys.push_back(new TransFuncMappingKey(*(intensityTF->getKeys()[i])));
-    }
-
-    // if a vector of TransFuncKeys already exists for the segment, update the corresponding map element,
-    // else insert a new element into the map
-    map< int, vector<TransFuncMappingKey*> >::iterator keyIter = segmentTransFuncKeys_.find(segment);
-    if ( keyIter != segmentTransFuncKeys_.end() ) {
-        // delete existing keys
-        for (size_t i=0; i<keyIter->second.size(); ++i)
-            delete keyIter->second[i];
-        keyIter->second = keys;
-    }
-    else {
-        segmentTransFuncKeys_.insert( std::pair< int,vector<TransFuncMappingKey*> >(segment, keys));
-    }
-
-    // do the same for segment visibilities
-    map< int, bool >::iterator visIter = segmentVisibilities_.find(segment);
-    if ( visIter != segmentVisibilities_.end() ) {
-        visIter->second = segmentVisible_.get();
-    }
-    else {
-        segmentVisibilities_.insert( std::pair<int,bool>(segment, segmentVisible_.get()));
-    }
-
-    // store thresholds
-    map< int, tgt::vec2 >::iterator threshIter = segmentThresholds_.find(segment);
-    if ( threshIter != segmentThresholds_.end() ) {
-        threshIter->second = intensityTF->getThresholds();
-    }
-    else {
-        segmentThresholds_.insert( std::pair<int,tgt::vec2>(segment, intensityTF->getThresholds()));
-    }
-
-}
-
-void SegmentationRaycaster::saveStandardTransFunc() {
-
-    TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
-    if (!intensityTF) {
-        LERROR("1D transfer function expected");
-        return;
-    }
-
-    // delete existing keys
-    for (size_t i=0; i<standardTransFuncKeys_.size(); ++i)
-        delete standardTransFuncKeys_[i];
-    standardTransFuncKeys_.clear();
-
-    // copy the transfer function's current keys to the standard keys vector
-    for (size_t i=0; i<intensityTF->getKeys().size(); ++i) {
-        standardTransFuncKeys_.push_back(new TransFuncMappingKey(*(intensityTF->getKeys()[i])));
-    }
-
-    // store thresholds
-    standardThresholds_ = intensityTF->getThresholds();
-
-}
-
-void SegmentationRaycaster::restoreSegmentTransFunc(int segment) {
-
-    tgtAssert(hasStoredSegmentTransFunc(segment), "Segment has no keys");
-    TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
-    if (!intensityTF) {
-        LERROR("1D transfer function expected");
-        return;
-    }
-
-    // read TransFuncMappingKeys stored for this segment and assign them to the transfer function
-    map< int, vector<TransFuncMappingKey*> >::iterator keyIter = segmentTransFuncKeys_.find(segment);
-    if (keyIter != segmentTransFuncKeys_.end()) {
-        intensityTF->clearKeys();
-        vector<TransFuncMappingKey*> keys = keyIter->second;
-        for (size_t i=0; i<keys.size(); ++i)
-            intensityTF->addKey(new TransFuncMappingKey(*(keys[i])));
-    }
-    else {
-        generateStandardTransFunc();
-    }
-
-    // read thresholds stored for this segment and assign them to the transfer function
-    map< int, tgt::vec2 >::iterator threshIter = segmentThresholds_.find(segment);
-    if (threshIter != segmentThresholds_.end()) {
-        intensityTF->setThresholds(threshIter->second);
-    }
-    else {
-        intensityTF->setThresholds(tgt::vec2(0.f,1.f));
-    }
-
-    // read stored visibility state
-    map< int, bool >::iterator visIter = segmentVisibilities_.find(segment);
-    if (visIter != segmentVisibilities_.end()) {
-        segmentVisible_.set(visIter->second);
-    }
-    else {
-        segmentVisible_.set(true);
-    }
-
-    updateSegmentationTransFuncTex(currentSegment_.get());
-
-    transferFunc_.updateWidgets();
-}
-
-void SegmentationRaycaster::restoreStandardTransFunc() {
-
-    TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
-    if (!intensityTF) {
-        LERROR("1D transfer function expected");
-        return;
-    }
-
-    intensityTF->clearKeys();
-    if (!standardTransFuncKeys_.empty()) {
-        for (size_t i=0; i<standardTransFuncKeys_.size(); ++i)
-            intensityTF->addKey(new TransFuncMappingKey(*(standardTransFuncKeys_[i])));
-        intensityTF->setThresholds(standardThresholds_);
-    }
-    else {
-        generateStandardTransFunc();
-    }
-}
-
-void SegmentationRaycaster::generateStandardTransFunc() {
-    TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
-    if (!intensityTF) {
-        LERROR("1D transfer function expected");
-        return;
-    }
-    intensityTF->createStdFunc();
-    intensityTF->setThresholds(tgt::vec2(0.f,1.f));
-}
-
-void SegmentationRaycaster::clearSegmentTransFuncs() {
-
-    map< int, vector<TransFuncMappingKey*> >::iterator segmentIter = segmentTransFuncKeys_.begin();
-    for (; segmentIter != segmentTransFuncKeys_.end(); ++segmentIter) {
-        vector<TransFuncMappingKey*>::iterator keyIter = segmentIter->second.begin();
-        for (; keyIter != segmentIter->second.end(); ++keyIter)
-            delete *keyIter;
-    }
-
-}
-
-bool SegmentationRaycaster::hasStoredSegmentTransFunc(int segment) {
-    return (segmentTransFuncKeys_.find(segment) != segmentTransFuncKeys_.end() ||
-            segmentThresholds_.find(segment) != segmentThresholds_.end()       ||
-            segmentVisibilities_.find(segment) != segmentVisibilities_.end());
-}
-
-void SegmentationRaycaster::applySegmentationChanged() {
-
-    if (applySegmentation_.get() && segmentationHandle_) {
-        saveStandardTransFunc();
-        if (hasStoredSegmentTransFunc(currentSegment_.get()))
-            restoreSegmentTransFunc(currentSegment_.get());
-        lastSegment_ = currentSegment_.get();
-    }
-    else {
-        if (segmentationHandle_)
-            saveSegmentTransFunc(currentSegment_.get());
-        restoreStandardTransFunc();
-    }
-
-    transferFunc_.updateWidgets();
-    invalidateShader();
-}
-
-void SegmentationRaycaster::transFuncChanged() {
-    updateSegmentationTransFuncTex(currentSegment_.get());
+void SegmentationRaycaster::segmentationTransFuncChanged(int segment) {
+    if (segmentationTransFuncTex_)
+        updateSegmentationTransFuncTex(segment);
 }
 
 void SegmentationRaycaster::updateSegmentationTransFuncTex(int segment) {
 
-    if (applySegmentation_.get()) {
-
-        TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
+    
+        //TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(transferFunc_.get());
+        TransFuncIntensity* intensityTF = dynamic_cast<TransFuncIntensity*>(segmentTransFuncs_->getProperty<TransFuncProp>(segment)->get());
         if (!intensityTF) {
             LERROR("1D transfer function expected");
             return;
@@ -703,32 +437,20 @@ void SegmentationRaycaster::updateSegmentationTransFuncTex(int segment) {
         // A segment's 1D transfer function is stored in the 2D segmentation tf texture as a
         // 3-row wide stripe which is centered around the row 3*i+1.
 
+        intensityTF->updateTexture();
         tgt::Texture* tfTex1D = intensityTF->getTexture();
-        tfTex1D->downloadTexture();
-        // if segment visible, copy the content of its transfer function to the combined 2D tf texture
+        // copy the content of the segment's transfer function to the combined 2D tf texture
         int tfRow = 3*segment+1;
         float intensityScale = static_cast<float>(tfTex1D->getWidth()) / static_cast<float>(segmentationTransFuncTex_->getWidth());
-        if (segmentVisible_.get()) {
-           for (int j=0; j<segmentationTransFuncTex_->getWidth(); ++j) {
-                tgt::col4 texel1D = tfTex1D->texel<tgt::col4>(tgt::ifloor(j*intensityScale));
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow-1) = texel1D;
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow) = texel1D;
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow+1) = texel1D;
-           }
-        }
-        // else clear the respective area in the 2D tf texture (set opacity to zero)
-        else {
-            for (int j=0; j<segmentationTransFuncTex_->getWidth(); ++j) {
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow-1).a = 0;
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow).a = 0;
-                segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow+1).a = 0;
-            }
+        for (int j=0; j<segmentationTransFuncTex_->getWidth(); ++j) {
+            tgt::col4 texel1D = tfTex1D->texel<tgt::col4>(tgt::ifloor(j*intensityScale));
+            segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow-1) = texel1D;
+            segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow) = texel1D;
+            segmentationTransFuncTex_->texel<tgt::col4>(j,tfRow+1) = texel1D;
         }
 
         // transfer func texture has to be uploaded before next rendering pass
-        segmentationTransFuncTexValid_ = false;
-
-    }
+        segmentationTransFuncTexValid_ = false; 
 
 }
 
@@ -736,58 +458,62 @@ TransFuncProp& SegmentationRaycaster::getTransFunc() {
     return transferFunc_;
 }
 
-void SegmentationRaycaster::setCurrentSegment(int id) {
-    currentSegment_.set(id);
-}
-
-int SegmentationRaycaster::getCurrentSegment() const {
-    return currentSegment_.get();
-}
 
 void SegmentationRaycaster::transFuncResolutionChanged() {
-    generateSegmentationTransFunc();
+    createSegmentationTransFunc();
+    initializeSegmentationTransFuncTex();
 }
 
-void SegmentationRaycaster::generateSegmentationTransFunc() {
-
-    setCurrentSegment(0);
+void SegmentationRaycaster::createSegmentationTransFunc() {
 
     delete segmentationTransFuncTex_;
 
-    int res = 256;
+    int hres = 256;
     switch (transFuncResolutionProp_->get()) {
         case 0:
-            res = 128;
+            hres = 128;
             break;
         case 1:
-            res = 256;
+            hres = 256;
             break;
         case 2:
-            res = 512;
+            hres = 512;
             break;
         case 3:
-            res = 1024;
+            hres = 1024;
             break;
         case 4:
-            res = 2048;
+            hres = 2048;
             break;
         case 5:
-            res = 4096;
+            hres = 4096;
             break;
     }
 
-    segmentationTransFuncTex_ = new tgt::Texture(tgt::ivec3(res, std::min(GpuCaps.getMaxTextureSize(), 4096), 1));
+    int vres = std::min(GpuCaps.getMaxTextureSize(), segmentTransFuncs_->getNumProperties() * 4);
+
+    segmentationTransFuncTex_ = new tgt::Texture(tgt::ivec3(hres, vres, 1));
     segmentationTransFuncTex_->setFilter(tgt::Texture::LINEAR);
-    // initialize texture with ramp-tf for each segment
-    float intScale = 255.f / segmentationTransFuncTex_->getWidth();
-    for (int i=0; i < segmentationTransFuncTex_->getWidth(); ++i) {
-        for (int j=0; j < segmentationTransFuncTex_->getHeight(); ++j) {
-            int grayValue = tgt::ifloor(i*intScale);
-            segmentationTransFuncTex_->texel<tgt::col4>(i,j) = tgt::col4(grayValue);
-        }
-        // initialize tf of segment 0
-        updateSegmentationTransFuncTex(0);
-    }
+    
+}
+
+void SegmentationRaycaster::initializeSegmentationTransFuncTex() {
+
+    for (int i=0; i<segmentTransFuncs_->getNumProperties(); ++i)
+        updateSegmentationTransFuncTex(i);
+
+    segmentationTransFuncTex_->uploadTexture();
+
+    segmentationTransFuncTexValid_ = true;
+    
+}
+
+void SegmentationRaycaster::applySegmentationChanged() {
+    invalidateShader();
+}
+
+PropertyVector& SegmentationRaycaster::getSegmentationTransFuncs() {
+    return *segmentTransFuncs_;
 }
 
 } // namespace voreen

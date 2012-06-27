@@ -30,7 +30,7 @@
 #ifndef VRN_RENDERSTORE_H
 #define VRN_RENDERSTORE_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -39,7 +39,7 @@ namespace voreen {
  * The image is stored in a persistent render target and can therefore be accessed at any time, not necessarily
  * within a rendering pass.
  */
-class RenderStore : public Processor {
+class RenderStore : public RenderProcessor {
 public:
     RenderStore();
     ~RenderStore();

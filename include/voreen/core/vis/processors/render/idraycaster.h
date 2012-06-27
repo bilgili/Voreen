@@ -59,16 +59,6 @@ public:
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const {return new IDRaycaster();}
 
-    /**
-     * Reacts to the following messages:
-     * - Identifier::switchCoarseness, Type: \c bool
-     * - "set.penetrationDepth", Type: \c float. \see penetrationDepth_
-     * - Identifier::setTransferFunction, Type: \c TransferFunc1D*.
-     * - "set.useBlurring", Type: \c bool. True, if first-hit-positions are blurred.
-     * - "set.blurDelta", Type: \c float. Blur filter size.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
     virtual int initializeGL();
 
     virtual void loadShader();

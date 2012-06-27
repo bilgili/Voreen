@@ -32,6 +32,7 @@
 
 #include "voreen/core/vis/processors/render/slicerendererbase.h"
 #include "tgt/event/eventlistener.h"
+#include "voreen/core/vis/properties/eventproperty.h"
 
 namespace voreen {
 
@@ -118,6 +119,7 @@ protected:
     IntProp numSlicesPerRowProp_;   /**< Property containing the currently displayed number of slices per Row */
     IntProp numSlicesPerColProp_;   /**< Property containing the currently displayed number of slices per Column */
     BoolProp renderSliceBoundariesProp_;    /**< Determines whether to render the slice boundaries */
+    EventProperty eventProp_;
     SliceAlignment alignment_;      /**< the currently used slice alignment */
     size_t numSlices_;              /**< The number of slices in the direction corresponding to alignment. */
 

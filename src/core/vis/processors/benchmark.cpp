@@ -29,7 +29,6 @@
 
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/benchmark.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
 
 namespace voreen {
 

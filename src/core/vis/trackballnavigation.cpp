@@ -29,6 +29,7 @@
 
 #include "voreen/core/vis/trackballnavigation.h"
 #include "voreen/core/vis/messagedistributor.h"
+
 #include "voreen/core/vis/processors/networkevaluator.h"
 
 namespace voreen {

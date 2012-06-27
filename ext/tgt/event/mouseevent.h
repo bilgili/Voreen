@@ -41,7 +41,8 @@ public:
         MOUSE_BUTTON_4 =   1 << 3,
         MOUSE_BUTTON_5 =   1 << 4,
         MOUSE_WHEEL_DOWN = 1 << 5,
-        MOUSE_WHEEL_UP =   1 << 6
+        MOUSE_WHEEL_UP =   1 << 6,
+        MOUSE_ALL = MOUSE_BUTTON_1 | MOUSE_BUTTON_2 | MOUSE_BUTTON_3 | MOUSE_BUTTON_4 | MOUSE_BUTTON_5 | MOUSE_WHEEL_DOWN | MOUSE_WHEEL_UP
     };
 
     enum MouseAction {
@@ -51,26 +52,26 @@ public:
         DOUBLECLICK,
         WHEEL
     };
-protected:
-    ivec2 coord_;
-    MouseButtons buttonCode_;
-    MouseAction action_;
-    int mod_;
 
 public:
-    MouseEvent(int x, int y, MouseAction action, int mod, MouseButtons button = NO_MOUSE_BUTTON);
+    MouseEvent(int x, int y, MouseAction action, Event::Modifier mod, MouseButtons button = NO_MOUSE_BUTTON);
 
-    ivec2 coord() { return coord_; }
-    int x() { return coord_.x; }
-    int y() { return coord_.y; }
-    MouseButtons button() { return buttonCode_; }
-    MouseAction action() { return action_; }
-    int modifiers() { return mod_; };
+    ivec2 coord();
+    int x();
+    int y();
+    MouseButtons button();
+    MouseAction action();
+    Event::Modifier modifiers();
 
     // HACK for voreen paper... it shouldn't be possible to set Coordinates after creation... or maybe it should?
     void setCoord(const ivec2& coord) { coord_ = coord; }
 	virtual int getEventType();
-    
+  
+protected:
+    ivec2 coord_;
+    MouseButtons buttonCode_;
+    MouseAction action_;
+    Event::Modifier mod_;
 };
 
 }

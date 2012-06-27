@@ -60,13 +60,13 @@ void EnumProp::updateFromXml(TiXmlElement* propElem) {
                                                  + propElem->Attribute("value")));
     }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 TiXmlElement* EnumProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
 
-    if (getSerializeMetaData()) {    
+    if (getSerializeTypeInformation()) {    
         propElem->SetAttribute("class", "EnumProperty");
 
         for (size_t i = 0; i < strings_.size(); ++i) {

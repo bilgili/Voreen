@@ -53,13 +53,13 @@ void ColorProp::updateFromXml(TiXmlElement* propElem) {
             errors_.store(e);
         }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 TiXmlElement* ColorProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
 
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation())
         propElem->SetAttribute("class", "ColorProperty");
     
     TiXmlElement* min = new TiXmlElement("minValue");
@@ -70,7 +70,7 @@ TiXmlElement* ColorProp::serializeToXml() const {
         min->SetDoubleAttribute(fields.substr(i, 1).c_str(), 0.0);
         max->SetDoubleAttribute(fields.substr(i, 1).c_str(), 1.0);
     }
-    if (getSerializeMetaData()) {
+    if (getSerializeTypeInformation()) {
         propElem->LinkEndChild(min);
         propElem->LinkEndChild(max);
     }

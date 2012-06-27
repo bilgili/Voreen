@@ -32,7 +32,13 @@
 
 // include required shader modules
 #include "modules/mod_sampler2d.frag"
+
+#ifdef BRICKED_VOLUME
+#include "modules/bricking/mod_bricking.frag"
+#else
 #include "modules/mod_sampler3d.frag"
+#endif
+
 #include "modules/mod_raysetup.frag"
 #include "modules/mod_masking.frag"
 #include "modules/mod_transfunc.frag"

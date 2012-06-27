@@ -101,7 +101,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
     File* file = FileSys.open(filename);
 
     // check if file is open
-    if (!file || !file->open()) {
+    if (!file || !file->isOpen()) {
         delete file;
         return false;
     }

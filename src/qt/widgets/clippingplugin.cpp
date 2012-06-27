@@ -74,19 +74,19 @@ void ClippingPlugin::createConnections() {
 void ClippingPlugin::updateXClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setLeftClipPlane_, clipXWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setRightClipPlane_, clipXWidget_->get2ndSliderValue()));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void ClippingPlugin::updateYClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setTopClipPlane_, clipYWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setBottomClipPlane_, clipYWidget_->get2ndSliderValue()));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void ClippingPlugin::updateZClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setFrontClipPlane_, clipZWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setBackClipPlane_, clipZWidget_->get2ndSliderValue()));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 

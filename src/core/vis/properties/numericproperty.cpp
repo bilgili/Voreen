@@ -68,7 +68,7 @@ TiXmlElement* NumericProperty<T>::serializeToXml() const {
     // to write this method for every derived class and can make use of
     // typedefs instead (df)
     std::ostringstream oss;
-    if (Property::getSerializeMetaData()) {
+    if (Property::getSerializeTypeInformation()) {
         size_t size = T::size;
         oss << "Vec" << size << "Property";
         propElem->SetAttribute("class", oss.str());
@@ -87,7 +87,7 @@ TiXmlElement* NumericProperty<T>::serializeToXml() const {
         oss.str(""); oss << maxValue_[i];
         max->SetAttribute(componentNames.substr(i, 1), oss.str());
     }
-    if (Property::getSerializeMetaData()) {
+    if (Property::getSerializeTypeInformation()) {
         propElem->LinkEndChild(min);
         propElem->LinkEndChild(max);
     }
@@ -111,7 +111,7 @@ void NumericProperty<float>::updateFromXml(TiXmlElement* propElem) {
         }
     } 
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 template<>
@@ -120,7 +120,7 @@ TiXmlElement* NumericProperty<float>::serializeToXml() const {
 
     propElem->SetDoubleAttribute("value", value_);
 
-    if (getSerializeMetaData()) {
+    if (getSerializeTypeInformation()) {
         propElem->SetAttribute("class", "FloatProperty");
         propElem->SetDoubleAttribute("minValue", minValue_);
         propElem->SetDoubleAttribute("maxValue", maxValue_);
@@ -143,7 +143,7 @@ void NumericProperty<int>::updateFromXml(TiXmlElement* propElem) {
         }
     }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 template<>
@@ -152,7 +152,7 @@ TiXmlElement* NumericProperty<int>::serializeToXml() const {
 
     propElem->SetAttribute("value", value_);
 
-    if (getSerializeMetaData()) {
+    if (getSerializeTypeInformation()) {
         propElem->SetAttribute("class", "IntProperty");   
         propElem->SetAttribute("minValue", minValue_);
         propElem->SetAttribute("maxValue", maxValue_);

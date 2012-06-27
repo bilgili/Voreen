@@ -32,78 +32,15 @@
 
 #include "tinyxml/tinyxml.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/propertyset.h"
 #include "voreen/core/xml/serializable.h"
 #include "voreen/core/volume/volumesetcontainer.h"
 
 namespace voreen {
 
-/**
- * Holds all data gathered from a ".vnw" XML network file.
- *
- * This class replaces the NetworkInformation and Networkinfos
- */
-class ProcessorNetwork : public Serializable {
-public:
-    ProcessorNetwork();
-    ProcessorNetwork(const ProcessorNetwork& othernet);
-    ~ProcessorNetwork();
-
-    void operator=(const ProcessorNetwork& othernet);
-
-    /**
-     * Returns the name of the xml element used when serializing the object
-     */
-    virtual std::string getXmlElementName() const { return "ProcessorNetwork"; }
-
-    /**
-     * Serializes the object to XML.
-     */
-    virtual TiXmlElement* serializeToXml() const;
-
-    /**
-     * Updates the object from XML.
-     */
-    virtual void updateFromXml(TiXmlElement* elem);
-    virtual void updateMetaFromXml(TiXmlElement* elem);
-
-    /**
-     * Checks the XML for a VolumeSetContainer
-     */
-    static bool hasVolumeSetContainer(TiXmlElement* elem);
-
-    void addToMeta(TiXmlElement* elem) { meta_.addData(elem); }
-    void removeFromMeta(std::string elemName) { meta_.removeData(elemName); }
-    void clearMeta() { meta_.clearData(); }
-    TiXmlElement* getFromMeta(std::string elemName) const { return meta_.getData(elemName); }
-    bool hasInMeta(std::string elemName) const { return meta_.hasData(elemName); }
-
-    /**
-    * Sets TextureContainer for all processors of the network.
-    */
-    ProcessorNetwork& setTextureContainer(TextureContainer* tc);
-
-    /**
-    * Sets the Camera for all Processors of the network
-    */
-    ProcessorNetwork& setCamera(tgt::Camera* camera);
-
-    // TODO: make private and add accessor methods (df)
-    //
-    std::vector<Processor*> processors;
-    std::vector<PropertySet*> propertySets;
-    bool reuseTCTargets;
-    int version;
-    VolumeSetContainer* volumeSetContainer;
-    bool serializeVolumeSetContainer;
-
-private:
-    void initializeFrom(const ProcessorNetwork& othernet);
-    MetaSerializer meta_; // Can store metadata
-};
+class ProcessorNetwork;
 
 /**
- * Serializes the data structure of processors to an XML file (currently not working). It can also
+ * Serializes the data structure of processors to an XML file. It can also
  * read an XML file and build the data structure again. (working)
  */
 class NetworkSerializer {
@@ -122,16 +59,10 @@ public:
         throw (SerializerException);
 
     /**
-     * Reads a ".vnw" file and returns a ProcessorNetwork holding all Processors, PropertySets and metadata
+     * Reads a ".vnw" file and returns a ProcessorNetwork holding all Processors and metadata
      * Ensure to free the obtained pointer using C++ delete afterwards!
      */
-    ProcessorNetwork* readNetworkFromFile(std::string filename, bool loadVolumeSetContainer = false)
-        throw (SerializerException);
-
-    /**
-     * Reads a ".vnw" file and returns if if contains a serialized VolumeSetContainer
-     */
-    bool hasVolumeSetContainer(std::string filename);
+    ProcessorNetwork* readNetworkFromFile(std::string filename) throw (SerializerException);
 
     /**
      * Returns the version of the ".vnw" file

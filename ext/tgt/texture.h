@@ -174,8 +174,8 @@ public:
     *   Generate OpenGL texture ID
     *   @return The generated ID
     */
-    GLuint generateId()
-    {
+    GLuint generateId() {
+        id_ = 0; 
         glGenTextures(1, &id_);
         return id_;
     }

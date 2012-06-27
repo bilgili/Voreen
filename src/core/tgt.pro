@@ -123,14 +123,20 @@ HEADERS += \
     ../../ext/tgt/timer.h \
     ../../ext/tgt/vector.h \
     ../../ext/tgt/vertex.h \
-\
     ../../ext/tgt/event/event.h \
     ../../ext/tgt/event/eventhandler.h \
+    ../../ext/tgt/event/eventlistener.h \
     ../../ext/tgt/event/keyevent.h \
     ../../ext/tgt/event/mouseevent.h \
     ../../ext/tgt/event/timeevent.h \
     ../../ext/tgt/event/exitevent.h \
     ../../ext/tgt/logmanager.h \
     ../../ext/tgt/navigation/trackball.h \
-    ../../ext/tgt/navigation/navigation.h
+    ../../ext/tgt/navigation/navigation.h 
 
+HEADERS += ../ext/tgt/animation/abstractanimation.h \
+    ../ext/tgt/animation/bsplineanimation.h \
+    ../ext/tgt/animation/circleanimation.h \
+
+SOURCES += ../ext/tgt/animation/bsplineanimation.cpp \
+    ../ext/tgt/animation/circleanimation.cpp

@@ -37,6 +37,7 @@
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/io/tuvvolumereader.h"
 #include "voreen/core/io/interfilevolumereader.h"
+#include "voreen/core/io/brickedvolumereader.h"
 #include "voreen/core/io/multivolumereader.h"
 
 #include "voreen/core/io/volumeserializer.h"
@@ -78,6 +79,7 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
     readers_.push_back(new RawVolumeReader(progress_));
     readers_.push_back(new TUVVolumeReader());
     readers_.push_back(new InterfileVolumeReader());
+	readers_.push_back(new BrickedVolumeReader(progress_) );
     readers_.push_back(new MultiVolumeReader(this, progress_));
 
 #ifdef VRN_WITH_DCMTK

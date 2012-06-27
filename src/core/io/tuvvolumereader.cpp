@@ -76,7 +76,7 @@ VolumeSet* TUVVolumeReader::read(const std::string &fileName)
 
     fin.close();
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
     VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);

@@ -34,7 +34,7 @@
 namespace voreen {
 
 const std::string Property::XmlElementName_ = "Property";
-bool Property::serializeMetaData_ = false;
+bool Property::serializeTypeInformation_ = false;
 
 Property::Property(const std::string& id, const std::string& guiText)
     : Serializable()
@@ -43,10 +43,12 @@ Property::Property(const std::string& id, const std::string& guiText)
     , owner_(0)
     , visible_(true)
     , lod_(USER)
+    , metaData_(0)
 {}
 
 Property::~Property() {
     disconnectWidgets();
+    delete metaData_;
 }
 
 void Property::setVisible(bool state) {
@@ -106,6 +108,10 @@ Identifier Property::getIdent() const {
     return Identifier(id_);
 }
 
+PropertyWidget* Property::createWidget(PropertyWidgetFactory*) {
+    return 0;
+}
+
 // XML serialization stuff
 std::string Property::getXmlElementName() const {
     return XmlElementName_;
@@ -125,8 +131,26 @@ TiXmlElement* Property::serializeToXml() const {
 
     propElem->SetAttribute("id", id_);
 
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation()) {
+        
         propElem->SetAttribute("label", guiText_);
+    }
+
+    // query property widgets for meta data to serialize
+    std::vector<TiXmlElement*> widgetMetaData;
+    std::set<PropertyWidget*>::const_iterator it = widgets_.begin();
+    for ( ; it != widgets_.end(); ++it) {
+        TiXmlElement* metaDataElem = (*it)->getWidgetMetaData();
+        if (metaDataElem)
+            widgetMetaData.push_back(metaDataElem);
+    }
+    // if there is meta data, add it to the DOM
+    if (!widgetMetaData.empty()) {
+        TiXmlElement* metaDataElem = new TiXmlElement("MetaData");
+        propElem->LinkEndChild(metaDataElem);
+        for (size_t i=0; i<widgetMetaData.size(); ++i)
+            metaDataElem->LinkEndChild(widgetMetaData[i]);
+    }
 
     if (lod_ != USER)
         propElem->SetAttribute("lod", lod_);
@@ -136,12 +160,19 @@ TiXmlElement* Property::serializeToXml() const {
 
 void Property::updateFromXml(TiXmlElement* propElem) {
     errors_.clear();
-    int* result = new int;
-    if (propElem->QueryIntAttribute("lod", result) == TIXML_SUCCESS)
-        lod_ = static_cast<LODSetting>(*result);
+    int result;
+    if (propElem->QueryIntAttribute("lod", &result) == TIXML_SUCCESS)
+        lod_ = static_cast<LODSetting>(result);
     else
         lod_ = USER;
-    delete result;
+
+    // read widget meta data
+    delete metaData_;
+    TiXmlElement* widgetMetaElem = propElem->FirstChildElement("MetaData");
+    if (widgetMetaElem)
+        metaData_ = new TiXmlElement(*widgetMetaElem);
+    else 
+        metaData_ = 0;
 }
 
 PropertyWidget* Property::createAndAddWidget(PropertyWidgetFactory* f) {
@@ -150,6 +181,30 @@ PropertyWidget* Property::createAndAddWidget(PropertyWidgetFactory* f) {
         widget->setVisible(visible_);
     addWidget(widget);
     return widget;
+}
+
+std::set<PropertyWidget*> Property::getPropertyWidgets() const {
+    return widgets_;
+}
+
+Property::LODSetting Property::getLevelOfDetail() {
+    return lod_;
+}
+
+void Property::setLevelOfDetail(LODSetting lod) {
+    lod_ = lod;
+}
+
+bool Property::getSerializeTypeInformation() {
+    return serializeTypeInformation_;
+}
+
+void Property::setSerializeTypeInformation(bool enable) {
+    serializeTypeInformation_ = enable;
+}
+
+const TiXmlElement* Property::getMetaData() const {
+    return metaData_;
 }
 
 } // namespace voreen

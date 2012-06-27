@@ -126,7 +126,7 @@ void DynamicsPlugin::setDataset(int val) {
     dataset_->update();
     //FIXME: this won't wokr anymore
     //postMessage(new IntMsg(Processor::setCurrentDataset_, val));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void DynamicsPlugin::play() {

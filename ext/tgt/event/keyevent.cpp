@@ -27,17 +27,26 @@
 namespace tgt {
 
 KeyEvent::KeyEvent(KeyCode keyCode, int mod, bool pressed)
-  : Event(),
-    keyCode_(keyCode),
-    mod_(mod),
-    pressed_(pressed)
-{
+    : Event()
+    , keyCode_(keyCode)
+    , mod_(mod)
+    , pressed_(pressed)
+{}
 
-}
-
-int KeyEvent::getEventType(){
+int KeyEvent::getEventType() {
     return KEYEVENT;
 }
 
+KeyEvent::KeyCode KeyEvent::keyCode() {
+    return keyCode_;
 }
 
+int KeyEvent::modifiers() {
+    return mod_;
+}
+
+bool KeyEvent::pressed() {
+    return pressed_;
+}
+
+}

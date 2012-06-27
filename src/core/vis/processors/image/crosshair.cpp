@@ -39,14 +39,16 @@
 namespace voreen {
 
 CrossHair::CrossHair()
-    : ImageProcessor("pp_crosshair"), tgt::EventListener(),
-    crossHairPrg_(0),
-    color_("crosshaircolor", "Crosshair-Color", tgt::vec4(1.0f,0.0f,0.0f,1.0f)),
-    useChromaDepth_("ueschromadepth", "Use chroma depth gradient", true),
-    removeBackground_("removeBackground", "Remove background depth", true),
-    textureSize_("textureSize", "Size of transfer texture", 256, 0, 8192),
-    cutAfterDecimalPlaces_("cutAfterDecimalPlaces", "Cut depth values after decimal place", 4),
-    showCrossHair_(false)
+    : ImageProcessor("pp_crosshair"), tgt::EventListener()
+    , crossHairPrg_(0)
+    , color_("crosshaircolor", "Crosshair-Color", tgt::vec4(1.0f,0.0f,0.0f,1.0f))
+    , useChromaDepth_("ueschromadepth", "Use chroma depth gradient", false)
+    , removeBackground_("removeBackground", "Remove background depth", true)
+    , textureSize_("textureSize", "Size of transfer texture", 256, 0, 8192)
+    , cutAfterDecimalPlaces_("cutAfterDecimalPlaces", "Cut depth values after decimal place", 4)
+    , eventProp_("Show crosshair", tgt::Event::SHIFT, tgt::MouseEvent::MOUSE_ALL)
+    , showCrossHair_(false)
+    , depthToColorTex_(0)      
 {
     setName("CrossHair");
     chromaDepthTex_ = 0;
@@ -55,6 +57,7 @@ CrossHair::CrossHair()
     addProperty(&removeBackground_);
     addProperty(&textureSize_);
     addProperty(&cutAfterDecimalPlaces_);
+    addProperty(&eventProp_);
     Option<int> pm[] = {
         { "relative", "relative", 0 },
         { "absolute", "absolute", 1 },
@@ -65,12 +68,10 @@ CrossHair::CrossHair()
     createInport("image.inport");
     addProperty(mappingModeProp_);
     createOutport("image.outport");
-    depthToColorTex_ = new tgt::Texture(tgt::ivec3(textureSize_.get(), 1, 1));
 }
 
 CrossHair::~CrossHair() {
-    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
-        static_cast<tgt::EventListener*>(this)));
+    delete depthToColorTex_;
 }
 
 const std::string CrossHair::getProcessorInfo() const {
@@ -79,15 +80,14 @@ const std::string CrossHair::getProcessorInfo() const {
 
 Processor* CrossHair::create() const {
     CrossHair* ch = new CrossHair();
-    MsgDistr.postMessage(
-        new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_,
-        static_cast<tgt::EventListener*>(ch)));
     return ch;
 }
 
 int CrossHair::initializeGL() {
     chromaDepthTex_ = TexMgr.load(VoreenApplication::app()->getTransFuncPath("chromadepthspectrum.bmp"),
                                   tgt::Texture::LINEAR, false, true, false);
+
+    depthToColorTex_ = new tgt::Texture(tgt::ivec3(textureSize_.get(), 1, 1));
 
     if (ImageProcessor::initializeGL() == VRN_OK) {
         crossHairPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag",
@@ -108,7 +108,7 @@ int CrossHair::initializeGL() {
 }
 
 void CrossHair::mousePressEvent(tgt::MouseEvent *e) {
-    if (e->modifiers() & tgt::MouseEvent::CTRL) {
+    if (eventProp_.accepts(e)) {
         showCrossHair_ = true;
         cursorPos_ = e->coord();
         e->accept();

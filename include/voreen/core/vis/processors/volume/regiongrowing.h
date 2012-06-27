@@ -31,7 +31,7 @@
 #define VRN_REGIONGROWINGPROCESSOR_H
 
 #include "voreen/core/vis/processors/render/volumerenderer.h"
-#include "voreen/core/vis/processors/image/geometryprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometryprocessor.h"
 #include "voreen/core/volume/volumeatomic.h"
 
 namespace voreen {
@@ -73,7 +73,8 @@ public:
     void clearSegment(int segmentID);
     void undoLastGrowing();
     void startGrowing(tgt::ivec2 seedPos, int segmentID);
-    void saveSegmentation(std::string filename);
+    void saveSegmentation(std::string filename) const;
+    void loadSegmentation(std::string filename);
     void saveSegment(int segmentID, std::string filename);
 
 protected:

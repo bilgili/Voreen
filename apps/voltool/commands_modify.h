@@ -34,6 +34,9 @@
 
 namespace voreen {
 
+struct BrickingInformation;
+class Volume;
+
 class CommandCutToPieces : public Command {
 public:
     CommandCutToPieces();
@@ -60,6 +63,19 @@ public:
     bool checkParameters(const std::vector<std::string>& parameters);
     bool execute(const std::vector<std::string>& parameters);
 };
+
+class CommandBrick : public Command {
+public:
+    CommandBrick();
+    bool execute(const std::vector<std::string>& parameters);
+    bool checkParameters(const std::vector<std::string>& parameters);
+    /**
+    * Gets information like spacing etc from a volume. This function is used to fill
+    * the brickingInformation struct with the necessary information to brick the volume.
+    */
+	void getVolumeInformation(BrickingInformation& brickingInformation, Volume* volume);
+};
+
 
 class CommandScaleTexCoords : public Command {
 public:

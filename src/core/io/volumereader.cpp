@@ -46,7 +46,7 @@ const std::vector<std::string>& VolumeReader::getExtensions() const {
     return extensions_;
 }
 
-void VolumeReader::read(Volume* volume, std::fstream& fin) {
+void VolumeReader::read(Volume* volume, FILE* fin) {
     if (progress_) {
         //TODO: check what influences this has on performance. Choose larger block size? joerg
         int max = tgt::max(volume->getDimensions());
@@ -56,12 +56,21 @@ void VolumeReader::read(Volume* volume, std::fstream& fin) {
         size_t sizeStep = volume->getNumBytes() / static_cast<size_t>(max);
 
         for (size_t i = 0; i < size_t(max); ++i) {
-            fin.read(reinterpret_cast<char*>(volume->getData()) + sizeStep * i, sizeStep);
+            if (fread(reinterpret_cast<char*>(volume->getData()) + sizeStep * i, 1, sizeStep, fin) == 0)
+                LWARNING("fread() failed");                    
             progress_->set(i);
         }
     }
-    else
-        fin.read(reinterpret_cast<char*>(volume->getData()), volume->getNumBytes());
+    else {
+        if (fread(reinterpret_cast<char*>(volume->getData()), 1, volume->getNumBytes(), fin) == 0)
+        LWARNING("fread() failed");                    
+    }
+}
+
+VolumeSet* VolumeReader::readSlices(const std::string&, size_t, size_t)
+    throw(tgt::FileException, std::bad_alloc)
+{
+    throw tgt::FileException("This VolumeReader can not read slice wise.");
 }
 
 VolumeHandle* VolumeReader::readFromOrigin(const VolumeHandle::Origin& origin) {

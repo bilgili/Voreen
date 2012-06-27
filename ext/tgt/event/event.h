@@ -51,13 +51,14 @@ public:
         SHIFT = LSHIFT | RSHIFT,
         CTRL = LCTRL | RCTRL,
         ALT = LALT | RALT,
+        ALTGR = CTRL | ALT,
         META = LMETA | RMETA
     };
 
     /*
      * enum to select to which eventType has to be broadcast, see EventHandler::broadcast
      */
-	enum eventType{
+	enum eventType {
     	MOUSEPRESSEVENT       = 0x0001,
 	    MOUSERELEASEEVENT     = 0x0002,
 	    MOUSEMOVEEVENT        = 0x0004,
@@ -70,7 +71,7 @@ public:
 	    SIZINGEVENT           = 0x0200,
         TRANSLATIONEVENT      = 0x0400,
 
-	    ALLEVENTTYPES = MOUSEPRESSEVENT | MOUSERELEASEEVENT | MOUSEMOVEEVENT | MOUSEDOUBLECLICKEVENT | WHEELEVENT| TIMEREVENT | KEYEVENT | ROTATIONEVENT | ZOOMEVENT | SIZINGEVENT | TRANSLATIONEVENT
+	    ALLEVENTTYPES = MOUSEPRESSEVENT | MOUSERELEASEEVENT | MOUSEMOVEEVENT | MOUSEDOUBLECLICKEVENT | WHEELEVENT | TIMEREVENT | KEYEVENT | ROTATIONEVENT | ZOOMEVENT | SIZINGEVENT | TRANSLATIONEVENT
 	};
 
 
@@ -95,7 +96,7 @@ public:
         accepted_ = false;
     }
 
-	virtual int getEventType() =0;
+	virtual int getEventType() = 0;
 
     bool accepted_;
 

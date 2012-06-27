@@ -35,6 +35,8 @@ class LocalPortMapping;
  * <code>CacheIndexSubEntry</code> class.
  * <code>CacheIndexSubEntry</code> objects hold one <i>sub-level key</i>
  * (<i>sub-keys</i>) each and the actual file name for the cached data.
+ *
+ * @author  Dirk Feldmann, June/July 2009
  */
 class CacheIndex {
 public:

@@ -35,19 +35,26 @@ namespace voreen {
 
 FileDialogProp::FileDialogProp(const std::string& id, const std::string& guiText,
                                const std::string& dialogCaption, const std::string& directory,
-                               const std::string& fileFilter, bool invalidate, bool invalidateShader)
+                               const std::string& fileFilter, FileDialogProp::FileMode fileMode, 
+                               bool invalidate, bool invalidateShader)
     : TemplateProperty<std::string>(id, guiText, "", invalidate, invalidateShader),
       dialogCaption_(dialogCaption),
       directory_(directory),
+      fileMode_(fileMode),
       fileFilter_(fileFilter)
-{}
+{
+
+    if (fileMode == DIRECTORY) 
+        set(directory_);
+
+}
 
 TiXmlElement* FileDialogProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
 
     propElem->SetAttribute("value", get());
 
-    if (getSerializeMetaData()) {
+    if (getSerializeTypeInformation()) {
         propElem->SetAttribute("class", "FileDialogProperty");
         propElem->SetAttribute("caption", getDialogCaption());
         propElem->SetAttribute("directory", getDirectory());
@@ -66,7 +73,7 @@ void FileDialogProp::updateFromXml(TiXmlElement* propElem) {
             errors_.store(e);
         }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 PropertyWidget* FileDialogProp::createWidget(PropertyWidgetFactory* f) {

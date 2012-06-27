@@ -32,6 +32,8 @@
 
 #include "voreen/core/vis/properties/property.h"
 
+class TiXmlElement;
+
 namespace voreen {
 
 /**
@@ -40,18 +42,33 @@ namespace voreen {
  */
 class PropertyWidget {
 public:
+    
     virtual ~PropertyWidget() {}
+    
     /**
      * The Widget should update itself from the Property's value when this is called.
      */
     virtual void update() = 0;
     virtual void setVisible(bool state) = 0;
+    
     /**
-     * When the Property is destroyed it call call disconnect so the Widget knows
+     * When the Property is destroyed it calls disconnect so the Widget knows
      * the property is no longer around
      */
     virtual void disconnect() = 0;
+
+    /**
+     * Allows property widgets to serialize their state. 
+     *
+     * This function is called by the Property's serialization routine. 
+     * If not overwritten in a subclass, it returns 0.
+     */
+    virtual TiXmlElement* getWidgetMetaData() const {
+        return 0;
+    }
+
 };
+
 
 } // namespace voreen
 

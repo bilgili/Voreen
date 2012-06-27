@@ -30,7 +30,7 @@
 #ifndef VRN_NULLRENDERER_H
 #define VRN_NULLRENDERER_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -41,7 +41,7 @@ namespace voreen {
  *
  * @author  Dirk Feldmann, October 2008
  */
-class NullRenderer : public Processor {
+class NullRenderer : public RenderProcessor {
 public:
     NullRenderer();
     ~NullRenderer();

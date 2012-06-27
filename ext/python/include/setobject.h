@@ -66,13 +66,19 @@ PyAPI_DATA(PyTypeObject) PyFrozenSet_Type;
  *     hash is -1
  */
 
-#define PyFrozenSet_CheckExact(ob) ((ob)->ob_type == &PyFrozenSet_Type)
+#define PyFrozenSet_CheckExact(ob) (Py_TYPE(ob) == &PyFrozenSet_Type)
 #define PyAnySet_CheckExact(ob) \
-	((ob)->ob_type == &PySet_Type || (ob)->ob_type == &PyFrozenSet_Type)
+	(Py_TYPE(ob) == &PySet_Type || Py_TYPE(ob) == &PyFrozenSet_Type)
 #define PyAnySet_Check(ob) \
-	((ob)->ob_type == &PySet_Type || (ob)->ob_type == &PyFrozenSet_Type || \
-	  PyType_IsSubtype((ob)->ob_type, &PySet_Type) || \
-	  PyType_IsSubtype((ob)->ob_type, &PyFrozenSet_Type))
+	(Py_TYPE(ob) == &PySet_Type || Py_TYPE(ob) == &PyFrozenSet_Type || \
+	  PyType_IsSubtype(Py_TYPE(ob), &PySet_Type) || \
+	  PyType_IsSubtype(Py_TYPE(ob), &PyFrozenSet_Type))
+#define PySet_Check(ob) \
+	(Py_TYPE(ob) == &PySet_Type || \
+	PyType_IsSubtype(Py_TYPE(ob), &PySet_Type))
+#define   PyFrozenSet_Check(ob) \
+	(Py_TYPE(ob) == &PyFrozenSet_Type || \
+	  PyType_IsSubtype(Py_TYPE(ob), &PyFrozenSet_Type))
 
 PyAPI_FUNC(PyObject *) PySet_New(PyObject *);
 PyAPI_FUNC(PyObject *) PyFrozenSet_New(PyObject *);
@@ -82,7 +88,8 @@ PyAPI_FUNC(int) PySet_Clear(PyObject *set);
 PyAPI_FUNC(int) PySet_Contains(PyObject *anyset, PyObject *key);
 PyAPI_FUNC(int) PySet_Discard(PyObject *set, PyObject *key);
 PyAPI_FUNC(int) PySet_Add(PyObject *set, PyObject *key);
-PyAPI_FUNC(int) _PySet_Next(PyObject *set, Py_ssize_t *pos, PyObject **entry);
+PyAPI_FUNC(int) _PySet_Next(PyObject *set, Py_ssize_t *pos, PyObject **key);
+PyAPI_FUNC(int) _PySet_NextEntry(PyObject *set, Py_ssize_t *pos, PyObject **key, long *hash);
 PyAPI_FUNC(PyObject *) PySet_Pop(PyObject *set);
 PyAPI_FUNC(int) _PySet_Update(PyObject *set, PyObject *iterable);
 

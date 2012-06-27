@@ -54,11 +54,6 @@ public:
 
     virtual std::string generateHeader();
 
-    /**
-    * Process voreen message, accepted identifiers:
-    * - switch.virtualClipplane
-    */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
     virtual void process(LocalPortMapping* portMapping);
 
 };

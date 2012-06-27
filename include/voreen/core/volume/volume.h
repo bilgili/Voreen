@@ -87,7 +87,7 @@ public:
     size_t getNumVoxels() const;
     tgt::vec3 getSpacing() const;
 
-    int getBitsStored() const;
+    virtual int getBitsStored() const;
 
     virtual int getBitsAllocated() const = 0;
     virtual int getNumChannels() const = 0;
@@ -185,6 +185,17 @@ public:
         throw (std::bad_alloc) = 0;
 
     /**
+    * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
+    * to 1 voxel. This does not necessarily happen when using the scale(..) function.
+    */
+    virtual Volume* downsample() const throw (std::bad_alloc);
+
+    /**Calculates the root mean square error between this volume and
+    * volume
+    */
+    virtual float calcError(Volume* volume) =0;
+
+    /**
      * Use this method in order to copy over the data from \p v to this Volume
      * while converting the data to this Volume's VoxelType.
      *
@@ -201,6 +212,11 @@ public:
     inline static typename T::VoxelType* getData(T* v) {
         return (typename T::VoxelType*) v->getData();
     }
+
+	/**
+	* Use this to check if all voxels in the volume have the same value.
+	*/
+	virtual bool getAllVoxelsEqual() = 0;
 
 protected:
     // protected default constructor

@@ -2,7 +2,7 @@ TARGET = voreenve
 TEMPLATE = app
 LANGUAGE = C++
 
-CONFIG += qt console
+CONFIG += console qt
 QT += opengl
 
 # Include local configuration
@@ -15,41 +15,18 @@ include(../../commonconf.txt)
 include(../voreenapp.txt)
 
 HEADERS += \
-    rptaggregationitem.h \
-    rptaggregationlistwidget.h \
-    rptarrow.h \
-    rptgraphwidget.h \
-    rptguiitem.h \
-    rptnetworkserializergui.h \
-    rptpainterwidget.h \
-    rptprocessoritem.h \
-    rptprocessorlistwidget.h \
-    rptpropertylistwidget.h \
-    rptpropertysetitem.h \
-    rpttcttooltip.h \
-    rpttooltiptimer.h \
+    voreencanvaswidget.h \
     voreenmainwindow.h \
-    workspace.h
+    workspace.h 
 
+    
 contains(DEFINES, VRN_WITH_DCMTK) {
   HEADERS += voreen/qt/dicomdialog.h
 }
 
 SOURCES += \
     main.cpp \
-    rptaggregationitem.cpp \
-    rptaggregationlistwidget.cpp \
-    rptarrow.cpp \
-    rptgraphwidget.cpp \
-    rptguiitem.cpp \
-    rptnetworkserializergui.cpp \
-    rptpainterwidget.cpp \
-    rptprocessoritem.cpp \
-    rptprocessorlistwidget.cpp \
-    rptpropertylistwidget.cpp \
-    rptpropertysetitem.cpp \
-    rpttcttooltip.cpp \
-    rpttooltiptimer.cpp \
+    voreencanvaswidget.cpp \
     voreenmainwindow.cpp
 
 contains(DEFINES, VRN_WITH_DCMTK) {

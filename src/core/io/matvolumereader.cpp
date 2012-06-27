@@ -77,7 +77,7 @@ VolumeSet* MatVolumeReader::read(const std::string& fileName)
     matClose(pmat);
     pmat = matOpen(fileName.c_str(), "r");
 
-    VolumeSet* volSet = new VolumeSet(tgt::File::fileName(fileName));
+    VolumeSet* volSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
 
     // Get headers of all variables.
     for (int i=0; i<numDir; ++i) {

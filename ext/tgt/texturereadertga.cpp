@@ -66,7 +66,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         return 0;
     }
 
-    if (!file->open()) {
+    if (!file->isOpen()) {
         LERROR("Failed to open file " << filename);
         delete file;
         return 0;

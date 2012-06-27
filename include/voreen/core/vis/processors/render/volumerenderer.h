@@ -30,7 +30,7 @@
 #ifndef VRN_VOLUMERENDERER_H
 #define VRN_VOLUMERENDERER_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 #include "voreen/core/volume/volumeseries.h"
 
 namespace voreen {
@@ -39,7 +39,7 @@ namespace voreen {
  * All classes which render volumes should inherit from this class.
  * This class knows of the current volumehandle.
  */
-class VolumeRenderer : public Processor {
+class VolumeRenderer : public RenderProcessor {
 public:
     VolumeRenderer(tgt::Camera* camera = 0, TextureContainer* tc = 0);
 

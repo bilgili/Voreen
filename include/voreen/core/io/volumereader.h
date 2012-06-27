@@ -62,12 +62,29 @@ public:
 
     virtual VolumeHandle* readFromOrigin(const VolumeHandle::Origin& origin);
 
+    /**
+     * Instead of reading the whole dataset, only some slices are read from file and written
+     * to the newly built volume. This isn't supported by all file formats.
+     */
+    virtual VolumeSet* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+        throw(tgt::FileException, std::bad_alloc);
+
+    /**
+     * Instead of reading the whole dataset, only a brick of volumedata, specified by
+     * its starting location and its dimensions, is read. This isn't supported by all file formats.
+     */
+    virtual VolumeSet* readBrick(const std::string& , tgt::ivec3 , int)
+        throw(tgt::FileException, std::bad_alloc){
+            throw(new tgt::FileException("This file format does not support brick-wise reading of volume data."));
+    }
+        
+
     void fixOrigins(VolumeSet* vs, const std::string& fn);
 
     const std::vector<std::string>& getExtensions() const;
 
 protected:
-    void read(Volume* volume, std::fstream& fin);
+    void read(Volume* volume, FILE* fin);
     IOProgress* getProgress() const { return progress_; }
 
     std::vector<std::string> extensions_;

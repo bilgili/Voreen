@@ -139,7 +139,7 @@ void DicomVolumeReader::setSecurityOptions(const DicomSecurityOptions& security)
     security_ = security;
 }
 
-int DicomVolumeReader::loadSlice(const std::string& fileName, int posScalar) {
+int DicomVolumeReader::loadSlice(const std::string& fileName, size_t posScalar) {
 
     DcmFileFormat fileformat;
     DcmDataset *dataset;  // Pixel data might be compressed
@@ -265,8 +265,6 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
 
         DcmFileFormat fileformat;
 
-//        LINFO("Reading metadata for " << (*it_files));
-
         OFCondition status = fileformat.loadFile((*it_files).c_str());
         if (status.bad()) {
             if (skipBroken) {
@@ -387,40 +385,32 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         it_files++;
     }
 
-    if (slices.size() == 0) {
+    if (slices.size() == 0)
         throw tgt::CorruptedFileException("Found no DICOM slices");
-    }
 
     // Determine in which direction the slices are arranged and sort by position.
     // Furthermore the slice spacing is determined.
-    //     the first slice must be included
-    //     first solution: add difference between 2 slices to numerator
-    //     second solution: divide by less than 1
     float slicespacing = 1;
-    tgt::vec3 imagePositionPatient0;
-    tgt::vec3 imagePositionPatient1;
     float imagePositionZ = -1.f;
     if (slices.size() > 1) {
-        imagePositionPatient0 = slices[0].second;
-        imagePositionPatient1 = slices[1].second;
-        if (imagePositionPatient0.x != imagePositionPatient1.x) {
-            LINFO("Slices are arranged in x direction.");
+        tgt::vec3 delta = tgt::abs(slices[1].second - slices[0].second);
+		float maxPosDelta = max(delta.x, max(delta.y, delta.z));
+        if (maxPosDelta == delta.x) {
             std::sort(slices.begin(), slices.end(), slices_cmp_x);
-            slicespacing = (slices[slices.size()-1].second.x - slices[0].second.x) / (slices.size()-1);
+            LINFO("Slices are arranged in x direction " << (slices[1].second - slices[0].second));
             imagePositionZ = slices[slices.size()-1].second.x;
         }
-        if (imagePositionPatient0.y != imagePositionPatient1.y) {
-            LINFO("Slices are arranged in y direction.");
+        else if (maxPosDelta == delta.y) {
             std::sort(slices.begin(), slices.end(), slices_cmp_y);
-            slicespacing = (slices[slices.size()-1].second.y - slices[0].second.y) / (slices.size()-1);
+            LINFO("Slices are arranged in y direction " << (slices[1].second - slices[0].second));
             imagePositionZ = slices[slices.size()-1].second.y;
         }
-        if (imagePositionPatient0.z != imagePositionPatient1.z) {
-            LINFO("Slices are arranged in z direction.");
+        else if (maxPosDelta == delta.z) {
             std::sort(slices.begin(), slices.end(), slices_cmp_z);
-            slicespacing = (slices[slices.size()-1].second.z - slices[0].second.z) / (slices.size()-1);
+            LINFO("Slices are arranged in z direction " << (slices[1].second - slices[0].second));
             imagePositionZ = slices[slices.size()-1].second.z;
         }
+		slicespacing = length(slices[slices.size()-1].second - slices[0].second) / (slices.size()-1);
     }
 
     dz_ = slices.size();
@@ -431,7 +421,8 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     case 16: bytesPerVoxel_ = 2; break;
     case 32: bytesPerVoxel_ = 4; break;
     }
-    scalars_ = new uint8_t[dx_ * dy_ * dz_ * bytesPerVoxel_];
+    // casts needed to handle files > 4 GB
+    scalars_ = new uint8_t[(size_t)dx_ * (size_t)dy_ * (size_t)dz_ * (size_t)bytesPerVoxel_];
 
     LINFO("We have " << dz_ << " slices. [" << dx_ << "x" << dy_ << "]");
 
@@ -445,7 +436,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     LINFO("Building volume...");
     LINFO("Reading slice data from " << slices.size() << " files...");
 
-    int posScalar = 0;
+    size_t posScalar = 0;
     vector<pair<string, tgt::vec3> >::iterator it_slices = slices.begin();
     if (getProgress())
         getProgress()->setNumSteps(slices.size());
@@ -455,7 +446,6 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
             getProgress()->set(i);
         i++;
 
-//        LINFO((*it_slices).first << " (position: " << (*it_slices).second << ")");
         int slicesize = loadSlice((*it_slices).first, posScalar);
         posScalar += slicesize;
         it_slices++;
@@ -482,6 +472,40 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                                    tgt::vec3(x_spacing, y_spacing, z_spacing),
                                    bits_);
         dataset->meta().setFileName(slices[0].first);
+        dataset->meta().setImagePositionZ(imagePositionZ);
+        break;
+    case 32:
+
+		LWARNING("Converting 32 bit DICOM to 8 bit dataset.");
+		//Convert the 32 bit DS to a 8 bit DS:
+		//(This is done because voreen cannot handle 32 bit intensity datasets.)
+		//This code is used to load FMT datasets.
+		try {
+			VolumeUInt8* dataset2 = new VolumeUInt8(tgt::ivec3(dx_, dy_, dz_), tgt::vec3(x_spacing, y_spacing, z_spacing), 8);
+			VolumeUInt32* source = new VolumeUInt32(reinterpret_cast<uint32_t*>(scalars_),
+								   tgt::ivec3(dx_, dy_, dz_),
+								   tgt::vec3(x_spacing, y_spacing, z_spacing),
+								   bits_);
+
+			for(int x=0; x<dx_;++x) {
+				for(int y=0; y<dy_;++y) {
+					for(int z=0; z<dz_;++z) {
+						//Only use highbyte:
+						dataset2->voxel(x,y,z) = source->voxel(x,y,z) / 16777215;
+					}
+				}
+			}
+
+			delete source;
+			dataset = dataset2;
+		}
+		catch (std::bad_alloc) {
+			LERROR("Bad alloc during 32->8 bit convertsion.");
+			delete[] scalars_;
+			scalars_ = 0;
+			return 0;
+		}
+		dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
     default:
@@ -804,9 +828,17 @@ VolumeSet* DicomVolumeReader::read(const string &fileName)
     }
 
     if (volume) {
-        VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+        VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
         VolumeSeries* volumeSeries = new VolumeSeries("unknown", modality_);
         volumeSet->addSeries(volumeSeries);
+		
+		// derive study name from filenamen and assign to volumeset
+		string volumeSetName = fileName;
+		size_t lastPos = volumeSetName.rfind("/");
+		if (lastPos == volumeSetName.length()-1)
+			lastPos = volumeSetName.substr(0, volumeSetName.length()-1).rfind("/");
+		volumeSet->setName(volumeSetName.substr(lastPos+1,volumeSetName.length()-lastPos-2));
+
         VolumeHandle* volumeHandle = new VolumeHandle(volume, 0.0f);
         volumeHandle->setOrigin(fileName, "unknown", 0.0f);
         volumeSeries->addVolumeHandle(volumeHandle);

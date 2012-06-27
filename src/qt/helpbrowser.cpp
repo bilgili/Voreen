@@ -29,25 +29,13 @@
 
 #include "voreen/qt/helpbrowser.h"
 
-#include <QToolBar>
 #include <QAction>
+#include <QTextBrowser>
+#include <QToolBar>
 
 namespace voreen {
 
-HelpBrowser::HelpBrowser(QWidget* parent)
-    : QMainWindow(parent)
-{
-    browser_ = new QTextBrowser(this);
-    browser_->createStandardContextMenu();
-    setCentralWidget(browser_);
-
-    setWindowIcon(QIcon(":/icons/bulb.png"));
-    setWindowTitle("VoreenHelpBrowser");
-
-    createAndConnectToolbar();
-}
-
-HelpBrowser::HelpBrowser(QUrl startPage, QWidget* parent)
+HelpBrowser::HelpBrowser(const QUrl& startPage, const QString& title, QWidget* parent)
     : QMainWindow(parent)
 {
     browser_ = new QTextBrowser(this);
@@ -56,13 +44,10 @@ HelpBrowser::HelpBrowser(QUrl startPage, QWidget* parent)
     setCentralWidget(browser_);
 
     setWindowIcon(QIcon(":/icons/bulb.png"));
-    setWindowTitle("VoreenHelpBrowser");
+
+    setWindowTitle(title.isEmpty() ? tr("Voreen Help Browser") : title);
 
     createAndConnectToolbar();
-}
-
-HelpBrowser::~HelpBrowser() {
-    delete browser_;
 }
 
 void HelpBrowser::createAndConnectToolbar() {
@@ -97,14 +82,11 @@ void HelpBrowser::createAndConnectToolbar() {
     QAction* quitBrowserAction = new QAction(QIcon(":/icons/list-remove.png"), tr("&Quit"), this);
     quitBrowserAction->setStatusTip(tr("Exit Help"));
     quitBrowserAction->setToolTip(tr("Exit Help"));
-    quitBrowserAction->setShortcut(tr("Ctrl+Q"));
+    quitBrowserAction->setShortcut(tr("Ctrl+W"));
     toolBar->addAction(quitBrowserAction);
 
-
-    //fileMenu_->addAction(saveFileAsAction_);
-    // add a separator
-
     //setMenuBar(menuBar_);
+
     addToolBar(toolBar);
 
     // CONNECT ACTIONS

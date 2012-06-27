@@ -105,11 +105,12 @@ void initGL(InitFeature::Features featureset) {
     
 	GLenum err = glewInit();
     if (err != GLEW_OK) {
-        /* Problem: glewInit failed, something is seriously wrong. */
+        // Problem: glewInit failed, something is seriously wrong.
         std::cerr << "glewInit failed, error: " << glewGetErrorString(err) << std::endl;
         exit(EXIT_FAILURE);
     }
-    LINFOC("tgt::initGL", "Glew version: " << glewGetString(GLEW_VERSION));
+    LINFOC("tgt.init", "GLEW version:       " << glewGetString(GLEW_VERSION));
+
     if (featureset & InitFeature::GPU_PROPERTIES )
         Singleton<GpuCapabilities> ::init(new GpuCapabilities());
 #ifdef WIN32

@@ -47,6 +47,9 @@ void raySetup(in vec3 first, in vec3 last, out vec3 rayDirection, out float tInc
     rayDirection = last - first;
     tEnd = length(rayDirection);
     rayDirection = normalize(rayDirection);
+    #ifdef ADAPTIVE_SAMPLING
+        directionWithStepSize = rayDirection * tIncr;
+    #endif
 }
 
 /***
@@ -73,13 +76,48 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
         for (int loop1=0; !finished && loop1<255; loop1++) {
 
 /***
- * The end of a typical raycasting loop.
+ * The end of a typical raycasting loop. If adaptive sampling
+ * is used for rendering bricked volumes, t is increased by a
+ * multiple of tIncr, thereby skipping several samples. 
  */
-#define RC_END_LOOP(result)                                    \
-            finished = earlyRayTermination(result.a, 0.9);    \
-            t += tIncr;                                        \
-            finished = finished || (t > tEnd);                \
-        }                                                    \
-    }                                                        \
-    gl_FragDepth = getDepthValue(tDepth, tEnd,                \
-                    entryPointsDepth_, exitPointsDepth_);
+#ifdef ADAPTIVE_SAMPLING
+#define RC_END_LOOP(result)									\
+			finished = earlyRayTermination(result.a, 0.9);	\
+			t += (tIncr * float(numberOfSkippedSamples));				\
+    		finished = finished || (t > tEnd);				\
+		}													\
+	}														\
+	gl_FragDepth = getDepthValue(tDepth, tEnd,				\
+					entryPointsDepth_, exitPointsDepth_);
+#else
+#define RC_END_LOOP(result)									\
+			finished = earlyRayTermination(result.a, 0.9);	\
+			t += tIncr;				                        \
+    		finished = finished || (t > tEnd);				\
+		}													\
+	}														\
+	gl_FragDepth = getDepthValue(tDepth, tEnd,				\
+					entryPointsDepth_, exitPointsDepth_);
+#endif
+
+/**
+* In order to keep the shaders as free as possible from dealing
+* with bricking and adaptive sampling, these defines can be placed
+* before and after the compositing function calls to enable adaptive
+* sampling when bricking is used. For normal datasets these defines
+* will have no impact at all. 
+*/ 
+#ifdef ADAPTIVE_SAMPLING
+#define RC_BEGIN_COMPOSITING                                \
+    for (int i=0; i<numberOfSkippedSamples; i++) {
+#else 
+    #define RC_BEGIN_COMPOSITING                                                                            
+#endif
+
+#ifdef ADAPTIVE_SAMPLING
+#define RC_END_COMPOSITING                                  \
+    }
+#else 
+#define RC_END_COMPOSITING                                                                               
+#endif
+

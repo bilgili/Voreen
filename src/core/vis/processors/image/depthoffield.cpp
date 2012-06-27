@@ -40,7 +40,7 @@ namespace voreen {
 const Identifier DepthOfField::setDepthOfFieldThreshold_("set.depthOfFieldThreshold");
 
 DepthOfField::DepthOfField()
-    : ImageProcessor("pp_depthoffield"),
+    : ImageProcessorDepth("pp_depthoffield"),
     depthThreshold_(setDepthOfFieldThreshold_, "Depth Threshold")
 {
     setName("Depth of Field");

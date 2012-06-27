@@ -45,7 +45,6 @@ const std::string TransFuncIntensityGradient::loggerCat_("voreen.vis.TransFunc.I
 
 TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height)
     : TransFunc(width, height)
-    , scaleFactor_(1.f)
 {
     loadFileFormats_.push_back("tfig");
 
@@ -63,7 +62,6 @@ TransFuncIntensityGradient::~TransFuncIntensityGradient() {
         delete *it;
         primitives_.erase(it);
     }
-
 }
 
 bool TransFuncIntensityGradient::operator==(const TransFuncIntensityGradient& tf) {
@@ -85,11 +83,11 @@ bool TransFuncIntensityGradient::operator!=(const TransFuncIntensityGradient& tf
 }
 
 void TransFuncIntensityGradient::setScaleFactor(float factor) {
-    scaleFactor_ = factor;
+    for (size_t i = 0; i < primitives_.size(); ++i)
+        primitives_[i]->setScaleFactor(factor);
 }
 
 void TransFuncIntensityGradient::createTex() {
-
     delete tex_;
 
     // create texture but do not alloc data
@@ -318,7 +316,7 @@ void TransFuncIntensityGradient::updateTexture() {
 
 void TransFuncIntensityGradient::paint() {
     for (size_t i = 0; i < primitives_.size(); ++i)
-        primitives_[i]->paint(scaleFactor_);
+        primitives_[i]->paint();
 }
 
 void TransFuncIntensityGradient::paintForSelection() {

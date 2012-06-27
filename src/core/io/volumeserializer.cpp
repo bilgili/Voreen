@@ -32,6 +32,7 @@
 #include <cstring>
 
 #include "voreen/core/io/volumereader.h"
+#include "voreen/core/io/brickedvolumereader.h"
 #include "voreen/core/io/volumewriter.h"
 #include "tgt/filesystem.h"
 
@@ -63,8 +64,14 @@ VolumeSerializer::~VolumeSerializer() {
 VolumeSet* VolumeSerializer::load(const std::string& filename)
     throw (tgt::FileException, std::bad_alloc)
 {
+    return loadSlices(filename,0, 0);
+}
+
+VolumeSet* VolumeSerializer::loadSlices(const std::string& filename, size_t firstSlice, size_t lastSlice)
+    throw (tgt::FileException, std::bad_alloc)
+{
     std::string realfile = filename;
-    std::string extension = tgt::File::fileExtension(filename, true);
+    std::string extension = tgt::FileSystem::fileExtension(filename, true);
 
     // Special handling for DICOM "URLs", as DICOM file often have new extension. Also allows
     // specifiying entire directories by adding a trailing '/' or '\'.
@@ -76,7 +83,40 @@ VolumeSet* VolumeSerializer::load(const std::string& filename)
     if (readers_.find(extension) == readers_.end())
         throw tgt::UnsupportedFormatException(extension, filename);
     VolumeReader* reader = readers_.find(extension)->second;
-    VolumeSet* volumeSet = reader->read(realfile);
+    VolumeSet* volumeSet =0;
+    if (filename.find("dicom://") == 0) {
+        // dicom reader does not support readSlices() yet
+        volumeSet = reader->read(realfile);
+    } else if (dynamic_cast<BrickedVolumeReader*>(reader)) {
+        BrickedVolumeReader* brickedReader = new BrickedVolumeReader();
+        volumeSet = brickedReader->readSlices(realfile,firstSlice,lastSlice);
+    } else {
+        volumeSet = reader->readSlices(realfile,firstSlice,lastSlice);  
+    }
+    return volumeSet;
+}
+
+VolumeSet* VolumeSerializer::loadBrick(const std::string& filename, tgt::ivec3 brickStartPos,
+    int brickSize) throw (tgt::FileException, std::bad_alloc)
+{
+    std::string realfile = filename;
+    std::string extension = tgt::FileSystem::fileExtension(filename, true);
+
+    // Special handling for DICOM "URLs", as DICOM file often have new extension. Also allows
+    // specifiying entire directories by adding a trailing '/' or '\'.
+    if (filename.find("dicom://") == 0) {
+        extension = "dicom";
+        realfile = filename.substr(8); // strip dicom://
+    }
+
+    if (readers_.find(extension) == readers_.end())
+        throw tgt::UnsupportedFormatException(extension, filename);
+    VolumeReader* reader = readers_.find(extension)->second;
+    VolumeSet* volumeSet =0;
+    if (dynamic_cast<BrickedVolumeReader*>(reader)) {
+    } else {
+        volumeSet = reader->readBrick(realfile,brickStartPos,brickSize);
+    }
     return volumeSet;
 }
 
@@ -89,7 +129,7 @@ VolumeHandle* VolumeSerializer::loadFromOrigin(VolumeHandle::Origin origin) {
         origin.filename = origin.filename.substr(6);
     }
     else
-        extension = tgt::File::fileExtension(origin.filename, true);
+        extension = tgt::FileSystem::fileExtension(origin.filename, true);
     
     if (readers_.find(extension) == readers_.end())
         throw tgt::UnsupportedFormatException(extension, origin.filename);
@@ -101,7 +141,7 @@ VolumeHandle* VolumeSerializer::loadFromOrigin(VolumeHandle::Origin origin) {
 void VolumeSerializer::save(const std::string& filename, Volume* volume)
     throw (tgt::FileException)
 {
-    std::string extension = tgt::File::fileExtension(filename, true);
+    std::string extension = tgt::FileSystem::fileExtension(filename, true);
 
     if (writers_.find(extension) != writers_.end())
         writers_.find(extension)->second->write(filename, volume);

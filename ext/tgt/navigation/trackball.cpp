@@ -62,6 +62,10 @@ Trackball::Trackball(GLCanvas* canvas, bool defaultEventHandling, Timer* continu
         initializeContinuousSpin();
 }
 
+Trackball::~Trackball() {
+    delete continuousSpinStopwatch_;
+}
+
 void Trackball::reset() {
     getCamera()->positionCamera(cameraPosition_, cameraFocus_, cameraUpVector_);
 }

@@ -35,7 +35,7 @@ const Identifier RenderStore::storeTexUnit_        = "storeTexUnit";
 const Identifier RenderStore::storeDepthTexUnit_   = "storeDepthTexUnit";
 
 RenderStore::RenderStore()
-    : Processor()
+    : RenderProcessor()
     , privateTargetID_(-1)
 {
     setName("RenderStore");

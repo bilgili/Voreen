@@ -120,8 +120,8 @@ void FlythroughNavigation::keyEvent(tgt::KeyEvent* e) {
     }
 
     if (cameraModified) {
-        postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
-        postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
+        MsgDistr.postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
+        MsgDistr.postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
         moveCounter_ = 0;
         Navigation::getCanvas()->update();
     }
@@ -200,7 +200,7 @@ void FlythroughNavigation::mouseDoubleClickEvent(tgt::MouseEvent* e) {
             canvas_->getCamera()->setPosition(initialPosition_);
             canvas_->getCamera()->setFocus(initialFocusPoint_);
             canvas_->getCamera()->setUpVector(initialUpVector_);
-            postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, canvas_->getCamera()) );
+            MsgDistr.postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, canvas_->getCamera()) );
             canvas_->repaint();
         }
     }
@@ -249,8 +249,8 @@ void FlythroughNavigation::wheelEvent(tgt::MouseEvent* e) {
     } */
 
     if (cameraModified) {
-        postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
-        postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
+        MsgDistr.postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, Navigation::getCamera()) );
+        MsgDistr.postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
         wheelCounter_ = 0;
         Navigation::getCanvas()->update();
     }
@@ -270,12 +270,12 @@ void FlythroughNavigation::timerEvent(tgt::TimeEvent* /*e*/) {
         moveCounter_++;
 
     if (wheelCounter_ == 60) {
-        postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, false) );
+        MsgDistr.postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, false) );
         Navigation::getCanvas()->update();
         wheelCounter_ = -1;
     }
     if (moveCounter_ == 60) {
-        postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, false) );
+        MsgDistr.postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, false) );
         Navigation::getCanvas()->update();
         moveCounter_ = -1;
     }

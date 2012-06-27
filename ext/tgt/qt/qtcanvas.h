@@ -126,7 +126,7 @@ protected:
     tgt::MouseEvent::MouseButtons getButton(QMouseEvent* e);
     // map a set of Qt-mousebuttons to a set of tgt-mousebuttons
     tgt::MouseEvent::MouseButtons getButtons(QMouseEvent* e);
-    int getModifier(QInputEvent* e);
+    tgt::Event::Modifier getModifier(QInputEvent* e);
     KeyEvent::KeyCode getKey(int key);
 
     static QGLFormat getQGLFormat(const Buffers buffers);

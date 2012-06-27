@@ -30,11 +30,11 @@
 #ifndef VRN_COARSENESSRENDERER_H
 #define VRN_COARSENESSRENDERER_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
-class CoarsenessRenderer : public Processor {
+class CoarsenessRenderer : public RenderProcessor {
 public:
     /**
      * Default constructor. Sets the processorname, creates one in- and one outport and registers

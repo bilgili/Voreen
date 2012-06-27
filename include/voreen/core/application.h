@@ -61,8 +61,7 @@ public:
      * @param appType Features to activate
      */
     VoreenApplication(const std::string& name, const std::string& displayName,
-                      int argc, char** argv, ApplicationType appType = APP_DEFAULT,
-                      const std::string& logDir = "./");
+                      int argc, char** argv, ApplicationType appType = APP_DEFAULT);
 
     virtual ~VoreenApplication() {}
 
@@ -76,6 +75,30 @@ public:
 
     CommandlineParser* getCommandLineParser() { return &cmdParser_; }
 
+    /**
+     * Overwrite this method to add commands to the CommandlineParser.
+     */
+    virtual void prepareCommandParser();
+    
+    //
+    // Initialization
+    //
+    
+    /**
+     * Do the actual initializations as controlled by appType_:
+     * Initialize tgt, execute command parser, start logging, detect paths and initialize Python.
+     */
+    virtual void init();
+
+    /**
+     * Do OpenGL-specific initialization.
+     */
+    virtual void initGL();
+
+    ///
+    /// Paths
+    ///
+    
     /**
      * Returns the application's base path as detected by \sa init().
      */
@@ -136,33 +159,44 @@ public:
     std::string getTransFuncPath(const std::string& filename = "") const;
 
     /**
+    * Constructs an absolute path consisting of the textures directory (typically
+    * voreen/data/textures) and the given filename.
+    */
+    std::string getTexturePath(const std::string& filename = "") const;
+
+    /**
      * Constructs an absolute path consisting of the module directory (typically
      * voreen/src/modules) and the given filename.
      */
     std::string getModulePath(const std::string& filename = "") const;
-    /**
 
-    * Constructs an absolute path consisting of the temporary directory (typically
+    /**
+     * Constructs an absolute path consisting of the temporary directory (typically
      * voreen/data/tmp) and the given filename.
      */
     std::string getTemporaryPath(const std::string& filename = "") const;
 
     /**
-     * Overwrite this method to add commands to the CommandlineParser.
+     * Constructs an absolute path consisting of the documentation directory (typically
+     * voreen/doc) and the given filename.
      */
-    virtual void prepareCommandParser();
+    std::string getDocumentationPath(const std::string& filename = "") const;
 
     /**
-     * Do the actual initializations as controlled by appType_:
-     * Initialize tgt, execute command parser, start logging, detect paths and initialize Python.
+     * Constructs an absolute path consisting of the documents directory (typically
+     * "C:\Documents and Settings\user\Documents" on Windows and $HOME on unix) and the given
+     * filename.
      */
-    virtual void init();
-
+    std::string getDocumentsPath(const std::string& filename = "") const;
+    
+#ifdef __APPLE__
     /**
-     * Do OpenGL-specific initialization.
+     * Constructs an absolute path consisting of the Mac application bundle's resource
+     * directory (path Contents/Resources within the bundle) and the given filename.
      */
-    virtual void initGL();
-
+    std::string getAppBundleResourcesPath(const std::string& filename = "") const;
+#endif
+    
 protected:
     static VoreenApplication* app_;
 
@@ -175,12 +209,18 @@ protected:
     std::string shaderPath_;
     std::string cachePath_;
     std::string dataPath_;
+    std::string texturePath_;
+    std::string fontPath_;
     std::string volumePath_;
     std::string temporaryPath_;
+    std::string documentationPath_;
+    std::string documentsPath_;
+#ifdef __APPLE__
+	std::string appBundleResourcesPath_;
+#endif
 
     tgt::LogLevel logLevel_;
     std::string logFile_;
-    std::string logDir_;
 
     static const std::string loggerCat_;
 };

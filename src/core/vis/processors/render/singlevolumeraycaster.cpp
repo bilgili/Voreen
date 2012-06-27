@@ -41,6 +41,10 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
 {
     setName("SingleVolumeRaycaster");
 
+    // VolumeRaycaster Props
+    addProperty(&segment_);
+    addProperty(&useSegmentation_);
+
     addProperty(&transferFunc_);
     addProperty(maskingMode_);
     addProperty(gradientMode_);
@@ -78,22 +82,6 @@ const std::string SingleVolumeRaycaster::getProcessorInfo() const {
     return "Performs a simple single pass raycasting with only some capabilites.";
 }
 
-void SingleVolumeRaycaster::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRaycaster::processMessage(msg, dest);
-    // send invalidate and update context, if lighting parameters have changed
-    if (msg->id_ == LightMaterial::setLightPosition_   ||
-        msg->id_ == LightMaterial::setLightAmbient_         ||
-        msg->id_ == LightMaterial::setLightDiffuse_         ||
-        msg->id_ == LightMaterial::setLightSpecular_        ||
-        msg->id_ == LightMaterial::setLightAttenuation_     ||
-        msg->id_ == LightMaterial::setMaterialAmbient_      ||
-        msg->id_ == LightMaterial::setMaterialDiffuse_      ||
-        msg->id_ == LightMaterial::setMaterialSpecular_     ||
-        msg->id_ == LightMaterial::setMaterialShininess_        ) {
-            invalidate();
-    }
-}
-
 int SingleVolumeRaycaster::initializeGL() {
     loadShader();
     initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;
@@ -112,7 +100,6 @@ void SingleVolumeRaycaster::compile() {
 }
 
 void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
-
     int entryParams = portMapping->getTarget("image.entrypoints");
     int exitParams = portMapping->getTarget("image.exitpoints");
 
@@ -166,11 +153,15 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
     tc_->setActiveTargets(activeTargets, "SingleVolumeRaycaster");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (!VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-                                                  portMapping->getVolumeHandle("volumehandle.volumehandle")))
+	bool handleChanged;
+    if (!VolumeRaycaster::checkVolumeHandle(currentVolumeHandle_,
+                                            portMapping->getVolumeHandle("volumehandle.volumehandle"), &handleChanged))
     {
         return;
     }
+
+	if (handleChanged)
+		invalidateShader();
 
     transferFunc_.setVolumeHandle(currentVolumeHandle_);
     
@@ -203,7 +194,9 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
         "volumeParameters_")
     );
 
-       // segmentation volume
+	addBrickedVolumeModalities(volumeTextures);
+
+   	// segmentation volume
     VolumeHandle* volumeSeg = currentVolumeHandle_->getRelatedVolumeHandle(Modality::MODALITY_SEGMENTATION);
 
     bool usingSegmentation = (maskingMode_->get() == 1) && volumeSeg;
@@ -248,6 +241,8 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
         raycastPrg_->setUniform("segment_" , seg);
     }
 
+	setBrickedVolumeUniforms();
+	LGL_ERROR;
 
     glPushAttrib(GL_LIGHTING_BIT);
     setLightingParameters();
@@ -269,7 +264,7 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
 }
 
 std::string SingleVolumeRaycaster::generateHeader() {
-    std::string headerSource = VolumeRaycaster::generateHeader();
+    std::string headerSource = VolumeRaycaster::generateHeader(getVolumeHandle());
 
     headerSource += transferFunc_.get()->getShaderDefines();
 
@@ -280,7 +275,7 @@ std::string SingleVolumeRaycaster::generateHeader() {
             break;
         case 1: headerSource += "compositeMIP(result, color, t, tDepth);\n";
             break;
-        case 2: headerSource += "compositeISO(result, color, t, tDepth, 0.5);\n";
+        case 2: headerSource += "compositeISO(result, color, t, tDepth, 0.0);\n";
             break;
         case 3: headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
             break;

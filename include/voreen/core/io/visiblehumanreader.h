@@ -39,6 +39,11 @@ namespace voreen {
     public:
         VisibleHumanReader();
 
+		/**
+		* Reads slices and creates a volume. byteSkip defines the number of bytes to skip at the beginning
+		* of each slice (because there is a header in each slice most of the time). color indicates whether
+		* the slices have color information or not. (Intensity and color slices have to be created differently)
+		*/ 
         void createDataset(std::vector<std::string> filenames,std::string outputFile, int byteSkip, bool color);
 
         void readSlice(std::fstream inputStream, std::fstream outputStream);

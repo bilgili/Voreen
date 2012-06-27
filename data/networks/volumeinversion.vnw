@@ -102,7 +102,7 @@
             <Processor id="8" port="volumehandle.volumehandle" />
         </Outport>
     </Processor>
-    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="7">
+    <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="7">
         <MetaData>
             <RptProcessorItem x="-398" y="-92" />
         </MetaData>

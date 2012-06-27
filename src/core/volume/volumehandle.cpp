@@ -38,6 +38,8 @@
 
 using std::string;
 
+#include "voreen/core/volume/bricking/brickedvolumegl.h"
+
 namespace voreen {
 
 const std::string VolumeHandle::loggerCat_("Voreen.VolumeHandle");
@@ -78,7 +80,7 @@ TiXmlElement* VolumeHandle::Origin::serializeToXml() const {
             }
         }
 
-        originElem->SetAttribute("filename", protocol + tgt::File::relativePath(path, basePath_) + inzip);
+        originElem->SetAttribute("filename", protocol + tgt::FileSystem::relativePath(path, basePath_) + inzip);
     } else {
         originElem->SetAttribute("filename", filename);
     }
@@ -117,7 +119,7 @@ void VolumeHandle::Origin::updateFromXml(TiXmlElement* elem) {
 
         // build new path only if this is not an absolute path
         if (path.find("/") != 0 && path.find("\\") != 0 && path.find(":") != 1)
-            filename = protocol + tgt::File::absolutePath(basePath_ + "/" + path);    
+            filename = protocol + tgt::FileSystem::absolutePath(basePath_ + "/" + path);    
     }
     
     seriesname = elem->Attribute("seriesname");
@@ -128,7 +130,8 @@ VolumeHandle::VolumeHandle(Volume* const volume, const float time)
       time_(time),
       hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE),
       parentSeries_(0),
-      objectID_(++nextObjectID_)
+      objectID_(++nextObjectID_),
+      largeVolumeManager_(0)
 {
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
@@ -163,6 +166,7 @@ void VolumeHandle::CopyValuesFromVolumeHandle(const VolumeHandle* handle) {
 VolumeHandle::~VolumeHandle() {
     freeHardwareVolumes();
     delete volume_;
+    delete largeVolumeManager_;
 }
 
 bool VolumeHandle::operator<(const VolumeHandle& handle) const {
@@ -252,7 +256,14 @@ void VolumeHandle::generateHardwareVolumes(int volumeMask) {
     if (volumeMask & VolumeHandle::HARDWARE_VOLUME_GL) {
         LDEBUG("generate GL hardware volume for " << filename);
         delete volumeGL_;
-        volumeGL_ = new VolumeGL(volume_);
+
+		BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume_);
+		if (brickedVolume) {
+			volumeGL_ = new BrickedVolumeGL(brickedVolume);
+		} else {
+			volumeGL_ = new VolumeGL(volume_);
+		}
+
         hardwareVolumeMask_ |= VolumeHandle::HARDWARE_VOLUME_GL; // set bit
     }
 #endif
@@ -385,6 +396,14 @@ std::string VolumeHandle::getFileNameFromXml(TiXmlElement* elem) {
     Origin origin;
     origin.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
     return origin.filename;
+}
+
+LargeVolumeManager* VolumeHandle::getLargeVolumeManager() {
+	return largeVolumeManager_;
+}
+
+void VolumeHandle::setLargeVolumeManager(LargeVolumeManager* largeVolumeManager) {
+	largeVolumeManager_ = largeVolumeManager;
 }
 
 } // namespace

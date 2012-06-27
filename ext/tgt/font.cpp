@@ -34,7 +34,13 @@ namespace tgt {
 
 Font::Font(const std::string& fontName, const int size) {
     font_ = new FTTextureFont(fontName.c_str());
-    font_->FaceSize(size);
+    if (!font_->Error())
+        font_->FaceSize(size);
+    else {
+        delete font_;
+        font_ = 0;
+        LERRORC("tgt.Font", "Font file could not be loaded: " << fontName);
+    }
 }
 
 Font::~Font() {
@@ -42,14 +48,20 @@ Font::~Font() {
 }
 
 void Font::setSize(const int size) {
-    font_->FaceSize(size);
+    if (font_)
+        font_->FaceSize(size);
 }
 
 void Font::render(const tgt::vec3& pos, const std::string& text) {
-    font_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
+    if (font_)
+        font_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
 }
 
 tgt::Bounds Font::getBounds(const tgt::vec3& pos, const std::string& text) {
+
+    if (!font_)
+        return tgt::Bounds();
+
     FTPoint point(static_cast<double>(pos.x),
                   static_cast<double>(pos.y),
                   static_cast<double>(pos.z));

@@ -49,6 +49,7 @@ CubeProxyGeometry::CubeProxyGeometry()
       clipDownY_(setBottomClipPlane_, "Bottom clipping plane", 0, 0, 100, true),
       clipFrontZ_(setFrontClipPlane_, "Front clipping plane", 0, 0, 100, true),
       clipBackZ_(setBackClipPlane_, "Back clipping plane", 0, 0, 100, true),
+      brickSelectionPriority_("set.bricking.region.priority", "Region Priority", 1, 0, 100, true),
       dl_(0),
       useVirtualClipplane_("switch.virtualClipplane", "Use virtual clipping plane", false),
       clipPlane_("set.virtualClipplane", "Plane equation", vec4(1.f/5.f, 2.f/5.f, 1.f, 0.3f),
@@ -67,7 +68,6 @@ CubeProxyGeometry::CubeProxyGeometry()
     useVirtualClipplane_.onChange(CallMemberAction<CubeProxyGeometry>(this, &CubeProxyGeometry::markAsChanged));
 
     addProperty(&useClipping_);
-    addProperty(&useVirtualClipplane_);
 
     // test of condition system
     clipPlane_.setVisible(false);
@@ -76,13 +76,29 @@ CubeProxyGeometry::CubeProxyGeometry()
     useVirtualClipplane_.onValueEqual(true, spva, spia);
     useVirtualClipplane_.set(false);
 
-    addProperty(&clipPlane_);
+    brickSelectionPropValues_.push_back("Select those bricks!");
+    brickSelectionPropValues_.push_back("Yep, select those bricks!");
+    brickSelectionProp_ = new EnumProp("select.bricks","Select bricks",
+            brickSelectionPropValues_,0,true,false);
+
+    CallMemberAction<CubeProxyGeometry> defineBoxBrickingRegion(this,
+        &CubeProxyGeometry::defineBoxBrickingRegion);
+    brickSelectionProp_->onChange(defineBoxBrickingRegion);
+
+
     addProperty(&clipLeftX_);
     addProperty(&clipRightX_);
     addProperty(&clipDownY_);
     addProperty(&clipUpY_);
     addProperty(&clipFrontZ_);
     addProperty(&clipBackZ_);
+   // addProperty(brickSelectionProp_);
+    addProperty(&brickSelectionPriority_);
+
+    addProperty(&useDatasetTransformationMatrix_);
+
+    //addProperty(&useVirtualClipplane_);
+    //addProperty(&clipPlane_);
 
     createInport("volumehandle.volumehandle");
     createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
@@ -108,12 +124,28 @@ bool CubeProxyGeometry::getUseVirtualClipplane() {
  */
 void CubeProxyGeometry::render() {
     if (volume_) {
+        
         if (needsBuild_) {
             revalidateCubeGeometry();
             needsBuild_ = false;
         }
-        if (dl_)
+        
+        if (dl_) {
+            
+            // transform proxy geometry by dataset transformation matrix
+            if (useDatasetTransformationMatrix_.get()) {
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                tgt::multMatrix(datasetTransformationMatrix_);
+            }
+
             glCallList(dl_);
+            
+            // restore matrix stack
+            if (useDatasetTransformationMatrix_.get()) {
+                glPopMatrix();
+            }
+        }
     }
 }
 
@@ -323,6 +355,34 @@ void CubeProxyGeometry::setBackClipPlane() {
 void CubeProxyGeometry::markAsChanged() {
     needsBuild_ = true;
     invalidate();
+}
+
+void CubeProxyGeometry::defineBoxBrickingRegion() {
+    vec3 llfPlane = vec3(static_cast<float>(clipLeftX_.get()),
+                     static_cast<float>(clipDownY_.get()),
+                     static_cast<float>(clipFrontZ_.get()) );
+
+    vec3 urbPlane = vec3(static_cast<float>(clipRightX_.get()),
+                     static_cast<float>(clipUpY_.get()),
+                     static_cast<float>(clipBackZ_.get()) );
+
+    vec3 geomLlf = -(volumeSize_ / 2.f) + volumeCenter_;
+    vec3 geomUrb = (volumeSize_  / 2.f) + volumeCenter_;
+
+    llfPlane = llfPlane / 100.f;
+    urbPlane = urbPlane / 100.f;
+
+    llfPlane = geomLlf + (volumeSize_ * llfPlane);
+    urbPlane = geomUrb - (volumeSize_ * urbPlane);
+
+    if (currentVolumeHandle_) {
+        LargeVolumeManager* lvm = currentVolumeHandle_->getLargeVolumeManager();
+        if (lvm) {
+            lvm->addBoxBrickingRegion(brickSelectionPriority_.get(), llfPlane, urbPlane);
+        }
+    }
+
+
 }
 
 } // namespace

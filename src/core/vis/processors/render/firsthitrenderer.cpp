@@ -35,7 +35,7 @@ namespace voreen {
 
 FirstHitRenderer::FirstHitRenderer()
     : VolumeRaycaster()
-    , transferFunc_(setTransFunc_, "Transfer Function")
+    , transferFunc_(setTransFunc_, "Transfer function")
 {
     setName("FirstHitRenderer");
 

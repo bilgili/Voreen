@@ -31,6 +31,7 @@
 #define VRN_POINTLISTGEOMETRY_H
 
 #include "voreen/core/geometry/geometry.h"
+#include "tgt/glmath.h"
 #include <vector>
 
 namespace voreen {
@@ -38,17 +39,31 @@ namespace voreen {
 template<class T>
 class PointListGeometry : public Geometry
 {
-    protected:
-        std::vector<T>* points_;
 
-    public:
-        PointListGeometry() { points_ = new std::vector<T>(); }
-        virtual ~PointListGeometry() { delete points_; points_ = 0; }
-        virtual void draw() = 0;
+public:
+    PointListGeometry() : Geometry() { points_ = new std::vector<T>(); }
+    virtual ~PointListGeometry() { delete points_; points_ = 0; }
+    virtual void draw() {
+        
+        if (!points_)
+            return;
 
-        const std::vector<T>& getData() const { return *points_; }
-        void setData(const std::vector<T>& points) { *points_ = points; }
-        size_t getNumPoints() const { return points_.size(); }
+        glBegin(GL_POINTS);
+        for (size_t i=0; i < points_->size(); ++i){
+            // assuming data type stored in the point list is compatible to tgt::vertex
+            // if not: template instantiation will fail (compile error)
+            tgt::vertex((*points_)[i]);
+        }
+        glEnd();
+    }
+
+    const std::vector<T>& getData() const { return *points_; }
+    void setData(const std::vector<T>& points) { *points_ = points; }
+    size_t getNumPoints() const { return points_.size(); }
+
+protected:
+    std::vector<T>* points_;
+
 };
 
 } // namespace

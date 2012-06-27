@@ -30,7 +30,8 @@
 #ifndef VRN_CLIPPINGPLANEWIDGET_H
 #define VRN_CLIPPINGPLANEWIDGET_H
 
-#include "voreen/core/vis/processors/image/geometryprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometryprocessor.h"
+#include "voreen/core/vis/properties/eventproperty.h"
 
 #include <vector>
 
@@ -96,6 +97,8 @@ private:
     BoolProp x_lock_;          ///< property for locking left and right clipping plane
     BoolProp y_lock_;          ///< property for locking bottom and top clipping plane
     BoolProp z_lock_;          ///< property for locking front and back clipping plane
+    EventProperty eventProp_;
+    EventProperty syncEventProp_;
 
     struct ControlElement {
         ControlElement(tgt::vec3 clipValue, std::string name, bool activated,

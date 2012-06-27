@@ -36,14 +36,19 @@
 #include "voreen/core/vis/propertywidgetfactory.h"
 
 #include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/volume/volumeseries.h"
+#include "voreen/core/volume/volumeset.h"
+#include "voreen/core/volume/volumesetcontainer.h"
 
 namespace voreen {
 
-TransFuncProp::TransFuncProp(const Identifier& ident, const std::string& guiText, bool invalidate, bool invalidateShader)
+TransFuncProp::TransFuncProp(const Identifier& ident, const std::string& guiText, bool invalidate, bool invalidateShader, 
+                             TransFuncProp::Editors editors, bool lazyEditorInstantiation)
     : TemplateProperty<TransFunc*>(ident.getName(), guiText, 0, invalidate, invalidateShader)
     , volumeHandle_(0)
-    , editors_(ALL)
+    , editors_(editors)
     , manualRepaint_(false)
+    , lazyEditorInstantiation_(lazyEditorInstantiation)
 {
     //start with intensity transfer function
     value_ = new TransFuncIntensity();
@@ -132,31 +137,62 @@ void TransFuncProp::set(TransFunc* tf) {
 
 void TransFuncProp::setVolumeHandle(VolumeHandle* handle) {
     if ((!volumeHandle_) || (volumeHandle_ && !volumeHandle_->isIdentical(handle))) {
+        clearObserverds();
+
         volumeHandle_ = handle;
 
-        // resize texture of tf according to bitdepth of volume
-        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
-        int max = static_cast<int>(pow(2.f, bits));
-        if (dynamic_cast<TransFuncIntensity*>(value_))
-            value_->setTextureDimension(max, 1);
-        else
-            value_->setTextureDimension(max, max);
-
+        if (volumeHandle_) {
+            // Add observer so we get notified when the volume is about to be deleted
+            if (handle->getParentSeries() && handle->getParentSeries()->getParentSet() &&
+                handle->getParentSeries()->getParentSet()->getParentContainer())
+            {
+                addObserved(handle->getParentSeries()->getParentSet()->getParentContainer());
+            }
+        
+            // Resize texture of tf according to bitdepth of volume
+            int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
+            int max = static_cast<int>(pow(2.f, bits));
+            if (dynamic_cast<TransFuncIntensity*>(value_))
+                value_->setTextureDimension(max, 1);
+            else
+                value_->setTextureDimension(max, max);
+        }
+        
         updateWidgets();
     }
 }
 
-Volume* TransFuncProp::getVolume() {
+VolumeHandle* TransFuncProp::getVolumeHandle() const {
+    return volumeHandle_;
+}
+
+Volume* TransFuncProp::getVolume() const {
     if (volumeHandle_)
         return volumeHandle_->getVolume();
     else
         return 0;
 }
 
-void TransFuncProp::notifyChange() {
+void TransFuncProp::notify(const Observable* const /*source*/) {
+    // Gets called when our VolumeSet is deleted
+    if (volumeHandle_) {
+        if (!volumeHandle_->getParentSeries() ||
+            !volumeHandle_->getParentSeries()->getParentSet() ||
+            !volumeHandle_->getParentSeries()->getParentSet()->getParentContainer())
+        {
+            // When it has no parent any more it was just removed from its series and is about
+            // to be deleted, so remove it here, too.
+            setVolumeHandle(0);
+        }
+    }
+}
+
+void TransFuncProp::notifyChange() {    
     // check if conditions are met and exec actions
     for (size_t j = 0; j < conditions_.size(); ++j)
         conditions_[j]->exec();
+
+    //updateWidgets();  // disable for now, as it kills 2D TFs. joerg
 }
 
 void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
@@ -243,7 +279,7 @@ void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
 TiXmlElement* TransFuncProp::serializeToXml() const {
     TiXmlElement* root = Property::serializeToXml();
 
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation())
         root->SetAttribute("class", "TransFuncProp");
 
     if (typeid(*value_) == typeid(TransFuncIntensity)) {

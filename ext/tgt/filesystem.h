@@ -44,17 +44,21 @@ public:
      * seekdir parameter in std::istream::seekg().
      */
     enum SeekDir {
-        begin,      ///< Offset is specified relatively to beginning of file
-        current,    ///< Offset is specified relatively to current position in file
-        end         ///< Offset is specified relatively to end of file
+        BEGIN,      ///< Offset is specified relatively to beginning of file
+        CURRENT,    ///< Offset is specified relatively to current position in file
+        END         ///< Offset is specified relatively to end of file
     };
 
     File();
     File(const std::string& name);
     virtual ~File();
 
+    /// Closes the file.
+    virtual void close() = 0;
+    
     /// Returns the name of the file
     const std::string& getName(void) { return name_; }
+
     /// Returns the size of the file in bytes (0 if unknown)
     size_t size(void) const { return size_; }
 
@@ -68,6 +72,7 @@ public:
     virtual std::string getAsString();
     /// Skips until after the first occurence of delim.
     virtual size_t skipLine(char delim = '\n');
+
     /// Skips count bytes (or to end of file, whatever comes first)
     virtual void skip(long count) = 0;
     /// Seeks to pos (relative to the begin of file)
@@ -76,55 +81,17 @@ public:
     virtual void seek(size_t offset, SeekDir seekDir) = 0;
     /// Returns the current reading position
     virtual size_t tell() = 0;
+
     /// Returns true if the End Of File is reached
     virtual bool eof() = 0;
-    /// Closes the file.
-    virtual void close() = 0;
     /// Returns true if the file is open.
-    //FIXME: the name implies that this actually opens a file. joerg
-    virtual bool open() = 0;
+    virtual bool isOpen() = 0;
     /// Check if the state of the file is good for i/o operations.
     virtual bool good() = 0;
-
-    //
-    // Static methods for file system information
-    //
-
-    /**
-     * Returns whether the given directory exists.
-     */
-    static bool dirExists(const std::string& dirpath);
-
-    /**
-     * Returns the canonicalized absolute pathname.
-     */
-    static std::string absolutePath(const std::string& path);
-
-    /**
-     * Returns a path relative to dir.
-     */
-    static std::string relativePath(const std::string& path, const std::string& dir);
-    
-    /**
-     * Return the file name without the path component.
-     */
-    static std::string fileName(const std::string& filepath);
-
-    /**
-     * Return the full directory path without the file name component.
-     */
-    static std::string dirName(const std::string& filepath);
-    
-    /**
-     * Return the file extension (suffix) from the path.
-     * @param lowercase convert result to lower case
-     */
-    static std::string fileExtension(const std::string& path, bool lowercase = false);
 
 protected:
     std::string name_;
     size_t size_;
-    size_t findDelim(char* buf, size_t size, char delim);
 };
 
 /**
@@ -136,14 +103,17 @@ public:
     RegularFile(const std::string& filename);
     virtual ~RegularFile();
 
+    virtual void close();
+
     virtual size_t read(void* buf, size_t count);
+
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
     virtual size_t tell();
+
     virtual bool eof();
-    virtual void close();
-    virtual bool open();
+    virtual bool isOpen();
     virtual bool good();
 
 protected:
@@ -157,18 +127,21 @@ protected:
 class MemoryFile : public File {
 public:
     /// Create memoryfile from data with given size and call it filename.
-    /// If deleteData is true the memoryfile will delete the data upon destruction.
+    /// If deleteData is true the memory file will delete the data upon destruction.
     MemoryFile(char* data, size_t size, const std::string& filename, bool deleteData = false);
     ~MemoryFile();
 
+    virtual void close();
+
     virtual size_t read(void* buf, size_t count);
+
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
     virtual size_t tell();
+
     virtual bool eof();
-    virtual void close();
-    virtual bool open();
+    virtual bool isOpen();
     virtual bool good();
 
 protected:
@@ -186,14 +159,17 @@ public:
     TarFile(const std::string& filename, const std::string& tarfilename, size_t offset, size_t size);
     ~TarFile();
 
+    virtual void close();
+
     virtual size_t read(void* buf, size_t count);
+
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
     virtual size_t tell();
+
     virtual bool eof();
-    virtual void close();
-    virtual bool open();
+    virtual bool isOpen();
     virtual bool good();
 
 protected:
@@ -240,8 +216,7 @@ protected:
  */
 class TarFileFactory : public FileFactory {
 public:
-    struct ArchivedFile
-    {
+    struct ArchivedFile {
         size_t size_;
         size_t offset_;
     };
@@ -305,12 +280,13 @@ protected:
  */
 class FileSystem {
 public:
-    FileSystem() {}
+    FileSystem();
     ~FileSystem();
 
     /// Open a file, first checks for availability in virtual FS, then in regular FS.
     File* open(const std::string& filename);
     /// Checks wether a file with the specified filename exists.
+    ///TODO: unimplemented
     bool exists(const std::string& filename);
     /// Adds a FileFactory and inserts all files provided by the factory to the virtual FS.
     /// All Factories are deleted upon destruction.
@@ -324,6 +300,50 @@ public:
     /// Creates a TarFileFactory and adds it (just for convenience)
     void addPackage(const std::string& filename, const std::string& rootpath = "./");
 
+    //
+    // Static methods for file system information
+    // NOTE: These do not work with the virtual filesystem!
+    //
+
+    //
+    // path information/manipulation
+    //
+    
+    /**
+     * Returns the canonicalized absolute pathname.
+     */
+    static std::string absolutePath(const std::string& path);
+
+    /**
+     * Returns a path relative to dir.
+     */
+    static std::string relativePath(const std::string& path, const std::string& dir);
+    
+    /**
+     * Return the file name without the path component.
+     */
+    static std::string fileName(const std::string& filepath);
+
+    /**
+     * Return the full directory path without the file name component.
+     */
+    static std::string dirName(const std::string& filepath);
+    
+    /**
+     * Return the file extension (suffix) from the path.
+     * @param lowercase convert result to lower case
+     */
+    static std::string fileExtension(const std::string& path, bool lowercase = false);
+
+    /**
+     * Returns a string containing the current working directory.
+     */
+    static std::string currentDirectory();
+
+    //
+    // file system manipulation/information
+    //   
+    
     /**
      * Creates the directory of the give name if it does not already exists.
      * 
@@ -331,11 +351,6 @@ public:
      * @return  true if the creation was succesful or false otherwise
      */
     static bool createDirectory(const std::string& directory);
-
-    /**
-     * Returns a string containing the current working directory.
-     */
-    static std::string currentDirectory();
 
     /**
      * Deletes the file with the given filename.
@@ -346,16 +361,6 @@ public:
     static bool deleteFile(const std::string& filename);
 
     /**
-     * Determines whether a directory of the given name exists or not.
-     *
-     * @param   directory   name of the directory which is suspected to exist
-     * @return  true if the directory exists, false otherwise
-     */
-    static bool directoryExists(const std::string& directory) {
-        return fileExists(directory);
-    }
-
-    /**
      * Determines whether a file of the given name exists or not.
      *
      * @param   filename   name of the file which is suspected to exist
@@ -364,20 +369,15 @@ public:
     static bool fileExists(const std::string& filename);
 
     /**
-     * Returns the substring containing all character on the right-hand side
-     * from the rightmost dot ('.'). Under Windows OS, this is used as 
-     * file extension.
-     *
-     * @param   filename    file of which the extension shall be determined
-     * @return  string containing the file extension. This string might be empty.
+     * Returns whether the given directory exists.
      */
-    static std::string getFileExtension(const std::string& filename);
-
+    static bool dirExists(const std::string& dirpath);
+    
     /**
-     * Reads the content of the the directory not regarding the directories "." and ".."
+     * Reads the content of the the directory, ignoring "." and ".."
      *
      * @param   directory   the directory to be read
-     * @param   sort    determines whether the returned vector shall be sorted in
+     * @param   sort    determines whether the returned vector should be sorted in
      *                  alphabetical order
      * @param   recursiveSearch determines whether to search the directory recursively.
      * @return  names of all files contained in the given directory. Files from sub-
@@ -385,27 +385,8 @@ public:
      *          If the directory does not exist, the returned vector is empty.
      */
     static std::vector<std::string> readDirectory(const std::string& directory, 
-        const bool sort = true, const bool recursiveSearch = true);
-
-    /**
-     * Removes all trailing occurences of the given character from the given string.
-     * If the last character in the string is not equal to trailer, nothing is removed.
-     * If the last n characters in the string are equal to trailer, all n characters are
-     * removed.
-     *
-     * @param   str The string which shall be cut.
-     * @param   trailer The character which shall be removed
-     * @return  Returns the number of characters which were removed.
-     */
-    static size_t removeTrailingCharacters(std::string& str, const char trailer);
-
-    /**
-     * Replaces all occurences of slashes ('/') by backslashes ('\').
-     *
-     * @param   input   The input string.
-     * @return  Returns a string containing '\' instead of '/'.
-     */
-    static std::string slashesToBackslashes(const std::string& input);
+                                                  const bool sort = true,
+                                                  const bool recursiveSearch = true);
 
 protected:
     std::map<std::string, FileFactory*> virtualFS_;
@@ -413,7 +394,7 @@ protected:
     static const std::string loggerCat_;
 };
 
-}
+} // namespace
 
 #define FileSys tgt::Singleton<tgt::FileSystem>::getRef()
 

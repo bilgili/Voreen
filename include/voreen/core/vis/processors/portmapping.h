@@ -30,18 +30,19 @@
 #ifndef VRN_PORTMAPPING_H
 #define VRN_PORTMAPPING_H
 
-#include "voreen/core/vis/identifier.h"
 #include "voreen/core/vis/exception.h"
+#include "voreen/core/vis/identifier.h"
 #include "voreen/core/vis/processors/port.h"
+#include "voreen/core/vis/processors/processor.h"
 
 #include <map>
 
 namespace voreen {
 
-class PortDataVolume;
 class LocalPortMapping;
 class VolumeHandle;
 class Processor;
+
 
 class PortMapping {
 public:
@@ -72,7 +73,7 @@ public:
         PortDataGeneric<T>* pdGeneric = dynamic_cast<PortDataGeneric<T>*>(portData[pos]);
 
         if (pdGeneric == 0)
-            throw VoreenException("The data mapped to this is port is from a PortDataGeneric<T> object.");
+            throw VoreenException("The data mapped to this is port is not from a PortDataGeneric<T> object.");
 
         return pdGeneric->getData();
     }
@@ -179,6 +180,7 @@ protected:
     PortMapping* portMapping_;
     Processor* processor_;
 };
+
 
 } // namespace voreen
 

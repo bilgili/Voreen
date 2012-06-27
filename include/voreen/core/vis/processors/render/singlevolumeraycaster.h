@@ -50,15 +50,6 @@ public:
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create() const { return new SingleVolumeRaycaster(); }
 
-    /**
-     *  Takes care of incoming messages.  Accepts the following message-ids:
-     *      - setTransferFunction, which sets the current transfer-function. Msg-Type: TransferFunc*
-     *
-     *   @param msg The incoming message.
-     *   @param dest The destination of the message.
-     */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-
     virtual int initializeGL();
 
     /**

@@ -48,14 +48,14 @@ void StringSelectionProp::updateFromXml(TiXmlElement* propElem) {
             errors_.store(e);
         }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 TiXmlElement* StringSelectionProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
     propElem->SetAttribute("value", value_);
 
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation())
         propElem->SetAttribute("class", "StringSelectionProperty");
     return propElem;
 }

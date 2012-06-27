@@ -43,6 +43,13 @@
 #include "tgt/gpucapabilities.h"
 #ifdef WIN32
     #include "tgt/gpucapabilitieswindows.h"
+    #include <shlobj.h>
+#else
+    #include <stdlib.h>
+#endif
+
+#ifdef __APPLE__
+	#include "CoreFoundation/CFBundle.h"
 #endif
 
 using std::string;
@@ -51,17 +58,18 @@ namespace voreen {
 
 namespace {
 
+
 string findWithSubDir(const string& path, const string& subdir, int iterations = 0) {
     string p = path;
 
     // try in start directory
-    if (tgt::File::dirExists(p + "/" + subdir))
+    if (tgt::FileSystem::dirExists(p + "/" + subdir))
         return p;
 
     // now try parent dirs
     for (int i = 0; i < iterations; i++) {
         p += "/..";
-        if (tgt::File::dirExists(p + "/" + subdir))
+        if (tgt::FileSystem::dirExists(p + "/" + subdir))
             return p;
     }
 
@@ -117,19 +125,50 @@ string findShaderPath(const string& basePath) {
 #endif
 }
 
+string findDocumentationPath(const string& basePath) {
+#ifdef VRN_INSTALL_PREFIX
+    return basePath + "/share/doc/voreen";
+#else
+    return basePath + "/doc";
+#endif
+}
+
+#ifdef __APPLE__
+string findAppBundleResourcesPath() {
+
+    CFBundleRef bundle;
+
+    bundle = CFBundleGetMainBundle();
+    if(!bundle)
+        return "";
+ 
+    CFURLRef resourceURL = CFBundleCopyResourcesDirectoryURL(bundle);
+    char* path = new char [200];
+    if(!CFURLGetFileSystemRepresentation(resourceURL, true, (UInt8*)path, 200))
+        return "";
+    
+    string pathStr;
+    if (path)
+        pathStr = string(path);
+    
+    delete[] path;
+ 	return pathStr;
+    
+}
+#endif
+    
 } // namespace
 
 VoreenApplication* VoreenApplication::app_ = 0;
 const std::string VoreenApplication::loggerCat_ = "voreen.application";
 
 VoreenApplication::VoreenApplication(const std::string& name, const std::string& displayName,
-                                     int argc, char** argv, ApplicationType appType, const std::string& logDir)
+                                     int argc, char** argv, ApplicationType appType)
     : appType_(appType),
       name_(name),
       displayName_(displayName),
       cmdParser_(displayName),
-      logLevel_(tgt::Info),
-      logDir_(logDir)
+      logLevel_(tgt::Info)
 {
     app_ = this;
     cmdParser_.setCommandLine(argc, argv);
@@ -154,11 +193,27 @@ void VoreenApplication::init() {
     prepareCommandParser();
     cmdParser_.execute();
 
+    // detect documents path first, needed for log file
+#ifdef WIN32
+    TCHAR szPath[MAX_PATH];
+    // get "my documents" directory
+    if (SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, szPath) == S_OK)
+        documentsPath_ = szPath;
+#else
+    if (getenv("HOME") != 0)
+        documentsPath_ = getenv("HOME");
+#endif
+    
     //
     // Logging
     //
     if (appType_ & APP_LOGGING) {
-        LogMgr.reinit(logDir_);
+        std::string logDir;
+#ifdef VRN_DISTRIBUTION
+        logDir = documentsPath_;
+        LogMgr.reinit(logDir);
+#endif
+       
         tgt::Log* clog = new tgt::ConsoleLog();
         clog->addCat("", true, logLevel_);
         LogMgr.addLog(clog);
@@ -177,7 +232,7 @@ void VoreenApplication::init() {
     }
 
     //
-    // Path finding
+    // Path detection
     //
 
     // detect base path based on program location
@@ -192,13 +247,13 @@ void VoreenApplication::init() {
     }
 
     // try to find base path starting at program path
-    basePath_ = tgt::File::absolutePath(findBasePath(basePath_));
+    basePath_ = tgt::FileSystem::absolutePath(findBasePath(basePath_));
 
     LINFO("Voreen base path: " << basePath_);
 
     // shader path
     if (appType_ & APP_SHADER) {
-#ifdef VRN_DISTRIBUTION_MODE
+#ifdef VRN_DISTRIBUTION
         // using tgt's virtual file system in distribution mode => no base path for shaders
         shaderPath_ = findShaderPath("");
 #else
@@ -206,14 +261,31 @@ void VoreenApplication::init() {
 #endif
     }
 
+#ifdef __APPLE__
+	appBundleResourcesPath_ = findAppBundleResourcesPath();
+    if (appBundleResourcesPath_.empty())
+    	LERROR("Application bundle's resources path could not be detected!");
+    else
+    	LINFO("Application bundle's resources path: " << appBundleResourcesPath_);
+#endif
+
     // data path
     if (appType_ & APP_DATA) {
         dataPath_ = findDataPath(basePath_);
         cachePath_ = dataPath_ + "/cache";
         temporaryPath_ = dataPath_ + "/tmp";
         volumePath_ = findVolumePath(basePath_);
+#if defined(__APPLE__) && defined(VRN_DISTRIBUTION)
+        fontPath_ = appBundleResourcesPath_ + "/fonts";
+        texturePath_ = appBundleResourcesPath_ + "/textures";
+        documentationPath_ = appBundleResourcesPath_ + "/doc";
+#else
+        fontPath_ = dataPath_ + "/fonts";
+        texturePath_ = dataPath_ + "/textures";
+        documentationPath_ = findDocumentationPath(basePath_);
+#endif
     }
-
+    
     //
     // Python
     //
@@ -260,7 +332,7 @@ std::string VoreenApplication::getVolumePath(const std::string& filename) const 
 }
 
 std::string VoreenApplication::getFontPath(const std::string& filename) const {
-    return dataPath_ + "/fonts" + (filename.empty() ? "" : "/" + filename);
+    return fontPath_ + (filename.empty() ? "" : "/" + filename);
 }
 
 std::string VoreenApplication::getNetworkPath(const std::string& filename) const {
@@ -283,8 +355,27 @@ std::string VoreenApplication::getModulePath(const std::string& filename) const 
     return basePath_ + "/src/modules" + (filename.empty() ? "" : "/" + filename);
 }
 
+std::string VoreenApplication::getTexturePath(const std::string& filename) const {
+    return texturePath_ + (filename.empty() ? "" : "/" + filename);
+}
+
 std::string VoreenApplication::getTemporaryPath(const std::string& filename) const {
     return temporaryPath_ + (filename.empty() ? "" : "/" + filename);
 }
+
+std::string VoreenApplication::getDocumentationPath(const std::string& filename) const {
+    return documentationPath_ + (filename.empty() ? "" : "/" + filename);
+}
+
+std::string VoreenApplication::getDocumentsPath(const std::string& filename) const {
+    return documentsPath_ + (filename.empty() ? "" : "/" + filename);
+}
+
+#ifdef __APPLE__
+std::string VoreenApplication::getAppBundleResourcesPath(const std::string& filename) const {
+   return appBundleResourcesPath_ + (filename.empty() ? "" : "/" + filename);		
+}
+#endif
+
 
 } // namespace

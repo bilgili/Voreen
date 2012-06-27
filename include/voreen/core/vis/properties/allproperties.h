@@ -33,6 +33,7 @@
 #include "voreen/core/vis/properties/filedialogproperty.h"
 #include "voreen/core/vis/properties/floatproperty.h"
 #include "voreen/core/vis/properties/intproperty.h"
+#include "voreen/core/vis/properties/propertyvector.h"
 #include "voreen/core/vis/properties/optionproperty.h"
 #include "voreen/core/vis/properties/stringproperty.h"
 #include "voreen/core/vis/properties/stringselectionproperty.h"

@@ -33,31 +33,33 @@
 #include "voreen/core/vis/properties/property.h"
 #include "voreen/core/vis/propertywidget.h"
 #include "voreen/core/vis/properties/allproperties.h"
+#include "voreen/qt/widgets/qpropertywidget.h"
 
 namespace voreen {
 
 /**
- * Creates compact PropertyWidgets (used in VoreenVE)
+ * Creates compact Qt PropertyWidgets (used in VoreenVE)
  */
 class CompactPropertyWidgetFactory : public PropertyWidgetFactory {
 public:
-    PropertyWidget* createWidget(FloatProp* p);
-    PropertyWidget* createWidget(IntProp* p);
-    PropertyWidget* createWidget(BoolProp* p);
-    PropertyWidget* createWidget(StringProp* p);
-    PropertyWidget* createWidget(StringVectorProp* p);
-    PropertyWidget* createWidget(StringSelectionProp* p);
-    PropertyWidget* createWidget(ColorProp* p);
-    PropertyWidget* createWidget(EnumProp* p);
-    PropertyWidget* createWidget(FileDialogProp* p);
-    PropertyWidget* createWidget(TransFuncProp* p);
-    PropertyWidget* createWidget(FloatVec2Prop* p);
-    PropertyWidget* createWidget(FloatVec3Prop* p);
-    PropertyWidget* createWidget(FloatVec4Prop* p);
-    PropertyWidget* createWidget(IntVec2Prop* p);
-    PropertyWidget* createWidget(IntVec3Prop* p);
-    PropertyWidget* createWidget(IntVec4Prop* p);
-    PropertyWidget* createWidget(OptionPropertyBase* p);
+    QPropertyWidget* createWidget(FloatProp* p);
+    QPropertyWidget* createWidget(IntProp* p);
+    QPropertyWidget* createWidget(BoolProp* p);
+    QPropertyWidget* createWidget(StringProp* p);
+    QPropertyWidget* createWidget(StringVectorProp* p);
+    QPropertyWidget* createWidget(StringSelectionProp* p);
+    QPropertyWidget* createWidget(ColorProp* p);
+    QPropertyWidget* createWidget(EnumProp* p);
+    QPropertyWidget* createWidget(FileDialogProp* p);
+    QPropertyWidget* createWidget(TransFuncProp* p);
+    QPropertyWidget* createWidget(FloatVec2Prop* p);
+    QPropertyWidget* createWidget(FloatVec3Prop* p);
+    QPropertyWidget* createWidget(FloatVec4Prop* p);
+    QPropertyWidget* createWidget(IntVec2Prop* p);
+    QPropertyWidget* createWidget(IntVec3Prop* p);
+    QPropertyWidget* createWidget(IntVec4Prop* p);
+    QPropertyWidget* createWidget(OptionPropertyBase* p);
+    QPropertyWidget* createWidget(PropertyVector* p);
 };
 
 } // namespace

@@ -31,25 +31,44 @@
 #define ANIMATIONPLUGIN_H
 
 #include "widgetplugin.h"
+
+#include "tgt/navigation/trackball.h"
+
 #include <vector>
 #include <string>
 
+#include <QAction>
 #include <QSpinBox>
-#include <QLabel>
-#include <QPushButton>
-#include <QBasicTimer>
-#include <QFileDialog>
-#include <QToolBox>
-#include <QMenu>
-#include <QCheckBox>
-#include <QGroupBox>
 
-#include "tgt/vector.h"
-#include "tgt/spline.h"
-#include "tgt/camera.h"
-#include "tgt/qt/qtcanvas.h"
+// forward declarations
+class QTabWidget;
+class QDoubleSpinBox;
+class QLabel;
+class QPushButton;
+class QBasicTimer;
+class QFileDialog;
+class QToolBox;
+class QMenu;
+class QCheckBox;
+class QGroupBox;
+class QString;
+
+namespace tgt{
+	class AbstractAnimation;
+	struct KeyFrame;
+	class Camera;
+	class QtCanvas;
+}
 
 namespace voreen {
+
+
+class VideoResolutionSpinBox : public QSpinBox {
+public:
+    VideoResolutionSpinBox(QWidget * parent = 0);
+    ~VideoResolutionSpinBox();
+
+};
 
 class AnimationPlugin : public WidgetPlugin {
     Q_OBJECT
@@ -61,38 +80,16 @@ public:
         int num_;
     };
 
-    AnimationPlugin(QWidget* parent, tgt::Camera* camera, tgt::QtCanvas* canvas = 0);
+    AnimationPlugin(QWidget* parent, tgt::Camera* camera, tgt::QtCanvas* canvas = 0, tgt::Trackball* trackBall = 0);
 
     virtual ~AnimationPlugin();
 
     virtual void createWidgets();
     virtual void createConnections();
 
-private:
-    struct KeyFrame {
-        tgt::vec3 position_;
-        tgt::vec3 focus_;
-        tgt::vec3 up_;
-        double timeToNextFrame_;
-        QPixmap pic_;
-    };
-
-    enum AnimationState {
-        Stopped,
-        Running,
-        Paused,
-        Recording
-    };
-
-    virtual void timerEvent(QTimerEvent *event);
-
-    bool isRenderingVideo() const;
-
-    void refreshFrameMenu();
-    void gotoFrame(int num);
+private slots:
     void setWidgetState();
 
-private slots:
     void appendKeyframe();
     void updateKeyframe();
     void startAnimation(bool record = false);
@@ -113,21 +110,54 @@ private slots:
 private:
     void recordAnimation(bool videoRecord = false);
 
-    tgt::Camera* camera_;
-    tgt::QtCanvas* canvas_;
+    virtual void timerEvent(QTimerEvent *event);
 
-    std::vector<KeyFrame> currentAnimation_;
+    bool isRenderingVideo() const;
+
+    void refreshFrameMenu();
+    void gotoFrame(int num);
+
+    enum AnimationState {
+        Stopped,
+        Running,
+        Paused,
+        Recording
+    } animationState_;
+
+    tgt::Trackball* trackBall_;
+	tgt::Camera* camera_;
+	tgt::QtCanvas* canvas_;
+
+    std::vector<tgt::KeyFrame> currentAnimation_;
     int currentKeyframe_;
 
-    tgt::BSpline* camPositionSpline_;
-    tgt::BSpline* camFocusSpline_;
-    tgt::BSpline* camUpSpline_;
+    /*
+     * in general animation-plugin's widget consists of four parts, playback-control, animation-edit, animation-load/save and rendering
+     */
+    QTabWidget* editBox_;
+    /*QGroupBox* playerBox_;
+    QGroupBox* recordBox_;
+    QGroupBox* renderBox_;*/// not of interest after init and signal-emiters are exported
 
-    AnimationState animationState_;
+    /**
+     * <emph>animation-edit</emph> will be switched depending the chosen animType given by current animTabBar estate
+     */
+    QGroupBox *editCircle_;
+    QSpinBox *selectCircleAngle_;
+    QSpinBox *selectCircleSpeed_;
+
+    tgt::AbstractAnimation *animation_;
+
+    /*
+     * numAnimationFrames_/fps is playback speed-indicator
+     */
     int numAnimationFrames_;
     int currentAnimationFrame_;
 
-    float timeOffset_;
+    QSpinBox *spinPlaybackFPS_;
+    QSpinBox *spinRecordingFPS_;
+
+    float timeOffset_;// TODO check if droppable
     std::string recordPathName_;
 
     bool renderingVideo_;
@@ -135,9 +165,8 @@ private:
     QPushButton* saveAsVideoButton_; // will be disabled in case ffmpeg is not available
     QPushButton* saveAsFrameSequenceButton_;
 
-    QGroupBox* editBox_;
-    QGroupBox* playerBox_;
-    QGroupBox* recordBox_;
+    QGroupBox *editFrames_;
+
     QPushButton *selectKeyframe_;
     QPushButton *appendKeyframe_;
     QPushButton *insertKeyframe_;
@@ -150,13 +179,11 @@ private:
     QPushButton *pauseAnimation_;
     QPushButton *saveAnimation_;
     QPushButton *loadAnimation_;
-    QSpinBox *spinWidth_;
-    QSpinBox *spinHeight_;
+
+    VideoResolutionSpinBox *spinWidth_;
+    VideoResolutionSpinBox *spinHeight_;
     QCheckBox *checkLoop_;
     QBasicTimer *animationTimer_;
-
-    QSpinBox *spinPlaybackFPS_;
-    QSpinBox *spinRecordingFPS_;
 
     QDoubleSpinBox *selectFrameTime_;
     QMenu *frameMenu_;

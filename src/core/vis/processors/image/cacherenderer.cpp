@@ -32,7 +32,7 @@
 namespace voreen {
 
 CacheRenderer::CacheRenderer()
-    : Processor()
+    : RenderProcessor()
 {
     setName("CacheRenderer");
 

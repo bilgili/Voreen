@@ -45,6 +45,7 @@ extern "C" {
 #define DELETE_SLICE	50
 /* Also uses 51-53 */
 
+#define STORE_MAP	54
 #define INPLACE_ADD	55
 #define INPLACE_SUBTRACT	56
 #define INPLACE_MULTIPLY	57
@@ -112,7 +113,7 @@ extern "C" {
 #define LOAD_GLOBAL	116	/* Index in name list */
 
 #define CONTINUE_LOOP	119	/* Start of loop (absolute) */
-#define SETUP_LOOP	120	/* Target address (absolute) */
+#define SETUP_LOOP	120	/* Target address (relative) */
 #define SETUP_EXCEPT	121	/* "" */
 #define SETUP_FINALLY	122	/* "" */
 

@@ -70,6 +70,8 @@ ClippingPlaneWidget::ClippingPlaneWidget()
     , x_lock_("switch.ClipXLock","Lock X-Clipping planes", false)
     , y_lock_("switch.ClipYLock","Lock Y-Clipping planes", false)
     , z_lock_("switch.ClipZLock","Lock Z-Clipping planes", false)
+    , eventProp_("Clipplane movement", tgt::Event::NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT)
+    , syncEventProp_("Syncronized movement", tgt::Event::SHIFT, tgt::MouseEvent::MOUSE_BUTTON_LEFT)
 {
     setName("ClippingPlaneWidget");
 
@@ -150,6 +152,8 @@ ClippingPlaneWidget::ClippingPlaneWidget()
     addProperty(&x_lock_);
     addProperty(&y_lock_);
     addProperty(&z_lock_);
+    addProperty(&eventProp_);
+    addProperty(&syncEventProp_);
 
     initLightAndMaterial();
 
@@ -161,8 +165,6 @@ ClippingPlaneWidget::ClippingPlaneWidget()
 ClippingPlaneWidget::~ClippingPlaneWidget() {
     if (arrowDisplayList_)
         glDeleteLists(arrowDisplayList_, 1);
-    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
-                    static_cast<tgt::EventListener*>(this)));
 }
 
 const Identifier ClippingPlaneWidget::getClassName() const {
@@ -175,10 +177,7 @@ const std::string ClippingPlaneWidget::getProcessorInfo() const {
 
 Processor* ClippingPlaneWidget::create() const {
     ClippingPlaneWidget* cw = new ClippingPlaneWidget();
-        MsgDistr.postMessage(
-            new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_,
-            static_cast<tgt::EventListener*>(cw)));
-        return cw;
+    return cw;
 }
 
 void ClippingPlaneWidget::processMessage(Message* msg, const Identifier& dest) {
@@ -309,29 +308,29 @@ void ClippingPlaneWidget::renderQuad(int number) {
     tgt::vec3 camPos = getCamera()->getPosition();
     bool frontFace = false;
     switch (number) {
-        case 1:
-            // left clipping plane
-            frontFace = ( camPos.x < volumeSize_.x*(clipValueLeft_ * 2 - 1) );
-            break;
-        case 2:
-            // right clipping plane
-            frontFace = ( camPos.x >= volumeSize_.x*(clipValueRight_ * 2 - 1) );
-            break;
-        case 3:
-          // back clipping plane
-            frontFace = ( camPos.y < volumeSize_.y*(clipValueBottom_ * 2 - 1) );
-            break;
-        case 4:
-            // front clipping plane
-            frontFace = ( camPos.y >= volumeSize_.y*(clipValueTop_ * 2 - 1) );
-            break;
-        case 5:
-            // bottom clipping plane
-            frontFace = ( camPos.z < volumeSize_.z*(clipValueFront_ * 2 - 1) );
-            break;
-        case 6:
-            frontFace = ( camPos.z >= volumeSize_.z*(clipValueBack_ * 2 - 1) );
-            break;
+    case 1:
+        // left clipping plane
+        frontFace = ( camPos.x < volumeSize_.x*(clipValueLeft_ * 2 - 1) );
+        break;
+    case 2:
+        // right clipping plane
+        frontFace = ( camPos.x >= volumeSize_.x*(clipValueRight_ * 2 - 1) );
+        break;
+    case 3:
+      // back clipping plane
+        frontFace = ( camPos.y < volumeSize_.y*(clipValueBottom_ * 2 - 1) );
+        break;
+    case 4:
+        // front clipping plane
+        frontFace = ( camPos.y >= volumeSize_.y*(clipValueTop_ * 2 - 1) );
+        break;
+    case 5:
+        // bottom clipping plane
+        frontFace = ( camPos.z < volumeSize_.z*(clipValueFront_ * 2 - 1) );
+        break;
+    case 6:
+        frontFace = ( camPos.z >= volumeSize_.z*(clipValueBack_ * 2 - 1) );
+        break;
     }
 
     // If we are looking at the front face of the clipping quad, we
@@ -385,9 +384,9 @@ void ClippingPlaneWidget::renderQuad(int number) {
     glPopAttrib();
 }
 
-void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
+void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent* e) {
     isClicked_ = isClicked(e->coord().x, e->coord().y);
-    if (isClicked_ && e->modifiers() & (tgt::Event::LSHIFT | tgt::Event::RSHIFT)) {
+    if (isClicked_ && syncEventProp_.accepts(e)) {
         shift_lock_ = true;
         if (isClicked_ == 1 || isClicked_ == 2 || isClicked_ == 3 || isClicked_ == 4)
             x_lock_.set(!x_lock_.get());
@@ -427,8 +426,8 @@ void ClippingPlaneWidget::mousePressEvent(tgt::MouseEvent *e) {
         e->ignore();
 }
 
-void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent *e) {
-    if (isClicked_) {
+void ClippingPlaneWidget::mouseMoveEvent(tgt::MouseEvent* e) {
+    if (isClicked_ && (eventProp_.accepts(e) || syncEventProp_.accepts(e))) {
         e->accept();
 
         GLint viewport[4];

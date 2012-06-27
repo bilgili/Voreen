@@ -33,9 +33,10 @@
 #include <functional>
 
 #include "voreen/core/vis/clippingplanewidget.h"
-#include "voreen/core/vis/processors/entryexitpoints/cubeentryexitpoints.h"
 #include "voreen/core/vis/processors/entryexitpoints/entryexitpoints.h"
 #include "voreen/core/vis/processors/geometrytestprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometryprocessor.h"
+#include "voreen/core/vis/processors/geometry/pointlistrenderer.h"
 #include "voreen/core/vis/processors/image/background.h"
 #include "voreen/core/vis/processors/image/blur.h"
 #include "voreen/core/vis/processors/image/cacherenderer.h"
@@ -48,7 +49,6 @@
 #include "voreen/core/vis/processors/image/depthmask.h"
 #include "voreen/core/vis/processors/image/depthoffield.h"
 #include "voreen/core/vis/processors/image/edgedetect.h"
-#include "voreen/core/vis/processors/image/geometryprocessor.h"
 #include "voreen/core/vis/processors/image/glow.h"
 #include "voreen/core/vis/processors/image/labeling.h"
 #include "voreen/core/vis/processors/image/nullrenderer.h"
@@ -143,7 +143,7 @@ void ProcessorFactory::initializeClassList() {
     registerClass(new MultipleAxialSliceProxyGeometry());
     registerClass(new SliceProxyGeometry());
 
-    registerClass(new CubeEntryExitPoints());
+    registerClass(new EntryExitPoints());
     registerClass(new SliceEntryPoints());
 
     registerClass(new Background());
@@ -169,6 +169,7 @@ void ProcessorFactory::initializeClassList() {
     registerClass(new GeomBoundingBox());
     registerClass(new GeomLightWidget());
     registerClass(new GeometryProcessor());
+    registerClass(new PointListRenderer());
 
     registerClass(new ClippingPlaneWidget());
 

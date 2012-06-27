@@ -37,7 +37,7 @@ namespace voreen {
 const Identifier ColorDepth::chromadepthTexUnit_ = "chromadepthTexUnit";
 
 ColorDepth::ColorDepth()
-    : ImageProcessor("pp_colordepth"),
+    : ImageProcessorDepth("pp_colordepth"),
       chromaDepthTex_(0),
       factor_("set.colordepth.factor", "Factor", 1.0f, 0.0f, 10.0f, false)
 {

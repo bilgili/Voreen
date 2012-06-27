@@ -4,7 +4,7 @@
         <RptAggregationItems />
     </MetaData>
     <Settings reuseTCTargets="false" />
-    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="0">
+    <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="0">
         <MetaData>
             <RptProcessorItem x="202" y="359" />
         </MetaData>

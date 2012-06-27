@@ -105,7 +105,7 @@ public:
      */
     virtual void updateFromXml(TiXmlElement* propElem);
 
-    void setOwner(Processor* processor);
+    virtual void setOwner(Processor* processor);
 
     Processor* getOwner() const;
 
@@ -139,7 +139,7 @@ public:
      * Does NOT add it to the Property. The given PropertyWidgetFactory will actually
      * build the Widget.
      */
-    virtual PropertyWidget* createWidget(PropertyWidgetFactory* f) = 0;
+    virtual PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
     /**
      * Creates a Widget for this Property, and
@@ -147,10 +147,16 @@ public:
      */
     PropertyWidget* createAndAddWidget(PropertyWidgetFactory* f);
 
-    std::set<PropertyWidget*> getPropertyWidgets() const { return widgets_; }
+    std::set<PropertyWidget*> getPropertyWidgets() const;
 
-    LODSetting getLevelOfDetail() { return lod_; }
-    void setLevelOfDetail(LODSetting lod) { lod_ = lod; }
+    /**
+     * Returns a TiXmlElement containing the serialized meta data.
+     * May be null.
+     */
+    const TiXmlElement* getMetaData() const;
+
+    LODSetting getLevelOfDetail();
+    void setLevelOfDetail(LODSetting lod);
 
     virtual std::string toString() const = 0;
 
@@ -163,8 +169,18 @@ public:
 
     static const std::string XmlElementName_;
 
-    static bool getSerializeMetaData() { return serializeMetaData_; }
-    static void setSerializeMetaData(bool enable) { serializeMetaData_ = enable; }
+    /** 
+     * Returns whether property type information is to be
+     * serialized.
+     */
+    static bool getSerializeTypeInformation();
+
+    /**
+     * Determines whether property type information is to be
+     * serialized (e.g. the property's class name, GUI label,
+     * min/max values).
+     */
+    static void setSerializeTypeInformation(bool enable);
 
  protected:
     std::string id_;
@@ -176,7 +192,10 @@ public:
 
     std::set<PropertyWidget*> widgets_;
 
-    static bool serializeMetaData_; ///< also serialize data like max value, etc.
+private:
+    static bool serializeTypeInformation_; 
+    TiXmlElement* metaData_;
+
 };
 
 typedef std::vector<Property*> Properties;

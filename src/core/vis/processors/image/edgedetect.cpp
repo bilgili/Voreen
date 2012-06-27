@@ -33,7 +33,7 @@
 namespace voreen {
 
 EdgeDetect::EdgeDetect()
-    : ImageProcessor("pp_edgedetect"),
+    : ImageProcessorDepth("pp_edgedetect"),
       edgeThreshold_("set.edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f, true),
       showImage_("set.showImage", "Show image", 1, 0, 1, true),
       edgeColor_("set.edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)),

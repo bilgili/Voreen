@@ -91,6 +91,10 @@ string GpuCapabilities::getGlRendererString() {
     return glRendererString_;
 }
 
+string GpuCapabilities::getShadingLanguageVersionString() {
+    return glslVersionString_;
+}
+
 string GpuCapabilities::getGlExtensionsString() {
     return glExtensionsString_;
 }
@@ -101,6 +105,10 @@ bool GpuCapabilities::areShadersSupported() {
 
 bool GpuCapabilities::areShadersSupportedARB() {
     return shaderSupportARB_;
+}
+
+GpuCapabilities::GlVersion GpuCapabilities::getShaderVersion() {
+    return shaderVersion_;
 }
 
 GpuCapabilities::ShaderModel GpuCapabilities::getShaderModel() {
@@ -180,16 +188,12 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         LINFO("OpenGL Extensions:   " << glExtensionsString_);
 
     stringstream features;
-    features << "Texturing:           " << (isOpenGlVersionSupported(TGT_GL_VERSION_1_1) ? "yes" : "no");
-    if (isOpenGlVersionSupported(TGT_GL_VERSION_1_1))
+    features << "Texturing:           " << (isOpenGlVersionSupported(GlVersion::TGT_GL_VERSION_1_1) ? "yes" : "no");
+    if (isOpenGlVersionSupported(GlVersion::TGT_GL_VERSION_1_1))
         features << ", max size: " << getMaxTextureSize();
-    LINFO(features.str());
-
-    features.clear();
-    features.str("");
-    features << "3D Texturing:        " << (is3DTexturingSupported() ? "yes" : "no");
+    features << ", 3D: " << (is3DTexturingSupported() ? "yes" : "no");
     if (is3DTexturingSupported())
-        features << ", max size: " << getMax3DTextureSize();
+        features << ", max 3D size: " << getMax3DTextureSize();
     LINFO(features.str());
 
     features.clear();
@@ -204,30 +208,7 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         features << "no anisotropic";    
     
     LINFO(features.str());
-/*    
-    features.clear();
-    features.str("");
-    features << "Texture Units:       " << getNumTextureUnits();
-    LINFO(features.str());
 
-    features.clear();
-    features.str("");
-    features << "NPOT / Rectangles:   " << (isNpotSupported() ? "yes" : "no") << " / ";
-    features << (areTextureRectanglesSupported() ? "yes" : "no");
-    LINFO(features.str());
-
-    features.clear();
-    features.str("");
-    features << "Texture Anisotropy:  " << (isAnisotropicFilteringSupported() ? "yes" : "no");
-    if (isAnisotropicFilteringSupported())
-        features << " (" << getMaxTextureAnisotropy() << ")";
-    LINFO(features.str());
-
-    features.clear();
-    features.str("");
-    features << "Texture Compression: " << (isTextureCompressionSupported() ? "yes" : "no");
-    LINFO(features.str());
-*/
     features.clear();
     features.str("");
     features << "Framebuffer Objects: " << (areFramebufferObjectsSupported() ? "yes" : "no");
@@ -238,6 +219,9 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     features << "Shaders:             " << (areShadersSupported() ? "yes (OpenGL 2.0)" : "no");
 
     if (areShadersSupported()) {
+
+        features << ", GLSL Version " << shaderVersion_;
+
         features << ", Shader Model ";
         if (shaderModel_ == SHADER_MODEL_4) {
             features << "4.0";
@@ -269,28 +253,15 @@ void GpuCapabilities::detectCapabilities() {
     glRendererString_  = string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
     glExtensionsString_ = string(reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS)));
 
-    // OpenGL version string begins with <major_number>.<minor_number>
-    if (glVersionString_.substr(0,3) == "1.0")
-        glVersion_ = TGT_GL_VERSION_1_0;
-    else if (glVersionString_.substr(0,3) == "1.1")
-        glVersion_ = TGT_GL_VERSION_1_1;
-    else if (glVersionString_.substr(0,3) == "1.2")
-        glVersion_ = TGT_GL_VERSION_1_2;
-    else if (glVersionString_.substr(0,3) == "1.3")
-        glVersion_ = TGT_GL_VERSION_1_3;
-    else if (glVersionString_.substr(0,3) == "1.4")
-        glVersion_ = TGT_GL_VERSION_1_4;
-    else if (glVersionString_.substr(0,3) == "1.5")
-        glVersion_ = TGT_GL_VERSION_1_5;
-    else if (glVersionString_.substr(0,3) == "2.0")
-        glVersion_ = TGT_GL_VERSION_2_0;
-    else if (glVersionString_.substr(0,3) == "2.1")
-        glVersion_ = TGT_GL_VERSION_2_1;
-    else if (glVersionString_.substr(0,3) == "3.0")
-        glVersion_ = TGT_GL_VERSION_3_0;
-    else {
-        glVersion_ = TGT_GL_VERSION_UNKNOWN;
-        LWARNING("Unknown OpenGL version or malformed OpenGL version string!: " << glVersionString_);
+    // Prevent segfault
+    const char* glslVS = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    if (glslVS)
+        glslVersionString_ = string(glslVS);
+    else
+        glslVersionString_ = ""; 
+
+    if (!glVersion_.parseVersionString(glVersionString_)) {
+        LERROR("Malformed OpenGL version string: " << glVersionString_);
     }
 
     // GPU Vendor
@@ -307,9 +278,13 @@ void GpuCapabilities::detectCapabilities() {
     }
 
     // Shaders
-    shaderSupport_ = (glVersion_ >= TGT_GL_VERSION_2_0);
+    shaderSupport_ = (glVersion_ >= GlVersion::TGT_GL_VERSION_2_0);
     shaderSupportARB_ = (isExtensionSupported("GL_ARB_vertex_program") &&
-        isExtensionSupported("GL_ARB_fragment_program"));
+                         isExtensionSupported("GL_ARB_fragment_program"));
+
+    if (!shaderVersion_.parseVersionString(glslVersionString_)) {
+        LERROR("Malformed GLSL version string: " << glslVersionString_);
+    }
 
 #ifndef __APPLE__
     // see http://www.opengl.org/wiki/index.php/Shading_languages:_How_to_detect_shader_model%3F
@@ -319,7 +294,7 @@ void GpuCapabilities::detectCapabilities() {
     else if (isExtensionSupported("GL_NV_vertex_program3")  ||
               isExtensionSupported("GL_ATI_shader_texture_lod"))
         shaderModel_ = SHADER_MODEL_3;
-    else if (glVersion_ >= TGT_GL_VERSION_2_0)
+    else if (glVersion_ >= GlVersion::TGT_GL_VERSION_2_0)
         shaderModel_ = SHADER_MODEL_2;
     else
         shaderModel_ = SHADER_MODEL_UNKNOWN;
@@ -330,11 +305,11 @@ void GpuCapabilities::detectCapabilities() {
 
     // Texturing
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &maxTexSize_);
-    texturing3D_ = (glVersion_ >= TGT_GL_VERSION_1_2 ||
+    texturing3D_ = (glVersion_ >= GlVersion::TGT_GL_VERSION_1_2 ||
         isExtensionSupported("GL_EXT_texture3D"));
 
     if (texturing3D_) {
-        if (glVersion_ >= TGT_GL_VERSION_2_0)
+        if (glVersion_ >= GlVersion::TGT_GL_VERSION_2_0)
             glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, (GLint *) &max3DTexSize_);
         else
             glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE_EXT, (GLint *) &max3DTexSize_);
@@ -428,6 +403,181 @@ void GpuCapabilities::detectOS() {
 #endif // WIN32
 
     osVersionString_ = oss.str();
+}
+
+
+
+//-----------------------------------------------------------------------------------
+
+
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_0(1,0,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_1(1,1,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_2(1,2,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_3(1,3,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_4(1,4,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_1_5(1,5,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_2_0(2,0,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_2_1(2,1,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_0(3,0,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_1(3,1,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_2(3,2,0);
+
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_110(1,10);      ///< GLSL version 1.10
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_120(1,20);      ///< GLSL version 1.20
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_130(1,30);      ///< GLSL version 1.30
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_140(1,40);      ///< GLSL version 1.40
+
+GpuCapabilities::GlVersion::GlVersion(int major, int minor, int release)
+  : major_(major), minor_(minor), release_(release)
+{}
+
+bool GpuCapabilities::GlVersion::parseVersionString(const string& st) {
+    major_ = -1;
+    minor_ = -1;
+    release_ = -1;
+
+    string str;
+
+    //ignore vendor specific part of the string:
+    size_t spacePos = st.find_first_of(" ");
+    if (spacePos != string::npos)
+        str = st.substr(0, spacePos);
+    else
+        str = st;
+    
+    //explode version string with delimiter ".":
+    std::vector<string> exploded;
+    size_t found;
+    found = str.find_first_of(".");
+    while(found != string::npos){
+        if (found > 0){
+            exploded.push_back(str.substr(0,found));
+        }
+        str = str.substr(found+1);
+        found = str.find_first_of(".");
+    }
+    if (str.length() > 0){
+        exploded.push_back(str);
+    }
+
+    // parse numbers
+    if (exploded.size() < 2) {
+        LWARNING("Version string too short to parse!");
+        return false;
+    }
+
+    stringstream vstr;
+
+    vstr << exploded[0];
+    vstr >> major_;
+    if (vstr.fail()) {
+        LERROR("Failed to parse major version! Version string: " << st);
+		major_ = -1;
+        return false;
+    }
+
+    vstr.clear();
+    vstr.str("");
+
+    vstr << exploded[1];
+    vstr >> minor_;
+    if (vstr.fail()) {
+        LERROR("Failed to parse minor version! Version string: " << st);
+		major_ = -1;
+		minor_ = -1;
+        return false;
+    }
+
+    vstr.clear();
+    vstr.str("");
+
+    //try to parse release number (not always there):
+    if (exploded.size() > 2) {
+        vstr << exploded[2];
+        vstr >> release_;
+        if (vstr.fail())
+            release_ = 0;
+    }
+    else
+        release_ = 0;
+
+    return true;
+}
+
+
+bool operator==(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if ((x.major_ == y.major_) && (x.minor_ == y.minor_) && (x.release_ == y.release_))
+		return true;
+	else	
+		return false;
+}
+
+bool operator!=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if ((x.major_ != y.major_) || (x.minor_ != y.minor_) || (x.release_ != y.release_))
+		return true;
+	else	
+		return false;
+}
+
+bool operator<(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if (x.major_ < y.major_)
+		return true;
+	else if (x.major_ == y.major_) {
+		if (x.minor_ < y.minor_)
+			return true;
+		else if (x.minor_ == y.minor_) 
+			if (x.release_ < y.release_)
+				return true;
+    }
+	return false;
+}
+
+bool operator<=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if (x.major_ < y.major_)
+		return true;
+	else if (x.major_ == y.major_) {
+		if (x.minor_ < y.minor_)
+			return true;
+		else if (x.minor_ == y.minor_) 
+			if (x.release_ <= y.release_)
+				return true;
+    }
+	return false;
+}
+
+bool operator>(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if (x.major_ > y.major_)
+		return true;
+	else if (x.major_ == y.major_) {
+		if (x.minor_ > y.minor_)
+			return true;
+		else if (x.minor_ == y.minor_) 
+			if (x.release_ > y.release_)
+				return true;
+    }
+	return false;
+}
+
+bool operator>=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
+	if (x.major_ > y.major_)
+		return true;
+	else if (x.major_ == y.major_) {
+		if (x.minor_ > y.minor_)
+			return true;
+		else if (x.minor_ == y.minor_) 
+			if (x.release_ >= y.release_)
+				return true;
+    }
+	return false;
+}
+
+std::ostream& operator<<(std::ostream& s, const GpuCapabilities::GlVersion& v) {
+	if (v.major_ == -1)
+		return (s << "unknown");
+	else if (v.release_ == 0)
+		return (s << v.major_ << "." << v.minor_);
+	else
+		return (s << v.major_ << "." << v.minor_ << "." << v.release_);
 }
 
 } // namespace tgt

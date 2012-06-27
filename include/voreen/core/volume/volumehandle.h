@@ -31,6 +31,7 @@
 #define VRN_VOLUMEHANDLE_H
 
 #include "voreen/core/volume/volume.h"
+#include "voreen/core/volume/bricking/largevolumemanager.h"
 
 #ifndef VRN_NO_OPENGL
 #include "voreen/core/volume/volumegl.h"
@@ -278,6 +279,9 @@ public:
 
     static std::string getFileNameFromXml(TiXmlElement* elem);
 
+    LargeVolumeManager* getLargeVolumeManager();
+	void setLargeVolumeManager(LargeVolumeManager* largeVolumeManager);
+
 
 #ifndef VRN_NO_OPENGL
     /**
@@ -321,6 +325,10 @@ protected:
     int hardwareVolumeMask_;
     VolumeSeries* parentSeries_;    ///< VolumeSeries containing this object
     unsigned int objectID_;         ///< unique ID for each INSTANCE of this class
+    LargeVolumeManager* largeVolumeManager_; /** In case this handle holds a bricked 
+                                                 volume, this is the Manager responsible
+                                                 for updating bricks etc. 0 if no bricked
+                                                 volume is present.*/
 
 #ifndef VRN_NO_OPENGL
     VolumeGL* volumeGL_;

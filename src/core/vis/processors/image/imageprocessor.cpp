@@ -35,15 +35,13 @@ const Identifier ImageProcessor::shadeTexUnit_ = "shadeTexUnit";
 const Identifier ImageProcessor::depthTexUnit_ = "depthTexUnit";
 
 ImageProcessor::ImageProcessor(const std::string& shaderFilename)
-    : Processor()
-    , minDepth_("set.minDepthPP", "Mindepth", 0.0f)
-    , maxDepth_("set.maxDepthPP", "Maxdepth", 1.0f)
+    : RenderProcessor()
     , program_(0)
     , shaderFilename_(shaderFilename)
 {
     std::vector<Identifier> units;
-    units.push_back(shadeTexUnit_);
     units.push_back(depthTexUnit_);
+    units.push_back(shadeTexUnit_);
     tm_.registerUnits(units);
 }
 
@@ -74,46 +72,5 @@ void ImageProcessor::compile() {
     if (program_)
         program_->rebuild();
 }
-
-/*
-* Read back depth buffer and determine min and max depth value.
-*/
-void ImageProcessor::analyzeDepthBuffer(int source) {
-    float* pixels = tc_->getDepthTargetAsFloats(source);
-    float* depthImg = pixels;
-    float curDepth = *(pixels);
-    minDepth_.set(curDepth);
-    maxDepth_.set(curDepth);
-    for (int x = 0; x < tc_->getSize().x; ++x) {
-        for (int y = 0; y < tc_->getSize().y; ++y) {
-            curDepth = *(pixels++);
-            if (minDepth_.get() == 0.0f)
-                minDepth_.set(curDepth);
-            else if ((curDepth != 0.0f) && (minDepth_.get() > curDepth))
-                minDepth_.set(curDepth);
-            if (maxDepth_.get() == 1.0f)
-                maxDepth_.set(curDepth);
-            else if ((curDepth != 1.0f) && (maxDepth_.get() < curDepth))
-                maxDepth_.set(curDepth);
-        }
-    }
-
-    //#define SAVE_DEPTH_BUFFER
-#ifdef SAVE_DEPTH_BUFFER
-    // save image for test purpose
-    ILuint img;
-    ilGenImages(1, &img);
-    ilBindImage(img);
-    //ilTexImage(tc_->getWidth(), tc_->getHeight(), 1, 1, IL_LUMINANCE, IL_FLOAT, NULL);
-    //ilSetPixels(0,0,0,tc_->getWidth(),tc_->getHeight(),1,IL_LUMINANCE, IL_FLOAT, pixels);
-    ilTexImage(tc_->getWidth(), tc_->getHeight(), 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, NULL);
-    ilSetPixels(0, 0, 0, tc_->getWidth(), tc_->getHeight(), 1, IL_RGBA, IL_UNSIGNED_BYTE, depthImg);
-    ilEnable(IL_FILE_OVERWRITE);
-    ilSaveImage("depth.bmp");
-    ilDeleteImages(1, &img);
-#endif
-    delete[] depthImg;
-}
-
 
 } // voreen namespace

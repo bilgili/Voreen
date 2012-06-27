@@ -38,6 +38,7 @@
 #endif
 
 #ifndef WIN32
+#include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -178,7 +179,9 @@ File::File(const std::string& name)
 File::~File()
 {}
 
-size_t File::findDelim(char* buf, size_t size, char delim) {
+namespace {
+
+size_t findDelim(char* buf, size_t size, char delim) {
     size_t pos = 0;
     while (pos < (size - 1)) {
         if (buf[pos] == delim)
@@ -187,6 +190,8 @@ size_t File::findDelim(char* buf, size_t size, char delim) {
     }
     return size+1;
 }
+
+} // namespace
 
 size_t File::readLine(char *buf, size_t maxCount, char delim) {
     size_t bytesread = 0;
@@ -250,152 +255,6 @@ size_t File::skipLine(char delim) {
     }
 }
 
-bool File::dirExists(const string& dirpath) {
-#ifdef WIN32
-    DWORD result = GetFileAttributes(dirpath.c_str());
-    return (result != INVALID_FILE_ATTRIBUTES) && (result & FILE_ATTRIBUTE_DIRECTORY);
-#else
-    DIR* dir = opendir(dirpath.c_str());
-    if (dir) {
-        closedir(dir);
-        return true;
-    }
-    else
-        return false;
-#endif
-}
-
-string File::absolutePath(const string& path) {
-    char* buffer;
-#ifdef WIN32
-    buffer = static_cast<char*>(malloc(4096));
-    buffer[0] = 0;
-    if (GetFullPathName(path.c_str(), 4096, buffer, 0) == 0) {
-        free(buffer);
-        buffer = 0;
-    }
-#elif _POSIX_VERSION >= 200809L || defined (linux)
-    // use safe realpath if available
-    buffer = realpath(path.c_str(), 0);
-#else
-    char* resolvedPath = static_cast<char*>(malloc(4096));
-    buffer = realpath(path.c_str(), resolvedPath);
-    // on success buffer is equal to resolvedPath and gets freed later
-    // on failure we have to free resolvedPath
-    if (!buffer)
-        free(resolvedPath);
-#endif
-
-    if (buffer) {
-        string result(buffer);
-        free(buffer);
-        return result;
-    }
-    return path;
-}
-
-namespace {
-
-const string PATH_SEPARATORS = "/\\";
-
-// remove double and trailing path separators
-string cleanupPath(std::string path) {
-    string::size_type p = 0;
-    while (p != string::npos) {
-        // check all combinations of path separators
-        p = path.find("//");
-        if (p == string::npos)
-            p = path.find("\\\\");
-        if (p == string::npos)
-            p = path.find("\\/");
-        if (p == string::npos)
-            p = path.find("/\\");
-
-        if (p != string::npos)
-            path = path.substr(0, p) + path.substr(p + 1);
-    }
-
-    // remove trailing separator
-    if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
-        path = path.substr(0, path.size() - 1);
-
-    return path;
-}
-
-} // namespace
-
-std::string File::relativePath(const std::string& path, const std::string& dir) {
-    // when there is no dir we just return the path
-    if (dir.empty())
-        return path;
-    
-    // make paths absolute and add trailing separator
-    string abspath = cleanupPath(absolutePath(path)) + "/";
-    string absdir = cleanupPath(absolutePath(dir)) + "/";
-
-    // catch differing DOS-style drive names
-    if (abspath.size() < 1 || abspath.size() < 1 || abspath[0] != absdir[0])
-        return cleanupPath(abspath);
-
-    // find common part in path and dir string
-    string::size_type pospath = abspath.find_first_of(PATH_SEPARATORS);
-    string::size_type posdir = absdir.find_first_of(PATH_SEPARATORS);
-    int i = 0;
-    while (abspath.compare(0, pospath, absdir, 0, posdir) == 0) {
-        i = pospath;
-        pospath = abspath.find_first_of(PATH_SEPARATORS, pospath + 1);
-        posdir = absdir.find_first_of(PATH_SEPARATORS, posdir + 1);
-    }
-
-    // now we have remaining then non-common parts of both paths
-    string restpath = abspath.substr(i + 1);
-    string restdir = absdir.substr(i + 1);
-
-    // the remaining path is our initial relative path
-    string relative = restpath;
-
-    // add ".." for each path separator in the remaining part of dir
-    string::size_type pos = restdir.find_first_of(PATH_SEPARATORS);
-    while (pos != string::npos) {
-        relative = "../" + relative;
-        pos = restdir.find_first_of(PATH_SEPARATORS, pos + 1);
-    }
-
-    // cleanup and return result
-    return cleanupPath(relative);
-}
-
-string File::fileName(const string& filepath) {
-    string::size_type separator = filepath.find_last_of("/\\");
-    if (separator != string::npos)
-        return filepath.substr(separator + 1);
-    else
-        return filepath;    
-}
-
-string File::dirName(const std::string& filepath) {
-    string::size_type separator = filepath.find_last_of("/\\");
-    if (separator != string::npos)
-        return filepath.substr(0, separator);
-    else
-        return "";
-}
-
-
-string File::fileExtension(const string& path, bool lowercase) {
-    string filename = fileName(path);
-
-    string::size_type dot = filename.rfind(".");
-    string extension;
-    if (dot != string::npos)
-        extension = filename.substr(dot + 1);
-    
-    if (lowercase)
-        std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
-    
-    return extension;
-}
-
 //-----------------------------------------------------------------------------
 
 const std::string RegularFile::loggerCat_("tgt.RegularFile");
@@ -420,8 +279,13 @@ RegularFile::~RegularFile() {
     close();
 }
 
+void RegularFile::close() {
+    if (isOpen())
+        file_.close();
+}
+
 size_t RegularFile::read(void* buf, size_t count) {
-    if (!open() || eof())
+    if (!isOpen() || eof())
         return 0;
 
     file_.read(static_cast<char*>(buf), count);
@@ -429,25 +293,25 @@ size_t RegularFile::read(void* buf, size_t count) {
 }
 
 void RegularFile::skip(long count) {
-    if (open())
+    if (isOpen())
         file_.seekg(count, std::ios::cur);
 }
 
 void RegularFile::seek(size_t pos) {
-    if (open())
+    if (isOpen())
         file_.seekg(pos);
 }
 
 void RegularFile::seek(size_t offset, File::SeekDir seekDir) {
-    if (open()) {
+    if (isOpen()) {
         switch (seekDir)  {
-        case File::begin:
+        case File::BEGIN:
             file_.seekg(offset, std::ios_base::beg);
             break;
-        case File::current:
+        case File::CURRENT:
             file_.seekg(offset, std::ios_base::cur);
             break;
-        case File::end:
+        case File::END:
             file_.seekg(offset, std::ios_base::end);
             break;
         }
@@ -455,7 +319,7 @@ void RegularFile::seek(size_t offset, File::SeekDir seekDir) {
 }
 
 size_t RegularFile::tell() {
-    if (open()) {
+    if (isOpen()) {
         std::streampos p = file_.tellg();
         if (p >= 0)
             return static_cast<size_t>(p);
@@ -464,7 +328,7 @@ size_t RegularFile::tell() {
 }
 
 bool RegularFile::eof() {
-    if (open()) {
+    if (isOpen()) {
         if (tell() == size())
             return true;
         else
@@ -474,17 +338,12 @@ bool RegularFile::eof() {
     }
 }
 
-void RegularFile::close() {
-    if (open())
-        file_.close();
-}
-
-bool RegularFile::open() {
+bool RegularFile::isOpen() {
     return file_.is_open();
 }
 
 bool RegularFile::good() {
-    if (open())
+    if (isOpen())
         return file_.good();
     else
         return false;
@@ -504,6 +363,10 @@ MemoryFile::MemoryFile(char* data, size_t size, const std::string& filename, boo
 MemoryFile::~MemoryFile(){
     if (data_ && deleteData_)
         delete[] data_;
+}
+
+void MemoryFile::close() {
+    pos_ = 0;
 }
 
 size_t MemoryFile::read(void* buf, size_t count) {
@@ -536,13 +399,13 @@ void MemoryFile::seek(size_t pos) {
 
 void MemoryFile::seek(size_t offset, File::SeekDir seekDir) {
     switch (seekDir) {
-    case File::begin :
+    case File::BEGIN:
         seek(offset);
         break;
-    case File::current :
+    case File::CURRENT:
         seek(pos_+offset);
         break;
-    case File::end :
+    case File::END:
         pos_ = size_ - 1;
         break;
     }
@@ -556,11 +419,7 @@ bool MemoryFile::eof() {
     return (pos_ == size_ - 1);
 }
 
-void MemoryFile::close() {
-    pos_ = 0;
-}
-
-bool MemoryFile::open() {
+bool MemoryFile::isOpen() {
     return true;
 }
 
@@ -594,9 +453,9 @@ TarFile::TarFile(const std::string& filename, const std::string& tarfilename, si
     }
 
 #ifdef TGT_DEBUG
-    file_->seek(0, File::end);
+    file_->seek(0, File::END);
     size_ = file_->tell();
-    file_->seek(File::begin);
+    file_->seek(File::BEGIN);
 
     if ((offset + size) > size_) {
         std::cout << "Wrong tar file size/offset! file: " << filename << " in " << tarfilename << std::endl;
@@ -610,11 +469,19 @@ TarFile::TarFile(const std::string& filename, const std::string& tarfilename, si
 
     size_ = size;
     offset_ = offset;
-    file_->seek(offset_, File::begin);
+    file_->seek(offset_, File::BEGIN);
 }
 
 TarFile::~TarFile() {
     close();
+}
+
+void TarFile::close() {
+    if (file_) {
+        file_->close();
+        delete file_;
+        file_ = 0;
+    }
 }
 
 size_t TarFile::read(void* buf, size_t count) {
@@ -631,7 +498,7 @@ void TarFile::skip(long count) {
         count = size_ - tell();
 
     if (file_)
-        file_->seek(count, File::current);
+        file_->seek(count, File::CURRENT);
 }
 
 void TarFile::seek(size_t pos) {
@@ -658,15 +525,7 @@ bool TarFile::eof() {
         return true;
 }
 
-void TarFile::close() {
-    if (file_) {
-        file_->close();
-        delete file_;
-        file_ = 0;
-    }
-}
-
-bool TarFile::open() {
+bool TarFile::isOpen() {
     return (file_ != 0);
 }
 
@@ -761,7 +620,7 @@ TarFileFactory::TarFileFactory(const std::string& filename, const std::string& r
                 files_[rootpath+currecord->header.name].size_ = filesize;
                 files_[rootpath+currecord->header.name].offset_ = file->tell();
 
-                file->seek(RECORDSIZE*blocks, File::current);
+                file->seek(RECORDSIZE*blocks, File::CURRENT);
             }
 
             if (file->eof())
@@ -813,7 +672,7 @@ ZipFileFactory::ZipFileFactory(const std::string& filename, const std::string& r
     LDEBUG("Reading Zip archive...");
 
     LDEBUG("Reading central directory end header:");
-    file_->seek(-ZIPEOCDRECORD, File::end);
+    file_->seek(-ZIPEOCDRECORD, File::END);
     zipEOCheader* eocheader = new zipEOCheader;
     file_->read(eocheader->charptr, ZIPEOCDRECORD);
 
@@ -827,7 +686,7 @@ ZipFileFactory::ZipFileFactory(const std::string& filename, const std::string& r
     unsigned int startOfCD = eocheader->header.offsetStartCD;
     LDEBUG("Start offset of CD: " << startOfCD);
 
-    file_->seek(startOfCD, File::begin);
+    file_->seek(startOfCD, File::BEGIN);
     unsigned short int entries = eocheader->header.numberOfEntriesInThisCD;
     
     LDEBUG("Reading " << entries << "entries in central directory...");
@@ -909,7 +768,7 @@ ZipFileFactory::ZipFileFactory(const std::string& filename, const std::string& r
             LWARNING("Compression method unsupported, file will not be added to filesystem!");
         }
 
-        file_->seek(extralength+commentlength, File::current);
+        file_->seek(extralength+commentlength, File::CURRENT);
     }
 }
 
@@ -926,7 +785,7 @@ File* ZipFileFactory::open(const std::string& filename) {
     if (it == files_.end())
         return 0;
 
-    file_->seek(it->second.offset_, File::begin);
+    file_->seek(it->second.offset_, File::BEGIN);
 
     zipheader* currecord = new zipheader;
     file_->read(currecord->charptr, ZIPHEADERSIZE);
@@ -1019,7 +878,7 @@ File* ZipFileFactory::open(const std::string& filename) {
     fname[(*fnlength)] = 0;
     LDEBUG("Filename: " << fname);
 
-    file_->seek((*extralength), File::current);
+    file_->seek((*extralength), File::CURRENT);
 
     size_t c = csize;
 
@@ -1082,6 +941,9 @@ std::vector<std::string> ZipFileFactory::getFilenames() {
 
 const std::string FileSystem::loggerCat_("tgt.FileSystem.FileSystem");
 
+FileSystem::FileSystem() {
+}
+
 FileSystem::~FileSystem() {
     while (!factories_.empty()) {
         delete (factories_.back());
@@ -1097,7 +959,7 @@ File* FileSystem::open(const std::string& filename) {
         LDEBUG("Opening file " << filename << " from real FS");
 
         RegularFile* f = new RegularFile(filename);
-        if (f->open()) {
+        if (f->isOpen()) {
             return f;
         } else {
             delete f;
@@ -1158,143 +1020,68 @@ void FileSystem::addPackage(const std::string& filename, const std::string& root
 	}
 }
 
+//
 // static methods for the regular filesystem
 //
 
-
-bool FileSystem::fileExists(const std::string& filename) {
-    if (filename.empty())
-        return false;
-
-#ifdef _WIN32
-    std::string converted = slashesToBackslashes(filename);
-    removeTrailingCharacters(converted, '\\');
-#else
-    std::string converted(filename);
-    removeTrailingCharacters(converted, '/');
-#endif
-
-    struct stat st;
-    return (stat(converted.c_str(), &st) == 0);
-}
-
-#ifdef _WIN32
-
-bool FileSystem::createDirectory(const std::string& directory) {
-    if (directory.empty())
-        return false;
-
-    std::string converted = slashesToBackslashes(directory);
-    removeTrailingCharacters(converted, '\\');
-    return (CreateDirectory(converted.c_str(), 0) != 0);
-}
-
-std::string FileSystem::currentDirectory() {
-    char* buffer = new char[MAX_PATH + 1];
-    memset(buffer, 0, MAX_PATH + 1);
-
-    DWORD size = GetCurrentDirectory(MAX_PATH, buffer);
-    if (size >= MAX_PATH) {
-        delete [] buffer;
-        buffer = new char[size + 1];
-        memset(buffer, 0, size + 1);
-        size = GetCurrentDirectory(size, buffer);
+string FileSystem::absolutePath(const string& path) {
+    char* buffer;
+#ifdef WIN32
+    buffer = static_cast<char*>(malloc(4096));
+    buffer[0] = 0;
+    if (GetFullPathName(path.c_str(), 4096, buffer, 0) == 0) {
+        free(buffer);
+        buffer = 0;
     }
-    std::string dir(buffer);
-    dir.resize(size);
-    delete [] buffer;
-
-    return dir;
-}
-
-bool FileSystem::deleteFile(const std::string& filename) {
-    if (filename.empty() == true)
-        return false;
-    return (DeleteFile(filename.c_str()) != 0);
-}
-
-std::vector<std::string> FileSystem::readDirectory(const std::string& directory, const bool sort,
-                                                   const bool recursiveSearch)
-{
-    std::vector<std::string> result;
-    if (directory.empty())
-        return result;
-
-    std::string converted = slashesToBackslashes(directory);
-    removeTrailingCharacters(converted, '\\');
-
-    WIN32_FIND_DATA findFileData = {0};
-    HANDLE hFind = 0;
-
-    std::stack<std::string> stackDirs;
-    std::string dir(converted + "\\*");
-    std::string subdir("");
-
-    do {
-        if (stackDirs.empty() == false) {
-            subdir = stackDirs.top();
-            stackDirs.pop();
-            dir = converted + "\\" + subdir + "\\*";
-        }
-
-        hFind = FindFirstFile(dir.c_str(), &findFileData);
-        if (hFind != INVALID_HANDLE_VALUE) {
-            do {
-                std::string file(findFileData.cFileName);
-                if (! (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                    if (subdir.empty() == false)
-                        result.push_back(std::string("/" + subdir + "/" + file));
-                    else
-                        result.push_back(file);
-                } else if (recursiveSearch == true) {
-                    if ((file != ".") && (file != ".."))
-                        stackDirs.push(file);
-                }
-            } while (FindNextFile(hFind, &findFileData) != 0);
-        }
-        FindClose(hFind);
-    } while (stackDirs.empty() == false);
-
-    if (sort == true)
-        std::sort(result.begin(), result.end());
-
-    return result;
-}
+#elif _POSIX_VERSION >= 200809L || defined (linux)
+    // use safe realpath if available
+    buffer = realpath(path.c_str(), 0);
 #else
-bool FileSystem::createDirectory(const std::string& /*directory*/) {
-    std::cout << "TODO: implement FileSystem::createDirectory() for Linux / Unix\n";
-    return false;
-}
-
-std::string FileSystem::currentDirectory() {
-    std::cout << "TODO: implement FileSystem::currentDirectory() for Linux / Unix\n";
-    return "";
-}
-
-bool FileSystem::deleteFile(const std::string& /*filename*/) {
-    std::cout << "TODO: implement FileSystem::deleteFile() for Linux / Unix\n";
-    return false;
-}
-
-std::vector<std::string> FileSystem::readDirectory(const std::string& /*directory*/, const bool /*sort*/,
-                                                   const bool /*recursiveSearch*/)
-{
-    std::cout << "TODO: implement FileSystem::readDirectory() for Linux / Unix\n";
-    return std::vector<std::string>();
-}
+    char* resolvedPath = static_cast<char*>(malloc(4096));
+    buffer = realpath(path.c_str(), resolvedPath);
+    // on success buffer is equal to resolvedPath and gets freed later
+    // on failure we have to free resolvedPath
+    if (!buffer)
+        free(resolvedPath);
 #endif
 
-std::string FileSystem::getFileExtension(const std::string& filename) {
-    if (filename.empty() == true)
-        return "";
-
-    size_t pos = filename.find_last_of('.');
-    if ((pos == std::string::npos) || ((pos + 1) == filename.size()))
-        return "";
-    return filename.substr(pos + 1);
+    if (buffer) {
+        string result(buffer);
+        free(buffer);
+        return result;
+    }
+    return path;
 }
 
-size_t FileSystem::removeTrailingCharacters(std::string& str, const char trailer) {
+namespace {
+
+const string PATH_SEPARATORS = "/\\";
+
+// remove double and trailing path separators
+string cleanupPath(std::string path) {
+    string::size_type p = 0;
+    while (p != string::npos) {
+        // check all combinations of path separators
+        p = path.find("//");
+        if (p == string::npos)
+            p = path.find("\\\\");
+        if (p == string::npos)
+            p = path.find("\\/");
+        if (p == string::npos)
+            p = path.find("/\\");
+
+        if (p != string::npos)
+            path = path.substr(0, p) + path.substr(p + 1);
+    }
+
+    // remove trailing separator
+    if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
+        path = path.substr(0, path.size() - 1);
+
+    return path;
+}
+
+size_t removeTrailingCharacters(std::string& str, const char trailer) {
     if (str.empty())
         return 0;
 
@@ -1308,15 +1095,237 @@ size_t FileSystem::removeTrailingCharacters(std::string& str, const char trailer
     return 0;
 }
 
-std::string FileSystem::slashesToBackslashes(const std::string& name) {
+std::string replaceAllCharacters(const std::string& name, const char oldChar,
+                                             const char newChar)
+{
     // the simplest algorithm but it should be fast enough
     //
     std::string conv(name);
     for (size_t i = 0; i < conv.size(); ++i) {
-        if (conv[i] == '/')
-            conv[i] = '\\';
+        if (conv[i] == oldChar)
+            conv[i] = newChar;
     }
     return conv;
 }
+
+
+} // namespace
+
+std::string FileSystem::relativePath(const std::string& path, const std::string& dir) {
+    // when there is no dir we just return the path
+    if (dir.empty())
+        return path;
+    
+    // make paths absolute and add trailing separator
+    string abspath = cleanupPath(absolutePath(path)) + "/";
+    string absdir = cleanupPath(absolutePath(dir)) + "/";
+
+    // catch differing DOS-style drive names
+    if (abspath.size() < 1 || abspath.size() < 1 || abspath[0] != absdir[0])
+        return cleanupPath(abspath);
+
+    // find common part in path and dir string
+    string::size_type pospath = abspath.find_first_of(PATH_SEPARATORS);
+    string::size_type posdir = absdir.find_first_of(PATH_SEPARATORS);
+    int i = 0;
+    while (abspath.compare(0, pospath, absdir, 0, posdir) == 0) {
+        i = pospath;
+        pospath = abspath.find_first_of(PATH_SEPARATORS, pospath + 1);
+        posdir = absdir.find_first_of(PATH_SEPARATORS, posdir + 1);
+    }
+
+    // now we have remaining then non-common parts of both paths
+    string restpath = abspath.substr(i + 1);
+    string restdir = absdir.substr(i + 1);
+
+    // the remaining path is our initial relative path
+    string relative = restpath;
+
+    // add ".." for each path separator in the remaining part of dir
+    string::size_type pos = restdir.find_first_of(PATH_SEPARATORS);
+    while (pos != string::npos) {
+        relative = "../" + relative;
+        pos = restdir.find_first_of(PATH_SEPARATORS, pos + 1);
+    }
+
+    // cleanup and return result
+    return cleanupPath(relative);
+}
+
+string FileSystem::fileName(const string& filepath) {
+    string::size_type separator = filepath.find_last_of("/\\");
+    if (separator != string::npos)
+        return filepath.substr(separator + 1);
+    else
+        return filepath;    
+}
+
+string FileSystem::dirName(const std::string& filepath) {
+    string::size_type separator = filepath.find_last_of("/\\");
+    if (separator != string::npos)
+        return filepath.substr(0, separator);
+    else
+        return "";
+}
+
+
+string FileSystem::fileExtension(const string& path, bool lowercase) {
+    string filename = fileName(path);
+
+    string::size_type dot = filename.rfind(".");
+    string extension;
+    if (dot != string::npos)
+        extension = filename.substr(dot + 1);
+    
+    if (lowercase)
+        std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
+    
+    return extension;
+}
+
+std::string FileSystem::currentDirectory() {
+#ifdef WIN32    
+    char* buffer = new char[MAX_PATH + 1];
+    memset(buffer, 0, MAX_PATH + 1);
+
+    DWORD size = GetCurrentDirectory(MAX_PATH, buffer);
+    if (size >= MAX_PATH) {
+        delete [] buffer;
+        buffer = new char[size + 1];
+        memset(buffer, 0, size + 1);
+        size = GetCurrentDirectory(size, buffer);
+    }
+    std::string dir(buffer);
+    dir.resize(size);
+    delete[] buffer;
+
+    return dir;
+#else
+    char path[FILENAME_MAX];
+    if (getcwd(path, FILENAME_MAX) == 0)
+        return "";
+    else
+        return std::string(path);
+#endif    
+}
+
+bool FileSystem::createDirectory(const std::string& directory) {
+    if (directory.empty())
+        return false;
+
+#ifdef WIN32    
+    std::string converted = replaceAllCharacters(directory, '/', '\\');
+    removeTrailingCharacters(converted, '\\');
+    return (CreateDirectory(converted.c_str(), 0) != 0);
+#else
+    std::string converted = replaceAllCharacters(directory, '\\', '/');
+    removeTrailingCharacters(converted, '/');
+    return (mkdir(converted.c_str(), 0777) == 0);
+#endif    
+}
+
+bool FileSystem::deleteFile(const std::string& filename) {
+    if (filename.empty())
+        return false;
+
+#ifdef WIN32
+    return (DeleteFile(filename.c_str()) != 0);
+#else
+    std::string converted = replaceAllCharacters(filename, '\\', '/');
+    removeTrailingCharacters(converted, '/');
+    return (remove(converted.c_str()) == 0);
+#endif    
+}
+
+bool FileSystem::fileExists(const std::string& filename) {
+    if (filename.empty())
+        return false;
+
+#ifdef _WIN32
+    std::string converted = replaceAllCharacters(filename, '/', '\\');
+    removeTrailingCharacters(converted, '\\');
+#else
+    std::string converted = replaceAllCharacters(filename, '\\', '/');
+    removeTrailingCharacters(converted, '/');
+#endif
+
+    struct stat st;
+    return (stat(converted.c_str(), &st) == 0);
+}
+
+bool FileSystem::dirExists(const string& dirpath) {
+#ifdef WIN32
+    DWORD result = GetFileAttributes(dirpath.c_str());
+    return (result != INVALID_FILE_ATTRIBUTES) && (result & FILE_ATTRIBUTE_DIRECTORY);
+#else
+    DIR* dir = opendir(dirpath.c_str());
+    if (dir) {
+        closedir(dir);
+        return true;
+    }
+    else
+        return false;
+#endif
+}
+
+#ifdef _WIN32
+
+std::vector<std::string> FileSystem::readDirectory(const std::string& directory, const bool sort,
+                                                   const bool recursiveSearch)
+{
+    std::vector<std::string> result;
+    if (directory.empty())
+        return result;
+
+    std::string converted = replaceAllCharacters(directory, '/', '\\');
+    removeTrailingCharacters(converted, '\\');
+
+    WIN32_FIND_DATA findFileData = {0};
+    HANDLE hFind = 0;
+
+    std::stack<std::string> stackDirs;
+    std::string dir(converted + "\\*");
+    std::string subdir("");
+
+    do {
+        if (!stackDirs.empty()) {
+            subdir = stackDirs.top();
+            stackDirs.pop();
+            dir = converted + "\\" + subdir + "\\*";
+        }
+
+        hFind = FindFirstFile(dir.c_str(), &findFileData);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            do {
+                std::string file(findFileData.cFileName);
+                if (! (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                    if (!subdir.empty())
+                        result.push_back(std::string("/" + subdir + "/" + file));
+                    else
+                        result.push_back(file);
+                } else if (recursiveSearch) {
+                    if ((file != ".") && (file != ".."))
+                        stackDirs.push(file);
+                }
+            } while (FindNextFile(hFind, &findFileData) != 0);
+        }
+        FindClose(hFind);
+    } while (!stackDirs.empty());
+
+    if (sort)
+        std::sort(result.begin(), result.end());
+
+    return result;
+}
+#else
+
+std::vector<std::string> FileSystem::readDirectory(const std::string& /*directory*/, const bool /*sort*/,
+                                                   const bool /*recursiveSearch*/)
+{
+    LERROR("TODO: implement FileSystem::readDirectory() for Unix");
+    return std::vector<std::string>();
+}
+
+#endif // WIN32
 
 } // namespace

@@ -61,8 +61,9 @@ def benchmark():
 # Start
 print 'starting script fps.py'
 
-if voreenqt.questionBox("Welcome fps.py!\n" + "Will run " + str(cycles) + " frames with "
-                      + str(width) + "x" + str(height) + " pixels.\n" + "Start?"):
+if voreenqt.questionBox("Welcome to fps.py!\n" + "Will run for " + str(cycles) + " frames with "
+                      + str(width) + "x" + str(height) + " pixels.\n" 
+                      + "Start?"):
     benchmark()
 else:
     print "aborting on user request"

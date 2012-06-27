@@ -50,6 +50,7 @@ CompactIntPropertyWidget::CompactIntPropertyWidget(IntProp* prop, QWidget* paren
 void CompactIntPropertyWidget::update() {
     spinBox_->blockSignals(true);
     spinBox_->setRange(property_->getMinValue(), property_->getMaxValue());
+    spinBox_->setSingleStep(property_->getStepping());
     spinBox_->setValue(property_->get());
     spinBox_->blockSignals(false);
 }

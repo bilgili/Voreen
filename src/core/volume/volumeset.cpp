@@ -74,7 +74,7 @@ void VolumeSet::setName(const string& name) {
     name_ = name;
 }
 
-const VolumeSetContainer* VolumeSet::getParentContainer() const {
+VolumeSetContainer* VolumeSet::getParentContainer() const {
     return parentContainer_;
 }
 

@@ -36,22 +36,20 @@ class TimeEvent : public Event {
 public:
     /// A default constructor. Note that there is no tgt::Timer set this way.
     TimeEvent();
-    TimeEvent( Timer* timer );
+    TimeEvent(Timer* timer);
     
     /// Getter for the tgt::Timer that throw this Event
     /// @return tgt::Timer
     Timer* getTimer();
     
     /// Sets the tgt::Timer that is used to determine who sent this event.
-    void setTimer( Timer* timer );
+    void setTimer(Timer* timer);
 
 	virtual int getEventType();
     
 protected:
     Timer* timer_;
-
 };
-
 
 }
 

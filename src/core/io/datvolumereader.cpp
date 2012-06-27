@@ -55,7 +55,15 @@ DatVolumeReader::DatVolumeReader(IOProgress* progress)
     extensions_.push_back("dat");
 }
 
-VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tgt::ivec3& dims)
+VolumeSet* DatVolumeReader::read(const std::string &fileName)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    return readSlices(fileName,0,0);
+
+}
+
+
+VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tgt::ivec3& dims,size_t firstSlice,size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader rawReader(getProgress());
@@ -74,12 +82,12 @@ VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tg
         "",
         6);                 // loading offset
 
-    VolumeSet* volumeSet = rawReader.read(fileName);
+    VolumeSet* volumeSet = rawReader.readSlices(fileName, firstSlice, lastSlice);
     fixOrigins(volumeSet, fileName);
     return volumeSet;
 }
 
-VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
+VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName,size_t firstSlice,size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     std::string objectFilename;
@@ -99,7 +107,7 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
     std::string metaString = "";
     bool error = false;
 
-    LINFO("Loading file " << fileName);
+    LINFO("Loading dat file " << fileName);
     TextFileReader reader(fileName);
 
     if (!reader)
@@ -113,44 +121,44 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
 
         if (type == "ObjectFileName:") {
             args >> objectFilename;
-            LINFO(type << " " << objectFilename);
+            LDEBUG(type << " " << objectFilename);
         } else if (type == "TaggedFileName:") {
             args >> taggedFilename;
-            LINFO(type << " " << taggedFilename);
+            LDEBUG(type << " " << taggedFilename);
         } else if (type == "Resolution:") {
             args >> resolution[0];
             args >> resolution[1];
             args >> resolution[2];
-            LINFO(type << " " << resolution[0] << " x " <<
+            LDEBUG(type << " " << resolution[0] << " x " <<
                   resolution[1] << " x " << resolution[2]);
         } else if (type == "SliceThickness:") {
             args >> sliceThickness[0] >> sliceThickness[1] >> sliceThickness[2];
-            LINFO(type << " " << sliceThickness[0] << " " <<
+            LDEBUG(type << " " << sliceThickness[0] << " " <<
                   sliceThickness[1] << " " << sliceThickness[2]);
         } else if (type == "Format:") {
             args >> format;
-            LINFO(type << " " << format);
+            LDEBUG(type << " " << format);
         } else if (type == "NbrTags:") {
             args >> nbrTags;
-            LINFO(type << " " << nbrTags);
+            LDEBUG(type << " " << nbrTags);
         } else if (type == "ObjectType:") {
             args >> objectType;
-            LINFO(type << " " << objectType);
+            LDEBUG(type << " " << objectType);
         } else if (type == "ObjectModel:") {
             args >> objectModel;
-            LINFO(type << " " << objectModel);
+            LDEBUG(type << " " << objectModel);
         } else if (type == "GridType:") {
             args >> gridType;
-            LINFO(type << " " << gridType);
+            LDEBUG(type << " " << gridType);
         } else if (type == "BitsStored:") {
             args >> bits;
-            LINFO(type << " " << bits);
+            LDEBUG(type << " " << bits);
         } else if (type == "Unit:") {
             args >> unit;
-            LINFO(type << " " << unit);
+            LDEBUG(type << " " << unit);
         } else if (type == "ZeroPoint:") {
             args >> zeroPoint;
-            LINFO(type << " " << zeroPoint);
+            LDEBUG(type << " " << zeroPoint);
         } else if (type == "TransformMatrix:") {
             // first argument contains number of row
             std::string row;
@@ -162,26 +170,26 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
             args >> transformation[index][2];
             args >> transformation[index][3];
             if (index == 3) {
-                LINFO("TransformMatrix:");
-                LINFO("  " << transformation[0]);
-                LINFO("  " << transformation[1]);
-                LINFO("  " << transformation[2]);
-                LINFO("  " << transformation[3]);
+                LDEBUG("TransformMatrix:");
+                LDEBUG("  " << transformation[0]);
+                LDEBUG("  " << transformation[1]);
+                LDEBUG("  " << transformation[2]);
+                LDEBUG("  " << transformation[3]);
             }
         }
         else if (type == "Modality:") {
             std::string modalityStr;
             args >> modalityStr;
-            LINFO(type << " " << modalityStr);
+            LDEBUG(type << " " << modalityStr);
             modality = Modality(modalityStr);
         }
         else if (type == "TimeStep:") {
             args >> timeStep;
-            LINFO(type << " " << timeStep);
+            LDEBUG(type << " " << timeStep);
         }
         else if (type == "MetaString:") {
             args >> metaString;
-            LINFO(type << " " << metaString);
+            LDEBUG(type << " " << metaString);
         }
         else {
             LERROR("Unknown type: " << type);
@@ -219,7 +227,7 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = rawReader.read(objectFilename);
+        VolumeSet* volumeSet = rawReader.readSlices(objectFilename,firstSlice,lastSlice);
         fixOrigins(volumeSet, fileName);
         return volumeSet;
     } else {
@@ -227,7 +235,7 @@ VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
     }
 }
 
-VolumeSet* DatVolumeReader::read(const std::string &fileName)
+VolumeSet* DatVolumeReader::readSlices(const std::string &fileName,size_t firstSlice, size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     // First of all, we have to test if the file is a simple meta-text file or contains a whole
@@ -256,9 +264,198 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName)
     fin.close();
 
     if (realSize == supposedSize)
-        return readVolumeFile(fileName, tgt::ivec3(dimensions));
+        return readVolumeFile(fileName, tgt::ivec3(dimensions),firstSlice,lastSlice);
     else
-        return readMetaFile(fileName);
+        return readMetaFile(fileName,firstSlice,lastSlice);
 }
+
+
+
+VolumeSet* DatVolumeReader::readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    // First of all, we have to test if the file is a simple meta-text file or contains a whole
+    // volume of its own.
+
+    std::fstream fin(fileName.c_str(), std::ios::in | std::ios::binary);
+    if (!fin.good() || fin.eof() || !fin.is_open())
+        throw tgt::FileNotFoundException("Unable to open dat file for reading", fileName);
+
+    // Determine the dimensions of the volume (provided it is one).
+    // They are stored in the first 3 blocks as 2 bytes each.
+    tgt::Vector3<unsigned short> dimensions;
+
+    fin.read(reinterpret_cast<char*>(dimensions.elem), sizeof(dimensions));
+
+    // Calculate the supposed size of the file:
+    // *2  because each voxel is saved as 2 bytes
+    // +6  because of the header in which the dimension-information reside
+    long supposedSize = (dimensions.x * dimensions.y * dimensions.z * sizeof(unsigned short)) + sizeof(dimensions);
+
+    // Jump to the end of the file and
+    // get the real size of the file in bytes
+    fin.seekg(0, std::ios_base::end);
+    long realSize = static_cast<long>(fin.tellg());
+
+    fin.close();
+
+    if (realSize == supposedSize)
+        return readVolumeFileBrick(fileName, tgt::ivec3(dimensions),brickStartPos,brickSize);
+    else
+        return readMetaFileBrick(fileName,brickStartPos,brickSize);
+}
+
+VolumeSet* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, const tgt::ivec3& dims, 
+    tgt::ivec3 brickStartPos, int brickSize) throw (tgt::FileException, std::bad_alloc)
+{
+    RawVolumeReader rawReader(getProgress());
+
+    rawReader.readHints(
+        dims,               // dimensions of the volume
+        ivec3(1, 1, 1),     // thickness of one slice
+        16,                 // bits per voxel
+        "I",                // intensity image
+        "USHORT",           // one unsigned short per voxel
+        0,                  // default values
+        tgt::mat4::identity,
+        Modality::MODALITY_UNKNOWN,
+        -1.0f,
+        "",
+        "",
+        6);                 // loading offset
+
+    VolumeSet* volumeSet = rawReader.readBrick(fileName,brickStartPos, brickSize);
+
+    fixOrigins(volumeSet, fileName);
+    return volumeSet;
+}
+
+VolumeSet* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::ivec3 brickStartPos,
+    int brickSize) throw (tgt::FileException, std::bad_alloc)
+{
+    std::string objectFilename;
+    std::string taggedFilename;
+    ivec3 resolution = ivec3(0, 0, 0);
+    vec3 sliceThickness = vec3(1.f, 1.f, 1.f);
+    std::string format;
+    int nbrTags;
+    std::string objectType;
+    std::string objectModel;
+    std::string gridType;
+    tgt::mat4 transformation = tgt::mat4::identity;
+    std::string unit;
+    Modality modality = Modality::MODALITY_UNKNOWN;
+    int zeroPoint = 0;
+    float timeStep = -1.0f;
+    std::string metaString = "";
+    bool error = false;
+
+    //LINFO("Loading file " << fileName);
+    TextFileReader reader(fileName);
+
+    if (!reader)
+        throw tgt::FileNotFoundException("reading dat file", fileName);
+
+    std::string type;
+    std::istringstream args;
+    int bits = 0;
+
+    while (reader.getNextLine(type, args, false)) {
+
+        if (type == "ObjectFileName:") {
+            args >> objectFilename;
+        } else if (type == "TaggedFileName:") {
+            args >> taggedFilename;
+        } else if (type == "Resolution:") {
+            args >> resolution[0];
+            args >> resolution[1];
+            args >> resolution[2];
+        } else if (type == "SliceThickness:") {
+            args >> sliceThickness[0] >> sliceThickness[1] >> sliceThickness[2];
+        } else if (type == "Format:") {
+            args >> format;
+        } else if (type == "NbrTags:") {
+            args >> nbrTags;
+        } else if (type == "ObjectType:") {
+            args >> objectType;
+        } else if (type == "ObjectModel:") {
+            args >> objectModel;
+        } else if (type == "GridType:") {
+            args >> gridType;
+        } else if (type == "BitsStored:") {
+            args >> bits;
+        } else if (type == "Unit:") {
+            args >> unit;
+        } else if (type == "ZeroPoint:") {
+            args >> zeroPoint;
+        } else if (type == "TransformMatrix:") {
+            // first argument contains number of row
+            std::string row;
+            args >> row;
+            // last element is the number
+            int index = atoi((row.substr(row.length()-1, row.length()-1)).c_str());
+            args >> transformation[index][0];
+            args >> transformation[index][1];
+            args >> transformation[index][2];
+            args >> transformation[index][3];
+        }
+        else if (type == "Modality:") {
+            std::string modalityStr;
+            args >> modalityStr;
+            modality = Modality(modalityStr);
+        }
+        else if (type == "TimeStep:") {
+            args >> timeStep;
+        }
+        else if (type == "MetaString:") {
+            args >> metaString;
+        }
+        else {
+            LERROR("Unknown type: " << type);
+        }
+
+        if (args.fail()) {
+            LERROR("Format error");
+            error = true;
+        }
+    }
+
+    // check whether necessary meta-data could be read
+    if (objectFilename == "") {
+        LERROR("No raw file specified");
+        error = true;
+    }
+
+    if (hor(lessThanEqual(resolution,ivec3(0, 0, 0)))) {
+        LERROR("Invalid resolution or resolution not specified: " << resolution[0] << " x " <<
+               resolution[1] << " x " << resolution[2]);
+        error = true;
+    }
+
+    if (!error) {
+        RawVolumeReader rawReader(getProgress());
+        rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, zeroPoint,
+            transformation, modality, timeStep, metaString, unit);
+
+        // do we have a relative path?
+        if ((objectFilename.substr(0, 1) != "/")  && (objectFilename.substr(0, 1) != "\\") &&
+            (objectFilename.substr(1, 2) != ":/") && (objectFilename.substr(1, 2) != ":\\"))
+        {
+            size_t p = fileName.find_last_of("\\/");
+            // construct path relative to dat file
+            objectFilename = fileName.substr(0, p + 1) + objectFilename;
+        }
+
+        VolumeSet* volumeSet = rawReader.readBrick(objectFilename,brickStartPos,brickSize);
+        fixOrigins(volumeSet, fileName);
+        return volumeSet;
+    } else {
+        throw tgt::CorruptedFileException("error while reading data", fileName);
+    }
+}
+
+
+
+
 
 } // namespace voreen

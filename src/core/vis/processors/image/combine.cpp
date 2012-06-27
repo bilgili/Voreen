@@ -138,23 +138,4 @@ void Combine::renderTwo(int source0, int source1, int /*pass*/) {
     LGL_ERROR;
 }
 
-void Combine::processMessage(Message* msg, const Identifier& dest) {
-    Collect::processMessage(msg, dest);
-
-    /*
-    if (msg->id_ == "Combine.set.blendMode") {
-        blendMode_->set(msg->getValue<int>());
-        invalidate();
-    }
-    else if (msg->id_ == "Combine.set.firstModifyColor") {
-        firstModifyColor_.set(msg->getValue<tgt::Color>());
-        invalidate();
-    }
-    else if (msg->id_ == "Combine.set.secondModifyColor") {
-        secondModifyColor_.set(msg->getValue<tgt::Color>());
-        invalidate();
-    }
-    */
-}
-
 } // voreen namespace

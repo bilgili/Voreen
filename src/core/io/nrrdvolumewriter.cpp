@@ -29,6 +29,7 @@
 
 #include "voreen/core/io/nrrdvolumewriter.h"
 #include "voreen/core/volume/volumeatomic.h"
+#include "tgt/filesystem.h"
 
 namespace voreen {
 
@@ -79,12 +80,12 @@ void NrrdVolumeWriter::write(const std::string& filename, Volume* volume)
     tgt::vec3 spacing = volume->getSpacing();
 
     nhdrout << "NRRD0001" << std::endl; // magic number
-    nhdrout << "content:      " << VolumeMetaData::getFileNameWithoutPath(filename) << std::endl;
+    nhdrout << "content:      " << tgt::FileSystem::fileName(filename) << std::endl;
     nhdrout << "dimension:    3" << std::endl;
     nhdrout << "type:         " << type << std::endl;
     nhdrout << "sizes:        " << dimensions.x << " " << dimensions.y << " " << dimensions.z << std::endl;
     nhdrout << "spacings:     " << spacing.x << " " << spacing.y << " " << spacing.z << std::endl;
-    nhdrout << "datafile:     " << VolumeMetaData::getFileNameWithoutPath(rawname) << std::endl;
+    nhdrout << "datafile:     " << tgt::FileSystem::fileName(rawname) << std::endl;
     nhdrout << "encoding:     raw" << std::endl;
 
     nhdrout.close();

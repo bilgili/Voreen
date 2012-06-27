@@ -51,10 +51,22 @@ public:
     void update();
     void disconnect();
 
+    /**
+     * Stores the state of the transfer function editor window.
+     */
+    virtual TiXmlElement* getWidgetMetaData() const;
+
 public slots:
     void setProperty();
 
 protected:
+    /// Creates the transfunc editor
+    void createEditorWindow();
+
+    /// Queries the property's meta data for
+    /// the editor window's visibility state
+    bool editorVisibleOnStartup() const;
+
     TransFuncPlugin* plugin_;
     TransFuncProp* property_;
     VoreenToolWindow* window_;

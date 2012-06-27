@@ -48,16 +48,16 @@ void WidgetPlugin::setMessageReceiver(MessageReceiver* receiver) {
 
 void WidgetPlugin::startTracking() {
     MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void WidgetPlugin::stopTracking() {
     MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-    repaintCanvases();
+    repaintCanvas();
 }
 
-void WidgetPlugin::repaintCanvases() {
-    MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
+void WidgetPlugin::repaintCanvas() {
+    MsgDistr.postMessage(new Message(VoreenPainter::repaint_));
 }
 
 void WidgetPlugin::postMessage(Message* msg, const Identifier& dest) {

@@ -93,7 +93,7 @@ public:
 
     void setName(const std::string& name);
 
-    const VolumeSetContainer* getParentContainer() const;
+    VolumeSetContainer* getParentContainer() const;
 
     /**
      * Returns the first Volume from the first handle in the first series being available.

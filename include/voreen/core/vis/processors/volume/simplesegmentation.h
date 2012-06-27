@@ -31,7 +31,7 @@
 #define VRN_SIMPLESEGMENTATIONPROCESSOR_H
 
 #include "voreen/core/vis/processors/render/volumerenderer.h"
-#include "voreen/core/vis/processors/image/geometryprocessor.h"
+#include "voreen/core/vis/processors/geometry/geometryprocessor.h"
 #include "voreen/core/volume/volumeatomic.h"
 
 namespace voreen {

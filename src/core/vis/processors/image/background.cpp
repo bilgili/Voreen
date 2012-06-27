@@ -52,7 +52,7 @@ Background::Background()
     , tex_(0)
     , textureloaded_(false)
     , filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
-                "", "*.jpg;*.bmp;*.png", true, true)
+        "", "*.jpg;*.bmp;*.png", FileDialogProp::FILE, true, true)
     , tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false),
     mode_(MONOCHROME)
 {

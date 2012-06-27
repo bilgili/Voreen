@@ -6,11 +6,7 @@
  *
  */
 
-#ifdef __APPLE__
 #include "../pch.h"
-#else
-#include "../../pch.h"
-#endif
 
 #if defined __cplusplus
 /* Add C++ includes here */

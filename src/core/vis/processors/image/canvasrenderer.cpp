@@ -32,7 +32,7 @@
 namespace voreen {
 
 CanvasRenderer::CanvasRenderer()
-    : Processor()
+    : RenderProcessor()
     , raycastPrg_(0)
     , useCaching_("set.useCaching", "Use caching?", true)
     , imageID_(-1)

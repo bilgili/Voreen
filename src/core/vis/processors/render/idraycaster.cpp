@@ -63,19 +63,6 @@ const std::string IDRaycaster::getProcessorInfo() const {
         "rendering target. The three color channels are filled with the first-hit-positions.";
 }
 
-void IDRaycaster::processMessage(Message* msg, const Identifier& dest) {
-    VolumeRaycaster::processMessage(msg, dest);
-
-    if (msg->id_ == VoreenPainter::switchCoarseness_)
-        coarse_ = msg->getValue<bool>();
-    /*
-    else if (msg->id_ == "set.penetrationDepth") {
-        penetrationDepth_.set( msg->getValue<float>());
-        invalidate();
-    }
-    */
-}
-
 int IDRaycaster::initializeGL() {
     loadShader();
     return VRN_OK;

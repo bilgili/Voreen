@@ -48,7 +48,7 @@ VolumeEditor::VolumeEditor()
     , brushSize_("set.brushSize", "Brush size", 10, 1, 50)
     , brushColor_("set.brushColor", "Brush color", tgt::col4(255,0,0,255))
     , saveDialogProp_("save.SegDataSet", "Save Segmentation Data", "")
-    , transferFunc_(setTransFunc_, "Transfer Function")
+    , transferFunc_(setTransFunc_, "Transfer function")
     , fbo_(0)
 {
     setName("VolumeEditor");
@@ -78,7 +78,6 @@ VolumeEditor::~VolumeEditor() {
 
 Processor* VolumeEditor::create() const {
     VolumeEditor* sr = new VolumeEditor();
-    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_, (tgt::EventListener*)sr));
     return sr;
 }
 
@@ -102,20 +101,8 @@ const std::string VolumeEditor::getProcessorInfo() const {
 
 void VolumeEditor::processMessage(Message* msg, const Identifier& dest) {
     VolumeRaycaster::processMessage(msg, dest);
-    // send invalidate and update context, if lighting parameters have changed
-    if (msg->id_ == LightMaterial::setLightPosition_   ||
-        msg->id_ == LightMaterial::setLightAmbient_         ||
-        msg->id_ == LightMaterial::setLightDiffuse_         ||
-        msg->id_ == LightMaterial::setLightSpecular_        ||
-        msg->id_ == LightMaterial::setLightAttenuation_     ||
-        msg->id_ == LightMaterial::setMaterialAmbient_      ||
-        msg->id_ == LightMaterial::setMaterialDiffuse_      ||
-        msg->id_ == LightMaterial::setMaterialSpecular_     ||
-        msg->id_ == LightMaterial::setMaterialShininess_        ) {
-            setLightingParameters();
-            invalidate();
-    }
-    else if (msg->id_ == "save.SegDataSet")
+
+    if (msg->id_ == "save.SegDataSet")
         saveSegmentationDataSet(msg->getValue<std::string>());
 }
 
@@ -143,10 +130,13 @@ void VolumeEditor::compile() {
 }
 
 void VolumeEditor::process(LocalPortMapping* portMapping) {
-    if ( VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle")) == false)
-    {
+    bool volumeChanged;
+    if (VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
+            portMapping->getVolumeHandle("volumehandle.volumehandle"), &volumeChanged) == false) {
         return;
+    }
+    if (volumeChanged) {
+        invalidateShader();
     }
 
     // pass volumehandle to transfer function
@@ -193,6 +183,8 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
         "volumeParameters_")
     );
 
+    addBrickedVolumeModalities(volumeTextures);
+
        // segmentation volume
     VolumeGL* volumeSeg = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
 
@@ -236,6 +228,7 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
     if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
         raycastPrg_->setUniform("segment_" , static_cast<GLfloat>(segment_.get()));
 
+    setBrickedVolumeUniforms();
     renderQuad();
 
     raycastPrg_->deactivate();
@@ -244,7 +237,7 @@ void VolumeEditor::process(LocalPortMapping* portMapping) {
 }
 
 std::string VolumeEditor::generateHeader() {
-    std::string headerSource = VolumeRaycaster::generateHeader();
+    std::string headerSource = VolumeRaycaster::generateHeader(getVolumeHandle());
 
     headerSource += transferFunc_.get()->getShaderDefines();
 

@@ -32,11 +32,12 @@
 #include "tgt/glmath.h"
 #include "tgt/camera.h"
 #include "tgt/shadermanager.h"
+#include "tgt/gpucapabilities.h"
 
 #include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/vis/lightmaterial.h"
+#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/processors/portmapping.h"
 
 #include <sstream>
 
@@ -48,11 +49,9 @@ namespace voreen {
 
 HasShader::HasShader()
     : needRecompileShader_(true)
-{
-}
+{}
 
-HasShader::~HasShader() {
-}
+HasShader::~HasShader() {}
 
 void HasShader::compileShader() {
     if (needRecompileShader_) {
@@ -67,50 +66,32 @@ void HasShader::invalidateShader() {
 
 //---------------------------------------------------------------------------
 
-const Identifier Processor::setBackgroundColor_("set.backgroundColor");
-
 const std::string Processor::loggerCat_("voreen.Processor");
 
 const std::string Processor::XmlElementName_("Processor");
 
-Processor::Processor(tgt::Camera* camera, TextureContainer* tc)
+Processor::Processor()
     : MessageReceiver()
     , Serializable()
-    , cacheable_(true),
-    useVolumeCaching_(true)
+    , cacheable_(true)
+    , useVolumeCaching_(true)
     , isCoprocessor_(false)
-    , camera_(camera)
-    , tc_(tc)
-    , tm_()
-    , backgroundColor_(setBackgroundColor_, "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f))
-    , lightPosition_(LightMaterial::setLightPosition_, "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
-                     tgt::vec4(-10), tgt::vec4(10))
-    , lightAmbient_(LightMaterial::setLightAmbient_, "Ambient light", tgt::Color(0.4f, 0.4f, 0.4f, 1.f))
-    , lightDiffuse_(LightMaterial::setLightDiffuse_, "Diffuse light", tgt::Color(0.8f, 0.8f, 0.8f, 1.f))
-    , lightSpecular_(LightMaterial::setLightSpecular_, "Specular light", tgt::Color(0.6f, 0.6f, 0.6f, 1.f))
-    , lightAttenuation_(LightMaterial::setLightAttenuation_, "Attenutation", tgt::vec3(1.f, 0.f, 0.f))
-    , materialAmbient_(LightMaterial::setMaterialAmbient_, "Ambient material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialDiffuse_(LightMaterial::setMaterialDiffuse_, "Diffuse material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialSpecular_(LightMaterial::setMaterialSpecular_, "Specular material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialEmission_(LightMaterial::setMaterialEmission_, "Emissive material color", tgt::Color(0.f, 0.f, 0.f, 1.f))
-    , materialShininess_(LightMaterial::setMaterialShininess_, "Shininess", 60.f, 0.1f, 128.f)
-    , initStatus_(VRN_OK)
+    , initStatus_(VRN_OK),
+    portMap_()
 {
-    addProperty(&lightPosition_);
-    lightPosition_.setVisible(false);
 }
 
 Processor::~Processor() {
-    for (size_t i=0; i<inports_.size(); ++i)
-        delete inports_.at(i);
-    for (size_t i=0; i<outports_.size(); ++i)
-        delete outports_.at(i);
-    for (size_t i=0; i<coProcessorInports_.size(); ++i)
-        delete coProcessorInports_.at(i);
-    for (size_t i=0; i<coProcessorOutports_.size(); ++i)
-        delete coProcessorOutports_.at(i);
-    for (size_t i=0; i<privatePorts_.size(); ++i)
-        delete privatePorts_.at(i);
+    for (size_t i = 0; i < inports_.size(); ++i)
+        delete inports_[i];
+    for (size_t i = 0; i < outports_.size(); ++i)
+        delete outports_[i];
+    for (size_t i = 0; i < coProcessorInports_.size(); ++i)
+        delete coProcessorInports_[i];
+    for (size_t i = 0; i < coProcessorOutports_.size(); ++i)
+        delete coProcessorOutports_[i];
+    for (size_t i = 0; i < privatePorts_.size(); ++i)
+        delete privatePorts_[i];
 }
 
 int Processor::initializeGL() {
@@ -131,189 +112,96 @@ const Properties& Processor::getProperties() const {
 }
 
 bool Processor::connect(Port* outport, Port* inport) {
-    if (!inport->isOutport()) {
-        if ( (outport->getType().getSubString(0) == inport->getType().getSubString(0)) && (inport->getProcessor() != this) ) {
-            if (inport->allowMultipleConnections() || inport->getConnected().size() == 0 ) {
-                if (!inport->isConnectedTo(outport)) {
-                    outport->addConnection(inport);
-                    inport->addConnection(outport);
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool Processor::testConnect(Port* outport, Port* inport) {
-    if (!inport->isOutport()) {
-        if ( (outport->getType().getSubString(0) == inport->getType().getSubString(0)) && (inport->getProcessor() != this) ) {
-            if (inport->allowMultipleConnections() || inport->getConnected().size() == 0 ) {
-                if (!inport->isConnectedTo(outport)) {
-                    return true;
-                }
-            }
-        }
-    }
+    if ((outport != 0) && (outport->testConnectivity(inport) == true))
+        return outport->connect(inport);
     return false;
 }
 
 bool Processor::disconnect(Port* outport, Port* inport) {
-    bool success = false;
-    for (size_t i=0; i<inport->getConnected().size(); ++i) {
-        if (inport->getConnected()[i] == outport) {
-            inport->getConnected().erase(inport->getConnected().begin() + i);
-            success = true;
-        }
-    }
-    if (!success)
-        return false;
+    if (outport != 0)
+        return (outport->disconnect(inport));
+    return false;
+}
 
-    for (size_t i=0; i<outport->getConnected().size(); ++i) {
-        if (outport->getConnected()[i] == inport) {
-            outport->getConnected().erase(outport->getConnected().begin() + i);
-            return true;
-        }
-    }
-
+bool Processor::testConnect(Port* const outport, Port* const inport) {
+    if (outport != 0)
+        return outport->testConnectivity(inport);
     return false;
 }
 
 Port* Processor::getPort(Identifier ident) {
-    for (size_t i=0; i <inports_.size(); ++i) {
-        if (inports_.at(i)->getType() == ident)
-            return inports_.at(i);
-    }
-
-    for (size_t i=0; i <outports_.size(); ++i) {
-        if (outports_.at(i)->getType() == ident)
-            return outports_.at(i);
-    }
-
-    for (size_t i=0; i <coProcessorInports_.size(); ++i) {
-        if (coProcessorInports_.at(i)->getType() == ident)
-            return coProcessorInports_.at(i);
-    }
-
-    for (size_t i=0; i <coProcessorOutports_.size(); ++i) {
-        if (coProcessorOutports_.at(i)->getType() == ident)
-            return coProcessorOutports_.at(i);
-    }
-
-    for (size_t i=0; i<privatePorts_.size(); ++i) {
-        if (privatePorts_.at(i)->getType() == ident)
-            return privatePorts_.at(i);
-    }
-
-    return 0;
+    PortMap::iterator it = portMap_.find(ident);
+    if (it == portMap_.end())
+        return 0;
+    return it->second;
 }
 
-void Processor::createInport(Identifier ident, bool allowMultipleConnectios) {
-    inports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
+void Processor::createInport(Identifier ident, bool allowMultipleConnections) {
+    Port* inport = new GenericInPort<int>(ident, this, allowMultipleConnections);
+    inports_.push_back(inport);
+    portMap_.insert(std::make_pair(ident, inport));
+
+    //inports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
 }
 
-void Processor::createOutport(Identifier ident, bool isPersistent,Identifier inport) {
-    Port* newOutport = new Port(ident,this,true,true,isPersistent);
-    outports_.push_back(newOutport);
+void Processor::createOutport(Identifier ident, bool isPersistent, Identifier inport) {
+    Port* outport = new GenericOutPort<int, PortDataTexture>(ident, -1, this, true, isPersistent, false);
+    outports_.push_back(outport);
+    portMap_.insert(std::make_pair(ident, outport));
+
+    /*
+    Port* newOutport = new Port(ident, this, true, true, isPersistent);
+    outports_.push_back(outport);
+    */
     if (inport != "dummy.port.unused") {
         if (getPort(inport) != 0)
-            outportToInportMap_.insert(std::pair<Port*,Port*>(newOutport,getPort(inport)));
+            outportToInportMap_.insert(std::pair<Port*,Port*>(outport, getPort(inport)));
         else
             LWARNING("Couldn't find the inport in Processor::createOutport(Identifier ident, Identifier ident)");
     }
 }
 
-void Processor::createCoProcessorInport(Identifier ident, bool allowMultipleConnectios) {
-    coProcessorInports_.push_back(new Port(ident,this,false,allowMultipleConnectios,false));
+void Processor::createCoProcessorInport(Identifier ident, bool allowMultipleConnections) {
+
+    //Port* coInport = new Port(ident, this, false, allowMultipleConnectios, false)
+    
+    Port* coInport = new GenericInPort<FunctionPointer>(ident, this, allowMultipleConnections);
+    coProcessorInports_.push_back(coInport);
+    portMap_.insert(std::make_pair(ident, coInport));
 }
 
-void Processor::createCoProcessorOutport(Identifier ident, FunctionPointer function, bool allowMultipleConnectios) {
-    Port* newPort = new Port(ident,this,true,allowMultipleConnectios,false);
-    newPort->setFunctionPointer(function);
-    coProcessorOutports_.push_back(newPort);
+void Processor::createCoProcessorOutport(Identifier ident, FunctionPointer function, 
+                                         bool allowMultipleConnections)
+{
+    Port* coOutport = new GenericOutPort<FunctionPointer, PortDataCoProcessor>(
+        ident, PortDataCoProcessor(this, function), this, allowMultipleConnections, false, false);
+    coOutport->setFunctionPointer(function);    // TODO: remove when old evaluator is removed
+    coProcessorOutports_.push_back(coOutport);
+    portMap_.insert(std::make_pair(ident, coOutport));
+
+    //Port* newPort = new Port(ident,this,true,allowMultipleConnectios,false);
+    //newPort->setFunctionPointer(function);
+    //coProcessorOutports_.push_back(newPort);
 }
 
 void Processor::createPrivatePort(Identifier ident) {
-    privatePorts_.push_back(new Port(ident,this,true,false,true));
+    Port* port = new GenericOutPort<int, PortDataTexture>(ident, -1, this, false, true, true);
+    privatePorts_.push_back(port);
+    portMap_.insert(std::make_pair(ident, port));
+
+    //privatePorts_.push_back(new Port(ident,this,true,false,true));
 }
+
 
 void Processor::processMessage(Message* msg, const Identifier& dest) {
-    MessageReceiver::processMessage(msg, dest);
-    if (msg->id_ == setBackgroundColor_) {
-        backgroundColor_.set(msg->getValue<tgt::Color>());
-    }
-    else if (msg->id_ == "set.viewport") {
-        if (camera_) {
-            tgt::ivec2 v = msg->getValue<tgt::ivec2>();
-            glViewport(0, 0, v.x, v.y);
-            setSizeTiled(v.x, v.y);
-            if (tc_)
-                tc_->setSize(v);
-
-            LINFO("set.viewport to " << v);
-        }
-    }
-    else if (msg->id_ == LightMaterial::setLightPosition_) {
-        lightPosition_.set(msg->getValue<vec4>());
-    }
-    else if (msg->id_ == LightMaterial::setLightAmbient_) {
-        lightAmbient_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setLightDiffuse_) {
-        lightDiffuse_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setLightSpecular_) {
-        lightSpecular_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setLightAttenuation_) {
-        lightAttenuation_.set(msg->getValue<vec3>());
-    }
-    else if (msg->id_ == LightMaterial::setMaterialAmbient_) {
-        materialAmbient_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setMaterialDiffuse_) {
-        materialDiffuse_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setMaterialSpecular_) {
-        materialSpecular_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setMaterialEmission_) {
-        materialEmission_.set(msg->getValue<Color>());
-    }
-    else if (msg->id_ == LightMaterial::setMaterialShininess_) {
-        materialShininess_.set(msg->getValue<float>());
-    }
-}
-
-void Processor::setTextureContainer(TextureContainer* tc) {
-    tc_ = tc;
-}
-
-void Processor::setCamera(tgt::Camera* camera) {
-    camera_ = camera;
-}
-
-tgt::Camera* Processor::getCamera() const {
-    return camera_;
-}
-
-TextureContainer* Processor::getTextureContainer() {
-    return tc_;
-}
-
-void Processor::setGeometryContainer(GeometryContainer* geoCont) {
-    geoContainer_ = geoCont;
-}
-
-GeometryContainer* Processor::getGeometryContainer() const {
-    return geoContainer_;
+	MessageReceiver::processMessage(msg, dest);
 }
 
 void Processor::setName(const std::string& name) {
     name_ = name;
 }
 
-std::string Processor::getName() const {
+const std::string& Processor::getName() const {
     return name_;
 }
 
@@ -321,174 +209,64 @@ const std::string Processor::getProcessorInfo() const {
     return "No information available";
 }
 
-std::vector<Port*> Processor::getInports() const {
+const std::vector<Port*>& Processor::getInports() const {
     return inports_;
 }
 
-std::vector<Port*> Processor::getOutports() const {
+const std::vector<Port*>& Processor::getOutports() const {
     return outports_;
 }
 
-std::vector<Port*> Processor::getCoProcessorInports() const {
+const std::vector<Port*>& Processor::getCoProcessorInports() const {
     return coProcessorInports_;
 }
 
-std::vector<Port*> Processor::getCoProcessorOutports() const {
+const std::vector<Port*>& Processor::getCoProcessorOutports() const {
     return coProcessorOutports_;
 }
 
-std::vector<Port*> Processor::getPrivatePorts() const {
+const std::vector<Port*>& Processor::getPrivatePorts() const {
     return privatePorts_;
 }
 
+bool Processor::hasPortOfCertainType(int portTypeMask) const {
+    std::vector<Port*> ports = inports_;
+    ports.insert(ports.end(), outports_.begin(), outports_.end());
+    ports.insert(ports.end(), coProcessorInports_.begin(), coProcessorInports_.end());
+    ports.insert(ports.end(), coProcessorOutports_.begin(), coProcessorOutports_.end());
+    if (portTypeMask == 0)
+        portTypeMask = ~0;
+
+    for (size_t i = 0; i < ports.size(); ++i) {
+        int pt = static_cast<int>(ports[i]->getType());
+        if ((portTypeMask & pt) != 0)
+            return true;
+    }
+    return false;
+}
+
 Port* Processor::getInport(Identifier type) {
-    for (size_t i=0; i < inports_.size(); ++i) {
-        if (inports_.at(i)->getType() == type)
+    for (size_t i = 0; i < inports_.size(); ++i) {
+        if (inports_.at(i)->getTypeIdentifier() == type)
             return inports_.at(i);
     }
     return 0;
 }
 
 Port* Processor::getOutport(Identifier type) {
-    for (size_t i=0; i < outports_.size(); ++i) {
-        if (outports_.at(i)->getType() == type)
+    for (size_t i = 0; i < outports_.size(); ++i) {
+        if (outports_.at(i)->getTypeIdentifier() == type)
             return outports_.at(i);
     }
     return 0;
 }
 
-void Processor::setSize(const tgt::ivec2 &size) {
-    setSize(static_cast<tgt::vec2>(size));
-}
-
-void Processor::setSize(const tgt::vec2& size) {
-    if (camera_ && size_ != size) {
-        size_ = size;
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        camera_->getFrustum().setRatio(size.x/size.y);
-        camera_->updateFrustum();
-        tgt::loadMatrix(camera_->getProjectionMatrix());
-
-        glMatrixMode(GL_MODELVIEW);
-
-        invalidate();
-    }
-}
-
-tgt::ivec2 Processor::getSize() const {
-    return static_cast<tgt::ivec2>(size_);
-}
-
-tgt::vec2 Processor::getSizeFloat() const {
-    return size_;
-}
-
 void Processor::invalidate() {
-    MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::processorInvalidated_, this));
-}
-
-void Processor::renderQuad() {
-    glBegin(GL_QUADS);
-        glVertex2f(-1.0, -1.0);
-        glVertex2f( 1.0, -1.0);
-        glVertex2f( 1.0,  1.0);
-        glVertex2f(-1.0,  1.0);
-    glEnd();
-}
-
-std::string Processor::generateHeader() {
-    std::string header = "";
-
-    // #version needs to be on the very first line for some compilers (ATI)
-    header += "#version 120\n";
-
-    if (tc_) {
-        if (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D)
-            header += "#define VRN_TEXTURE_2D\n";
-        else if (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE)
-            header += "#define VRN_TEXTURE_RECTANGLE\n";
-    }
-
-    if (GLEW_NV_fragment_program2) {
-        GLint i = -1;
-        glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
-        if (i > 0) {
-            std::ostringstream o;
-            o << i;
-            header += "#define VRN_MAX_PROGRAM_LOOP_COUNT " + o.str() + "\n";
-        }
-    }
-
-    return header;
-}
-
-// Parameters currently set:
-// - screenDim_
-// - screenDimRCP_
-// - cameraPosition_ (camera position in world coordinates)
-// - lightPosition_ (light source position in world coordinates)
-void Processor::setGlobalShaderParameters(tgt::Shader* shader) {
-    shader->setIgnoreUniformLocationError(true);
-
-    if (tc_) {
-        shader->setUniform("screenDim_", tgt::vec2(tc_->getSize()));
-        shader->setUniform("screenDimRCP_", 1.f / tgt::vec2(tc_->getSize()));
-    }
-
-    // camera position in world coordinates
-    shader->setUniform("cameraPosition_", camera_->getPosition());
-
-    // light source position in world coordinates
-    shader->setUniform("lightPosition_", getLightPosition());
-
-    shader->setIgnoreUniformLocationError(false);
-}
-
-void Processor::setLightingParameters() {
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient_.get().elem );
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse_.get().elem );
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular_.get().elem );
-    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, lightAttenuation_.get().x );
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, lightAttenuation_.get().y );
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, lightAttenuation_.get().z );
-
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialAmbient_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialDiffuse_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, materialSpecular_.get().elem);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, materialEmission_.get().elem);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialShininess_.get());
-}
-
-void Processor::setSizeTiled(uint width, uint height) {
-    setSize(tgt::ivec2(width, height));
-
-    // gluPerspective replacement taken from
-    // http://nehe.gamedev.net/data/articles/article.asp?article=11
-
-    float fovY = 45.f;
-    float aspect = static_cast<float>(width) / height;
-    float zNear = 0.1f;
-    float zFar = 50.f;
-
-    float fw, fh;
-    fh = tanf(fovY / 360 * tgt::PIf) * zNear;
-    fw = fh * aspect;
-
-    tgt::Frustum frust_ = tgt::Frustum(-fw, fw, - fh, fh, zNear, zFar);
-    camera_->setFrustum(frust_);
-    camera_->updateFrustum();
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    tgt::loadMatrix(camera_->getProjectionMatrix());
-    glMatrixMode(GL_MODELVIEW);
+    MsgDistr.postMessage(new ProcessorPointerMsg("processor.invalidated", this));
 }
 
 bool Processor::isEndProcessor() const {
-    return (outports_.size() == 0 && coProcessorOutports_.size() == 0);
+    return ((outports_.size() == 0) && (coProcessorOutports_.size() == 0));
 }
 
 std::string Processor::getState() const {
@@ -546,20 +324,20 @@ TiXmlElement* Processor::serializeToXml(const std::map<Processor*,int> idMap) co
     processorElem->SetAttribute("id", idMap.find(self)->second);
     // serialize the (in)ports a.k.a. connection info
     std::vector<Port*> outports = getOutports();
-    std::vector<Port*> coprocessoroutports = getCoProcessorOutports();
+    const std::vector<Port*>& coprocessoroutports = getCoProcessorOutports();
     // append coprocessoroutports to outports because we can handle them identically
     outports.insert(outports.end(), coprocessoroutports.begin(), coprocessoroutports.end());
-    for (size_t i=0; i < outports.size(); ++i) {
+    for (size_t i = 0; i < outports.size(); ++i) {
         // add (out)port
         TiXmlElement* outportElem = new TiXmlElement("Outport");
-        outportElem->SetAttribute("type", outports[i]->getType().getName());
+        outportElem->SetAttribute("type", outports[i]->getTypeIdentifier().getName());
         processorElem->LinkEndChild(outportElem);
         // add processors connected to this (out)port via one of their (in)ports
         std::vector<Port*> connectedPorts = outports[i]->getConnected();
         for (size_t j=0; j < connectedPorts.size(); ++j) {
             TiXmlElement* connectedProcessorElem = new TiXmlElement(XmlElementName_);
             connectedProcessorElem->SetAttribute("id", idMap.find(connectedPorts[j]->getProcessor())->second);
-            connectedProcessorElem->SetAttribute("port", connectedPorts[j]->getType().getName());
+            connectedProcessorElem->SetAttribute("port", connectedPorts[j]->getTypeIdentifier().getName());
             // For inports that allow multiple connections
             // need to know the index of outport in the inports connected ports
             if (connectedPorts[j]->allowMultipleConnections())
@@ -679,10 +457,6 @@ std::vector<TiXmlElement*> Processor::getAllFromMeta() const {
 
 bool Processor::hasInMeta(std::string elemName) const {
     return meta_.hasData(elemName);
-}
-
-tgt::vec3 Processor::getLightPosition() const {
-    return tgt::vec3(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
 }
 
 bool Processor::getIsCoprocessor() const {

@@ -27,6 +27,7 @@
  *                                                                    *
  **********************************************************************/
 
+
 #ifndef VRN_NETWORKEVALUATOR_H
 #define VRN_NETWORKEVALUATOR_H
 
@@ -42,6 +43,7 @@ namespace voreen {
 class CanvasRenderer;
 class Processor;
 class Port;
+class VolumeSetContainer;
 class GeometryContainer;
 class TextureContainer;
 class PortData;
@@ -63,13 +65,13 @@ public:
      */
     class ProcessWrapper : public MessageReceiver {
         friend class NetworkEvaluator;
+        friend class NetworkEvaluatorG;
     public:
         virtual ~ProcessWrapper() {}
     protected:
         virtual void beforeProcess(Processor* /*p*/) {}
         virtual void afterProcess(Processor* /*p*/) {}
     };
-
 
     /**
      * Default constructor, it's better to use the one with parameters
@@ -112,12 +114,22 @@ public:
     /**
      * Sets the processors to be analyzed and evaluated
      */
-    void setProcessors(std::vector<Processor*> processors);
+    void setProcessors(const std::vector<Processor*>& processors);
 
     /**
      * Gets the processors in this evaluator
      */
     std::vector<Processor*>& getProcessors();
+
+    /**
+     * Sets the VolumeSetContainer.
+     */
+    void setVolumeSetContainer(VolumeSetContainer* const volSetContainer);
+
+    /**
+     * Returns the VolumeSetContainer
+     */
+    VolumeSetContainer* getVolumeSetContainer();
 
     /**
      * Sets the GeometryContainer
@@ -186,7 +198,7 @@ public:
      * addForbiddenTargets_ -> adds targets to forbiddenTargets_ vector
      *
      */
-    void processMessage(Message* msg, const Identifier& dest);
+    virtual void processMessage(Message* msg, const Identifier& dest);
 
     /**
      * Returns if the current network is valid and can be rendered.
@@ -196,7 +208,7 @@ public:
     /**
      * Returns the mapped texture container target for the given port.
      * If no texture container target is mapped, -1 is returned. This is used for the preview
-     * in rptgui when selecting arrows.
+     * in network editor when selecting arrows.
      */
     int getTextureContainerTarget(Port* p,int pos = 0) throw (VoreenException);
 
@@ -409,6 +421,11 @@ protected:
     GeometryContainer* geoContainer_;
 
     /**
+     * The common VolumeSetContainer of all processors.
+     */
+    VolumeSetContainer* volumeSetContainer_;
+
+    /**
      * The Processors to be evaluated by this Evaluator
      */
     std::vector<Processor*> processors_;
@@ -496,8 +513,6 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////////
     //
-    // TODO: UNDER CONSTRUCTION - caching
-    //
     enum CacheState {
         CACHE_STATE_UNKNOWN,    // default value
         CACHE_STATE_ERROR_PROCESSOR_INVALID,    // processor pointer is NULL
@@ -524,4 +539,5 @@ protected:
 
 } // namespace voreen
 
-#endif //VRN_NETWORKEVALUATOR_H
+#endif //VRN_NETWORKEVALUATOROLD_H
+

@@ -132,16 +132,6 @@ public:
         return *this;
     }
 
-    /**
-     * Checks if a value is valid for a Property, which means all Validations are met().
-     * Does _not_ set the Property.
-     */
-    //bool valid(const T& value);
-
-    virtual PropertyWidget* createWidget(PropertyWidgetFactory* f) = 0;
-
-    virtual std::string toString() const = 0;
-
 protected:
     /**
      * Runs validate() on all Validations. If any of them is not met() a Condition::ValidationFailed

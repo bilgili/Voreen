@@ -41,7 +41,7 @@ using std::vector;
 
 namespace voreen {
 
-class GeometryTestProcessorA : public Processor
+class GeometryTestProcessorA : public RenderProcessor
 {
     public:
         GeometryTestProcessorA() : portName_("geometry.CubePointList")
@@ -97,7 +97,7 @@ class GeometryTestProcessorA : public Processor
         Identifier portName_;
 };
 
-class GeometryTestProcessorB : public Processor
+class GeometryTestProcessorB : public RenderProcessor
 {
     public:
         GeometryTestProcessorB() : inportName_("geometry.inport"), outportName_("image.output")

@@ -65,7 +65,7 @@ class Trackball : public Navigation {
         Trackball(GLCanvas* canvas, bool defaultEventHandling = true, Timer* continousSpinTimer = NULL);
 
         /// Destructor
-        virtual ~Trackball() {};
+        virtual ~Trackball();
 
         /// Resets the trackball to the initial configuration of the canvas' camera.
         void reset();

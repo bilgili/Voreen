@@ -49,26 +49,65 @@ namespace tgt {
  */
 class GpuCapabilities {
 public:
+
     /**
-     * Specifies the major and minor version
-     * of the OpenGL implementation.
+     * Specifies the version
+     * of the OpenGL/glsl implementation.
      * TGT_GL_VERSION_x_y denotes OpenGL version x.y.
-     * Current OpenGL versions are fully downwards compatible.
      *
      * TGT prefix is necessary due to name clashes with glew.
      */
-    enum GlVersion {
-        TGT_GL_VERSION_UNKNOWN,
-        TGT_GL_VERSION_1_0,
-        TGT_GL_VERSION_1_1,
-        TGT_GL_VERSION_1_2,
-        TGT_GL_VERSION_1_3,
-        TGT_GL_VERSION_1_4,
-        TGT_GL_VERSION_1_5,
-        TGT_GL_VERSION_2_0,
-        TGT_GL_VERSION_2_1,
-        TGT_GL_VERSION_3_0
-    };
+	class GlVersion {
+		public:
+		GlVersion(int major = 0, int minor = 0, int release = 0);
+
+		/**
+		 * Parse OpenGL version string as specified:
+		 *
+		 * The GL_VERSION and GL_SHADING_LANGUAGE_VERSION strings begin with a version number.
+		 * The version number uses one of these forms:
+		 *      major_number.minor_number
+		 *      major_number.minor_number.release_number
+		 *
+		 * Vendor-specific information may follow the version number.
+		 * Its format depends on the implementation, but a space always separates the version number and the vendor-specific information.
+		 */
+		bool parseVersionString(const std::string& st);
+
+		int major_;
+		int minor_;
+		int release_;
+
+		int major() { return major_; }
+		int minor() { return minor_; }
+		int release() { return release_; }
+
+		friend bool operator==(const GlVersion& x, const GlVersion& y);
+		friend bool operator!=(const GlVersion& x, const GlVersion& y);
+		friend bool operator<(const GlVersion& x, const GlVersion& y);
+		friend bool operator<=(const GlVersion& x, const GlVersion& y);
+		friend bool operator>(const GlVersion& x, const GlVersion& y);
+		friend bool operator>=(const GlVersion& x, const GlVersion& y);
+		friend std::ostream& operator<<(std::ostream& s, const GlVersion& v); 
+
+		static const GlVersion TGT_GL_VERSION_1_0;
+ 		static const GlVersion TGT_GL_VERSION_1_1;
+ 		static const GlVersion TGT_GL_VERSION_1_2;
+ 		static const GlVersion TGT_GL_VERSION_1_3;
+ 		static const GlVersion TGT_GL_VERSION_1_4;
+ 		static const GlVersion TGT_GL_VERSION_1_5;
+ 		static const GlVersion TGT_GL_VERSION_2_0;
+ 		static const GlVersion TGT_GL_VERSION_2_1;
+ 		static const GlVersion TGT_GL_VERSION_3_0;
+ 		static const GlVersion TGT_GL_VERSION_3_1;
+ 		static const GlVersion TGT_GL_VERSION_3_2;
+
+        static const GlVersion SHADER_VERSION_110;      ///< GLSL version 1.10
+        static const GlVersion SHADER_VERSION_120;      ///< GLSL version 1.20
+        static const GlVersion SHADER_VERSION_130;      ///< GLSL version 1.30
+        static const GlVersion SHADER_VERSION_140;      ///< GLSL version 1.40
+	};
+
 
     /**
      * Identifies the vendor of the GPU
@@ -127,7 +166,7 @@ public:
     GlVersion getGlVersion();
 
     /**
-     * Returns wether a certain OpenGL version is supported.
+     * Returns whether a certain OpenGL version is supported.
      *
      * @param version the OpenGL version to check
      *
@@ -187,6 +226,12 @@ public:
     std::string getGlExtensionsString();
 
     /**
+    * Returns the complete Shading Language Version string
+    * retrieved by <tt>glGetString(GL_SHADING_LANGUAGE_VERSION)</tt>.
+    */
+    std::string getShadingLanguageVersionString();
+
+    /**
      * Returns wether shaders are supported, which
      * is true for OpenGL version 2.0 or later.
      */
@@ -203,6 +248,14 @@ public:
      * <tt>glCompileShader</tt>
      */
     bool areShadersSupportedARB();
+
+    /**
+    * Returns the GLSL shading language version
+    * supported by the GPU.
+    *
+    * @see GlVersion 
+    */
+    GlVersion getShaderVersion();
 
     /**
      * Returns the DirectX shader model
@@ -353,10 +406,12 @@ private:
     std::string glExtensionsString_;
     std::string glVendorString_;
     std::string glRendererString_;
+    std::string glslVersionString_;
     GpuVendor vendor_;
 
     bool shaderSupport_;
     bool shaderSupportARB_;
+    GlVersion shaderVersion_;
     ShaderModel shaderModel_;
 
     int maxTexSize_;

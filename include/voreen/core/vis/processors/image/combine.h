@@ -45,8 +45,6 @@ public:
     virtual Processor* create() const {return new Combine();}
     ~Combine();
 
-    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
-
 protected:
 
     /**

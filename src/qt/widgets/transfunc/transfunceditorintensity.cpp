@@ -446,7 +446,7 @@ void TransFuncEditorIntensity::applyThreshold() {
 void TransFuncEditorIntensity::update() {
     // check whether the volume associated with the TransFuncProperty has changed
     Volume* newVol = property_->getVolume();
-    if (newVol && (newVol != volume_)) {
+    if (newVol != volume_) {
         volume_ = newVol;
         volumeChanged();
     }
@@ -506,26 +506,28 @@ void TransFuncEditorIntensity::restoreThresholds() {
 }
 
 void TransFuncEditorIntensity::volumeChanged() {
-    int bits = volume_->getBitsStored() / volume_->getNumChannels();
-    int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
-    if (maxNew != maximumIntensity_) {
-        float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
-        float upperRelative = upperThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
-        maximumIntensity_ = maxNew;
-        lowerThresholdSpin_->blockSignals(true);
-        lowerThresholdSpin_->setRange(0, maximumIntensity_-1);
-        lowerThresholdSpin_->setValue(tgt::iround(lowerRelative*maximumIntensity_));
-        lowerThresholdSpin_->updateGeometry();
-        lowerThresholdSpin_->blockSignals(false);
+    if (volume_) {
+        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+        int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
+        if (maxNew != maximumIntensity_) {
+            float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
+            float upperRelative = upperThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
+            maximumIntensity_ = maxNew;
+            lowerThresholdSpin_->blockSignals(true);
+            lowerThresholdSpin_->setRange(0, maximumIntensity_-1);
+            lowerThresholdSpin_->setValue(tgt::iround(lowerRelative*maximumIntensity_));
+            lowerThresholdSpin_->updateGeometry();
+            lowerThresholdSpin_->blockSignals(false);
 
-        upperThresholdSpin_->blockSignals(true);
-        upperThresholdSpin_->setRange(1, maximumIntensity_);
-        upperThresholdSpin_->setValue(tgt::iround(upperRelative*maximumIntensity_));
-        upperThresholdSpin_->updateGeometry();
-        upperThresholdSpin_->blockSignals(false);
+            upperThresholdSpin_->blockSignals(true);
+            upperThresholdSpin_->setRange(1, maximumIntensity_);
+            upperThresholdSpin_->setValue(tgt::iround(upperRelative*maximumIntensity_));
+            upperThresholdSpin_->updateGeometry();
+            upperThresholdSpin_->blockSignals(false);
+        }
     }
 
-    //propagate new volume to transfuncMappingCanvas
+    // propagate new volume to transfuncMappingCanvas
     transCanvas_->volumeChanged(volume_, maximumIntensity_+1);
 }
 
@@ -553,6 +555,17 @@ void TransFuncEditorIntensity::repaintAll() {
     transCanvas_->repaint();
     doubleSlider_->repaint();
     textureCanvas_->update();
+}
+
+void TransFuncEditorIntensity::setTransFuncProp(TransFuncProp* prop) {
+    
+    TransFuncEditor::setTransFuncProp(prop);
+
+    // update widgets
+    transferFuncIntensity_ = dynamic_cast<TransFuncIntensity*>(prop->get());
+    texturePainter_->setTransFunc(transferFuncIntensity_);
+    transCanvas_->setTransFunc(transferFuncIntensity_);
+    update();
 }
 
 } // namespace voreen

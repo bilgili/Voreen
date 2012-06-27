@@ -29,6 +29,9 @@ CONFIG += warn_on
 # Python scripting support
 #DEFINES += VRN_WITH_PYTHON
 
+# Do we have the ffmpeg library for video output?
+#DEFINES += VRN_WITH_FFMPEG
+
 # Do we have the ZipArchive library?
 #DEFINES += VRN_WITH_ZIP
 
@@ -49,18 +52,15 @@ DEFINES += VRN_WITH_PVM
 # for hardware detection on Windows?
 win32: DEFINES += TGT_WITH_WMI
 
-# Allow debug outputs
-#DEFINES += TGT_DEBUG
-
 #
 # Additional settings
 #
 
-# Activate additional debug code in voreen
-#DEFINES += VRN_DEBUG
+# Activate additional debug code in voreen (also sets TGT_DEBUG)
+DEFINES += VRN_DEBUG
 
 # Compile Voreen for distribution (loads shaders from tarball)
-#DEFINES += VRN_DISTRIBUTION_MODE
+#DEFINES += VRN_DISTRIBUTION
 
 # Write log output into a file
 DEFINES += VRN_ADD_FILE_LOGGER

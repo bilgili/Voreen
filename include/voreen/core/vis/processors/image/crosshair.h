@@ -35,6 +35,8 @@
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/vis/processors/image/imageprocessor.h"
 
+#include "voreen/core/vis/properties/eventproperty.h"
+
 namespace voreen {
 
 /**
@@ -73,6 +75,7 @@ protected:
     IntProp textureSize_;
     IntProp cutAfterDecimalPlaces_;
     OptionProperty<int>* mappingModeProp_;
+    EventProperty eventProp_;
     bool showCrossHair_;
     tgt::Texture* depthToColorTex_;
     float minValue_;

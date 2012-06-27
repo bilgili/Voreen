@@ -48,6 +48,7 @@ namespace voreen {
 
 TransFuncPlugin::TransFuncPlugin(Processor* proc, QWidget* parent, Qt::Orientation orientation)
     : QPropertyWidget(parent)
+    , stackedWidget_(0)
     , disconnected_(false)
     , oldIndex_(-1)
 {
@@ -69,6 +70,7 @@ TransFuncPlugin::TransFuncPlugin(Processor* proc, QWidget* parent, Qt::Orientati
 
 TransFuncPlugin::TransFuncPlugin(TransFuncProp* prop, QWidget* parent, Qt::Orientation orientation)
     : QPropertyWidget(parent)
+    , stackedWidget_(0)
     , disconnected_(false)
     , oldIndex_(-1)
 {
@@ -159,7 +161,7 @@ void TransFuncPlugin::createConnections() {
 }
 
 void TransFuncPlugin::update() {
-    if (editors_.size() > 0) {
+    if (editors_.size() > 0 && stackedWidget_) {
         int index = tabWidgets_[stackedWidget_->currentIndex()]->currentIndex();
         editors_[stackedWidget_->currentIndex()][index]->update();
     }

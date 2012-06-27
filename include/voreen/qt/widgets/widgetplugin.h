@@ -58,7 +58,7 @@ public:
 public slots:
     virtual void startTracking();
     virtual void stopTracking();
-    virtual void repaintCanvases();
+    virtual void repaintCanvas();
 
 protected:
     virtual void postMessage(Message* msg, const Identifier& dest = Message::all_);

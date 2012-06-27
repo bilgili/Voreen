@@ -78,6 +78,8 @@ protected:
      */
     void resetClippingPlanes();
 
+    void defineBoxBrickingRegion();
+
     /// clipping
     BoolProp useClipping_;
     IntProp clipLeftX_;
@@ -86,6 +88,9 @@ protected:
     IntProp clipDownY_;
     IntProp clipFrontZ_;
     IntProp clipBackZ_;
+    EnumProp* brickSelectionProp_;
+    std::vector<std::string> brickSelectionPropValues_;
+    IntProp brickSelectionPriority_;
 
     GLuint dl_;
     BoolProp useVirtualClipplane_;

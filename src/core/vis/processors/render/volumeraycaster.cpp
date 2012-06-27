@@ -28,6 +28,10 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/render/volumeraycaster.h"
+#include "voreen/core/vis/voreenpainter.h"
+
+#include "voreen/core/volume/bricking/brickedvolumegl.h"
+#include "voreen/core/volume/volumehandlevalidator.h"
 
 #include "tgt/vector.h"
 
@@ -72,8 +76,11 @@ const Identifier VolumeRaycaster::gradientMagnitudesTexUnit_ = "gradientMagnitud
 VolumeRaycaster::VolumeRaycaster()
     : VolumeRenderer()
     , raycastPrg_(0)
+    , useAdaptiveSampling_("swith.adaptive.sampling", "Use Adaptive Sampling",false,true,true)
     , segment_(setSegment_, "Active segment", 0)
     , useSegmentation_(switchSegmentation_, "Use Segmentation", false, true, true)
+    , useInterpolationCoarseness_("switch.interpolation.coarseness","Use Interpolation Coarseness",false,true,true)
+    , coarsenessOn_(false)
 {
     // set texture unit identifiers and register
     std::vector<Identifier> units;
@@ -94,6 +101,7 @@ VolumeRaycaster::VolumeRaycaster()
     tm_.registerUnits(units);
 
     initProperties();
+
 }
 
 VolumeRaycaster::~VolumeRaycaster() {
@@ -106,13 +114,47 @@ VolumeRaycaster::~VolumeRaycaster() {
     delete classificationMode_;
     delete shadeMode_;
     delete compositingMode_;
+
+    if (brickingInterpolationMode_)
+        delete brickingInterpolationMode_;
+
+    if (brickingStrategyMode_)
+        delete brickingStrategyMode_;
+
+    if (brickingUpdateStrategy_)
+        delete brickingUpdateStrategy_;
+
+    if (brickLodSelector_)
+        delete brickLodSelector_;
 }
 
 /*
     further methods
 */
-std::string VolumeRaycaster::generateHeader() {
+std::string VolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     std::string headerSource = VolumeRenderer::generateHeader();
+	
+	if (volumeHandle != 0 && volumeHandle->getParentSeries()) {
+		if (volumeHandle->getParentSeries()->getModality() == Modality::MODALITY_BRICKED_VOLUME) {
+			headerSource+= "#define BRICKED_VOLUME\n";
+			headerSource+= "#define LOOKUP_VOXEL(sample,brickStartPos,indexVolumeSample) ";
+			switch (brickingInterpolationMode_->get() ) {
+				case 0: 
+					headerSource += "clampedPackedVolumeLookup(sample,brickStartPos,indexVolumeSample);\n";
+					break;
+				case 1:
+					//headerSource += "interBlockInterpolation(sample);\n";
+					headerSource += "interBlockInterpolationLookup(brickStartPos,sample, indexVolumeSample);\n";
+					break;
+			}
+            if (useAdaptiveSampling_.get() ) {
+                headerSource += "#define ADAPTIVE_SAMPLING\n";
+            } 
+            if (useInterpolationCoarseness_.get() ) {
+                headerSource += "#define INTERPOLATION_COARSENESS\n";
+            }
+		}
+	}
 
     if (maskingMode_->get() == 1)
          headerSource += "#define USE_SEGMENTATION\n";
@@ -250,25 +292,276 @@ void VolumeRaycaster::initProperties() {
     compositingModes_.push_back("FHP");
     compositingModes_.push_back("FHN");
     compositingMode_ = new EnumProp("set.compositing", "Compositing", compositingModes_, 0, true, true);
+
+    brickingInterpolationModes_.push_back("Intrablock Interpolation");
+    brickingInterpolationModes_.push_back("Interblock Interpolation (slow)");
+        brickingInterpolationMode_ = new EnumProp("set.interpolation.mode","Interpolation",
+            brickingInterpolationModes_,0,true,true);
+    
+		brickingInterpolationMode_->setVisible(false);
+	addProperty(brickingInterpolationMode_);
+
+    brickLodSelectors_.push_back("Error-based");
+    brickLodSelectors_.push_back("Camera-based");
+    brickLodSelector_ = new EnumProp("set.brickLodSelector","Brick LOD Selection",
+        brickLodSelectors_,0,true,false);
+	brickLodSelector_->setVisible(false);
+    Call1ParMemberAction<VolumeRaycaster,std::string> errorBasedLodSelector(this,
+		&VolumeRaycaster::changeBrickLodSelector,"Error-based");
+
+	Call1ParMemberAction<VolumeRaycaster,std::string> cameraBasedLodSelector(this,
+        &VolumeRaycaster::changeBrickLodSelector,"Camera-based");
+
+	brickLodSelector_->onValueEqual(0,errorBasedLodSelector);
+	brickLodSelector_->onValueEqual(1,cameraBasedLodSelector);
+    addProperty(brickLodSelector_);
+
+    brickingStrategyModes_.push_back("Balanced");
+    brickingStrategyModes_.push_back("Only Max Bricks");
+        brickingStrategyMode_ = new EnumProp("set.bricking.strategy.mode","Bricking Strategy",
+            brickingStrategyModes_,0,true,false);
+	
+	brickingStrategyMode_->setVisible(false);
+    addProperty(brickingStrategyMode_);
+
+    Call1ParMemberAction<VolumeRaycaster,std::string> useBalancedBricks(this,
+        &VolumeRaycaster::changeBrickResolutionCalculator,"balanced");
+
+    Call1ParMemberAction<VolumeRaycaster,std::string> useMaximumBricks(this,
+        &VolumeRaycaster::changeBrickResolutionCalculator,"maximum");
+
+
+    brickingStrategyMode_->onValueEqual(0,useBalancedBricks);
+    brickingStrategyMode_->onValueEqual(1,useMaximumBricks);
+
+    brickingUpdateStrategies_.push_back("Never");
+	brickingUpdateStrategies_.push_back("On mouse release");	
+	
+
+	brickingUpdateStrategy_ = new EnumProp("set.bricking.update.strategy","Update Bricks",
+        brickingUpdateStrategies_,0,true,false);
+	brickingUpdateStrategy_->setVisible(false);
+
+	Call1ParMemberAction<VolumeRaycaster,std::string> updateBricks(this,
+		&VolumeRaycaster::changeBrickingUpdateStrategy,"On mouse release");
+
+	Call1ParMemberAction<VolumeRaycaster,std::string> dontUpdateBricks(this,
+        &VolumeRaycaster::changeBrickingUpdateStrategy,"Never");
+
+	brickingUpdateStrategy_->onValueEqual(1,updateBricks);
+	brickingUpdateStrategy_->onValueEqual(0,dontUpdateBricks);
+
+	addProperty(brickingUpdateStrategy_);
+    
+    useAdaptiveSampling_.setVisible(false);
+    useInterpolationCoarseness_.setVisible(false);
+    addProperty(&useAdaptiveSampling_);
+    addProperty(&useInterpolationCoarseness_);
 }
 
 void VolumeRaycaster::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
-    VolumeRenderer::processMessage(msg, dest);
+   VolumeRenderer::processMessage(msg, dest);
 
-    if (msg->id_ == "msg.invalidate") { //FIXME: hack, shouldn't be necessary, but still needed
-                                        // sometimes to enforce redraw.
-        std::cout << "VolumeRaycaster::processMessage: msg.invalidate was sent - THIS IS A HACK!"
-                  << std::endl;
-        invalidate();
+   if (msg->id_ == VoreenPainter::switchCoarseness_) {
+       if (coarsenessOn_ == true) {
+           coarsenessOn_ = false;
+       } 
+       else if (coarsenessOn_ == false) {
+           coarsenessOn_ = true;
+       }
+   }
+}
+
+void VolumeRaycaster::changeBrickResolutionCalculator(std::string mode) {
+    if (currentVolumeHandle_) {
+        LargeVolumeManager* lvm = currentVolumeHandle_->getLargeVolumeManager();
+        if (lvm) {
+            lvm->changeBrickResolutionCalculator(mode);
+        }
     }
-    else if (msg->id_ == setSegment_) {
-        segment_.set(msg->getValue<int>());
-        invalidate();
+}
+
+void VolumeRaycaster::changeBrickingUpdateStrategy(std::string mode) {
+    if (currentVolumeHandle_) {
+        LargeVolumeManager* lvm = currentVolumeHandle_->getLargeVolumeManager();
+        if (lvm) {
+			if (mode == "On mouse release") {
+				lvm->setUpdateBricks(true);
+			} else {
+				lvm->setUpdateBricks(false);
+			}
+
+        }
     }
-    else if (msg->id_ == switchSegmentation_) {
-        useSegmentation_.set(msg->getValue<bool>());
-        invalidate();
+}
+
+void VolumeRaycaster::changeBrickLodSelector(std::string selector) {
+    if (currentVolumeHandle_) {
+        LargeVolumeManager* lvm = currentVolumeHandle_->getLargeVolumeManager();
+        if (lvm) {
+			if (selector == "Error-based") {
+                brickingUpdateStrategy_->setVisible(false);
+                brickingStrategyMode_->setVisible(false);
+				lvm->changeBrickLodSelector("Error-based");
+			} else if (selector == "Camera-based") {
+                brickingUpdateStrategy_->setVisible(true);
+                brickingStrategyMode_->setVisible(true);
+				lvm->changeBrickLodSelector("Camera-based");
+			}
+            //lvm->changeBrickLodSelector(selector);
+        }
     }
+}
+
+void VolumeRaycaster::showBrickingProperties(bool b) {
+	if (b==true) {
+		brickingInterpolationMode_->setVisible(true);
+        if (brickLodSelector_->get() != 0) {
+		    brickingUpdateStrategy_->setVisible(true);
+		    brickingStrategyMode_->setVisible(true);
+        }
+        useAdaptiveSampling_.setVisible(true);
+        useInterpolationCoarseness_.setVisible(true);
+        brickLodSelector_->setVisible(true);
+	} else {
+		brickingInterpolationMode_->setVisible(false);
+		brickingUpdateStrategy_->setVisible(false);
+		brickingStrategyMode_->setVisible(false);
+        useAdaptiveSampling_.setVisible(false);
+        useInterpolationCoarseness_.setVisible(false);
+        brickLodSelector_->setVisible(false);
+	}
+}
+
+void VolumeRaycaster::setBrickedVolumeUniforms() {
+
+	Volume* eepVolume;
+	Volume* packedVolume;
+
+	if (!currentVolumeHandle_->getParentSeries() ||
+        currentVolumeHandle_->getParentSeries()->getModality() != Modality::MODALITY_BRICKED_VOLUME)
+    {
+        showBrickingProperties(false);
+		return;
+	} 
+
+   showBrickingProperties(true);
+
+	BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(currentVolumeHandle_->getVolume() );
+	if (!brickedVolume)
+		return;
+
+	eepVolume = brickedVolume->getEepVolume();
+	packedVolume = brickedVolume->getPackedVolume();
+
+	LGL_ERROR;
+
+	size_t bricksize = eepVolume->meta().getBrickSize();
+	tgt::ivec3 eepDimensions = eepVolume->getDimensions();
+	tgt::ivec3 brickedDimensions = packedVolume->getDimensions();
+
+	float numbricksX = (float)ceil((float)eepDimensions.x/(float)bricksize);
+	float numbricksY = (float)ceil((float)eepDimensions.y/(float)bricksize);
+	float numbricksZ = (float)ceil((float)eepDimensions.z/(float)bricksize);
+
+	float brickSizeX = 1.0f / numbricksX;
+	float brickSizeY = 1.0f / numbricksY;
+	float brickSizeZ = 1.0f / numbricksZ;
+
+    LGL_ERROR;
+	if (brickingInterpolationMode_->get() == 1) {
+		raycastPrg_->setUniform("brickSizeX_",brickSizeX);
+		raycastPrg_->setUniform("brickSizeY_",brickSizeY);
+		raycastPrg_->setUniform("brickSizeZ_",brickSizeZ);
+	}
+
+	raycastPrg_->setUniform("numbricksX_",numbricksX);
+	raycastPrg_->setUniform("numbricksY_",numbricksY);
+	raycastPrg_->setUniform("numbricksZ_",numbricksZ);
+    float temp1 = 1.0f / (2.0f * numbricksX);
+    float temp2 = 1.0f / (2.0f * numbricksY);
+    float temp3 = 1.0f / (2.0f * numbricksZ);
+    raycastPrg_->setUniform("temp1",temp1);
+	raycastPrg_->setUniform("temp2",temp2);
+	raycastPrg_->setUniform("temp3",temp3);
+
+    float temp4 = 1.0f / (2.0f * bricksize);
+    raycastPrg_->setUniform("temp4",temp4);
+
+    float temp5 = 1.0f / numbricksX;
+    float temp6 = 1.0f / numbricksY;
+    float temp7 = 1.0f / numbricksZ;
+    raycastPrg_->setUniform("temp5",temp5);
+    raycastPrg_->setUniform("temp6",temp6);
+    raycastPrg_->setUniform("temp7",temp7);
+
+    float boundaryX = 1.0f - (1.0f / numbricksX);
+    float boundaryY = 1.0f - (1.0f / numbricksY);
+    float boundaryZ = 1.0f - (1.0f / numbricksZ);
+
+    raycastPrg_->setUniform("boundaryX_",boundaryX);
+    raycastPrg_->setUniform("boundaryY_",boundaryY);
+    raycastPrg_->setUniform("boundaryZ_",boundaryZ);
+
+	LGL_ERROR;
+	
+	//raycastPrg_->setUniform("maxbricksize_",(float)bricksize);
+	LGL_ERROR;
+	float offsetFactorX = (float)eepDimensions.x / (float)brickedDimensions.x;
+	float offsetFactorY = (float)eepDimensions.y / (float)brickedDimensions.y;
+	float offsetFactorZ = (float)eepDimensions.z / (float)brickedDimensions.z;
+
+	raycastPrg_->setUniform("offsetFactorX_",offsetFactorX);
+	raycastPrg_->setUniform("offsetFactorY_",offsetFactorY);
+	raycastPrg_->setUniform("offsetFactorZ_",offsetFactorZ);
+	LGL_ERROR;
+	float indexVolumeFactorX = 65535.0f / brickedDimensions.x;
+	float indexVolumeFactorY = 65535.0f / brickedDimensions.y;
+	float indexVolumeFactorZ = 65535.0f / brickedDimensions.z;
+
+	raycastPrg_->setUniform("indexVolumeFactorX_",indexVolumeFactorX);
+	raycastPrg_->setUniform("indexVolumeFactorY_",indexVolumeFactorY);
+	raycastPrg_->setUniform("indexVolumeFactorZ_",indexVolumeFactorZ);
+	LGL_ERROR;
+
+    if (useInterpolationCoarseness_.get() )
+        raycastPrg_->setUniform("coarsenessOn_",coarsenessOn_);
+}
+
+void VolumeRaycaster::addBrickedVolumeModalities(std::vector<VolumeStruct>& volumeTextures) {
+
+	if (currentVolumeHandle_->getParentSeries() &&
+        currentVolumeHandle_->getParentSeries()->getModality() == Modality::MODALITY_BRICKED_VOLUME)
+    {
+		VolumeGL* vgl = currentVolumeHandle_->getVolumeGL();
+		BrickedVolumeGL* brickedVolumeGL = dynamic_cast<BrickedVolumeGL*>(vgl);
+
+		if (!brickedVolumeGL) {
+			return;
+		}
+
+		VolumeGL* packedVolumeGL = brickedVolumeGL->getPackedVolumeGL();
+		VolumeGL* indexVolumeGL = brickedVolumeGL->getIndexVolumeGL();
+
+		if (!packedVolumeGL || !indexVolumeGL) {
+			return;
+		}
+
+		volumeTextures.push_back(VolumeStruct(
+			packedVolumeGL,
+			volTexUnit2_,
+			"packedVolume_",
+			"packedVolumeParameters_")
+		);
+
+		volumeTextures.push_back(VolumeStruct(
+			indexVolumeGL,
+			volTexUnit3_,
+			"indexVolume_",
+			"indexVolumeParameters_")
+		);
+
+	}
 }
 
 void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader) {
@@ -288,6 +581,31 @@ void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader) {
     shader->setUniform("const_to_z_w_2", 0.5f*((f+n)/(f-n))+0.5f);
 
     shader->setIgnoreUniformLocationError(false);
+}
+
+bool VolumeRaycaster::checkVolumeHandle(VolumeHandle*& handle, VolumeHandle* const newHandle,
+                                        bool* handleChanged, const bool omitVolumeCheck) 
+{
+	bool b;
+	if (!handleChanged)
+		handleChanged = &b;
+
+    bool result = VolumeHandleValidator::checkVolumeHandle(handle, newHandle, handleChanged, omitVolumeCheck);
+
+	if (*handleChanged) {
+		if (newHandle && dynamic_cast<BrickedVolume*>(newHandle->getVolume()) ) {
+			LargeVolumeManager* lvm = newHandle->getLargeVolumeManager();
+			if (lvm) {
+				if (brickingUpdateStrategy_->get() == 1) {
+					lvm->setUpdateBricks(true);
+				} else {
+					lvm->setUpdateBricks(false);
+				}
+			}
+
+		}
+	}
+	return result;
 }
 
 } // namespace voreen

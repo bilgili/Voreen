@@ -31,6 +31,9 @@
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/volume/volumeatomic.h"
+#include "voreen/core/volume/bricking/brickinginformation.h"
+#include "voreen/core/io/brickedvolumewriter.h"
+
 #include "tgt/vector.h"
 
 namespace voreen {
@@ -216,6 +219,169 @@ bool CommandSubSet::execute(const std::vector<std::string>& parameters) {
 
 //-----------------------------------------------------------------------------
 
+CommandBrick::CommandBrick() :
+    Command("--brick", "", "Bricks the volume into bricks of size BRICKSIZE^3 and writes them into a single file.",
+        "<BRICKSIZE IN OUT>",3)
+{
+    loggerCat_ += "." + name_;
+}
+
+bool CommandBrick::checkParameters(const std::vector<std::string>& parameters) {
+    return (parameters.size() == 3);
+}
+    
+bool CommandBrick::execute(const std::vector<std::string>& parameters) {
+
+	int bricksize = cast<int>(parameters[0]);
+
+	VolumeSerializerPopulator volLoadPop;
+    VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
+
+	BrickingInformation brickingInformation;
+
+	brickingInformation.brickSize = bricksize;
+    brickingInformation.totalNumberOfResolutions = static_cast<int> ( ( log( 
+            (float)bricksize) / log (2.0) ) + 1);
+
+	VolumeSet* volumeSet;
+	Volume* volume;
+    bool readSliceWise = true;
+	try {
+		volumeSet = serializer->loadSlices(parameters[1],0,bricksize);
+	} catch (std::exception e) {
+        readSliceWise = false;
+    }
+    if (readSliceWise == false) {
+        try {
+            volumeSet = serializer->loadBrick(parameters[1],tgt::ivec3(0),bricksize);
+        } catch (std::exception e) {
+            LERROR(e.what() << "\nCouldn't read brick-wise or slice-wise.");
+            return false;
+        }
+    }
+
+	volume = volumeSet->getFirstVolume();
+	getVolumeInformation(brickingInformation,volume);
+	delete volume;
+	volume = 0;
+
+	BrickedVolumeWriter* brickedVolumeWriter = new BrickedVolumeWriter(brickingInformation);
+	brickedVolumeWriter->openFile(parameters[2]);
+
+	//The volume might not fit into memory, therefore we only read enough slices to
+	//create some bricks, write those into the file and then delete them from memory.
+	//Then we read the next slices, create bricks, and so on.
+    if (readSliceWise == true) {
+	    for (int i=0; i<brickingInformation.originalVolumeDimensions.z; i=i+bricksize) {
+		    VolumeSet* volumeSet = 0;
+    	
+		    try {
+			    volumeSet = serializer->loadSlices(parameters[1],i,i+bricksize);
+		    } catch (std::exception e) {
+			    LERROR(e.what());
+            }
+		    Volume* volume = volumeSet->getFirstVolume();
+    		
+		    for (int j=0; j < brickingInformation.numBricks.y; j++) {
+			    for (int k=0; k < brickingInformation.numBricks.x; k++) {
+				    int xpos,ypos,zpos;
+				    xpos=k*bricksize;
+				    ypos=j*bricksize;
+				    zpos=0;
+
+				    Volume* subset = volume->createSubset(tgt::ivec3(xpos,ypos,zpos),tgt::ivec3(bricksize) );
+				    brickedVolumeWriter->writeVolume(subset);
+				    delete subset;
+			    }
+		    }
+		    std::stringstream msg;
+            msg << i+bricksize << " of " << brickingInformation.originalVolumeDimensions.z << " slices done.";
+		    LINFO(msg.str());
+		    delete volume;
+	    }
+    } else {
+        //We don't even have enough RAM to read enough slices, so we read single bricks.
+        //This is very very very slow, but there is nothing we can do if the volumes are just 
+        //too big. 
+        for (int i=0; i<brickingInformation.numBricks.z; i++) {
+            for (int j=0; j < brickingInformation.numBricks.y; j++) {
+			    for (int k=0; k < brickingInformation.numBricks.x; k++) {
+		            VolumeSet* volumeSet = 0;
+
+		            try {
+                        volumeSet = serializer->loadBrick(parameters[1],tgt::ivec3(k,j,i), bricksize);
+		            } catch (std::exception e) {
+			            LERROR(e.what());
+                    }
+		            Volume* volume = volumeSet->getFirstVolume();
+                    brickedVolumeWriter->writeVolume(volume);
+                    delete volume;
+                }
+            }
+        }
+    }
+
+	brickedVolumeWriter->writeBviFile();
+	brickedVolumeWriter->closeFile();
+    return true;
+}
+
+void CommandBrick::getVolumeInformation(BrickingInformation &brickingInformation, Volume* volume) {
+
+	if (dynamic_cast<VolumeUInt8*>(volume)) {
+		brickingInformation.originalVolumeFormat = "UCHAR";
+		brickingInformation.originalVolumeModel = "I";
+	} else if (dynamic_cast<VolumeUInt16*>(volume)) {
+		brickingInformation.originalVolumeFormat = "USHORT";
+		brickingInformation.originalVolumeModel = "I";
+	} else if (dynamic_cast<VolumeFloat*>(volume)) {
+		brickingInformation.originalVolumeFormat = "FLOAT";
+		brickingInformation.originalVolumeModel = "I";
+	} else if (dynamic_cast<Volume4xUInt8*>(volume)) {
+		brickingInformation.originalVolumeFormat = "UCHAR";
+		brickingInformation.originalVolumeModel = "RGBA";
+	} else if (dynamic_cast<Volume4xUInt16*>(volume)) {
+		brickingInformation.originalVolumeFormat = "USHORT";
+		brickingInformation.originalVolumeModel = "RGBA";
+	} else if (dynamic_cast<Volume3xUInt8*>(volume)) {
+		brickingInformation.originalVolumeFormat = "UCHAR";
+		brickingInformation.originalVolumeModel = "RGB";
+	} else if (dynamic_cast<Volume3xUInt16*>(volume)) {
+		brickingInformation.originalVolumeFormat = "USHORT";
+		brickingInformation.originalVolumeModel = "RGB";
+	}
+	brickingInformation.originalVolumeDimensions = volume->meta().getParentVolumeDimensions();
+	brickingInformation.originalVolumeSpacing = volume->getSpacing();
+	brickingInformation.originalVolumeBitsStored = volume->getBitsStored();
+	brickingInformation.originalVolumeBytesAllocated = volume->getBitsAllocated()/8;
+
+	tgt::ivec3 numbricks;
+	numbricks.x = static_cast<int>( 
+		ceil( (float)brickingInformation.originalVolumeDimensions.x / (float)brickingInformation.brickSize));
+	numbricks.y = static_cast<int>( 
+		ceil( (float)brickingInformation.originalVolumeDimensions.y / (float)brickingInformation.brickSize));
+	numbricks.z = static_cast<int>( 
+		ceil( (float)brickingInformation.originalVolumeDimensions.z / (float)brickingInformation.brickSize));
+
+    brickingInformation.totalNumberOfBricksNeeded = numbricks.x * numbricks.y * numbricks.z;
+
+	brickingInformation.numBricks = numbricks;
+
+
+    tgt::vec3 cubeSize = tgt::vec3(numbricks*brickingInformation.brickSize) *
+								brickingInformation.originalVolumeSpacing;
+
+    cubeSize = cubeSize * 2.f / max(cubeSize);
+	tgt::vec3 urb = cubeSize / 2.f;
+    tgt::vec3 llf = -urb;
+
+	brickingInformation.originalVolumeLLF = llf;
+	brickingInformation.originalVolumeURB = urb;
+    brickingInformation.numberOfBricksWithEmptyVolumes = 0;
+}
+
+//-----------------------------------------------------------------------------
+
 CommandScaleTexCoords::CommandScaleTexCoords() :
 	Command("--scaleTC", "", "Sample dataset to target dimensions dx dy dz\n", "<DX DY DZ IN OUT>", 5)
 {
@@ -324,10 +490,10 @@ bool CommandScaleTexCoords::execute(const std::vector<std::string>& parameters) 
                         }
 
                         res /= segments[seg];
-                        v->voxel(pos).x = res.x;
-                        v->voxel(pos).y = res.y;
-                        v->voxel(pos).z = res.z;
-                        v->voxel(pos).w = seg;
+                        v->voxel(pos).x = static_cast<uint8_t>(res.x);
+                        v->voxel(pos).y = static_cast<uint8_t>(res.y);
+                        v->voxel(pos).z = static_cast<uint8_t>(res.z);
+                        v->voxel(pos).w = static_cast<uint8_t>(seg);
                     }
                     else {
                         v->voxel(pos).x = 0;

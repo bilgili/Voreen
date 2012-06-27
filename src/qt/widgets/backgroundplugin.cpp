@@ -421,7 +421,7 @@ void BackgroundPlugin::selectBackgroundColor() {
         postMessage(new ColorMsg(Background::setBackgroundColor_,
             backgroundColor_));
 
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -447,7 +447,7 @@ void BackgroundPlugin::selectBackgroundFirstColor(){
         postMessage(new ColorMsg(Background::setBackgroundFirstColor_,
             backgroundFirstColor_));
 
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -473,7 +473,7 @@ void BackgroundPlugin::selectBackgroundSecondColor(){
         postMessage(new ColorMsg(Background::setBackgroundSecondColor_,
             backgroundSecondColor_));
 
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -506,21 +506,21 @@ void BackgroundPlugin::setBackgroundLayout(int /*value*/) {
     setWidgetState();
 
     postMessage(new StringMsg("set.backgroundModeAsString", layout));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void BackgroundPlugin::setBackgroundAngle(int value) {
     backgroundAngle_ = value;
     postMessage(new IntMsg(Background::setBackgroundAngle_, value));
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void BackgroundPlugin::setBackgroundTile(int value) {
     backgroundTile_ = value;
     postMessage(new FloatMsg("set.backgroundTile", float(value)));
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 } // namespace voreen

@@ -31,7 +31,7 @@
 #define VRN_EDGEDETECT_H
 
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/imageprocessor.h"
+#include "voreen/core/vis/processors/image/imageprocessordepth.h"
 
 namespace voreen {
 
@@ -40,7 +40,7 @@ namespace voreen {
  *
  * The detected edge is then colored.
  */
-class EdgeDetect : public ImageProcessor {
+class EdgeDetect : public ImageProcessorDepth {
 
 public:
 

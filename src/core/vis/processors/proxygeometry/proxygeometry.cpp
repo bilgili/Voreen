@@ -54,6 +54,8 @@ ProxyGeometry::ProxyGeometry()
     , volumeSize_(tgt::vec3::zero)
     , volumeCenter_(tgt::vec3::zero)
     , volume_(0)
+    , useDatasetTransformationMatrix_("set.useDatasetTrafoMatrix", "Use data set trafo matrix", false, true)
+    , datasetTransformationMatrix_(tgt::mat4::identity)
 {}
 
 int ProxyGeometry::initializeGL() {
@@ -67,10 +69,12 @@ void ProxyGeometry::process(LocalPortMapping* portMapping) {
 
     if ((res == true) && (changed == true)) {
         volume_ = currentVolumeHandle_->getVolumeGL()->getVolume();
-        if (volume_ != 0) {
+        if (volume_) {
             needsBuild_ = true;
             // getCubeSize() returns the size mapped to [-1,1] and we want [-0.5,0.5] here
             volumeSize_ = volume_->getCubeSize();
+            // store dataset transformation matrix (is applied by render()-method)
+            datasetTransformationMatrix_ = volume_->meta().getTransformation();
         }
     }
 }

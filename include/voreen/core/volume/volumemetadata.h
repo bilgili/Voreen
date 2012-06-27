@@ -64,15 +64,14 @@ public:
     void setSize(const tgt::ivec2& size);
     const tgt::ivec2& getSize() const;
 
+	void setParentVolumeDimensions(tgt::ivec3 dimensions);
+    tgt::ivec3 getParentVolumeDimensions();
+
+	void setBrickSize(size_t bricksize);
+	size_t getBrickSize();
+
     void setUnit(const std::string& unit);
     const std::string& getUnit() const;
-
-    //
-    // further methods
-    //
-
-    /// extracts the file name of a name given with full path
-    static std::string getFileNameWithoutPath(const std::string& fullpath);
 
 protected:
     std::string string_;
@@ -80,7 +79,21 @@ protected:
     float imagePositionZ_;
     tgt::mat4 transformation_;
     tgt::ivec2 size_;
+
+	/**
+	* If this volume is part of a bigger volume (for example if this volume
+	* was created by createSubset, you can store the dimensions of the
+	* bigger volume here). Uses in bricking for example. 
+	*/
+	tgt::ivec3 parentVolumeDimensions_;
+
+	/**
+	* If the volume is a bricked volume, you can store the size of the bricks here.
+	*/
+	size_t brickSize_;
+
     std::string unit_;
+
 };
 
 } // namespace voreen

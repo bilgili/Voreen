@@ -1,15 +1,68 @@
 Voreen Changelog
 ----------------
 
+2009-08-04: Snapshot r24 (voreen-7062)
+--------------------------------------
+
+   * New experimental dynamic bricking support, for rendering volumes larger
+     than GPU memory. To use this feature, the data set first needs to be
+     preprocessed using "voltool --brick 32 volume.dat volume-bricked.bvi".
+     Bricking is activated by simply loading the resulting .bvi file as a volume
+     in VoreenVE. The raycasting processor has several additional properties for
+     controlling details of the bricking technique, such as interpolation
+     between adjacent bricks and the method for selection of brick resolutions.
+
+     The amount of GPU memory used for bricking is calculated using a simple
+     heuristic approach, taking into account the total amount of GPU memory. For
+     non-Windows platforms or when the heuristic fails, the memory size can be
+     set manually in brickingmanager.h (gpuMemorySize and gpuMemoryReserve).
+
+   * A new getting started guide is available in the 'Help' menu.
+
+   * Distribution:
+     o The installer package for Windows now contains Python scripting support.
+     o A pre-compiled version is now available also for the Mac platform as a
+       .dmg file. To install, just drag the VoreenVE folder into the application
+       folder or somewhere else.
+
+   * New functionality in VoreenVE:
+     o The animation plugin can now directly output video files (AVI, MPEG, WMV,
+       FLV) using the ffmpeg library.
+     o In addition to keyframe-based animation, now also a simple rotation is
+       supported.
+     o The visibility and position of transfer function editor windows is
+       serialized in the workspace file.
+     o The sides of the orientation cube available through "show orientation
+       overlay" in the "Camera Orientation" window are now labeled with their
+       particular direction.
+     o New fly-through navigation for the camera: activate it in the "Options"
+       menu, navigation is controlled with the arrow keys.
+
+   * Internal changes:
+     o CubeEntryExitPoints was merged with EntryExitPoints
+     o refactoring of Rpt* classes, renaming
+     o switched to Python 2.6.2 
+     o support for DICOM files with non axis-aligned slice positioning
+     o select GLSL version for shaders depending on GPU capabilities
+
+   * Bug fixes:
+     o benchmark script fps.py now gives correct results independent of the size
+       of the visualization window
+     o DICOM reader now supports volumes > 2 GB
+     o prevent crashes when calculation a volume histogram
+     o fix template instantiation problem for gcc 4.3.2
+     o fix some memory leaks and uninitialized memory (thanks to Valgrind)
+
+
 2009-07-06: Snapshot r18 (voreen-6845)
--------------------------------------
+--------------------------------------
 
    * VoreenVE now has two modes of operation: network mode and visualization
      mode. The visualization replaces the old VoreenDev application.
       o The entire state of VoreenVE can be saved/restored into workspace files
         (*.vws).
       o Switched to use docking for most tool windows.
-      o The visibilty of individual properties and entire processors in
+      o The visibility of individual properties and entire processors in
         visualization mode can be configured using the 'eye' buttons in network
         editor mode.
       o Processor-specific tool windows are only shown when the network
@@ -45,7 +98,7 @@ Voreen Changelog
 
 
 2009-02-13: Snapshot r13 (voreen-5688)
--------------------------------------
+--------------------------------------
   
     * Redesigned GUI for VoreenVE, using multiple tool windows instead of dock
       widgets, work in progress
@@ -121,7 +174,7 @@ Voreen Changelog
       o information about loaded data sets is serialized into the .vnw file
       o more command line parameters for voreenve and voreendev
 
-    * Rendering / volume handling :
+    * Rendering / volume handling:
       o correct rendering when camera enters the volume
       o hardware volumes (OpenGL textures) are now generated implicitly when
         accessing getVolumeGL()

@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/volume/histogram.h"
+#include "voreen/core/volume/bricking/brickedvolume.h"
 
 using namespace tgt;
 
@@ -42,7 +43,15 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     maxValue_ = 0;
     significantRange_ = ivec2(bucketCount, -1);
 
-    VolumeUInt8* sourceDataset8Bit = dynamic_cast<VolumeUInt8*>(volume);
+    Volume* currentVolume = volume;
+    
+
+    BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume);
+    if (brickedVolume) {
+        currentVolume = brickedVolume->getPackedVolume();
+    }
+
+    VolumeUInt8* sourceDataset8Bit = dynamic_cast<VolumeUInt8*>(currentVolume);
     if (sourceDataset8Bit) {
         int bucket;
         float m = (bucketCount - 1.f) / 255.f;
@@ -62,7 +71,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         }
     }
 
-    Volume4xUInt8* sourceDataset32Bit = dynamic_cast<Volume4xUInt8*>(volume);
+    Volume4xUInt8* sourceDataset32Bit = dynamic_cast<Volume4xUInt8*>(currentVolume);
     if (sourceDataset32Bit) {
         int bucket;
         float m = (bucketCount - 1.f) / 255.f;
@@ -82,7 +91,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         }
     }
 
-    VolumeUInt16* sourceDataset16Bit = dynamic_cast<VolumeUInt16*>(volume);
+    VolumeUInt16* sourceDataset16Bit = dynamic_cast<VolumeUInt16*>(currentVolume);
     if (sourceDataset16Bit) {
         int bucket;
         float maxValue = (sourceDataset16Bit->getBitsStored() == 12) ? 4095.f : 65535.f;

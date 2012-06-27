@@ -58,6 +58,7 @@ public:
     virtual PropertyWidget* createWidget(IntVec3Prop* p) = 0;
     virtual PropertyWidget* createWidget(IntVec4Prop* p) = 0;
     virtual PropertyWidget* createWidget(OptionPropertyBase* p) = 0;
+    virtual PropertyWidget* createWidget(PropertyVector* p) = 0;
 };
 
 } // namespace

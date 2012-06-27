@@ -133,7 +133,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName)
 
     VolumeSet* volumeSet = 0;
     try {
-        volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+        volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
          VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
          volumeSet->addSeries(volumeSeries);
          VolumeHandle* volumeHandle = new VolumeHandle(dataset, 0.0f);

@@ -65,9 +65,11 @@ ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, Processor*
     // create widget for every property and put them into a vertical layout
     for (std::vector<Property*>::iterator iter = propertyList.begin(); iter != propertyList.end(); ++iter) {
         QPropertyWidget* w = dynamic_cast<QPropertyWidget*>((*iter)->createAndAddWidget(widgetFactory));
-        connect(w, SIGNAL(propertyChanged()), this, SIGNAL(propertyChanged()));
-        widgets_.push_back(w);
-        vbox->addWidget(w);
+        if (w != 0) {
+            connect(w, SIGNAL(propertyChanged()), this, SIGNAL(propertyChanged()));
+            widgets_.push_back(w);
+            vbox->addWidget(w);
+        }
     }
 
     mainLayout->addWidget(propertyWidget_);
@@ -121,7 +123,7 @@ void ProcessorPropertiesWidget::setLODHidden() {
             QPropertyWidget* wdt = dynamic_cast<QPropertyWidget*>(*iter);
             for (std::vector<QPropertyWidget*>::iterator innerIter = widgets_.begin(); innerIter != widgets_.end(); ++innerIter) {
                 if (wdt == (*innerIter)) {
-                    wdt->setLevelOfDetail(false);
+                    wdt->setLevelOfDetail(Property::USER);
                 }
             }
         }
@@ -136,7 +138,7 @@ void ProcessorPropertiesWidget::setLODVisible() {
             QPropertyWidget* wdt = dynamic_cast<QPropertyWidget*>(*iter);
             for (std::vector<QPropertyWidget*>::iterator innerIter = widgets_.begin(); innerIter != widgets_.end(); ++innerIter) {
                 if (wdt == (*innerIter)) {
-                    wdt->setLevelOfDetail(true);
+                    wdt->setLevelOfDetail(Property::DEVELOPER);
                 }
             }
         }

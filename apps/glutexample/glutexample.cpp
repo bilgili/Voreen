@@ -49,6 +49,8 @@
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/vis/processors/networkserializer.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
+#include "voreen/core/vis/processors/processornetwork.h"
 #include "voreen/core/volume/volumeset.h"
 #include "voreen/core/volume/volumesetcontainer.h"
 
@@ -96,10 +98,11 @@ void init() {
     // load processors from the network
     ProcessorNetwork* net = networkSerializer_->readNetworkFromFile(VoreenApplication::app()->getNetworkPath("glutexample.vnw"));
 
-    std::vector<Processor*> processors = net->processors;
+    std::vector<Processor*> processors = net->getProcessors();
     // each processor should use the camera we created above
     for (size_t i = 0 ; i < processors.size() ; ++i)
-        processors.at(i)->setCamera(camera_);
+        if (RenderProcessor* r = dynamic_cast<RenderProcessor*>(processors.at(i)))
+            r->setCamera(camera_);
 
     // initialize the network evaluator, which -among others- tests the network for errors
     NetworkEvaluator* networkEvaluator_ = new NetworkEvaluator();

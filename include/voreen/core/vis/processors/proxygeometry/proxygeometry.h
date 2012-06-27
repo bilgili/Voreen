@@ -92,6 +92,13 @@ protected:
      */
     tgt::vec3 volumeCenter_;
     Volume* volume_;
+
+    /** Determines wether the transformation matrix assigned to a dataset
+     *  is considered when rendering the proxygeometry.
+     */
+    BoolProp useDatasetTransformationMatrix_;
+    tgt::mat4 datasetTransformationMatrix_;
+
 };
 
 } // namespace voreen

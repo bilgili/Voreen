@@ -100,27 +100,27 @@ void StereoPlugin::changeStereoMode(int stereoMode) {
     switch(stereoMode) {
     case 0:
         postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_MONOSCOPIC));
-        repaintCanvases();
+        repaintCanvas();
         break;
     case 1:
         postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_STEREOSCOPIC));
-        repaintCanvases();
+        repaintCanvas();
         break;
     case 2:
         postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_AUTOSTEREOSCOPIC));
-        repaintCanvases();
+        repaintCanvas();
         break;
     }
 }
 
 void StereoPlugin::changeEyeDistance(int dist) {
     postMessage(new IntMsg(setEyeDistance_, dist));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void StereoPlugin::changeFocalDistance(int dist) {
     postMessage(new IntMsg(setFocalDistance_, dist));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void StereoPlugin::correctWindowPos(bool /*on*/) {
@@ -128,7 +128,7 @@ void StereoPlugin::correctWindowPos(bool /*on*/) {
         postMessage(new IntMsg(setCorrectWindowPos_, 1));
     else
         postMessage(new IntMsg(setCorrectWindowPos_, 0));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 } // namespace voreen

@@ -78,6 +78,11 @@ public:
     ~TransFuncEditorIntensity();
 
     /**
+     * Assigns the passed transfer function property.
+     */
+    void setTransFuncProp(TransFuncProp* prop);
+
+    /**
      * Creates the whole layout of this widget.
      */
     void createWidgets();

@@ -46,8 +46,8 @@ using namespace voreen;
 
 class VoreenVEApplication : public VoreenApplicationQt {
 public:
-    VoreenVEApplication(int argc, char** argv, const std::string& logDir)
-        : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_DEFAULT, logDir)
+    VoreenVEApplication(int argc, char** argv)
+        : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_DEFAULT)
     {}
 
     virtual void prepareCommandParser() {
@@ -66,13 +66,7 @@ public:
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
 
-    std::string logDir;
-#ifdef VRN_DISTRIBUTION_MODE
-    // detect user's home directory for log file
-    logDir = QDir::toNativeSeparators(QDir::homePath() + "/").toStdString();
-#endif
-
-    VoreenVEApplication vapp(argc, argv, logDir);
+    VoreenVEApplication vapp(argc, argv);
     vapp.init();
 
 #ifdef VRN_SPLASHSCREEN
@@ -96,10 +90,14 @@ int main(int argc, char** argv) {
 
     // initialize virtual file system for shaders
     // (only in distribution mode)
-#ifdef VRN_DISTRIBUTION_MODE
+#ifdef VRN_DISTRIBUTION
     #pragma message("NOTICE: Using 'shaders.tar'. Is it up to date?")
     LINFOC("voreenve.main", "Loading shaders.tar into virtual file system ...");
-    FileSys.addPackage(vapp.getBasePath() + "/shaders.tar", "/src/core/vis/glsl/");
+    #ifndef __APPLE__
+    	FileSys.addPackage(vapp.getBasePath() + "/shaders.tar", "/src/core/vis/glsl/");
+    #else
+    	FileSys.addPackage(vapp.getAppBundleResourcesPath() + "/shaders.tar", "/src/core/vis/glsl/");
+    #endif
 #endif
 
     VoreenMainWindow mainWindow(vapp.networkFilename_, vapp.datasetFilename_);

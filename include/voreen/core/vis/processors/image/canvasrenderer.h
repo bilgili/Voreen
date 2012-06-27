@@ -30,7 +30,7 @@
 #ifndef VRN_CANVASRENDERER_H
 #define VRN_CANVASRENDERER_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -40,7 +40,7 @@ namespace voreen {
  * is able to cache the rendering result, if no parameter in any processor in the network
  * has been changed since last rendering.
  */
-class CanvasRenderer : public Processor {
+class CanvasRenderer : public RenderProcessor {
 public:
     CanvasRenderer();
     ~CanvasRenderer();

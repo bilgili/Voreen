@@ -41,15 +41,17 @@ TransFuncPrimitive::TransFuncPrimitive()
     , fuzziness_(1.f)
     , cpSize_(0.02f)
     , grabbed_(-1)
+    , scaleFactor_(1.f)
 {
 }
 
-TransFuncPrimitive::TransFuncPrimitive(tgt::col4 color)
+TransFuncPrimitive::TransFuncPrimitive(tgt::col4 color, float scaleFactor)
     : color_(color)
     , selected_(false)
     , fuzziness_(1.f)
     , cpSize_(0.02f)
     , grabbed_(-1)
+    , scaleFactor_(scaleFactor)
 {
 }
 
@@ -152,11 +154,13 @@ void TransFuncPrimitive::updateFromXml(TiXmlElement* root) {
 
 TransFuncQuad::TransFuncQuad()
     : TransFuncPrimitive()
+    , scaleCoords_(true)
 {
 }
 
-TransFuncQuad::TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col)
-    : TransFuncPrimitive(col)
+TransFuncQuad::TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col, float scaleFactor)
+    : TransFuncPrimitive(col, scaleFactor)
+    , scaleCoords_(true)
 {
     size *= 0.5f;
     coords_[0] = center + tgt::vec2(-size, -size);
@@ -168,51 +172,48 @@ TransFuncQuad::TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col)
 TransFuncQuad::~TransFuncQuad() {
 }
 
-void TransFuncQuad::paint(float scaleFactor) {
-    tgt::vec2 coordsScaled_[4];
-    coordsScaled_[0] = tgt::vec2(coords_[0].x, scaleFactor*coords_[0].y);
-    coordsScaled_[1] = tgt::vec2(coords_[1].x, scaleFactor*coords_[1].y);
-    coordsScaled_[2] = tgt::vec2(coords_[2].x, scaleFactor*coords_[2].y);
-    coordsScaled_[3] = tgt::vec2(coords_[3].x, scaleFactor*coords_[3].y);
+void TransFuncQuad::setScaleFactor(float scaleFactor) {
+    scaleFactor_ = scaleFactor;
+    // adjust coords
+    for (int i = 0; i < 4; ++i)
+        coords_[i].y = tgt::clamp(coords_[i].y / scaleFactor_, 0.f, 1.f);
+}
 
-    tgt::vec2 center = coordsScaled_[0]+coordsScaled_[1]+coordsScaled_[2]+coordsScaled_[3];
+void TransFuncQuad::paint() {
+    tgt::vec2 coords[4];
+    if (scaleCoords_) {
+        coords[0] = tgt::vec2(coords_[0].x, scaleFactor_ * coords_[0].y);
+        coords[1] = tgt::vec2(coords_[1].x, scaleFactor_ * coords_[1].y);
+        coords[2] = tgt::vec2(coords_[2].x, scaleFactor_ * coords_[2].y);
+        coords[3] = tgt::vec2(coords_[3].x, scaleFactor_ * coords_[3].y);
+    }
+    else {
+        coords[0] = coords_[0];
+        coords[1] = coords_[1];
+        coords[2] = coords_[2];
+        coords[3] = coords_[3];
+    }
+
+    tgt::vec2 center = coords[0] + coords[1] + coords[2] + coords[3];
     center /= 4.f;
 
     glTranslatef(0.f, 0.f, -0.5f);
     glBegin(GL_QUADS);
-        glColor4ub(color_.r, color_.g, color_.b, 0);
-        tgt::vertex(coordsScaled_[0]);
-        tgt::vertex(coordsScaled_[1]);
-        glColor4ubv(color_.elem);
-        tgt::vertex(fuzziness_ * coordsScaled_[1] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[0] + (1.f - fuzziness_) * center);
 
-        glColor4ub(color_.r, color_.g, color_.b, 0);
-        tgt::vertex(coordsScaled_[1]);
-        tgt::vertex(coordsScaled_[2]);
-        glColor4ubv(color_.elem);
-        tgt::vertex(fuzziness_ * coordsScaled_[2] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[1] + (1.f - fuzziness_) * center);
+        for (int i = 1; i <= 4; ++i) {
+            glColor4ub(color_.r, color_.g, color_.b, 0);
+            tgt::vertex(coords[i-1]);
+            tgt::vertex(coords[i%4]);
+            glColor4ubv(color_.elem);
+            tgt::vertex(fuzziness_ * coords[i%4] + (1.f - fuzziness_) * center);
+            tgt::vertex(fuzziness_ * coords[i-1] + (1.f - fuzziness_) * center);
+        }
 
-        glColor4ub(color_.r, color_.g, color_.b, 0);
-        tgt::vertex(coordsScaled_[2]);
-        tgt::vertex(coordsScaled_[3]);
-        glColor4ubv(color_.elem);
-        tgt::vertex(fuzziness_ * coordsScaled_[3] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[2] + (1.f - fuzziness_) * center);
+        tgt::vertex(fuzziness_ * coords[0] + (1.f - fuzziness_) * center);
+        tgt::vertex(fuzziness_ * coords[1] + (1.f - fuzziness_) * center);
+        tgt::vertex(fuzziness_ * coords[2] + (1.f - fuzziness_) * center);
+        tgt::vertex(fuzziness_ * coords[3] + (1.f - fuzziness_) * center);
 
-        glColor4ub(color_.r, color_.g, color_.b, 0);
-        tgt::vertex(coordsScaled_[3]);
-        tgt::vertex(coordsScaled_[0]);
-        glColor4ubv(color_.elem);
-        tgt::vertex(fuzziness_ * coordsScaled_[0] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[3] + (1.f - fuzziness_) * center);
-
-        glColor4ubv(color_.elem);
-        tgt::vertex(fuzziness_ * coordsScaled_[0] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[1] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[2] + (1.f - fuzziness_) * center);
-        tgt::vertex(fuzziness_ * coordsScaled_[3] + (1.f - fuzziness_) * center);
     glEnd();
     glTranslatef(0.f, 0.f, 0.5f);
 }
@@ -228,7 +229,9 @@ void TransFuncQuad::paintForSelection(GLubyte id) {
 }
 
 void TransFuncQuad::paintInEditor() {
+    scaleCoords_ = false;
     paint();
+    scaleCoords_ = true;
 
     glBegin(GL_LINE_LOOP);
         if (selected_)
@@ -245,7 +248,6 @@ void TransFuncQuad::paintInEditor() {
     paintControlPoint(coords_[1]);
     paintControlPoint(coords_[2]);
     paintControlPoint(coords_[3]);
-
 }
 
 float TransFuncQuad::getClosestControlPointDist(tgt::vec2 pos) {
@@ -315,7 +317,7 @@ bool TransFuncQuad::move(tgt::vec2 offset) {
     // only move the control point when one is grabbed
     if (grabbed_ > -1) {
         tgt::vec2 temp = coords_[grabbed_] + offset;
-        // don't move control point when it is outside of allowed region
+        // do not move control point when it is outside of allowed region
         if ((temp.x < 0.f) || (temp.x > 1.f) ||
             (temp.y < 0.f) || (temp.y > 1.f))
         {
@@ -327,7 +329,7 @@ bool TransFuncQuad::move(tgt::vec2 offset) {
     else {
         for (int i = 0; i < 4; ++i) {
             tgt::vec2 temp = coords_[i] + offset;
-            //don't move primitive when one point is outside of allowed region
+            // do not move primitive when one point is outside of allowed region
             if ((temp.x < 0.f) || (temp.x > 1.f) ||
                 (temp.y < 0.f) || (temp.y > 1.f))
             {
@@ -346,12 +348,14 @@ bool TransFuncQuad::move(tgt::vec2 offset) {
 TransFuncBanana::TransFuncBanana()
     : TransFuncPrimitive()
     , steps_(20)
+    , scaleCoords_(true)
 {
 }
 
-TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col)
-    : TransFuncPrimitive(col)
+TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col, float scaleFactor)
+    : TransFuncPrimitive(col, scaleFactor)
     , steps_(20)
+    , scaleCoords_(true)
 {
     coords_[0] = a;
     coords_[1] = b1;
@@ -362,10 +366,17 @@ TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::v
 TransFuncBanana::~TransFuncBanana() {
 }
 
-void TransFuncBanana::paint(float scaleFactor) {
+void TransFuncBanana::setScaleFactor(float scaleFactor) {
+    scaleFactor_ = scaleFactor;
+    // adjust coords
+    for (int i = 0; i < 4; ++i)
+        coords_[i].y = tgt::clamp(coords_[i].y / scaleFactor_, 0.f, 1.f);
+}
+
+void TransFuncBanana::paint() {
     glTranslatef(0.f, 0.f, -0.5f);
     glColor4ubv(color_.elem);
-    paintInner(scaleFactor);
+    paintInner();
     glTranslatef(0.f, 0.f, 0.5f);
 }
 
@@ -376,7 +387,7 @@ void TransFuncBanana::paintForSelection(GLubyte id) {
     t1 = (2.f * coords_[1]) - (0.5f * coords_[0]) - (0.5f * coords_[3]);
     t2 = (2.f * coords_[2]) - (0.5f * coords_[0]) - (0.5f * coords_[3]);
 
-    //fill the space between the two bezier curves:
+    // fill the space between the two bezier curves:
     glBegin(GL_TRIANGLE_STRIP);
     tgt::vertex(coords_[0]);
     for (int i = 0; i < steps_; ++i) {
@@ -390,77 +401,89 @@ void TransFuncBanana::paintForSelection(GLubyte id) {
     glEnd();
 }
 
-void TransFuncBanana::paintInner(float scaleFactor) {
+void TransFuncBanana::paintInner() {
     float t;
     tgt::vec2 v1, v2, t1, t2, t3, t4, tc;
 
-    tgt::vec2 coordsScaled[4];
-    coordsScaled[0] = tgt::vec2(coords_[0].x, scaleFactor*coords_[0].y);
-    coordsScaled[1] = tgt::vec2(coords_[1].x, scaleFactor*coords_[1].y);
-    coordsScaled[2] = tgt::vec2(coords_[2].x, scaleFactor*coords_[2].y);
-    coordsScaled[3] = tgt::vec2(coords_[3].x, scaleFactor*coords_[3].y);
+    tgt::vec2 coords[4];
+    if (scaleCoords_) {
+        coords[0] = tgt::vec2(coords_[0].x, scaleFactor_ * coords_[0].y);
+        coords[1] = tgt::vec2(coords_[1].x, scaleFactor_ * coords_[1].y);
+        coords[2] = tgt::vec2(coords_[2].x, scaleFactor_ * coords_[2].y);
+        coords[3] = tgt::vec2(coords_[3].x, scaleFactor_ * coords_[3].y);
+    }
+    else {
+        coords[0] = coords_[0];
+        coords[1] = coords_[1];
+        coords[2] = coords_[2];
+        coords[3] = coords_[3];
+    }
 
-    t1 = (2.f * coordsScaled[1]) - (0.5f * coordsScaled[0]) - (0.5f * coordsScaled[3]);
-    t2 = (2.f * coordsScaled[2]) - (0.5f * coordsScaled[0]) - (0.5f * coordsScaled[3]);
+    t1 = (2.f * coords[1]) - (0.5f * coords[0]) - (0.5f * coords[3]);
+    t2 = (2.f * coords[2]) - (0.5f * coords[0]) - (0.5f * coords[3]);
 
     tc = (t1 + t2) / 2.f;
     t3 = fuzziness_ * t1 + (1.f - fuzziness_) * tc;
     t4 = fuzziness_ * t2 + (1.f - fuzziness_) * tc;
-    //fill the space between the two bezier curves:
+    
+    // fill the space between the two bezier curves:
     glBegin(GL_TRIANGLE_STRIP);
     glColor4ubv(color_.elem);
-    tgt::vertex(coordsScaled[0]);
+    tgt::vertex(coords[0]);
     for (int i = 0; i < steps_; ++i) {
         t = i / static_cast<float>(steps_ - 1);
-        v1 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t1) + ((t * t) * coordsScaled[3]);
-        v2 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t3) + ((t * t) * coordsScaled[3]);
+        v1 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t1) + ((t * t) * coords[3]);
+        v2 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t3) + ((t * t) * coords[3]);
         glColor4ub(color_.r, color_.g, color_.b, 0);
         tgt::vertex(v1);
         glColor4ubv(color_.elem);
         tgt::vertex(v2);
     }
-    tgt::vertex(coordsScaled[3]);
+    tgt::vertex(coords[3]);
 
     glColor4ubv(color_.elem);
-    tgt::vertex(coordsScaled[0]);
+    tgt::vertex(coords[0]);
     for (int i = 0; i < steps_; ++i) {
         t = i / static_cast<float>(steps_ - 1);
-        v1 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t3) + ((t * t) * coordsScaled[3]);
-        v2 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t4) + ((t * t) * coordsScaled[3]);
+        v1 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t3) + ((t * t) * coords[3]);
+        v2 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t4) + ((t * t) * coords[3]);
         tgt::vertex(v1);
         tgt::vertex(v2);
     }
-    tgt::vertex(coordsScaled[3]);
+    tgt::vertex(coords[3]);
 
-    tgt::vertex(coordsScaled[0]);
+    tgt::vertex(coords[0]);
     for (int i = 0; i < steps_; ++i) {
         t = i / static_cast<float>(steps_ - 1);
-        v1 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t4) + ((t * t) * coordsScaled[3]);
-        v2 = (((1 - t) * (1 - t)) * coordsScaled[0]) + ((2 * (1 - t) * t) * t2) + ((t * t) * coordsScaled[3]);
+        v1 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t4) + ((t * t) * coords[3]);
+        v2 = (((1 - t) * (1 - t)) * coords[0]) + ((2 * (1 - t) * t) * t2) + ((t * t) * coords[3]);
         glColor4ubv(color_.elem);
         tgt::vertex(v1);
         glColor4ub(color_.r, color_.g, color_.b, 0);
         tgt::vertex(v2);
     }
-    tgt::vertex(coordsScaled[3]);
+    tgt::vertex(coords[3]);
 
     glEnd();
 }
 
 void TransFuncBanana::paintInEditor() {
+    scaleCoords_ = false;
     paint();
+    scaleCoords_ = true;
 
     float t;
     tgt::vec2 v, t1, t2;
     t1 = (2.f * coords_[1]) - (0.5f * coords_[0]) - (0.5f * coords_[3]);
     t2 = (2.f * coords_[2]) - (0.5f * coords_[0]) - (0.5f * coords_[3]);
 
-    //draw outer line of double bezier curve:
+    // draw outer line of double bezier curve:
     glBegin(GL_LINE_LOOP);
         if (selected_)
             glColor4ub(255, 255, 255, 255);
         else
             glColor4ub(128, 128, 128, 255);
+        
         for (int i = 0; i < steps_; ++i) {
             t = i / static_cast<float>(steps_ - 1);
             v = (((1 - t) * (1 - t)) * coords_[0]) + ((2 * (1 - t) * t) * t1) + ((t * t) * coords_[3]);
@@ -496,7 +519,7 @@ bool TransFuncBanana::selectControlPoint(tgt::vec2 pos) {
     int n = 0;
     float min = distance(pos, coords_[0]);
     float d;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 1; i < 4; ++i) {
         d = distance(pos, coords_[i]);
         if (d < min) {
             min = d;
@@ -544,7 +567,7 @@ void TransFuncBanana::updateFromXml(TiXmlElement* root) {
 bool TransFuncBanana::move(tgt::vec2 offset) {
     if (grabbed_ > -1) {
         tgt::vec2 temp = coords_[grabbed_] + offset;
-        // don't move control point when it is outside of allowed region
+        // do not move control point when it is outside of allowed region
         if ((temp.x < 0.f) || (temp.x > 1.f) ||
             (temp.y < 0.f) || (temp.y > 1.f))
         {
@@ -556,7 +579,7 @@ bool TransFuncBanana::move(tgt::vec2 offset) {
     else {
         for (int i = 0; i < 4; ++i) {
             tgt::vec2 temp = coords_[i] + offset;
-            //don't move primitive when one point is outside of allowed region
+            //do not move primitive when one point is outside of allowed region
             if ((temp.x < 0.f) || (temp.x > 1.f) ||
                 (temp.y < 0.f) || (temp.y > 1.f))
             {

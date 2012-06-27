@@ -30,11 +30,9 @@
 #ifndef VOREEN_PYVOREEN_H
 #define VOREEN_PYVOREEN_H
 
-
 #ifdef VRN_WITH_PYTHON
 
 namespace voreen {
-
     /// Initializes the voreen Python module.
     void initVoreenPythonModule();
 }

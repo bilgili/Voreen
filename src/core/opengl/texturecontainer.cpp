@@ -222,6 +222,10 @@ void TextureContainer::setCapacityIncr(int incr) {
     capacityIncr_ = incr;
 }
 
+int TextureContainer::getCapacity() const {
+    return capacity_;
+}
+
 int TextureContainer::getNumAvailable() {
     return used_;
 }
@@ -664,7 +668,7 @@ void TextureContainerFBO::setActiveTargets(const std::vector<int>& targets, cons
         }
         LDEBUG("Attach rt " << id <<" as color texture.");
 
-        GLenum *buffers = new GLenum[targets.size()];
+        GLenum* buffers = new GLenum[targets.size()];
 
         for (size_t i=0; i < targets.size();++i) {
             fbo_->AttachTexture(getGLTexTarget(targets[i]), rt_[targets[i]].tex_,
@@ -675,6 +679,7 @@ void TextureContainerFBO::setActiveTargets(const std::vector<int>& targets, cons
 
         glDrawBuffers(targets.size(), buffers);
         LGL_ERROR;
+        delete[] buffers;
 
         LFBO_ERROR
         LGL_ERROR;

@@ -112,4 +112,8 @@ const QString TransFuncEditor::getTitle() {
     return title_;
 }
 
+void TransFuncEditor::setTransFuncProp(TransFuncProp* prop) {
+    property_ = prop;
+}
+
 } // namespace voreen

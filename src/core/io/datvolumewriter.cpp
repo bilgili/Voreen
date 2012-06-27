@@ -30,6 +30,7 @@
 #include "voreen/core/io/datvolumewriter.h"
 #include "voreen/core/volume/volumeatomic.h"
 
+#include "tgt/filesystem.h"
 #include "tgt/matrix.h"
 
 namespace voreen {
@@ -135,7 +136,7 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
     else
         LERROR("Format currently not supported");
 
-    datout << "ObjectFileName:\t" << VolumeMetaData::getFileNameWithoutPath(rawname) << std::endl;
+    datout << "ObjectFileName:\t" << tgt::FileSystem::fileName(rawname) << std::endl;
 
     tgt::ivec3 dimensions = volume->getDimensions();
     datout << "Resolution:\t" << dimensions.x << " " << dimensions.y << " " << dimensions.z << std::endl;

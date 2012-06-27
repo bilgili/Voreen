@@ -75,9 +75,11 @@ void rayTraversal(in vec3 first, in vec3 last) {
 
             // if opacity greater zero, apply compositing
             if (color.a > 0.0) {
+                RC_BEGIN_COMPOSITING
                 result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, tDepth);
                 result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, tDepth);
                 result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, tDepth);
+                RC_END_COMPOSITING
             }
 
         }

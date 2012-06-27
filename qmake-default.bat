@@ -15,16 +15,12 @@ cd ..\qt
 qmake.exe -tp vc "CONFIG+=flat" voreenlib_qt.pro
 cd ..\..\apps\voreenve
 qmake.exe -tp vc "CONFIG+=flat" voreenve.pro
-cd ..\..\apps\vesselvis
-qmake.exe -tp vc "CONFIG+=flat" vesselvis.pro
 
 rem Optional
-rem cd ..\..\apps\voreendev
-rem qmake.exe -tp vc "CONFIG+=flat" voreendev.pro
-rem cd ..\..\apps\voreenpub
-rem qmake.exe -tp vc "CONFIG+=flat" voreenpub.pro
 rem cd ..\..\apps\voltool
 rem qmake.exe -tp vc "CONFIG+=flat" voltool.pro
+rem cd ..\..\apps\vesselvis
+rem qmake.exe -tp vc "CONFIG+=flat" vesselvis.pro
 rem cd ..\..\apps\voreenus
 rem qmake.exe -tp vc "CONFIG+=flat" voreenus.pro
 rem cd ..\..\apps\glyphapp

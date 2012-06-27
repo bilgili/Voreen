@@ -183,4 +183,8 @@ float Volume::getVoxelFloatLinear(const vec3& pos, size_t channel /*= 0*/) const
           + getVoxelFloat(llb.x, urf.y, urf.z, channel) * (1.f-p.x)*(    p.y)*(    p.z);// ulF
 }
 
+Volume* Volume::downsample() const throw (std::bad_alloc) {
+    return 0;
+}
+
 } // namespace voreen

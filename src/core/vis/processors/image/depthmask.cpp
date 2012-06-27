@@ -32,7 +32,7 @@
 namespace voreen {
 
 DepthMask::DepthMask()
-    : ImageProcessor("pp_depthmask"),
+    : ImageProcessorDepth("pp_depthmask"),
     lambda_("set.depthMaskLambda", "Lambda", 5.0f, 0.0f, 10.0f)
 {
     setName("Depth Masking");

@@ -119,7 +119,8 @@ void TextLog::logFiltered(const std::string &cat, LogLevel level, const std::str
 }
 
 TextLog::TextLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-	file_ = fopen((LogMgr.getLogDir()+filename).c_str(),"w");
+    std::string path = (LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/");
+	file_ = fopen((path + filename).c_str(),"w");
 	tgtAssert(file_, "weTextLog assert: failed to open file");
 	timeStamping_ = timeStamping;
 	dateStamping_ = dateStamping;
@@ -244,7 +245,8 @@ void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::str
 }
 
 HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-	file_ = fopen((LogMgr.getLogDir()+filename).c_str(), "w");
+    std::string path = (LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/");
+	file_ = fopen((path + filename).c_str(), "w");
 	tgtAssert(file_, "HtmltLog assert: failed to open file");
 
 	timeStamping_ = timeStamping;

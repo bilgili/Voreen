@@ -43,6 +43,7 @@
 #include "voreen/qt/widgets/compactproperty/compactintvec4propertywidget.h"
 #include "voreen/qt/widgets/compactproperty/compactoptionpropertywidget.h"
 #include "voreen/qt/widgets/compactproperty/compactpropertywidget.h"
+#include "voreen/qt/widgets/compactproperty/compactpropertyvectorwidget.h"
 #include "voreen/qt/widgets/compactproperty/compactstringpropertywidget.h"
 #include "voreen/qt/widgets/compactproperty/compactstringselectionpropertywidget.h"
 #include "voreen/qt/widgets/compactproperty/compactstringvectorpropertywidget.h"
@@ -50,72 +51,76 @@
 
 namespace voreen {
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatProp* p) {
     return new CompactFloatPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(IntProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(IntProp* p) {
     return new CompactIntPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(BoolProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(BoolProp* p) {
     return new CompactBoolPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(StringProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(StringProp* p) {
     return new CompactStringPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(StringVectorProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(StringVectorProp* p) {
     return new CompactStringVectorPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(StringSelectionProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(StringSelectionProp* p) {
     return new CompactStringSelectionPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(ColorProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(ColorProp* p) {
     return new CompactColorPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(EnumProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(EnumProp* p) {
     return new CompactEnumPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(FileDialogProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(FileDialogProp* p) {
     return new CompactFileDialogPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(TransFuncProp* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(TransFuncProp* p) {
     return new CompactTransFuncPropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec2Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec2Prop* p) {
     return new CompactFloatVec2PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec3Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec3Prop* p) {
     return new CompactFloatVec3PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec4Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(FloatVec4Prop* p) {
     return new CompactFloatVec4PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec2Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec2Prop* p) {
     return new CompactIntVec2PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec3Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec3Prop* p) {
     return new CompactIntVec3PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec4Prop* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(IntVec4Prop* p) {
     return new CompactIntVec4PropertyWidget(p, 0);
 }
 
-PropertyWidget* CompactPropertyWidgetFactory::createWidget(OptionPropertyBase* p) {
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(OptionPropertyBase* p) {
     return new CompactOptionPropertyWidget(p, 0);
+}
+
+QPropertyWidget* CompactPropertyWidgetFactory::createWidget(PropertyVector* p) {
+    return new CompactPropertyVectorWidget(p, 0);
 }
 
 } // namespace voreen

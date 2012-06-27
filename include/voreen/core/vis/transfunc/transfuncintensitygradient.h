@@ -32,7 +32,6 @@
 
 #include "voreen/core/vis/transfunc/transfunc.h"
 
-class FramebufferObject;
 class TiXmlDocument;
 class TiXmlElement;
 
@@ -99,7 +98,7 @@ public:
      * Sets the scaling factor in y direction for the primitive coordinates to the given value.
      * That is necessary because the histogram is scaled to the maximum gradientlength that occurs
      * in the current rendered dataset. Usually this length is smaller than the highest possible
-     * gradientlength. The factor is passed to the primitives when they are painted.
+     * gradientlength. The factor is passed to the primitives.
      *
      * @param factor scaling factor for primitive coordinates in y direction
      */
@@ -165,7 +164,7 @@ public:
     TransFuncPrimitive* getPrimitiveForClickedControlPoint(tgt::vec2 pos);
 
     /**
-     * Calls paint for all primitives with the scaling factor as parameter
+     * Calls paint for all primitives
      */
     void paint();
 
@@ -287,7 +286,6 @@ protected:
     bool loadTfig(const std::string& filename);
 
     std::vector<TransFuncPrimitive*> primitives_; ///< primitives the transfer function consists of
-    float scaleFactor_; ///< scaling factor for the y coordinate of the primitives
 
 private:
     static const std::string loggerCat_; ///< the logger category

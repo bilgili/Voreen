@@ -133,7 +133,7 @@
                 <Processor id="2" port="image.inport" />
             </Outport>
         </Processor>
-        <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="10">
+        <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="10">
             <MetaData>
                 <RptProcessorItem x="-42" y="-296" />
             </MetaData>

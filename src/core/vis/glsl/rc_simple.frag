@@ -62,7 +62,7 @@ vec4 directRendering(in vec3 first, in vec3 last) {
         for (int loop1=0; !finished && loop1<255; loop1++) {
 
             vec3 sample = first.rgb + t * direction;
-            vec4 voxel = textureLookup3D(volume_, volumeParameters_, sample);
+            vec4 voxel = getVoxel(volume_, volumeParameters_, sample);
 
             float intensity = voxel.a;
             #if defined(USE_SEGMENTATION)

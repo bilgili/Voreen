@@ -276,7 +276,6 @@ void ShowTexContainerWidget::paintInfos(unsigned int id) {
 
 std::string ShowTexContainerWidget::generateHeader() {
     std::string header = "";
- //   header += "#version 110 \n";
     if (tc_) {
         if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D )
             header += "#define VRN_TEXTURE_2D\n";
@@ -495,14 +494,6 @@ void ShowTexture::paintGL() {
 
 std::string ShowTexture::generateHeader() {
     std::string header = "";
- //   header += "#version 110 \n";
-    /*if (tc_) {
-        if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ){
-            header += "#define VRN_TEXTURE_2D\n";
-        } else if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE ) {
-            header += "#define VRN_TEXTURE_RECTANGLE\n";
-        }
-    } */
     return header;
 }
 

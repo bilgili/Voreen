@@ -66,7 +66,12 @@ win32 {
   }
 
   contains(DEFINES, VRN_WITH_PYTHON) {
-      LIBS += "$${PYTHON_DIR}/lib/$(ConfigurationName)/python25.lib"
+     contains(MSC_VER, "_MSC_VER=1400") {
+      LIBS += "$${VRN_HOME}/ext/python/lib/$(ConfigurationName)/VS2005/python26.lib"
+    }
+    contains(MSC_VER, "_MSC_VER=1500") {
+      LIBS += "$${VRN_HOME}/ext/python/lib/$(ConfigurationName)/python26.lib"
+    }
   }
 
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
@@ -144,6 +149,7 @@ unix {
             -ldcmjpeg -lijg8 -lijg12 -lijg16 -lofstd
 
     LIBS += -ldcmtls
+    macx: LIBS += -lcrypto
   }
   
   contains(DEFINES, VRN_WITH_FFMPEG) {

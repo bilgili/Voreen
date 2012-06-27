@@ -283,6 +283,8 @@ void TransFuncEditorIntensityGradient::loadTransferFunction() {
 
     QString fileName = getOpenFileName(filter);
     if (!fileName.isEmpty()) {
+        // deselect current selected primitive. Primitive gets deleted on successfull loading.
+        painter_->deselectPrimitive();
         if (transFuncGradient_->load(fileName.toStdString())) {
             painter_->updateTF();
             transCanvas_->update();
@@ -359,12 +361,12 @@ void TransFuncEditorIntensityGradient::update() {
         return;
 
     Volume* newVolume = property_->getVolume();
-    if (newVolume && newVolume != volume_) {
+    if (newVolume != volume_) {
         volume_ = newVolume;
         volumeChanged();
     }
 
-    if (transFuncGradient_) {
+    if (volume_ && transFuncGradient_) {
         transFuncGradient_->setScaleFactor(painter_->getScaleFactor());
         painter_->updateTF();
         transCanvas_->update();
@@ -385,8 +387,10 @@ void TransFuncEditorIntensityGradient::volumeChanged() {
     histogramBrightness_->setValue(100);
     histogramBrightness_->blockSignals(false);
 
-    int bits = volume_->getBitsStored() / volume_->getNumChannels();
-    maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
+    if (volume_) {
+        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+        maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
+    }
 
     // propagate volume to painter where the histogram is calculated
     painter_->volumeChanged(volume_);

@@ -48,19 +48,20 @@ namespace voreen {
 const std::string SliceSequenceRenderer::fontName_("Vera.ttf");
 
 SliceSequenceRenderer::SliceSequenceRenderer(const bool isSingleSlice)
-    : SliceRendererBase(),
-    alignmentProp_(0),
-    sliceIndexProp_("sliceIndex", "slice number: ", 1, 1, 100),
-    numSlicesPerRowProp_("numSlicesPerRowProp", "slices per Row: ", 4, 1, 5),
-    numSlicesPerColProp_("numSlicesPerColProp", "slices per Column: ", 4, 1, 5),
-    renderSliceBoundariesProp_("renderSliceBoundariesProp", "render slice boundaries: ", true),
-    alignment_(SAGITTAL),
-    numSlices_(0),
-    slicePos_(1.0f),
-    sliceSize_(0.0f),
-    volumeDimensions_(0, 0, 0),
-    lastMousePosition_(0, 0),
-    voxelPosPermutation_(0, 1, 2)
+    : SliceRendererBase()
+    , alignmentProp_(0)
+    , sliceIndexProp_("sliceIndex", "slice number: ", 1, 1, 100)
+    , numSlicesPerRowProp_("numSlicesPerRowProp", "slices per Row: ", 4, 1, 5)
+    , numSlicesPerColProp_("numSlicesPerColProp", "slices per Column: ", 4, 1, 5)
+    , renderSliceBoundariesProp_("renderSliceBoundariesProp", "render slice boundaries: ", true)
+    , eventProp_("Show cursor position", tgt::Event::NONE, tgt::MouseEvent::MOUSE_ALL)
+    , alignment_(SAGITTAL)
+    , numSlices_(0)
+    , slicePos_(1.0f)
+    , sliceSize_(0.0f)
+    , volumeDimensions_(0, 0, 0)
+    , lastMousePosition_(0, 0)
+    , voxelPosPermutation_(0, 1, 2)
 {
     setName("SliceSequenceRenderer");
 
@@ -79,6 +80,7 @@ SliceSequenceRenderer::SliceSequenceRenderer(const bool isSingleSlice)
         addProperty(&numSlicesPerColProp_);
     }
     addProperty(&renderSliceBoundariesProp_);
+    addProperty(&eventProp_);
 
     // call this method to set the correct permutation for the
     // screen-position-to-voxel-position mapping.
@@ -118,21 +120,21 @@ void SliceSequenceRenderer::updateNumSlices() {
 }
 
 void SliceSequenceRenderer::mouseMoveEvent(tgt::MouseEvent* e) {
-    if (e == 0)
-        return;
-    lastMousePosition_ = e->coord();
-    e->ignore();
+    if ((e != 0) && (eventProp_.accepts(e))) {
+        lastMousePosition_ = e->coord();
+        e->ignore();
+    }
 }
 
 void SliceSequenceRenderer::mousePressEvent(tgt::MouseEvent* e) {
-    if (e == 0)
-        return;
-    lastMousePosition_ = e->coord();
-    e->ignore();
+    if ((e != 0) && (eventProp_.accepts(e))) {
+        lastMousePosition_ = e->coord();
+        e->ignore();
 
-    // call invalidate() in order to re-render the textual infos...
-    //
-    invalidate();
+        // call invalidate() in order to re-render the textual infos...
+        //
+        invalidate();
+    }
 }
 
 void SliceSequenceRenderer::process(LocalPortMapping* portMapping) {

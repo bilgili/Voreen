@@ -39,15 +39,84 @@ using tgt::FileSystem;
 
 namespace voreen {
 
+// Setup the general ability of caching
+//
+#ifdef VRN_WITH_VOLUMECACHING
+bool CacheBase::cachingEnabled_(true);
+#else
+bool CacheBase::cachingEnabled_(false);
+#endif
+
+CacheBase::CacheBase(const std::string& cachedObjectsClassName, const std::string& assignedPortType)
+    : assignedPortType_(assignedPortType),
+    cachedObjectsClassName_(cachedObjectsClassName),
+    isEnabled_(true)
+{
+}
+
+const std::string& CacheBase::getAssignedPortType() const {
+    return assignedPortType_;
+}
+
+std::vector<Port*> CacheBase::getCacheConcernedOutports(Processor* const processor) const {
+    if (processor == 0)
+        return std::vector<Port*>();
+
+    std::vector<Port*> concernedPorts;
+    const std::vector<Port*>& outports = processor->getOutports();
+    for (size_t i = 0; i < outports.size(); ++i) {
+        if (outports[i]->getTypeIdentifier().getSubString(0) == assignedPortType_)
+            concernedPorts.push_back(outports[i]);
+    }
+    return concernedPorts;
+}
+
+const std::string& CacheBase::getCachedObjectsClassName() const  { 
+    return cachedObjectsClassName_;
+}
+
+std::string CacheBase::getProcessorsInportConfig(const Processor* processor, 
+                                                LocalPortMapping* const localPortMapping) const
+{
+    if ((processor == 0) || (localPortMapping == 0))
+        return "";
+
+    std::string inputConfig("");
+    std::vector<Port*> inports = processor->getInports();
+    for (size_t i = 0; i < inports.size(); ++i) {
+        inputConfig += portContentToString(inports[i]->getTypeIdentifier(), localPortMapping);
+        if (i < (inports.size() - 1))
+            inputConfig += ", ";
+    }
+    return inputConfig;
+}
+
+bool CacheBase::isCompatible(voreen::Processor* const processor) const {
+    const std::vector<Port*>& outports = processor->getOutports();
+    for (size_t i = 0; i < outports.size(); ++i) {
+        if (outports[i]->getTypeIdentifier().getSubString(0) == assignedPortType_)
+            return true;
+    }
+    return false;
+}
+
+bool CacheBase::isEnabled() const {
+    return (isEnabled_ && cachingEnabled_);
+}
+
+void CacheBase::setEnabled(const bool enable) {
+    isEnabled_ = enable;
+}
+
+// ============================================================================
+
 template<typename T> const std::string Cache<T>::loggerCat_("Cache<T>");
 
 template<typename T>
 Cache<T>::Cache(const std::string& cachedObjectsClassName, const std::string& assignedPortType)
-    : assignedPortType_(assignedPortType),
-    cachedObjectsClassName_(cachedObjectsClassName),
+    : CacheBase(cachedObjectsClassName, assignedPortType),
     objectMap_(),
     cacheIndex_(CacheIndex::getInstance()),
-    isEnabled_(true),
     cacheFolder_(VoreenApplication::app()->getCachePath())
 {
 }
@@ -63,11 +132,14 @@ Cache<T>::~Cache() {
 }
 
 template<typename T>
-T* Cache<T>::find(Processor* const processor, Port* const port, 
+T Cache<T>::find(Processor* const processor, Port* const port, 
                   LocalPortMapping* const localPortMapping)
 {
-    if ((isEnabled_ == false) || (processor == 0) || (port == 0))
-        return 0;
+    // Do nothing if this cache is disabled in general or in particular,
+    // or the parameters are bad.
+    //
+    if ((isEnabled() == false) || (processor == 0) || (port == 0) || (localPortMapping == 0))
+        return getInvalidValue();
 
     // 1. Check whether the cached data already exist in the local object map and
     // return them if so.
@@ -88,13 +160,13 @@ T* Cache<T>::find(Processor* const processor, Port* const port,
     //
     const std::string filename = cacheIndex_.findFilename(processor, port, inportConfig);
     if (filename.empty() == true)
-        return 0;
+        return getInvalidValue();
 
     // 3. Otherwise, if there is a cache index entry, load the concerned object and 
     // store it in the local object map for future lookups.
     //
-    T* object = loadObject(cacheFolder_, filename);
-    if (object != 0) {
+    T object = loadObject(filename);
+    if (object != getInvalidValue()) {
         //std::cout << "find(): found cache index entry for object!";
         std::pair<typename Cache<T>::ObjectMap::iterator, bool> res = 
             objectMap_.insert(std::make_pair(keyStr, new CacheObject<T>(object, true)));
@@ -103,32 +175,11 @@ T* Cache<T>::find(Processor* const processor, Port* const port,
 }
 
 template<typename T>
-std::vector<Port*> Cache<T>::getCacheConcernedOutports(Processor* const processor) const {
-    if (processor == 0)
-        return std::vector<Port*>();
-
-    std::vector<Port*> concernedPorts;
-    std::vector<Port*> outports = processor->getOutports();
-    for (size_t i = 0; i < outports.size(); ++i) {
-        if (outports[i]->getType().getSubString(0) == assignedPortType_)
-            concernedPorts.push_back(outports[i]);
-    }
-    return concernedPorts;
-}
-
-template<typename T>
-bool Cache<T>::isCompatible(voreen::Processor* const processor) const {
-    std::vector<Port*> outports = processor->getOutports();
-    for (size_t i = 0; i < outports.size(); ++i) {
-        if (outports[i]->getType().getSubString(0) == assignedPortType_)
-            return true;
-    }
-    return false;
-}
-
-template<typename T>
 bool Cache<T>::update(Processor* const processor, LocalPortMapping* const localPortMapping) {
-    if ((isEnabled_ == false) || (processor == 0))
+    // Do nothing if caching is disabled in general or in particular, or if one of the 
+    // parameters is bad.
+    //
+    if ((isEnabled() == false) || (processor == 0) || (localPortMapping == 0))
         return false;
 
     std::string inportConfig = getProcessorsInportConfig(processor, localPortMapping);
@@ -138,8 +189,8 @@ bool Cache<T>::update(Processor* const processor, LocalPortMapping* const localP
     std::vector<Port*> concernedPorts = getCacheConcernedOutports(processor);
     bool result = (! concernedPorts.empty());
     for (size_t i = 0; i < concernedPorts.size(); ++i) {
-        T* object = getPortData(concernedPorts[i]->getType(), localPortMapping);
-        if (object == 0)
+        T object = getPortData(concernedPorts[i]->getTypeIdentifier(), localPortMapping);
+        if (object == getInvalidValue())
             continue;
 
         // try to find an entry for that processor and port with the current 
@@ -181,23 +232,6 @@ bool Cache<T>::update(Processor* const processor, LocalPortMapping* const localP
     return result;
 }
 
-template<typename T>
-std::string Cache<T>::getProcessorsInportConfig(const Processor* processor, 
-                                                LocalPortMapping* const localPortMapping) const
-{
-    if ((processor == 0) || (localPortMapping == 0))
-        return "";
-
-    std::string inputConfig("");
-    std::vector<Port*> inports = processor->getInports();
-    for (size_t i = 0; i < inports.size(); ++i) {
-        inputConfig += portContentToString(inports[i]->getType(), localPortMapping);
-        if (i < (inports.size() - 1))
-            inputConfig += ", ";
-    }
-    return inputConfig;
-}
-
 // private methods
 //
 
@@ -218,13 +252,13 @@ void Cache<T>::cleanup() {
 
         // If file is a .dat file, also try to delete related .raw file
         //
-        if (FileSystem::getFileExtension(file) == "dat") {
+        if (FileSystem::fileExtension(file) == "dat") {
             file.replace(file.size() - 3, 3, "raw");
             FileSystem::deleteFile(file);
         }
     }
 }
 
-template class Cache<VolumeHandle>;
+template class Cache<VolumeHandle*>;
 
 }   // namespace

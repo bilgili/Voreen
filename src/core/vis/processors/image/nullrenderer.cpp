@@ -32,7 +32,7 @@
 namespace voreen {
 
 NullRenderer::NullRenderer()
-    : Processor(),
+    : RenderProcessor(),
       imageID_(-1)
 {
     setName("NullRenderer");

@@ -44,11 +44,11 @@ class QSpinBox;
 class QDoubleSpinBox;
 class QGroupBox;
 class QComboBox;
+class QLabel;
 
 namespace voreen {
 
 class NetworkEvaluator;
-class SimpleSegmentationProcessor;
 class ThresholdWidget;
 
 class SegmentationPlugin : public WidgetPlugin, MessageReceiver, tgt::EventListener {
@@ -65,43 +65,48 @@ public:
     virtual void mousePressEvent(tgt::MouseEvent* e);
 
     bool usable(const std::vector<Processor*>& processors);
-                                                    
-public slots:
+
+private slots:
+
+    // update the intensity editor to the segmentation raycaster's state
+    void updateIntensityEditor();
+
+    // registers this plugin as listener at the segmentation raycaster's properties
+    void registerAsListener();
+
+    // is called when a relevant transfunc property was changed outside this plugin
+    void transFuncChangedExternally();
+
+    // callback for registered at segmentation raycaster's property
+    void applySegmentationToggled();
+
+    // callback gui checkbox
     void toggleApplySegmentation(bool);
+
+    // gui callbacks
     void setCurrentSegment(int);
-    void toggleSegmentVisible(bool);
     void undoSegment();
     void clearSegment();
     void setSeed(bool checked);
-    void setThresholds(int lower, int upper);
     void saveSegmentation();
+    void loadSegmentation();
     void clearSegmentation();
 
 private:
 
-    enum TransFuncSyncDirection {
-        PUSH,   // push local transfunc to segmentation raycaster
-        PULL    // pull transfunc from segmentation raycaster
-    };
-
-    // is called when the user has modified the transfer function via the widget's editor
-    void transFuncChanged();
-    // Synchronizes the widget's transfer function with the SegmentationRaycaster's.
-    void synchronizeTransFuncs(TransFuncSyncDirection syncDir);
     // Propagates the locally saved region growing parameters to the RegionGrowing processor
     void propagateRegionGrowingParams();
 
     // Retrieve processors from evaluator
-    SegmentationRaycaster* getSegmentationRaycaster();
-    RegionGrowingProcessor* getRegionGrowingProcessor();
+    SegmentationRaycaster* getSegmentationRaycaster(bool suppressWarning = false);
+    RegionGrowingProcessor* getRegionGrowingProcessor(bool suppressWarning = false);
 
     NetworkEvaluator* evaluator_;
-    TransFuncProp transFuncProp_;
     TransFuncEditorIntensity* intensityEditor_;
 
     QCheckBox* checkApplySegmentation_;
+    QLabel* labelCurrentSegment_;
     QSpinBox* spinCurrentSegment_;
-    QCheckBox* checkSegmentVisible_;
 
     QPushButton* markSeedButton_;
     QPushButton* undoButton_;
@@ -120,7 +125,6 @@ private:
     QGroupBox* renderingBox_;
     QGroupBox* regionGrowingBox_;
 
-    ThresholdWidget* thresholdWidget_;
 };
 
 } // namespace voreen

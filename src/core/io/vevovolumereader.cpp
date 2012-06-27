@@ -157,7 +157,7 @@ VolumeSet* VevoVolumeReader::read(const string &fname)
         volDS_ = new VolumeUInt8(tgt::vec3(8));
     }
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fname));
+    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fname));
     VolumeSeries* volumeSeries = new VolumeSeries("unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volDS_, 0.0f);

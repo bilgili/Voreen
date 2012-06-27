@@ -48,6 +48,8 @@ SOURCES += \
 SOURCES += \
     geometry/geometrycontainer.cpp
 SOURCES += \
+    io/brickedvolumereader.cpp \
+    io/brickedvolumewriter.cpp \
     io/cache.cpp \
     io/cacheindex.cpp \
     io/datvolumereader.cpp \
@@ -75,21 +77,24 @@ SOURCES += \
 SOURCES += \
     vis/processors/benchmark.cpp \
     vis/processors/networkevaluator.cpp \
+	vis/processors/networkevaluatorg.cpp \
+	vis/processors/networkgraph.cpp \
     vis/processors/networkserializer.cpp \
     vis/processors/port.cpp \
     vis/processors/portmapping.cpp \
     vis/processors/processor.cpp \
+    vis/processors/renderprocessor.cpp \
     vis/processors/processorfactory.cpp \
-    vis/processors/propertyset.cpp \
+    vis/processors/processornetwork.cpp \
     vis/processors/interactionhandler.cpp\
     vis/processors/volumeselectionprocessor.cpp \
     vis/processors/volumesetsourceprocessor.cpp \
-    vis/processors/entryexitpoints/cubeentryexitpoints.cpp \
     vis/processors/entryexitpoints/entryexitpoints.cpp \
+    vis/processors/geometry/geometryprocessor.cpp \
+    vis/processors/geometry/pointlistrenderer.cpp \
     vis/processors/image/background.cpp \
     vis/processors/image/coarsenessrenderer.cpp \
     vis/processors/image/canvasrenderer.cpp \
-    vis/processors/image/geometryprocessor.cpp \
     vis/processors/image/labeling.cpp \
     vis/processors/image/labelingmath.cpp \
     vis/processors/image/blur.cpp \
@@ -103,6 +108,7 @@ SOURCES += \
     vis/processors/image/depthoffield.cpp \
     vis/processors/image/edgedetect.cpp \
     vis/processors/image/imageprocessor.cpp \
+    vis/processors/image/imageprocessordepth.cpp \
     vis/processors/image/merge.cpp \
     vis/processors/image/nullrenderer.cpp \
     vis/processors/image/renderstore.cpp \
@@ -138,12 +144,14 @@ SOURCES += \
     vis/properties/colorproperty.cpp \
     vis/properties/condition.cpp \
     vis/properties/enumproperty.cpp \
+    vis/properties/eventproperty.cpp \
     vis/properties/filedialogproperty.cpp \
     vis/properties/floatproperty.cpp \
     vis/properties/intproperty.cpp \
     vis/properties/numericproperty.cpp \
     vis/properties/optionproperty.cpp \
     vis/properties/property.cpp \
+    vis/properties/propertyvector.cpp \
     vis/properties/stringproperty.cpp \
     vis/properties/stringselectionproperty.cpp \
     vis/properties/transferfuncproperty.cpp \
@@ -163,6 +171,7 @@ SOURCES += \
     vis/message.cpp \
     vis/messagedistributor.cpp \
     vis/pyvoreen.cpp \
+	vis/rendertarget.cpp \
     vis/trackballnavigation.cpp \
     vis/voreenpainter.cpp
 SOURCES += \
@@ -186,6 +195,20 @@ SOURCES += \
     volume/gradient.cpp \
     volume/histogram.cpp \
     volume/observer.cpp
+SOURCES += \
+    volume/bricking/balancedbrickresolutioncalculator.cpp \
+    volume/bricking/boxbrickingregion.cpp \
+    volume/bricking/brick.cpp \
+    volume/bricking/brickedvolume.cpp \
+    volume/bricking/brickedvolumegl.cpp \
+    volume/bricking/brickingregion.cpp \
+    volume/bricking/brickingregionmanager.cpp \
+    volume/bricking/bricklodselector.cpp \
+    volume/bricking/brickresolutioncalculator.cpp \
+    volume/bricking/cameralodselector.cpp \
+    volume/bricking/errorlodselector.cpp \ 
+    volume/bricking/largevolumemanager.cpp \
+    volume/bricking/maximumbrickresolutioncalculator.cpp 
 SOURCES += \
     xml/xmlserializable.cpp \
     xml/serializable.cpp
@@ -249,9 +272,19 @@ SHADER_SOURCES_MODS += \
     vis/glsl/modules/mod_transfunc.frag \
     vis/glsl/modules/vrn_shaderincludes.frag
 
+SHADER_SOURCES_MODS_BRICK += \
+    vis/glsl/modules/bricking/mod_adaptive_sampling.frag \
+    vis/glsl/modules/bricking/mod_basics.frag \
+    vis/glsl/modules/bricking/mod_bricking.frag \
+    vis/glsl/modules/bricking/mod_global_variables.frag \
+    vis/glsl/modules/bricking/mod_interpolation.frag \
+    vis/glsl/modules/bricking/mod_lookups.frag \
+    vis/glsl/modules/bricking/mod_math.frag \
+    vis/glsl/modules/bricking/mod_uniforms.frag
+
 win32 {
     MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
-    !isEmpty(MSC_VER): SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_MODS
+    !isEmpty(MSC_VER): SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_MODS $$SHADER_SOURCES_MODS_BRICK
 }
 
 HEADERS += \
@@ -269,8 +302,11 @@ HEADERS += \
     ../../include/voreen/core/geometry/geometrycontainer.h \
     ../../include/voreen/core/geometry/pointgeometry.h \
     ../../include/voreen/core/geometry/pointlistgeometry.h \
-    ../../include/voreen/core/geometry/tgtvec3pointlistgeometry.h
+    ../../include/voreen/core/geometry/tgtvec3pointlistgeometry.h \
+    ../../include/voreen/core/geometry/pointsegmentlistgeometry.h
 HEADERS += \
+    ../../include/voreen/core/io/brickedvolumereader.h \
+    ../../include/voreen/core/io/brickedvolumewriter.h \
     ../../include/voreen/core/io/cache.h \
     ../../include/voreen/core/io/cacheindex.h \
     ../../include/voreen/core/io/datvolumereader.h \
@@ -296,19 +332,24 @@ HEADERS += \
     ../../include/voreen/core/opengl/texturecontainer.h \
     ../../include/voreen/core/opengl/texunitmapper.h
 HEADERS += \
-    ../../include/voreen/core/vis/processors/benchmark.h\
-    ../../include/voreen/core/vis/processors/networkevaluator.h\
-    ../../include/voreen/core/vis/processors/networkserializer.h\
+    ../../include/voreen/core/vis/processors/benchmark.h \
+	../../include/voreen/core/vis/processors/graphvisitor.h \
+    ../../include/voreen/core/vis/processors/networkevaluator.h \
+	../../include/voreen/core/vis/processors/networkevaluatorg.h \
+	../../include/voreen/core/vis/processors/networkgraph.h \
+    ../../include/voreen/core/vis/processors/networkserializer.h \
     ../../include/voreen/core/vis/processors/port.h \
     ../../include/voreen/core/vis/processors/portmapping.h \
     ../../include/voreen/core/vis/processors/processor.h \
+    ../../include/voreen/core/vis/processors/renderprocessor.h \
     ../../include/voreen/core/vis/processors/processorfactory.h \
-    ../../include/voreen/core/vis/processors/propertyset.h \
+    ../../include/voreen/core/vis/processors/processornetwork.h\
     ../../include/voreen/core/vis/processors/interactionhandler.h\
     ../../include/voreen/core/vis/processors/volumeselectionprocessor.h \
     ../../include/voreen/core/vis/processors/volumesetsourceprocessor.h \
-    ../../include/voreen/core/vis/processors/entryexitpoints/cubeentryexitpoints.h \
     ../../include/voreen/core/vis/processors/entryexitpoints/entryexitpoints.h \
+    ../../include/voreen/core/vis/processors/geometry/geometryprocessor.h \
+    ../../include/voreen/core/vis/processors/geometry/pointlistrenderer.h \
     ../../include/voreen/core/vis/processors/image/background.h \
     ../../include/voreen/core/vis/processors/image/blur.h \
     ../../include/voreen/core/vis/processors/image/cacherenderer.h \
@@ -321,8 +362,8 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/image/depthmask.h \
     ../../include/voreen/core/vis/processors/image/depthoffield.h \
     ../../include/voreen/core/vis/processors/image/edgedetect.h \
-    ../../include/voreen/core/vis/processors/image/geometryprocessor.h \
     ../../include/voreen/core/vis/processors/image/imageprocessor.h \
+    ../../include/voreen/core/vis/processors/image/imageprocessordepth.h \
     ../../include/voreen/core/vis/processors/image/labeling.h \
     ../../include/voreen/core/vis/processors/image/labelingmath.h \
     ../../include/voreen/core/vis/processors/image/merge.h \
@@ -362,6 +403,7 @@ HEADERS += \
 	../../include/voreen/core/vis/properties/colorproperty.h \
 	../../include/voreen/core/vis/properties/condition.h \
 	../../include/voreen/core/vis/properties/enumproperty.h \
+    ../../include/voreen/core/vis/properties/eventproperty.h \
 	../../include/voreen/core/vis/properties/filedialogproperty.h \
 	../../include/voreen/core/vis/properties/floatproperty.h \
 	../../include/voreen/core/vis/properties/intproperty.h \
@@ -369,6 +411,7 @@ HEADERS += \
 	../../include/voreen/core/vis/properties/optionproperty.h \
 	../../include/voreen/core/vis/properties/properties_decl.h \
 	../../include/voreen/core/vis/properties/property.h \
+	../../include/voreen/core/vis/properties/propertyvector.h \
 	../../include/voreen/core/vis/properties/stringproperty.h \
 	../../include/voreen/core/vis/properties/stringselectionproperty.h \
 	../../include/voreen/core/vis/properties/templateproperty.h \
@@ -393,6 +436,7 @@ HEADERS += \
     ../../include/voreen/core/vis/propertywidget.h \
     ../../include/voreen/core/vis/propertywidgetfactory.h \
     ../../include/voreen/core/vis/pyvoreen.h \
+	../../include/voreen/core/vis/rendertarget.h \
     ../../include/voreen/core/vis/trackballnavigation.h \
     ../../include/voreen/core/vis/voreenpainter.h
 HEADERS += \
@@ -417,12 +461,30 @@ HEADERS += \
     ../../include/voreen/core/volume/histogram.h \
     ../../include/voreen/core/volume/observer.h
 HEADERS += \
+    ../../include/voreen/core/volume/bricking/balancedbrickresolutioncalculator.h \
+    ../../include/voreen/core/volume/bricking/boxbrickingregion.h \
+    ../../include/voreen/core/volume/bricking/brick.h \
+    ../../include/voreen/core/volume/bricking/brickedvolume.h \
+    ../../include/voreen/core/volume/bricking/brickedvolumegl.h \
+    ../../include/voreen/core/volume/bricking/brickinginformation.h \
+    ../../include/voreen/core/volume/bricking/brickingmanager.h \
+    ../../include/voreen/core/volume/bricking/brickingregion.h \
+    ../../include/voreen/core/volume/bricking/brickingregionmanager.h \
+    ../../include/voreen/core/volume/bricking/bricklodselector.h \
+    ../../include/voreen/core/volume/bricking/brickresolutioncalculator.h \
+    ../../include/voreen/core/volume/bricking/cameralodselector.h \
+    ../../include/voreen/core/volume/bricking/errorlodselector.h \
+    ../../include/voreen/core/volume/bricking/largevolumemanager.h \
+    ../../include/voreen/core/volume/bricking/maximumbrickresolutioncalculator.h \
+    ../../include/voreen/core/volume/bricking/packingbrickassigner.h \
+    ../../include/voreen/core/volume/bricking/rammanager.h \
+    ../../include/voreen/core/volume/bricking/volumebrickcreator.h
+HEADERS += \
     ../../include/voreen/core/xml/xmlserializable.h \
     ../../include/voreen/core/xml/serializable.h
 HEADERS += \
     ../../ext/tinyxml/tinyxml.h \
-    ../../ext/tinyxml/tinystr.h \
-    ../../ext/il/include/IL/il.h
+    ../../ext/tinyxml/tinystr.h
 
 ####################################################
 # Modules which can be enabled/disabled by defines
@@ -512,12 +574,16 @@ unix {
     NETWORKS = clippingcombine clippingplanes fancy glutexample labeling minimal multimodal \
                multiplanar regiongrowing simple singleslice slicesequence \
                standard volumeinversion
-    WORKSPACES = standard
+    WORKSPACES = standard walnut
     SCRIPTS = fps.py
     VOLUMES = nucleon.dat nucleon.raw walnut.dat walnut.raw
     TFS = nucleon.tfi walnut.tfi
+    TEXTURES = anterior2.png axial_b.png axial_t.png coronal_b.png coronal_f.png \
+               inferior2.png lateral2.png sagittal_l.png sagittal_r.png septal2.png
+
     FONTS = Vera.ttf
-    DOCS = CREDITS.txt Changelog.txt LICENSE-academic.txt LICENSE.txt readme.txt
+    DOCS = CREDITS.txt Changelog.txt LICENSE-academic.txt LICENSE.txt readme.txt \
+           doc/gettingstarted/
 
     target.path = $$INSTALLPATH_LIB
 
@@ -525,6 +591,8 @@ unix {
     shaders.files += $$SHADER_SOURCES
     shader_modules.path = $$INSTALLPATH_SHARE/shaders/modules
     shader_modules.files += $$SHADER_SOURCES_MODS
+    shader_modules_brick.path = $$INSTALLPATH_SHARE/shaders/modules/bricking
+    shader_modules_brick.files += $$SHADER_SOURCES_MODS_BRICK
 
     for(i, NETWORKS): NETWORKS_FULL += $$join(i, " ", "../../data/networks/", ".vnw")
     networks.path = $$INSTALLPATH_SHARE/networks
@@ -546,6 +614,10 @@ unix {
     tfs.path = $$INSTALLPATH_SHARE/transferfuncs
     tfs.files += $$TFS_FULL
 
+    for(i, TEXTURES): TEXTURES_FULL += $$join(i, " ", "../../data/textures/", "")
+    textures.path = $$INSTALLPATH_SHARE/textures
+    textures.files += $$TEXTURES_FULL
+
     for(i, FONTS): FONTS_FULL += $$join(i, " ", "../../data/fonts/", "")
     fonts.path = $$INSTALLPATH_SHARE/fonts
     fonts.files += $$FONTS_FULL
@@ -557,8 +629,8 @@ unix {
     icons.path = $$INSTALLPATH_SHARE
     icons.files += ../../resource/vrn_share/icons/icon-64.png
 
-    INSTALLS += target shaders shader_modules networks workspaces scripts volumes \
-                tfs fonts documentation icons
+    INSTALLS += target shaders shader_modules shader_modules_brick networks workspaces scripts volumes \
+                tfs textures fonts documentation icons
   }
 }
 

@@ -30,7 +30,7 @@
 #ifndef VRN_CACHERENDERER_H
 #define VRN_CACHERENDERER_H
 
-#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -39,7 +39,7 @@ namespace voreen {
  * It will use the cached image as long as any parameter of a predecessing processor
  * is changed.
  */
-class CacheRenderer : public Processor {
+class CacheRenderer : public RenderProcessor {
 public:
     CacheRenderer();
     ~CacheRenderer();

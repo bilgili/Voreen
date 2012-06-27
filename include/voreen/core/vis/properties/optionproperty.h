@@ -174,7 +174,7 @@ TiXmlElement* OptionProperty<T>::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
     propElem->SetAttribute("value", getId());
 
-    if (getSerializeMetaData()) {
+    if (getSerializeTypeInformation()) {
         propElem->SetAttribute("class", "OptionProperty");
         for (size_t i = 0; i < options_.size(); ++i) {
             TiXmlElement* allowed = new TiXmlElement("allowedValue");

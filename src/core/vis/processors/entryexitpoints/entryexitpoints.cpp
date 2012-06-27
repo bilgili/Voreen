@@ -53,6 +53,7 @@ const std::string EntryExitPoints::loggerCat_("voreen.EntryExitPoints");
 EntryExitPoints::EntryExitPoints()
     : VolumeRenderer(),
       shaderProgram_(0),
+      shaderProgramJitter_(0),
       shaderProgramClipping_(0),
       supportCameraInsideVolume_("set.supportCameraInsideVolume",
                                  "Support camera inside the volume", true),
@@ -60,9 +61,7 @@ EntryExitPoints::EntryExitPoints()
       filterJitterTexture_("set.filterJitterTexture", "Filter jitter texture", true),
       jitterStepLength_("set.jitterStepLength", "Jitter step length",
                         0.005f, 0.0005f, 0.025f, true),
-      jitterTexture_(0),
-      transformationMatrix_(mat4::identity),
-      switchFrontAndBackFaces_(false)
+      jitterTexture_(0)
 {
     setName("EntryExitPoints");
 
@@ -78,6 +77,12 @@ EntryExitPoints::EntryExitPoints()
 
     addProperty(&supportCameraInsideVolume_);
     addProperty(&jitterEntryPoints_);
+
+    createInport("volumehandle.volumehandle");
+    createCoProcessorInport("coprocessor.proxygeometry");
+    createPrivatePort("image.tmp");
+    createOutport("image.entrypoints");
+    createOutport("image.exitpoints");
 }
 
 EntryExitPoints::~EntryExitPoints() {
@@ -89,7 +94,6 @@ EntryExitPoints::~EntryExitPoints() {
         ShdrMgr.dispose(shaderProgramClipping_);
     if (jitterTexture_)
         TexMgr.dispose(jitterTexture_);
-
 }
 
 int EntryExitPoints::initializeGL() {
@@ -107,104 +111,103 @@ int EntryExitPoints::initializeGL() {
 }
 
 void EntryExitPoints::process(LocalPortMapping* portMapping) {
-    bool handleChanged = false;
-    const bool res = VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
-        portMapping->getVolumeHandle("volumehandle.volumehandle"), &handleChanged);
 
-    if (res && handleChanged)
-        setTransformationMatrix(currentVolumeHandle_->getVolume()->meta().getTransformation());
+    LGL_ERROR;
+
+    if (!VolumeHandleValidator::checkVolumeHandle(currentVolumeHandle_,
+            portMapping->getVolumeHandle("volumehandle.volumehandle")))
+        return;
+
+    int exitSource = portMapping->getTarget("image.exitpoints");
+    int entrySource;
+    
+    // use temporary target if necessary
+    if ( (supportCameraInsideVolume_.get() && jitterEntryPoints_.get()) ||
+         (!supportCameraInsideVolume_.get() && !jitterEntryPoints_.get()) )     
+        entrySource = portMapping->getTarget("image.entrypoints");
+    else 
+        entrySource = portMapping->getTarget("image.tmp");
+
+    // retrieve proxy geometry via coprocessor port
+    PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
+
+    // set modelview and projection matrices
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    tgt::loadMatrix(camera_->getProjectionMatrix());
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    tgt::loadMatrix(camera_->getViewMatrix());
+
+    // enable culling
+    glEnable(GL_CULL_FACE);
+
+    // activate shader program
+    shaderProgram_->activate();
+    setGlobalShaderParameters(shaderProgram_);
+
+    LGL_ERROR;
+
+    //
+    // render back texture
+    //
+    tc_->setActiveTarget(exitSource, "exit"); 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_FRONT);
+    LGL_ERROR;
+    pg->call("render");
+    LGL_ERROR;
+
+    //
+    // render front texture
+    //
+    tc_->setActiveTarget(entrySource, "entry");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_BACK);
+    LGL_ERROR;
+    pg->call("render");
+    LGL_ERROR;
+
+    // deactivate shader program
+    shaderProgram_->deactivate();
+
+    // fill holes in entry points texture caused by near plane clipping
+    if (supportCameraInsideVolume_.get())
+        complementClippedEntryPoints(portMapping);
+
+    // jittering of entry points
+    if (jitterEntryPoints_.get())
+        jitterEntryPoints(portMapping);
+
+    // restore OpenGL context
+    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
+    glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
+
+    // restore modelview and projection matrices
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+    LGL_ERROR;
 }
 
 void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
     VolumeRenderer::processMessage(msg, dest);
 
-    if (msg->id_ == VoreenPainter::cameraChanged_ && msg->getValue<tgt::Camera*>() == camera_)
-        invalidate();
+//     if (msg->id_ == VoreenPainter::cameraChanged_ && msg->getValue<tgt::Camera*>() == camera_)
+//         invalidate();
 }
-
-void EntryExitPoints::setTransformationMatrix(tgt::mat4 trans) {
-    transformationMatrix_ = trans;
-
-    float det = trans.t00 * trans.t11 * trans.t22
-        + trans.t01 * trans.t12* trans.t20
-        + trans.t02 * trans.t10* trans.t21
-        - trans.t20 * trans.t11* trans.t02
-        - trans.t21 * trans.t12* trans.t00
-        - trans.t22 * trans.t10* trans.t01;
-    switchFrontAndBackFaces_ = (det < 0.f);
-}
-
-//void EntryExitPoints::setScaling(tgt::vec3 scale) {
-//    transformationMatrix_ *= mat4::createScale(scale);
-//    if (currentVolumeHandle_ != 0) {
-//        Volume* volume = currentVolumeHandle_->getVolume();
-//        if (volume != 0)
-//            volume->meta().setTransformation(transformationMatrix_);
-//    }
-//}
-//
-//void EntryExitPoints::setTranslation(tgt::vec3 trans) {
-//    transformationMatrix_ *= mat4::createTranslation(trans);
-//    if (currentVolumeHandle_ != 0) {
-//        Volume* volume = currentVolumeHandle_->getVolume();
-//        if (volume != 0)
-//            volume->meta().setTransformation(transformationMatrix_);
-//    }
-//}
-
-//void EntryExitPoints::setRotationX(float angle) {
-//    mat4 mult = mat4::identity;
-//    mult[0][0] = 1;
-//    mult[1][1] = cosf(angle);
-//    mult[1][2] = -sinf(angle);
-//    mult[2][1] = sinf(angle);
-//    mult[2][2] = cosf(angle);
-//    transformationMatrix_ = transformationMatrix_*mult;
-//    if (currentVolumeHandle_ != 0) {
-//        Volume* volume = currentVolumeHandle_->getVolume();
-//        if (volume != 0)
-//            volume->meta().setTransformation(transformationMatrix_);
-//    }
-//}
-//
-//void EntryExitPoints::setRotationY(float angle) {
-//    mat4 mult = mat4::identity;
-//    mult[0][0] = cosf(angle);
-//    mult[0][2] = sinf(angle);
-//    mult[1][1] = 1.f;
-//    mult[2][0] = -sinf(angle);
-//    mult[2][2] = cosf(angle);
-//    transformationMatrix_ = transformationMatrix_ * mult;
-//    if (currentVolumeHandle_ != 0) {
-//        Volume* volume = currentVolumeHandle_->getVolume();
-//        if (volume != 0)
-//            volume->meta().setTransformation(transformationMatrix_);
-//    }
-//}
-//
-//void EntryExitPoints::setRotationZ(float angle) {
-//    mat4 mult = mat4::identity;
-//    mult[0][0] = cosf(angle);
-//    mult[0][1] = -sinf(angle);
-//    mult[1][0] = sinf(angle);
-//    mult[1][1] = cosf(angle);
-//    mult[2][2] = 1;
-//    transformationMatrix_ = transformationMatrix_*mult;
-//    if (currentVolumeHandle_ != 0) {
-//        Volume* volume = currentVolumeHandle_->getVolume();
-//        if (volume != 0)
-//            volume->meta().setTransformation(transformationMatrix_);
-//    }
-//}
 
 void EntryExitPoints::complementClippedEntryPoints(LocalPortMapping* portMapping) {
+
     // note: since this a helper function which is only called internally,
     //       we assume that the modelview and projection matrices have already been set correctly
     //       and that a current dataset is available
 
     tgtAssert(currentVolumeHandle_, "No Volume active");
     tgtAssert(shaderProgramClipping_, "Clipping shader not available");
-
 
     int entrySource;
     int entryDest;
@@ -245,23 +248,25 @@ void EntryExitPoints::complementClippedEntryPoints(LocalPortMapping* portMapping
     );
     bindVolumes(shaderProgramClipping_, volumes);
 
-    if (switchFrontAndBackFaces_)
-        glCullFace(GL_BACK);
-    else
-        glCullFace(GL_FRONT);
+    glCullFace(GL_FRONT);
 
     tc_->setActiveTarget(entryDest, "entry filled");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
-    pg->call("render", 0);
+    pg->call("render");
 
     shaderProgramClipping_->deactivate();
 
     glCullFace(GL_BACK);
+    LGL_ERROR;
+
 }
 
 void EntryExitPoints::jitterEntryPoints(LocalPortMapping* portMapping) {
+
+    tgtAssert(shaderProgramJitter_, "Jittering shader not available");
+
     int entrySource = portMapping->getTarget("image.tmp");
     int exitSource = portMapping->getTarget("image.exitpoints");
 
@@ -359,34 +364,9 @@ void EntryExitPoints::generateJitterTexture() {
     delete[] texData;
 }
 
-// protected methods replacing messaging
-//
 void EntryExitPoints::onFilterJitterTextureChange() {
     generateJitterTexture();
     invalidate();
 }
-
-//void EntryExitPoints::onSetScaleChange() {
-//    tgt::vec3 oldScale(transformationMatrix_.getScalingPart());
-//    tgt::vec3 newScale(scaleProp_.get());
-//    newScale.x /= oldScale.x;
-//    newScale.y /= oldScale.y;
-//    newScale.z /= oldScale.z;
-//    setScaling(newScale);
-//    invalidate();
-//}
-//
-//void EntryExitPoints::onSetTranslationChange() {
-//    tgt::vec3 oldTranslation(transformationMatrix_[0][3], transformationMatrix_[1][3], transformationMatrix_[2][3]);
-//    tgt::vec3 newTranslation(translationProp_.get());
-//    newTranslation -= oldTranslation;
-//    newTranslation.x /= transformationMatrix_[0][0];
-//    newTranslation.y /= transformationMatrix_[1][1];
-//    newTranslation.z /= transformationMatrix_[2][2];
-//    if ( newTranslation != tgt::vec3::zero )
-//        setTranslation(newTranslation);
-//
-//    invalidate();
-//}
 
 } // namespace voreen

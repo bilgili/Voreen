@@ -39,7 +39,7 @@ namespace voreen {
 class VoreenApplicationQt : public VoreenApplication {
 public:
     VoreenApplicationQt(const std::string& name, const std::string& displayName,
-        int argc, char** argv, ApplicationType appType = APP_DEFAULT, const std::string& logDir = "./");
+                        int argc, char** argv, ApplicationType appType = APP_DEFAULT);
     virtual void init();
 };
 

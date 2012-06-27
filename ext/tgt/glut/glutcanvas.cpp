@@ -171,7 +171,7 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
     }
 
     // calculate right TGT modifier
-    int tgtModifier = getModifier(modifier);
+    Event::Modifier tgtModifier = static_cast<Event::Modifier>(getModifier(modifier));
 
     // Create and broadcast event
     MouseEvent* mousePressedEvent = new MouseEvent(x, y, action, tgtModifier, pressedButton);

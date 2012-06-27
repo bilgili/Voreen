@@ -73,10 +73,10 @@ void main() {
         fragColor = blendFactor_*shadeCol0+(1.0-blendFactor_)*shadeCol1;
     } else if (compositingMode_ == 4) {
         // alpha compositing
-        if (depth0 < depth1) {
+        if (depth1 < depth0) {
             fragColor.rgb = shadeCol1.rgb * shadeCol1.a + shadeCol0.rgb * shadeCol0.a * (1.0 - shadeCol1.a);
             fragColor.a = shadeCol1.a + shadeCol0.a * (1.0 - shadeCol1.a);
-        } else {
+		} else {
             fragColor.rgb = shadeCol0.rgb * shadeCol0.a + shadeCol1.rgb * shadeCol1.a * (1.0 - shadeCol0.a);
             fragColor.a = shadeCol0.a + shadeCol1.a * (1.0 - shadeCol0.a);
         }

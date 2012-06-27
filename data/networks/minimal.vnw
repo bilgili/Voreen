@@ -85,7 +85,7 @@
         <Property id="set.lightPosition" x="2.3" y="1.5" z="1.5" w="1" />
         <Property id="set.useCaching" value="true" />
     </Processor>
-    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="5">
+    <Processor type="EntryExitPoints.EntryExitPoints" name="EntryExitPoints" id="5">
         <MetaData>
             <RptProcessorItem x="38" y="-449" />
         </MetaData>

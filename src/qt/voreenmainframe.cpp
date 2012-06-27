@@ -38,7 +38,6 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/trackballnavigation.h"
 
-#include "voreen/qt/widgets/widgetgenerator.h"
 #include "voreen/qt/widgets/widgetplugin.h"
 #include "voreen/qt/widgets/informationplugin.h"
 #include "voreen/qt/widgets/plugindialog.h"

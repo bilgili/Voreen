@@ -436,7 +436,7 @@ void TransFuncEditorIntensityPet::updateTransferFunction() {
 void TransFuncEditorIntensityPet::update() {
     // check whether the volume associated with the TransFuncProperty has changed
     Volume* newVol = property_->getVolume();
-    if (newVol && (newVol != volume_)) {
+    if (newVol != volume_) {
         volume_ = newVol;
         volumeChanged();
     }
@@ -473,34 +473,36 @@ void TransFuncEditorIntensityPet::update() {
 }
 
 void TransFuncEditorIntensityPet::volumeChanged() {
-    int bits = volume_->getBitsStored() / volume_->getNumChannels();
-    int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
-    if (maxNew != maximumIntensity_) {
-        maximumIntensity_ = maxNew;
-        currentRange_ = tgt::ivec2(0, maximumIntensity_);
+    if (volume_) {
+        int bits = volume_->getBitsStored() / volume_->getNumChannels();
+        int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
+        if (maxNew != maximumIntensity_) {
+            maximumIntensity_ = maxNew;
+            currentRange_ = tgt::ivec2(0, maximumIntensity_);
 
-        lowerThresholdSpin_->blockSignals(true);
-        upperThresholdSpin_->blockSignals(true);
+            lowerThresholdSpin_->blockSignals(true);
+            upperThresholdSpin_->blockSignals(true);
 
-        lowerThresholdSpin_->setRange(0, maximumIntensity_ - 1);
-        lowerThresholdSpin_->setValue(tgt::iround(oldThreshold_.x * maximumIntensity_));
+            lowerThresholdSpin_->setRange(0, maximumIntensity_ - 1);
+            lowerThresholdSpin_->setValue(tgt::iround(oldThreshold_.x * maximumIntensity_));
 
-        upperThresholdSpin_->setRange(1, maximumIntensity_);
-        upperThresholdSpin_->setValue(tgt::iround(oldThreshold_.y * maximumIntensity_));
+            upperThresholdSpin_->setRange(1, maximumIntensity_);
+            upperThresholdSpin_->setValue(tgt::iround(oldThreshold_.y * maximumIntensity_));
 
-        lowerThresholdSpin_->updateGeometry();
-        upperThresholdSpin_->updateGeometry();
+            lowerThresholdSpin_->updateGeometry();
+            upperThresholdSpin_->updateGeometry();
 
-        lowerThresholdSpin_->blockSignals(false);
-        upperThresholdSpin_->blockSignals(false);
+            lowerThresholdSpin_->blockSignals(false);
+            upperThresholdSpin_->blockSignals(false);
 
-        //set minimal distance of sliders in doubleSlider widget
-        doubleSlider_->setMinimalAllowedSliderDistance(1.f / static_cast<float>(maximumIntensity_));
-        doubleSlider_->blockSignals(true);
-        doubleSlider_->setValues(oldThreshold_.x, oldThreshold_.y);
-        doubleSlider_->blockSignals(false);
+            //set minimal distance of sliders in doubleSlider widget
+            doubleSlider_->setMinimalAllowedSliderDistance(1.f / static_cast<float>(maximumIntensity_));
+            doubleSlider_->blockSignals(true);
+            doubleSlider_->setValues(oldThreshold_.x, oldThreshold_.y);
+            doubleSlider_->blockSignals(false);
 
-        applyThreshold();
+            applyThreshold();
+        }
     }
 
     // propagate new volume to histogrampainter

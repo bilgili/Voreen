@@ -95,8 +95,9 @@ int main(int argc, char** argv) {
     cmdparser.addCommand(new CommandScale());
     cmdparser.addCommand(new CommandMirrorZ());
     cmdparser.addCommand(new CommandSubSet());
-
-
+	cmdparser.addCommand(new CommandBrick());
+    
+    
 #ifndef VRN_SNAPSHOT
     cmdparser.addCommand(new CommandCreateMotion());
 

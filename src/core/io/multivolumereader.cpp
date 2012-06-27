@@ -56,7 +56,7 @@ VolumeSet* MultiVolumeReader::read(const std::string& fileName)
     if (!fin.good() || fin.eof() || !fin.is_open())
         throw tgt::FileNotFoundException("Unable to open mv file for reading", fileName);
 
-    VolumeSet* volumeSet = new VolumeSet(tgt::File::fileName(fileName));
+    VolumeSet* volumeSet = new VolumeSet(tgt::FileSystem::fileName(fileName));
 
     // extract file path from file name
     string path;

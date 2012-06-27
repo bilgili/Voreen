@@ -33,6 +33,7 @@
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/volume/volumesetcontainer.h"
 #include "voreen/core/io/datvolumewriter.h"
+#include "voreen/core/io/datvolumereader.h"
 #include "voreen/core/vis/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/vis/processors/image/renderstore.h"
 #include "tgt/quadric.h"
@@ -410,12 +411,39 @@ void RegionGrowingProcessor::startGrowing(tgt::ivec2 seedPos, int segmentID) {
     }
 }
 
-void RegionGrowingProcessor::saveSegmentation(std::string filename) {
+void RegionGrowingProcessor::saveSegmentation(std::string filename) const {
     if (segmentationHandle_) {
         LINFO("saving segmentation volume to " << filename);
         DatVolumeWriter writer;
         writer.write(filename, segmentationHandle_->getVolume());
     }
+}
+
+void RegionGrowingProcessor::loadSegmentation(std::string filename) {
+
+    LINFO("Reading segmentation: " << filename);
+
+    delete segmentationHandle_;
+    segmentationHandle_ = 0;
+
+    DatVolumeReader reader;
+    VolumeSet* volSet = 0;
+    try {
+        volSet = reader.read(filename);
+    }
+    catch (std::exception& /*e*/) {}
+    
+    if (volSet) {
+        Volume* vol = volSet->getFirstVolume();
+        if (vol) {
+            segmentationHandle_ = new VolumeHandle(vol);
+            invalidate();
+            return;
+        }
+    }
+
+    LERROR("Failed reading segmentation: " << filename);
+
 }
 
 void RegionGrowingProcessor::saveSegment(int segmentID, std::string filename) {

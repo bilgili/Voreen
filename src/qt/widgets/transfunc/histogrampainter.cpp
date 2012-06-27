@@ -61,10 +61,12 @@ void HistogramPainter::setHistogram(HistogramIntensity* histogram) {
     cache_ = 0;
 }
 
-void HistogramPainter::setxRange(tgt::vec2 xRange) {
-    xRange_ = xRange;
-    delete cache_;
-    cache_ = 0;
+void HistogramPainter::setxRange(const tgt::vec2& xRange) {
+    if (xRange != xRange_) {
+        xRange_ = xRange;
+        delete cache_;
+        cache_ = 0;
+    }
 }
 
 void HistogramPainter::paintEvent(QPaintEvent* event) {
@@ -90,66 +92,92 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
             paint.setBrush(QColor(200, 0, 0, 120));
             paint.setRenderHint(QPainter::Antialiasing, true);
 
-            //Qt can't handle polygons that have more than 65536 points
-            //so we have to split the polygon
             int histogramWidth = static_cast<int>(histogram_->getBucketCount());
-            QPointF* points;
             tgt::vec2 p;
-            if (histogramWidth == 65536) {//16 bit dataset
-                points = new QPointF[histogramWidth-1];
-                for (int x=0; x<histogramWidth-3; ++x) {
+
+            QPointF* points = new QPointF[histogramWidth + 2];
+            int count = 0;
+
+            for (int x=0; x < histogramWidth; ++x) {
+                float xpos = static_cast<float>(x) / histogramWidth;
+                // Do some simple clipping here, as the automatic clipping of drawPolygon()
+                // gets very slow if lots of polygons have to be clipped away, e.g. when
+                // zooming to small part of the histogram.
+                if (xpos >= xRange_[0] && xpos <= xRange_[1]) {
                     float value = histogram_->getLogNormalized(x);
-                    p = wtos(tgt::vec2(static_cast<float>(x)/(histogramWidth-1),
-                                       value * (yRange_[1] - yRange_[0]) + yRange_[0]));
-                    points[x].rx() = p.x;
-                    points[x].ry() = p.y;
+                    p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
+
+                    // optimization: if the y-coord has not changed from the two last points
+                    // then just update the last point's x-coord to the current one
+                    if( (count >= 2 ) && (points[count - 2].ry() == p.y) && (points[count - 1].ry() == p.y) && (count >= 2) ){
+                        points[count - 1].rx() = p.x;
+                    } else {
+                        points[count].rx() = p.x;
+                        points[count].ry() = p.y;
+                        count++;
+                    }
                 }
-                //needed for a closed polygon
-                p = wtos(tgt::vec2((histogramWidth-3.f)/(histogramWidth-1.f), yRange_[0]));
-                points[histogramWidth-3].rx() = p.x;
-                points[histogramWidth-3].ry() = p.y;
+            }
+
+            // Qt can't handle polygons that have more than 65536 points
+            // so we have to split the polygon
+            bool needSplit = false;
+            if (count > 65536 - 2) { // 16 bit dataset
+                needSplit = true;
+                count = 65536 - 2; // 2 points needed for closing the polygon
+            }
+                
+            if (count > 0) {
+                // move x coordinate of first and last points to prevent vertical holes caused
+                // by clipping
+                points[0].rx() = wtos(tgt::vec2(xRange_[0], 0.f)).x;
+                if (count < histogramWidth - 2) // only when last point was actually clipped
+                    points[count - 1].rx() = wtos(tgt::vec2(xRange_[1], 0.f)).x;
+
+                // needed for a closed polygon
                 p = wtos(tgt::vec2(0.f, yRange_[0]));
-                points[histogramWidth-2].rx() = p.x;
-                points[histogramWidth-2].ry() = p.y;
+                points[count].rx() = points[count - 1].rx();
+                points[count].ry() = p.y;
+                count++;
+                p = wtos(tgt::vec2(0.f, yRange_[0]));
+                points[count].rx() = points[0].rx();
+                points[count].ry() = p.y;
+                count++;
 
-                paint.drawPolygon(points, histogramWidth-1);
+                paint.drawPolygon(points, count);
+            }
 
-                //last points
+            // draw last points when splitting is needed
+            if (needSplit && false) {
                 delete[] points;
                 points = new QPointF[5];
-                for (int x=histogramWidth-3; x<histogramWidth; ++x) {
-                    float value = histogram_->getLogNormalized(x);
-                    p = wtos(tgt::vec2(static_cast<float>(x)/(histogramWidth-1), value * (yRange_[1] - yRange_[0]) + yRange_[0]));
-                    points[x-histogramWidth+3].rx() = p.x;
-                    points[x-histogramWidth+3].ry() = p.y;
+                count = 0;
+                for (int x=histogramWidth - 2; x < histogramWidth; ++x) {
+                    float xpos = static_cast<float>(x) / histogramWidth;
+                    if (xpos >= xRange_[0] && xpos <= xRange_[1]) {
+                        float value = histogram_->getLogNormalized(x);
+                        p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
+                        points[x-histogramWidth+3].rx() = p.x;
+                        points[x-histogramWidth+3].ry() = p.y;
+                        count++;
+                    }
                 }
-                //needed for a closed polygon
-                p = wtos(tgt::vec2(1.f, yRange_[0]));
-                points[3].rx() = p.x;
-                points[3].ry() = p.y;
-                p = wtos(tgt::vec2((histogramWidth-3.f)/(histogramWidth-1.f), yRange_[0]));
-                points[4].rx() = p.x;
-                points[4].ry() = p.y;
+                if (count > 0) {
+                    // move x coordinate of last point to prevent vertical holes caused by clipping
+                    points[count - 1].rx() = wtos(tgt::vec2(xRange_[1], 0.f)).x;
+                
+                    // needed for a closed polygon
+                    p = wtos(tgt::vec2(0.f, yRange_[0]));
+                    points[count].rx() = points[count - 1].rx();
+                    points[count].ry() = p.y;
+                    count++;
+                    p = wtos(tgt::vec2(0, yRange_[0]));
+                    points[count].rx() = points[0].rx();
+                    points[count].ry() = p.y;
+                    count++;
 
-                paint.drawPolygon(points, 5);
-            }
-            else {
-                points = new QPointF[histogramWidth + 2];
-                for (int x=0; x<histogramWidth; ++x) {
-                    float value = histogram_->getLogNormalized(x);
-                    p = wtos(tgt::vec2(static_cast<float>(x)/(histogramWidth-1), value * (yRange_[1] - yRange_[0]) + yRange_[0]));
-                    points[x].rx() = p.x;
-                    points[x].ry() = p.y;
+                    paint.drawPolygon(points, 5);
                 }
-                //needed for a closed polygon
-                p = wtos(tgt::vec2(1.f, yRange_[0]));
-                points[histogramWidth].rx() = p.x;
-                points[histogramWidth].ry() = p.y;
-                p = wtos(tgt::vec2(0.f, yRange_[0]));
-                points[histogramWidth+1].rx() = p.x;
-                points[histogramWidth+1].ry() = p.y;
-
-                paint.drawPolygon(points, histogramWidth + 2);
             }
             delete[] points;
         }
@@ -159,10 +187,10 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
     paint.drawPixmap(0, 0, *cache_);    
 }
 
-tgt::vec2 HistogramPainter::wtos(tgt::vec2 p) {
+tgt::vec2 HistogramPainter::wtos(const tgt::vec2& p) const {
     float sx = (p.x - xRange_[0]) / (xRange_[1] - xRange_[0]) * (static_cast<float>(width())  - 2 * padding_ - 1.5 * arrowLength_) + padding_;
     float sy = (p.y - yRange_[0]) / (yRange_[1] - yRange_[0]) * (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
     return tgt::vec2(sx, sy);
 }
 
-} // namespace voreen
+} // namespace

@@ -56,21 +56,45 @@ void CompactFileDialogPropertyWidget::setProperty() {
         const std::string& directory = property_->getDirectory();
         const std::string& fileFilter = property_->getFileFilter();
 
-        std::string filename = QFileDialog::getOpenFileName(QWidget::parentWidget(), dialogCaption.c_str(),
-            directory.c_str(), fileFilter.c_str()).toStdString();
-        property_->set(filename);
-        updateButtonText(filename);
-        emit propertyChanged();
+        std::string filename;
+        if (property_->getFileMode() == FileDialogProp::FILE) {
+            filename = QFileDialog::getOpenFileName(QWidget::parentWidget(), dialogCaption.c_str(),
+                directory.c_str(), fileFilter.c_str()).toStdString();
+        }
+        else if (property_->getFileMode() == FileDialogProp::DIRECTORY) {
+            filename = QFileDialog::getExistingDirectory(QWidget::parentWidget(), dialogCaption.c_str(),
+                QString::fromStdString(property_->get())).toStdString();
+        }
+        
+        if (!filename.empty()) {
+            property_->set(filename);
+            updateButtonText(filename);
+            emit propertyChanged();
+        }
+
     }
 }
 
 void CompactFileDialogPropertyWidget::updateButtonText(const std::string& filename) {
     if (!filename.empty()) {
-        size_t index = filename.find_last_of('/');
-        std::string endFilename = filename.substr(index + 1, filename.length());
-        openFileDialogBtn_->setText(endFilename.c_str());
-    } else
-        openFileDialogBtn_->setText(tr("open file"));
+        if (property_->getFileMode() == FileDialogProp::FILE) {
+            size_t index = filename.find_last_of('/');
+            std::string endFilename = filename.substr(index + 1, filename.length());
+            openFileDialogBtn_->setText(endFilename.c_str());
+        }
+        else if (property_->getFileMode() == FileDialogProp::DIRECTORY) {
+            std::string directory = filename;
+            if (directory.length() >= 20)
+                directory = "..." + directory.substr(directory.length()-20);
+            openFileDialogBtn_->setText(directory.c_str());
+        }
+    } 
+    else {
+        if (property_->getFileMode() == FileDialogProp::FILE)   
+             openFileDialogBtn_->setText(tr("open file"));
+        else if (property_->getFileMode() == FileDialogProp::DIRECTORY)   
+            openFileDialogBtn_->setText(tr("select directory"));
+    }
 
     openFileDialogBtn_->update();
 }

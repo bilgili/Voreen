@@ -28,9 +28,12 @@
 
 namespace tgt {
 
-	EventListener::EventListener(){
-	    eventTypes_ = Event::ALLEVENTTYPES;
-	}
+EventListener::EventListener() {
+    eventTypes_ = Event::ALLEVENTTYPES;
+}
+
+EventListener::~EventListener() {
+}
 
 void EventListener::onEvent(Event* e) {
     /*
@@ -59,11 +62,39 @@ void EventListener::onEvent(Event* e) {
 }
 
 void EventListener::setEventTypes(int eventTypes){
-    eventTypes_=eventTypes;
+    eventTypes_ = eventTypes;
 }
 
 int EventListener::getEventTypes(){
 	return eventTypes_;
+}
+
+void EventListener::mousePressEvent(MouseEvent* e) {
+    e->ignore();
+}
+
+void EventListener::mouseReleaseEvent(MouseEvent* e) {
+    e->ignore();
+}
+
+void EventListener::mouseMoveEvent(MouseEvent* e) {
+    e->ignore();
+}
+
+void EventListener::mouseDoubleClickEvent(MouseEvent* e) {
+    e->ignore();
+}
+
+void EventListener::wheelEvent(MouseEvent* e) {
+    e->ignore();
+}
+
+void EventListener::timerEvent(TimeEvent* e) {
+    e->ignore();
+}
+
+void EventListener::keyEvent(KeyEvent* e) {
+    e->ignore();
 }
 
 } // namespace tgt

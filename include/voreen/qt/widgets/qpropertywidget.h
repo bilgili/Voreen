@@ -45,11 +45,10 @@ public:
 
     void setVisible(bool state);
 
-    virtual void showLODControls() = 0;
-    virtual void hideLODControls() = 0;
-
 public slots:
     virtual void setLevelOfDetail(bool value) = 0;
+    virtual void showLODControls() = 0;
+    virtual void hideLODControls() = 0;
 
 signals:
     void propertyChanged(); // should result in a repaint

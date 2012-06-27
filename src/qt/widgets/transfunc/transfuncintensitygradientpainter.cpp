@@ -217,7 +217,7 @@ TransFuncPrimitive* TransFuncIntensityGradientPainter::getPrimitiveUnderMouse(tg
 
 void TransFuncIntensityGradientPainter::addQuadPrimitive() {
     // create new primitive
-    TransFuncPrimitive* p = new TransFuncQuad(tgt::vec2(0.5f), 0.2f, tgt::col4(128));
+    TransFuncPrimitive* p = new TransFuncQuad(tgt::vec2(0.5f), 0.2f, tgt::col4(128), scaleFactor_);
 
     // add primitive to transfer function
     tf_->addPrimitive(p);
@@ -228,7 +228,7 @@ void TransFuncIntensityGradientPainter::addQuadPrimitive() {
     // select primitive and update widgets
     selectPrimitive(p);
 
-    //repaint canvas
+    // repaint canvas
     getCanvas()->repaint();
 }
 
@@ -236,7 +236,7 @@ void TransFuncIntensityGradientPainter::addBananaPrimitive() {
     // create new primitive
     TransFuncPrimitive* p = new TransFuncBanana(tgt::vec2(0.f), tgt::vec2(0.3f, 0.4f),
                                                 tgt::vec2(0.34f, 0.2f), tgt::vec2(0.5f, 0.f),
-                                                tgt::col4(128));
+                                                tgt::col4(128), scaleFactor_);
 
     // add primitive to transfer function
     tf_->addPrimitive(p);
@@ -247,7 +247,7 @@ void TransFuncIntensityGradientPainter::addBananaPrimitive() {
     // select primitive and update widgets
     selectPrimitive(p);
 
-    //repaint canvas
+    // repaint canvas
     getCanvas()->repaint();
 }
 
@@ -499,8 +499,9 @@ void TransFuncIntensityGradientPainter::volumeChanged(Volume* newVolume) {
 
     histogramBrightness_ = 1.f;
     showHistogram_ = false;
+    scaleFactor_ = 1.f;
     if (tf_)
-        tf_->setScaleFactor(1.f);
+        tf_->setScaleFactor(scaleFactor_);
 
     delete histogram_;
     delete histogramTex_;

@@ -33,27 +33,29 @@
 #include <QtGui>
 
 #include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/processornetwork.h"
 
 namespace voreen {
 
 class ConsolePlugin;
 class NetworkEvaluator;
-class RptPropertyListWidget;
-class RptGraphWidget;
-class RptNetwork;
-class RptPainterWidget;
-class RptProcessorListWidget;
+class PropertyListWidget;
+class NetworkEditor;
+class ProcessorNetwork;
+class VoreenCanvasWidget;
+class ProcessorListWidget;
 class VolumeSetContainer;
 class VolumeSetWidget;
 class VoreenToolWindow;
 class VoreenToolDockWindow;
 class WidgetPlugin;
+class ShortcutPreferencesWidget;
 
 //---------------------------------------------------------------------------
 
 class VoreenMainWindow;
 
-class VoreenVisualization : public QObject {
+class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
     Q_OBJECT
 public:
     VoreenVisualization();
@@ -74,34 +76,37 @@ public:
     void saveWorkspace(const std::string& filename, bool reuseTCTargets, VoreenMainWindow* mainwindow)
         throw (SerializerException);
 
+    // Implementation of the ProcessorNetworkObserver interface
+    void networkChanged();
+    void processorAdded(Processor* processor);
+    void processorRemoved(Processor* processor);
+
     void clearScene();
-    void setNetwork(RptNetwork* network);
+    void setNetwork(ProcessorNetwork* network);
+    void setVolumeSetContainer(VolumeSetContainer* volumeSetContainer);
     std::vector<std::string> getNetworkErrors();
     bool evaluateNetwork();
     bool rebuildShaders();
 
-    void setRenderWidget(RptPainterWidget* renderWidget);
-    void setNetworkEditorWidget(RptGraphWidget* networkEditorWidget);
+    void setCanvasWidget(VoreenCanvasWidget* renderWidget);
+    void setNetworkEditorWidget(NetworkEditor* networkEditorWidget);
     void setVolumeSetWidget(VolumeSetWidget* volumeSetWidget);
 
     bool readOnlyWorkspace() const { return readOnlyWorkspace_; }
 
 signals:
-    void networkLoaded(RptNetwork* network);
-    void processorDeleted(Processor* processor);
-
-public slots:    
-    void deleteFromNetwork();
+    void networkLoaded(ProcessorNetwork* network);
+    void networkModified(ProcessorNetwork* network);
     
 private:
     NetworkEvaluator* evaluator_;
-    RptNetwork* rptnet_;
+    ProcessorNetwork* processorNetwork_;
     VolumeSetContainer* volsetContainer_;
     GeometryContainer* geoContainer_;
     tgt::Camera* camera_;
 
-    RptPainterWidget* renderWidget_;
-    RptGraphWidget* networkEditorWidget_;
+    VoreenCanvasWidget* canvasWidget_;
+    NetworkEditor* networkEditorWidget_;
     VolumeSetWidget* volumeSetWidget_;
     bool readOnlyWorkspace_;
 };
@@ -142,7 +147,8 @@ public slots:
     void openNetwork();
     void openNetwork(const QString& filename);
     bool saveNetworkAs();
-    void setNetwork(RptNetwork* network);
+    void setNetwork(ProcessorNetwork* network);
+    void setVolumeSetContainer(VolumeSetContainer* volSetContainer);
 
     // workspace
     void newWorkspace();
@@ -165,6 +171,7 @@ public slots:
     void navigationChanged();
     void setLoadLastWorkspace();
     void setReuseTargets();
+    void displayShortcutPreferences();
     
     // help menu
     void helpAbout();
@@ -238,9 +245,10 @@ private:
     
     GuiMode guiMode_;
 
-    RptPainterWidget* renderWidget_;
+    VoreenCanvasWidget* canvasWidget_;
     VolumeSetWidget* volumeSetWidget_;
-    RptGraphWidget* networkEditorWidget_;
+    NetworkEditor* networkEditorWidget_;
+    ShortcutPreferencesWidget* shortcutPrefWidget_;
 
     VoreenVisualization* vis_;
     
@@ -252,10 +260,11 @@ private:
     QList<std::pair<WidgetPlugin*, QAction*> > tools_;
     
     VoreenToolDockWindow* propertyListTool_;
-    RptPropertyListWidget* propertyListWidget_;
-    RptProcessorListWidget* processorListWidget_;
+    PropertyListWidget* propertyListWidget_;
+    ProcessorListWidget* processorListWidget_;
     VoreenToolDockWindow* processorListTool_;
-    
+    VoreenToolWindow* consoleTool_;
+
     QSettings settings_;
     QByteArray visualizationModeState_;
     QByteArray networkModeState_;
@@ -266,6 +275,7 @@ private:
     QMdiArea* mdiArea_;
     VoreenMdiSubWindow* networkEditorWindow_;
     VoreenMdiSubWindow* renderWindow_;
+    VoreenMdiSubWindow* shortcutPrefWindow_;
     
     // Main menu
     QMenuBar* menu_;
@@ -289,6 +299,7 @@ private:
     QAction* openDatasetAction_;
     QAction* openNetworkFileAction_;
     QAction* saveNetworkAsAction_;
+    QAction* showShortcutPreferencesAction_;
     QAction* openDicomDirAct_;
     QAction* openDicomFilesAct_;
     QAction* quitAction_;

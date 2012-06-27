@@ -95,6 +95,20 @@ public:
     VolumeSet* load(const std::string& filename)
         throw (tgt::FileException, std::bad_alloc);
 
+    /**
+     * Instead of reading the whole dataset, only some slices are read from file and written
+     * to the newly built volume. This isn't supported by all file formats.
+     */
+    VolumeSet* loadSlices(const std::string& filename, size_t firstSlice, size_t lastSlice)
+        throw (tgt::FileException, std::bad_alloc);
+
+    /**
+     * Instead of reading the whole dataset, only a brick of volumedata, specified by
+     * its starting location and its dimensions, is read. This isn't supported by all file formats.
+     */
+    VolumeSet* loadBrick(const std::string& filename,tgt::ivec3 brickStartPos, int brickSize)
+        throw (tgt::FileException, std::bad_alloc);
+
     VolumeHandle* loadFromOrigin(VolumeHandle::Origin origin);
 
     /**

@@ -43,12 +43,12 @@ const Identifier VolumeRenderer::setTransFunc2_("set.TransferFunction2");
 
 
 VolumeRenderer::VolumeRenderer(tgt::Camera* camera, TextureContainer* tc)
-    : Processor(camera, tc),
+    : RenderProcessor(camera, tc),
       currentVolumeHandle_(0)
 {}
 
 std::string VolumeRenderer::generateHeader() {
-    std::string header = Processor::generateHeader();
+    std::string header = RenderProcessor::generateHeader();
 
     if (GpuCaps.isNpotSupported())
         header += "#define VRN_TEXTURE_3D\n";
@@ -59,7 +59,7 @@ std::string VolumeRenderer::generateHeader() {
 }
 
 void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader) {
-    Processor::setGlobalShaderParameters(shader);
+    RenderProcessor::setGlobalShaderParameters(shader);
 
     shader->setIgnoreUniformLocationError(true);
 

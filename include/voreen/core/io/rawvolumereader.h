@@ -82,6 +82,12 @@ public:
     virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
+    virtual VolumeSet* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+        throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+
+    virtual VolumeSet* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+        throw(tgt::FileException, std::bad_alloc);
+
 private:
 
     tgt::ivec3 dimensions_;
@@ -94,7 +100,7 @@ private:
     Modality modality_;
     float timeStep_;
     std::string metaString_;
-    int offset_;
+    uint64_t offset_;
     std::string unit_;
 
     static const std::string loggerCat_;

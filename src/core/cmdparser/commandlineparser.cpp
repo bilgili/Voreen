@@ -93,6 +93,13 @@ CommandlineParser::~CommandlineParser() {
     commands_.clear();
 }
 
+std::string CommandlineParser::getProgramPath() const {
+    return programPath_;
+}
+
+void CommandlineParser::setVerbosity(const bool verbosity) {
+    verbosity_ = verbosity;
+}
 
 void CommandlineParser::setCommandLine(int argc, char** argv) {
     // argv[0] = program name
@@ -277,7 +284,7 @@ Command* CommandlineParser::getCommand(std::string shortOrLongName) {
 
 inline void CommandlineParser::exitWithError(const std::string& msg) {
     std::cout << msg << std::endl << std::endl;
-    displayHelp();
+    displayUsage();
     exit(EXIT_FAILURE);
 }
 

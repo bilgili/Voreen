@@ -30,20 +30,20 @@ TimeEvent::TimeEvent()
     : Event()
 {}
 
-TimeEvent::TimeEvent( Timer* timer ) 
-    : Event (),
-      timer_ ( timer )
+TimeEvent::TimeEvent(Timer* timer) 
+    : Event ()
+    , timer_(timer)
 {}
 
 Timer* TimeEvent::getTimer() {
     return timer_;
 }
 
-void TimeEvent::setTimer( Timer* timer ) {
+void TimeEvent::setTimer(Timer* timer) {
     timer_ = timer;
 }
 
-int TimeEvent::getEventType(){
+int TimeEvent::getEventType() {
     return TIMEREVENT;
 }
 

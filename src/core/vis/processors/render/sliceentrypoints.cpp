@@ -56,10 +56,6 @@ std::string SliceEntryPoints::generateHeader() {
     return header;
 }
 
-void SliceEntryPoints::processMessage(Message* msg, const Identifier& dest) {
-    EntryExitPoints::processMessage(msg, dest);
-}
-
 void SliceEntryPoints::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 
@@ -91,7 +87,7 @@ void SliceEntryPoints::process(LocalPortMapping* portMapping) {
     tgt::loadMatrix(camera_->getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    tgt::loadMatrix(camera_->getViewMatrix() * transformationMatrix_);
+    tgt::loadMatrix(camera_->getViewMatrix());
 
     shaderProgram_->activate();
     setGlobalShaderParameters(shaderProgram_);

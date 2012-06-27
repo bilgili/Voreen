@@ -89,6 +89,11 @@ public:
     void createConnections();
 
     /**
+    * Assigns the passed transfer function property.
+    */
+    void setTransFuncProp(TransFuncProp* prop);
+
+    /**
      * Tests whether the volume associated with the transFuncProperty has changed and updates
      * the editor to the new volume when necessary.
      */

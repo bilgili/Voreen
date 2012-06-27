@@ -35,7 +35,7 @@ bool Script::load(const std::string& filename, bool compileDirectly) {
     File* file = FileSys.open(filename);
 
     // Check if file is open
-    if (!file || !file->open())
+    if (!file || !file->isOpen())
         return false;
 
     size_t len = file->size();

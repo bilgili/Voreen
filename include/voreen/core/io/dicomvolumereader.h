@@ -204,7 +204,7 @@ private:
      *
      * @deprecated should be encapsulated
      */
-    virtual int loadSlice(const std::string& fileName, int posScalar);
+    virtual int loadSlice(const std::string& fileName, size_t posScalar);
 
     /**
      * Generates a 2D-Texture from a DicomImage.

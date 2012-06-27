@@ -41,48 +41,16 @@
 #include "voreen/core/xml/serializable.h"
 #include "voreen/core/vis/processors/port.h"
 #include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/volume/volumehandlevalidator.h"
 #include "voreen/core/vis/properties/allproperties.h"
 #include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/volume/volumehandlevalidator.h"
 
 namespace voreen {
 
-class ProxyGeometry;
 class GeometryContainer;
+class LocalPortMapping;
+class ProxyGeometry;
 class TextureContainer;
-
-class HasShader {
-public:
-    HasShader();
-
-    virtual ~HasShader();
-
-    /**
-     * Invalidate the shader, so that recompiling is performed before the next
-     * rendering.
-     */
-    virtual void invalidateShader();
-
-protected:
-    /**
-     * Compile the shader if necessary.
-     *
-     * Checks the bool flag isShaderValid_ and calls the virtual method compile()
-     * if necessary. So derived classes should place their compile code there and
-     * call the method invalidateShader() when recompiling is required.
-     */
-    virtual void compileShader();
-
-    /**
-     * Compile and link the shader program
-     */
-    virtual void compile() = 0;
-
-private:
-    bool needRecompileShader_; ///< should the shader recompiled?
-};
-
-// ------------------------------------------------------------------------- //
 
 /**
  * The base class for all processor classes used in Voreen.
@@ -114,12 +82,7 @@ public:
     // Note: The order for the first port is not really needed.
     typedef std::vector< std::pair< ConnectionSide, ConnectionSide > > ConnectionMap;
 
-
-    /**
-     * @param camera The tgt::Camera which is used with this class.
-     * @param tc Some processor subclasses must know the TextureContainer.
-     */
-    Processor(tgt::Camera* camera = 0, TextureContainer* tc = 0);
+    Processor();
 
     virtual ~Processor();
 
@@ -144,7 +107,6 @@ public:
     /// Returns the error code which occured during \a initializeGL().
     int getInitStatus() const;
 
-
     /// This method is called when the processor should be processed.
     virtual void process(LocalPortMapping* portMapping) = 0;
 
@@ -155,31 +117,8 @@ public:
      */
     virtual Message* call(Identifier ident, LocalPortMapping* portMapping);
 
-    virtual void setTextureContainer(TextureContainer* tc);
-    virtual TextureContainer* getTextureContainer();
-
-    virtual void setCamera(tgt::Camera* camera);
-
-    /// Returns the camera used by this processor.
-    virtual tgt::Camera* getCamera() const;
-
-    /// Returns the light source position in world coordinates
-    virtual tgt::vec3 getLightPosition() const;
-
     /**
-     * Processes:
-     * - Identifier::setBackgroundColor
-     * - "set.viewport"
-     * - Identifier::setTargetTypeMapping
-     * - LightMaterial::setLightPosition_, type Vec4Msg
-     * - LightMaterial::setLightAmbient_, type ColorMsg
-     * - LightMaterial::setLightDiffuse_, type ColorMsg
-     * - LightMaterial::setLightSpecular_, type ColorMsg
-     * - LightMaterial::setLightAttenuation_, type Vec3Msg (constant, linear, quadratic)
-     * - LightMaterial::setMaterialAmbient_, type ColorMsg
-     * - LightMaterial::setMaterialDiffuse_, type ColorMsg
-     * - LightMaterial::setMaterialSpecular_, type ColorMsg
-     * - LightMaterial::setMaterialShininess_, type FloatMsg
+	 * @deprecated: Messaging will be removed.
      */
     virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 
@@ -187,24 +126,11 @@ public:
     void setName(const std::string& name);
 
     /// Returns the name of this processor.
-    std::string getName() const;
+    const std::string& getName() const;
 
     // Returns processor information
     virtual const std::string getProcessorInfo() const;
 
-    /// Set the size of this processor.
-    virtual void setSize(const tgt::ivec2& size);
-
-    /// Set the size of this processor.
-    virtual void setSize(const tgt::vec2& size);
-
-    /// Returns the size of the processor canvas.
-    tgt::ivec2 getSize() const;
-
-    /// Returns the size of the processor canvas as a float.
-    /// Non-integer values can be introduces by the CoarsenessRenderer.
-    tgt::vec2 getSizeFloat() const;
-    
     /// Marks that the processor needs to be updated
     virtual void invalidate();
 
@@ -217,27 +143,29 @@ public:
     /**
      * Returns the inports of this processor.
      */
-    virtual std::vector<Port*> getInports() const;
+    virtual const std::vector<Port*>& getInports() const;
 
     /**
     * Returns the outports of this processor.
     */
-    virtual std::vector<Port*> getOutports() const;
+    virtual const std::vector<Port*>& getOutports() const;
 
     /**
     * Returns the coprocessor inports of this processor.
     */
-    virtual std::vector<Port*> getCoProcessorInports() const;
+    virtual const std::vector<Port*>& getCoProcessorInports() const;
 
     /**
     * Returns the coprocessor outports of this processor.
     */
-    virtual std::vector<Port*> getCoProcessorOutports() const;
+    virtual const std::vector<Port*>& getCoProcessorOutports() const;
 
     /**
     * Returns the private ports of this processor.
     */
-    virtual std::vector<Port*> getPrivatePorts() const;
+    virtual const std::vector<Port*>& getPrivatePorts() const;
+
+    bool hasPortOfCertainType(int portTypeMask) const;
 
     /**
     * Returns the port that contains (or better that is represented by) the given Identifier.
@@ -264,8 +192,8 @@ public:
      *                    input from. If this is neccessary, inportIdent holds the Identifier of
      *                    that inport.
      */
-    virtual void createOutport(Identifier type, bool isPersistent = false,
-                               Identifier inportIdent = "dummy.port.unused");
+    virtual void createOutport(Identifier type, bool isPersistent = false, 
+        Identifier inportIdent = "dummy.port.unused");
 
     /**
      * Contains an outport which actually contains the passed data. The data will be deleted
@@ -284,11 +212,12 @@ public:
     void createGenericOutport(Identifier type, const T data, const bool isPersistent = false,
                               const Identifier& inportIdent = "dummy.port.unused")
     {
-        Port* newOutport = new GenericOutPort<T>(type, data, this, isPersistent);
-        outports_.push_back(newOutport);
+        Port* outport = new GenericOutPort<T>(type, data, this, isPersistent);
+        outports_.push_back(outport);
+        portMap_.insert(std::make_pair(type, outport));
         if (inportIdent != "dummy.port.unused") {
             if (getPort(inportIdent) != 0)
-                outportToInportMap_.insert(std::pair<Port*, Port*>(newOutport, getPort(inportIdent)));
+                outportToInportMap_.insert(std::pair<Port*, Port*>(outport, getPort(inportIdent)));
             else
                 LWARNING("Couldn't find the inport in Processor::createGenericOutport())");
         }
@@ -321,7 +250,7 @@ public:
     /**
      * Creates a new private port for this processor. Private ports are ports that get a render
      * target, but that target isn't connected to any other processors. (That port doesn't show
-     * up in rptgui). The combiner for example needs two temporary TC targets to work correctly,
+     * up in network editor). The combiner for example needs two temporary TC targets to work correctly,
      * and this is how it gets them. Just create two privatePorts and render your temporary
      * render results to those targets. Private ports are always persistent.
      *
@@ -332,7 +261,7 @@ public:
 
     /**
      * Connects one outport of this processor with one inport of another processor. You can use
-     * this function to manually build processor networks, but the easier way is to use rptgui.
+     * this function to manually build processor networks, but the easier way is to use network editor.
      *
      * @param outport The outport of this processor that is to be connected
      * @param inport The inport of the target processor to which the outport should connect.
@@ -340,14 +269,15 @@ public:
     virtual bool connect(Port* outport, Port* inport);
 
     /**
+     * Disconnectes the outport of this processor from the inport from another processor
+     */
+    virtual bool disconnect(Port* outport, Port* inport);
+
+    /**
      * Tests if the outport of this processor can be connected to the inport of the other processor
      */
     virtual bool testConnect(Port* outport, Port* inport);
 
-    /**
-     * Disconnectes the outport of this processor from the inport from another processor
-     */
-    virtual bool disconnect(Port* outport, Port* inport);
 
     /**
      * Returns the name of the xml element used when serializing the object
@@ -424,14 +354,6 @@ public:
     bool usesVolumeCaching() const { return useVolumeCaching_; }
 
     /**
-     * Set the GeometryContainer. The container must be the same as used by the
-     * network evaluator. Therefore it will be set by the latter.
-     */
-    virtual void setGeometryContainer(GeometryContainer* geoCont);
-
-    virtual GeometryContainer* getGeometryContainer() const;
-
-    /**
      * Returns the inport with the identifier type
      * @param type unique port type
      * @return port with given type, null if not existing
@@ -464,49 +386,9 @@ public:
     std::string getState() const;
 
     // identifiers commonly used in processors
-    static const Identifier setBackgroundColor_;
     static const std::string XmlElementName_;
 
 protected:
-    /// Renders a screen aligned quad.
-    void renderQuad();
-
-    /**
-     * This generates the header that will be used at the beginning of the shaders. It includes the necessary #defines that
-     * are to be used with the shaders.
-     * \note If you overwrite this function in a subclass, you have to the call the superclass' function first and
-     * append your additions to its result!
-     */
-    virtual std::string generateHeader();
-
-    /**
-     * Sets some uniforms potentially needed by every shader.
-     * @note This function should be called for every shader before every rendering pass!
-     * @param shader the shader to set up
-     */
-    //TODO: remove, a general processor has no shaders. joerg
-    virtual void setGlobalShaderParameters(tgt::Shader* shader);
-
-    /**
-     * \brief Updates the current OpenGL context according to the
-     *        object's lighting properties (e.g. lightPosition_).
-     *
-     * The following parameters are set for GL_LIGHT0:
-     * - Light source position
-     * - Light ambient / diffuse / specular colors
-     * - Light attenuation factors
-     *
-     * The following material parameters are set (GL_FRONT_AND_BACK):
-     * - Material ambient / diffuse / specular / emissive colors
-     * - Material shininess
-     *
-     */
-    virtual void setLightingParameters();
-
-    // FIXME: does not work anymore, deprecated
-    /// Internally used for making high resolution screenshots.
-    void setSizeTiled(uint width, uint height);
-
     bool cacheable_; ///< is caching supported by this processor?
     bool useVolumeCaching_;
 
@@ -516,37 +398,7 @@ protected:
      */
     bool isCoprocessor_;
 
-    GeometryContainer* geoContainer_; ///< container that holds geomtry, e.g. points or pointlists
-
-    tgt::Camera* camera_;   ///< the camera that will be used in rendering
-    TextureContainer* tc_;  ///< manages render targets. That are textures or the framebuffer.
-    TexUnitMapper tm_;      ///< manages texture units
-
     std::string name_;      ///< name of the processor
-    tgt::vec2 size_;        ///< size of the viewport of the processor
-
-    ColorProp backgroundColor_; ///< the color of the background
-
-    /// The position of the light source used for lighting calculations in world coordinates
-    FloatVec4Prop lightPosition_;
-    /// The light source's ambient color according to the Phong lighting model
-    ColorProp lightAmbient_;
-    /// The light source's diffuse color according to the Phong lighting model
-    ColorProp lightDiffuse_;
-    /// The light source's specular color according to the Phong lighting model
-    ColorProp lightSpecular_;
-    /// The light source's attenuation factors (x = constant, y = linear, z = quadratic)
-    FloatVec3Prop lightAttenuation_;
-    /// The ambient material color according to the Phong lighting model
-    ColorProp materialAmbient_;
-    /// The diffuse material color according to the Phong lighting model
-    ColorProp materialDiffuse_;
-    /// The specular material color according to the Phong lighting model
-    ColorProp materialSpecular_;
-    /// The emission material color according to the Phong lighting model
-    ColorProp materialEmission_;
-    /// The material's specular exponent according to the Phong lighting model
-    FloatProp materialShininess_;
 
     Properties props_; ///< vector with all properties of the processor
 
@@ -562,6 +414,9 @@ private:
      * analyzed in the networkevaluator, where the appropriate rendertargets are given.
      */
     std::map<Port*, Port*> outportToInportMap_;
+    
+    typedef std::map<Identifier, Port*> PortMap;
+    PortMap portMap_;
 
     /**
      * List of ports that specifies which inputs this processor needs.
@@ -592,6 +447,41 @@ private:
 };
 
 typedef TemplateMessage<Processor*> ProcessorPtrMsg;
+
+// ------------------------------------------------------------------------- //
+
+//Deprecated
+class HasShader {
+public:
+    HasShader();
+
+    virtual ~HasShader();
+
+    /**
+     * Invalidate the shader, so that recompiling is performed before the next
+     * rendering.
+     */
+    virtual void invalidateShader();
+
+protected:
+    /**
+     * Compile the shader if necessary.
+     *
+     * Checks the bool flag isShaderValid_ and calls the virtual method compile()
+     * if necessary. So derived classes should place their compile code there and
+     * call the method invalidateShader() when recompiling is required.
+     */
+    virtual void compileShader();
+
+    /**
+     * Compile and link the shader program
+     */
+    virtual void compile() = 0;
+
+private:
+    bool needRecompileShader_; ///< should the shader recompiled?
+};
+
 
 } // namespace voreen
 

@@ -289,20 +289,20 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x, center.y, dimensions.z * 0.25);
-		tgt::vec3 blob2 = tgt::vec3(center.x, center.y, dimensions.z * 0.75);
+		tgt::vec3 blob1 = tgt::vec3(center.x, center.y, dimensions.z * 0.25f);
+		tgt::vec3 blob2 = tgt::vec3(center.x, center.y, dimensions.z * 0.75f);
 
-        float radius = 0.22 / (float)dimensions.x * 32.0;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0,1.0,1.0);
-		float max = (1.0 / distance(blob1, m)) + (1.0 / distance(blob1, m));
+        float radius = 0.22f / (float)dimensions.x * 32.0f;
+		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
 
 		max -= radius;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0 / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0 / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
                     
 					float v = b1+b2;
 					v -= radius;
@@ -310,7 +310,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 					if(v >= max) 
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
 					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255.0 * (v / max);
+						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
 					else
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
@@ -333,20 +333,20 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9, center.y * 0.8, dimensions.z * 0.3);
-		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1, center.y * 1.2, dimensions.z * 0.7);
+		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
+		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
 
-        float radius = 0.22 / (float)dimensions.x * 32.0;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0,1.0,1.0);
-		float max = (1.0 / distance(blob1, m)) + (1.0 / distance(blob1, m));
+        float radius = 0.22f / (float)dimensions.x * 32.0f;
+		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m));
 
 		max -= radius;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0 / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0 / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
                     
 					float v = b1+b2;
 					v -= radius;
@@ -354,7 +354,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 					if(v >= max) 
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
 					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255.0 * (v / max);
+						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
 					else
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
@@ -377,22 +377,22 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 
         //clear dataset:
         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
-		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9, center.y * 0.8, dimensions.z * 0.3);
-		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1, center.y * 1.2, dimensions.z * 0.7);
-		tgt::vec3 blob3 = tgt::vec3(dimensions.x * 0.7, center.y * 1.0, dimensions.z * 0.5);
+		tgt::vec3 blob1 = tgt::vec3(center.x * 0.9f, center.y * 0.8f, dimensions.z * 0.3f);
+		tgt::vec3 blob2 = tgt::vec3(center.x * 1.1f, center.y * 1.2f, dimensions.z * 0.7f);
+		tgt::vec3 blob3 = tgt::vec3(dimensions.x * 0.7f, center.y * 1.0f, dimensions.z * 0.5f);
 
-        float radius = 0.32 / (float)dimensions.x * 32.0;
-		tgt::vec3 m  = blob1 + tgt::vec3(1.0,1.0,1.0);
-		float max = (1.0 / distance(blob1, m)) + (1.0 / distance(blob1, m)) + (1.0 / distance(blob3, m));
+        float radius = 0.32f / (float)dimensions.x * 32.0f;
+		tgt::vec3 m  = blob1 + tgt::vec3(1.0f,1.0f,1.0f);
+		float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m)) + (1.0f / distance(blob3, m));
 
 		max -= radius;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
                 for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-					float b1 = 1.0 / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b2 = 1.0 / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
-					float b3 = 1.0 / distance(blob3, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b1 = 1.0f / distance(blob1, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b2 = 1.0f / distance(blob2, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
+					float b3 = 1.0f / distance(blob3, tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z)); 
 
 					float v = b1+b2+b3;
 					v -= radius;
@@ -400,7 +400,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 					if(v >= max) 
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 255;
 					else if(v > 0.0)
-						target2->voxel(voxel_x, voxel_y, voxel_z) = 255.0 * (v / max);
+						target2->voxel(voxel_x, voxel_y, voxel_z) = static_cast<uint8_t>(255.0f * (v / max));
 					else
 						target2->voxel(voxel_x, voxel_y, voxel_z) = 0;
                 }
@@ -424,7 +424,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         //clear dataset:
 //         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
 
-        float radius = center.x * 0.8;
+        float radius = center.x * 0.8f;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
@@ -462,8 +462,8 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         //clear dataset:
 //         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
 
-        float radius = center.x * 0.8;
-        float radius2 = center.x * 0.4;
+        float radius = center.x * 0.8f;
+        float radius2 = center.x * 0.4f;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
@@ -507,7 +507,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         //clear dataset:
 //         fillBox(target2, tgt::ivec3(0,0,0), dimensions, 0);
 
-        float radius = center.x * 0.8;
+        float radius = center.x * 0.8f;
         
         for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
             for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
@@ -517,18 +517,18 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
                     
                     if(r <= (float)radius) {
                         //y,x
-                        float theta = atan2(voxel_y-center.y, voxel_x-center.x);
+                        double theta = atan2(voxel_y-center.y, voxel_x-center.x);
                         theta += tgt::PI;
                         
                         float phi = acos((voxel_z-center.z) / r);
                         
-                        target2->voxel(voxel_x, voxel_y, voxel_z).r = theta / (tgt::PI * 2.0) * 255.0;
-                        target2->voxel(voxel_x, voxel_y, voxel_z).g = phi / tgt::PI * 255.0;
-                        target2->voxel(voxel_x, voxel_y, voxel_z).b = (float) r / (float) radius * 255.0;
+                        target2->voxel(voxel_x, voxel_y, voxel_z).r = static_cast<uint8_t>(theta / (tgt::PI * 2.0) * 255.0);
+                        target2->voxel(voxel_x, voxel_y, voxel_z).g = static_cast<uint8_t>(phi / tgt::PI * 255.0);
+                        target2->voxel(voxel_x, voxel_y, voxel_z).b = static_cast<uint8_t>((float) r / (float) radius * 255.0f);
                         if(target2->voxel(voxel_x, voxel_y, voxel_z).b == 0)
                             target2->voxel(voxel_x, voxel_y, voxel_z).b = 1;
                         
-                        target2->voxel(voxel_x, voxel_y, voxel_z).a = 255.0 - (((float) r / (float) radius) * 255.0);
+                        target2->voxel(voxel_x, voxel_y, voxel_z).a = static_cast<uint8_t>(255.0f - (((float) r / (float) radius) * 255.0f));
 //                         target2->voxel(voxel_x, voxel_y, voxel_z).a = value;
                     }
                     else {

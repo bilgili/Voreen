@@ -36,7 +36,7 @@
 namespace voreen {
 
 class VoreenToolWindow : public QWidget {
-    Q_OBJECT
+Q_OBJECT
 public:
     VoreenToolWindow(QAction* action, QWidget* parent, QWidget* child, const QString& name = "");
     QAction* action() const { return action_; }
@@ -52,6 +52,8 @@ private:
     QAction* action_;
 };
 
+//----------------------------------------------------------------------------------------------------------------
+
 class VoreenToolDockWindowTitle : public QWidget {
 	Q_OBJECT
 public:
@@ -65,6 +67,8 @@ private:
 	QPixmap closeButton_;
 	QPixmap undockButton_;
 };
+
+//----------------------------------------------------------------------------------------------------------------
 
 class VoreenToolDockWindow : public QDockWidget {
 	Q_OBJECT

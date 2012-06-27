@@ -518,7 +518,7 @@ void LightMaterialPlugin::setAddAmbient(bool checked) {
     checkAddAmbient_->blockSignals(false);
 
     postMessage(new BoolMsg(LightMaterial::switchPhongAddAmbient_, addAmbient_));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::setAddSpecular(bool checked) {
@@ -538,7 +538,7 @@ void LightMaterialPlugin::setAddSpecular(bool checked) {
     checkAddSpecular_->blockSignals(false);
 
     postMessage(new BoolMsg(LightMaterial::switchPhongAddSpecular_, addSpecular_));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::setApplyAttenuation(bool checked) {
@@ -551,7 +551,7 @@ void LightMaterialPlugin::setApplyAttenuation(bool checked) {
     checkApplyAttenuation_->blockSignals(false);
 
     postMessage(new BoolMsg(LightMaterial::switchPhongApplyAttenuation_, applyAttenuation_));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::setUseOGLMaterial(bool b) {
@@ -570,7 +570,7 @@ void LightMaterialPlugin::setUseOGLMaterial(bool b) {
     checkUseOpenGLMaterial_->blockSignals(false);
 
     postMessage(new BoolMsg(LightMaterial::switchUseOpenGLMaterial_, b));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateLightSpecularColor(int value) {
@@ -581,7 +581,7 @@ void LightMaterialPlugin::updateLightSpecularColor(int value) {
     postMessage(new ColorMsg(LightMaterial::setLightSpecular_,
         tgt::Color(currentLightSpecular_, currentLightSpecular_, currentLightSpecular_, 1.f))  );
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateLightAmbientColor(int value) {
@@ -592,7 +592,7 @@ void LightMaterialPlugin::updateLightAmbientColor(int value) {
     postMessage(new ColorMsg(LightMaterial::setLightAmbient_,
         tgt::Color(currentLightAmbient_, currentLightAmbient_, currentLightAmbient_, 1.f))  );
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateLightDiffuseColor(int value) {
@@ -603,7 +603,7 @@ void LightMaterialPlugin::updateLightDiffuseColor(int value) {
     postMessage(new ColorMsg(LightMaterial::setLightDiffuse_,
         tgt::Color(currentLightDiffuse_, currentLightDiffuse_, currentLightDiffuse_, 1.f))  );
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateMaterialSpecularColor() {
@@ -620,7 +620,7 @@ void LightMaterialPlugin::updateMaterialSpecularColor() {
 
         postMessage(new ColorMsg(LightMaterial::setMaterialSpecular_, currentMaterialSpecular_));
 
-        repaintCanvases();
+        repaintCanvas();
         showMaterialSpecularColor();
     }
 }
@@ -640,7 +640,7 @@ void LightMaterialPlugin::updateMaterialAmbientColor() {
 
         postMessage(new ColorMsg(LightMaterial::setMaterialAmbient_, currentMaterialAmbient_));
 
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -659,7 +659,7 @@ void LightMaterialPlugin::updateMaterialDiffuseColor() {
 
         postMessage(new ColorMsg(LightMaterial::setMaterialDiffuse_, currentMaterialDiffuse_));
 
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -677,7 +677,7 @@ void LightMaterialPlugin::updateMaterialEmissionColor() {
         showMaterialEmissionColor();
 
         postMessage(new ColorMsg(LightMaterial::setMaterialEmission_, currentMaterialEmission_));
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -777,7 +777,7 @@ void LightMaterialPlugin::updateConstantAttenuationSlider() {
 
     postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
         tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateLinearAttenuationSlider() {
@@ -791,7 +791,7 @@ void LightMaterialPlugin::updateLinearAttenuationSlider() {
 
     postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
         tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateQuadraticAttenuationSlider() {
@@ -805,7 +805,7 @@ void LightMaterialPlugin::updateQuadraticAttenuationSlider() {
 
     postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
         tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateConstantAttenuationSpin(double value, bool updateGLState) {
@@ -822,7 +822,7 @@ void LightMaterialPlugin::updateConstantAttenuationSpin(double value, bool updat
     if (updateGLState) {
         postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
             tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -840,7 +840,7 @@ void LightMaterialPlugin::updateLinearAttenuationSpin(double value, bool updateG
     if (updateGLState) {
         postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
             tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -858,7 +858,7 @@ void LightMaterialPlugin::updateQuadraticAttenuationSpin(double value, bool upda
     if (updateGLState) {
         postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_,
             tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
-        repaintCanvases();
+        repaintCanvas();
     }
 }
 
@@ -871,7 +871,7 @@ void LightMaterialPlugin::updateShininessSlider(int value) {
 
     postMessage(new FloatMsg(LightMaterial::setMaterialShininess_, currentShininess_));
 
-    repaintCanvases();
+    repaintCanvas();
 }
 
 void LightMaterialPlugin::updateShininessSpin(double value) {
@@ -882,7 +882,7 @@ void LightMaterialPlugin::updateShininessSpin(double value) {
     sliderShininess_->blockSignals(false);
 
     postMessage(new FloatMsg(LightMaterial::setMaterialShininess_, currentShininess_));
-    repaintCanvases();
+    repaintCanvas();
 }
 
 } // namespace voreen

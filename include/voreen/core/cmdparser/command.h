@@ -86,25 +86,25 @@ public:
      */
     Command(const std::string& name, const std::string& shortName = "", const std::string& infoText = "",
         const std::string& parameterList = "", const int argumentNum = 1, const bool allowMultipleCalls = false);
-    virtual ~Command() {}
+    virtual ~Command();
 
     /// Returns the name of this command
-    const std::string getName() { return name_; }
+    const std::string getName();
 
     /// Returns the short name of this command
-    const std::string getShortName() { return shortName_; }
+    const std::string getShortName();
 
     /// Returns the parameter list necessary for the <code>usage</code> method
-    const std::string getParameterList() { return parameterList_; }
+    const std::string getParameterList();
 
     /// Returns a short description used for the <code>--help</code> command
-    const std::string getInfoText() { return infoText_; }
+    const std::string getInfoText();
 
     /// Returns the number of accepted arguments for this command
-    int getArgumentNumber() { return argumentNum_; }
+    int getArgumentNumber();
 
     /// Returns if the command can be called more than once in a single command line
-    bool getAllowMultipleCalls() { return allowMultipleCalls_; }
+    bool getAllowMultipleCalls();
 
     /**
      * Executes this command with the given parameters

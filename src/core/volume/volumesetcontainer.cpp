@@ -42,13 +42,13 @@ const Identifier VolumeSetContainer::msgSetVolumeSetContainer_("set.VolumeSetCon
 const std::string VolumeSetContainer::XmlElementName = "VolumeSetContainer";
 
 VolumeSetContainer::VolumeSetContainer()
-    : volumesets_(VolumeSet::VolumeSetSet())
 {
 }
 
 VolumeSetContainer::~VolumeSetContainer() {
     // can not use clear() here because of postMessage()
-    for (VolumeSet::VolumeSetSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
+    VolumeSet::VolumeSetSet sets = volumesets_;
+    for (VolumeSet::VolumeSetSet::iterator it = sets.begin(); it != sets.end(); ++it)
         delete *it;
 
     volumesets_.clear();
@@ -56,8 +56,9 @@ VolumeSetContainer::~VolumeSetContainer() {
 
 void VolumeSetContainer::clear() {
     MsgDistr.postMessage(new VolumeSetContainerMsg("volumesetcontainer.clear", this));
-    for (VolumeSet::VolumeSetSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
-        delete *it;
+    VolumeSet::VolumeSetSet sets = volumesets_;
+    for (VolumeSet::VolumeSetSet::iterator it = sets.begin(); it != sets.end(); ++it)
+        deleteVolumeSet(*it);
 
     volumesets_.clear();
 }

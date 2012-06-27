@@ -91,7 +91,7 @@ public:
              tgt::Texture::Filter filter = tgt::Texture::LINEAR) throw (std::bad_alloc);
 
     /// This class will not delete its \a volume_.
-    ~VolumeGL();
+    virtual ~VolumeGL();
 
     //
     //    getters and setters

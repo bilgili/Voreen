@@ -48,13 +48,13 @@ void StringProp::updateFromXml(TiXmlElement* propElem) {
             errors_.store(e);
         }
     else
-        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+        errors_.store(XmlAttributeException("Attribute 'value' missing in property element of " + getIdent().getName()));
 }
 
 TiXmlElement* StringProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
     propElem->SetAttribute("value", value_);
-    if (getSerializeMetaData())
+    if (getSerializeTypeInformation())
         propElem->SetAttribute("class", "StringProperty");
 
     return propElem;

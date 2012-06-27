@@ -58,7 +58,7 @@ bool ShaderObject::loadSourceFromFile(const string& filename) {
     File* file = FileSys.open(filename);
 
     // check if file is open
-	if (!file || !file->open()) {
+	if (!file || !file->isOpen()) {
 		LERROR("File not found: " << filename);
         return false;
 	}
@@ -101,7 +101,7 @@ string ShaderObject::replaceIncludes(const string& completeSource) {
 
             File* file = FileSys.open(fileName);
             string content;
-            if (file && file->open()) {
+            if (file && file->isOpen()) {
                 content = file->getAsString();
                 file->close();
 
@@ -479,9 +479,9 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!vert->loadSourceFromFile(vert_filename)) {
-            LWARNING("Failed to load vertexshader " << vert_filename);
+            LERROR("Failed to load vertexshader " << vert_filename);
             delete vert;
-            vert = 0;
+            return false;
         } else {
             vert->uploadSource();
 
@@ -505,9 +505,10 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!geom->loadSourceFromFile(geom_filename)) {
-            LWARNING("Failed to load geometryshader " << geom_filename);
+            LERROR("Failed to load geometryshader " << geom_filename);
+            delete vert;
             delete geom;
-            geom = 0;
+            return false;
         } else {
             geom->uploadSource();
 
@@ -534,9 +535,11 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         }
 
         if (!frag->loadSourceFromFile(frag_filename)) {
-            LWARNING("Failed to load fragmentshader " << frag_filename);
+            LERROR("Failed to load fragmentshader " << frag_filename);
             delete frag;
-            frag = 0;
+            delete geom;
+            delete vert;
+            return false;
         } else {
 			frag->uploadSource();
 

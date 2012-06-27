@@ -51,8 +51,9 @@ public:
      * Constructor
      *
      * @param col color of the primitive
+     * @param scalefactor scaling of the y coordinate of the primitive
      */
-    TransFuncPrimitive(tgt::col4 col);
+    TransFuncPrimitive(tgt::col4 col, float scaleFactor);
 
     /**
      * Destructor
@@ -60,9 +61,17 @@ public:
     virtual ~TransFuncPrimitive();
 
     /**
+     * Sets the scaleFactor of the primitive to the given value. The y coordinates
+     * of the primitive are adjusted according to the scaleFactor.
+     *
+     * @param scaleFactor scaleFactor for the y coordinates of the primitve
+     */
+    virtual void setScaleFactor(float scaleFactor) = 0;
+
+    /**
      * Paints the primitive.
      */
-    virtual void paint(float scaleFactor = 1.f) = 0;
+    virtual void paint() = 0;
 
     /**
      * Paints the primitive for display in an editor. An outline and control points are added.
@@ -174,11 +183,12 @@ public:
     virtual void updateFromXml(TiXmlElement* root) = 0;
 
 protected:
-    tgt::col4 color_; ///< color of the primitive
-    bool selected_;   ///< indicates whether the primitive is selected or not
-    float fuzziness_; ///< fuzziness of the primitive
-    float cpSize_;    ///< size of a control point
-    int grabbed_;     ///< number of the grabbed control point. -1 when no control point is grabbed
+    tgt::col4 color_;   ///< color of the primitive
+    bool selected_;     ///< indicates whether the primitive is selected or not
+    float fuzziness_;   ///< fuzziness of the primitive
+    float cpSize_;      ///< size of a control point
+    int grabbed_;       ///< number of the grabbed control point. -1 when no control point is grabbed
+    float scaleFactor_; ///< scaling of the primitive coordinates in y direction
 };
 
 // ----------------------------------------------------------------------------
@@ -199,8 +209,9 @@ public:
      * @param center center of the quad
      * @param size size of the quad
      * @param col color of the quad
+     * @param scaleFactor scaling of the y coordinate of the primitive
      */
-    TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col);
+    TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col, float scaleFactor);
 
     /**
      * Destructor
@@ -208,9 +219,17 @@ public:
     ~TransFuncQuad();
 
     /**
+     * Sets the scaleFactor of the primitive to the given value. The y coordinates
+     * of the primitive are adjusted according to the scaleFactor.
+     *
+     * @param scaleFactor scaleFactor for the y coordinates of the primitve
+     */
+    void setScaleFactor(float scaleFactor);
+
+    /**
      * Paints the quad. The fuzziness factor is obeyed.
      */
-    void paint(float scaleFactor = 1.f);
+    void paint();
 
     /**
      * Paints the quad for selection purposes. Therefor the color used in painting is set
@@ -267,6 +286,7 @@ public:
 
 protected:
     tgt::vec2 coords_[4]; ///< the coordinates of the 4 vertices
+    bool scaleCoords_;    ///< indicates whether the coordinates must be scaled in paint() or not
 };
 
 // ----------------------------------------------------------------------------
@@ -296,8 +316,9 @@ public:
      * @param b2 coordinate of the lower middle control point
      * @param c  coordinate of the right control point
      * @param col color of the primitive
+     * @param scaleFactor scaling of the y coordinate of the primitive
      */
-    TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col);
+    TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col, float scaleFactor);
 
     /**
      * Destructor
@@ -305,9 +326,17 @@ public:
     ~TransFuncBanana();
 
     /**
+     * Sets the scaleFactor of the primitive to the given value. The y coordinates
+     * of the primitive are adjusted according to the scaleFactor.
+     *
+     * @param scaleFactor scaleFactor for the y coordinates of the primitve
+     */
+    void setScaleFactor(float scaleFactor);
+
+    /**
      * Paints the banana. The fuzziness is obeyed.
      */
-    void paint(float scaleFactor = 1.f);
+    void paint();
 
     /**
      * Paints the banana for selection purposes. Therefor the color used in painting is set
@@ -367,12 +396,14 @@ protected:
      * Paints the space between the both splines. steps_ triangles in a
      * trianglestrip are used for that.
      */
-    void paintInner(float scaleFactor);
+    void paintInner();
 
 
     tgt::vec2 coords_[4]; ///< coordinates of the 4 vertices
 
     int steps_; ///< number of triangles used to fill the space between the both splines
+
+    bool scaleCoords_; ///< indicates whether the coordinates must be scaled in paintInner() or not
 };
 
 } // namespace voreen

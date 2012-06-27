@@ -67,14 +67,7 @@ void CompactPropertyWidget::addVisibilityControls() {
     lodControl_->setToolTip(tr("Show property in visualization mode"));
     lodControl_->setCheckable(true);
     lodControl_->setMaximumSize(16,16);
-    if (prop_->getLevelOfDetail() == Property::USER) {
-        lodControl_->setChecked(true);
-        lodControl_->setIcon(QIcon(":/icons/eye.png"));
-    }
-    else {
-        lodControl_->setChecked(false);
-        lodControl_->setIcon(QIcon(":/icons/eye_crossedout.png"));
-    }
+    setLevelOfDetail(prop_->getLevelOfDetail());
     
     connect(lodControl_, SIGNAL(clicked(bool)), this, SLOT(setLevelOfDetail(bool)));
 
@@ -102,16 +95,23 @@ void CompactPropertyWidget::disconnect() {
 }
 
 void CompactPropertyWidget::setLevelOfDetail(bool value) {
-    if (value) {
-        prop_->setLevelOfDetail(Property::USER);
+    setLevelOfDetail( value ? Property::USER : Property::DEVELOPER);
+}
+
+void CompactPropertyWidget::setLevelOfDetail(Property::LODSetting value) {
+    prop_->setLevelOfDetail(value);
+    
+    if (value == Property::USER) {
         lodControl_->setChecked(true);
         lodControl_->setIcon(QIcon(":/icons/eye.png"));
     }
     else {
-        prop_->setLevelOfDetail(Property::DEVELOPER);
         lodControl_->setChecked(false);
         lodControl_->setIcon(QIcon(":/icons/eye_crossedout.png"));
     }
+
+    emit levelOfDetailChanged(value);
 }
 
 } // namespace
+

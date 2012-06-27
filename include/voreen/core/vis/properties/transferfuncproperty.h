@@ -32,6 +32,9 @@
 
 #include "voreen/core/vis/properties/templateproperty.h"
 
+#include "voreen/core/volume/observer.h"
+#include "voreen/core/volume/volumehandle.h"
+
 namespace voreen {
 
 class TransFunc;
@@ -40,26 +43,12 @@ class Volume;
 
 /**
  * Property for transfer functions. The widget for this property contains several editors
- * to modify the transfer function. You can change the shown editors by calling enableEditor() or
- * disableEditor().
+ * to modify the transfer function. You can change the shown editors via the constructor or 
+ * by calling enableEditor() or disableEditor().
  */
-class TransFuncProp : public TemplateProperty<TransFunc*> {
+class TransFuncProp : public TemplateProperty<TransFunc*>, Observer {
 public:
-    /**
-     * Constructor
-     *
-     * @param ident identifier that is used in serialization
-     * @param guiText text that is shown in the gui
-     * @param invalidate if true the owner of the property is invalidated when the property changes
-     * @param invalidateShader if true the shader of the owner of the property owner is invalidated when the property changes
-     */
-    TransFuncProp(const Identifier& ident, const std::string& guiText, bool invalidate = true, bool invalidateShader = false);
-
-    /**
-     * Destructor
-     */
-    ~TransFuncProp();
-
+    
     ///< enum for all editors that can be used in the widget for this property
     enum Editors {
         NONE               = 0, ///< no editor appears in the widget
@@ -69,6 +58,25 @@ public:
         INTENSITY_GRADIENT = 8, ///< widget for 2D transfer functions
         ALL                = 15 ///< aggregation of all editor widgets
     };
+
+    /**
+     * Constructor
+     *
+     * @param ident identifier that is used in serialization
+     * @param guiText text that is shown in the gui
+     * @param invalidate if true the owner of the property is invalidated when the property changes
+     * @param invalidateShader if true the shader of the owner of the property owner is invalidated when the property changes
+     * @param editors determines the types of editors to be presented to the user
+     * @param lazyEditorInstantiation determines whether the transfer function editor of this property is instantiated on 
+     *        construction of the property widget or when the user is first accessing it (lazy)
+     */
+    TransFuncProp(const Identifier& ident, const std::string& guiText, bool invalidate = true, bool invalidateShader = false,
+        Editors editors = ALL, bool lazyEditorInstantiation = false);
+
+    /**
+     * Destructor
+     */
+    ~TransFuncProp();
 
     /**
      * Enables the given editor in the widget for the property. Must be called before creation
@@ -127,11 +135,18 @@ public:
     void setVolumeHandle(VolumeHandle* handle);
 
     /**
+     * Returns the volume handle that is assigned to this property.
+     *
+     * @return volume handle that is associated with this property
+     */
+    VolumeHandle* getVolumeHandle() const;
+    
+    /**
      * Returns the volume that is assigned to this property.
      *
      * @return volume that is associated with this property
      */
-    Volume* getVolume();
+    Volume* getVolume() const;
 
     /**
      * Executes all member actions that belong to the property. Generally the owner of the
@@ -163,7 +178,20 @@ public:
      */
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
+    /** 
+     * Returns whether the transfer function editor of this property should be instantiated on 
+     * construction of the property widget or when the user is first accessing it (lazy)
+     */
+    bool getLazyEditorInstantiation() const { return lazyEditorInstantiation_; }
+
     virtual std::string toString() const { return ""; }
+
+    /**
+     * Gets called when something changes in the VolumeSetContainer while the background thread
+     * is calculating the histogram. Checks whether the volume handle is still contained in the
+     * container.
+     */
+    void notify(const Observable* const source = 0);
 
 protected:
     VolumeHandle* volumeHandle_; ///< volumehandle that is associated with the transfer function property
@@ -172,6 +200,11 @@ protected:
 
     bool manualRepaint_; ///< indicates whether the tf widget automatically emits repaints for the
                          ///< volume rendering or whether the user has to do it manually
+
+    /// Determines whether the transfer function editor of this property is instantiated on 
+    /// construction of the property widget or when the user is first accessing it (lazy)
+    bool lazyEditorInstantiation_;
+
 };
 
 } // namespace voreen

@@ -61,10 +61,15 @@ public:
     /**
      * While using this constructor the class will automatically allocate
      * an appropiate chunk of memory. This memory will be deleted by this class.
+	 * If allocMem is false, no memory will be allocated. This can be used to create
+	 * volumes without any data, in case you just want to store its dimensions, spacing etc.
+	 * This is used for bricking for example, because the entry-exit point volume would
+     * otherwise allocate an enormous amount of memory, although only its dimensions are
+     * required. 
      */
     VolumeAtomic(const tgt::ivec3& dimensions,
                  const tgt::vec3& spacing = tgt::vec3(1.f),
-                 int bitsStored = BITS_PER_VOXEL) throw (std::bad_alloc);
+                 int bitsStored = BITS_PER_VOXEL, bool allocMem=true) throw (std::bad_alloc);
 
     /**
      * While using this constructor the class will use an preallocated chunk of
@@ -220,6 +225,20 @@ public:
     virtual VolumeAtomic<T>* mirrorZ() const
         throw (std::bad_alloc);
 
+    virtual bool getAllVoxelsEqual();
+
+    /**
+    * Calculates the root mean square error between this volumeatomic and the volume
+    * passed as paramater. This is used in bricking for example. 
+    */
+    virtual float calcError(Volume* volume);
+
+    /**
+    * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
+    * to 1 voxel. This does not necessarily happen when using the scale(..) function.
+    */
+    virtual VolumeAtomic<T>* downsample() const throw (std::bad_alloc);
+
 protected:
     // protected default constructor
     VolumeAtomic() {}
@@ -277,7 +296,7 @@ typedef VolumeAtomic<tgt::dvec4> Volume4xDouble;
 
 template<class T>
 VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spacing,
-                              int bitsStored)
+                              int bitsStored, bool allocMem)
     throw (std::bad_alloc)
     : Volume(dimensions, bitsStored, spacing),
       data_(0),
@@ -285,12 +304,14 @@ VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spa
       zeroPoint_(VolumeElement<T>::getZero()),
       minMaxValid_(false)
 {
-    try {
-        data_ = new T[numVoxels_];
-    }
-    catch (std::bad_alloc) {
-        throw; // throw it to the caller
-    }
+	if (allocMem) {
+		try {
+			data_ = new T[numVoxels_];
+		}
+		catch (std::bad_alloc) {
+			throw; // throw it to the caller
+		}
+	}
 }
 
 template<class T>
@@ -567,6 +588,91 @@ VolumeAtomic<T>* VolumeAtomic<T>::mirrorZ() const
 
     return mirror;
 }
+
+template<class T>
+bool VolumeAtomic<T>::getAllVoxelsEqual() {
+	T firstVoxel = voxel(0);
+	bool allVoxelsEqual=true;
+	for (size_t i=1; i < numVoxels_; i++) {
+		T currentVoxel = voxel(i);
+		if (firstVoxel != currentVoxel) {
+			allVoxelsEqual = false;
+			break;
+		}
+	}
+	return allVoxelsEqual;
+}
+
+/**
+* Calculates to which position the given position relates in a smaller volume. This 
+* is used in the calcError function to determine to which position in the smaller volume
+* a voxel position corresponds, in order to compute the difference between the voxels.
+*/
+inline static tgt::ivec3 calcPosInSmallerVolume(tgt::ivec3 pos, tgt::ivec3 factor) {
+    tgt::ivec3 result;
+    result.x = static_cast<int>( floor(pos.x / (float)factor.x));
+    result.y = static_cast<int>( floor(pos.y / (float)factor.y));
+    result.z = static_cast<int>( floor(pos.z / (float)factor.z));
+    return result;
+}
+
+template<class T>
+float VolumeAtomic<T>::calcError(Volume* volume) {
+
+    VolumeAtomic<T>* secondVolume = dynamic_cast<VolumeAtomic<T>*>(volume);
+    double errorSum = 0.0;
+    tgt::ivec3 factor = dimensions_ / secondVolume->getDimensions();
+    
+    for (int i=0; i<dimensions_.z; i++) {
+        for (int j=0; j<dimensions_.y; j++) {
+            for (int k=0; k<dimensions_.x; k++) {
+                tgt::ivec3 currentPos = tgt::ivec3(k,j,i);
+                tgt::ivec3 smallVolumePos = calcPosInSmallerVolume(currentPos, factor);
+                T origVoxel = voxel(currentPos);
+                T errVoxel = secondVolume->voxel(smallVolumePos);
+                
+                errorSum = errorSum + VolumeElement<T>::calcSquaredDifference(origVoxel, errVoxel);
+            }
+        }
+    }
+
+    errorSum = errorSum / (float)(numVoxels_);
+    errorSum = sqrt(errorSum);
+    errorSum = errorSum / (double)VolumeElement<T>::maxElement();
+    
+    return (float)errorSum;
+}
+
+template<class T>
+VolumeAtomic<T>* VolumeAtomic<T>::downsample() const
+    throw (std::bad_alloc) {
+    tgt::ivec3 dims = dimensions_;
+    tgt::ivec3 halfDims = dimensions_ / 2;
+
+    VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(halfDims,spacing_,bitsStored_);
+
+    for (int z=0; z<halfDims.z; z++) {
+        for (int y=0; y<halfDims.y; y++) {
+            for (int x=0; x<halfDims.x; x++) {
+                tgt::ivec3 pos = tgt::ivec3(2*x,2*y,2*z);
+                typedef typename VolumeElement<T>::DoubleType Double;
+                newVolume->voxel(x,y,z) =
+                        T(  Double(voxel(pos.x, pos.y, pos.z))          * (1.0/8.0) //LLF
+                          + Double(voxel(pos.x, pos.y, pos.z+1))        * (1.0/8.0) //LLB
+                          + Double(voxel(pos.x, pos.y+1, pos.z))        * (1.0/8.0) //ULF
+                          + Double(voxel(pos.x, pos.y+1, pos.z+1))      * (1.0/8.0) //ULB
+                          + Double(voxel(pos.x+1, pos.y, pos.z))        * (1.0/8.0) //LRF
+                          + Double(voxel(pos.x+1, pos.y, pos.z+1))      * (1.0/8.0) //LRB
+                          + Double(voxel(pos.x+1, pos.y+1, pos.z))      * (1.0/8.0) //URF
+                          + Double(voxel(pos.x+1, pos.y+1, pos.z+1))    * (1.0/8.0)); //URB
+
+            }
+        }
+    }
+
+    return newVolume;
+}
+
 
 } // namespace voreen
 
