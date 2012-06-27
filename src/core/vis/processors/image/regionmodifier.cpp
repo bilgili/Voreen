@@ -33,8 +33,6 @@ namespace voreen {
 
 using tgt::Color;
 
-//---------------------------------------------------------------------------
-
 const Identifier RegionModifier::shadeTexUnit1_ = "shadeTexUnit1";
 const Identifier RegionModifier::depthTexUnit1_ = "depthTexUnit1";
 
@@ -68,8 +66,7 @@ const std::string RegionModifier::getProcessorInfo() const {
 	return "Highlights a part of an image using a segmentation image.";
 }
 
-void RegionModifier::compile()
-{
+void RegionModifier::compile() {
     program_->setHeaders(generateHeader(), false);
     program_->rebuild();
 }
@@ -110,10 +107,10 @@ void RegionModifier::process(LocalPortMapping* portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("shadeTexMask_", (GLint) tm_.getTexUnit(shadeTexUnit1_));
-    //program_->setUniform("depthTexMask_", (GLint) tm_.getTexUnit(depthTexUnit1_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTexMask_", tm_.getTexUnit(shadeTexUnit1_));
+    //program_->setUniform("depthTexMask_", tm_.getTexUnit(depthTexUnit1_));
     program_->setUniform("segmentId_", segmentId_.get());
     program_->setUniform("destColor_", destColor_.get());
     //program_->setUniform("mode_", modeMap_[mode_]);
@@ -127,7 +124,7 @@ void RegionModifier::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 }
 
-void RegionModifier::processMessage(Message* msg, const Identifier& dest){
+void RegionModifier::processMessage(Message* msg, const Identifier& dest) {
 	GenericFragment::processMessage(msg, dest);
     if (msg->id_ == "set.segmentId") {
         segmentId_.set(msg->getValue<Color>());
@@ -139,13 +136,13 @@ void RegionModifier::processMessage(Message* msg, const Identifier& dest){
     }
     else if (msg->id_ == "set.RegionModfifierMode") {
         std::string modeStr = msg->getValue<std::string>();
-        if (modeStr == "replace") mode_ = MODE_REPLACE;
-        else if (modeStr == "blend") mode_ = MODE_BLEND;
+        if (modeStr == "replace")
+            mode_ = MODE_REPLACE;
+        else if (modeStr == "blend")
+            mode_ = MODE_BLEND;
         needRecompileShader_ = true;
         invalidate();
     }
 }
 
-
 } // voreen namespace
-

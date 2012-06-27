@@ -290,7 +290,7 @@ void* VolumeFusion<T, N>::getData() {
             result[i] = Volume::getData< VolumeAtomic<T> >(volumes_[i]);
     }
 
-    return (void*) result;
+    return reinterpret_cast<void*>(result);
 }
 
 //

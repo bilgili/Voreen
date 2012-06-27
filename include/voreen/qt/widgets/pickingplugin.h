@@ -33,7 +33,6 @@
 #include "widgetplugin.h"
 #include "tgt/event/eventlistener.h"
 #include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/volume/volumecontainer.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/vis/messagedistributor.h"
@@ -46,59 +45,47 @@ namespace voreen {
 
 
 class PickingPlugin : public WidgetPlugin, tgt::EventListener {
-    Q_OBJECT
+Q_OBJECT
 
-    public:
-        PickingPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0);
-        virtual ~PickingPlugin() {
-        }
+public:
+    PickingPlugin(QWidget* parent = 0, MessageReceiver* msgReceiver = 0);
+    virtual ~PickingPlugin() {}
 
-        void mouseDoubleClickEvent(tgt::MouseEvent* e);
-        void setTextureContainer(voreen::TextureContainer* tc); 
-        void setDataset(int volume);
-        void setVolumeContainer(voreen::VolumeContainer* volcont);
-        void setLowerThreshold(float);
-        void setUpperThreshold(float);
+    void mouseDoubleClickEvent(tgt::MouseEvent* e);
+    void setTextureContainer(voreen::TextureContainer* tc); 
+    void setLowerThreshold(float);
+    void setUpperThreshold(float);
 
+protected:
+    virtual void createWidgets();
+    virtual void createConnections();
+    void initiateFloodFill(tgt::ivec3 position);
+    void floodFill(tgt::ivec3 position);
 
-    protected:
-        virtual void createWidgets();
-        virtual void createConnections();
-        void initiateFloodFill(tgt::ivec3 position);
-        void floodFill(tgt::ivec3 position);
+public slots:
+     void evaluateThreshold();
+    
+private:
+    voreen::TextureContainer* tc_;  
+    QGroupBox* thresholdBox_;
+    QGroupBox* segmentBox_;
 
+    QLabel*  thresholdStandardDerivationLbl_;
+    QLabel* thresholdStandardDerivationValueLbl_;
+    QLabel* thresholdAverageLbl_;
+    QLabel* thresholdAverageValueLbl_;
 
+    QLabel* segmentCapacityLbl_;
+    QLabel* segmentCapacityValueLbl_ ;
 
-    public slots:
-        
-         void evaluateThreshold();
+    QLabel* segmentAverageLbl_;
+    QLabel* segmentAverageValueLbl_;
+    QLabel* segmentStandardDerivationLbl_;
+    QLabel* segmentStandardDerivationValueLbl_;
+   
+    QPushButton* thresholdCalcBt_;
 
-        
-    private:
-        voreen::TextureContainer* tc_;  
-        QGroupBox* thresholdBox_;
-        QGroupBox* segmentBox_;
-
-        QLabel*  thresholdStandardDerivationLbl_;
-        QLabel* thresholdStandardDerivationValueLbl_;
-        QLabel* thresholdAverageLbl_;
-        QLabel* thresholdAverageValueLbl_;
-
-        QLabel* segmentCapacityLbl_;
-        QLabel* segmentCapacityValueLbl_ ;
-
-        QLabel* segmentAverageLbl_;
-        QLabel* segmentAverageValueLbl_;
-        QLabel* segmentStandardDerivationLbl_;
-        QLabel* segmentStandardDerivationValueLbl_;
-       
-        
-        QPushButton* thresholdCalcBt_;
-
-        voreen::Volume* dataset_;
-        voreen::VolumeContainer* volumeContainer_; 
-
-        tgt::vec2 thresholdValues_;
+    tgt::vec2 thresholdValues_;
         
 };
 

@@ -79,7 +79,7 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
         else
             range = equal_range(currViewId_);
 
-        for(iterator iter = range.first; iter != range.second; ++iter) {
+        for (iterator iter = range.first; iter != range.second; ++iter) {
             iter->second->processMessage(msg, currViewId_);
             if ( msg->isDiscarded() )
                 return;
@@ -89,7 +89,7 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
     else {
         std::pair<iterator, iterator> range = equal_range(dest);
 
-        for(iterator iter = range.first; iter != range.second; ++iter) {
+        for (iterator iter = range.first; iter != range.second; ++iter) {
             iter->second->processMessage(msg, dest);
             if ( msg->isDiscarded() )
                 return;

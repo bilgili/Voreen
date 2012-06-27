@@ -33,15 +33,17 @@
 #include "tgt/qt/qtcanvas.h"
 
 #include "voreen/qt/widgets/widgetplugin.h"
-#include "voreen/qt/widgets/transfunc/transfuncgradient.h"
 #include "voreen/core/vis/transfunc/transfunceditor.h"
-
+/*
 #include <QPushButton>
-#include <QToolButton>
 #include <QLabel>
+#include <QToolButton>
 #include <QSlider>
 #include <QCheckBox>
-
+*/
+class QToolButton;
+class QSlider;
+class QCheckBox;
 
 namespace voreen {
 

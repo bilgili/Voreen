@@ -330,14 +330,14 @@ const char* TiXmlBase::SkipWhiteSpace( const char* p, TiXmlEncoding encoding )
 				p += 3;
 				continue;
 			}
-			else if(*(pU+0)==TIXML_UTF_LEAD_0
+			else if (*(pU+0)==TIXML_UTF_LEAD_0
 				 && *(pU+1)==0xbfU
 				 && *(pU+2)==0xbeU )
 			{
 				p += 3;
 				continue;
 			}
-			else if(*(pU+0)==TIXML_UTF_LEAD_0
+			else if (*(pU+0)==TIXML_UTF_LEAD_0
 				 && *(pU+1)==0xbfU
 				 && *(pU+2)==0xbfU )
 			{
@@ -353,7 +353,7 @@ const char* TiXmlBase::SkipWhiteSpace( const char* p, TiXmlEncoding encoding )
 	}
 	else
 	{
-		while ( *p && IsWhiteSpace( *p ) || *p == '\n' || *p =='\r' )
+		while ( (*p && IsWhiteSpace( *p )) || *p == '\n' || *p =='\r' )
 			++p;
 	}
 
@@ -640,7 +640,7 @@ void TiXmlDocument::StreamIn( TIXML_ISTREAM * in, TIXML_STRING * tag )
 
 	while ( in->good() )
 	{
-		int tagIndex = (int) tag->length();
+		int tagIndex = static_cast<int>(tag->length());
 		while ( in->good() && in->peek() != '>' )
 		{
 			int c = in->get();
@@ -649,7 +649,7 @@ void TiXmlDocument::StreamIn( TIXML_ISTREAM * in, TIXML_STRING * tag )
 				SetError( TIXML_ERROR_EMBEDDED_NULL, 0, 0, TIXML_ENCODING_UNKNOWN );
 				break;
 			}
-			(*tag) += (char) c;
+			(*tag) += static_cast<char>(c);
 		}
 
 		if ( in->good() )
@@ -948,7 +948,7 @@ void TiXmlElement::StreamIn (TIXML_ISTREAM * in, TIXML_STRING * tag)
 			// We should be at a "<", regardless.
 			if ( !in->good() ) return;
 			assert( in->peek() == '<' );
-			int tagIndex = (int) tag->length();
+			int tagIndex = static_cast<int>(tag->length());
 
 			bool closingTag = false;
 			bool firstCharFound = false;
@@ -970,7 +970,7 @@ void TiXmlElement::StreamIn (TIXML_ISTREAM * in, TIXML_STRING * tag)
 				if ( c == '>' )
 					break;
 
-				*tag += (char) c;
+				*tag += static_cast<char>(c);
 				in->get();
 
 				if ( !firstCharFound && c != '<' && !IsWhiteSpace( c ) )

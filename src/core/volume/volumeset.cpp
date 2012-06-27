@@ -29,18 +29,23 @@
 
 #include "voreen/core/volume/volumeset.h"
 #include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/volume/volumesetcontainer.h"
+
 
 namespace voreen {
 
 const Identifier VolumeSet::msgUpdateVolumeSeries_("update.VolumeSeries");
+const std::string VolumeSet::XmlElementName = "VolumeSet";
 
 VolumeSet::VolumeSet()
-  : name_("")
+    : name_("")
+    , parentContainer_(0)
 {
 }
 
-VolumeSet::VolumeSet(const std::string& filename)
-  : name_(filename)
+VolumeSet::VolumeSet(VolumeSetContainer* const parent, const std::string& filename)
+    : name_(filename)
+    , parentContainer_(parent)
 {
 }
 
@@ -62,6 +67,18 @@ bool VolumeSet::operator==(const VolumeSet& volset) const {
 
 const std::string& VolumeSet::getName() const {
     return name_;
+}
+
+void VolumeSet::setName(const std::string& name) {
+    name_ = name;
+}
+
+const VolumeSetContainer* VolumeSet::getParentContainer() const {
+    return parentContainer_;
+}
+
+void VolumeSet::setParentContainer(VolumeSetContainer* const parent) {
+    parentContainer_ = parent;
 }
 
 const VolumeSeries::SeriesSet& VolumeSet::getSeries() const {
@@ -95,6 +112,9 @@ bool VolumeSet::addSeries(voreen::VolumeSeries*& series, const bool forceInserti
         else
             found->second++;
         (*(pr.first))->setParentVolumeSet(this);
+
+        if( parentContainer_ != 0 )
+            parentContainer_->notifyObservers();
         MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
         return true;
     }
@@ -129,9 +149,14 @@ bool VolumeSet::addSeries(voreen::VolumeSeries*& series, const bool forceInserti
             delete series;
             series = containedSeries;
         }
-    } else
-        MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
+    }
+    else {
+        (*(pr.first))->setParentVolumeSet(this);
+        if (parentContainer_ != 0)
+            parentContainer_->notifyObservers();
 
+        MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
+    }
     return pr.second;
 }
 
@@ -156,15 +181,15 @@ std::vector<VolumeHandle*> VolumeSet::getAllVolumeHandles() const {
     VolumeSeries::SeriesSet::const_iterator itSeries = series_.begin();
     for ( ; itSeries != series_.end(); ++itSeries) {
         const VolumeSeries* const s = *itSeries;
-        if( s == 0 )
+        if (s == 0)
             continue;
 
         const VolumeHandle::HandleSet& handles = s->getVolumeHandles();
         VolumeHandle::HandleSet::const_iterator itHandles = handles.begin();
-        for ( ; itHandles != handles.end(); ++itHandles ) {
-            if(*itHandles == 0)
+        for ( ; itHandles != handles.end(); ++itHandles) {
+            if (*itHandles == 0)
                 continue;
-            result.push_back( *itHandles );
+            result.push_back(*itHandles);
         }
     }
     return result;
@@ -180,20 +205,18 @@ void VolumeSet::forceModality(const Modality& modality) {
 printf("\tVolumeSet::forceSeries()...\n");
 printf("\t\tforcing series to become '%s'\n", modality.getName().c_str());
     VolumeSeries::SeriesSet::iterator it = series_.begin();
-    for( ; it != series_.end(); ++it) {
+    for ( ; it != series_.end(); ++it) {
         VolumeSeries* series = *it;
         if (series == 0)
             continue;
 printf("\t\tconverting series from '%s'...\n", series->getName().c_str());
         const VolumeHandle::HandleSet& handles = series->getVolumeHandles();
-        VolumeHandle::HandleSet::const_iterator itHandles = handles.begin();
 
         // remove all VolumeHandles from the series and add them to the new
         // series. Therefore the deletion of the VolumeSeries does not cause
-        // the VolumeHadle to become deleted and copying is not necessary.
-        //
-        for( ; itHandles != handles.end(); ) {
-            VolumeHandle* handle = series->removeVolumeHandle(*(itHandles++));
+        // the VolumeHandle to become deleted and copying is not necessary.
+        while (handles.begin() != handles.end()) {
+            VolumeHandle* handle = series->removeVolumeHandle(*(handles.begin()));
             newSeries->addVolumeHandle(handle);
         }
 
@@ -240,6 +263,11 @@ VolumeSeries* VolumeSet::removeSeries(VolumeSeries* const series) {
     VolumeSeries* found = findSeries(series);
     if (found != 0) {
         series_.erase(series);
+        found->setParentVolumeSet(0);
+
+        if (parentContainer_ != 0)
+            parentContainer_->notifyObservers();
+
         MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
     }
     return found;
@@ -284,6 +312,71 @@ bool VolumeSet::deleteSeries(const Modality& modality) {
         delete *it;
     }
     return result;
+}
+
+TiXmlElement* VolumeSet::serializeToXml() const {
+    serializableSanityChecks();
+    TiXmlElement* setElem = new TiXmlElement(getXmlElementName());
+    // Serialize Data
+    setElem->SetAttribute("name", name_);
+    // Serialize VolumeSeries and add them to the set element
+    VolumeSeries::SeriesSet::const_iterator it;
+    for (it = series_.begin(); it != series_.end(); it++)
+        setElem->LinkEndChild((*it)->serializeToXml());
+    return setElem;
+}
+
+void VolumeSet::updateFromXml(TiXmlElement* elem) {
+    errors_.clear();
+    serializableSanityChecks(elem);
+    // deserialize Set
+    if (!elem->Attribute("name"))
+        throw XmlAttributeException("Attributes missing on VolumeSet element"); // TODO Better Exception
+    setName(elem->Attribute("name"));
+}
+
+void VolumeSet::updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap) {
+    updateFromXml(elem);
+    // deserialize VolumeSeries
+    TiXmlElement* volumeseriesElem;
+    for (volumeseriesElem = elem->FirstChildElement(VolumeSeries::XmlElementName);
+        volumeseriesElem;
+        volumeseriesElem = volumeseriesElem->NextSiblingElement(VolumeSeries::XmlElementName))
+    {
+        VolumeSeries* series;
+        try {
+            series = new VolumeSeries(0);
+            series->updateFromXml(volumeseriesElem, volumeMap);
+            errors_.store(series->errors());
+            addSeries(series);
+        }
+        catch (SerializerException& e) {
+            delete series;
+            errors_.store(e);
+        }
+    }
+}
+
+std::set<std::string> VolumeSet::getFileNamesFromXml(TiXmlElement* elem) {
+//    errors_.clear();
+//    serializableSanityChecks(elem);
+    std::set<std::string> filenames;
+    // get all Filenames from the Series
+    TiXmlElement* volumeseriesElem;
+    for (volumeseriesElem = elem->FirstChildElement(VolumeSeries::XmlElementName);
+        volumeseriesElem;
+        volumeseriesElem = volumeseriesElem->NextSiblingElement(VolumeSeries::XmlElementName))
+    {
+//        try {
+            std::set<std::string> seriesfilenames = VolumeSeries::getFileNamesFromXml(volumeseriesElem);
+//            errors_.store(series->errors());
+            filenames.insert(seriesfilenames.begin(), seriesfilenames.end());
+//        }
+//        catch (SerializerException& e) {
+//            errors_.store(e);
+//        }
+    }
+    return filenames;
 }
 
 } // namespace

@@ -59,8 +59,7 @@ public:
     { }
 };
 
-inline double toDouble(const std::string& s)
-{
+inline double toDouble(const std::string& s) {
     std::istringstream i(s);
     double x;
     if (!(i >> x))
@@ -68,8 +67,7 @@ inline double toDouble(const std::string& s)
     return x;
 }
 
-inline int toInt(const std::string& s)
-{
+inline int toInt(const std::string& s) {
     std::istringstream i(s);
     int x;
     if (!(i >> x))
@@ -89,11 +87,12 @@ VevoFrame::VevoFrame(int n, size_t s, int o, double t, std::string file, size_t 
     : num_(n)
     , size_(s)
     , offset_(o)
-    , tstamp_((float)t)
+    , tstamp_(static_cast<float>(t))
     , file_(file)
     , fileid_(fileid)
     , dir_(dir)
-    , ecgval_(ecg) {}
+    , ecgval_(ecg)
+{}
 
 VevoFrame::VevoFrame(const VevoFrame& v)
     : num_(v.num_)
@@ -106,7 +105,8 @@ VevoFrame::VevoFrame(const VevoFrame& v)
     , hpBegin_(v.hpBegin_)
     , hpEnd_(v.hpEnd_)
     , dir_(v.dir_)
-    , ecgval_(v.ecgval_) {}
+    , ecgval_(v.ecgval_)
+{}
 
 VevoFrame& VevoFrame::operator=(const VevoFrame& v) {
     this->~VevoFrame();
@@ -128,7 +128,7 @@ VevoVolumeReader::VevoVolumeReader()
     extensions_.push_back("rdm");
 }
 
-VolumeSet* VevoVolumeReader::read(const string &fname, bool generateVolumeGL)
+VolumeSet* VevoVolumeReader::read(const string &fname)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     tgt::ivec3 dimensions;
@@ -140,13 +140,14 @@ VolumeSet* VevoVolumeReader::read(const string &fname, bool generateVolumeGL)
         LERROR("Opening single 2D frames stack, no volume dataset can be"
                "reconstructed from one file.");
         exit(EXIT_FAILURE);
-    }
+    } 
     else if ((pos = fname.rfind("rdm")) != string::npos) {
         std::vector<string> filenames;
 
         readVevoFramesCollection(fname, filenames);
         volDS_ = new VolumeUInt8(tgt::vec3(0, 0, 0));
-    } else {
+    }
+    else {
         LERROR("unknown filename " << fname);
     }
 
@@ -155,14 +156,12 @@ VolumeSet* VevoVolumeReader::read(const string &fname, bool generateVolumeGL)
         volDS_ = new VolumeUInt8(tgt::vec3(8));
     }
 
-    VolumeSet* volumeSet = new VolumeSet(fname);
+    VolumeSet* volumeSet = new VolumeSet(0, fname);
     VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volDS_, 0.0f);
+    volumeHandle->setOrigin(fname, "unknown", 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
-    if( generateVolumeGL == true )
-        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
-
     return volumeSet;
 }
 
@@ -203,7 +202,7 @@ void VevoVolumeReader::loadFramesDescrFromFile(const string& fname,
 
     if (!in) {
         LERROR("Cannot open .rdi input file :" << fname);
-        return ;
+        return;
     }
 
     string s;
@@ -298,15 +297,15 @@ struct VevoInfoFile* VevoVolumeReader::readCSVFile(const string& fname) {
             }
 
             if (v[0].substr(0, 23) == "B-Mode/ECG/Heart-Period") {
-                vif->HPlen = (float) atof(v[1].c_str());
+                vif->HPlen = static_cast<float>(atof(v[1].c_str()));
             }
 
             if (v[0].substr(0, 29) == "B-Mode/RX/Sector-Width-Target") {
-                vif->dataXSize = (float) atof(v[1].c_str());
+                vif->dataXSize = static_cast<float>(atof(v[1].c_str()));
             }
 
             if (v[0].substr(0, 30) == "B-Mode/RX/Sector-Height-Target") {
-                vif->dataYSize = (float) atof(v[1].c_str());
+                vif->dataYSize = static_cast<float>(atof(v[1].c_str()));
             }
         }
     }
@@ -317,7 +316,8 @@ struct VevoInfoFile* VevoVolumeReader::readCSVFile(const string& fname) {
 }
 
 void VevoVolumeReader::loadECGValues(string f, size_t ecgds, size_t ecgoffset,
-                                     std::vector<int16_t>& ecgvals) {
+                                     std::vector<int16_t>& ecgvals)
+{
     int16_t buf;
 
     string fname = renameSingle(f);
@@ -333,7 +333,7 @@ void VevoVolumeReader::loadECGValues(string f, size_t ecgds, size_t ecgoffset,
 
     if (ecgds > 0) {
         for (size_t j = 0; j < ecgds / 2; j++) {
-            fin.read((char *)(&buf), 2);
+            fin.read(reinterpret_cast<char*>(&buf), 2);
             ecgvals.push_back(buf);
         }
 
@@ -349,7 +349,8 @@ void VevoVolumeReader::loadECGValues(string f, size_t ecgds, size_t ecgoffset,
  * @param filenames
  */
 void VevoVolumeReader::readVevoFramesCollection(string fname,
-        std::vector<string>& filenames) {
+        std::vector<string>& filenames)
+{
     std::ifstream in(fname.c_str());
 
     if (!in) {
@@ -378,10 +379,12 @@ void VevoVolumeReader::readVevoFramesCollection(string fname,
 
         if (s == "LATERAL POSITIONS") {
             break;
-        } else if (s.substr(0, 9) == "z-spacing") {
+        }
+        else if (s.substr(0, 9) == "z-spacing") {
             std::vector<string> v = splitLine(s, " ");
-            zspacing_ = (float) atof(v[1].c_str());
-        } else if (s.substr(0, 4) == "sync") {
+            zspacing_ = static_cast<float>(atof(v[1].c_str()));
+        }
+        else if (s.substr(0, 4) == "sync") {
             syncDataset_ = true;
         }
     }
@@ -405,7 +408,8 @@ string VevoVolumeReader::renameSingle(string fname) {
             fileName.replace(pos, 3, "rdb");
 
         return fileName;
-    } else {
+    }
+    else {
         LERROR("unknown filename " << fname);
         return NULL;
     }
@@ -415,9 +419,10 @@ string VevoVolumeReader::renameSingle(string fname) {
  * returns the size of the appended frame
  */
 size_t VevoVolumeReader::appendToVolume(VevoFrame& v, VolumeUInt16* ds,
-        size_t ds_offset, size_t xres) {
+        size_t ds_offset, size_t xres)
+{
     size_t ret;
-    char *to = (char *)(ds->voxel() + ds_offset);
+    char *to = reinterpret_cast<char*>(ds->voxel() + ds_offset);
 
     if (v.dir_ == 1)
         ret = loadRawFrame(v, to);
@@ -433,8 +438,10 @@ size_t VevoVolumeReader::loadInvertedRawFrame(VevoFrame& frame, char *to, size_t
     if (!fin) {
         LERROR("Cannot open input file " << frame.file_);
         return 0;
-    } else
+    }
+    else {
         LDEBUG("Will read frame from : " << frame.file_);
+    }
 
     if (frame.offset_) {
         fin.seekg(frame.offset_);
@@ -484,8 +491,10 @@ size_t VevoVolumeReader::loadRawFrame(VevoFrame& frame, char *to) {
     if (!fin) {
         LERROR("Cannot open input file " << frame.file_);
         return 0;
-    } else
+    }
+    else {
         LDEBUG("Will read frame from : " << frame.file_);
+    }
 
     if (frame.offset_) {
         fin.seekg(frame.offset_);
@@ -503,12 +512,13 @@ size_t VevoVolumeReader::loadRawFrame(VevoFrame& frame, char *to) {
 
         if (fin.rdstate() & std::ios_base::failbit)
             LERROR("\tFormat error during reading (failbit)")
-            else if (fin.rdstate() & std::ios_base::badbit)
+            else
+            if (fin.rdstate() & std::ios_base::badbit)
                 LERROR("\tStream corrupted, i.e. invalid offset (badbit)")
-                else
-                    LERROR("\tStream totally b0rked!")
+            else
+            LERROR("\tStream totally b0rked!")
 
-                    fin.clear();
+            fin.clear();
     }
 
     size_t read = (size_t)fin.gcount();

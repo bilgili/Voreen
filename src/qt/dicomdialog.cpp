@@ -38,6 +38,8 @@
 #include "voreen/core/io/dicomfindscu.h"
 #endif
 
+namespace voreen {
+
 void DownloadThread::run() {
     std::vector<std::string> files;
     if (voreen::DicomMoveSCU::moveSeries(selectedSeriesInstanceUID_,
@@ -713,3 +715,5 @@ std::string DicomDirDialog::getFilename() {
     else
         return filename_ + "?" + listWidget_->getSelectedSeriesInstanceUID();
 }
+
+} // namespace

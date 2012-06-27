@@ -34,28 +34,23 @@ const std::string Script::loggerCat_ = "tgt.Script";
 bool Script::load(const std::string& filename, bool compileDirectly) {
     File* file = FileSys.open(filename);
 
-    //Check if file is open:
-    if(!file)
-        return false;
-
-    if(!file->open())
+    // Check if file is open
+    if (!file || !file->open())
         return false;
 
     size_t len = file->size();
 
-    //Check if file is empty
-    if (len==0)
+    // Check if file is empty
+    if (len == 0)
         return false;
 
-    if(source_ != 0) {
+    if (source_ != 0)
         delete[] source_;
-        source_ = 0;
-    }
 
     // allocate memory
     source_ = new char[len+1];
 
-    if(source_ == 0)
+    if (source_ == 0)
         return false;   //allocation failed
 
     file->read(source_, len);
@@ -127,7 +122,9 @@ bool Script::run() {
 }
 
 //------------------------------------------------------------------------------
+
 const std::string ScriptManager::loggerCat_ = "tgt.Script.Manager";
+
 ScriptManager::ScriptManager(bool initSignalHandlers)
     : ResourceManager<Script>()
 {
@@ -146,13 +143,13 @@ ScriptManager::~ScriptManager() {
 }
 
 Script* ScriptManager::load(const std::string& filename, bool compileDirectly) {
-    if(isLoaded(filename)) {
+    if (isLoaded(filename)) {
         increaseUsage(filename);
         return get(filename);
     }
 
     Script* script = new Script();
-	if( script->load((path_.empty() ? "" : (path_ + '/')) + filename, compileDirectly) ) {
+	if (script->load(completePath(filename), compileDirectly)) {
         reg(script, filename);
         return script;
     }

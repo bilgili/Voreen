@@ -40,14 +40,6 @@
 
 namespace voreen {
 
-//TODO: check if all of these are needed
-using tgt::vec3;
-using tgt::ivec2;
-using tgt::Color;
-using std::vector;
-
-//---------------------------------------------------------------------------
-
 const Identifier DepthOfField::setDepthOfFieldThreshold_("set.depthOfFieldThreshold");
 
 DepthOfField::DepthOfField()
@@ -70,7 +62,7 @@ void DepthOfField::setDepthThreshold(float depthThreshold) {
 }
 
 void DepthOfField::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,(int)size_.x,(int)size_.y);
+    glViewport(0,0,size_.x,size_.y);
 
 	int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
@@ -94,8 +86,8 @@ void DepthOfField::process(LocalPortMapping* portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());
     program_->setUniform("depthThreshold_", depthThreshold_.get());
@@ -107,6 +99,4 @@ void DepthOfField::process(LocalPortMapping* portMapping) {
     LGL_ERROR;
 }
 
-
 } // voreen namespace
-

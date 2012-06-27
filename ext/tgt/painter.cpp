@@ -40,14 +40,14 @@ void Painter::setCanvas(GLCanvas* canvas) {
 }
 
 GLCanvas* Painter::getCanvas() const {
-    if (canvas_) // FIXME: should we skip this test for performace resaons?
+    if (canvas_) // FIXME: should we skip this test for performace reasons?
         return canvas_;
     else
         return NULL;
 }
 
-Camera* Painter::getCamera() const{
-    if (canvas_) // FIXME: should we skip this test for performace resaons?
+Camera* Painter::getCamera() const {
+    if (canvas_) // FIXME: should we skip this test for performace reasons?
         return canvas_->getCamera();
     else
         return NULL;

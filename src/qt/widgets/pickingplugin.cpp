@@ -109,18 +109,9 @@ void PickingPlugin::createWidgets() {
 }
 
 void PickingPlugin::createConnections() {
-
  connect(thresholdCalcBt_,SIGNAL(clicked()),this,SLOT(evaluateThreshold()));
-
 }
 
-void PickingPlugin::setDataset(int volume){
-    dataset_ = volumeContainer_->getVolume(volume);
-    
-}
-void PickingPlugin::setVolumeContainer(voreen::VolumeContainer* volcont){
-    volumeContainer_ = volcont;
-}
 void PickingPlugin::setLowerThreshold(float threshold){
     thresholdValues_.x = threshold;
 }
@@ -128,8 +119,6 @@ void PickingPlugin::setLowerThreshold(float threshold){
 void PickingPlugin::setUpperThreshold(float threshold){
     thresholdValues_.y = threshold;
 }
-
-
 
 void PickingPlugin::mouseDoubleClickEvent(tgt::MouseEvent* e){
    tgt::ivec2 size = tc_->getSize(); 
@@ -142,9 +131,9 @@ void PickingPlugin::mouseDoubleClickEvent(tgt::MouseEvent* e){
    posY = maxY - posY; 
  
    color = tc_->getTargetAsFloats(3,posX,posY);
-   float red = color[0];
-   float green = color[1];
-   float blue = color[2];
+//    float red = color[0];
+//    float green = color[1];
+//    float blue = color[2];
    float alpha = color[3];
 
 
@@ -152,8 +141,10 @@ void PickingPlugin::mouseDoubleClickEvent(tgt::MouseEvent* e){
           QMessageBox::warning(this, "Voreen", tr("you've selected the background!")); 
           return;
      }
-    
-     position = tgt::ivec3(red*dataset_->getDimensions().x,green*dataset_->getDimensions().y,blue*dataset_->getDimensions().z);
+
+     // FIXME: dataset_ is obsoleted together with VolumeContainer.
+     //
+     /*position = tgt::ivec3(red*dataset_->getDimensions().x,green*dataset_->getDimensions().y,blue*dataset_->getDimensions().z);
 
      if (position.x <= 1 || position.x >= dataset_->getDimensions().x-1 || 
          position.y <= 1 || position.y >= dataset_->getDimensions().y-1 ||
@@ -161,14 +152,11 @@ void PickingPlugin::mouseDoubleClickEvent(tgt::MouseEvent* e){
              QMessageBox::warning(this, "Voreen", tr("you've selected the border lines, try another angle or threshold"));
 	         return ;
      }
-
+     */
      floodFill(position); 
 }
  
-void PickingPlugin::initiateFloodFill(tgt::ivec3 position){
-    
-    
-
+void PickingPlugin::initiateFloodFill(tgt::ivec3 /*position*/) {
 }
 
 int max(int x, int y) {
@@ -176,8 +164,11 @@ int max(int x, int y) {
  else return y;
 }
 
-
-void PickingPlugin::floodFill(tgt::ivec3 position){
+// FIXME: dataset_ is not available anymore due to removal of
+// VolumeContainer.
+//
+void PickingPlugin::floodFill(tgt::ivec3 /*position*/) {
+/*
     float xl,yl,zl;
     float xr,yr,zr;
 
@@ -194,9 +185,9 @@ void PickingPlugin::floodFill(tgt::ivec3 position){
     tgt::ivec3 datasetDimension = dataset_->getDimensions();
     VolumeAtomic<bool> markedVoxels(dataset_->getDimensions(),tgt::vec3(1),1); 
 
-    for(int x = 0; x< markedVoxels.getDimensions().x; x++)
-        for(int y = 0; y< markedVoxels.getDimensions().y; y++)
-            for(int z = 0; z< markedVoxels.getDimensions().z; z++)
+    for (int x = 0; x< markedVoxels.getDimensions().x; x++)
+        for (int y = 0; y< markedVoxels.getDimensions().y; y++)
+            for (int z = 0; z< markedVoxels.getDimensions().z; z++)
                 markedVoxels.voxel(x,y,z) = false;
 
     tgt::ivec3 val = tgt::ivec3(0);
@@ -275,24 +266,24 @@ void PickingPlugin::floodFill(tgt::ivec3 position){
 
    // draw rectangle 
      float maxSideLength = max(max(dataset_->getDimensions().x,dataset_->getDimensions().y),dataset_->getDimensions().z);
-      //xl = (xl / ((float)dataset_->getDimensions().x))* (( 1 / ((float)dataset_->getDimensions().x)) *  maxSideLength)    *2 - 1;
-      //xr = (xr / ((float)dataset_->getDimensions().x))* (( 1 / ((float)dataset_->getDimensions().x)) *  maxSideLength)    *2 - 1;
+      //xl = (xl / (static_cast<float>(dataset_->getDimensions().x)))* (( 1 / (static_cast<float>(dataset_->getDimensions().x))) *  maxSideLength)    *2 - 1;
+      //xr = (xr / (static_cast<float>(dataset_->getDimensions().x)))* (( 1 / (static_cast<float>(dataset_->getDimensions().x))) *  maxSideLength)    *2 - 1;
 
 
-      //yl = (yl / ((float)dataset_->getDimensions().y))* (( 1 / ((float)dataset_->getDimensions().y)) *  maxSideLength)    *2 - 1;
-      //yr = (yr / ((float)dataset_->getDimensions().y))* (( 1 / ((float)dataset_->getDimensions().y)) *  maxSideLength)    *2 - 1;
+      //yl = (yl / (static_cast<float>(dataset_->getDimensions().y)))* (( 1 / (static_cast<float>(dataset_->getDimensions().y))) *  maxSideLength)    *2 - 1;
+      //yr = (yr / (static_cast<float>(dataset_->getDimensions().y)))* (( 1 / (static_cast<float>(dataset_->getDimensions().y))) *  maxSideLength)    *2 - 1;
 
-      //zl = (zl / ((float)dataset_->getDimensions().z))* (( 1 / ((float)dataset_->getDimensions().z)) *  maxSideLength)    *2 - 1;
-      //zr = (zr / ((float)dataset_->getDimensions().z))* (( 1 / ((float)dataset_->getDimensions().z)) *  maxSideLength)    *2 - 1;
+      //zl = (zl / (static_cast<float>(dataset_->getDimensions().z)))* (( 1 / (static_cast<float>(dataset_->getDimensions().z))) *  maxSideLength)    *2 - 1;
+      //zr = (zr / (static_cast<float>(dataset_->getDimensions().z)))* (( 1 / (static_cast<float>(dataset_->getDimensions().z))) *  maxSideLength)    *2 - 1;
 
-      xl = xl / ((float)dataset_->getDimensions().x); 
-      xr = xr / ((float)dataset_->getDimensions().x);
+      xl = xl / (static_cast<float>(dataset_->getDimensions().x)); 
+      xr = xr / (static_cast<float>(dataset_->getDimensions().x));
 
-      yl = yl / ((float)dataset_->getDimensions().y); 
-      yr = yr / ((float)dataset_->getDimensions().y);
+      yl = yl / (static_cast<float>(dataset_->getDimensions().y)); 
+      yr = yr / (static_cast<float>(dataset_->getDimensions().y));
 
-      zl = zl / ((float)dataset_->getDimensions().z); 
-      zr = zr / ((float)dataset_->getDimensions().z);
+      zl = zl / (static_cast<float>(dataset_->getDimensions().z)); 
+      zr = zr / (static_cast<float>(dataset_->getDimensions().z));
  
       xl = (2.f*xl-1.f)*(dataset_->getDimensions().x / maxSideLength);
       xr = (2.f*xr-1.f)*(dataset_->getDimensions().x / maxSideLength);
@@ -302,8 +293,6 @@ void PickingPlugin::floodFill(tgt::ivec3 position){
 
       zl = (2.f*zl-1.f)*(dataset_->getDimensions().z / maxSideLength);
       zr = (2.f*zr-1.f)*(dataset_->getDimensions().z / maxSideLength);
-
-      
       
       tgt::vec4 llf(xl,yl,zl,1.f);
       tgt::vec4 urb(xr,yr,zr,1.f);
@@ -346,19 +335,21 @@ void PickingPlugin::floodFill(tgt::ivec3 position){
                     derivationSum += (sum - vol->voxel(x,y,z))*(sum - vol->voxel(x,y,z));
                 }
 
-                derivationSum  = sqrt( (1/count) * derivationSum);
-                segmentStandardDerivationValueLbl_->setText(QString::number(derivationSum));
+    derivationSum  = sqrt( (1/count) * derivationSum);
+    segmentStandardDerivationValueLbl_->setText(QString::number(derivationSum));
+    */
 }
 
 
-void PickingPlugin::setTextureContainer(voreen::TextureContainer* tc){
+void PickingPlugin::setTextureContainer(voreen::TextureContainer* tc) {
 tc_ = tc;
 }
 
-
-
+// FIXME: dataset_ is not available anymore due to removal of
+// VolumeContainer.
+//
 void PickingPlugin::evaluateThreshold(){
-
+/*
   VolumeUInt8* vol = dynamic_cast<VolumeUInt8*>(dataset_);
   float count = 0;
   float sum = 0.f;
@@ -394,7 +385,7 @@ void PickingPlugin::evaluateThreshold(){
             derivationSum  = sqrt( (1/count) * derivationSum);
 
             thresholdStandardDerivationValueLbl_->setText(QString::number(derivationSum));
-
+*/
 }
 
 

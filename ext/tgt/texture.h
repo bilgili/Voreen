@@ -373,7 +373,7 @@ protected:
     GLuint id_;             ///< OpenGL texture id
 
     GLenum type_;           ///< 1D, 2D, 3D
-    int bpp_;               ///< bytes per pixel
+    GLubyte bpp_;           ///< bytes per pixel
 
     std::string name_;      ///< optional, e.g. for storing texture file name
     

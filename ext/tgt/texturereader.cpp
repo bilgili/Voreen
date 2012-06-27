@@ -39,19 +39,16 @@ const std::string TextureReader::loggerCat_("tgt.Texture.Reader");
 
 
 TextureReader::TextureReader()
-{
-}
+{}
 
-GLsizei TextureReader::checkSize(GLsizei s)
-{
+GLsizei TextureReader::checkSize(GLsizei s) {
     int k = 1;
-    while(k < s)
+    while (k < s)
         k <<= 1;
     return k;
 }
 
-bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter)
-{
+bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter) {
     std::string name = (t->getName().empty() ? "" : " (" + t->getName() + ")");
     
     if ((t->dimensions_.x != checkSize(t->dimensions_.x)) ||
@@ -102,8 +99,7 @@ bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter)
     return true;
 }
 
-bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex)
-{
+bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     t->type_ = GL_TEXTURE_1D;
 
     switch (t->bpp_) {
@@ -118,7 +114,7 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
             break;
 
         default:
-            LERROR((int)t->bpp_<< " bits per pixel...error!");
+            LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
             return false;
     }
 
@@ -138,8 +134,7 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
     return true;
 }
 
-bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex)
-{
+bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     t->type_ = GL_TEXTURE_2D;
 
     switch (t->bpp_) {
@@ -154,7 +149,7 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
             break;
 
         default:
-            LERROR((int)t->bpp_<< " bits per pixel...error!");
+            LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
             return false;
     }
 
@@ -174,8 +169,7 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
     return true;
 }
 
-bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex)
-{
+bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     switch (t->bpp_) {
         case 3:
             t->format_ = GL_RGB;
@@ -188,7 +182,7 @@ bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, b
             break;
 
         default:
-            LERROR((int)t->bpp_<< " bits per pixel...error!");
+            LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
             return false;
     }
 
@@ -209,8 +203,7 @@ bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, b
     return true;
 }
 
-bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex)
-{
+bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     t->type_ = GL_TEXTURE_3D;
 
     switch (t->bpp_) {
@@ -224,12 +217,10 @@ bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool com
             t->format_ = GL_RGB;
             compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
             break;
-
         case 4:
             t->format_ = GL_RGBA;
             compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
             break;
-
         default:
             LERROR(t->bpp_<< " bits per pixel...error!");
             return false;

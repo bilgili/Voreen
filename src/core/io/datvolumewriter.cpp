@@ -52,7 +52,7 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
     std::fstream datout(datname.c_str(), std::ios::out);
     std::fstream rawout(rawname.c_str(), std::ios::out | std::ios::binary);
 
-    if(datout.bad() || rawout.bad())
+    if (datout.bad() || rawout.bad())
         throw tgt::IOException();
 
     // write dat file

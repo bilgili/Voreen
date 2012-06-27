@@ -36,10 +36,10 @@ GLUTCanvas * GLUTCanvas::Canvases_[MAX_NUMBER_OF_WINDOWS];
 
 GLUTCanvas::GLUTCanvas(const std::string& title,
                        const ivec2& size,
-                       const GLCanvas::Buffers buffers )
-    : GLCanvas( title, size, buffers ) {
-
-    glutMouse_ = NULL;
+                       const GLCanvas::Buffers buffers)
+    : GLCanvas(title, size, buffers)
+{
+    glutMouse_ = 0;
     holdButton_ = MouseEvent::NO_MOUSE_BUTTON;
 }
 
@@ -53,17 +53,17 @@ void GLUTCanvas::init() {
 
     atexit(onExitFunction); // FIXME: sholdn't this be part of GLUTApplication??
 
-    glutInitWindowSize( size_.x, size_.y );
-    glutCreateWindow( title_.c_str() );
+    glutInitWindowSize(size_.x, size_.y);
+    glutCreateWindow(title_.c_str());
 
     windowID_ = glutGetWindow();
     Canvases_[windowID_] = this;
     registerCallbacks();
 
-    rgbaSize_ = ivec4( glutGet(GLUT_WINDOW_RED_SIZE),
-                       glutGet(GLUT_WINDOW_GREEN_SIZE),
-                       glutGet(GLUT_WINDOW_BLUE_SIZE),
-                       glutGet(GLUT_WINDOW_ALPHA_SIZE) ) ;
+    rgbaSize_ = ivec4(glutGet(GLUT_WINDOW_RED_SIZE),
+                      glutGet(GLUT_WINDOW_GREEN_SIZE),
+                      glutGet(GLUT_WINDOW_BLUE_SIZE),
+                      glutGet(GLUT_WINDOW_ALPHA_SIZE)) ;
     stencilSize_ = glutGet(GLUT_WINDOW_STENCIL_SIZE);
     depthSize_ = glutGet(GLUT_WINDOW_DEPTH_SIZE);
     doubleBuffered_ = glutGet(GLUT_WINDOW_DOUBLEBUFFER);
@@ -90,36 +90,33 @@ void GLUTCanvas::getGLFocus() {
     glutSetWindow(windowID_);
 }
 
-void GLUTCanvas::toggleFullScreen(){
-    if(!fullscreen_)
-    {
+void GLUTCanvas::toggleFullScreen() {
+    if (!fullscreen_) {
         noFullScreenSize_ = size_;
-        windowPosition_ = ivec2( glutGet(GLUT_WINDOW_X), glutGet(GLUT_WINDOW_Y) );
+        windowPosition_ = ivec2(glutGet(GLUT_WINDOW_X), glutGet(GLUT_WINDOW_Y));
         glutFullScreen();
-    }
-    else
-    {
+    } else {
         // reshaping calls sizeChanged by reshape
         // this updates size_
-        glutReshapeWindow( noFullScreenSize_.x, noFullScreenSize_.y );
-        glutPositionWindow( windowPosition_.x, windowPosition_.y );
+        glutReshapeWindow(noFullScreenSize_.x, noFullScreenSize_.y);
+        glutPositionWindow(windowPosition_.x, windowPosition_.y);
     }
     fullscreen_ = !fullscreen_;
 }
 
-bool GLUTCanvas::isFullScreen(){
+bool GLUTCanvas::isFullScreen() {
     return fullscreen_;
 }
 
-GLUTMouse* GLUTCanvas::getMouse(){
+GLUTMouse* GLUTCanvas::getMouse() {
     return glutMouse_;
 }
 
-void GLUTCanvas::setMouse( GLUTMouse* glutMouse ){
+void GLUTCanvas::setMouse(GLUTMouse* glutMouse) {
     this->glutMouse_ = glutMouse;
 }
 
-int GLUTCanvas::getWindowID(){
+int GLUTCanvas::getWindowID() {
     return windowID_;
 }
 
@@ -127,7 +124,7 @@ int GLUTCanvas::getWindowID(){
 //------------------------------------------------------------------------------
 // Callback functions for GLUT.
 
-void GLUTCanvas::display(){
+void GLUTCanvas::display() {
     paint();
 }
 
@@ -136,20 +133,20 @@ void GLUTCanvas::mouseMotion(const int& x, const int& y) {
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent( x, y, MouseEvent::MOTION, Event::NONE, holdButton_ );
-    getEventHandler()->broadcast( moveEvent );
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE, holdButton_);
+    getEventHandler()->broadcast(moveEvent);
 }
 
-void GLUTCanvas::passiveMouseMotion(const int& x, const int& y){
+void GLUTCanvas::passiveMouseMotion(const int& x, const int& y) {
     // maybe there is a glutMouse that needs update
     keepMouseUpdated(x, y);
 
     // Create tgt and broadcast it
-    MouseEvent* moveEvent = new MouseEvent( x, y, MouseEvent::MOTION, Event::NONE );
-    getEventHandler()->broadcast( moveEvent );
+    MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::NONE);
+    getEventHandler()->broadcast(moveEvent);
 }
 
-void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x, const int& y, const int& modifier ) {
+void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x, const int& y, const int& modifier) {
     // maybe there is a glutMouse that needs update
     keepMouseUpdated(x, y);
 
@@ -164,7 +161,7 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
 
     // Create tgt action and update holdButton.
     MouseEvent::MouseAction action;
-    if (state == GLUT_DOWN){
+    if (state == GLUT_DOWN) {
         action = MouseEvent::PRESSED;
         holdButton_ = pressedButton;
     }
@@ -177,8 +174,8 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
     int tgtModifier = getModifier(modifier);
 
     // Create and broadcast event
-    MouseEvent* mousePressedEvent = new MouseEvent( x, y, action, tgtModifier, pressedButton );
-    getEventHandler()->broadcast( mousePressedEvent );
+    MouseEvent* mousePressedEvent = new MouseEvent(x, y, action, tgtModifier, pressedButton);
+    getEventHandler()->broadcast(mousePressedEvent);
 }
 
 void GLUTCanvas::keyboard(const unsigned char& key, const int& x, const int& y, const int& modifier)
@@ -200,7 +197,7 @@ void GLUTCanvas::keyboard(const unsigned char& key, const int& x, const int& y, 
     eventHandler_->broadcast(ke_release);
 }
 
-void GLUTCanvas::keyboardSpecial( const int& key, const int& x, const int& y, const int& modifier ){
+void GLUTCanvas::keyboardSpecial(const int& key, const int& x, const int& y, const int& modifier) {
     // maybe there is a glutMouse that needs update
     keepMouseUpdated(x, y);
 
@@ -215,11 +212,11 @@ void GLUTCanvas::keyboardSpecial( const int& key, const int& x, const int& y, co
     eventHandler_->broadcast(ke_release);
 }
 
-void GLUTCanvas::reshape( int width, int height ){
-    sizeChanged( ivec2(width, height) );
+void GLUTCanvas::reshape(int width, int height) {
+    sizeChanged(ivec2(width, height));
 }
 
-void GLUTCanvas::visibility( const int& visible ){
+void GLUTCanvas::visibility(const int& /*visible*/) {
 }
 
 //------------------------------------------------------------------------------
@@ -229,26 +226,24 @@ void GLUTCanvas::visibility( const int& visible ){
 /**
  * Helper to keep track of the mouse. Mainly used to have an optional GLUTMouse updated.
  */
-void GLUTCanvas::keepMouseUpdated( const int& x, const int& y){
-    if(glutMouse_)
-        glutMouse_->setPosition( ivec2(x, y) );
+void GLUTCanvas::keepMouseUpdated(const int& x, const int& y) {
+    if (glutMouse_)
+        glutMouse_->setPosition(ivec2(x, y));
 }
-
-
 
 /**
  * Helper to map from GLUT modifier bitmap to TGT modifier bitmap.
  */
-int GLUTCanvas::getModifier(const int& glutModifier){
+int GLUTCanvas::getModifier(const int& glutModifier) {
     int result = 0;
 
-    if( glutModifier & GLUT_ACTIVE_SHIFT )
+    if (glutModifier & GLUT_ACTIVE_SHIFT)
         result |= tgt::Event::SHIFT;
 
-    if( glutModifier & GLUT_ACTIVE_ALT )
+    if (glutModifier & GLUT_ACTIVE_ALT)
         result |= tgt::Event::ALT;
 
-    if( glutModifier & GLUT_ACTIVE_CTRL )
+    if (glutModifier & GLUT_ACTIVE_CTRL)
         result |= tgt::Event::CTRL;
 
     return result;
@@ -264,23 +259,23 @@ KeyEvent::KeyCode GLUTCanvas::getKeyCode(const int& key) {
     // Normaly it should be handled in a switch statement.
     // this is faster :)
 
-    if( (key >= 91) && (key <= 127) )   /// small letters, some brackets, etc.
+    if ((key >= 91) && (key <= 127))   /// small letters, some brackets, etc.
         return static_cast<tgt::KeyEvent::KeyCode> (key);
-    if( (key >= 65) && (key <= 90) )    /// there are no UPPERCASE keys in tgt
+    if ((key >= 65) && (key <= 90))    /// there are no UPPERCASE keys in tgt
         return static_cast<tgt::KeyEvent::KeyCode> (key+32);
-    if( (key >= 38) && (key <= 64) )    /// numbers, symbols
+    if ((key >= 38) && (key <= 64))    /// numbers, symbols
         return static_cast<tgt::KeyEvent::KeyCode> (key);
-    if( (key >= 32) && (key <= 36) )    /// symbols
+    if ((key >= 32) && (key <= 36))    /// symbols
         return static_cast<tgt::KeyEvent::KeyCode> (key);
 
     // the rest
-    switch(key){
-        case   8:      return tgt::KeyEvent::K_BACKSPACE;
-        case   9:      return tgt::KeyEvent::K_TAB;
-        case  12:      return tgt::KeyEvent::K_CLEAR;
-        case  13:      return tgt::KeyEvent::K_RETURN;
-        case  19:      return tgt::KeyEvent::K_PAUSE;
-        case  27:      return tgt::KeyEvent::K_ESCAPE;
+    switch (key) {
+    case   8: return tgt::KeyEvent::K_BACKSPACE;
+    case   9: return tgt::KeyEvent::K_TAB;
+    case  12: return tgt::KeyEvent::K_CLEAR;
+    case  13: return tgt::KeyEvent::K_RETURN;
+    case  19: return tgt::KeyEvent::K_PAUSE;
+    case  27: return tgt::KeyEvent::K_ESCAPE;
     }
     return tgt::KeyEvent::K_UNKNOWN;
 }
@@ -290,34 +285,33 @@ KeyEvent::KeyCode GLUTCanvas::getKeyCode(const int& key) {
 /**
  * Helper to convert "special" Keys from GLUT to TGT keys.
  */
-KeyEvent::KeyCode GLUTCanvas::getSpecialKeyCode(const int& key){
-    switch(key){
-        // Note: According to its API, this is everything GLUT has to offer.
+KeyEvent::KeyCode GLUTCanvas::getSpecialKeyCode(const int& key) {
+    // Note: According to its API, this is everything GLUT has to offer.
+    switch (key) {
+    case GLUT_KEY_F1:           return tgt::KeyEvent::K_F1;
+    case GLUT_KEY_F2:           return tgt::KeyEvent::K_F2;
+    case GLUT_KEY_F3:           return tgt::KeyEvent::K_F3;
+    case GLUT_KEY_F4:           return tgt::KeyEvent::K_F4;
+    case GLUT_KEY_F5:           return tgt::KeyEvent::K_F5;
+    case GLUT_KEY_F6:           return tgt::KeyEvent::K_F6;
+    case GLUT_KEY_F7:           return tgt::KeyEvent::K_F7;
+    case GLUT_KEY_F8:           return tgt::KeyEvent::K_F8;
+    case GLUT_KEY_F9:           return tgt::KeyEvent::K_F9;
+    case GLUT_KEY_F10:          return tgt::KeyEvent::K_F10;
+    case GLUT_KEY_F11:          return tgt::KeyEvent::K_F11;
+    case GLUT_KEY_F12:          return tgt::KeyEvent::K_F12;
 
-        case GLUT_KEY_F1:           return tgt::KeyEvent::K_F1;
-        case GLUT_KEY_F2:           return tgt::KeyEvent::K_F2;
-        case GLUT_KEY_F3:           return tgt::KeyEvent::K_F3;
-        case GLUT_KEY_F4:           return tgt::KeyEvent::K_F4;
-        case GLUT_KEY_F5:           return tgt::KeyEvent::K_F5;
-        case GLUT_KEY_F6:           return tgt::KeyEvent::K_F6;
-        case GLUT_KEY_F7:           return tgt::KeyEvent::K_F7;
-        case GLUT_KEY_F8:           return tgt::KeyEvent::K_F8;
-        case GLUT_KEY_F9:           return tgt::KeyEvent::K_F9;
-        case GLUT_KEY_F10:          return tgt::KeyEvent::K_F10;
-        case GLUT_KEY_F11:          return tgt::KeyEvent::K_F11;
-        case GLUT_KEY_F12:          return tgt::KeyEvent::K_F12;
+    case GLUT_KEY_LEFT:         return tgt::KeyEvent::K_LEFT;
+    case GLUT_KEY_UP:           return tgt::KeyEvent::K_UP;
+    case GLUT_KEY_RIGHT:        return tgt::KeyEvent::K_RIGHT;
+    case GLUT_KEY_DOWN:         return tgt::KeyEvent::K_DOWN;
+    case GLUT_KEY_PAGE_UP:      return tgt::KeyEvent::K_PAGEUP;
+    case GLUT_KEY_PAGE_DOWN:    return tgt::KeyEvent::K_PAGEDOWN;
+    case GLUT_KEY_HOME:         return tgt::KeyEvent::K_HOME;
+    case GLUT_KEY_END:          return tgt::KeyEvent::K_END;
+    case GLUT_KEY_INSERT:       return tgt::KeyEvent::K_INSERT;
 
-        case GLUT_KEY_LEFT:         return tgt::KeyEvent::K_LEFT;
-        case GLUT_KEY_UP:           return tgt::KeyEvent::K_UP;
-        case GLUT_KEY_RIGHT:        return tgt::KeyEvent::K_RIGHT;
-        case GLUT_KEY_DOWN:         return tgt::KeyEvent::K_DOWN;
-        case GLUT_KEY_PAGE_UP:      return tgt::KeyEvent::K_PAGEUP;
-        case GLUT_KEY_PAGE_DOWN:    return tgt::KeyEvent::K_PAGEDOWN;
-        case GLUT_KEY_HOME:         return tgt::KeyEvent::K_HOME;
-        case GLUT_KEY_END:          return tgt::KeyEvent::K_END;
-        case GLUT_KEY_INSERT:       return tgt::KeyEvent::K_INSERT;
-
-        default:                    return tgt::KeyEvent::K_UNKNOWN;
+    default:                    return tgt::KeyEvent::K_UNKNOWN;
     }
 }
 
@@ -327,15 +321,15 @@ KeyEvent::KeyCode GLUTCanvas::getSpecialKeyCode(const int& key){
  * glut display mode.
  */
 unsigned int GLUTCanvas::getDisplayMode() {
-  return ( ( RGB_BUFFER     & buffers_ ? GLUT_RGB         : 0 ) |
-	   ( RGBA_BUFFER    & buffers_ ? GLUT_RGBA        : 0 ) |
-	   ( ALPHA_BUFFER   & buffers_ ? GLUT_ALPHA       : 0 ) |
-	   ( DEPTH_BUFFER   & buffers_ ? GLUT_DEPTH       : 0 ) |
-	   ( DOUBLE_BUFFER  & buffers_ ? GLUT_DOUBLE      : 0 ) |
-	   ( STENCIL_BUFFER & buffers_ ? GLUT_STENCIL     : 0 ) |
-	   ( ACCUM_BUFFER   & buffers_ ? GLUT_ACCUM       : 0 ) |
-	   ( STEREO_VIEWING & buffers_ ? GLUT_STEREO      : 0 ) |
-	   ( MULTISAMPLING  & buffers_ ? GLUT_MULTISAMPLE : 0 ) );
+  return ((RGB_BUFFER     & buffers_ ? GLUT_RGB         : 0) |
+          (RGBA_BUFFER    & buffers_ ? GLUT_RGBA        : 0) |
+          (ALPHA_BUFFER   & buffers_ ? GLUT_ALPHA       : 0) |
+          (DEPTH_BUFFER   & buffers_ ? GLUT_DEPTH       : 0) |
+          (DOUBLE_BUFFER  & buffers_ ? GLUT_DOUBLE      : 0) |
+          (STENCIL_BUFFER & buffers_ ? GLUT_STENCIL     : 0) |
+          (ACCUM_BUFFER   & buffers_ ? GLUT_ACCUM       : 0) |
+          (STEREO_VIEWING & buffers_ ? GLUT_STEREO      : 0) |
+          (MULTISAMPLING  & buffers_ ? GLUT_MULTISAMPLE : 0));
 }
 
 //------------------------------------------------------------------------------
@@ -343,53 +337,53 @@ unsigned int GLUTCanvas::getDisplayMode() {
 //
 // remember: these are wrapping the member functions of GLUTCanvas.
 
-void GLUTCanvas::registerCallbacks(){
-    glutDisplayFunc( displayFunc );
-    glutReshapeFunc( reshapeFunc );
-    glutKeyboardFunc( keyboardFunc );
-    glutSpecialFunc( keyboardSpecialFunc );
-    glutMouseFunc( mousePressedFunc );
-    glutMotionFunc( mouseMotionFunc );
-    glutPassiveMotionFunc( mouseMotionFunc );
-    glutVisibilityFunc( visibilityFunc );
+void GLUTCanvas::registerCallbacks() {
+    glutDisplayFunc(displayFunc);
+    glutReshapeFunc(reshapeFunc);
+    glutKeyboardFunc(keyboardFunc);
+    glutSpecialFunc(keyboardSpecialFunc);
+    glutMouseFunc(mousePressedFunc);
+    glutMotionFunc(mouseMotionFunc);
+    glutPassiveMotionFunc(mouseMotionFunc);
+    glutVisibilityFunc(visibilityFunc);
 }
 
-void GLUTCanvas::displayFunc( void ){
+void GLUTCanvas::displayFunc(void) {
     Canvases_[glutGetWindow()]->display();
 }
 
-void GLUTCanvas::keyboardFunc( unsigned char key, int x, int y ){
-    Canvases_[glutGetWindow()]->keyboard( key, x, y, glutGetModifiers() );
+void GLUTCanvas::keyboardFunc(unsigned char key, int x, int y) {
+    Canvases_[glutGetWindow()]->keyboard(key, x, y, glutGetModifiers());
 }
 
-void GLUTCanvas::mouseMotionFunc( int x, int y ){
-    Canvases_[glutGetWindow()]->mouseMotion( x, y );
+void GLUTCanvas::mouseMotionFunc(int x, int y) {
+    Canvases_[glutGetWindow()]->mouseMotion(x, y);
 }
 
-void GLUTCanvas::mousePressedFunc( int button, int state, int x, int y ){
-    Canvases_[glutGetWindow()]->mousePressed( button, state, x, y, glutGetModifiers() );
+void GLUTCanvas::mousePressedFunc(int button, int state, int x, int y) {
+    Canvases_[glutGetWindow()]->mousePressed(button, state, x, y, glutGetModifiers());
 }
 
-void GLUTCanvas::passiveMouseMotionFunc( int x, int y ){
-    Canvases_[glutGetWindow()]->passiveMouseMotion( x, y );
+void GLUTCanvas::passiveMouseMotionFunc(int x, int y) {
+    Canvases_[glutGetWindow()]->passiveMouseMotion(x, y);
 }
 
-void GLUTCanvas::reshapeFunc( int width, int height ){
-    Canvases_[glutGetWindow()]->reshape( width, height );
+void GLUTCanvas::reshapeFunc(int width, int height) {
+    Canvases_[glutGetWindow()]->reshape(width, height);
 }
 
-void GLUTCanvas::keyboardSpecialFunc( int key, int x, int y ){
-    Canvases_[glutGetWindow()]->keyboardSpecial( key, x, y, glutGetModifiers() );
+void GLUTCanvas::keyboardSpecialFunc(int key, int x, int y) {
+    Canvases_[glutGetWindow()]->keyboardSpecial(key, x, y, glutGetModifiers());
 }
 
-void GLUTCanvas::visibilityFunc( int visible ){
-    Canvases_[glutGetWindow()]->visibility( visible );
+void GLUTCanvas::visibilityFunc(int visible) {
+    Canvases_[glutGetWindow()]->visibility(visible);
 }
 
 // FIXME: sholdn't this be part of GLUTApplication??
-void GLUTCanvas::onExitFunction(){
-    for(int i = 0;  i < MAX_NUMBER_OF_WINDOWS ; ++i )
-        delete(Canvases_[i]);
+void GLUTCanvas::onExitFunction() {
+    for (int i = 0;  i < MAX_NUMBER_OF_WINDOWS ; ++i)
+        delete Canvases_[i];
     deinitGL();
     deinit();
 }

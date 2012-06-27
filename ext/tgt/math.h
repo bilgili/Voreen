@@ -84,11 +84,11 @@ inline double deg2rad(double d) {
 */
 
 inline float sign(float f) {
-    return f == 0.f ? 0.f : f/std::fabs(f);
+    return f == 0.f ? 0.f : f/std::abs(f);
 }
 
 inline double sign(double d) {
-    return d == 0.0 ? 0.0 : d/std::fabs(d);
+    return d == 0.0 ? 0.0 : d/std::abs(d);
 }
 
 inline int sign(int i) {
@@ -143,12 +143,12 @@ inline int iceil(double d) {
 
 /// Truncate \p f towards zero.
 inline float fix(float f) {
-    return std::fabs(f) * sign(f);
+    return std::abs(f) * sign(f);
 }
 
 /// Truncate \p d towards zero.
 inline double fix(double d) {
-    return std::fabs(d) * sign(d);
+    return std::abs(d) * sign(d);
 }
 
 /// Truncate \p f towards zero.

@@ -639,10 +639,10 @@ void LightMaterialPlugin::updateMaterialSpecularColor() {
     QColor newDiff = QColorDialog::getColor(oldDiff, 0);
 
     if (newDiff.isValid()){
-        currentMaterialSpecular_.a = (float) newDiff.alphaF();
-        currentMaterialSpecular_.r = (float) newDiff.redF();
-        currentMaterialSpecular_.g = (float) newDiff.greenF();
-        currentMaterialSpecular_.b = (float) newDiff.blueF();
+        currentMaterialSpecular_.a = static_cast<float>(newDiff.alphaF());
+        currentMaterialSpecular_.r = static_cast<float>(newDiff.redF());
+        currentMaterialSpecular_.g = static_cast<float>(newDiff.greenF());
+        currentMaterialSpecular_.b = static_cast<float>(newDiff.blueF());
         
         postMessage(new ColorMsg(LightMaterial::setMaterialSpecular_, currentMaterialSpecular_));
 
@@ -659,10 +659,10 @@ void LightMaterialPlugin::updateMaterialAmbientColor() {
     QColor newDiff = QColorDialog::getColor(oldDiff, 0);
 
     if (newDiff.isValid()){
-        currentMaterialAmbient_.a = (float) newDiff.alphaF();
-        currentMaterialAmbient_.r = (float) newDiff.redF();
-        currentMaterialAmbient_.g = (float) newDiff.greenF();
-        currentMaterialAmbient_.b = (float) newDiff.blueF();
+        currentMaterialAmbient_.a = static_cast<float>(newDiff.alphaF());
+        currentMaterialAmbient_.r = static_cast<float>(newDiff.redF());
+        currentMaterialAmbient_.g = static_cast<float>(newDiff.greenF());
+        currentMaterialAmbient_.b = static_cast<float>(newDiff.blueF());
         showMaterialAmbientColor();
     
         postMessage(new ColorMsg(LightMaterial::setMaterialAmbient_, currentMaterialAmbient_));
@@ -680,10 +680,10 @@ void LightMaterialPlugin::updateMaterialDiffuseColor() {
     QColor newDiff = QColorDialog::getColor(oldDiff, 0);
 
     if (newDiff.isValid()){
-        currentMaterialDiffuse_.a = (float) newDiff.alphaF();
-        currentMaterialDiffuse_.r = (float) newDiff.redF();
-        currentMaterialDiffuse_.g = (float) newDiff.greenF();
-        currentMaterialDiffuse_.b = (float) newDiff.blueF();
+        currentMaterialDiffuse_.a = static_cast<float>(newDiff.alphaF());
+        currentMaterialDiffuse_.r = static_cast<float>(newDiff.redF());
+        currentMaterialDiffuse_.g = static_cast<float>(newDiff.greenF());
+        currentMaterialDiffuse_.b = static_cast<float>(newDiff.blueF());
         showMaterialDiffuseColor();
         
         postMessage(new ColorMsg(LightMaterial::setMaterialDiffuse_, currentMaterialDiffuse_));
@@ -701,10 +701,10 @@ void LightMaterialPlugin::updateMaterialEmissionColor() {
     QColor newDiff = QColorDialog::getColor(oldDiff, 0);
 
     if (newDiff.isValid()){
-        currentMaterialEmission_.a = (float) newDiff.alphaF();
-        currentMaterialEmission_.r = (float) newDiff.redF();
-        currentMaterialEmission_.g = (float) newDiff.greenF();
-        currentMaterialEmission_.b = (float) newDiff.blueF();
+        currentMaterialEmission_.a = static_cast<float>(newDiff.alphaF());
+        currentMaterialEmission_.r = static_cast<float>(newDiff.redF());
+        currentMaterialEmission_.g = static_cast<float>(newDiff.greenF());
+        currentMaterialEmission_.b = static_cast<float>(newDiff.blueF());
         showMaterialEmissionColor();
         
         postMessage(new ColorMsg(LightMaterial::setMaterialEmission_, currentMaterialEmission_));

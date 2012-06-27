@@ -58,7 +58,6 @@ GenericFragment::~GenericFragment() {
 }
 
 int GenericFragment::initializeGL() {
-
     if (shaderFilename_.length() > 0) {
         program_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag", generateHeader(), false);
         if (program_) {
@@ -73,24 +72,16 @@ int GenericFragment::initializeGL() {
     }
 }
 
-void GenericFragment::compileShader()
-{
+void GenericFragment::compileShader() {
     if (needRecompileShader_) {
         compile();
         needRecompileShader_ = false;
     }
 }
 
-/**
- * Load the needed shader.
- *
- */
 void GenericFragment::compile() {
     if (program_)
         program_->rebuild();
 }
 
-
-
 } // voreen namespace
-

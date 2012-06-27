@@ -28,9 +28,11 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/background.h"
-#include "voreen/core/opengl/texunitmapper.h"
-#include "voreen/core/vis/processors/processorfactory.h"
+
+
 #include "voreen/core/vis/processors/portmapping.h"
+#include "voreen/core/vis/processors/processorfactory.h"
+
 
 namespace voreen {
 
@@ -44,17 +46,17 @@ const Identifier Background::shadeTexUnit1_ = "shadeTex1";
 const Identifier Background::depthTexUnit1_ = "depthTex1";
 
 Background::Background()
-        : GenericFragment("pp_combine"),
-        firstcolor_(setBackgroundFirstColor_, "first color",
-                    tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
-        secondcolor_(setBackgroundSecondColor_, "second color",
-                     tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f)),
-        angle_(setBackgroundAngle_, "angle", 180, 0, 359, false),
-        tex_(0),
-        textureloaded_(false),
-        filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
-                  "", "*.jpg;*.bmp;*.png"),
-		tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false) 
+    : GenericFragment("pp_combine"),
+      firstcolor_(setBackgroundFirstColor_, "first color",
+                  tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
+      secondcolor_(setBackgroundSecondColor_, "second color",
+                   tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f)),
+      angle_(setBackgroundAngle_, "angle", 180, 0, 359, false),
+      tex_(0),
+      textureloaded_(false),
+      filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
+                "", "*.jpg;*.bmp;*.png"),
+      tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false) 
 {
     setName("Background");
 
@@ -105,12 +107,10 @@ Background::Background()
 
 Background::~Background() {
     if (tex_) {
-        if (textureloaded_) {
+        if (textureloaded_)
             TexMgr.dispose(tex_);
-        } 
-        else {
+        else
             delete tex_;
-        }
 
         LGL_ERROR;
     }
@@ -119,14 +119,22 @@ Background::~Background() {
     delete condProp_;
 }
 
+const Identifier Background::getClassName() const {
+    return "PostProcessor.Background";
+}
+
 const std::string Background::getProcessorInfo() const {
-	return "Creates special backgrounds like monochrome background by using the current background color, color gradient, radial gradient, procedural clouds or an image.";
+	return "Creates special backgrounds like monochrome background by using the current background color, "
+        "color gradient, radial gradient, procedural clouds or an image.";
+}
+
+Processor* Background::create() {
+    return new Background();
 }
 
 std::string Background::generateHeader() {
-
     std::string header = GenericFragment::generateHeader();
-    header += "#define COMBINE_DEPTH_DEPENDENT\n";
+    header += "#define COMBINE_ALPHA_COMPOSITING\n";
     header += "#line 1\n";
 
     return header;
@@ -141,7 +149,7 @@ void Background::process(LocalPortMapping* portMapping) {
 	    tc_->setActiveTarget(dest, "Background::process()"); // render directly into destination
     else 
         tc_->setActiveTarget(tmpBckgrnd, "Background::process() tmp for background"); // render first in tmp target
-    glViewport(0, 0, (int)size_.x, (int)size_.y);
+    glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 
     compileShader();
     
@@ -165,7 +173,7 @@ void Background::process(LocalPortMapping* portMapping) {
     // leave if there's nothing to render above
 	if (source != -1) {
         tc_->setActiveTarget(dest, "Background::process()"); // now blend src and tmp into dest
-        glViewport(0, 0, (int)size_.x, (int)size_.y);
+        glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// use pp_combine.frag to blend the orginal picture over the background
@@ -185,10 +193,10 @@ void Background::process(LocalPortMapping* portMapping) {
 		// initialize shader
 		program_->activate();
 		setGlobalShaderParameters(program_);
-		program_->setUniform("shadeTex0_", (GLint) tm_.getTexUnit(shadeTexUnit0_));
-		program_->setUniform("depthTex0_", (GLint) tm_.getTexUnit(depthTexUnit0_));
-		program_->setUniform("shadeTex1_", (GLint) tm_.getTexUnit(shadeTexUnit1_));
-		program_->setUniform("depthTex1_", (GLint) tm_.getTexUnit(depthTexUnit1_));
+		program_->setUniform("shadeTex0_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit0_)));
+		program_->setUniform("depthTex0_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit0_)));
+		program_->setUniform("shadeTex1_", static_cast<GLint>(tm_.getTexUnit(shadeTexUnit1_)));
+		program_->setUniform("depthTex1_", static_cast<GLint>(tm_.getTexUnit(depthTexUnit1_)));
 
 		glDepthFunc(GL_ALWAYS);
 		renderQuad();
@@ -206,9 +214,11 @@ void Background::renderBackground() {
     glDisable(GL_TEXTURE_2D);
 
     if (mode_ == MONOCHROME) {
+        glPushAttrib(GL_COLOR_BUFFER_BIT);
         glClearColor(firstcolor_.get().r, firstcolor_.get().g,
-            firstcolor_.get().b, firstcolor_.get().a);
+                     firstcolor_.get().b, firstcolor_.get().a);
         glClear(GL_COLOR_BUFFER_BIT);
+        glPopAttrib();
     }
     else if (mode_ == RADIAL) {
         glBegin(GL_QUADS);
@@ -249,7 +259,7 @@ void Background::renderBackground() {
     else {
         glPushMatrix();
         glLoadIdentity();
-        glRotatef((float)angle_.get(), 0.0f, 0.0f, 1.0f);
+        glRotatef(static_cast<float>(angle_.get()), 0.0f, 0.0f, 1.0f);
 
         // when you rotate the texture, you need to scale it.
         // otherwise the edges doesn't cover the complete screen
@@ -269,7 +279,7 @@ void Background::renderBackground() {
     }
 
     // clouds and textures over the gradient-screen
-    if ( ( mode_ == CLOUD || mode_ == TEXTURE ) && tex_   ) {
+    if ( ( mode_ == CLOUD || mode_ == TEXTURE ) && tex_ ) {
         glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
         tex_->bind();
         tex_->enable();
@@ -293,12 +303,10 @@ void Background::renderBackground() {
     
         tex_->disable();
     }
-
 }
 
 void Background::loadTexture() {
     // is a texture already loaded? -> then delete
-
     if (tex_) {
         if (textureloaded_) {
             TexMgr.dispose(tex_);
@@ -332,25 +340,32 @@ void Background::loadTexture() {
 GLubyte* Background::blur(GLubyte* image, int size) {
     GLubyte* n = new GLubyte[size * size];
 
-	for (int y = 0;y < size;y++) {
-        for (int x = 0;x < size;x++) {
+	for (int y = 0; y < size; y++) {
+        for (int x = 0; x < size; x++) {
             int pos = x + y * size;
             n[pos] = image[pos] / 5;
 
-            if (x == 0) n[pos] += image[pos + (size - 1)] / 5;
-            else n[pos] += image[pos - 1] / 5;
+            if (x == 0)
+                n[pos] += image[pos + (size - 1)] / 5;
+            else
+                n[pos] += image[pos - 1] / 5;
 
-            if (y == 0) n[pos] += image[pos + (size - 1) * size] / 5;
-            else n[pos] += image[pos - size] / 5;
+            if (y == 0)
+                n[pos] += image[pos + (size - 1) * size] / 5;
+            else
+                n[pos] += image[pos - size] / 5;
 
-            if (x == size-1) n[pos] += image[y * size] / 5;
-            else n[pos] += image[pos + 1] / 5;
+            if (x == size-1)
+                n[pos] += image[y * size] / 5;
+            else
+                n[pos] += image[pos + 1] / 5;
 
-            if (y == size-1) n[pos] += image[x] / 5;
-            else n[pos] +=image[pos + size] / 5;
+            if (y == size-1)
+                n[pos] += image[x] / 5;
+            else
+                n[pos] +=image[pos + size] / 5;
         }
 	}
-
     delete[] image;
     return n;
 }
@@ -358,8 +373,8 @@ GLubyte* Background::blur(GLubyte* image, int size) {
 GLubyte* Background::resize(GLubyte* image, int size) {
     GLubyte* n = new GLubyte[4 * size * size];
 
-    for (int y = 0;y < size*2;y++)
-        for (int x = 0;x < size*2;x++)
+    for (int y = 0; y < size*2; y++)
+        for (int x = 0; x < size*2; x++)
             n[x + y*size*2] = image[(x / 2) + (y / 2) * size];
 
     delete[] image;
@@ -370,8 +385,8 @@ GLubyte* Background::resize(GLubyte* image, int size) {
 GLubyte* Background::tile(GLubyte* image, int size) {
     GLubyte* n = new GLubyte[4 * size * size];
 
-    for (int y = 0;y < size*2;y++)
-        for (int x = 0;x < size*2;x++)
+    for (int y = 0; y < size*2; y++)
+        for (int x = 0; x < size*2; x++)
             n[x + y*size*2] = image[(x % size) + (y % size) * size];
 
     delete[] image;
@@ -387,26 +402,26 @@ void Background::createCloudTexture() {
     // creates 4 blured and resized noise-datas
     GLubyte* tex1 = new GLubyte[size * size];
 
-    for (int k = 0;k < size*size;k++)
+    for (int k = 0; k < size*size; k++)
         tex1[k] = rand() % 256;
 
     tex1 = tile(tile(tile(blur(tex1, size), size), size * 2), size * 4);
     GLubyte* tex2 = new GLubyte[size * size];
 
-    for (int k = 0;k < size*size;k++)
+    for (int k = 0; k < size*size; k++)
         tex2[k] = rand() % 256;
 
     tex2 = tile(tile(resize(blur(tex2, size), size), size * 2), size * 4);
     GLubyte* tex3 = new GLubyte[size * size];
 
-    for (int k = 0;k < size*size;k++) {
+    for (int k = 0; k < size*size; k++) {
         tex3[k] = rand() % 256;
     }
 
     tex3 = tile(resize(resize(blur(tex3, size), size), size * 2), size * 4);
     GLubyte* tex4 = new GLubyte[size * size];
 
-    for (int k = 0;k < size*size;k++)
+    for (int k = 0; k < size*size; k++)
         tex4[k] = rand() % 256;
 
     tex4 = resize(resize(resize(blur(tex4, size), size), size * 2), size * 4);
@@ -414,12 +429,13 @@ void Background::createCloudTexture() {
     // creates the final cloud data with the 4 textures from above
     GLubyte* tex5 = new GLubyte[imgx * imgy];
 
-	for (int y = 0;y < imgy;y++) {
-		for (int x = 0;x < imgx;x++) {
+	for (int y = 0; y < imgy; y++) {
+		for (int x = 0; x < imgx; x++) {
             int pos = x + imgx * y;
             // mix textures and don't use all values, so that there are free areas in the sky
             float c = (tex4[pos] + tex3[pos] / 2 + tex2[pos] / 4 + tex1[pos] / 8) / 2 - 110.0f;
-            if (c < 0) c = 0;
+            if (c < 0)
+                c = 0;
             // exp-function to calc the final value for a nicer look
             tex5[pos] = (GLubyte)(255 - (pow(0.95f, c) * 255));
         }
@@ -429,8 +445,8 @@ void Background::createCloudTexture() {
 
     tex_ = new tgt::Texture(tgt::ivec3(imgx, imgy, 1));
 
-	for (int y = 0;y < imgy;y++) {
-        for (int x = 0;x < imgx;x++) {
+	for (int y = 0; y < imgy; y++) {
+        for (int x = 0; x < imgx; x++) {
             tex_->getPixelData()[x*4 + imgx*4*y + 0] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 1] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 2] = 255;
@@ -458,10 +474,10 @@ void Background::createRadialTexture() {
     GLubyte a = 255;
     double r;
 
-	for (int y = 0;y < imgy;y++) {
-        for (int x = 0;x < imgx;x++) {
+	for (int y = 0; y < imgy; y++) {
+        for (int x = 0; x < imgx; x++) {
             // calculate radius (Pythagoras)
-            r = (double)((x - imgx / 2) * (x - imgx / 2) + (y - imgy / 2) * (y - imgy / 2));
+            r = static_cast<double>((x - imgx / 2) * (x - imgx / 2) + (y - imgy / 2) * (y - imgy / 2));
             r = sqrt(r);
             // norm to half size of smaller value
             r = 2 * r / ((imgx < imgy) ? imgx : imgy);
@@ -471,7 +487,7 @@ void Background::createRadialTexture() {
             tex_->getPixelData()[x*4 + imgx*4*y + 1] = 255;
             tex_->getPixelData()[x*4 + imgx*4*y + 2] = 255;
             // invert and multiply with intensity
-            tex_->getPixelData()[x*4 + imgx*4*y + 3] = (GLubyte)(a * (1 - r));
+            tex_->getPixelData()[x*4 + imgx*4*y + 3] = static_cast<GLubyte>(a * (1 - r));
         }
 	}
 
@@ -483,7 +499,7 @@ void Background::createRadialTexture() {
 void Background::processMessage(Message* msg, const Identifier& dest) {
     PostProcessor::processMessage(msg, dest);
 
-    if (msg->id_ == setBackgroundColor_) {
+    if (msg->id_ == setBackgroundColor_) { //FIXME: is this still used? joerg
         invalidate();
     }
     else if (msg->id_ == setBackgroundFirstColor_) {
@@ -501,15 +517,19 @@ void Background::processMessage(Message* msg, const Identifier& dest) {
     else if (msg->id_ == "set.backgroundModeAsString") {
         std::string modeStr = msg->getValue<std::string>();
 
-        if (modeStr == "Monochrome") mode_ = MONOCHROME;
-        else if (modeStr == "Gradient") mode_ = GRADIENT;
-        else if (modeStr == "Radial") mode_ = RADIAL;
+        if (modeStr == "Monochrome")
+            mode_ = MONOCHROME;
+        else if (modeStr == "Gradient")
+            mode_ = GRADIENT;
+        else if (modeStr == "Radial")
+            mode_ = RADIAL;
         else if (modeStr == "Cloud") {
             mode_ = CLOUD;
             firstcolor_.set(tgt::vec4(0.0f, 0.0f, 0.8f, 1.0f));
             secondcolor_.set(tgt::vec4(0.7f, 0.7f, 1.0f, 1.0f));
             angle_.set(200);
-        } else if (modeStr == "Texture") mode_ = TEXTURE;
+        } else if (modeStr == "Texture")
+            mode_ = TEXTURE;
 
         loadTexture();
         invalidate();

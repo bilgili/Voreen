@@ -30,7 +30,6 @@
 #ifndef VRN_BACKGROUND_H
 #define VRN_BACKGROUND_H
 
-#include "voreen/core/vis/processors/image/postprocessor.h"
 #include "voreen/core/vis/processors/image/genericfragment.h"
 
 namespace voreen {
@@ -43,9 +42,9 @@ public:
     Background();
     ~Background();
 
-	virtual const Identifier getClassName() const {return "PostProcessor.Background";}
+	virtual const Identifier getClassName() const;
 	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new Background();}
+    virtual Processor* create();
     /**
     * Render-Method: draws the existing content over a background
     */

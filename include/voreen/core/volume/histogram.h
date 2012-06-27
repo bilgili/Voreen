@@ -50,7 +50,7 @@ public:
     /// Create new histogram with bucketCount buckets from volume
     HistogramIntensity(voreen::Volume* volume, int bucketCount);
 
-    int getBucketCount();
+    size_t getBucketCount();
     
     /// get value in bucket i
     int getValue(int i);
@@ -104,8 +104,8 @@ public:
     /// the minimal / maximal non-zero bucket column
     tgt::ivec2 getSignificantRangeGradient() const;
 
-    int getBucketCountIntensity();
-    int getBucketCountGradient();
+    size_t getBucketCountIntensity();
+    size_t getBucketCountGradient();
     
 protected:
     std::vector<std::vector<int> > hist_;
@@ -134,7 +134,7 @@ protected:
                     int ny = volumeGrad->voxel(x,y,z).g - 128;
                     int nz = volumeGrad->voxel(x,y,z).b - 128;
                     
-                    float nlength = sqrt((float)(nx*nx)+(ny*ny)+(nz*nz));
+                    float nlength = sqrtf(static_cast<float>(nx*nx)+(ny*ny)+(nz*nz));
                     float intensity;
                     
                     if (volumeIntensity)

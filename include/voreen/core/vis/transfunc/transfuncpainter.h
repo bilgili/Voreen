@@ -36,14 +36,21 @@
 #include "tgt/texturemanager.h"
 #include "tgt/event/keyevent.h"
 #include "tgt/tgt_gl.h"
-
+/*
 #include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/volume/volume.h"
 #include "voreen/core/volume/histogram.h"
 #include "voreen/core/vis/transfunc/transfunceditor.h"
+*/
 
 namespace voreen {
+
+class TransFuncIntensityGradientPrimitiveContainer;
+class TransFuncPrimitive;
+class Volume;
+class HistogramIntensityGradient;
+class TransFuncEditor;
 
 /**
  *  Painter implementation for drawing a control widget for TransFuncIntensityGradient.
@@ -103,7 +110,7 @@ public:
     
     void setThresholds(float l, float u);
     ///Check if init was completed without errors (FBO!)
-    bool initOk() { return ((tf_ != 0) && (tf_->initOk())); }
+    bool initOk();
 
     void setTransFunc(TransFuncIntensityGradientPrimitiveContainer* tf);
 protected:

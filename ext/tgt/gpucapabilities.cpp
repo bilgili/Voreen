@@ -43,147 +43,124 @@ namespace tgt {
 
 const std::string GpuCapabilities::loggerCat_("tgt.GpuCapabilities");
 
-GpuCapabilities::GpuCapabilities() {
-
-    detectCapabilities();
-    detectOS();
+GpuCapabilities::GpuCapabilities(bool detectCaps) {
+	if (detectCaps) {
+		detectCapabilities();
+		detectOS();
+	}
 }
 
 GpuCapabilities::GlVersion GpuCapabilities::getGlVersion() {
-
     return glVersion_;
 }
 
 bool GpuCapabilities::isOpenGlVersionSupported(GpuCapabilities::GlVersion version) {
-
     return ( glVersion_ >= version );
 }
 
 GpuCapabilities::GpuVendor GpuCapabilities::getVendor() {
-
     return vendor_;
 }
 
 bool GpuCapabilities::isExtensionSupported(string extension) {
-
     return ( glExtensionsString_.find(extension) != string::npos );
 }
 
 string GpuCapabilities::getGlVersionString() {
-
     return glVersionString_;
 }
 
 string GpuCapabilities::getGlVendorString() {
-
     return glVendorString_;
 }
 
 string GpuCapabilities::getGlRendererString() {
-
     return glRendererString_;
 }
 
 string GpuCapabilities::getGlExtensionsString() {
-
     return glExtensionsString_;
 }
 
 bool GpuCapabilities::areShadersSupported() {
-
     return shaderSupport_;
 }
 
 bool GpuCapabilities::areShadersSupportedARB() {
-
     return shaderSupportARB_;
 }
 
 GpuCapabilities::ShaderModel GpuCapabilities::getShaderModel() {
-
     return shaderModel_;
 }
 
 bool GpuCapabilities::isShaderModelSupported(GpuCapabilities::ShaderModel shaderModel) {
-
     return ( shaderModel_ >= shaderModel);
 }
 
-
 int GpuCapabilities::getMaxTextureSize() {
-
     return maxTexSize_;
 }
 
-
 bool GpuCapabilities::is3DTexturingSupported() {
-
     return texturing3D_;
 }
 
 int GpuCapabilities::getMax3DTextureSize() {
-
     return max3DTexSize_;
 }
 
 int GpuCapabilities::getNumTextureUnits() {
-
     return numTextureUnits_;
 }
 
 bool GpuCapabilities::isNpotSupported() {
-
     return npotTextures_;
 }
 
 bool GpuCapabilities::areTextureRectanglesSupported() {
-
     return textureRectangles_;
 }
 
-
 bool GpuCapabilities::isAnisotropicFilteringSupported() {
-
     return anisotropicFiltering_;
 }
 
 float GpuCapabilities::getMaxTextureAnisotropy() {
-
     return maxTextureAnisotropy_;
 }
 
 bool GpuCapabilities::isTextureCompressionSupported() {
-
     return textureCompression_;
 }
 
 bool GpuCapabilities::arePalettedTexturesSupported() {
-
     return palettedTextures_;
 }
 
 bool GpuCapabilities::areSharedPalettedTexturesSupported() {
-
     return sharedPalettedTextures_;
 }
 
 int GpuCapabilities::getColorTableWidth() {
-
     return colorTableWidth_;
 }
 
 bool GpuCapabilities::areFramebufferObjectsSupported() {
-
     return framebufferObjects_;
 }
 
 void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
-
     if (osString) {
         LINFO("OS version:          " << osVersionString_);
     }
     LINFO("OpenGL Version:      " << glVersionString_)
     LINFO("OpenGL Renderer:     " << glRendererString_)
+    if (glRendererString_.find("Cheetah") != string::npos) {
+        LWARNING("It seems that a NVIdia GPU emulation is running on this system.");
+        LWARNING("This sometimes leads to strange errors.");
+        LWARNING("It's therefore strongly recommended to turn the emulation off!");
+    }
     LINFO("GPU Vendor:          " << glVendorString_);
     if (extensionsString) {
         LINFO("OpenGL Extensions:   " << glExtensionsString_);
@@ -241,10 +218,7 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         features << "Shader Model:        ";
         if (shaderModel_ == SHADER_MODEL_4) {
             features << "4.0";
-			int i;
-			glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, (GLint*) &i);
-			LINFO("MAX_GEOMETRY_OUTPUT_VERTICES_EXT: " << i);
-        }
+		}
         else if (shaderModel_ == SHADER_MODEL_3) {
             features << "3.0";
         }
@@ -256,21 +230,27 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         }
         LINFO(features.str());
 
+        if (shaderModel_ == SHADER_MODEL_4) {
+            int i;
+			glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, (GLint*) &i);
+			LINFO("MAX_GEOMETRY_OUTPUT_VERTICES_EXT: " << i);
+        }
+
         if (isExtensionSupported("GL_NV_fragment_program2")) {
             GLint i = -1;
-            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV, &i);
-            LINFO("MAX_PROGRAM_EXEC_INSTRUCTIONS_NV: " << i);
-            i = -1;
-            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
-            LINFO("MAX_PROGRAM_LOOP_COUNT_NV: " << i);
-            i = -1;
-            glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_DEPTH_NV, &i);
-            LINFO("MAX_PROGRAM_LOOP_DEPTH_NV: " << i);
+            if (glGetProgramivARB) {
+                glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV, &i);
+                LINFO("MAX_PROGRAM_EXEC_INSTRUCTIONS_NV: " << i);
+                i = -1;
+                glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
+                LINFO("MAX_PROGRAM_LOOP_COUNT_NV: " << i);
+                i = -1;
+                glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_DEPTH_NV, &i);
+                LINFO("MAX_PROGRAM_LOOP_DEPTH_NV: " << i);
+            }
         }
 
     }
-    
-
 }
 
 GpuCapabilities::OSVersion GpuCapabilities::getOSVersion() {
@@ -282,15 +262,10 @@ std::string GpuCapabilities::getOSVersionString() {
 }
 
 void GpuCapabilities::detectCapabilities() {
-
-    glVersionString_ =
-        string( reinterpret_cast<const char*>(glGetString(GL_VERSION)) );
-    glVendorString_  =
-        string( reinterpret_cast<const char*>(glGetString(GL_VENDOR)) );
-    glRendererString_  =
-        string( reinterpret_cast<const char*>(glGetString(GL_RENDERER)) );
-    glExtensionsString_ =
-        string( reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS)) );
+    glVersionString_ = string( reinterpret_cast<const char*>(glGetString(GL_VERSION)) );
+    glVendorString_  = string( reinterpret_cast<const char*>(glGetString(GL_VENDOR)) );
+    glRendererString_  = string( reinterpret_cast<const char*>(glGetString(GL_RENDERER)) );
+    glExtensionsString_ = string( reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS)) );
 
     // OpenGL version string begins with <major_number>.<minor_number>
     if ( glVersionString_.substr(0,3) == "1.0" )
@@ -396,7 +371,6 @@ void GpuCapabilities::detectOS() {
     std::ostringstream oss;
 
 #ifdef WIN32
-
     OSVERSIONINFOEX osvi;
     ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
@@ -433,7 +407,6 @@ void GpuCapabilities::detectOS() {
     osVersionString_ = oss.str();
 
 #else // WIN32 -> must be UNIX/POSIX
-
     osVersion_ = OS_POSIX;
 
     utsname name;

@@ -61,8 +61,7 @@ ProxyGeometry::ProxyGeometry()
       needsBuild_(true),
       volumeSize_(tgt::vec3::zero),
       volume_(0)
-{
-}
+{}
 
 int ProxyGeometry::initializeGL() {
     return VRN_OK;
@@ -70,8 +69,13 @@ int ProxyGeometry::initializeGL() {
 
 void ProxyGeometry::setVolumeHandle(VolumeHandle* const handle) {
     VolumeRenderer::setVolumeHandle(handle);
-    
-    volume_ = currentVolumeHandle_->getVolume();
+    if ( currentVolumeHandle_ == 0 ) {
+        volume_ = 0;
+        return;
+    }
+
+    //volume_ = currentVolumeHandle_->getVolume();
+	volume_ = currentVolumeHandle_->getVolumeGL()->getVolume();
     if (volume_ != 0) {
         needsBuild_ = true;
         volumeSize_ = volume_->getCubeSize() / 2.f;
@@ -79,10 +83,9 @@ void ProxyGeometry::setVolumeHandle(VolumeHandle* const handle) {
 }
 
 void ProxyGeometry::process(LocalPortMapping* portMapping) {
-
     VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
 
-    if ((volumeHandle != 0) && (volumeHandle != currentVolumeHandle_))
+    if (volumeHandle != currentVolumeHandle_)
         setVolumeHandle(volumeHandle);    
 }
 
@@ -94,9 +97,8 @@ Message* ProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/
     else if (ident == getVolumeSize_) {
         return new Vec3Msg("", getVolumeSize());
     }
-    else {
+    else
         return 0;
-    }
 }
 
 tgt::vec3 ProxyGeometry::getVolumeSize() {
@@ -180,7 +182,7 @@ CubeProxyGeometry::~CubeProxyGeometry() {
     delete clipplaneGroup_;
 }
 
-bool CubeProxyGeometry::getUseVirtualClipplane(){
+bool CubeProxyGeometry::getUseVirtualClipplane() {
     return useVirtualClipplane_.get();
 }
 
@@ -189,10 +191,10 @@ bool CubeProxyGeometry::getUseVirtualClipplane(){
  */
 void CubeProxyGeometry::render() {
     if (volume_) {
-        if(needsBuild_) {
-            if (!dl_) {
+        if (needsBuild_) {
+            if (!dl_)
                 dl_ = glGenLists(1);
-            }
+            
             revalidateCubeGeometry();
             needsBuild_ = false;
         }
@@ -200,13 +202,13 @@ void CubeProxyGeometry::render() {
     }
 }
 
-tgt::vec3 CubeProxyGeometry::getClipPlaneLDF(){
+tgt::vec3 CubeProxyGeometry::getClipPlaneLDF() {
     return tgt::vec3(static_cast<float>(clipLeftX_.get()),
         static_cast<float>(clipDownY_.get()),
         static_cast<float>(clipFrontZ_.get()) );
 }
 
-tgt::vec3 CubeProxyGeometry::getClipPlaneRUB(){
+tgt::vec3 CubeProxyGeometry::getClipPlaneRUB() {
     return tgt::vec3(static_cast<float>(clipRightX_.get()),
         static_cast<float>(clipUpY_.get()),
         static_cast<float>(clipBackZ_.get()) );
@@ -238,10 +240,9 @@ void CubeProxyGeometry::revalidateCubeGeometry() {
 
 		// draw patch
 		glBegin(GL_POLYGON);
-        for (size_t i = 0; i < clippedPolygon.size(); ++i) {
+        for (size_t i = 0; i < clippedPolygon.size(); ++i)
             glVertex3fv(clippedPolygon[i].elem);
-        }
-		glEnd();
+        glEnd();
 
 		// set clip plane in OpenGL
 		glEnable(GL_CLIP_PLANE0);
@@ -298,15 +299,15 @@ void CubeProxyGeometry::resetClippingPlanes() {
     clipUpY_.set(0);
 }
 
-void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
+void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     ProxyGeometry::processMessage(msg, dest);
 
-    if (msg->id_ == setUseClipping_){
+    if (msg->id_ == setUseClipping_) {
 		useClipping_.set(msg->getValue<bool>());
 		needsBuild_ = true;
         invalidate();
 	}
-    else if (msg->id_ == setLeftClipPlane_){
+    else if (msg->id_ == setLeftClipPlane_) {
         clipLeftX_.set(msg->getValue<int>());
         if ((clipLeftX_.get() + clipRightX_.get()) >= 100) {
             clipRightX_.set(99-clipLeftX_.get());
@@ -314,7 +315,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == setRightClipPlane_){
+    else if (msg->id_ == setRightClipPlane_) {
         clipRightX_.set(msg->getValue<int>());
         if ((clipLeftX_.get() + clipRightX_.get()) >= 100) {
             clipLeftX_.set(99-clipRightX_.get());
@@ -322,7 +323,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == setTopClipPlane_){
+    else if (msg->id_ == setTopClipPlane_) {
         clipUpY_.set(msg->getValue<int>());
         if ((clipUpY_.get() + clipDownY_.get()) >= 100) {
             clipDownY_.set(99-clipUpY_.get());
@@ -330,7 +331,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == setBottomClipPlane_){
+    else if (msg->id_ == setBottomClipPlane_) {
         clipDownY_.set(msg->getValue<int>());
         if ((clipUpY_.get() + clipDownY_.get()) >= 100) {
             clipUpY_.set(99-clipDownY_.get());
@@ -338,7 +339,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == setFrontClipPlane_){
+    else if (msg->id_ == setFrontClipPlane_) {
         clipFrontZ_.set(msg->getValue<int>());
         if ((clipFrontZ_.get() + clipBackZ_.get()) >= 100) {
             clipBackZ_.set(99-clipFrontZ_.get());
@@ -346,7 +347,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == setBackClipPlane_){
+    else if (msg->id_ == setBackClipPlane_) {
         clipBackZ_.set(msg->getValue<int>());
         if ((clipBackZ_.get() + clipFrontZ_.get()) >= 100) {
             clipFrontZ_.set(99-clipBackZ_.get());
@@ -364,7 +365,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest){
         needsBuild_ = true;
         invalidate();
     }
-    else if (msg->id_ == resetClipPlanes_){
+    else if (msg->id_ == resetClipPlanes_) {
         resetClippingPlanes();
         needsBuild_ = true;
         invalidate();
@@ -421,10 +422,9 @@ CubeCutProxyGeometry::~CubeCutProxyGeometry() {
  */
 void CubeCutProxyGeometry::render() {
     if (volume_) {
-        if(needsBuild_) {
-            if (!dl_) {
+        if (needsBuild_) {
+            if (!dl_)
                 dl_ = glGenLists(1);
-            }
             revalidateCubeGeometry();
             needsBuild_ = false;
         }
@@ -579,7 +579,7 @@ void CubeCutProxyGeometry::revalidateCubeGeometry() {
 
 }
 
-void CubeCutProxyGeometry::processMessage(Message *msg, const Identifier& dest){
+void CubeCutProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     ProxyGeometry::processMessage(msg, dest);
 	if (msg->id_ == "set.cutCubeSize") {
 		cubeSize_.set(msg->getValue<vec3>());
@@ -589,7 +589,6 @@ void CubeCutProxyGeometry::processMessage(Message *msg, const Identifier& dest){
 		cutCube_.set(msg->getValue<bool>());
 		needsBuild_ = true;
 	}
-	
 }
 
 } // namespace voreen

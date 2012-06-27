@@ -62,7 +62,7 @@ namespace voreen {
 
 const std::string QuadHidacVolumeReader::loggerCat_ = "voreen.io.VolumeReader.QuadHidac";
 
-VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string title;
@@ -217,12 +217,14 @@ VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName, bool generat
         }
     }
 
-    if (error) return 0;
+    if (error)
+        return 0;
 
     // if croppedDims is available, use it, nicer version is in work
-    if (croppedDims.z > 0) dims = croppedDims;
+    if (croppedDims.z > 0)
+        dims = croppedDims;
 
-    float *slice = new float[dims.x * dims.y];
+    float* slice = new float[dims.x * dims.y];
     float min;
     float max;
 
@@ -231,7 +233,7 @@ VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName, bool generat
     uint16_t* scalars = new uint16_t[hmul(dims)];
     uint16_t* p = scalars;
     for (tgt::ivec3 i = tgt::ivec3::zero; i.z < dims.z; ++i.z) {
-        file.read((char*)slice, dims.x*dims.y*4);
+        file.read(reinterpret_cast<char*>(slice), dims.x*dims.y*4);
 
         for (i.y = 0; i.y < dims.y; ++i.y) {
             for (i.x = 0; i.x < dims.x; ++i.x) {
@@ -264,13 +266,12 @@ VolumeSet* QuadHidacVolumeReader::read(const std::string &fileName, bool generat
     file.close();
     delete[] slice;
 
-    VolumeSet* volumeSet = new VolumeSet(fileName);
+    VolumeSet* volumeSet = new VolumeSet(0, fileName);
     VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
+    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
-    if( generateVolumeGL == true )
-        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
 
     return volumeSet;
 }

@@ -31,7 +31,7 @@
 
 
 #include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 #include "tgt/gpucapabilities.h"
 
@@ -48,16 +48,16 @@ namespace voreen {
 TransFuncIntensityPlugin::TransFuncIntensityPlugin(QWidget* parent, MessageReceiver* msgReceiver,
                                                    Qt::Orientation widgetOrientation,
                                                    TransFuncProp* prop, bool showHistogramAtDatasourceChange)
-    : WidgetPlugin(parent, msgReceiver),
-      TransFuncEditor(msgReceiver),
-      prop_(prop),
-      transferFunc_(0),
-      rampMode_(false),
-      clipThresholds_(false),
-      lastMousePos_(),
-      rampModeTracking_(false),
-      showHistogramAtDatasourceChange_(showHistogramAtDatasourceChange),
-      widgetOrientation_(widgetOrientation)
+    : WidgetPlugin(parent, msgReceiver)
+    , TransFuncEditor(msgReceiver)
+    , prop_(prop)
+    , transferFunc_(0)
+    , widgetOrientation_(widgetOrientation)
+    , showHistogramAtDatasourceChange_(showHistogramAtDatasourceChange)
+    , rampMode_(false)
+    , clipThresholds_(false)
+    , lastMousePos_()
+    , rampModeTracking_(false)
 {
     setObjectName(tr("Transfer Function"));
     icon_ = QIcon(":/icons/transferfunc.png");
@@ -92,7 +92,7 @@ void TransFuncIntensityPlugin::createWidgets() {
     
     gradient_ = new TransFuncGradient(0);
 	gradient_->getCanvas()->getGLFocus();
-	transferFunc_ = new TransFuncIntensityKeys();
+	transferFunc_ = new TransFuncIntensity();
     transCanvas_ = new TransFuncMappingCanvas(0, transferFunc_, gradient_, msgReceiver_);
     transferFunc_->createTex(256);
 
@@ -373,7 +373,7 @@ void TransFuncIntensityPlugin::changeValue(TransFunc* /*tf*/){
 
 }
 
-void TransFuncIntensityPlugin::setTransFunc(TransFuncIntensityKeys* tf) {
+void TransFuncIntensityPlugin::setTransFunc(TransFuncIntensity* tf) {
     transferFunc_ = tf;
     transCanvas_->setTransFunc(tf);
     
@@ -485,7 +485,7 @@ void TransFuncIntensityPlugin::setStandardFunc() {
 
 void TransFuncIntensityPlugin::updateTransferFunction() {
     if (!transferFunc_)
-        transferFunc_ = new TransFuncIntensityKeys();
+        transferFunc_ = new TransFuncIntensity();
     
     if (rampMode_) {
         float rampCenter, rampWidth;
@@ -582,7 +582,7 @@ void TransFuncIntensityPlugin::setMaxValue(unsigned int value) {
     // synchronize ramp widget
     float center, width;
     transCanvas_->getRampParams(center, width);
-    syncRampSliders(center*maxValue_, width*maxValue_);
+    syncRampSliders(static_cast<int>(center * maxValue_), static_cast<int>(width * maxValue_));
     sliderRampCenter_->setMaximum(maxValue_);
     sliderRampWidth_->setMaximum(maxValue_);
     spinRampCenter_->setMaximum(maxValue_);

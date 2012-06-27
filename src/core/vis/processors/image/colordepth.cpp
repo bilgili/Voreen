@@ -66,7 +66,7 @@ const std::string ColorDepth::getProcessorInfo() const {
 }
 
 void ColorDepth::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,(int)size_.x,(int)size_.y);
+    glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
 
 	int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
@@ -95,9 +95,9 @@ void ColorDepth::process(LocalPortMapping* portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("chromadepthTex_", (GLint) tm_.getTexUnit(chromadepthTexUnit_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("chromadepthTex_", tm_.getTexUnit(chromadepthTexUnit_));
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());
 	program_->setUniform("colorMode_", colorMode_->get());
@@ -116,12 +116,11 @@ void ColorDepth::processMessage(Message* msg, const Identifier& dest)
     if (msg->id_ == "set.colordepth.mode") {
         colorMode_->set(msg->getValue<int>());
         invalidate();
-    } else if (msg->id_ == "set.colordepth.factor") {
+    } 
+    else if (msg->id_ == "set.colordepth.factor") {
         factor_.set(msg->getValue<float>());
         invalidate();
     }
 }
 
-
 } // voreen namespace
-

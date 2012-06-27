@@ -38,10 +38,11 @@
 #include "tgt/plane.h"
 #include "tgt/glmath.h"
 
+#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/property.h"
 #include "voreen/core/vis/processors/render/slicerenderer.h"
 #include "voreen/core/vis/processors/portmapping.h"
-#include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/volume/modality.h"
 
 using tgt::vec2;
 using tgt::vec3;
@@ -95,16 +96,12 @@ SliceRendererBase::SliceRendererBase()
     addProperty(&useCalcGradients_);
     addProperty(&usePreIntegration_);
 
-	TransFuncIntensityKeys* tf = new TransFuncIntensityKeys();
+	TransFuncIntensity* tf = new TransFuncIntensity();
 	tf->createStdFunc();
     transferFunc_ = tf;
 
     createInport("volumehandle.volumehandle");
     createOutport("image.outport");
-    // temporary only
-    //
-    volumeContainer_ = 0;
-    currentDataset_ = 0;
 }
 
 
@@ -120,9 +117,6 @@ SliceRendererBase::~SliceRendererBase() {
 }
 
 void SliceRendererBase::init() {
-    if ( !getCurrentDataset() )
-        return;
-
     if ( GpuCaps.areShadersSupported() )
         setupShader();
     else if (GpuCaps.areSharedPalettedTexturesSupported())
@@ -131,9 +125,6 @@ void SliceRendererBase::init() {
 }
 
 void SliceRendererBase::deinit() {
-    if ( !getCurrentDataset() )
-        return;
-
     if ( GpuCaps.areShadersSupported() )
         tgt::Shader::deactivate();
     else if ( GpuCaps.areSharedPalettedTexturesSupported() )
@@ -146,29 +137,28 @@ void SliceRendererBase::deinit() {
 */
 
 bool SliceRendererBase::ready() const {
-
-    // we need a dataset to render, of course
-    if ( getCurrentDataset() == NULL )
+    if ( currentVolumeHandle_ == 0 )
         return false;
 
+    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
     // we need at least one texture
-    if ( getCurrentDataset()->getNumTextures() == 0 )
+    if ( (volumeGL == 0) || (volumeGL->getNumTextures() == 0) )
         return false;
 
-    tgtAssert( getCurrentDataset()->getTexture() != NULL, "No volume texture" );
+    tgtAssert( volumeGL->getTexture() != NULL, "No volume texture" );
 
     bool ready;
 
     // transferfunction and transferfuncshader are needed, if shaders are supported
     if ( GpuCaps.areShadersSupported() )
-        ready = ( transferFunc_ != NULL && transferFuncShader_ != NULL );
+        ready = ( transferFunc_ != 0 && transferFuncShader_ != 0 );
     // transferfunction is needed and texture's format has to be color-index, if we use shared palette textures
     else if ( !GpuCaps.areShadersSupported() && GpuCaps.areSharedPalettedTexturesSupported() )
-        ready = ( transferFunc_ != NULL && getCurrentDataset()->getTexture()->getFormat() == GL_COLOR_INDEX );
+        ready = ( transferFunc_ != 0 && volumeGL->getTexture()->getFormat() == GL_COLOR_INDEX );
     // without shaders / palette textures, the texture's format has to be RGBA or luminance-alpha
     else if ( !GpuCaps.areShadersSupported() && !GpuCaps.areSharedPalettedTexturesSupported() )
-        ready = ( getCurrentDataset()->getTexture()->getFormat() == GL_LUMINANCE_ALPHA ||
-                  getCurrentDataset()->getTexture()->getFormat() == GL_RGBA );
+        ready = ( volumeGL->getTexture()->getFormat() == GL_LUMINANCE_ALPHA ||
+                  volumeGL->getTexture()->getFormat() == GL_RGBA );
     else
         ready = false;
 
@@ -226,25 +216,25 @@ void SliceRendererBase::setupShader() {
     if (transferFuncShader_) {
         transferFuncShader_->activate();
 
-        transferFuncShader_->setUniform("volumeDataset_", (GLint) tm_.getTexUnit(volTexUnit_));
+        transferFuncShader_->setUniform("volumeDataset_", tm_.getTexUnit(volTexUnit_));
 
         if ( useLowerThreshold_.get() || useUpperThreshold_.get() )
             transferFuncShader_->setUniform("threshold_", threshold_);
         if ( usePreIntegration_.get() ) {
-            transferFuncShader_->setUniform("lookupTable_", (GLint) tm_.getTexUnit(transFuncTexUnit_));
+            transferFuncShader_->setUniform("lookupTable_", tm_.getTexUnit(transFuncTexUnit_));
         }
         else
-            transferFuncShader_->setUniform("transferFunc_", (GLint) tm_.getTexUnit(transFuncTexUnit_));
+            transferFuncShader_->setUniform("transferFunc_", tm_.getTexUnit(transFuncTexUnit_));
     }
 
     LGL_ERROR;
 }
 
 std::string SliceRendererBase::buildHeader() {
-    std::string header("");
+	std::string header = VolumeRenderer::generateHeader();
 
     if (transferFunc_)
-        header = transferFunc_->getShaderDefines();
+        header += transferFunc_->getShaderDefines();
 
     std::ostringstream oss;
 
@@ -254,18 +244,10 @@ std::string SliceRendererBase::buildHeader() {
         oss << "#define USE_UPPER_THRESHOLD" << std::endl;
     if ( usePhongLighting_.get() )
         oss << "#define USE_PHONG_LIGHTING" << std::endl;
-    if ( useCalcGradients_.get() )
-        oss << "#define USE_CALC_GRADIENTS" << std::endl;
     if ( usePreIntegration_.get() )
         oss << "#define USE_PRE_INTEGRATION" << std::endl;
 
     oss << "#define VOL_TEX " << tm_.getTexUnit(volTexUnit_) << std::endl;
-
-    VolumeGL* volumeGL = getCurrentDataset();
-    if (volumeGL) {
-        if (volumeGL->getVolume()->getBitsStored() == 12)
-            oss << "#define BITDEPTH_12" << std::endl;
-    }
 
     header += oss.str();
 
@@ -297,31 +279,10 @@ void SliceRendererBase::usePreIntegration(TransFunc* source) {
 void SliceRendererBase::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
     VolumeRenderer::processMessage(msg, dest);
 
-    // moved here from super class VolumeRenderer. Eliminate on removing old VolumeContainer
-    if (msg->id_ == setCurrentDataset_) {
-        int oldDataset = currentDataset_;
-        msg->getValue(currentDataset_);
-        if (currentDataset_ != oldDataset) {
-            invalidate();
-        }
-    }
-    else if (msg->id_ == setVolumeContainer_) {
-        VolumeContainer* oldContainer = volumeContainer_;
-        msg->getValue(volumeContainer_);
-        if (volumeContainer_ != oldContainer) {
-            invalidate();
-        }
-    }
-
-    // handle new volume container
-    if (msg->id_ == setVolumeContainer_) {
-        setVolumeContainer();
-        init();
-    }
     /*
         transfer fucntion
     */
-    else if (msg->id_ == usePreIntegrationId_) {
+    if (msg->id_ == usePreIntegrationId_) {
         usePreIntegration_.set( msg->getValue<bool>() );
 		usePreIntegration(transferFunc_);
     }
@@ -338,8 +299,9 @@ void SliceRendererBase::processMessage(Message* msg, const Identifier& dest/*=Me
             transferFunc_ = tf;
         }
 
-        if ( getCurrentDataset() )
-            getCurrentDataset()->applyTransFunc(transferFunc_); // VolumeGL handles all hardware support cases
+        if( (currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolumeGL() != 0) )
+            // VolumeGL handles all hardware support cases
+            currentVolumeHandle_->getVolumeGL()->applyTransFunc(transferFunc_); 
     }
 
     /*
@@ -482,16 +444,17 @@ void SliceRenderer3D::setPropertyDestination(Identifier tag) {
         props[i]->setMsgDestination(tag);
 }
 
+// FIXME: obsoleted by new volume concept
+/*
 void SliceRenderer3D::setVolumeContainer() {
     Volume* volume = getCurrentDataset()->getVolume();
 
-    /*
-        Calculate sliceDensity_
-    */
+    //Calculate sliceDensity_
     sliceDensity_ = (volume->getCubeSize().z) / (volume->getDimensions().z + 0.01f); // TODO what offset should be used here?
     sliceDensity_ *= samplingRate_;
     //TODO: consider spacing of volume data set when calculating density
 }
+*/
 
 void SliceRenderer3D::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
     SliceRendererBase::processMessage(msg, dest);
@@ -506,9 +469,10 @@ void SliceRenderer3D::processMessage(Message* msg, const Identifier& dest/*=Mess
     else if (msg->id_ == setSamplingRateId_) {
         samplingRateProp_->set( msg->getValue<int>() );
         samplingRate_ = samplingRate2Float( samplingRateProp_->get() );
-		if (getCurrentDataset() !=0) {
-			Volume* volume = getCurrentDataset()->getVolume();
-			sliceDensity_ = (volume->getCubeSize().z) / (volume->getDimensions().z + 0.01f); // TODO what offset should be used here?
+        if ((currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolume() != 0) ) {
+			Volume* volume = currentVolumeHandle_->getVolume();
+            // TODO what offset should be used here?
+			sliceDensity_ = (volume->getCubeSize().z) / (volume->getDimensions().z + 0.01f);
 			sliceDensity_ *= samplingRate_;
 
 			if ( transferFuncShader_ && usePreIntegration_.get() )
@@ -712,10 +676,10 @@ void SliceRenderer3D::paint() {
             glDisable(GL_DEPTH);
             glColor3f(0,1,0);
             glBegin(GL_QUADS);
-                glVertex3f(-0.8,-0.8, 0);
-                glVertex3f(-0.8,0.8, 0);
-                glVertex3f(0.8,0.8, 0);
-                glVertex3f(0.8,-0.8, 0);
+                glVertex3f(-0.8f, -0.8f, 0.f);
+                glVertex3f(-0.8f, 0.8f, 0.f);
+                glVertex3f(0.8f, 0.8f, 0.f);
+                glVertex3f(0.8f, -0.8f, 0.f);
             glEnd();
 
             depth += sliceDensity_;
@@ -767,29 +731,21 @@ void SliceRenderer3D::paint() {
 
 
 void SliceRenderer3D::process(LocalPortMapping* portMapping) {
-	/*
-    int datasetNumber = portMapping->getVolumeNumber("volume.dataset");
-	if (datasetNumber != currentDataset_)
-		postMessage(new IntMsg(setCurrentDataset_,datasetNumber));
-    */
 
     VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if( (volumeHandle != 0) && (volumeHandle != currentVolumeHandle_) )
-    {
+    if (volumeHandle != currentVolumeHandle_)
         setVolumeHandle(volumeHandle);
-    }
-    if( currentVolumeHandle_ == 0 )
-    {
+    
+    if ( currentVolumeHandle_ == 0 )
         return;
-    }
 
      if (tc_) {
         std::ostringstream oss;
-        oss << "SliceRenderer3D::render(dataset=" << currentDataset_ << ") dest";
+        oss << "SliceRenderer3D::render(dataset=" << currentVolumeHandle_ << ") dest";
 		int dest = portMapping->getTarget("image.outport");
         tc_->setActiveTarget(dest, oss.str());
     }
-    glViewport(0,0,(int)size_.x,(int)size_.y);
+    glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
     LGL_ERROR;
     // set background to background color, even if no dataset is rendered
     tgt::Color clearColor = backgroundColor_.get();
@@ -833,14 +789,17 @@ OverviewRenderer::OverviewRenderer(bool drawGrid,
 
 //RPTMERGE todo portmapping
 void OverviewRenderer::process(LocalPortMapping* /*localPortMapping*/) {
-
+    // FIXME: obsolete due to removal of VolumeContainer. Migrate to new
+    // volume concept.
+    //
+    /*
     if ( !getCurrentDataset() || (getCurrentDataset()->getNumTextures() == 0) )
         return;
-
-    if( !ready() )
+    */
+    if ( !ready() )
         return;
 
-    VolumeGL* volumeGL = getCurrentDataset();
+    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
 
     glDisable(GL_DEPTH_TEST);
 
@@ -854,7 +813,7 @@ void OverviewRenderer::process(LocalPortMapping* /*localPortMapping*/) {
     int dest;
     if (tc_) {
         std::ostringstream oss;
-        oss << "OverviewRenderer::render(dataset=" << currentDataset_ << ") dest";
+        oss << "OverviewRenderer::render(dataset=" << currentVolumeHandle_ << ") dest";
 		dest = 0; //FIXME: tc_->getTargetID(getTargetConfig(ttImage_), oss.str());
         tc_->setActiveTarget(dest);
     }
@@ -981,11 +940,11 @@ void OverviewRenderer::process(LocalPortMapping* /*localPortMapping*/) {
         // draw lines between slices
         glColor4fv(innerGridColor_.elem);
         glBegin(GL_LINES);
-            for(int x = 1; x < numX_ ; ++x) {
+            for (int x = 1; x < numX_ ; ++x) {
                 glVertex3f(-1.f + sliceWidth * x, -1.f, 0.0f);
                 glVertex3f(-1.f + sliceWidth * x, 1.f, 0.0f);
             }
-            for(int y = 1; y < numY_ ; ++y) {
+            for (int y = 1; y < numY_ ; ++y) {
                 glVertex3f(-1.f, -1.f + sliceHeight * y, 0.0f);
                 glVertex3f(1.f, -1.f + sliceHeight * y, 0.0f);
             }
@@ -1094,8 +1053,8 @@ void OverviewRenderer::snapToGrid() {
     int slice_x = int( (1.f-trans_.x) / (2.f/numX_) );
     int slice_y = int( (1.f-trans_.y) / (2.f/numY_) );
 
-    trans_.x = 1.f -( slice_x + 1/2.f)/((float)numX_/2.f);
-    trans_.y = 1.f -( slice_y + 1/2.f)/((float)numY_/2.f);
+    trans_.x = 1.f -( slice_x + 1/2.f)/(static_cast<float>(numX_)/2.f);
+    trans_.y = 1.f -( slice_y + 1/2.f)/(static_cast<float>(numY_)/2.f);
 
 }
 
@@ -1127,8 +1086,8 @@ void OverviewRenderer::showSlice(const tgt::ivec2 &canvasCoordinates) {
 
     // shift slice plate so that the passed canvas coordinates are centered
     ivec2 canvasDim = getSize();
-    vec2 shift = vec2((float)(canvasDim.x/2 - canvasCoordinates.x),
-        (float)(canvasCoordinates.y - canvasDim.y/2));
+    vec2 shift = vec2(static_cast<float>(canvasDim.x/2 - canvasCoordinates.x),
+        static_cast<float>(canvasCoordinates.y - canvasDim.y/2));
     addTranslation(shift, true);
 
     // set scale factor to maximum
@@ -1159,10 +1118,10 @@ void OverviewRenderer::stopDragging() {
 
 void OverviewRenderer::calcScaleVector() {
 
-    if (!volumeContainer_)
+    if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolume() == 0) )
         return;
 
-    ivec3 dim = getCurrentDataset()->getVolume()->getDimensions();
+    ivec3 dim = currentVolumeHandle_->getVolume()->getDimensions();
     ivec2 canvasDim = getSize();
 
     sliceDiagonal_ = int(sqrt(double(dim.x*dim.x + dim.y*dim.y)));
@@ -1176,7 +1135,7 @@ void OverviewRenderer::calcScaleVector() {
     // aspect ratio of the slices
     ivec2 slicePlateDim = ivec2(numX_*dim.x, numY_*dim.y);
     scaleVector_ = vec3(1.f,
-        ((float)slicePlateDim.y*canvasDim.x) / ((float)slicePlateDim.x*canvasDim.y),
+        (static_cast<float>(slicePlateDim.y)*canvasDim.x) / (static_cast<float>(slicePlateDim.x)*canvasDim.y),
         1.f);
     scaleVector_ *= 0.99f/std::max(scaleVector_.x, scaleVector_.y);
 }
@@ -1188,8 +1147,8 @@ int OverviewRenderer::distanceToNearestCenter(int &slice_x, int &slice_y) {
     slice_y = int( (1.f-trans_.y) / (2.f/numY_) );
 
     // distance between canvas center and slice center in world coordinates
-    float distWorld_x = (1.f - trans_.x) - ( ( slice_x + 1/2.f ) / ((float)numX_/2.f) );
-    float distWorld_y = (1.f - trans_.y) - ( ( slice_y + 1/2.f ) / ((float)numY_/2.f) );
+    float distWorld_x = (1.f - trans_.x) - ( ( slice_x + 1/2.f ) / (static_cast<float>(numX_)/2.f) );
+    float distWorld_y = (1.f - trans_.y) - ( ( slice_y + 1/2.f ) / (static_cast<float>(numY_)/2.f) );
 
     // distance between canvas center and slice center in pixel coordinates
     vec2 canvasDim = getSize();
@@ -1202,9 +1161,15 @@ int OverviewRenderer::distanceToNearestCenter(int &slice_x, int &slice_y) {
 
 void OverviewRenderer::getSliceCoords(int sliceID, vec2 &ll, vec2 &ur) {
 
-    tgtAssert(getCurrentDataset(), "no volume");
+    if( currentVolumeHandle_ == 0 )
+        return;
+
+    Volume* volume = currentVolumeHandle_->getVolume();
+    if( volume == 0 )
+        return;
+
     tgtAssert(sliceID >= 0 &&
-        sliceID < getCurrentDataset()->getVolume()->getDimensions().z, "slice index out of range" );
+        sliceID < volume->getDimensions().z, "slice index out of range" );
 
     int row = sliceID / numX_;
     int column = sliceID % numX_;
@@ -1246,11 +1211,13 @@ void SingleSliceRenderer::setSliceIndex(size_t sliceIndex) {
     sliceIndex_ = sliceIndex;
 }
 
+// FIXME: obsoleted by removal of VolumeContainer.
+/*
 void SingleSliceRenderer::setVolumeContainer() {
     numSlices_ = getCurrentDataset()->getVolume()->getDimensions()[xyz_.z];
     sliceIndex_ = static_cast<int>(numSlices_/2.0);
 }
-
+*/
 
 void SingleSliceRenderer::processMessage(Message* msg, const Identifier& ident) {
 	SliceRendererBase::processMessage(msg,ident);
@@ -1273,13 +1240,17 @@ void SingleSliceRenderer::processMessage(Message* msg, const Identifier& ident) 
 void SingleSliceRenderer::process(LocalPortMapping* portMapping) {
     if ( !ready() )
         return;
+    // FIXME: obsolete due to removal of VolumeContainer. Migrate to new
+    // volume concept. (dirk)
+    //
+    /*
 	int datasetNumber = portMapping->getVolumeNumber("volume.dataset");
 	if (datasetNumber != currentDataset_)
 		postMessage(new IntMsg(setCurrentDataset_,datasetNumber));
-
+    */
     if (tc_) {
         std::ostringstream oss;
-        oss << "SingleSliceRenderer::render(dataset=" << currentDataset_ << ") dest";
+        oss << "SingleSliceRenderer::render(dataset=" << currentVolumeHandle_ << ") dest";
         int dest = portMapping->getTarget("image.outport");
         tc_->setActiveTarget(dest);
     }
@@ -1287,10 +1258,12 @@ void SingleSliceRenderer::process(LocalPortMapping* portMapping) {
 
 
     // init stuff
-    VolumeGL* volumeGL = getCurrentDataset();
+    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
+    if( volumeGL == 0 )
+        return;
+
     setupTextures();
     // volTexUnit_ is now active
-	
 
     setupShader();
 
@@ -1320,7 +1293,7 @@ void SingleSliceRenderer::process(LocalPortMapping* portMapping) {
         depth /= cubeSize;                 // map to [-0.5, -0.5]
         depth += 0.5f;                     // map to [0, 1]
 
-        float canvasRatio = (float)size_.x/(float)size_.y;
+        float canvasRatio = static_cast<float>(size_.x)/static_cast<float>(size_.y);
 
         glMatrixMode(GL_TEXTURE);
             tgt::loadMatrix( tex->getMatrix() );
@@ -1394,16 +1367,18 @@ MultimodalSingleSliceRenderer::MultimodalSingleSliceRenderer(Alignment alignment
     units.push_back(volTexUnit1_);
 	tm_.registerUnits(units);
 
-	transferFunc1_ = new TransFuncIntensityKeys();
+	transferFunc1_ = new TransFuncIntensity();
 }
 
 void MultimodalSingleSliceRenderer::process(LocalPortMapping* localPortMapping) {
     if ( !ready() )
         return;
 
+    // FIXME: implement port mapping for new volume concept here (dirk)
+
     if (tc_) {
         std::ostringstream oss;
-        oss << "MultimodalSingleSliceRenderer::render(dataset=" << currentDataset_ << ") dest";
+        oss << "MultimodalSingleSliceRenderer::render(dataset=" << currentVolumeHandle_ << ") dest";
         int dest = localPortMapping->getTarget("image.outport");
         tc_->setActiveTarget(dest);
     }
@@ -1411,8 +1386,8 @@ void MultimodalSingleSliceRenderer::process(LocalPortMapping* localPortMapping) 
     glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT);
 
     // init stuff
-    VolumeGL* volumeCT = volumeContainer_->getVolumeGL(Modality::MODALITY_CT);
-    VolumeGL* volumePET = volumeContainer_->getVolumeGL(Modality::MODALITY_PET);
+    VolumeGL* volumeCT = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_CT);
+    VolumeGL* volumePET = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_PET);
     glActiveTexture(tm_.getGLTexUnit(transFuncTexUnit_));
     transferFunc_->bind();
     glActiveTexture(tm_.getGLTexUnit(transFuncTexUnit1_));
@@ -1427,10 +1402,10 @@ void MultimodalSingleSliceRenderer::process(LocalPortMapping* localPortMapping) 
     // activate if everything went fine and set the needed uniforms
     if (transferFuncShader_) {
         transferFuncShader_->activate();
-        transferFuncShader_->setUniform("volumeCT_", (GLint) tm_.getTexUnit(volTexUnit_));
-        transferFuncShader_->setUniform("volumePET_", (GLint) tm_.getTexUnit(volTexUnit1_));
-        transferFuncShader_->setUniform("transferFuncCT_", (GLint) tm_.getTexUnit(transFuncTexUnit_));
-        transferFuncShader_->setUniform("transferFuncPET_", (GLint) tm_.getTexUnit(transFuncTexUnit1_));
+        transferFuncShader_->setUniform("volumeCT_", tm_.getTexUnit(volTexUnit_));
+        transferFuncShader_->setUniform("volumePET_", tm_.getTexUnit(volTexUnit1_));
+        transferFuncShader_->setUniform("transferFuncCT_", tm_.getTexUnit(transFuncTexUnit_));
+        transferFuncShader_->setUniform("transferFuncPET_", tm_.getTexUnit(transFuncTexUnit1_));
     }
 
 
@@ -1450,7 +1425,7 @@ void MultimodalSingleSliceRenderer::process(LocalPortMapping* localPortMapping) 
             float cubeSize = tex->getCubeSize()[xyz_.z];
 
             // calculate depth in llb/urf space
-            float depth = ( float(sliceIndex_) / float(numSlices_ - 1) - 0.5f )
+            float depth = ( static_cast<float>(sliceIndex_) / static_cast<float>(numSlices_ - 1) - 0.5f )
                 * volumeCT->getVolume()->getCubeSize()[xyz_.z];
 
             // check whether the given slice is not within tex
@@ -1462,7 +1437,7 @@ void MultimodalSingleSliceRenderer::process(LocalPortMapping* localPortMapping) 
             depth /= cubeSize;                 // map to [-0.5, -0.5]
             depth += 0.5f;                     // map to [0, 1]
 
-            float canvasRatio = (float)size_.x/(float)size_.y;
+            float canvasRatio = static_cast<float>(size_.x)/static_cast<float>(size_.y);
 
     /*
                 glActiveTexture(tm_.getGLTexUnit(volTexUnit_));
@@ -1545,31 +1520,34 @@ void CustomSliceRenderer::process(LocalPortMapping* localPortMapping) {
     if ( !ready() || camera_ == 0 )
         return;
 
+    // FIXME: implement portmapping for new volume concept.
+
+    Volume* volume = currentVolumeHandle_->getVolume();
+    if( volume == 0 )
+        return;
+
     mat4 m = camera_->getViewMatrix();
     vec3 transl = vec3(m.elemRowCol[0][3], m.elemRowCol[1][3], m.elemRowCol[2][3]); // get translation
     quat q = camera_->getQuat();
     mat4 mRot = generateMatrixFromQuat(q);
 
-    ivec3 texSize = getCurrentDataset()->getVolume()->getDimensions();
+    ivec3 texSize = volume->getDimensions();
 
     // FIXME This must only be done once
-    vec3 spacing = vec3(getCurrentDataset()->getVolume()->getDimensions()) * getCurrentDataset()->getVolume()->getSpacing();
-    float maxdim = static_cast<float>( max(getCurrentDataset()->getVolume()->getDimensions()) );
+    vec3 spacing = vec3(volume->getDimensions()) * volume->getSpacing();
+    float maxdim = static_cast<float>( max(volume->getDimensions()) );
     vec3 ratio = maxdim / spacing;
     vec3 size = (spacing * 2.0f) / (static_cast<vec3>(texSize) * ratio);
 
-    if (!volumeContainer_)
-        return;
-
     if (tc_) {
         std::ostringstream oss;
-        oss << "CustomSliceRenderer::render(dataset=" << currentDataset_ << ") dest";
+        oss << "CustomSliceRenderer::render(dataset=" << currentVolumeHandle_ << ") dest";
         int dest = localPortMapping->getTarget("image.outport");
         tc_->setActiveTarget(dest);
     }
     glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT);
 
-	VolumeGL* volumeGL = getCurrentDataset();
+    VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
 	const VolumeTexture* tex = volumeGL->getTexture();
 
     //
@@ -1612,16 +1590,16 @@ void CustomSliceRenderer::process(LocalPortMapping* localPortMapping) {
     p.n = tgt::abs(p.n);
 
     // angle between z-axis and normal 
-    float angle_y_axis_rad = acos( tgt::dot(p.n, vec3(0.f, 0.f, 1.f)) );
+    float angle_y_axis_rad = acosf(tgt::dot(p.n, vec3(0.f, 0.f, 1.f)));
     // convert to degree
     float angle_y_axis_deg = tgt::rad2deg(angle_y_axis_rad);
 
     // rotate normal around y-axis
     mat4 rotation_y = mat4::createRotationY(angle_y_axis_rad);
-    vec3 rotated_normal = tgt::abs(rotation_y*p.n);
+    vec3 rotated_normal = tgt::abs(rotation_y * p.n);
 
     // angle between z-axis and normal
-    float angle_x_axis_rad = acos( tgt::dot(rotated_normal, vec3(0.f, 0.f, 1.f)) );
+    float angle_x_axis_rad = acosf(tgt::dot(rotated_normal, vec3(0.f, 0.f, 1.f)));
     // convert to degree
     float angle_x_axis_deg = tgt::rad2deg(angle_x_axis_rad);
 
@@ -1636,7 +1614,7 @@ void CustomSliceRenderer::process(LocalPortMapping* localPortMapping) {
         glRotatef( angle_y_axis_deg, 0, 1, 0);
 
     glBegin(GL_POLYGON);
-    for(size_t i = 0; i < cutData_->numVertices_; ++i) {
+    for (size_t i = 0; i < cutData_->numVertices_; ++i) {
         vec3 tc = cutData_->cutPolygon_[i];
         tgt::texCoord(tc);
         tgt::vertex(tc);
@@ -1671,6 +1649,8 @@ void EmphasizedSliceRenderer3D::calculateTransformation() {
 }
 
 void EmphasizedSliceRenderer3D::paint() {
+    if( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
+        return;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1678,15 +1658,19 @@ void EmphasizedSliceRenderer3D::paint() {
     setupTextures();
     // volTexUnit_ is now active
 
-    getCurrentDataset()->getTexture()->bind();
+    const VolumeTexture* volTex = currentVolumeHandle_->getVolumeGL()->getTexture();
+    if( volTex == 0 )
+        return;
 
-    vec3 cubeSize = getCurrentDataset()->getTexture()->getCubeSize();
+    volTex->bind();
+
+    vec3 cubeSize = volTex->getCubeSize();
 
     vec3 tcv[8]; // transformed cube vertices
 
     // transform cube vertices
     for (size_t i = 0; i < 8; ++i)
-        tcv[i] = rot_ * getCurrentDataset()->getTexture()->getCubeVertices()[i];
+        tcv[i] = rot_ * volTex->getCubeVertices()[i];
 
     plane tcp[8]; // transformed cube planes
     plane::createCubePlanes(tcv, tcp);

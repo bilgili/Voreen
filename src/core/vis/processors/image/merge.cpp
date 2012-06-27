@@ -40,12 +40,6 @@
 
 namespace voreen {
 
-//TODO: check if all of these are needed
-using tgt::vec3;
-using tgt::ivec2;
-using tgt::Color;
-using std::vector;
-
 //---------------------------------------------------------------------------
 
 const Identifier Merge::shadeTexUnit1_ = "shadeTexUnit1";
@@ -80,10 +74,10 @@ void Merge::renderTwo(int source0, int source1, int /*pass*/) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex0_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex0_", (GLint) tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("shadeTex1_", (GLint) tm_.getTexUnit(shadeTexUnit1_));
-    program_->setUniform("depthTex1_", (GLint) tm_.getTexUnit(depthTexUnit1_));
+    program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
+    program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
     program_->setUniform("backgroundColor_", backgroundColor_.get());
 
     renderQuad();
@@ -93,6 +87,4 @@ void Merge::renderTwo(int source0, int source1, int /*pass*/) {
     LGL_ERROR;
 }
 
-
 } // voreen namespace
-

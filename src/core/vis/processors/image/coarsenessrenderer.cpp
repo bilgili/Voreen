@@ -32,6 +32,8 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/vis/processors/portmapping.h"
+
 
 namespace voreen {
 
@@ -49,13 +51,12 @@ const std::string CoarsenessRenderer::getProcessorInfo() const {
 	return "Renders in coarseness mode to ensure interactive data set handling";
 }
 
-void CoarsenessRenderer::process(LocalPortMapping*  portMapping)
-{
-	glViewport(0,0,(int)size_.x,(int)size_.y);
+void CoarsenessRenderer::process(LocalPortMapping*  portMapping) {
+	glViewport(0,0,static_cast<GLsizei>(size_.x),static_cast<GLsizei>(size_.y));
 	
 	if (useCoarseness_.get() && !ignoreCoarseness_) {
         CoarsenessStruct* cs = new CoarsenessStruct();
-		cs->coarsenessFactor = (float) coarsenessFactor_.get();
+		cs->coarsenessFactor = static_cast<float>(coarsenessFactor_.get());
 		cs->processor = this;
 		CoarsenessMsg* msg = new CoarsenessMsg(NetworkEvaluator::setSizeBackward_,cs);
 		MsgDistr.postMessage(msg,"evaluator");
@@ -91,12 +92,9 @@ void CoarsenessRenderer::process(LocalPortMapping*  portMapping)
 
 		if (useCoarseness_.get() && !ignoreCoarseness_) {
 			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glViewport(0, 0, (int)size_.x, (int)size_.y);
+			glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 		}
-
 	}
 }
-
-
 
 } // namespace voreen

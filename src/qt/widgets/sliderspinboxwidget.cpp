@@ -201,7 +201,8 @@ void DoubleSliderSpinBoxWidget::setValue(double value) {
 		value_ = value;
 		spinBoxSPB->setValue(value_);
         sliderSLD->blockSignals(true);
-        sliderSLD->setValue( (spinBoxSPB->value() - spinBoxSPB->minimum()) / (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum() );
+        sliderSLD->setValue( static_cast<int>((spinBoxSPB->value() - spinBoxSPB->minimum()) /
+                                   (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum()) );
         sliderSLD->blockSignals(false);
         emit valueChanged(value_);
 	}
@@ -279,7 +280,8 @@ void DoubleSliderSpinBoxWidget::adjustSliderScale() {
     sliderSLD->setMaximum(tgt::iround(sliderScale));
 
     sliderSLD->blockSignals(true);
-    sliderSLD->setValue( (spinBoxSPB->value() - spinBoxSPB->minimum()) / (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum() );
+    sliderSLD->setValue(static_cast<int>((spinBoxSPB->value() - spinBoxSPB->minimum()) /
+                              (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum()));
     sliderSLD->blockSignals(false);
 }
 

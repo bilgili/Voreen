@@ -65,7 +65,7 @@ public:
 
     /**
      * While using this constructor the class will automatically allocate
-     * an apropiate chunk of memory. This memory will be deleted by this class.
+     * an appropiate chunk of memory. This memory will be deleted by this class.
      */
     VolumeAtomic(const tgt::ivec3& dimensions,
                  const tgt::vec3& spacing = tgt::vec3(1.f),
@@ -409,7 +409,7 @@ float VolumeAtomic<T>::getVoxelFloat(const tgt::ivec3& pos, size_t channel) cons
 
 template<class T>
 float VolumeAtomic<T>::getVoxelFloat(size_t x, size_t y, size_t z, size_t channel) const {
-    return getVoxelFloat(tgt::ivec3(x, y, z), channel);
+    return getVoxelFloat(tgt::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel);
 }
 
 template<class T>
@@ -418,17 +418,17 @@ void VolumeAtomic<T>::setVoxelFloat(float value, const tgt::ivec3& pos, size_t c
     Base zero  = VolumeElement<T>::getChannel( zeroPoint_, channel );
     
     Base max;
-    if ( typeid(*this) == typeid(VolumeFloat) || typeid(*this) == typeid(VolumeDouble) ) 
+    if (typeid(*this) == typeid(VolumeFloat) || typeid(*this) == typeid(VolumeDouble)) 
         max = static_cast<Base>(1);
     else
         max = static_cast<Base>( (1ll << static_cast<unsigned long long>(bitsStored_)) - 1ll );
 
-    VolumeElement<T>::setChannel( Base(value * float(max)) + zero, voxel(pos), channel );
+    VolumeElement<T>::setChannel(Base(value * float(max)) + zero, voxel(pos), channel);
 }
 
 template<class T>
 void  VolumeAtomic<T>::setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel) {
-    setVoxelFloat( value, tgt::ivec3(x, y, z), channel );
+    setVoxelFloat( value, tgt::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel );
 }
 
 /*
@@ -440,7 +440,7 @@ void VolumeAtomic<T>::calcDifferences(const VolumeAtomic<T>& v1, const VolumeAto
     tgtAssert(numVoxels_ == v1.numVoxels_, "numVoxels_ must fit here");
     tgtAssert(numVoxels_ == v2.numVoxels_, "numVoxels_ must fit here");
 
-    for(size_t i = 0; i < numVoxels_; ++i) {
+    for (size_t i = 0; i < numVoxels_; ++i) {
         int res = v2.voxel(i) - v1.voxel(i);
         // TODO I don't understand why max is needed here
         voxel(i) = res ? (res + VolumeElement<T>::max())/2 : 0;
@@ -452,7 +452,7 @@ void VolumeAtomic<T>::calc1stDerivative(const VolumeAtomic<T>& v1, const VolumeA
     tgtAssert(numVoxels_ == v1.numVoxels_, "numVoxels_ must fit here");
     tgtAssert(numVoxels_ == v2.numVoxels_, "numVoxels_ must fit here");
 
-    for(size_t i = 0; i < numVoxels_; ++i) {
+    for (size_t i = 0; i < numVoxels_; ++i) {
         int res = v2.voxel(i) - v1.voxel(i);
         // TODO I don't understand why max is needed here
         voxel(i) = res ? ( res + VolumeElement<T>::max() )/(2*k) : 0;
@@ -470,7 +470,7 @@ void VolumeAtomic<T>::calc2ndDerivative(
     tgtAssert(numVoxels_ == v2.numVoxels_, "numVoxels_ must fit here");
     tgtAssert(numVoxels_ == v3.numVoxels_, "numVoxels_ must fit here");
 
-    for(int i = 0; i < numVoxels_; ++i) {
+    for (int i = 0; i < numVoxels_; ++i) {
         int res = v3.voxel(i) - 2*v2.voxel(i) + v1.voxel(i);
         // TODO I don't understand why max is needed here
         voxel(i) = res ? ( res + VolumeElement<T>::max() )/(2*k*k) : 0;
@@ -513,7 +513,7 @@ void VolumeAtomic<T>::clear() {
 
 template<class T>
 void* VolumeAtomic<T>::getData() {
-    return (void*) data_;
+    return reinterpret_cast<void*>(data_);
 }
 
 template<class T>
@@ -547,13 +547,13 @@ VolumeAtomic<T>* VolumeAtomic<T>::scale(const tgt::ivec3& newDims, Filter filter
     switch (filter) {
     case NEAREST:
         for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
-            nearest.z = float(pos.z) * ratio.z;
+            nearest.z = static_cast<float>(pos.z) * ratio.z;
 
             for (pos.y = 0; pos.y < newDims.y; ++pos.y) {
-                nearest.y = float(pos.y) * ratio.y;
+                nearest.y = static_cast<float>(pos.y) * ratio.y;
 
                 for (pos.x = 0; pos.x < newDims.x; ++pos.x) {
-                    nearest.x = float(pos.x) * ratio.x;
+                    nearest.x = static_cast<float>(pos.x) * ratio.x;
                     v->voxel(pos) = voxel( ivec3(nearest + 0.5f) ); // round and do the lookup
                 }
             }
@@ -562,13 +562,13 @@ VolumeAtomic<T>* VolumeAtomic<T>::scale(const tgt::ivec3& newDims, Filter filter
 
     case LINEAR:
         for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
-            nearest.z = float(pos.z) * ratio.z;
+            nearest.z = static_cast<float>(pos.z) * ratio.z;
 
             for (pos.y = 0; pos.y < newDims.y; ++pos.y) {
-                nearest.y = float(pos.y) * ratio.y;
+                nearest.y = static_cast<float>(pos.y) * ratio.y;
 
                 for (pos.x = 0; pos.x < newDims.x; ++pos.x) {
-                    nearest.x = float(pos.x) * ratio.x;
+                    nearest.x = static_cast<float>(pos.x) * ratio.x;
                     vec3 p = nearest - floor(nearest); // get decimal part
                     ivec3 llb = ivec3( nearest );
                     ivec3 urf = ivec3( ceil(nearest) );
@@ -579,14 +579,14 @@ VolumeAtomic<T>* VolumeAtomic<T>::scale(const tgt::ivec3& newDims, Filter filter
                     */
                     typedef typename VolumeElement<T>::DoubleType Double;
                     v->voxel(pos) =
-                        T(Double(voxel(llb.x, llb.y, llb.z)) * double((1.f-p.x)*(1.f-p.y)*(1.f-p.z))  // llB
-                          + Double(voxel(urf.x, llb.y, llb.z)) * double((    p.x)*(1.f-p.y)*(1.f-p.z))  // lrB
-                          + Double(voxel(urf.x, urf.y, llb.z)) * double((    p.x)*(    p.y)*(1.f-p.z))  // urB
-                          + Double(voxel(llb.x, urf.y, llb.z)) * double((1.f-p.x)*(    p.y)*(1.f-p.z))  // ulB
-                          + Double(voxel(llb.x, llb.y, urf.z)) * double((1.f-p.x)*(1.f-p.y)*(    p.z))  // llF
-                          + Double(voxel(urf.x, llb.y, urf.z)) * double((    p.x)*(1.f-p.y)*(    p.z))  // lrF
-                          + Double(voxel(urf.x, urf.y, urf.z)) * double((    p.x)*(    p.y)*(    p.z))  // urF
-                          + Double(voxel(llb.x, urf.y, urf.z)) * double((1.f-p.x)*(    p.y)*(    p.z)));// ulF
+                        T(Double(voxel(llb.x, llb.y, llb.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(1.f-p.z))  // llB
+                          + Double(voxel(urf.x, llb.y, llb.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(1.f-p.z))  // lrB
+                          + Double(voxel(urf.x, urf.y, llb.z)) * static_cast<double>((    p.x)*(    p.y)*(1.f-p.z))  // urB
+                          + Double(voxel(llb.x, urf.y, llb.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(1.f-p.z))  // ulB
+                          + Double(voxel(llb.x, llb.y, urf.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(    p.z))  // llF
+                          + Double(voxel(urf.x, llb.y, urf.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(    p.z))  // lrF
+                          + Double(voxel(urf.x, urf.y, urf.z)) * static_cast<double>((    p.x)*(    p.y)*(    p.z))  // urF
+                          + Double(voxel(llb.x, urf.y, urf.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(    p.z)));// ulF
                 }
             }
         }
@@ -597,7 +597,9 @@ VolumeAtomic<T>* VolumeAtomic<T>::scale(const tgt::ivec3& newDims, Filter filter
 }
 
 template<class T>
-VolumeAtomic<T>* VolumeAtomic<T>::createSubset(const tgt::ivec3& pos, const tgt::ivec3& size) const throw (std::bad_alloc) {
+VolumeAtomic<T>* VolumeAtomic<T>::createSubset(const tgt::ivec3& pos, const tgt::ivec3& size) const
+    throw (std::bad_alloc)
+{
     VolumeAtomic<T>* subset;
     try {
         subset = new VolumeAtomic<T>(size, spacing_, bitsStored_);
@@ -609,14 +611,14 @@ VolumeAtomic<T>* VolumeAtomic<T>::createSubset(const tgt::ivec3& pos, const tgt:
     subset->setZeroPoint(zeroPoint_);
     subset->meta() = meta();
 
-    //calculate new imageposition
+    // calculate new imageposition
     if (pos.z != 0.f)
-        subset->meta().setImagePositionZ(meta().getImagePositionZ()-spacing_.z*pos.z);
+        subset->meta().setImagePositionZ(meta().getImagePositionZ() - spacing_.z * pos.z);
 
     LINFO("Create subset: " << size << " from position: " << pos);
 
     // create values for ranges less than zero and greater equal dimensions_
-    subset->clear(); // TODO This can be optmized by avoiding to clear the values in range
+    subset->clear(); // TODO: This can be optomized by avoiding to clear the values in range
 
     // now the rest
     tgt::ivec3 start = tgt::max(pos, tgt::ivec3::zero);// clamp values

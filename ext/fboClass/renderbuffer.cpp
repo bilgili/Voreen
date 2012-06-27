@@ -79,7 +79,7 @@ void Renderbuffer::Set(GLenum internalFormat, int width, int height)
   // Guarded bind
   GLint savedId = 0;
   glGetIntegerv( GL_RENDERBUFFER_BINDING_EXT, &savedId );
-  if (savedId != (GLint)m_bufId) {
+  if (savedId != static_cast<GLint>(m_bufId)) {
     Bind();
   }
 
@@ -87,7 +87,7 @@ void Renderbuffer::Set(GLenum internalFormat, int width, int height)
   glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, internalFormat, width, height );
 
   // Guarded unbind
-  if (savedId != (GLint)m_bufId) {
+  if (savedId != static_cast<GLint>(m_bufId)) {
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, savedId);
   }
 }

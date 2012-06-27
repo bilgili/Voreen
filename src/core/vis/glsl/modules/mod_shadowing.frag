@@ -1,3 +1,32 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
 #ifdef USE_SHADOWS_3DTEXTURE
 uniform sampler3D shadowVolume_;
 #endif
@@ -98,22 +127,18 @@ vec4 shadowRunner(in vec3 curVoxel, in vec3 lightPosition) {
     //while (!finished) {
 	t += 0.01;
 	for(int loop=0; !finished && loop < 255; ++loop){
-        for(int loop1=0; !finished && loop1 < 255; ++loop1){
+        for (int loop1=0; !finished && loop1 < 255; ++loop1){
 		    t += stepIncr;
 		    vec3 sample = curVoxel + t * direction;
 	        float value = textureLookup3D(volume_, volumeParameters_, sample).a;
-#ifdef BITDEPTH_12
-		    if (value*16.0 + IOTA >= lowerThreshold_ && value*16.0 < upperThreshold_) {
-#else
 		    if (value + IOTA >= lowerThreshold_ && value < upperThreshold_) {
-#endif
 			    vec4 tfcolor = applyTF(value);
-			    if(tfcolor.a >= shadowThreshold_){
+			    if (tfcolor.a >= shadowThreshold_){
     			    finished = true;
     				shadow = 1.0;
 			    }
     		}
-		    if(t>=tend) {
+		    if (t>=tend) {
     			finished = true;		
     		}
         }
@@ -140,23 +165,19 @@ vec4 shadowRunner(in vec3 curVoxel, in vec3 lightPosition) {
     //while (!finished) {
 	t += 0.01;
 	for(int loop=0; !finished && loop < 255; ++loop){
-        for(int loop1=0; !finished && loop1 < 255; ++loop1){
+        for (int loop1=0; !finished && loop1 < 255; ++loop1){
     		t += stepIncr;
 		    vec3 sample = curVoxel + t * direction;
     	    float value = textureLookup3D(volume_, volumeParameters_, sample).a;
-#ifdef BITDEPTH_12
-		    if (value*16.0 + IOTA >= lowerThreshold_ && value*16.0 < upperThreshold_) {
-#else
     		if (value + IOTA >= lowerThreshold_ && value < upperThreshold_) {
-#endif                
 		        vec4 tfcolor = applyTF(value);
                 tfcolor.a *= raycastingQualityFactorRCP_;
                 resultAlpha = resultAlpha + (1.0-resultAlpha) * tfcolor.a;            
-                if(resultAlpha >= 1.0){
+                if (resultAlpha >= 1.0){
     				finished = true;
                 }
     		}
-		    if(t>=tend) {
+		    if (t>=tend) {
 		    	finished = true;		
 		    }
         }
@@ -274,24 +295,24 @@ float getShadow(vec3 vpos, float d, vec3 L, float currentAlpha, float colorA, fl
 #ifdef USE_SHADOWS_3DTEXTURE
 	shadow = texture3D(shadowVolume_,vpos).a;
 #ifdef USE_SHADOW_LOWTHRESHOLD
-    if(shadow >= 0.99) {
+    if (shadow >= 0.99) {
 		shadow = 1.0;
 	}
 #else
-    if(shadow >= 0.05) {
+    if (shadow >= 0.05) {
 		shadow = 1.0;
 	}
 #endif
 #endif
 #ifdef USE_SHADOWS_SHADOWRAY_ALPHA
 	shadow = shadowRunner(vpos,lightPosition_).a;
-    if(shadow >= 1.0) {
+    if (shadow >= 1.0) {
 		shadow = 1.0;
 	}
 #endif
 #ifdef USE_SHADOWS_SHADOWRAY
 	shadow = shadowRunner(vpos,lightPosition_).a;
-    if(shadow >= 1.0) {
+    if (shadow >= 1.0) {
 		shadow = 1.0;
 	}
 #endif
@@ -345,8 +366,8 @@ float getShadow(vec3 vpos, float d, vec3 L, float currentAlpha, float colorA, fl
     float resVal = 0.0;
     float normalizer = 0.0;
     vec2 texPos_off = vec2(0.0);
-    for(int shadowCount1=0; shadowCount1<shadowFilterSizeX; shadowCount1+=1){
-        for(int shadowCount2=0; shadowCount2<shadowFilterSizeY; shadowCount2+=1){
+    for (int shadowCount1=0; shadowCount1<shadowFilterSizeX; shadowCount1+=1){
+        for (int shadowCount2=0; shadowCount2<shadowFilterSizeY; shadowCount2+=1){
             vec2 offset = vec2(-shadowSize + float(shadowCount1),-shadowSize + float(shadowCount2));
             float texDist = sqrt(offset.x*offset.x + offset.y*offset.y);
             if ((texDist < shadowSize)){

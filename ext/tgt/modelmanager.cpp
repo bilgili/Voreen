@@ -32,12 +32,10 @@ namespace tgt {
     
 const std::string ModelManager::loggerCat_("tgt.Model.Manager");
     
-std::string ModelManager::getEnding(const std::string& filename) const
-{
+std::string ModelManager::getEnding(const std::string& filename) const {
     std::string ending = "";
     size_t pos = filename.find_last_of('.');
-    if (pos != std::string::npos)
-    {
+    if (pos != std::string::npos) {
         ending = filename.substr(pos+1);
     }
     return ending;
@@ -51,7 +49,7 @@ ModelManager::~ModelManager(){
 
 Model* ModelManager::load(const std::string& filename) {
     // already loaded?
-    if( isLoaded(filename) ) {
+    if ( isLoaded(filename) ) {
         increaseUsage(filename);
         return get(filename);
     }
@@ -68,7 +66,7 @@ Model* ModelManager::load(const std::string& filename) {
         // try every path
         std::string completeFilename;
         std::list<std::string>::iterator iter = pathList_.begin();
-        while( iter != pathList_.end() && !m ) {
+        while ( iter != pathList_.end() && !m ) {
             completeFilename = (!(*iter).empty() ? *iter + '/' : "") + filename;
             // check if responsable reader is able to load filename
             m = readers_[ending]->loadModel( completeFilename );
@@ -93,16 +91,14 @@ Model* ModelManager::load(const std::string& filename) {
     return m;
 }
 
-void ModelManager::registerReader(ModelReader* mr)
-{
+void ModelManager::registerReader(ModelReader* mr) {
     readerSet_.insert(mr);
     LDEBUG("ModuleManager: Registering reader: " << mr->getName());
 
     std::string formats = "";
     std::vector<std::string> knownEndings = mr->getEndings();
     std::vector<std::string>::iterator i;
-    for( i = knownEndings.begin(); i != knownEndings.end(); ++i )
-    {
+    for ( i = knownEndings.begin(); i != knownEndings.end(); ++i ) {
         readers_[*i] = mr;
         formats += *i + " ";
     }

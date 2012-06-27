@@ -72,7 +72,6 @@ VoreenMainframe::VoreenMainframe(QWidget *parent, std::string name)
 
     setCentralWidget(canvas3D_);
 
-    volumeContainer_ = new VolumeContainer();
     volumeSerializer_ = volumeSerializerPopulator_.getVolumeSerializer();
 
     fileDialogDir_ = QDir("../../data");
@@ -83,7 +82,6 @@ VoreenMainframe::VoreenMainframe(QWidget *parent, std::string name)
 VoreenMainframe::~VoreenMainframe() {
     deinit();
     MsgDistr.remove(painter_);
-    delete volumeContainer_;
     delete painter_;
 }
 
@@ -92,7 +90,7 @@ void VoreenMainframe::processMessage(Message* msg, const Identifier& dest/*=Mess
     MessageReceiver::processMessage(msg, dest);
     MsgDistr.processMessage(msg, dest);
 
-    if(msg->id_ == "main.dataset.load") {
+    if (msg->id_ == "main.dataset.load") {
         fileOpen(QStringList(QString(msg->getValue<std::string>().c_str())), false);
     }
 }
@@ -128,7 +126,7 @@ void VoreenMainframe::init(QStringList args) {
 
     postMessage(new ColorMsg("set.backgroundColor", tgt::vec4(1.f, 1.f, 1.f, 1.f)));
 
-    if(cmdLineParser_->getMaximized())
+    if (cmdLineParser_->getMaximized())
         setWindowState(windowState() | Qt::WindowMaximized);
 
     MsgDistr.setAllowRepaints(true); // all initialized, allow repaints via messages
@@ -211,12 +209,12 @@ bool VoreenMainframe::getFileDialog(QStringList& filenames, QDir& dir)
 
 void VoreenMainframe::fileOpen() {
     QStringList filenames;
-    if(!getFileDialog(filenames, fileDialogDir_))
+    if (!getFileDialog(filenames, fileDialogDir_))
         return;
     fileOpen(filenames);
 }
 
-void VoreenMainframe::fileOpen(const QStringList& fileNames, bool add) {
+void VoreenMainframe::fileOpen(const QStringList& fileNames, bool /*add*/) {
     if (fileNames.empty())
         return;
 
@@ -224,8 +222,8 @@ void VoreenMainframe::fileOpen(const QStringList& fileNames, bool add) {
     setUpdatesEnabled(false);
 
     // fixes reopen problem if currentDataset has value out of range
-    if (volumeContainer_->size())
-        postMessage(new IntMsg(Processor::setCurrentDataset_, 0));
+    //if (volumeContainer_->size())
+    //    postMessage(new IntMsg(Processor::setCurrentDataset_, 0));
 
     // set to a waiting cursor
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -272,7 +270,9 @@ void VoreenMainframe::fileOpen(const QStringList& fileNames, bool add) {
 }
 
 void VoreenMainframe::fileExport() {
-    if(!volumeContainer_->getVolume(0)) {
+    // FIXME: VolumeContainer is obsolete. New design required for this (Dirk)
+    /*
+    if (!volumeContainer_->getVolume(0)) {
         QMessageBox::information(this, "Voreen", tr("No Datasets available.\n"));
         return;
     }
@@ -280,11 +280,12 @@ void VoreenMainframe::fileExport() {
     QString fn = QFileDialog::getSaveFileName(this, tr("Export Dataset"), ".", tr("Dat/Raw Dataset (*.DAT)"));
     std::string fileName = fn.toStdString();
 
-    if(fileName.length() == 0)
+    if (fileName.length() == 0)
         return;
 
     DatVolumeWriter datwriter;
     datwriter.write(fileName, volumeContainer_->getVolume(0));
+    */
 }
 
 void VoreenMainframe::showDatasetInfo(Volume* dataset, QString fileName) {
@@ -409,7 +410,7 @@ void VoreenMainframe::initializeRenderer() {
     painter_->setRenderer(renderer);
 
     //in case the slicerenderer is used, we have to manually specify a standard transferfunction
-    if(rendererType == RendererFactory::VRN_SLICERENDERER3D)
-        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, new TransFuncIntensityKeys()));
+    if (rendererType == RendererFactory::VRN_SLICERENDERER3D)
+        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, new TransFuncIntensity()));
     */
 }

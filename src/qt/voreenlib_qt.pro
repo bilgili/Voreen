@@ -1,8 +1,6 @@
 ####################################################
 # Project file for the Voreen-Qt library
 ####################################################
-#unix: TEMPLATE = lib
-#win32: TEMPLATE = vclib
 TEMPLATE = lib
 TARGET = voreen_qt
 VERSION = 1.0
@@ -49,10 +47,11 @@ SOURCES += \
     qcolorluminancepicker.cpp \
     qcolorpicker.cpp \
     voreenapp.cpp \
-    voreenmainframe.cpp
+    voreenmainframe.cpp \
+    opennetworkfiledialog.cpp
 SOURCES += \
-    widgets/adddialog.cpp \
     widgets/backgroundplugin.cpp \
+    widgets/canvasmodifier.cpp \
     widgets/clipperwidget.cpp \
     widgets/clippingplugin.cpp \
     widgets/consoleplugin.cpp \
@@ -78,7 +77,8 @@ SOURCES += \
     widgets/volumesetwidget.cpp \
     widgets/widgetplugin.cpp \
     widgets/widgetgenerator.cpp \
-    widgets/widgetgeneratorplugins.cpp \
+    widgets/widgetgeneratorplugins.cpp
+SOURCES += \
     widgets/transfunc/transfuncplugin.cpp \
     widgets/transfunc/transfuncalphaplugin.cpp \
     widgets/transfunc/transfuncintensitypainter.cpp \
@@ -86,7 +86,8 @@ SOURCES += \
     widgets/transfunc/transfuncintensitypetplugin.cpp \
     widgets/transfunc/transfuncgradient.cpp \
     widgets/transfunc/transfuncmappingcanvas.cpp \
-    widgets/transfunc/transfuncintensitygradientplugin.cpp \
+    widgets/transfunc/transfuncintensitygradientplugin.cpp
+SOURCES += \
     ../../ext/tgt/qt/qtcanvas.cpp \
     ../../ext/tgt/qt/qttimer.cpp
 
@@ -99,10 +100,11 @@ HEADERS += \
     ../../include/voreen/qt/qcolorpicker.h \
     ../../include/voreen/qt/qdebug.h \
     ../../include/voreen/qt/voreenapp.h \
-    ../../include/voreen/qt/voreenmainframe.h
+    ../../include/voreen/qt/voreenmainframe.h \
+    ../../include/voreen/qt/opennetworkfiledialog.h
 HEADERS += \
-    ../../include/voreen/qt/widgets/adddialog.h \
     ../../include/voreen/qt/widgets/backgroundplugin.h \
+    ../../include/voreen/qt/widgets/canvasmodifier.h \
     ../../include/voreen/qt/widgets/clipperwidget.h \
     ../../include/voreen/qt/widgets/clippingplugin.h \
     ../../include/voreen/qt/widgets/consoleplugin.h \
@@ -125,6 +127,12 @@ HEADERS += \
     ../../include/voreen/qt/widgets/snapshotplugin.h \
     ../../include/voreen/qt/widgets/stereoplugin.h \
     ../../include/voreen/qt/widgets/thresholdwidget.h \
+    ../../include/voreen/qt/widgets/volumesetwidget.h \
+    ../../include/voreen/qt/widgets/widgetgenerator.h \
+    ../../include/voreen/qt/widgets/widgetgeneratorplugins.h \
+    ../../include/voreen/qt/widgets/widgetplugin.h
+
+HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/transfuncplugin.h \
     ../../include/voreen/qt/widgets/transfunc/transfuncalphaplugin.h \
     ../../include/voreen/qt/widgets/transfunc/transfuncintensitypainter.h \
@@ -132,13 +140,11 @@ HEADERS += \
     ../../include/voreen/qt/widgets/transfunc/transfuncintensitypetplugin.h \
     ../../include/voreen/qt/widgets/transfunc/transfuncgradient.h \
     ../../include/voreen/qt/widgets/transfunc/transfuncintensitygradientplugin.h \
-    ../../include/voreen/qt/widgets/transfunc/transfuncmappingcanvas.h \
-    ../../include/voreen/qt/widgets/volumesetwidget.h \
-    ../../include/voreen/qt/widgets/widgetgenerator.h \
-    ../../include/voreen/qt/widgets/widgetgeneratorplugins.h \
-    ../../include/voreen/qt/widgets/widgetplugin.h \
+    ../../include/voreen/qt/widgets/transfunc/transfuncmappingcanvas.h
+HEADERS += \
     ../../ext/tgt/qt/qtcanvas.h \
     ../../ext/tgt/qt/qttimer.h
+
 MSVC_IDE: SOURCES += \
     ../core/vis/glsl/stc_showdepth.frag \
     ../core/vis/glsl/stc_showfloatcolor.frag \
@@ -158,13 +164,13 @@ SOURCES += \
     widgets/ultrasoundplugin.cpp \
     widgets/usframeoverlay.cpp \
     widgets/usschematicrenderarea.cpp \
-    widgets/vectorfieldplugin.cpp \
+    widgets/vectorfieldplugin.cpp
 
 HEADERS += \
     ../../include/voreen/qt/widgets/ultrasoundplugin.h \
     ../../include/voreen/qt/widgets/usframeoverlay.h \
     ../../include/voreen/qt/widgets/usschematicrenderarea.h \
-    ../../include/voreen/qt/widgets/vectorfieldplugin.h \
+    ../../include/voreen/qt/widgets/vectorfieldplugin.h
 }
 
 

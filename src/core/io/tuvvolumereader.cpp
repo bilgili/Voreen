@@ -48,7 +48,7 @@ namespace voreen {
 
 const std::string TUVVolumeReader::loggerCat_ = "voreen.io.VolumeReader.tuv";
 
-VolumeSet* TUVVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* TUVVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     LINFO(fileName);
@@ -65,8 +65,7 @@ VolumeSet* TUVVolumeReader::read(const std::string &fileName, bool generateVolum
     VolumeUInt16* dataset;
     try {
         dataset = new VolumeUInt16(dimensions, ivec3(1));
-    }
-    catch (std::bad_alloc) {
+    } catch (std::bad_alloc) {
         throw; // throw it to the caller
     }
 
@@ -77,13 +76,12 @@ VolumeSet* TUVVolumeReader::read(const std::string &fileName, bool generateVolum
 
     fin.close();
 
-    VolumeSet* volumeSet = new VolumeSet(fileName);
+    VolumeSet* volumeSet = new VolumeSet(0, fileName);
     VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
+    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
-    if( generateVolumeGL == true )
-        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
 
     return volumeSet;
 }

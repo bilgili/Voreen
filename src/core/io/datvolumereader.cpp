@@ -48,7 +48,7 @@ namespace voreen {
 
 const std::string DatVolumeReader::loggerCat_ = "voreen.io.VolumeReader.dat";
 
-VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* DatVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string objectFilename;
@@ -61,7 +61,6 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
     std::string objectModel;
     std::string gridType;
     tgt::mat4 transformation = tgt::mat4::identity;
-    //double measuring = 0.0;
     std::string unit;
     Modality modality = Modality::MODALITY_UNKNOWN;
     int zeroPoint = 0;
@@ -69,7 +68,7 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
     std::string metaString = "";
     bool error = false;
 
-    LINFO("DatVolumeReader: " << fileName);
+    LINFO("Loading file " << fileName);
     TextFileReader reader(fileName);
 
     if (!reader)
@@ -80,48 +79,47 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
     int bits = 0;
 
     while (reader.getNextLine(type, args, false)) {
-        LINFO("Type : " << type);
 
         if (type == "ObjectFileName:") {
             args >> objectFilename;
-            LINFO("Value: " << objectFilename);
+            LINFO(type << " " << objectFilename);
         } else if (type == "TaggedFileName:") {
             args >> taggedFilename;
-            LINFO("Value: " << taggedFilename);
+            LINFO(type << " " << taggedFilename);
         } else if (type == "Resolution:") {
             args >> resolution[0];
             args >> resolution[1];
             args >> resolution[2];
-            LINFO("Value: " << resolution[0] << " x " <<
+            LINFO(type << " " << resolution[0] << " x " <<
                   resolution[1] << " x " << resolution[2]);
         } else if (type == "SliceThickness:") {
             args >> sliceThickness[0] >> sliceThickness[1] >> sliceThickness[2];
-            LINFO("Value: " << sliceThickness[0] << " " <<
+            LINFO(type << " " << sliceThickness[0] << " " <<
                   sliceThickness[1] << " " << sliceThickness[2]);
         } else if (type == "Format:") {
             args >> format;
-            LINFO("Value: " << format);
+            LINFO(type << " " << format);
         } else if (type == "NbrTags:") {
             args >> nbrTags;
-            LINFO("Value: " << nbrTags);
+            LINFO(type << " " << nbrTags);
         } else if (type == "ObjectType:") {
             args >> objectType;
-            LINFO("Value: " << objectType);
+            LINFO(type << " " << objectType);
         } else if (type == "ObjectModel:") {
             args >> objectModel;
-            LINFO("Value: " << objectModel);
+            LINFO(type << " " << objectModel);
         } else if (type == "GridType:") {
             args >> gridType;
-            LINFO("Value: " << gridType);
+            LINFO(type << " " << gridType);
         } else if (type == "BitsStored:") {
             args >> bits;
-            LINFO("Value: " << bits);
+            LINFO(type << " " << bits);
         } else if (type == "Unit:") {
             args >> unit;
-            LINFO("Value: " << unit);
+            LINFO(type << " " << unit);
         } else if (type == "ZeroPoint:") {
             args >> zeroPoint;
-            LINFO("Value: " << zeroPoint);
+            LINFO(type << " " << zeroPoint);
         } else if (type == "TransformMatrix:") {
             // first argument contains number of row
             std::string row;
@@ -133,25 +131,26 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
             args >> transformation[index][2];
             args >> transformation[index][3];
             if (index == 3) {
-                LINFO("Value: " << transformation[0]);
-                LINFO("Value: " << transformation[1]);
-                LINFO("Value: " << transformation[2]);
-                LINFO("Value: " << transformation[3]);
+                LINFO("TransformMatrix:");
+                LINFO("  " << transformation[0]);
+                LINFO("  " << transformation[1]);
+                LINFO("  " << transformation[2]);
+                LINFO("  " << transformation[3]);
             }
         }
         else if (type == "Modality:") {
             std::string modalityStr;
             args >> modalityStr;
-            LINFO("Value: " << modalityStr);
+            LINFO(type << " " << modalityStr);
             modality = Modality(modalityStr);
         }
         else if (type == "TimeStep:") {
             args >> timeStep;
-            LINFO("Value: " << timeStep);
+            LINFO(type << " " << timeStep);
         }
         else if (type == "MetaString:") {
             args >> metaString;
-            LINFO("Value: " << metaString);
+            LINFO(type << " " << metaString);
         }
         else {
             LERROR("Unknown type: " << type);
@@ -161,7 +160,6 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
             LERROR("Format error");
             error = true;
         }
-
     }
 
     // check wether necessary meta-data could be read
@@ -171,7 +169,7 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
     }
     if ( hor(lessThanEqual(resolution,ivec3(0,0,0))) ) {
         LERROR("Invalid resolution or resolution not specified: " << resolution[0] << " x " <<
-                  resolution[1] << " x " << resolution[2])
+               resolution[1] << " x " << resolution[2])
         error = true;
     }
 
@@ -181,8 +179,8 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
             transformation, modality, timeStep, metaString);
 
         // do we have a relative path?
-        if ((objectFilename.substr(0,1) != "/")  && (objectFilename.substr(0,1) != "\\") &&
-            (objectFilename.substr(1,2) != ":/") && (objectFilename.substr(1,2) != ":\\"))
+        if ((objectFilename.substr(0, 1) != "/")  && (objectFilename.substr(0, 1) != "\\") &&
+            (objectFilename.substr(1, 2) != ":/") && (objectFilename.substr(1, 2) != ":\\"))
         {
             size_t p = fileName.find_last_of("\\");
             if (p == std::string::npos)
@@ -192,22 +190,18 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName, bool generateVolum
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        // FIXME unit and measuring is hacked into the dat-file (roland)
-//         dataset->setUnit(unit);
-//         dataset->setMeasuring(measuring);
-
-//VolumeContainer* vc;
         VolumeSet* volumeSet = 0;
         try {
-            volumeSet = rawReader.read(objectFilename, generateVolumeGL);
+            volumeSet = rawReader.read(objectFilename);
         }
         catch (...) {
             throw; // throw it to the caller
         }
+        fixOrigins(volumeSet, fileName);
         return volumeSet;
+    } else {
+        throw tgt::CorruptedFileException();
     }
-    // error:
-    throw tgt::CorruptedFileException();
 }
 
 } // namespace voreen

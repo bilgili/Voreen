@@ -36,10 +36,8 @@ namespace voreen {
 
 int GeometryContainer::nextID_ = 1;    // static member!
 
-bool GeometryContainer::initGeometry(Geometry* geo, const Identifier& name, const int id)
-{
-    if( (geo->id_ == 0) )
-    {
+bool GeometryContainer::initGeometry(Geometry* geo, const Identifier& name, const int id) {
+    if ( (geo->id_ == 0) ) {
         geo->name_ = name;
         geo->id_ = id;
         return true;
@@ -48,36 +46,30 @@ bool GeometryContainer::initGeometry(Geometry* geo, const Identifier& name, cons
     return false;
 }
 
-void GeometryContainer::resetGeometry(Geometry* geo)
-{
+void GeometryContainer::resetGeometry(Geometry* geo) {
     geo->name_ = "";
     geo->id_ = 0;
 }
 
 // public methods
 //
-int GeometryContainer::getNextID() const
-{
+int GeometryContainer::getNextID() const {
     return nextID_;
 }
 
-bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifier& name)
-{
+bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifier& name) {
     // Don't start working, when pointer is NULL
     //
-    if( (geo == 0) || (id <= 0) )
-    {
+    if ( (geo == 0) || (id <= 0) ) {
         return 0;
     }
 
     // Try to insert the name if it is non-empty.
     //
     pair< map<Identifier, int>::iterator, bool > ret;
-    if( name != "" )
-    {
+    if ( name != "" ) {
         ret = names_.insert( pair<Identifier, int>(name, id) );
-        if( ret.second == false )
-        {
+        if ( ret.second == false ) {
             return false;
         }
     }
@@ -86,10 +78,8 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
     // to Geometry object. If the assignment fails, the (name, id) entry
     // will be removed from the map again and the method will fail.
     //
-    if( initGeometry(geo, name, id) == false )
-    {
-        if( name != "" )
-        {
+    if ( initGeometry(geo, name, id) == false ) {
+        if ( name != "" ) {
             names_.erase(ret.first);
         }
         return false;
@@ -97,8 +87,7 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
     
     pair< map<int, Geometry*>::iterator, bool > ret2;
     ret2 = geos_.insert( pair<int, Geometry*>(id, geo) );
-    if( ret2.second == false )
-    {
+    if ( ret2.second == false ) {
         resetGeometry(geo);
         return false;
     }
@@ -111,41 +100,34 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
     return true;
 }
 
-Geometry* GeometryContainer::getGeometry(const Identifier& name)
-{
+Geometry* GeometryContainer::getGeometry(const Identifier& name) {
     const int id = getGeometryID(name);
-    if( id == 0 )
-    {
+    if ( id == 0 ) {
         return 0;
     }
 
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return 0;
     }
 
     return itGeo->second;
 }
 
-Geometry* GeometryContainer::getGeometry(const int id)
-{
+Geometry* GeometryContainer::getGeometry(const int id) {
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return 0;
     }
 
     return itGeo->second;
 }
 
-Geometry* GeometryContainer::removeGeometry(const Identifier& name)
-{
+Geometry* GeometryContainer::removeGeometry(const Identifier& name) {
     // try to find the ID for the given name first
     //
     map<Identifier, int>::iterator itID = names_.find(name);
-    if( itID == names_.end() )
-    {
+    if ( itID == names_.end() ) {
         return 0;
     }
 
@@ -157,11 +139,9 @@ Geometry* GeometryContainer::removeGeometry(const Identifier& name)
     return geo;
 }
 
-Geometry* GeometryContainer::removeGeometry(const int id)
-{
+Geometry* GeometryContainer::removeGeometry(const int id) {
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return 0;
     }
 
@@ -169,8 +149,7 @@ Geometry* GeometryContainer::removeGeometry(const int id)
     //
     const Identifier& strName = itGeo->second->getName();
     map<Identifier, int>::iterator itID = names_.find(strName);
-    if( itID == names_.end() )
-    {
+    if ( itID == names_.end() ) {
         return 0;
     }
     
@@ -186,13 +165,11 @@ Geometry* GeometryContainer::removeGeometry(const int id)
     return itGeo->second;
 }
 
-bool GeometryContainer::deleteGeometry(const Identifier& name)
-{
+bool GeometryContainer::deleteGeometry(const Identifier& name) {
     // try to find the ID for the given name first
     //
     map<Identifier, int>::iterator itID = names_.find(name);
-    if( itID == names_.end() )
-    {
+    if ( itID == names_.end() ) {
         return false;
     }
 
@@ -201,16 +178,13 @@ bool GeometryContainer::deleteGeometry(const Identifier& name)
     return deleteGeometry(itID->second);
 }
 
-bool GeometryContainer::deleteGeometry(const int id)
-{
-    if( id <= 0 )
-    {
+bool GeometryContainer::deleteGeometry(const int id) {
+    if ( id <= 0 ) {
         return false;
     }
 
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return false;
     }
 
@@ -218,8 +192,7 @@ bool GeometryContainer::deleteGeometry(const int id)
     //
     const Identifier& strName = itGeo->second->getName();
     map<Identifier, int>::iterator itID = names_.find(strName);
-    if( itID == names_.end() )
-    {
+    if ( itID == names_.end() ) {
         return false;
     }
 
@@ -236,10 +209,8 @@ bool GeometryContainer::deleteGeometry(const int id)
     return true;
 }
 
-bool GeometryContainer::replaceGeometry(const Identifier& name, Geometry* geo)
-{
-    if( (geo == 0) || (name == "") )
-    {
+bool GeometryContainer::replaceGeometry(const Identifier& name, Geometry* geo) {
+    if ( (geo == 0) || (name == "") ) {
         return false;
     }
 
@@ -247,22 +218,18 @@ bool GeometryContainer::replaceGeometry(const Identifier& name, Geometry* geo)
     return replaceGeometry(id, geo);
 }
 
-bool GeometryContainer::replaceGeometry(const int id, Geometry* geo)
-{
-    if( (geo == 0) || (id == 0) )
-    {
+bool GeometryContainer::replaceGeometry(const int id, Geometry* geo) {
+    if ( (geo == 0) || (id == 0) ) {
         return false;
     }
     
     map<int, Geometry*>::iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return false;
     }
     
     Geometry* pOldGeo = itGeo->second;
-    if( initGeometry(geo, pOldGeo->getName(), id) == true )
-    {
+    if ( initGeometry(geo, pOldGeo->getName(), id) == true ) {
         delete pOldGeo;
         pOldGeo = 0;
         itGeo->second = geo;
@@ -282,47 +249,38 @@ bool GeometryContainer::replaceGeometry(const int id, Geometry* geo)
     return false;
 }
 
-Identifier GeometryContainer::getGeometryName(const int id) const
-{
+Identifier GeometryContainer::getGeometryName(const int id) const {
     map<int, Geometry*>::const_iterator itGeo = geos_.find(id);
-    if( itGeo == geos_.end() )
-    {
+    if ( itGeo == geos_.end() ) {
         return "";
     }
     return itGeo->second->getName();
 }
 
-int GeometryContainer::getGeometryID(const Identifier& name) const
-{
+int GeometryContainer::getGeometryID(const Identifier& name) const {
     map<Identifier, int>::const_iterator itID = names_.find(name);
-    if( itID == names_.end() )
-    {
+    if ( itID == names_.end() ) {
         return 0;
     }
     return itID->second;
 }
 
-bool GeometryContainer::containsGeometry(const Identifier& name) const
-{
+bool GeometryContainer::containsGeometry(const Identifier& name) const {
     const int id = getGeometryID(name);
     return containsGeometry(id);
 }
 
-bool GeometryContainer::containsGeometry(const int id) const
-{
+bool GeometryContainer::containsGeometry(const int id) const {
     map<int, Geometry*>::const_iterator itGeo = geos_.find(id);
-    if( itGeo != geos_.end() )
-    {
+    if ( itGeo != geos_.end() ) {
         return true;
     }
 
     return false;
 }
 
-void GeometryContainer::clear()
-{
-    for( map<int, Geometry*>::iterator itGeos = geos_.begin(); itGeos != geos_.end(); itGeos++ )
-    {
+void GeometryContainer::clear() {
+    for ( map<int, Geometry*>::iterator itGeos = geos_.begin(); itGeos != geos_.end(); itGeos++ ) {
         resetGeometry(itGeos->second);
     }
 
@@ -337,10 +295,8 @@ void GeometryContainer::clear()
     nextID_ = 1;
 }
 
-void GeometryContainer::clearDeleting()
-{
-    for( map<int, Geometry*>::iterator itGeos = geos_.begin(); itGeos != geos_.end(); itGeos++ )
-    {
+void GeometryContainer::clearDeleting() {
+    for ( map<int, Geometry*>::iterator itGeos = geos_.begin(); itGeos != geos_.end(); itGeos++ ) {
         delete itGeos->second;
         itGeos->second = 0;
     }

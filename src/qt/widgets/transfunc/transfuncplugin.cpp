@@ -27,22 +27,28 @@
  *                                                                    *
  **********************************************************************/
 
+//#define ALEXBOCKTRIALCODE
+
 #include "voreen/qt/widgets/transfunc/transfuncplugin.h"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QPainter>
-#include <QSplitter>
+
 #include <QFrame>
 #include <QGroupBox>
+#include <QHBoxLayout>
+#include <QPainter>
+#include <QSizePolicy>
+#include <QSplitter>
 #include <QTabWidget>
+#include <QVBoxLayout>
 
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
-#include "voreen/core/vis/processors/render/volumeraycaster.h"
-#include "voreen/core/vis/processors/render/slicerenderer.h"
+#include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/vis/processors/propertyset.h"
+#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
+#include "voreen/core/vis/processors/render/slicerenderer.h"
+#include "voreen/core/vis/processors/render/volumeraycaster.h"
 #include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
 
+#include "voreen/qt/widgets/thresholdwidget.h"
 #include "voreen/qt/widgets/transfunc/transfuncintensitygradientplugin.h"
 #include "voreen/qt/widgets/transfunc/transfuncintensityplugin.h"
 #include "voreen/qt/widgets/transfunc/transfuncintensitypetplugin.h"
@@ -50,159 +56,131 @@
 
 namespace voreen {
 
-
-TransFuncPlugin::TransFuncPlugin(QWidget* parent, MessageReceiver* msgReceiver, TransFuncProp* prop, Qt::Orientation widgetOrientation)
-    : WidgetPlugin(parent, msgReceiver),
-      prop_(prop),
-      showThresholdWidget_(true),
-      showRendererWidget_(true),
-      showEditorTypeWidget_(true),
-	  enabled_(false),
-      thresholdWidget_(0),
-      currentVolumeRenderer_(0),
-      widgetOrientation_(widgetOrientation)
+TransFuncPlugin::TransFuncPlugin(QWidget* parent, MessageReceiver* msgReceiver,
+                                 TransFuncProp* prop, Qt::Orientation widgetOrientation)
+    : WidgetPlugin(parent, msgReceiver)
+    , currentVolumeRenderer_(0)
+    , prop_(prop)
+    , widgetOrientation_(widgetOrientation)
+    , showRendererWidget_(true)
+    , msgReceiver_(msgReceiver)
 {
     setObjectName(tr("Transfer Function"));
     icon_ = QIcon(":/icons/transferfunc.png");
 
     if (prop_) {
-        msgIdent_ = prop->getIdent();
-        showThresholdWidget_ = prop_->getShowThreshold();
-    } else {
-        msgIdent_ = VolumeRenderer::setTransFunc_;
+      msgIdent_ = prop->getIdent();
+        for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+            transFuncEditor_.at(i)->setShowThresholdWidget(prop_->getShowThreshold());
     }
+      else
+        msgIdent_ = VolumeRenderer::setTransFunc_;
 }
 
 TransFuncPlugin::~TransFuncPlugin() {
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        delete transFuncEditor_.at(i);
+}
 
+void TransFuncPlugin::createWidgets() {
+    resize(300,300);
+
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+
+    vrendererCombo_ = new QComboBox(0);
+    if (showRendererWidget_)
+        mainLayout->addWidget(vrendererCombo_);
+  
+    transFuncEditorTab_ = new QTabWidget(this);
+
+#ifndef ALEXBOCKTRIALCODE
+    transFuncEditor_.push_back(new TransFuncEditorPlugin(this, msgReceiver_, currentVolumeRenderer_, prop_, widgetOrientation_));
+
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i){
+        transFuncEditor_.at(i)->createWidgets();
+        transFuncEditor_.at(i)->createConnections();
+        transFuncEditorTab_->addTab(transFuncEditor_.at(i) , "TransFunc");
+    }
+#endif
+   
+    mainLayout->addWidget(transFuncEditorTab_, 0, Qt::AlignTop);
+
+    setLayout(mainLayout);
+    
+    setEnabled(false);
+}
+
+void TransFuncPlugin::createConnections() {
+    connect(vrendererCombo_, SIGNAL(activated(int)), this, SLOT(setProcessor(int)));
+
+    // If there are no editors, nothing has to be done
+    if (transFuncEditor_.size() == 0)
+        return;
+
+    connect(transFuncEditorTab_, SIGNAL(currentChanged(int)), this, SLOT(setTab(int)));
+
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->createConnections();
 }
 
 void TransFuncPlugin::setShowThresholdWidget(bool show) {
-    showThresholdWidget_ = show;
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->setShowThresholdWidget(show);
 }
 
 void TransFuncPlugin::setShowEditorTypeWidget(bool show) {
-    showEditorTypeWidget_ = show;
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->setShowEditorTypeWidget(show);
 }
 
 void TransFuncPlugin::setShowRendererWidget(bool show) {
     showRendererWidget_ = show;
 }
 
-void TransFuncPlugin::createWidgets() {
-    resize(300,300);
-
-    QBoxLayout *mainLayout = new QVBoxLayout(this);
-
-    // Splitter between topwidget and bottomwidget
-    QSplitter* splitter = new QSplitter(Qt::Vertical, this);
-    splitter->setChildrenCollapsible(false);
-    mainLayout->addWidget(splitter);
-
-    // Top - MappingCanvas and Gradient
-    QWidget* topwidget = new QWidget(splitter);
-    QVBoxLayout* gridLayout = new QVBoxLayout(topwidget);
-    gridLayout->setMargin(0);
-    gridLayout->setSpacing(1);
-
-    vrendererCombo_ = new QComboBox(0);
-    if (showRendererWidget_)
-        gridLayout->addWidget(vrendererCombo_);
-    
-    editorType_ = new QComboBox(0);
-    if (showEditorTypeWidget_) 
-        gridLayout->addWidget(editorType_);
-    editorType_->addItem(tr("Intensity: Keys"));
-    editorType_->addItem(tr("Intensity: Gradient"));
-	editorType_->addItem(tr("Intensity: PET"));
-    
-    intensityPlugin_ = new TransFuncIntensityPlugin(0, msgReceiver_, widgetOrientation_);
-    intensityPlugin_->createWidgets();
-    intensityPlugin_->createConnections();
-    
-    intensityGradientPlugin_ = new TransFuncIntensityGradientPlugin(0, msgReceiver_, widgetOrientation_);
-    intensityGradientPlugin_->createWidgets();
-    intensityGradientPlugin_->createConnections();
-    
-	intensityPetPlugin_ = new TransFuncIntensityPetPlugin(0, msgReceiver_, widgetOrientation_);
-    intensityPetPlugin_->createWidgets();
-    intensityPetPlugin_->createConnections();
-
-    
-    editors_ = new QStackedWidget();
-    editors_->addWidget(intensityPlugin_);
-    editors_->addWidget(intensityGradientPlugin_);
-	editors_->addWidget(intensityPetPlugin_);
-
-    editors_->setContentsMargins(-8, -8, -8, -8);
-
-    gridLayout->addWidget(editors_);
-    
-    gridLayout->addSpacing(10);
-    
-    if (showThresholdWidget_) {
-        thresholdWidget_ = new ThresholdWidget(this);
-        gridLayout->addWidget(thresholdWidget_);
-    }
-
-    gridLayout->addStretch();
-    gridLayout->addStretch();
-
-    setLayout(mainLayout);
-}
-
-void TransFuncPlugin::createConnections() {
-    connect(editorType_, SIGNAL(activated(int)), this, SLOT(setEditor(int)));
-    connect(vrendererCombo_, SIGNAL(activated(int)), this, SLOT(setProcessor(int)));
-
-    if (showThresholdWidget_) {
-        connect(intensityPlugin_, SIGNAL(transferFunctionReset()), thresholdWidget_, SLOT(resetThresholds()));
-        connect(thresholdWidget_, SIGNAL(valuesChanged(int, int)), this, SLOT(setThresholds(int, int)));
-        connect(thresholdWidget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(switchInteractionMode(bool)) );
-    }
+void TransFuncPlugin::setThresholdWidget(ThresholdWidget* thresholdWidget) {
+    transFuncEditor_.at(transFuncEditorTab_->currentIndex())->setThresholdWidget(thresholdWidget);
 }
 
 void TransFuncPlugin::setProcessor(Processor* r) {
-	processors_.clear();
-    VolumeRaycaster* vrc = dynamic_cast<VolumeRaycaster*> (r);
-    SliceRendererBase* srb = dynamic_cast<SliceRendererBase*> (r);
-    if ( (r != 0) && (vrc || srb) ) {
-       processors_.push_back((VolumeRenderer*)r);
-	   enabled_ = true;
-	   setProcessor(0);
+	// Delete the currently used processors anyway
+    processors_.clear();
+
+    if (r == 0)
+        return;
+
+    // Add this processor if it is a VolumeRenderer and has a transfer function
+    VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(r);
+
+    // r is a VolumeRaycaster or a SliceRendererBase
+    if (vr && vr->getTransFunc()) {
+        processors_.push_back((VolumeRenderer*)r);
+        setProcessor(0);
     }
-}
+ }
 
 void TransFuncPlugin::setEvaluator(NetworkEvaluator* eval) {
 	processors_.clear();
 	vrendererCombo_->clear();
-	std::vector<Processor*> res = eval->getProcessors();
-    for (size_t i=0 ; i < res.size() ; ++i) {
-        VolumeRaycaster* vrc = dynamic_cast<VolumeRaycaster*>(res[i]);
-        SliceRendererBase* srb = dynamic_cast<SliceRendererBase*>(res[i]);
-        if (vrc || srb) {
-			vrendererCombo_->addItem(QString::fromStdString(res[i]->getClassName().getName()+" ("+res[i]->getTag().getName()+")"), 
-                QString::fromStdString(res[i]->getTag().getName()));
-            processors_.push_back((VolumeRenderer*)res[i]);
+
+    std::vector<Processor*> res = eval->getProcessors();
+    for (size_t i=0; i < res.size(); ++i) {
+        // Add this processor if it is a VolumeRenderer and has a transfer function
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(res[i]);
+        if (vr && vr->getTransFunc()) {
+			vrendererCombo_->addItem((res[i]->getClassName().getName() + " (" + res[i]->getTag().getName() + ")").c_str(), 
+                                     res[i]->getTag().getName().c_str());
+            processors_.push_back(vr);
         }
     }
+    
 	if (processors_.size() > 0) {
-		enabled_ = true;
 		setProcessor(0);
 		setMessageReceiver(processors_.at(0));
 	}
 }
 
-void TransFuncPlugin::setEnabled(bool b) {
-	enabled_ = b;
-}
-
 void TransFuncPlugin::setVisibleState(bool vis) {
     setVisible(vis);
-}
-
-void TransFuncPlugin::changeValue(TransFunc* /*tf*/) {
-
 }
 
 void TransFuncPlugin::removeProcessor(Processor* processor) {
@@ -218,106 +196,40 @@ void TransFuncPlugin::removeProcessor(Processor* processor) {
 		vrendererCombo_->removeItem(position);
 }
 
-void TransFuncPlugin::dataSourceChanged(Volume* newDataset) {
-    intensityPlugin_->dataSourceChanged(newDataset);
-    intensityGradientPlugin_->dataSourceChanged(newDataset);
-    intensityGradientPlugin_->clear();
-	intensityPetPlugin_->dataSourceChanged(newDataset);
-
-    LGL_ERROR;
-
-    int bits = newDataset->getBitsStored();
-    switch (bits) {
-        case 8:
-            scaleFactor_ = 1.0f/255.0f;
-            setSliderValues(0, 255);
-            break;
-        case 12:
-            scaleFactor_ = 1.0f/4095.0f;
-            setSliderValues(0, 4095);
-            break;
-        case 16:
-            scaleFactor_ = 1.0f/65535.0f;
-            setSliderValues(0, 65535);
-            break;
-        case 32:
-            scaleFactor_ = 1.0f/255.0f;
-            setSliderValues(0, 255);
-            break;
-    }
-}
-
-void TransFuncPlugin::setSliderValues(int lowerValue, int upperValue) {
-    if (thresholdWidget_) {
-        thresholdWidget_->setMinValue(lowerValue);
-        thresholdWidget_->setMaxValue(upperValue);
-        thresholdWidget_->setValues(lowerValue, upperValue);
-        setThresholds(lowerValue, upperValue);
-    }
+void TransFuncPlugin::dataSourceChanged(Volume* newDataSource) {
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->dataSourceChanged(newDataSource);
 }
 
 void TransFuncPlugin::updateTransferFunction() {
-    //re-send the TF msg:
-    setEditor(editors_->currentIndex());
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->updateTransferFunction();
 }
 
-
 void TransFuncPlugin::setThresholds(int lower, int upper) {
-        if (processors_.size() > 0){
-            if (currentVolumeRenderer_) {
-                if (prop_) {       
-                    currentVolumeRenderer_->postMessage(
-                        new FloatMsg(VolumeRenderer::setLowerThreshold_,lower*scaleFactor_),prop_->getMsgDestination());
-                    currentVolumeRenderer_->postMessage(
-                        new FloatMsg(VolumeRenderer::setUpperThreshold_,upper*scaleFactor_),prop_->getMsgDestination());
-                } else {
-                    currentVolumeRenderer_->postMessage(
-                        new FloatMsg(VolumeRenderer::setLowerThreshold_,lower*scaleFactor_),target_);
-                    currentVolumeRenderer_->postMessage(
-                        new FloatMsg(VolumeRenderer::setUpperThreshold_,upper*scaleFactor_),target_);
-                }
-           }
-    }
+    if ( (processors_.size() > 0) && (currentVolumeRenderer_))
+        for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+            transFuncEditor_.at(i)->setThresholds(lower, upper);
 
-    intensityPlugin_->setThresholds(lower,upper);
-    intensityGradientPlugin_->setThresholds(lower,upper);
-    if (isVisible())
+    if ( isVisible() )
         repaintCanvases();
 }
 
 
 void TransFuncPlugin::switchInteractionMode(bool on) {
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->switchInteractionMode(on);
+
     if (on)
 		startTracking();
 	else
 		stopTracking();
 }
 
-void TransFuncPlugin::setEditor(int i) {
-    editors_->setCurrentIndex(i);
-
-    if (i==0)
-        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, intensityPlugin_->getTransFunc()), target_);
-    else if (i==1) {
-        TransFunc* tf = intensityGradientPlugin_->getTransFunc();
-        if (!tf)
-            tf = intensityPlugin_->getTransFunc();
-        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf), target_);
-    }
-	 else if (i==2) {
-//        TransFunc* tf = intensityPetPlugin_->getTransFunc();
-//        if (!tf)
-            TransFunc* tf = intensityPlugin_->getTransFunc();
-        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf), target_);
-    }
-}
-
 void TransFuncPlugin::setMessageReceiver(MessageReceiver* receiver) {
-	msgReceiver_ = receiver;
-	intensityPlugin_->setMessageReceiver(receiver);
-	intensityPlugin_->setReceiver(receiver);
-    intensityGradientPlugin_->setMessageReceiver(receiver);
-	intensityPetPlugin_->setMessageReceiver(receiver);
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        transFuncEditor_.at(i)->setMessageReceiver(receiver);
+    msgReceiver_ = receiver;
 }
 
 void TransFuncPlugin::findAndSetProcessor(Processor* r) {
@@ -346,43 +258,351 @@ void TransFuncPlugin::findAndSetProcessor(Processor* r) {
 	if (found)
 		setProcessor(position);
 	else {
-		VolumeRaycaster* vrc = dynamic_cast<VolumeRaycaster*>(r);
-        SliceRendererBase* srb = dynamic_cast<SliceRendererBase*>(r);
-        if (vrc || srb) {
+        // Add this processor if it is a VolumeRenderer and has a transfer function
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(r);
+        if (vr && vr->getTransFunc()) {
 			vrendererCombo_->addItem(QString::fromStdString(r->getClassName().getName()+" ("+r->getTag().getName()+")"), 
                 QString::fromStdString(r->getTag().getName()));
             processors_.push_back((VolumeRenderer*)r);
-			setEnabled(true);
 			setProcessor(processors_.size()-1);
 		}
+        else
+            setEnabled(false);
 	}
 }
 
-void  TransFuncPlugin::setProcessor(int i) {
-	if (enabled_==false)
-		return;
+void TransFuncPlugin::setProcessor(int i) {
+    setEnabled(true);
 	if (processors_.size() < (size_t)i+1)
 		return;
 	if (processors_.at(i) == 0)
 		return;
-    currentVolumeRenderer_ = processors_[i];
-	
-	//if ( (thresholdWidget_) && (currentVolumeRenderer_->getCurrentDataset()) ) {
-    if ( (thresholdWidget_) && (currentVolumeRenderer_->getVolumeHandle()) ) {
-	  //int bits = currentVolumeRenderer_->getCurrentDataset()->getVolume()->getBitsStored();
-      int bits = currentVolumeRenderer_->getVolumeHandle()->getVolume()->getBitsStored();
-      float lowerT = currentVolumeRenderer_->getLowerThreshold();
-      float upperT = currentVolumeRenderer_->getUpperThreshold();
+    currentVolumeRenderer_ = processors_.at(i);
+/*
+    for (size_t k = 0 ; k < transFuncEditor_.size() ; ++k) {
+        delete transFuncEditor_.at(k);
+        transFuncEditorTab_->removeTab(k);
+    }
+*/
+    //transFuncEditor_.clear();
 
-	  switch (bits) {
-			case 8:
-				scaleFactor_ = 1.0f/255.0f;
+//            TransFunc* tf = currentVolumeRenderer_->getTransFunc(0);
+//   transFuncEditor_.push_back(new TransFuncEditorPlugin(this, msgReceiver_, currentVolumeRenderer_, prop_, widgetOrientation_));
+
+//    while (tf != 0){
+//        tf = currentVolumeRenderer_->getTransFunc(++k);
+//        transFuncEditor_.push_back(new TransFuncEditorPlugin(this, msgReceiver_, currentVolumeRenderer_, prop_, widgetOrientation_));
+//    }
+#ifdef ALEXBOCKTRIALCODE
+    for (int k = 0 ; ; ++k) {
+        TransFunc* tf = currentVolumeRenderer_->getTransFunc(k);
+
+        std::cout << tf << std::endl;
+
+        if (tf == 0)
+            break;
+        else {
+            TransFuncEditorPlugin* newPlugin = new TransFuncEditorPlugin(this, msgReceiver_, currentVolumeRenderer_, prop_, widgetOrientation_);
+            transFuncEditor_.push_back(newPlugin);
+
+            newPlugin->createWidgets();
+//            newPlugin->createConnections();
+
+            transFuncEditorTab_->addTab(newPlugin , "TransFunc");
+            
+/*
+            if (newPlugin->getShowThresholdWidget()) {
+                connect(newPlugin->getIntensityPlugin(), SIGNAL(transferFunctionReset()), newPlugin->getThresholdWidget(), SLOT(resetThresholds()));
+                connect(newPlugin->getThresholdWidget(), SIGNAL(valuesChanged(int, int)), this, SLOT(setThresholds(int, int)));
+                connect(newPlugin->getThresholdWidget(), SIGNAL(sliderPressedChanged(bool)), this, SLOT(switchInteractionMode(bool)) );
+            }
+*/
+        }
+
+    }
+#endif
+
+    for (size_t j = 0 ; j < transFuncEditor_.size() ; ++j) {
+        transFuncEditor_.at(j)->setCurrentVolumeRenderer(currentVolumeRenderer_);
+        transFuncEditor_.at(j)->setMessageReceiver(currentVolumeRenderer_);
+    }
+	
+	setMessageReceiver(currentVolumeRenderer_);
+
+    target_ = vrendererCombo_->itemData(i).toString().toStdString();
+	vrendererCombo_->setCurrentIndex(i);
+
+    for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i) {
+        transFuncEditor_.at(i)->setTarget(target_);
+        transFuncEditor_.at(i)->getIntensityPlugin()->setTarget(target_);
+        transFuncEditor_.at(i)->getIntensityGradientPlugin()->setTarget(target_);
+        transFuncEditor_.at(i)->getIntensityPetPlugin()->setTarget(target_);
+
+        TransFunc* tf = currentVolumeRenderer_->getTransFunc(0);
+    
+        if (tf == 0) {
+        }
+        else {
+            TransFuncIntensity* tfik = dynamic_cast<TransFuncIntensity*>(tf);
+            TransFuncIntensityGradientPrimitiveContainer* tfig = dynamic_cast<TransFuncIntensityGradientPrimitiveContainer*>(tf);
+
+            if (tfik) {
+                transFuncEditor_.at(i)->getIntensityPlugin()->setTransFunc(tfik);
+                //transFuncEditor_.at(i)->setEditor(0);   //rückschalten des editors
+            }
+            else if (tfig) {
+                transFuncEditor_.at(i)->getIntensityGradientPlugin()->setTransFunc(tfig);
+                //transFuncEditor_.at(i)->setEditor(1);
+            }
+        }
+        transFuncEditor_.at(i)->updateTransferFunction();
+    }
+}
+
+TransFuncIntensityPlugin* TransFuncPlugin::getIntensityPlugin() const {
+    return transFuncEditor_.at(transFuncEditorTab_->currentIndex())->getIntensityPlugin();
+}
+
+TransFuncIntensityGradientPlugin* TransFuncPlugin::getIntensityGradientPlugin() const {
+    return transFuncEditor_.at(transFuncEditorTab_->currentIndex())->getIntensityGradientPlugin();
+}
+
+TransFuncIntensityPetPlugin* TransFuncPlugin::getIntensityPetPlugin() const {
+    return transFuncEditor_.at(transFuncEditorTab_->currentIndex())->getIntensityPetPlugin();
+}
+
+void TransFuncPlugin::setEditor(int /*index*/) {
+    //transFuncEditor_.at(transFuncEditorTab_->currentIndex())->setEditor(index);
+    //for (size_t i = 0 ; i < transFuncEditor_.size() ; ++i)
+        //transFuncEditor_.at(i)->setEditor(index);
+}
+
+void TransFuncPlugin::setTab(int index) {
+    transFuncEditor_.at(index)->updateTransferFunction();
+}
+
+//-----------------------------------------------------------------------------
+
+TransFuncEditorPlugin::TransFuncEditorPlugin(QWidget* parent, MessageReceiver* msgReceiver,
+                                             VolumeRenderer* processor, TransFuncProp* prop,
+                                             Qt::Orientation widgetOrientation)
+    : WidgetPlugin(parent, msgReceiver),
+      currentVolumeRenderer_(processor),
+      widgetOrientation_(widgetOrientation),
+      prop_(prop),
+      thresholdWidget_(0),
+      showThresholdWidget_(true),
+      showEditorTypeWidget_(true)
+{}
+
+TransFuncEditorPlugin::~TransFuncEditorPlugin() {
+}
+
+void TransFuncEditorPlugin::createWidgets() {
+    QVBoxLayout* gridLayout = new QVBoxLayout(this);
+
+    editorType_ = new QComboBox(0);
+    if (showEditorTypeWidget_) 
+        gridLayout->addWidget(editorType_);
+    editorType_->addItem(tr("Intensity: Keys"));
+    editorType_->addItem(tr("Intensity: Gradient"));
+	editorType_->addItem(tr("Intensity: PET"));
+    
+    intensityPlugin_ = new TransFuncIntensityPlugin(0, msgReceiver_, widgetOrientation_);
+    intensityPlugin_->createWidgets();
+    intensityPlugin_->createConnections();
+    
+    intensityGradientPlugin_ = new TransFuncIntensityGradientPlugin(0, msgReceiver_, widgetOrientation_);
+    intensityGradientPlugin_->createWidgets();
+    intensityGradientPlugin_->createConnections();
+    
+	intensityPetPlugin_ = new TransFuncIntensityPetPlugin(0, msgReceiver_, widgetOrientation_);
+    intensityPetPlugin_->createWidgets();
+    intensityPetPlugin_->createConnections();
+
+    editors_ = new QStackedWidget();
+    editors_->addWidget(intensityPlugin_);
+    editors_->addWidget(intensityGradientPlugin_);
+	editors_->addWidget(intensityPetPlugin_);
+
+    editors_->setContentsMargins(-8, -8, -8, -8);
+
+    gridLayout->addWidget(editors_);
+    
+    gridLayout->addSpacing(10);
+    
+    if (showThresholdWidget_) {
+        thresholdWidget_ = new ThresholdWidget(this);
+        gridLayout->addWidget(thresholdWidget_);
+    }
+
+    gridLayout->addStretch();
+    gridLayout->addStretch();
+
+    setLayout(gridLayout);
+}
+
+void TransFuncEditorPlugin::createConnections() {
+    connect(editorType_, SIGNAL(activated(int)), this, SLOT(setEditor(int)));
+
+    if (showThresholdWidget_) {
+        connect(intensityPlugin_, SIGNAL(transferFunctionReset()), thresholdWidget_, SLOT(resetThresholds()));
+        connect(thresholdWidget_, SIGNAL(valuesChanged(int, int)), this, SLOT(setThresholds(int, int)));
+        connect(thresholdWidget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(switchInteractionMode(bool)) );
+    }
+}
+
+void TransFuncEditorPlugin::dataSourceChanged(Volume* newDataSource) {
+    intensityPlugin_->dataSourceChanged(newDataSource);
+    intensityGradientPlugin_->dataSourceChanged(newDataSource);
+    intensityGradientPlugin_->clear();
+	intensityPetPlugin_->dataSourceChanged(newDataSource);
+
+    LGL_ERROR;
+
+    int bits = newDataSource->getBitsStored();
+    switch (bits) {
+        case 8:
+            setScaleFactor(1.0f/255.0f);
+            setSliderValues(0, 255);
+            break;
+        case 12:
+            setScaleFactor(1.0f/4095.0f);
+            setSliderValues(0, 4095);
+            break;
+        case 16:
+            setScaleFactor(1.0f/65535.0f);
+            setSliderValues(0, 65535);
+            break;
+        case 32:
+            setScaleFactor(1.0f/255.0f);
+            setSliderValues(0, 255);
+            break;
+    }
+}
+
+void TransFuncEditorPlugin::setEditor(int i) {
+    editors_->setCurrentIndex(i);
+
+    if (i==0)
+        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, intensityPlugin_->getTransFunc()), target_);
+    else if (i==1) {
+        TransFunc* tf = intensityGradientPlugin_->getTransFunc();
+        if (!tf)
+            tf = intensityPlugin_->getTransFunc();
+        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf), target_);
+    }
+	 else if (i==2) {
+        TransFunc* tf = intensityPetPlugin_->getTransFunc();
+        if (!tf)
+            tf = intensityPlugin_->getTransFunc();
+        postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf), target_);
+    }
+}
+
+void TransFuncEditorPlugin::setThresholdWidget(ThresholdWidget* thresholdWidget) {
+    thresholdWidget_ = thresholdWidget;
+}
+
+void TransFuncEditorPlugin::setShowThresholdWidget(bool show) {
+    showThresholdWidget_ = show;
+}
+
+void TransFuncEditorPlugin::setShowEditorTypeWidget(bool show) {
+    showEditorTypeWidget_ = show;
+}
+
+TransFuncIntensityGradientPlugin* TransFuncEditorPlugin::getIntensityGradientPlugin() {
+    return intensityGradientPlugin_;
+}
+
+TransFuncIntensityPlugin* TransFuncEditorPlugin::getIntensityPlugin() {
+    return intensityPlugin_;
+}
+
+TransFuncIntensityPetPlugin* TransFuncEditorPlugin::getIntensityPetPlugin() {
+    return intensityPetPlugin_;
+}
+
+TransFuncProp* TransFuncEditorPlugin::getTransFuncProp() {
+    return prop_;
+}
+
+void TransFuncEditorPlugin::setSliderValues(int lowerValue, int upperValue) {
+    if (thresholdWidget_) {
+        thresholdWidget_->setMinValue(lowerValue);
+        thresholdWidget_->setMaxValue(upperValue);
+        thresholdWidget_->setValues(lowerValue, upperValue);
+        setThresholds(lowerValue, upperValue);
+    }
+}
+
+void TransFuncEditorPlugin::updateTransferFunction() {
+    //re-send the TF msg:
+    setEditor(editors_->currentIndex());
+}
+
+void TransFuncEditorPlugin::switchInteractionMode(bool on) {
+    if (on)
+		startTracking();
+	else
+		stopTracking();
+}
+
+void TransFuncEditorPlugin::setThresholds(int lower, int upper) {
+    if (currentVolumeRenderer_) {
+        if (prop_) {       
+            currentVolumeRenderer_->postMessage(
+                new FloatMsg(VolumeRenderer::setLowerThreshold_,lower*scaleFactor_),prop_->getMsgDestination());
+            currentVolumeRenderer_->postMessage(
+                new FloatMsg(VolumeRenderer::setUpperThreshold_,upper*scaleFactor_),prop_->getMsgDestination());
+        } else {
+            currentVolumeRenderer_->postMessage(
+                new FloatMsg(VolumeRenderer::setLowerThreshold_,lower*scaleFactor_),target_);
+            currentVolumeRenderer_->postMessage(
+                new FloatMsg(VolumeRenderer::setUpperThreshold_,upper*scaleFactor_),target_);
+        }
+
+    intensityPlugin_->setThresholds(lower, upper);
+    intensityGradientPlugin_->setThresholds(lower, upper);
+
+    if ( isVisible() )
+        repaintCanvases();
+    }
+}
+
+void TransFuncEditorPlugin::setMessageReceiver(MessageReceiver* receiver) {
+	msgReceiver_ = receiver;
+	intensityPlugin_->setMessageReceiver(receiver);
+	intensityPlugin_->setReceiver(receiver);
+    intensityGradientPlugin_->setMessageReceiver(receiver);
+    intensityGradientPlugin_->setReceiver(receiver);
+	intensityPetPlugin_->setMessageReceiver(receiver);
+    intensityPetPlugin_->setReceiver(receiver);
+}
+
+ThresholdWidget* TransFuncEditorPlugin::getThresholdWidget() {
+    return thresholdWidget_;
+}
+
+void TransFuncEditorPlugin::setCurrentVolumeRenderer(VolumeRenderer* renderer) {
+    currentVolumeRenderer_ = renderer;
+
+    if ( (thresholdWidget_) && (currentVolumeRenderer_->getVolumeHandle()) ) {
+        //int bits = currentVolumeRenderer_->getCurrentDataset()->getVolume()->getBitsStored();
+        int bits = currentVolumeRenderer_->getVolumeHandle()->getVolume()->getBitsStored();
+        float lowerT = currentVolumeRenderer_->getLowerThreshold();
+        float upperT = currentVolumeRenderer_->getUpperThreshold();
+
+        switch (bits) {
+            case 8:
+                scaleFactor_ = 1.0f/255.0f;
 				//setSliderValues(0, 255);
 				thresholdWidget_->setMinValue(0);
 				thresholdWidget_->setMaxValue(255);
             	intensityPlugin_->processorChanged(bits); 
 			    //setThresholds(lowerT * 255.f,upperT * 255.f); 
-				thresholdWidget_->setValues(lowerT * 255.f,upperT * 255.f);  
+				thresholdWidget_->setValues((int)(lowerT * 255.f), (int)(upperT * 255.f));
 		    	break;
 			case 12:
 				scaleFactor_ = 1.0f/4095.0f;
@@ -391,14 +611,14 @@ void  TransFuncPlugin::setProcessor(int i) {
 				thresholdWidget_->setMaxValue(4095);
 				intensityPlugin_->processorChanged(bits); 
 			    //setThresholds(lowerT * 4095.f,upperT * 4095.f); 
-				thresholdWidget_->setValues(lowerT * 4095.f,upperT * 4095.f);  
+				thresholdWidget_->setValues((int)(lowerT * 4095.f), (int)(upperT * 4095.f));
 		       	break;
 			case 16:
 				scaleFactor_ = 1.0f/65535.0f;
 				//setSliderValues(0, 65535);
 				thresholdWidget_->setMinValue(0);
 				thresholdWidget_->setMaxValue(65535);
-		        thresholdWidget_->setValues(lowerT * 65535.f,upperT * 65535.f); 				
+		        thresholdWidget_->setValues((int)(lowerT * 65535.f), (int)(upperT * 65535.f));
 		    	intensityPlugin_->processorChanged(bits); 
 				break;
 			case 32:
@@ -406,55 +626,24 @@ void  TransFuncPlugin::setProcessor(int i) {
 				//setSliderValues(0, 255);
 				thresholdWidget_->setMinValue(0);
 				thresholdWidget_->setMaxValue(255);
-		        thresholdWidget_->setValues(lowerT * 255.f,upperT * 255.f); 				
+		        thresholdWidget_->setValues((int)(lowerT * 255.f), (int)(upperT * 255.f));
 				intensityPlugin_->processorChanged(bits); 
 				break;
 		}
-	}
-
-
-	setMessageReceiver(currentVolumeRenderer_);
-    TransFunc* tf = currentVolumeRenderer_->getTransFunc();
-    
-    QVariant var = vrendererCombo_->itemData(i);
-	vrendererCombo_->setCurrentIndex(i);
-    QString str = var.toString();
-    target_ = str.toStdString();
-    intensityGradientPlugin_->setTarget(target_);
-    intensityPlugin_->setTarget(target_);
-    
-    if (tf == 0) {
-        //intensityPlugin_->setStandardFunc();
-        //intensityGradientPlugin_->clear();
-        //setEditor(0);
-    }
-    else {
-        TransFuncIntensityKeys* tfik = dynamic_cast<TransFuncIntensityKeys*>(tf);
-        TransFuncIntensityGradientPrimitiveContainer* tfig = dynamic_cast<TransFuncIntensityGradientPrimitiveContainer*>(tf);
-        
-        if (tfik) {
-            intensityPlugin_->setTransFunc(tfik);
-            setEditor(0);
-        }
-        else if (tfig) {
-            intensityGradientPlugin_->setTransFunc(tfig);
-            setEditor(1);
-        }
-    }
+    } // if ( (thresholdWidget_) && (currentVolumeRenderer_->getVolumeHandle()) )
 }
 
-TransFuncIntensityPlugin* TransFuncPlugin::getIntensityPlugin() const {
-    return intensityPlugin_;
+void TransFuncEditorPlugin::setTarget(Identifier target) {
+    target_ = target;
 }
 
-TransFuncIntensityGradientPlugin* TransFuncPlugin::getIntensityGradientPlugin() const {
-    return intensityGradientPlugin_;
+void TransFuncEditorPlugin::setScaleFactor(float factor) {
+    scaleFactor_ = factor;
 }
 
-TransFuncIntensityPetPlugin* TransFuncPlugin::getIntensityPetPlugin() const {
-    return intensityPetPlugin_;
+bool TransFuncEditorPlugin::getShowThresholdWidget() {
+    return showThresholdWidget_;
 }
 
 
 } // namespace voreen
-

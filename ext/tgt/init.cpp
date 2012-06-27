@@ -53,15 +53,14 @@
 namespace tgt {
 
 void init(InitFeature::Features featureset) {
-
     if (featureset & InitFeature::SHADER_MANAGER) {
         featureset = (InitFeature::Features) (featureset | InitFeature::GPU_PROPERTIES | InitFeature::FILE_SYSTEM);
     }
+
     if (featureset & InitFeature::TEXTURE_MANAGER) {
         featureset = (InitFeature::Features) (featureset | InitFeature::GPU_PROPERTIES | InitFeature::FILE_SYSTEM);
     }
-    
-    
+
     if (featureset & InitFeature::LOG_MANAGER) {
         Singleton<LogManager>::init(new LogManager());
         ConsoleLog* log = new ConsoleLog();

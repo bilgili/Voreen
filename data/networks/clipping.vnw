@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<ProcessorNetwork version="2">
+    <MetaData>
+        <RptAggregationItems />
+    </MetaData>
+    <Settings reuseTCTargets="false" />
+    <Processor type="Miscellaneous.Canvas" name="Canvas" id="0">
+        <MetaData>
+            <RptProcessorItem x="-180" y="316" />
+        </MetaData>
+        <Property id="set.Coarseness" type="IntProp" autochange="true" value="1" />
+        <Property id="switch.coarseness" type="BoolProp" value="false" />
+    </Processor>
+    <Processor type="GeometryRenderer.GeometryProcessor" name="GeometryProcessor" id="1">
+        <MetaData>
+            <RptProcessorItem x="-292" y="6" />
+        </MetaData>
+        <Outport type="image.outport">
+            <Processor id="12" port="image.inputs" order="0" />
+        </Outport>
+    </Processor>
+    <Processor type="PostProcessor.Background" name="Background" id="2">
+        <MetaData>
+            <RptProcessorItem x="-182" y="213" />
+        </MetaData>
+        <Property id="set.backgroundModeAsString" type="EnumProp" value="Gradient" />
+        <Property id="set.backgroundFirstColor" type="ColorProp" r="0.756863" g="0.756863" b="0.756863" a="1.000000" />
+        <Property id="set.backgroundSecondColor" type="ColorProp" r="0.980392" g="0.980392" b="0.980392" a="1.000000" />
+        <Property id="set.backgroundAngle" type="IntProp" value="180" />
+        <Property id="set.backgroundfilenameAsString" type="FileDialogProp" value="" caption="" directory="" filefilter="" />
+        <Property id="set.backgroundtile" type="FloatProp" value="1.000000" />
+        <Outport type="image.output">
+            <Processor id="0" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.GeomLightWidget" name="GeomLightWidget" id="3">
+        <MetaData>
+            <RptProcessorItem x="-473" y="6" />
+        </MetaData>
+        <Property id="set.shadowLightPos.x" type="FloatProp" value="2.255270" />
+        <Property id="set.shadowLightPos.y" type="FloatProp" value="1.288031" />
+        <Property id="set.shadowLightPos.z" type="FloatProp" value="1.625947" />
+        <Property id="set.showLightWidget" type="BoolProp" autochange="true" value="true" />
+        <Outport type="coprocessor.light">
+            <Processor id="1" port="coprocessor.geometryrenderers" order="0" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.BoundingBox" name="BoundingBox" id="4">
+        <MetaData>
+            <RptProcessorItem x="-464" y="-63" />
+        </MetaData>
+        <Property id="set.BoundingBoxWidth" type="FloatProp" value="1.000000" />
+        <Property id="set.BoundingBoxStippleFactor" type="IntProp" value="1" />
+        <Property id="set.BoundingBoxStipplePattern" type="IntProp" value="65535" />
+        <Property id="set.BoundingboxColor" type="ColorProp" r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        <Property id="set.BoundingBoxShowGrid" type="BoolProp" value="true" />
+        <Property id="set.BoundingBoxTilesX" type="IntProp" value="10" />
+        <Property id="set.BoundingBoxTilesY" type="IntProp" value="10" />
+        <Property id="set.BoundingBoxTilesZ" type="IntProp" value="10" />
+        <Outport type="coprocessor.boundingbox">
+            <Processor id="1" port="coprocessor.geometryrenderers" order="1" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSelector" name="VolumeSelector" id="5">
+        <MetaData>
+            <RptProcessorItem x="-315" y="-502" />
+        </MetaData>
+        <Property id="set.currentTimestep" type="IntProp" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="9" port="volumehandle.volumehandle" />
+            <Processor id="10" port="volumehandle.volumehandle" />
+            <Processor id="11" port="volumehandle.volumehandle" />
+            <Processor id="13" port="volumehandle.volumehandle" />
+            <Processor id="14" port="volumehandle.volumehandle" />
+            <Processor id="15" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="6">
+        <MetaData>
+            <RptProcessorItem x="-320" y="-602" />
+        </MetaData>
+        <Outport type="volumeset.volumeset">
+            <Processor id="5" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="GeometryRenderer.ClippingWidget" name="ClippingWidget" id="7">
+        <MetaData>
+            <RptProcessorItem x="-468" y="82" />
+        </MetaData>
+        <Property id="set.ClipSliceColor" type="ColorProp" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
+        <Property id="switch.ClipXLock" type="BoolProp" value="false" />
+        <Property id="switch.ClipYLock" type="BoolProp" value="false" />
+        <Property id="switch.ClipZLock" type="BoolProp" value="false" />
+        <Outport type="coprocessor.clipping">
+            <Processor id="1" port="coprocessor.geometryrenderers" order="2" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.CoarsenessRenderer" name="CoarsenessRenderer" id="8">
+        <MetaData>
+            <RptProcessorItem x="-294" y="-97" />
+        </MetaData>
+        <Property id="set.Coarseness" type="IntProp" autochange="true" value="4" />
+        <Property id="switch.coarseness" type="BoolProp" value="false" />
+        <Outport type="image.outport">
+            <Processor id="1" port="image.inport" />
+        </Outport>
+    </Processor>
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="9">
+        <MetaData>
+            <RptProcessorItem x="-250" y="-309" />
+        </MetaData>
+        <Property id="set.jitterEntryParams" type="BoolProp" value="false" />
+        <Property id="set.scaleX" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleY" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleZ" type="FloatProp" value="1.000000" />
+        <Property id="set.translationX" type="FloatProp" value="0.000000" />
+        <Property id="set.translationY" type="FloatProp" value="0.000000" />
+        <Property id="set.translationZ" type="FloatProp" value="0.000000" />
+        <Outport type="image.entrypoints">
+            <Processor id="10" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="10" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="10">
+        <MetaData>
+            <RptProcessorItem x="-299" y="-214" />
+        </MetaData>
+        <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
+        <Property id="set.TransferFunction" type="TransFuncProp">
+            <Marker source="0.000000" dest="0.000000" r="0" g="0" b="0" a="0" />
+            <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
+        </Property>
+        <Property id="set.masking" type="EnumProp" value="Thresholding" />
+        <Property id="set.gradient" type="EnumProp" value="Forward Differences" />
+        <Property id="set.classification" type="EnumProp" value="Transfer Function" />
+        <Property id="set.shading" type="EnumProp" value="Phong (Full)" />
+        <Property id="set.compositing" type="EnumProp" value="DVR" />
+        <Property id="" type="EnumProp" value="DVR" />
+        <Property id="" type="EnumProp" value="DVR" />
+        <Outport type="image.output">
+            <Processor id="8" port="image.inport" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="11">
+        <MetaData>
+            <RptProcessorItem x="-104" y="-214" />
+        </MetaData>
+        <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
+        <Property id="set.TransferFunction" type="TransFuncProp">
+            <Marker source="0.302198" dest="0.000000" r="78" g="86" b="229" a="0" />
+            <Marker source="0.368132" dest="1.000000" r="88" g="94" b="211" a="255" />
+            <Marker source="0.472527" dest="0.000000" r="88" g="101" b="217" a="0" />
+        </Property>
+        <Property id="set.masking" type="EnumProp" value="Thresholding" />
+        <Property id="set.gradient" type="EnumProp" value="Forward Differences" />
+        <Property id="set.classification" type="EnumProp" value="Transfer Function" />
+        <Property id="set.shading" type="EnumProp" value="Phong (Full)" />
+        <Property id="set.compositing" type="EnumProp" value="DVR" />
+        <Property id="" type="EnumProp" value="DVR" />
+        <Property id="" type="EnumProp" value="DVR" />
+        <Outport type="image.output">
+            <Processor id="16" port="image.inport" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+    <Processor type="PostProcessor.Combine" name="Combine PP" id="12">
+        <MetaData>
+            <RptProcessorItem x="-182" y="110" />
+        </MetaData>
+        <Property id="Combine.set.blendMode" type="EnumProp" value="Depth dependent" />
+        <Property id="Combine.set.firstModifyColor" type="ColorProp" autochange="true" r="1.000000" g="0.000000" b="0.000000" a="1.000000" />
+        <Property id="Combine.set.secondModifyColor" type="ColorProp" autochange="true" r="0.000000" g="1.000000" b="0.000000" a="1.000000" />
+        <Property id="Combine.set.blendFactor" type="FloatProp" autochange="true" value="0.000000" />
+        <Property id="set.backgroundColor" type="ColorProp" autochange="true" r="0.000000" g="0.000000" b="0.000000" a="0.000000" />
+        <Outport type="image.output">
+            <Processor id="2" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="13">
+        <MetaData>
+            <RptProcessorItem x="-529" y="-211" />
+        </MetaData>
+        <Property id="set.UseClipping" type="BoolProp" value="true" />
+        <Property id="switch.virtualClipplane" type="BoolProp" value="false" />
+        <Property id="set.virtualClipplane" type="FloatVec4Prop" x="0.200000" y="0.400000" z="1.000000" w="1.000000" />
+        <Property id="set.LeftClipPlane" type="IntProp" value="0" />
+        <Property id="set.RightClipPlane" type="IntProp" value="0" />
+        <Property id="set.BottomClipPlane" type="IntProp" value="43" />
+        <Property id="set.TopClipPlane" type="IntProp" value="26" />
+        <Property id="set.FrontClipPlane" type="IntProp" value="0" />
+        <Property id="set.BackClipPlane" type="IntProp" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="4" port="coprocessor.proxygeometry" />
+            <Processor id="3" port="coprocessor.proxygeometry" />
+            <Processor id="7" port="coprocessor.proxygeometry" />
+            <Processor id="9" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="14">
+        <MetaData>
+            <RptProcessorItem x="-514" y="-402" />
+        </MetaData>
+        <Property id="set.UseClipping" type="BoolProp" value="false" />
+        <Property id="switch.virtualClipplane" type="BoolProp" value="false" />
+        <Property id="set.virtualClipplane" type="FloatVec4Prop" x="0.200000" y="0.400000" z="1.000000" w="1.000000" />
+        <Property id="set.LeftClipPlane" type="IntProp" value="0" />
+        <Property id="set.RightClipPlane" type="IntProp" value="0" />
+        <Property id="set.BottomClipPlane" type="IntProp" value="43" />
+        <Property id="set.TopClipPlane" type="IntProp" value="26" />
+        <Property id="set.FrontClipPlane" type="IntProp" value="0" />
+        <Property id="set.BackClipPlane" type="IntProp" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="15" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="15">
+        <MetaData>
+            <RptProcessorItem x="-84" y="-407" />
+        </MetaData>
+        <Property id="set.jitterEntryParams" type="BoolProp" value="false" />
+        <Property id="set.scaleX" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleY" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleZ" type="FloatProp" value="1.000000" />
+        <Property id="set.translationX" type="FloatProp" value="0.000000" />
+        <Property id="set.translationY" type="FloatProp" value="0.000000" />
+        <Property id="set.translationZ" type="FloatProp" value="0.000000" />
+        <Outport type="image.entrypoints">
+            <Processor id="11" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="11" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.CoarsenessRenderer" name="CopyToScreenRenderer" id="16">
+        <MetaData>
+            <RptProcessorItem x="-99" y="-95" />
+        </MetaData>
+        <Property id="set.Coarseness" type="IntProp" autochange="true" value="4" />
+        <Property id="switch.coarseness" type="BoolProp" value="false" />
+        <Outport type="image.outport">
+            <Processor id="12" port="image.inputs" order="1" />
+        </Outport>
+    </Processor>
+    <VolumeSetContainer>
+        <VolumeSet name="C:/voreen/data/nucleon.raw">
+            <VolumeSeries name="unknown" modality="unknown">
+                <VolumeHandle timestep="0.000000">
+                    <Origin filename="C:/voreen/data/nucleon.dat" seriesname="unknown" timestep="0.000000" />
+                </VolumeHandle>
+            </VolumeSeries>
+        </VolumeSet>
+    </VolumeSetContainer>
+</ProcessorNetwork>

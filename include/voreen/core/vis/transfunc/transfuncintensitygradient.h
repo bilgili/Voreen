@@ -30,18 +30,12 @@
 #ifndef VRN_TRANSFUNCINTENSITYGRADIENT_H
 #define VRN_TRANSFUNCINTENSITYGRADIENT_H
 
-#include <vector>
-
-#include "tgt/tgt_gl.h"
-#include "tgt/vector.h"
-#include "tinyxml/tinyxml.h"
-
-#include "fboClass/framebufferObject.h"
-
 #include "voreen/core/vis/transfunc/transfunc.h"
 
-namespace voreen {
+class FramebufferObject;
+class TiXmlDocument;
 
+namespace voreen {
 
 /** 
  *  This class represents a two-dimensional intensity-gradient based transfer function.
@@ -172,8 +166,8 @@ protected:
     float fuzziness_;
     float cpSize_;
 public:
-    TransFuncPrimitive(tgt::col4 col) : color_(col), selected_(false), cpSize_(0.02) {}
-    TransFuncPrimitive() { color_ = tgt::col4(255,255,0,255); selected_ = false; }
+    TransFuncPrimitive(tgt::col4 col) : color_(col), selected_(false), cpSize_(0.02f) {}
+    TransFuncPrimitive() { color_ = tgt::col4(255, 255, 0, 255); selected_ = false; }
     virtual ~TransFuncPrimitive() {}
 
     ///Paint for use in transfer function

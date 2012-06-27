@@ -8,7 +8,7 @@ SUBDIRS = sub_core sub_qt sub_voreenrpt sub_voreendev
 sub_core.file = src/core/voreenlib_core.pro
 sub_qt.file = src/qt/voreenlib_qt.pro
 
-sub_voreenrpt.file = apps/rptgui/rptgui.pro
+sub_voreenrpt.file = apps/voreenve/voreenve.pro
 sub_voreenrpt.depends = sub_core sub_qt
 
 sub_voreendev.file = apps/voreendev/voreendev.pro

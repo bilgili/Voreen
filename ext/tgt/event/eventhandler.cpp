@@ -58,7 +58,7 @@ void EventHandler::clear() {
 }
 
 void EventHandler::broadcast(Event* e) {
-    for(size_t i = 0; i < listeners_.size(); ++i) {
+    for (size_t i = 0 ; i < listeners_.size() ; ++i) {
         listeners_[i]->onEvent(e);
         if (e->isAccepted())
             break;
@@ -66,7 +66,7 @@ void EventHandler::broadcast(Event* e) {
     delete e;
 }
 
-int EventHandler::getListenerNumber() const {
+size_t EventHandler::getListenerNumber() const {
     return listeners_.size();
 }
 

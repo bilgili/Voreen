@@ -74,14 +74,12 @@ VolumeRaycaster::VolumeRaycaster(std::string fragmentShaderFilename)
     , raycastPrg_(0)
     , fragmentShaderFilename_(fragmentShaderFilename)
     , splitMode_("set.splitMode", "Set Splitmode", &needRecompileShader_, 0, 0, 10)
+    , pg_(0)
     , raycastingQualityFactor_(setRaycastingQualityFactor_, "Raycasting Quality", &needRecompileShader_, 1.0f)
     , segment_(setSegment_, "Set Segment", 0)
     , useSegmentation_(switchSegmentation_, "Use Segmentation", &needRecompileShader_, false)
-    , pg_(0)
 {
-    /*
-        set texture unit identifiers and register
-    */
+    // set texture unit identifiers and register
     std::vector<Identifier> units;
     units.push_back(entryParamsTexUnit_);
     units.push_back(entryParamsDepthTexUnit_);
@@ -97,8 +95,6 @@ VolumeRaycaster::VolumeRaycaster(std::string fragmentShaderFilename)
     initProperties();
 }
 
-
-
 VolumeRaycaster::~VolumeRaycaster() {
     if (raycastPrg_)
         ShdrMgr.dispose(raycastPrg_);
@@ -107,14 +103,13 @@ VolumeRaycaster::~VolumeRaycaster() {
         delete raycastingQualitiesEnumProp_;
 }
 
-void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle)
-{
+void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle) {
     VolumeRenderer::setVolumeHandle(handle);
-    if( currentVolumeHandle_ == 0 )
+    if ( currentVolumeHandle_ == 0 )
         return;
     
     VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
-    if( (volumeGL != 0) && (volumeGL->getNumTextures() > 1) ) {
+    if ( (volumeGL != 0) && (volumeGL->getNumTextures() > 1) ) {
         // free tex units
         for (size_t i = 0; i < splitNames_.size(); ++i)
             tm_.removeTexUnit(splitNames_[i]);
@@ -132,7 +127,8 @@ void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle)
             tm_.addTexUnit(oss.str());
             splitNames_.push_back(oss.str());
         }
-    } else {
+    }
+    else {
         // free tex units
         for (size_t i = 0; i < splitNames_.size(); ++i)
             tm_.removeTexUnit(splitNames_[i]);
@@ -146,9 +142,124 @@ void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle)
     further methods
 */
 
-std::string VolumeRaycaster::generateHeader(){
-    std::string header = VolumeRenderer::generateHeader();
-    return header;
+std::string VolumeRaycaster::generateHeader() {
+    std::string headerSource = VolumeRenderer::generateHeader();
+
+	// enable support for multiple render targets
+	//headerSource += "#extension GL_ARB_draw_buffers : enable\n";
+
+	if (getTransFunc())
+        headerSource += getTransFunc()->getShaderDefines();
+    else
+        headerSource += "#define TF_INTENSITY\n";
+
+    
+    if (maskingMode_->get() == 3 || maskingMode_->get() == 4) // FIXME: HACK needed until USE_SGEMENTATION is obsolete
+		headerSource += "#define USE_SEGMENTATION\n";
+/*
+	// include required shader modules
+	headerSource += "#include \"modules/mod_sampler2d.frag\"\n";
+	headerSource += "#include \"modules/mod_sampler3d.frag\"\n";
+	headerSource += "#include \"modules/mod_raysetup.frag\"\n";
+	headerSource += "#include \"modules/mod_masking.frag\"\n";
+	headerSource += "#include \"modules/mod_gradients.frag\"\n";
+	headerSource += "#include \"modules/mod_transfunc.frag\"\n";
+	headerSource += "#include \"modules/mod_shading.frag\"\n";
+	headerSource += "#include \"modules/mod_compositing.frag\"\n";
+	headerSource += "#include \"modules/mod_depth.frag\"\n";
+*/
+
+	// configure masking
+	headerSource += "#define RC_NOT_MASKED(samplePos, intensity) ";
+	switch (maskingMode_->get()) {
+		case 0:
+            headerSource += "true\n";
+			break;
+		case 1:
+            headerSource += "inThresholdInterval(intensity)\n";
+			break;
+		case 2:
+            headerSource += "inSegmentation(samplePos)\n";
+			break;
+		case 3:
+            headerSource += "inThresholdInterval(intensity) && inSegmentation(samplePos)\n";
+			break;
+	}
+
+	// configure gradient calculation
+	headerSource += "#define RC_CALC_GRADIENTS(voxel, samplePos, volume, volumeParameters, t, rayDirection, entryPoints) ";
+	switch (gradientMode_->get()) {
+		case 0:
+            headerSource += "voxel.xyz-vec3(0.5);\n";
+			break;
+		case 1:
+            headerSource += "calcGradientAFD(volume, volumeParameters, samplePos, t, rayDirection, entryPoints);\n";
+			break;
+		case 2:
+            headerSource += "calcGradientA(volume, volumeParameters, samplePos, t, rayDirection, entryPoints);\n";
+			break;
+		case 3:
+            headerSource += "calcGradientFiltered(volume, volumeParameters, samplePos, entryPoints);\n";
+			break;
+	}
+
+	// configure classififcation
+	headerSource += "#define RC_APPLY_CLASSIFICATION(voxel) ";
+	switch (classificationMode_->get()) {
+		case 0:
+            headerSource += "vec4(voxel.a);\n";
+			break;
+		case 1:
+            headerSource += "applyTF(voxel);\n";
+			break;
+	}
+
+	// configure shading mode
+	headerSource += "#define RC_APPLY_SHADING(gradient, samplePos, volumeParameters, ka, kd, ks) ";
+	switch (shadeMode_->get()) {
+		case 0:
+            headerSource += "ka;\n";
+			break;
+		case 1:
+            headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
+			break;
+		case 2:
+            headerSource += "phongShadingS(gradient, samplePos, volumeParameters, kd);\n";
+			break;
+		case 3: headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, ka, kd);\n";
+			break;
+		case 4:
+            headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, ka, kd);\n";
+			break;
+		case 5:
+            headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
+			break;
+		case 6:
+            headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
+			break;
+	}
+
+	// configure compositing mode
+	headerSource += "#define RC_APPLY_COMPOSITING(result, color, samplePos, gradient, t) ";
+	switch (compositingMode_->get()) {
+		case 0:
+            headerSource += "compositeDVR(color, result, t, tDepth);\n";
+			break;
+		case 1:
+            headerSource += "compositeMIP(color, result, t, tDepth);\n";
+			break;
+		case 2:
+            headerSource += "compositeISO(color, result, t, tDepth, 0.5);\n";
+			break;
+		case 3:
+            headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+			break;
+		case 4:
+            headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
+			break;
+	}
+
+	return headerSource;
 }
 
 void VolumeRaycaster::initProperties() {
@@ -158,10 +269,43 @@ void VolumeRaycaster::initProperties() {
     raycastingQualities_.push_back("high");
     raycastingQualities_.push_back("higher");
     raycastingQualities_.push_back("highest");
-    raycastingQualitiesEnumProp_ = new EnumProp(setRaycastingQualityFactor_, "Raycasting quality: ",
-        raycastingQualities_, &needRecompileShader_, 2);
-    //use addPropety()-function in the classes the property is needed
-    //addProperty(raycastingQualitiesEnumProp_);
+    raycastingQualitiesEnumProp_ = new EnumProp(setRaycastingQualityFactor_, "Sampling Rate",
+                                                raycastingQualities_, &needRecompileShader_, 2);
+    addProperty(raycastingQualitiesEnumProp_);
+
+	// initialization of the rendering properties
+	// the properties are added in the respective subclasses
+	maskingModes_.push_back("none");
+	maskingModes_.push_back("Thresholding");
+	maskingModes_.push_back("Segmentation");
+	maskingModes_.push_back("Thresholding+Segmentation");
+	maskingMode_ = new EnumProp("set.masking", "Masking", maskingModes_, &needRecompileShader_, 1);
+
+	gradientModes_.push_back("none");
+	gradientModes_.push_back("Forward Differences");
+	gradientModes_.push_back("Central Differences");
+	gradientModes_.push_back("Filtered");
+	gradientMode_ = new EnumProp("set.gradient", "Gradient Calculation", gradientModes_, &needRecompileShader_, 1);
+
+	classificationModes_.push_back("none");
+	classificationModes_.push_back("Transfer Function");
+	classificationMode_ = new EnumProp("set.classification", "Classification", classificationModes_, &needRecompileShader_, 1);
+
+	shadeModes_.push_back("none");
+	shadeModes_.push_back("Phong (Diffuse)");
+	shadeModes_.push_back("Phong (Specular)");
+	shadeModes_.push_back("Phong (Diffuse+Ambient)");
+	shadeModes_.push_back("Phong (Diffuse+Specular)");
+	shadeModes_.push_back("Phong (Full)");
+	shadeModes_.push_back("Toon");
+	shadeMode_ = new EnumProp("set.shading", "Shading", shadeModes_, &needRecompileShader_, 5);
+
+	compositingModes_.push_back("DVR");
+	compositingModes_.push_back("MIP");
+	compositingModes_.push_back("ISO");
+	compositingModes_.push_back("FHP");
+	compositingModes_.push_back("FHN");
+	compositingMode_ = new EnumProp("set.compositing", "Compositing", compositingModes_, &needRecompileShader_, 0);
 }
 
 void VolumeRaycaster::setPropertyDestination(Identifier tag) {
@@ -169,9 +313,6 @@ void VolumeRaycaster::setPropertyDestination(Identifier tag) {
     raycastingQualitiesEnumProp_->setMsgDestination(tag);
     lowerTH_.setMsgDestination(tag);
     upperTH_.setMsgDestination(tag);
-    /*segment_.setMsgDestination(tag);
-    useSegmentation_.setMsgDestination(tag);
-    splitMode_.setMsgDestination(tag);*/
 }
 
 void VolumeRaycaster::restoreMatrixStacks() {
@@ -228,34 +369,16 @@ void VolumeRaycaster::processMessage(Message* msg, const Identifier& dest/*=Mess
 }
 
 void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader) {
-
     VolumeRenderer::setGlobalShaderParameters(shader);
 
     // raycasting quality factor
     int loc = shader->getUniformLocation("raycastingQualityFactor_", true);
-    if ( loc != -1)
+    if (loc != -1)
         shader->setUniform( loc, raycastingQualityFactor_.get());
-    loc = shader->getUniformLocation("raycastingQualityFactorRCP_", true);
-    if ( loc != -1)
-        shader->setUniform(loc, 1.f / raycastingQualityFactor_.get());
 
-   /* loc = shader->getUniformLocation("lightPosition_", true);
-    if ( loc != -1) {
-        //correct light position, if volume has not uniform size in each direction
-        //and take uncorrected position when no pg_ is available
-        tgt::vec3 pos;
-        if (pg_){
-            pos.x = lightPosition_.get().x / pg_->getVolumeSize().x;
-            pos.y = lightPosition_.get().y / pg_->getVolumeSize().y;
-            pos.z = lightPosition_.get().z / pg_->getVolumeSize().z;
-        }
-        else {
-            pos.x = lightPosition_.get().x;
-            pos.y = lightPosition_.get().y;
-            pos.z = lightPosition_.get().z;
-        }
-        shader->setUniform("lightPosition_", (pos+1.f)/2.f);
-    } */
+    loc = shader->getUniformLocation("raycastingQualityFactorRCP_", true);
+    if (loc != -1)
+        shader->setUniform(loc, 1.f / raycastingQualityFactor_.get());
 }
 
 } // namespace voreen

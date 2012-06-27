@@ -216,7 +216,7 @@ bool Line3<T>::intersectSegments(const Line3<T>& l, Vector3<T>& v) const {
     Vector3<T> c = cross(d_, l.d_);
     T q = lengthSq(c);
 
-    if (fabs(q) < 0.00001f)
+    if (std::abs(q) < 0.00001f)
         return false;
     else {
         Vector3<T> o = l.p_ - p_;
@@ -245,7 +245,7 @@ bool Line3<T>::intersect(const Line3<T>& l, Vector3<T>& v) const {
     Vector3<T> c = cross(d_, l.d_);
     T q = lengthSq(c);
 
-    if (fabs(q) < 0.00001f)
+    if (std::abs(q) < 0.00001f)
         return false;
     else {
         Vector3<T> o = l.p_ - p_;

@@ -32,7 +32,7 @@
 
 #include <QWidget>
 
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/qt/widgets/transfunc/transfuncintensitypainter.h"
 #include "tgt/qt/qtcanvas.h"
 

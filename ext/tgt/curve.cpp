@@ -55,7 +55,7 @@ void Curve::render(GLfloat startParam, GLfloat endParam) {
 vec3 Circle::getPoint(GLfloat t) {
     tgtAssert(t >= 0.0f && t <= 1.0f, "Parameter t must be inside interval [0, 1].");
     t = t * 2.0f * PIf;
-    vec3 position = radius_ * vec3(cos(t), sin(t), 0.0f);
+    vec3 position = radius_ * vec3(cosf(t), sinf(t), 0.0f);
     position = rotationMatrix_ * position;
     position += center_;
     return position;
@@ -65,7 +65,7 @@ vec3 Circle::getPoint(GLfloat t) {
 vec3 Circle::getDerivative(GLfloat t) {
     tgtAssert(t >= 0.0f && t <= 1.0f, "Parameter t must be inside interval [0, 1.0].");
     t = t * 2.0f * PIf;
-    vec3 derive = radius_ * vec3( -sin(t), cos(t), 0.0f);
+    vec3 derive = radius_ * vec3( -sinf(t), cosf(t), 0.0f);
     derive = rotationMatrix_ * derive;
     return derive;
 }
@@ -80,14 +80,13 @@ void Circle::setNormal(const vec3& normal) {
 // calculates two perpendicular vectors that are also perpendicular the normal vector
 // and creates an rotation matrix out of them.
 void Circle::setRotationMatrix() {
-
     vec3 rx;
     vec3 ry;
     if (dot(normal_, vec3(1.0, 0.0, 0.0)) > 0.99 ) {
-        rx = normalize(cross(normal_, vec3(0.0, 1.0, 0.0))) * float(isign(dot(normal_, vec3(0,0,1))));
+        rx = normalize(cross(normal_, vec3(0.0, 1.0, 0.0))) * static_cast<float>(isign(dot(normal_, vec3(0,0,1))));
         ry = normalize(cross(normal_, rx));
     } else {
-        ry = normalize(cross(normal_, vec3(1.0, 0.0, 0.0))) * float(isign(dot(normal_, vec3(0,0,1))));
+        ry = normalize(cross(normal_, vec3(1.0, 0.0, 0.0))) * static_cast<float>(isign(dot(normal_, vec3(0,0,1))));
         rx = normalize(cross(ry, normal_));
     }
 // warning: statement has no effect
@@ -101,7 +100,7 @@ void Circle::setRotationMatrix() {
 vec3 Ellipse::getPoint(GLfloat t) {
     tgtAssert(t >= 0.0f && t <= 1.0f, "Parameter t must be inside interval [0, 1.0].");
     t = t * 2.0f * PIf;
-    vec3 position = vec3(a_ * cos(t), b_ * sin(t), 0.0f);
+    vec3 position = vec3(a_ * cosf(t), b_ * sinf(t), 0.0f);
     position = rotationMatrix_ * position;
     position += center_;
     return position;
@@ -111,7 +110,7 @@ vec3 Ellipse::getPoint(GLfloat t) {
 vec3 Ellipse::getDerivative(GLfloat t) {
     tgtAssert(t >= 0.0f && t <= 1.0f, "Parameter t must be inside interval [0, 1.0].");
     t = t * 2 * PIf;
-    vec3 derive = vec3( -a_ * sin(t), b_ * cos(t), 0.0f);
+    vec3 derive = vec3( -a_ * sinf(t), b_ * cosf(t), 0.f);
     derive = rotationMatrix_ * derive;
     return derive;
 }
@@ -120,7 +119,6 @@ vec3 Ellipse::getDerivative(GLfloat t) {
 // Creates an rotation matrix from the normal vector, the semi major and semi minor
 // axis direction
 void Ellipse::setRotationMatrix() {
-
     rotationMatrix_ = transpose(mat3(semiMajor_, semiMinor_, normal_));
 }
 
@@ -143,7 +141,6 @@ void Ellipse::setSemiMajorAxisDirection(const vec3& semiMajor) {
     semiMajor_ = cross(semiMinor_, normal_);
     setRotationMatrix();
 }
-
 
 
 } // namespace tgt

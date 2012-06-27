@@ -54,7 +54,7 @@ namespace voreen {
 class TransFuncProp;
 class TransFuncMappingCanvas;
 class TransFuncGradient;
-class TransFuncIntensityKeys;
+class TransFuncIntensity;
 class TransferGradient;
 class QColorPicker;
 class QColorLuminancePicker;
@@ -94,7 +94,7 @@ public:
     void setVisibleState(bool vis);
     
     void changeValue(TransFunc* tf);
-    void setTransFunc(TransFuncIntensityKeys* tf);
+    void setTransFunc(TransFuncIntensity* tf);
     TransFunc* getTransFunc();
     void processorChanged(int bits);
 
@@ -131,7 +131,7 @@ private:
 
     TransFuncMappingCanvas* transCanvas_;
     TransFuncGradient* gradient_;
-    TransFuncIntensityKeys* transferFunc_;
+    TransFuncIntensity* transferFunc_;
 
     QComboBox* tfSize_;
     QToolButton* loadButton_;

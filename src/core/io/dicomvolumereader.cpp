@@ -34,7 +34,6 @@
 #include "voreen/core/io/dicomfindscu.h"
 
 #include "voreen/core/volume/volumeatomic.h"
-#include "voreen/core/volume/volumecontainer.h"
 #include "tgt/texture.h"
 
 #ifdef WIN32
@@ -310,8 +309,8 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                     dataset->findAndGetOFString(DCM_PixelSpacing, colspacing_str, 1).good()) {
                     LINFO("    PixelSpacing: (" << rowspacing_str << "; " << colspacing_str << ")");
                     if (rowspacing_str != colspacing_str)
-                        LWARNING("row-spacing != colspacing: " << rowspacing_str
-                                       << " vs. " << colspacing_str);
+                        LWARNING("row-spacing != colspacing: " << rowspacing_str << " vs. " << colspacing_str);
+                    
                     rowspacing = static_cast<float>(atof(rowspacing_str.c_str()));
                     colspacing = static_cast<float>(atof(colspacing_str.c_str()));
                 }
@@ -337,6 +336,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
             else {
                 LERROR("Can't retrieve DCM_ImagePositionPatient from file " << (*it_files));
             }
+/* //TODO: necessary for some US(?) datasets
             if (dataset->findAndGetOFString(DCM_ImageType, imageType, 3).good()) {
                 LINFO("Image type: " << imageType);
             } 
@@ -348,6 +348,8 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                 LINFO("Add image to stack.");
                 slices.push_back(make_pair(*it_files, imagePositionPatient));
             }
+*/
+            slices.push_back(make_pair(*it_files, imagePositionPatient));            
         } 
         else {
             LDEBUG("  File " << (*it_files) << " has different SeriesInstanceUID - skipping");
@@ -398,7 +400,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     scalars_ = new uint8_t[dx_ * dy_ * dz_ * bytesPerVoxel_];
 
     LINFO("We have " << dz_ << " slices. [" << dx_ << "x" << dy_ << "]");
-    
+
     x_spacing = rowspacing;
     y_spacing = colspacing;
     z_spacing = slicespacing;
@@ -425,13 +427,10 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     DJDecoderRegistration::cleanup();
 
     Volume* dataset = 0;
-    //FIXME: why making a copy here?
-    uint8_t* scalarsCopy = new uint8_t[dx_ * dy_ * dz_ * bytesPerVoxel_];
-    memcpy(scalarsCopy, scalars_, dx_ * dy_ * dz_ * bytesPerVoxel_);
 
     switch (bits_) {
     case 8:
-        dataset = new VolumeUInt8(scalarsCopy,
+        dataset = new VolumeUInt8(scalars_,
                                   tgt::ivec3(dx_, dy_, dz_),
                                   tgt::vec3(x_spacing, y_spacing, z_spacing),
                                   bits_);
@@ -440,7 +439,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         break;
     case 12:
     case 16:
-        dataset = new VolumeUInt16((uint16_t*)scalarsCopy,
+        dataset = new VolumeUInt16((uint16_t*)scalars_,
                                     tgt::ivec3(dx_, dy_, dz_),
                                     tgt::vec3(x_spacing, y_spacing, z_spacing),
                                     bits_);
@@ -449,10 +448,10 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         break;
     default:
         LERROR("Unsupported bit depth: " << bits_);
+        delete[] scalars_;
+        scalars_ = 0;
         return 0;
     }
-
-    delete[] scalars_;
 
     LINFO("Building volume complete.");
     return dataset;
@@ -730,7 +729,7 @@ bool pathIsDir(const string &path) {
 } // namespace
 
 
-VolumeSet* DicomVolumeReader::read(const string &fileName, bool generateVolumeGL)
+VolumeSet* DicomVolumeReader::read(const string &fileName)
 throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
 
@@ -770,17 +769,12 @@ throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
         dataset = readDicomFile(fileName);
 	}
 
-    //VolumeContainer* volcont = new VolumeContainer();
-    //volcont->add(dataset, fileName, modality_, -1.f, generateVolumeGL);
-    //return volcont;
-
-    VolumeSet* volumeSet = new VolumeSet(fileName);
+    VolumeSet* volumeSet = new VolumeSet(0, fileName);
     VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", modality_);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
+    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
-    if( generateVolumeGL == true )
-        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
    
     return volumeSet;
 }

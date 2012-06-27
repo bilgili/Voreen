@@ -40,7 +40,6 @@
 #ifndef VRN_SNAPSHOT
 #include "commands_motion.h"
 #include "commands_dao.h"
-// #include "commands_histo.h"
 #endif
 
 #include "tgt/init.h"
@@ -117,7 +116,7 @@ int main(int argc, char** argv) {
     commandMap_.addCommand(new CommandHistogram());
 #endif
 
-// 	commandMap_.addCommand(new CommandStretchHisto());
+    //commandMap_.addCommand(new CommandStretchHisto());
 
 #ifdef _OPENMP
     LINFO("OpenMP Supported.");

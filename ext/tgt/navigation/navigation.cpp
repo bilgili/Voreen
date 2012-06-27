@@ -43,7 +43,8 @@ void Navigation::rotateView(float angle, const vec3& axis) {
 
     // we do not allow views that are too similar to the up-vector since this results
     // in "flickering"
-    if ( fabs(dot( look, getCamera()->getUpVector() )) > .995f ) return;
+    if ( fabs(dot( look, getCamera()->getUpVector() )) > .995f )
+        return;
 
     // Set the new focus-point
     getCamera()->setFocus(getCamera()->getPosition() + getCamera()->getFocalLength()*look);
@@ -65,7 +66,8 @@ void Navigation::rotateViewHV(float anglehorz, float anglevert) {
 
     // we do not allow views that are too similar to the up-vector since this results
     // in "flickering"
-    if(fabs(dot(look, getCamera()->getUpVector())) > .995f) return;
+    if (fabs(dot(look, getCamera()->getUpVector())) > .995f)
+        return;
 
     // Set the new focus-point
     getCamera()->setFocus(getCamera()->getPosition() + getCamera()->getFocalLength()*look);

@@ -75,8 +75,8 @@ struct Quaternion {
 
     /// calculate the absolute length of the Quaternion
     T abs() const {
-        return sqrt( x * x + y * y +
-                      z * z + w * w);
+        return std::sqrt(x * x + y * y +
+                         z * z + w * w);
     }
 
     /// return the vector consisting of the imaginary parts of the Quaternion
@@ -199,7 +199,8 @@ struct Quaternion {
 
     /// calculate the t-th power of this quaternion
     Quaternion pow(const T t) {
-        if(abs() != 1 || t < 0 || t > 0) return 0;
+        using namespace std; // use overloaded cos and sin
+        if (abs() != 1 || t < 0 || t > 0) return 0;
 
         double phi = acos(w);
         Vector3<T> u = vec() / sin(phi);
@@ -211,7 +212,8 @@ struct Quaternion {
 
     /// calculate the natural logarithm of this quaternion
     Vector3<T> log() const {
-        if(abs() != 1) return 0;
+        using namespace std; // use overloaded cos and sin
+        if (abs() != 1) return 0;
 
         double phi = acos(w);
         Vector3<T> u = vec() / sin(phi);
@@ -228,7 +230,7 @@ struct Quaternion {
         res.x = newAxis.x * sinf(angle / 2);
         res.y = newAxis.y * sinf(angle / 2);
         res.z = newAxis.z * sinf(angle / 2);
-        res.w = cosf(angle / 2);
+        res.w = std::cos(angle / 2);
 
         return res;
     }
@@ -253,7 +255,6 @@ struct Quaternion {
         // Also note that the returned vector is automatically of length 1 since we only use
         // use unit-quaternions.
         Quaternion res = (rot * targ) * rotconj;
-// 	Quaternion res = rot * (targ * rotconj);
 
         return vec3(res.x, res.y, res.z);
     }
@@ -295,7 +296,7 @@ inline Quaternion<T> multQuat(const Quaternion<T>& q1, const Quaternion<T>& q2) 
 */
 template<class T>
 Quaternion<T> expQuat(const Quaternion<T>& q) {
-    float a = sqrt(q.x*q.x + q.y*q.y + q.y*q.y);
+    float a = std::sqrt(q.x*q.x + q.y*q.y + q.y*q.y);
     float sina = sinf(a);
     Quaternion<T> ret;
 
@@ -375,9 +376,8 @@ inline Quaternion<T> conjugate(const Quaternion<T>& q) {
 */
 template<class T>
 inline Quaternion<T> invert(const Quaternion<T>& q) {
-
     T absq = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
-    if(absq != 0) {
+    if (absq != 0) {
         Quaternion<T> res = conjugate(q);
         return res / absq;
     }
@@ -405,12 +405,13 @@ inline Quaternion<T> lerpQuat(const Quaternion<T>& a, const Quaternion<T>& b, T 
 */
 template<class T>
 Quaternion<T> slerpQuat(const Quaternion<T>& a, const Quaternion<T>& b, T t, bool inv = true) {
+    using namespace std; // use overloaded cos and sin
     tgtAssert(!((t < T(0.0)) || (t > T(1.0))), "running-parameter must be between 0 and 1");
 
     Quaternion<T> c = b;
     T tmp = a.w*b.w + a.x*b.x + a.y*b.y + a.z*b.z;
 
-    if(inv && tmp < T(0.0)) {
+    if (inv && tmp < T(0.0)) {
         tmp = -tmp;
         c = -1.f*c;
     }
@@ -431,7 +432,8 @@ Quaternion<T> slerpQuat(const Quaternion<T>& a, const Quaternion<T>& b, T t, boo
 */
 template<class T>
 inline Quaternion<T> squadQuat(const Quaternion<T>& p, const Quaternion<T>& q,
-                    const Quaternion<T>& a, const Quaternion<T>& b, double t) {
+                               const Quaternion<T>& a, const Quaternion<T>& b, double t)
+{
     tgtAssert(!((t < 0.0) || (t > 1.0)), "running-parameter must be between 0 and 1");
 
     return slerpQuat<T>(slerpQuat<T>(p, q, t), slerpQuat<T>(a, b, t), 2.f*t*(1.f - t), false);
@@ -465,14 +467,14 @@ Quaternion<T> generateQuaternionFromTo(const Vector3<T> src, const Vector3<T> de
 
     T dot = v1.x*v2.x + v1.y+v2.y + v1.z*v2.z;
 
-    if (abs(dot) >= 1) // the vectors are identical
+    if (std::abs(dot) >= 1) // the vectors are identical
         return Quaternion<T>(0, 0, 0, 1); // ... so we return a rotation that does nothing
 
-    T root = sqrt((1 + dot) * 2);
+    T root = std::sqrt((1 + dot) * 2);
 
-    if(root < 1e-6) { // do this for numerical stability
+    if (root < T(1e-6)) { // do this for numerical stability
         Vector3<T> axis = cross(Vector3<T>(1, 0, 0), src);
-        if(length(axis) == 0) {
+        if (length(axis) == 0) {
             axis = cross(Vector3<T>(0, 1, 0), src);
         }
         axis = normalize(axis);
@@ -483,7 +485,7 @@ Quaternion<T> generateQuaternionFromTo(const Vector3<T> src, const Vector3<T> de
         q.x = crs.x * inverse;
         q.y = crs.y * inverse;
         q.z = crs.z * inverse;
-        q.w = 0.5 * inverse;
+        q.w = T(0.5) * inverse;
     }
 
     return q;
@@ -529,50 +531,50 @@ Quaternion<T> generateQuatFromMatrix(const Matrix4<T>& mat) {
     T t = mat[0][0] + mat[1][1] + mat[2][2] + T(1);
 
 //     if(t > 0) {
-//         double s = 0.5 / sqrt(t);
+//         double s = 0.5 / std::sqrt(t);
 //         q.w = 0.25 / s;
 //         q.x = ( mat[2][1] - mat[1][2] ) * s;
 //         q.y = ( mat[0][2] - mat[2][0] ) * s;
 //         q.z = ( mat[1][0] - mat[0][1] ) * s;
 //     } else if ((mat[0][0] > mat[1][1]) && (mat[0][0] > mat[2][2])) {
-//         double s = sqrt( 1.0 + mat[0][0] - mat[1][1] - mat[2][2] ) * 2.0;
+//         double s = std::sqrt( 1.0 + mat[0][0] - mat[1][1] - mat[2][2] ) * 2.0;
 //         q.x = 0.25 / s;
 //         q.y = (mat[0][1] + mat[1][0] ) / s;
 //         q.z = (mat[0][2] + mat[2][0] ) / s;
 //         q.w = (mat[1][2] - mat[2][1] ) / s;
 //     } else if (mat[1][1] > mat[2][2]) {
-//         double s = sqrt( 1.0 + mat[1][1] - mat[0][0] - mat[2][2] ) * 2.0;
+//         double s = std::sqrt( 1.0 + mat[1][1] - mat[0][0] - mat[2][2] ) * 2.0;
 //         q.x = (mat[0][1] + mat[1][0] ) / s;
 //         q.y = 0.25 / s;
 //         q.z = (mat[1][2] + mat[2][1] ) / s;
 //         q.w = (mat[0][2] - mat[2][0] ) / s;
 //     } else {
-//         double s = sqrt( 1.0 + mat[2][2] - mat[0][0] - mat[1][1] ) * 2.0;
+//         double s = std::sqrt( 1.0 + mat[2][2] - mat[0][0] - mat[1][1] ) * 2.0;
 //         q.x = (mat[0][2] + mat[2][0] ) / s;
 //         q.y = (mat[1][2] + mat[2][1] ) / s;
 //         q.z = 0.25 / s;
 //         q.w = (mat[0][1] - mat[1][0] ) / s;
 //     }
     if(t > T(0)) {
-        T s = T(0.5) / sqrt(t);
+        T s = T(0.5) / std::sqrt(t);
         q.w = T(0.25) / s;
         q.x = ( mat[1][2] - mat[2][1] ) * s;
         q.y = ( mat[2][0] - mat[0][2] ) * s;
         q.z = ( mat[0][1] - mat[1][0] ) * s;
     } else if ((mat[0][0] > mat[1][1]) && (mat[0][0] > mat[2][2])) {
-        T s = sqrt( T(1.0) + mat[0][0] - mat[1][1] - mat[2][2] ) * T(2.0);
+        T s = std::sqrt( T(1.0) + mat[0][0] - mat[1][1] - mat[2][2] ) * T(2.0);
         q.x = T(0.25) / s;
         q.y = (mat[1][0] + mat[0][1] ) / s;
         q.z = (mat[2][0] + mat[0][2] ) / s;
         q.w = (mat[2][1] - mat[1][2] ) / s;
     } else if (mat[1][1] > mat[2][2]) {
-        T s = sqrt( T(1.0) + mat[1][1] - mat[0][0] - mat[2][2] ) * T(2.0);
+        T s = std::sqrt( T(1.0) + mat[1][1] - mat[0][0] - mat[2][2] ) * T(2.0);
         q.x = (mat[1][0] + mat[0][1] ) / s;
         q.y = T(0.25) / s;
         q.z = (mat[2][1] + mat[1][2] ) / s;
         q.w = (mat[2][0] - mat[0][2] ) / s;
     } else {
-        T s = sqrt( T(1.0) + mat[2][2] - mat[0][0] - mat[1][1] ) * T(2.0);
+        T s = std::sqrt( T(1.0) + mat[2][2] - mat[0][0] - mat[1][1] ) * T(2.0);
         q.x = (mat[2][0] + mat[0][2] ) / s;
         q.y = (mat[2][1] + mat[1][2] ) / s;
         q.z = T(0.25) / s;
@@ -590,8 +592,8 @@ void generateAxisAngleFromQuat(const Quaternion<T>& qu, T& angle, Vector3<T>& ax
     if (q.w > 1)
         q.normalize();
 
-    angle = 2 * acos(q.w);
-    T s = sqrt(1-q.w*q.w);
+    angle = 2 * std::acos(q.w);
+    T s = std::sqrt(1 - q.w * q.w);
 
     if (s < 0.001) {
         axis.x = q.x;

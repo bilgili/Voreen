@@ -74,7 +74,7 @@ FramebufferObject::AttachTexture( GLenum texTarget, GLuint texId,
   _GuardedBind();
 
 #ifndef NDEBUG
-  if( true/*GetAttachedId(attachment) != texId */) {
+  if ( true/*GetAttachedId(attachment) != texId */) {
 #endif
 
     _FramebufferTextureND( attachment, texTarget,
@@ -96,7 +96,7 @@ void
 FramebufferObject::AttachTextures( int numTextures, GLenum texTarget[], GLuint texId[],
                                   GLenum attachment[], int mipLevel[], int zSlice[] )
 {
-  for(int i = 0; i < numTextures; ++i) {
+  for (int i = 0; i < numTextures; ++i) {
     AttachTexture( texTarget[i], texId[i], 
                    attachment ? attachment[i] : (GL_COLOR_ATTACHMENT0_EXT + i), 
                    mipLevel ? mipLevel[i] : 0, 
@@ -110,7 +110,7 @@ FramebufferObject::AttachRenderBuffer( GLuint buffId, GLenum attachment )
   _GuardedBind();
 
 #ifndef NDEBUG
-  if( GetAttachedId(attachment) != buffId ) {
+  if ( GetAttachedId(attachment) != buffId ) {
 #endif
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, attachment, 
@@ -131,7 +131,7 @@ FramebufferObject::AttachRenderBuffer( GLuint buffId, GLenum attachment )
 void
 FramebufferObject::AttachRenderBuffers( int numBuffers, GLuint buffId[], GLenum attachment[] )
 {
-  for(int i = 0; i < numBuffers; ++i) {
+  for (int i = 0; i < numBuffers; ++i) {
     AttachRenderBuffer( buffId[i], 
                         attachment ? attachment[i] : (GL_COLOR_ATTACHMENT0_EXT + i) );
   }
@@ -162,7 +162,7 @@ void
 FramebufferObject::UnattachAll()
 {
   int numAttachments = GetMaxColorAttachments();
-  for(int i = 0; i < numAttachments; ++i) {
+  for (int i = 0; i < numAttachments; ++i) {
     Unattach( GL_COLOR_ATTACHMENT0_EXT + i );
   }
 }

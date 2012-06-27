@@ -33,15 +33,16 @@
 #include "tgt/types.h"
 #include "tgt/shadermanager.h"
 
-#include "voreen/core/opengl/texturecontainer.h"
-#include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/property.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/processors/render/volumerenderer.h"
+#include "voreen/core/vis/transfunc/transfunc.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/core/volume/volumegl.h"
 
 namespace voreen {
 
+class TextureContainer;
 class ShadowHelper;
 
 /**
@@ -158,16 +159,19 @@ protected:
     static const Identifier entryParamsDepthTexUnit_; ///< The texture unit used for the depth-values of the entry-parameters
     static const Identifier exitParamsTexUnit_;       ///< The texture unit used for exit-parameters
     static const Identifier exitParamsDepthTexUnit_;  ///< The texture unit used for the depth-values of exit-parameters
-    static const Identifier volTexUnit_;              ///< The texture unit used for the actual volume that is supposed to be raycasted
+
+	static const Identifier volTexUnit_;              ///< The texture unit used for the actual volume that is supposed to be raycasted
     static const Identifier volTexUnit2_;             ///< The texture unit used for the actual volume that is supposed to be raycasted
     static const Identifier volTexUnit3_;             ///< The texture unit used for the actual volume that is supposed to be raycasted
     static const Identifier transferTexUnit_;         ///< The texture unit used for the transfer-function
     static const Identifier transferTexUnit2_;        ///< The texture unit used for the second transfer-function
 	static const Identifier transferTexUnit3_;        ///< The texture unit used for the third transfer-function
-    static const Identifier segmentationTexUnit_;     ///< The texture unit used for the segmentation-texture
-    static const Identifier ambTexUnit_;              ///< The texture unit used for dao
-    static const Identifier ambLookupTexUnit_;        ///< The texture unit used for dao
-    static const Identifier normalsTexUnit_;        ///< The texture unit used for normals
+    
+	static const Identifier segmentationTexUnit_;       ///< The texture unit used for the segmentation-texture
+    
+	static const Identifier ambTexUnit_;                ///< The texture unit used for dao
+    static const Identifier ambLookupTexUnit_;          ///< The texture unit used for dao
+    static const Identifier normalsTexUnit_;            ///< The texture unit used for normals
     static const Identifier gradientMagnitudesTexUnit_; ///< The texture unit used for gradient magnitudes
 
     typedef std::vector<std::string> SplitNames;
@@ -175,14 +179,28 @@ protected:
 
     IntProp splitMode_; ///< The property that controls the split-mode
 
+
+
+    ProxyGeometry* pg_;
+
     FloatProp raycastingQualityFactor_; ///< The property that can be used to change the quality-factor of the raycasting
     std::vector<std::string> raycastingQualities_; ///< contains the different quality-modes
     EnumProp* raycastingQualitiesEnumProp_; /// Controls the kind of quality used for raycasting
 
-    IntProp segment_; ///< controls the segment that is to be rendered
-    BoolProp useSegmentation_; ///< controls whether or not segmentation-mode is used
+	// properties for all volume raycasters
+    EnumProp* maskingMode_;			  				///< What masking should be applied (thresholding, segmentation)
+    std::vector<std::string> maskingModes_;
+    EnumProp* classificationMode_;					///< What type of transfer function should be used for classification
+    std::vector<std::string> classificationModes_;
+    EnumProp* gradientMode_;						///< What type of calculation should be used for on-the-fly gradients
+    std::vector<std::string> gradientModes_;
+    EnumProp* shadeMode_;							///< What shading method should be applied
+    std::vector<std::string> shadeModes_;
+    EnumProp* compositingMode_;						///< What compositing mode should be applied
+    std::vector<std::string> compositingModes_;
 
-    ProxyGeometry* pg_;
+    IntProp segment_;								///< Controls the segment that is to be rendered
+    BoolProp useSegmentation_;						///< Controls whether or not segmentation-mode is used
 };
 
 } // namespace voreen

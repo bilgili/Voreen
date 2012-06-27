@@ -27,11 +27,10 @@
 #ifdef TGT_HAS_DEVIL
 
 #include <IL/il.h>
-#include <IL/ilu.h>
-#include <IL/ilut.h>
 
 #include "tgt/logmanager.h"
 #include "tgt/filesystem.h"
+#include <cstring>
 
 
 namespace tgt{
@@ -43,8 +42,7 @@ namespace tgt{
 
 const std::string TextureReaderDevil::loggerCat_("tgt.Texture.Reader.Devil");
 
-TextureReaderDevil::TextureReaderDevil() 
-{
+TextureReaderDevil::TextureReaderDevil() {
     name_ = "DevIL Reader";
     extensions_.push_back("bmp");
     extensions_.push_back("cut");
@@ -73,13 +71,10 @@ TextureReaderDevil::TextureReaderDevil()
     extensions_.push_back("pal");
     extensions_.push_back("hdr");
 
-
     // Initialize DevIL
     ilInit();
-    ilutRenderer(ILUT_OPENGL);
     ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
     ilEnable(IL_ORIGIN_SET); // Flip images
-    iluInit();
 }
 
 Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::Filter filter,
@@ -144,14 +139,12 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
     }
     delete[] imdata;
 
-    t->setBpp( ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) );
-    switch ( t->getBpp() )
-    {
+    t->setBpp(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL));
+    switch ( t->getBpp() ) {
 //         case 1:
 //             t->setFormat(GL_RGB);
         case 3:
-            if (!ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE))
-            {
+            if (!ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE)) {
                 delete t;
                 return 0;
             }
@@ -159,8 +152,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
             break;
 
         case 4:
-            if (!ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE))
-            {
+            if (!ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE)) {
                 delete t;
                 return 0;
             }
@@ -200,8 +192,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
         else
 		    success = create2DTexture(t, filter, compress, createOGLTex);
     }
-    if (!success)
-	{
+    if (!success) {
         ilDeleteImages(1, &ImageName);
         if (!keepPixels)
             t->setPixelData(0);
@@ -211,14 +202,13 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
 
     ilDeleteImages(1, &ImageName);
 
-    if (!keepPixels){
+    if (!keepPixels) {
         delete[] t->getPixelData();
         t->setPixelData(0);
     }
 
     return t;
 }
-
 
 } // namespace tgt
 

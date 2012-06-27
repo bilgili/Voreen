@@ -102,8 +102,7 @@ public:
 
 protected:
     /// Complements the parts of the entry points texture clipped by the near plane.
-    void complementClippedEntryPoints();
-	void complementClippedEntryPoints(int entry, int exit, Processor* pg, FunctionPointer function);
+	void complementClippedEntryPoints(LocalPortMapping* portMapping);
 
     /**
      *  Jitters entry points in ray direction.
@@ -125,6 +124,7 @@ protected:
     static const Identifier jitterTexUnit_;
 
     //properties for gui generation:
+    BoolProp supportCameraInsideVolume_;
     GroupProp scalingGroup_;
     FloatProp scaleX_;
     FloatProp scaleY_;
@@ -142,7 +142,7 @@ protected:
     bool switchFrontAndBackFaces_;
 
     ConditionProp* condJitter_;
-
+    
     static const std::string loggerCat_;
 };
 
@@ -178,7 +178,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-//TODO: find better name and move somewhere else
+//FIXME: replaced by NullRenderer
 class OutputProcessor : public Processor {
 public:
 	OutputProcessor();

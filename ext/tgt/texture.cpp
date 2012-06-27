@@ -105,8 +105,7 @@ void Texture::init(bool allocData, bool textureRectangle) {
     applyFilter();
 }
 
-int Texture::calcBpp()
-{
+int Texture::calcBpp() {
     int typeSize = 0;
 
     switch (dataType_) {
@@ -170,9 +169,7 @@ int Texture::calcBpp()
     return bpp_;
 }
 
-GLenum Texture::calcType(bool textureRectangle)
-{
-
+GLenum Texture::calcType(bool textureRectangle) {
     if (dimensions_.z == 1)	{
         if (dimensions_.y == 1)
             type_ = GL_TEXTURE_1D;
@@ -192,18 +189,15 @@ GLenum Texture::calcType(bool textureRectangle)
     return type_;
 }
 
-void Texture::setFilter(Filter filter)
-{
+void Texture::setFilter(Filter filter) {
     filter_ = filter;
     applyFilter();
 }
 
-void Texture::applyFilter()
-{
+void Texture::applyFilter() {
     bind();
 
-    switch(filter_)
-    {
+    switch(filter_) {
         case NEAREST:
             glTexParameteri(type_,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
             glTexParameteri(type_,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
@@ -245,12 +239,10 @@ void Texture::applyWrapping() {
         glTexParameteri(type_, GL_TEXTURE_WRAP_R, wrap);
 }
 
-void Texture::uploadTexture()
-{
+void Texture::uploadTexture() {
     bind();
 
-    switch(type_)
-    {
+    switch(type_) {
         case GL_TEXTURE_1D:
             glTexImage1D(GL_TEXTURE_1D, 0, internalformat_, dimensions_.x, 0,
                          format_, dataType_, pixels_);
@@ -277,8 +269,7 @@ void Texture::uploadTexture()
     }
 }
 
-void Texture::downloadTexture()
-{
+void Texture::downloadTexture() {
     bind();
 
     if(pixels_ == 0)
@@ -287,13 +278,12 @@ void Texture::downloadTexture()
     glGetTexImage(type_, 0, format_, dataType_, pixels_);
 }
 
-bool Texture::isTextureRectangle(){
+bool Texture::isTextureRectangle() {
 #ifdef GL_TEXTURE_RECTANGLE_ARB
     return (type_ == GL_TEXTURE_RECTANGLE_ARB);
 #else
     return false;
 #endif
 }
-
 
 } // namespace tgt

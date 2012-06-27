@@ -77,7 +77,7 @@ VolumeSet* MatVolumeReader::read(const std::string& fileName, bool generateVolum
     matClose(pmat);
     pmat = matOpen(fileName.c_str(), "r");
 
-    VolumeSet* volSet = new VolumeSet(fileName);
+    VolumeSet* volSet = new VolumeSet(0, fileName);
 
     // Get headers of all variables.
     for (int i=0; i<numDir; ++i) {
@@ -238,6 +238,10 @@ void MatVolumeReader::readMatrix(mxArray* pa, VolumeSet* volSet, char* name, boo
                 break;
         }
         VolumeHandle* handle = new VolumeHandle(series, dataset, static_cast<const float>(w));
+        handle->setOrigin(
+            series->getParentVolumeSet()->getName(),
+            name,
+            static_cast<const float>(w));
         series->addVolumeHandle(handle);
         if (generateVolumeGL)
             handle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);

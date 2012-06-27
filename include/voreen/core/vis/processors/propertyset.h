@@ -142,27 +142,6 @@ private:
     static PropertySet* tmpPropSet_;
     std::string name_;
     MetaSerializer meta_;
-
-// !!! NOTE:
-// These attributes and methods haven been moved here temporary
-// from super class VolumeRenderer in order to provide compatibility
-// with old VolumeContainer.
-// This functionality is about to be eliminated in near future!
-// (Dirk)
-//
-protected:    
-    VolumeContainer* volumeContainer_;
-    int currentDataset_;
-
-public:
-    /// Returns the dataset currently used.
-    VolumeGL* getCurrentDataset() {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
-    /// Returns the dataset currently used.
-    const VolumeGL* getCurrentDataset() const {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
 };
 
 }

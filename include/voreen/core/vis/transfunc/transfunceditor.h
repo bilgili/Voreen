@@ -30,16 +30,10 @@
 #ifndef VRN_TRANSFUNCEDITOR_H
 #define VRN_TRANSFUNCEDITOR_H
 
-#include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/processors/render/volumerenderer.h"
 
-#include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/message.h"
-
-#include "voreen/core/vis/transfunc/transfunc.h"
 
 namespace voreen {
-class Volume;
 
 /**
 * Interface for all TF editor widgets. Implement colorchooser with the currently used toolkit.

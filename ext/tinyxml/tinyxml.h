@@ -888,7 +888,7 @@ public:
 		double d;
 		int result = QueryDoubleAttribute( name, &d );
 		if ( result == TIXML_SUCCESS ) {
-			*_value = (float)d;
+			*_value = static_cast<float>(d);
 		}
 		return result;
 	}

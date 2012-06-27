@@ -54,7 +54,7 @@ void Collect::process(LocalPortMapping*  portMapping) {
 }
 
 void Collect::processIterative(LocalPortMapping* portMapping) {
-	glViewport(0,0,(int)size_.x,(int)size_.y);
+	glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
 	std::vector<int> sources = portMapping->getAllTargets("image.inputs");
 	if (sources.size() <= 1)
         return;
@@ -65,7 +65,7 @@ void Collect::processIterative(LocalPortMapping* portMapping) {
 	int currentTarget = tempTarget1;
 	int source0, source1;
 	source0 = sources.at(0);
-	for (size_t i=1;i<sources.size();i++) {
+	for (size_t i=1; i<sources.size(); i++) {
 		source1 = sources.at(i);
 		if ( (i+1) == sources.size())
 			tc_->setActiveTarget(dest);

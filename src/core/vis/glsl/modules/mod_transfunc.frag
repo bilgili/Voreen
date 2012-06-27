@@ -1,60 +1,71 @@
-// un-commenting the line below will break 2D-TFs!
-// use TF->getShaderDefines(); in <raycaster>->generateHeader() to get the correct define!
-// #define TF_INTENSITY
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
+/**
+ * This module contains all functions which can be used for performing
+ * classifications of a voxel within a raycaster.
+ * The functions below are referenced by RC_APPLY_CLASSIFICATION which
+ * is used in the raycaster fragment shaders.
+ */
+
 #if defined(TF_INTENSITY)
-    uniform sampler1D transferFunc_;                        // transfer function
+    uniform sampler1D transferFunc_;	// 1D transfer function
 
-    vec4 applyTF(float intensity) {
-        #ifdef BITDEPTH_12
-            return texture1D(transferFunc_, intensity * 16.0);
-        #else
-            return texture1D(transferFunc_, intensity);
-        #endif
-    }
+	vec4 applyTF(float intensity) {
+		return texture1D(transferFunc_, intensity);
+	}
 
-    vec4 applyTF(vec4 intensity) {
-        #ifdef BITDEPTH_12
-            return texture1D(transferFunc_, intensity.a * 16.0);
-        #else
-            return texture1D(transferFunc_, intensity.a);
-        #endif
-    }
+	vec4 applyTF(vec4 intensity) {
+		return texture1D(transferFunc_, intensity.a);
+	}
+
 #elif defined(TF_INTENSITY_GRADIENT)
-    uniform sampler2D transferFunc_;                        // transfer function
+    uniform sampler2D transferFunc_;	// 2D transfer function
 
-    vec4 applyTF(float intensity) {
-        #ifdef BITDEPTH_12
-            return texture2D(transferFunc_, vec2(intensity * 16.0, intensity * 16.0));
-        #else
-            return texture2D(transferFunc_, vec2(intensity,intensity));
-        #endif
-    }
+	vec4 applyTF(float intensity) {
+		return texture2D(transferFunc_, vec2(intensity,intensity));
+	}
 
-    vec4 applyTF(float intensity, float gradientMagnitude) {
-        #ifdef BITDEPTH_12
-            return texture2D(transferFunc_, vec2(intensity * 16.0, gradientMagnitude));
-        #else
-            return texture2D(transferFunc_, vec2(intensity, gradientMagnitude));
-        #endif
-    }
+	vec4 applyTF(float intensity, float gradientMagnitude) {
+		return texture2D(transferFunc_, vec2(intensity, gradientMagnitude));
+	}
 
-    vec4 applyTF(vec4 intensityGradient) {
-	
-	#ifdef BITDEPTH_12
-            return texture2D(transferFunc_, vec2(intensityGradient.a*16.0, length(intensityGradient.rgb)) );
-        #else
-            return texture2D(transferFunc_, vec2(intensityGradient.a, length(intensityGradient.rgb))); 
-	#endif
-    }
+	vec4 applyTF(vec4 intensityGradient) {
+		return texture2D(transferFunc_, vec2(intensityGradient.a, length(intensityGradient.rgb))); 
+	}
 #endif
 
 
-#if defined(MOD_TF_SIMPLE)
+// These fucntions are used by the ambient occlusion raycaster
 
-#else
 vec4 triPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters,
-                      vec3 volumeDimensions, sampler1D classTex, float fetchFactor)
-{
+                      vec3 volumeDimensions, sampler1D classTex, float fetchFactor) {
 	// perform trilinear interpolation with pre-classification
 	vec3 volDimMinusOne = volumeDimensions;//-ivec3(1);
 	vec3 min = floor(sample*volDimMinusOne)/volDimMinusOne;
@@ -100,210 +111,9 @@ vec4 triPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volume
 	return voxColor;
 }
 
-vec4 edgemix(vec4 x, vec4 y, float a, float intensityx, float intensityy) {
-#ifdef BITDEPTH_12
-	if (x.a > 0.0 && intensityx*16.0 >= lowerThreshold_ && intensityx*16.0 < upperThreshold_) {
-        if (y.a > 0.0 && intensityy*16.0 >= lowerThreshold_ && intensityy*16.0 < upperThreshold_) {
-#else
-	if (x.a > 0.0 && intensityx >= lowerThreshold_ && intensityx < upperThreshold_) {
-        if (y.a > 0.0 && intensityy >= lowerThreshold_ && intensityy < upperThreshold_) {
-#endif
-            //if (a>0.5) {
-            //    return vec4(y.rgb,(y.a-x.a)*a+x.a);
-            //}else{
-            //    return vec4(x.rgb,(y.a-x.a)*a+x.a);
-            //}
-            return mix(x,y,a);
-        }else{
-            //return x;
-            return vec4(x.rgb,(1.0-a)*x.a);
-        }
-    }else{
-#ifdef BITDEPTH_12
-        if (y.a > 0.0 && intensityy*16.0 >= lowerThreshold_ && intensityy*16.0 < upperThreshold_) {
-#else
-        if (y.a > 0.0 && intensityy >= lowerThreshold_ && intensityy < upperThreshold_) {
-#endif
-            //return y;
-            return vec4(y.rgb,a*y.a);
-        }else{
-            return vec4(0.0);
-        }
-    }
-}
-
-float intensitymix(float intensity1, float intensity2) {
-#ifdef BITDEPTH_12
-	if (intensity1*16.0 >= lowerThreshold_ && intensity1*16.0 < upperThreshold_) {
-#else
-	if (intensity1 >= lowerThreshold_ && intensity1 < upperThreshold_) {
-#endif
-        return intensity1;
-    }else{
-        return intensity2;
-    }
-}
-
-vec4 mixPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters)
-{
-    vec3 pos = sample * volumeTexParameters.datasetDimensions_;
-    vec3 erg1 = floor(pos);
-    vec3 erg2 = pos + vec3(1.0);
-    vec3 mixf = pos - erg1;
-    erg1 *= volumeTexParameters.datasetDimensionsRCP_;
-    erg2 *= volumeTexParameters.datasetDimensionsRCP_;
-
-	float intensity000 = textureLookup3D(volumeTex, volumeTexParameters, erg1).a;
-	float intensity001 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg1.y,erg2.z)).a;
-	float intensity010 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg1.z)).a;
-	float intensity011 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg2.z)).a;
-	float intensity100 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg1.z)).a;
-	float intensity101 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg2.z)).a;
-	float intensity110 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg2.y,erg1.z)).a;
-	float intensity111 = textureLookup3D(volumeTex, volumeTexParameters, erg2).a;
-
-	vec4 color000 = applyTF(intensity000);
-	vec4 color001 = applyTF(intensity001);
-	vec4 color010 = applyTF(intensity010);
-	vec4 color011 = applyTF(intensity011);
-	vec4 color100 = applyTF(intensity100);
-	vec4 color101 = applyTF(intensity101);
-	vec4 color110 = applyTF(intensity110);
-	vec4 color111 = applyTF(intensity111);
-
-    vec4 color00 = edgemix(color000, color001, mixf.z, intensity000, intensity001);
-    vec4 color01 = edgemix(color010, color011, mixf.z, intensity010, intensity011);
-    vec4 color10 = edgemix(color100, color101, mixf.z, intensity100, intensity101);
-    vec4 color11 = edgemix(color110, color111, mixf.z, intensity110, intensity111);
-
-    vec4 color0 = edgemix(color00, color01, mixf.y, intensitymix(intensity000,intensity001), intensitymix(intensity010,intensity011));
-    vec4 color1 = edgemix(color10, color11, mixf.y, intensitymix(intensity100,intensity101), intensitymix(intensity110,intensity111));
-
-    vec4 color = edgemix(color0, color1, mixf.x, lowerThreshold_, lowerThreshold_);
-    return color;
-}
-
-vec4 jitterPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters,
-                         sampler2D noiseTex)
-{
-    float intensity = textureLookup3D(volumeTex, volumeTexParameters, sample).a;
-
-    vec3 jsample = sample +
-    (texture2D(noiseTex,vec2(intensity*0.23423+sample.x*3.141+sample.y,-intensity*0.0967+sample.z*3.141+sample.x)).rgb
-        - vec3(0.5)) * volumeTexParameters.datasetDimensionsRCP_ /4.0;
-    float jintensity = textureLookup3D(volumeTex, volumeTexParameters, jsample).a;
-
-#ifdef BITDEPTH_12
-	if (!(jintensity*16.0 >= lowerThreshold_ && jintensity*16.0 < upperThreshold_)) {
-#else
-	if (!(jintensity >= lowerThreshold_ && jintensity < upperThreshold_)) {
-#endif
-        jintensity = intensity;
-    }
-    vec4 color = applyTF(jintensity);
-
-    vec3 pos = sample * volumeTexParameters.datasetDimensions_;
-    vec3 erg1 = floor(pos);
-    vec3 erg2 = pos + vec3(1.0);
-    vec3 mixf = pos - erg1;
-    erg1 *= volumeTexParameters.datasetDimensionsRCP_;
-    erg2 *= volumeTexParameters.datasetDimensionsRCP_;
-
-	float alpha000 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, erg1).a).a;
-	float alpha001 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg1.y,erg2.z)).a).a;
-	float alpha010 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg1.z)).a).a;
-	float alpha011 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg2.z)).a).a;
-	float alpha100 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg1.z)).a).a;
-	float alpha101 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg2.z)).a).a;
-	float alpha110 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg2.y,erg1.z)).a).a;
-	float alpha111 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, erg2).a).a;
-
-    float alpha00 = (alpha001-alpha000)*mixf.z+alpha000;
-    float alpha01 = (alpha011-alpha010)*mixf.z+alpha010;
-    float alpha10 = (alpha101-alpha100)*mixf.z+alpha100;
-    float alpha11 = (alpha111-alpha110)*mixf.z+alpha110;
-
-    float alpha0 = (alpha01-alpha00)*mixf.y+alpha00;
-    float alpha1 = (alpha11-alpha10)*mixf.y+alpha10;
-
-    color.a *= (alpha1-alpha0)*mixf.x+alpha0;
-
-    return color;
-}
-
-vec4 intensityPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters,
-                            float factor)
-{
-    float intensity = textureLookup3D(volumeTex, volumeTexParameters, floor((sample * volumeTexParameters.datasetDimensions_)+vec3(0.5))*volumeTexParameters.datasetDimensionsRCP_).a;
-    vec3 pos = sample * volumeTexParameters.datasetDimensions_;
-    vec3 erg1 = floor(pos);
-    vec3 erg2 = pos + vec3(1.0);
-    vec3 mixf = pos - erg1;
-    erg1 *= volumeTexParameters.datasetDimensionsRCP_;
-    erg2 *= volumeTexParameters.datasetDimensionsRCP_;
-
-	float intensity000 = textureLookup3D(volumeTex, volumeTexParameters, erg1).a;
-	float intensity001 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg1.y,erg2.z)).a;
-	float intensity010 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg1.z)).a;
-	float intensity011 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg2.z)).a;
-	float intensity100 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg1.z)).a;
-	float intensity101 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg2.z)).a;
-	float intensity110 = textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg2.y,erg1.z)).a;
-	float intensity111 = textureLookup3D(volumeTex, volumeTexParameters, erg2).a;
-
-    float intensity00 = (intensity001-intensity000)*mixf.z+intensity000;
-    float intensity01 = (intensity011-intensity010)*mixf.z+intensity010;
-    float intensity10 = (intensity101-intensity100)*mixf.z+intensity100;
-    float intensity11 = (intensity111-intensity110)*mixf.z+intensity110;
-
-    float intensity0 = (intensity01-intensity00)*mixf.y+intensity00;
-    float intensity1 = (intensity11-intensity10)*mixf.y+intensity10;
-
-    float dif = abs(intensity - ((intensity1-intensity0)*mixf.x+intensity0));
-
-    vec4 color = applyTF(intensity);
-    color.a *= (1.0-min(1.0,dif/factor));
-    return color;
-}
-
-vec4 alphaPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters)
-{
-    float intensity = textureLookup3D(volumeTex, volumeTexParameters, sample).a;
-
-    vec4 color = applyTF(intensity);
-
-    vec3 pos = sample * volumeTexParameters.datasetDimensions_;
-    vec3 erg1 = floor(pos);
-    vec3 erg2 = pos + vec3(1.0);
-    vec3 mixf = pos - erg1;
-    erg1 *= volumeTexParameters.datasetDimensionsRCP_;
-    erg2 *= volumeTexParameters.datasetDimensionsRCP_;
-
-	float alpha000 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, erg1).a).a;
-	float alpha001 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg1.y,erg2.z)).a).a;
-	float alpha010 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg1.z)).a).a;
-	float alpha011 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg1.x,erg2.y,erg2.z)).a).a;
-	float alpha100 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg1.z)).a).a;
-	float alpha101 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg1.y,erg2.z)).a).a;
-	float alpha110 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, vec3(erg2.x,erg2.y,erg1.z)).a).a;
-	float alpha111 = applyTF(textureLookup3D(volumeTex, volumeTexParameters, erg2).a).a;
-
-    float alpha00 = (alpha001-alpha000)*mixf.z+alpha000;
-    float alpha01 = (alpha011-alpha010)*mixf.z+alpha010;
-    float alpha10 = (alpha101-alpha100)*mixf.z+alpha100;
-    float alpha11 = (alpha111-alpha110)*mixf.z+alpha110;
-
-    float alpha0 = (alpha01-alpha00)*mixf.y+alpha00;
-    float alpha1 = (alpha11-alpha10)*mixf.y+alpha10;
-
-    color.a *= (alpha1-alpha0)*mixf.x+alpha0;
-
-    return color;
-}
 
 vec4 planePreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters, vec3 volumeDimensions,
-                        sampler1D classTex, float fetchFactor, float weighting, float dist, vec3 normal)
-{
+                        sampler1D classTex, float fetchFactor, float weighting, float dist, vec3 normal) {
 	vec3 voxelSize = vec3(1.0) * volumeTexParameters.datasetDimensionsRCP_;
 	vec3 n = normalize(normal);
 
@@ -329,4 +139,3 @@ vec4 planePreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volu
 
 	return weighting*voxColor0 + ((1.0-weighting)/4.0)*(voxColor1+voxColor2+voxColor3+voxColor4);
 }
-#endif

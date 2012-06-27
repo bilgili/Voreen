@@ -89,8 +89,9 @@ namespace voreen {
  * init statics
  */
 
-VolumeGL::LargeVolumeSupport VolumeGL::lvSupport_ = BRICK;
+VolumeGL::LargeVolumeSupport VolumeGL::lvSupport_ = RESIZE_LINEAR;
 int VolumeGL::max3DTexSize_ = 0;
+int VolumeGL::availableGpuMemory_ = 0; 
 const std::string VolumeGL::loggerCat_("Voreen.VolumeGL");
 
 
@@ -231,8 +232,9 @@ VolumeGL::VolumeGL(Volume* volume, const TransFunc* tf /*= 0*/, float alphaScale
         tgtAssert(false, "OpenGL does not support this kind of volume directly");
     }
     // -> not found
-    else
+    else {
         tgtAssert(false, "unsupported volume format_");
+    }
 
     // check hardware support
     if (GpuCaps.areShadersSupported())
@@ -364,6 +366,14 @@ int VolumeGL::getMax3DTexSize() {
     return max3DTexSize_;
 }
 
+void VolumeGL::setAvailableGpuMemory(int availableGpuMemory) {
+	availableGpuMemory_ = availableGpuMemory;
+}
+
+int VolumeGL::getAvailableGpuMemory() {
+	return availableGpuMemory_;
+}
+
 /*
  * further methods
  */
@@ -417,7 +427,7 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
     #endif
     
     
-    if(fitsInVideoRam) {
+    if (fitsInVideoRam) {
 /*
     WARNING THE ALGORITHM BELOW WAS HARD WORK AND IT CAN BE CONSIDERED AS
         __VERY__ __EASY__ TO BREAK SOMETHING ALTHOUGH A BUG IN THIS CODE
@@ -442,11 +452,68 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
             whether splitting must be performed in this direction
         */
         bvec3 splitNecessary = lessThan(maxTexSize, volumeDims);
+
+		//This checks if the texture would fit into the gpu memory
+		long numVoxels = static_cast<long>(volume_->getNumVoxels());
+		int bytesAllocated = volume_->getBitsAllocated() / 8;
+		int volumeSizeMB = static_cast<int>(ceil((numVoxels*bytesAllocated) / (1024.0 * 1024.0)));
+		bool fitsInGpuMemory;
+
+		//if availableGpuMemory_ is 0 we assume the volume fits into gpu memory
+		if ( (volumeSizeMB < availableGpuMemory_) || (availableGpuMemory_ ==0) )
+			fitsInGpuMemory = true;
+		else
+			fitsInGpuMemory = false;
+
+		//Do the dimensions of the texture exceed the max3DTexSize?
+		bool dimensionsFit = !hor(splitNecessary);
     
         // set pixel store with no alignment when reading from main memory
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+		//This means the volume does fit into gpu memory and the dimensions
+		//aren't too big either
+		bool volumeOK = true;
+
+		//The ratio we are using to downscale the volume in case it is not ok
+		float ratio;
+
+		if (fitsInGpuMemory && (!dimensionsFit) ) {
+			//Only the dimensions are too big, the memory of the gpu is enough
+			volumeOK = false;
+			ratio = float(maxTexSize.x) / max( vec3(volumeDims) ); 	
+		} 
+		else if ( (!fitsInGpuMemory) && dimensionsFit) {
+			//The dimensions are ok, but the volume is too big for the gpu memory
+			volumeOK = false;
+			//Calculate the ratio for the downscaling. This is a little complicated. The
+			//ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
+			long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
+			long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
+			float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
+			ratio = pow(temp,static_cast<float>(1.0/3.0));
+		} 
+		else if ( (!fitsInGpuMemory) && (!dimensionsFit) ) {
+			//The dimensions are too big AND the volume is too big for the gpu memory
+			volumeOK = false;
+			//Check if the volume would fit into gpu memory if we scaled it down to
+			//max3DTexSize
+			ratio = static_cast<float>(maxTexSize.x) / max( vec3(volumeDims) );
+			tgt::ivec3 newDims = ivec3(ratio * vec3(volumeDims));
+			int newVolumeSizeMB = static_cast<int>(ceil((newDims.x * newDims.y * newDims.z *bytesAllocated) / (1024.0 * 1024.0)));
+
+			//If the newVolumeSize is sufficiently small, we're done, otherwise we have to downscale even more.
+			if (newVolumeSizeMB >= availableGpuMemory_) {
+				//Calculate the ratio for the downscaling. This is a little complicated. The
+				//ratio is the third root of (maxNumberOfAvailableVoxels / v.x * v.y * v.z)
+				long maxMemorySizeInByte = availableGpuMemory_ * 1024*1024;
+				long maxNumberOfVoxels = maxMemorySizeInByte / bytesAllocated;
+				float temp = static_cast<float>(maxNumberOfVoxels) / static_cast<float>(numVoxels);
+				ratio = pow(temp,static_cast<float>(1.0/3.0));
+			}
+		}
     
-        if ( hor(splitNecessary) ) {
+        if (!volumeOK) {
             Volume::Filter filter = Volume::LINEAR;
     
             switch (lvSupport_) {
@@ -454,7 +521,7 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                     filter = Volume::NEAREST;
                     // fall through the next case statement
                 case RESIZE_LINEAR: {
-                    float ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
+                    //float ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
     
                     try {
                         volume_ = origVolume_->scale( ivec3(ratio * vec3(volumeDims)), filter);
@@ -468,14 +535,14 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                     volumeSpacing = volume_->getSpacing();
     
                     // bricking not necessary -> we have scaled
-                    splitNecessary = bvec3(false);
+                    volumeOK = true;
                     break;
                 }
                 case BRICK: { /*do nothing*/ }
             }
         }
     
-        if ( hor(splitNecessary) ) {
+        if (!volumeOK) {
             // -> we must split
             LINFO("Starting splitting now...");
     
@@ -612,11 +679,11 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
                 incr.y = maxTexSize.y - 2;
                 size.y = maxTexSize.y;
             } // for -> z
-        } // if split neccessary
+		} // if split neccessary
     
     // WARNING END
         
-        else {
+		else {
             // -> we don't have to split
     
         /*
@@ -722,8 +789,9 @@ void VolumeGL::uploadTexture(const TransFunc* tf, float alphaScale /*= 1.f*/,
                 temp[i*4 + 3] = static_cast<GLubyte>(tf->getTexture()->texel<col4>(index)[3] * alphaScale);
             }
         }
-        else
+        else {
             tgtAssert( false, "type must be either VolumeUInt8 or VolumeUInt16 here" );
+        }
     }
 
     // create texture

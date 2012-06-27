@@ -27,38 +27,51 @@
  *                                                                    *
  **********************************************************************/
 
+#include "voreen/core/volume/volumehandle.h"
+
 #include "voreen/core/volume/volumeset.h"
+#include "voreen/core/volume/volumeseries.h"
 
 namespace voreen {
 
-VolumeHandle::VolumeHandle(const VolumeHandle& handle) {
-    if (handle != *this) {
-        hardwareVolumeMask_ = handle.getHardwareVolumeMask();
-        volume_ = handle.getVolume();
-        volumeGL_ = handle.getVolumeGL();
-        time_ = handle.getTimestep();
-        parentSeries_ = handle.getParentSeries();
-    }
-}
+const std::string VolumeHandle::loggerCat_("Voreen.VolumeHandle");
 
 VolumeHandle::VolumeHandle(VolumeSeries* const parentSeries, Volume* const volume, const float time)
     : volume_(volume), 
       time_(time),
+      hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE),
       parentSeries_(parentSeries), 
-      hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE)
+      file_("")
 {
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
 #endif
+
+#ifdef VRN_MODULE_CUDA
+    volumeCUDA_ = 0;
+#endif
+}
+
+VolumeHandle::VolumeHandle(const VolumeHandle& handle) : Serializable() {
+    if (handle != *this) {
+        volume_ = handle.getVolume();
+        time_ = handle.getTimestep();
+        parentSeries_ = handle.getParentSeries();
+        hardwareVolumeMask_ = handle.getHardwareVolumeMask();
+        file_ = handle.getFileName();
+#ifndef VRN_NO_OPENGL
+        volumeGL_ = handle.volumeGL_;
+#endif
+
+#ifdef VRN_MODULE_CUDA
+        volumeCUDA_ = handle.volumeCUDA_;
+#endif
+    }
 }
 
 VolumeHandle::~VolumeHandle() {
+    freeHardwareVolumes();
     delete volume_;
-
-#ifndef VRN_NO_OPENGL
-    delete volumeGL_;
-#endif
-    // TODO: add deleting for attributes for CUDA volumes
 }
 
 bool VolumeHandle::operator<(const VolumeHandle& handle) const {
@@ -78,12 +91,12 @@ Volume* VolumeHandle::getVolume() const {
 }
 
 void VolumeHandle::setVolume(Volume* const volume) {
-    if( volume != volume_ ) {
+    if (volume != volume_) {
         delete volume_;
         volume_ = volume;
-        // as the volume has changed, the hardware volumes need
+
+        // As the volume has changed, the hardware volumes need
         // to be updated, too! So simply regenerate them.
-        //
         generateHardwareVolumes(hardwareVolumeMask_);
     }
 }
@@ -92,8 +105,22 @@ float VolumeHandle::getTimestep() const {
     return time_;
 }
 
-void VolumeHandle::setTimestep(const float timestep) {
-    time_ = timestep;
+bool VolumeHandle::setTimestep(const float timestep) {
+    if (timestep != time_) {
+        // If the timestep is not already contained in
+        // the parent VolumeSeries it can be used for
+        // this VolumeHandle. Otherwise it cannot be used.
+        if (parentSeries_ != 0 && parentSeries_->findVolumeHandle(timestep) == 0) {
+            time_ = timestep;
+            parentSeries_->timestepChanged(this);
+            return true;
+        } 
+        if (parentSeries_ == 0) {
+            time_ = timestep;
+            return true;
+        }
+    }
+    return false;
 }
 
 VolumeSeries* VolumeHandle::getParentSeries() const {
@@ -104,48 +131,73 @@ void VolumeHandle::setParentSeries(VolumeSeries* const series) {
     parentSeries_ = series;
 }
 
+const std::string& VolumeHandle::getFileName() const {
+    return file_;
+}
+
+void VolumeHandle::setFileName(const std::string& filename) {
+    file_ = filename;
+}
+
 int VolumeHandle::getHardwareVolumeMask() const {
     return hardwareVolumeMask_;
 }
 
+bool VolumeHandle::hasHardwareVolumes(int volumeMask) const {
+    return (hardwareVolumeMask_ & volumeMask);
+}
+
 void VolumeHandle::generateHardwareVolumes(int volumeMask) {
-    hardwareVolumeMask_ = volumeMask;
+    std::string filename = (volume_->meta().getFileName().empty() ? "unknown" : volume_->meta().getFileName());
+    
 #ifndef VRN_NO_OPENGL
-    if ((hardwareVolumeMask_ & VolumeHandle::HARDWARE_VOLUME_GL) != 0) {
+    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_GL) {
+        LDEBUG("generate GL hardware volume for " << filename);
         delete volumeGL_;
         volumeGL_ = new VolumeGL(volume_);
+        hardwareVolumeMask_ |= VolumeHandle::HARDWARE_VOLUME_GL; // set bit
     }
 #endif
-    // TODO: add support for CUDA in the same fashion as it is done for VolumeGL
-    // above
-}
 
-bool VolumeHandle::hasVolumeGL() const {
-#ifndef VRN_NO_OPENGL
-    return ((hardwareVolumeMask_ & VolumeHandle::HARDWARE_VOLUME_GL) != 0);
-#else
-    return false;
+#ifdef VRN_MODULE_CUDA
+    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_CUDA) {
+        LDEBUG("generate CUDA hardware volume for " << filename);
+        delete volumeCUDA_;
+        volumeCUDA_ = new VolumeCUDA(volume_);
+        hardwareVolumeMask_ |= VolumeHandle::HARDWARE_VOLUME_CUDA; // set bit
+    }
 #endif
 }
 
-bool VolumeHandle::hasVolumeCUDA() const {
-    // TODO: adapt when implementing VolumeCUDA
-    //
-    return false;
+void VolumeHandle::freeHardwareVolumes(int volumeMask) {
+#ifndef VRN_NO_OPENGL
+    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_GL) {
+        delete volumeGL_;
+        volumeGL_ = 0;
+        hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_GL; // remove bit
+    }
+#endif
+
+#ifdef VRN_MODULE_CUDA
+    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_CUDA) {
+        delete volumeCUDA_;
+        volumeCUDA_ = 0;
+        hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_CUDA; // remove bit
+    }
+#endif
 }
 
-Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const
-{
-    if( (parentSeries_ == 0) )
+Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const {
+    if (parentSeries_ == 0)
         return 0;
 
     VolumeSet* set = parentSeries_->getParentVolumeSet();
-    if( set != 0 ) {
+    if (set != 0) {
         std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for( size_t i = 0; i < series.size(); i++ ) {
-            if( series[i] != 0 ) {
+        for (size_t i = 0; i < series.size(); i++) {
+            if (series[i] != 0 && series[i] != parentSeries_) {
                 VolumeHandle* handle = series[i]->findVolumeHandle(time_);
-                if( handle != 0 )
+                if (handle != 0)
                     return handle->getVolume();
             }
         }
@@ -154,23 +206,126 @@ Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const
 }
 
 #ifndef VRN_NO_OPENGL
-VolumeGL* VolumeHandle::getRelatedVolumeGL(const Modality& modality) const {
-    if( (parentSeries_ == 0) )
+
+VolumeGL* VolumeHandle::getRelatedVolumeGL(const Modality& modality) {
+    if (parentSeries_ == 0)
         return 0;
 
     VolumeSet* set = parentSeries_->getParentVolumeSet();
-    if( set != 0 ) {
+    if (set != 0) {
         std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for( size_t i = 0; i < series.size(); i++ ) {
-            if( series[i] != 0 ) {
+        for (size_t i = 0; i < series.size(); i++) {
+            if (series[i] != 0 && series[i] != parentSeries_) {
                 VolumeHandle* handle = series[i]->findVolumeHandle(time_);
-                if( handle != 0 )
+                if (handle != 0)
                     return handle->getVolumeGL();
             }
         }
     }
     return 0;
 }
-#endif
+
+VolumeGL* VolumeHandle::getVolumeGL() {
+    if (volumeGL_ == 0)
+        generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
+
+    return volumeGL_;
+}
+
+#endif // VRN_NO_OPENGL
+
+#ifdef VRN_MODULE_CUDA
+
+VolumeCUDA* VolumeHandle::getVolumeCUDA() {
+    if (volumeCUDA_ == 0)
+        generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_CUDA);
+
+    return volumeCUDA_;
+}
+
+#endif // VRN_MODULE_CUDA
+
+void VolumeHandle::setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep) {
+    origin_.filename = filename;
+    origin_.seriesname = seriesname;
+    origin_.timestep = timestep;
+}
+
+void VolumeHandle::setOrigin(const VolumeHandle::Origin& origin) {
+    origin_ = origin;
+}
+
+const VolumeHandle::Origin& VolumeHandle::getOrigin() const {
+    return origin_;
+}
+
+const std::string VolumeHandle::Origin::XmlElementName = "Origin";
+
+TiXmlElement* VolumeHandle::Origin::serializeToXml() const {
+    serializableSanityChecks();
+    TiXmlElement* originElem = new TiXmlElement(XmlElementName);
+    
+    originElem->SetAttribute("filename", filename);
+    originElem->SetAttribute("seriesname", seriesname);
+    originElem->SetDoubleAttribute("timestep", timestep);
+    return originElem;
+}
+
+void VolumeHandle::Origin::updateFromXml(TiXmlElement* elem) {
+    errors_.clear();
+    serializableSanityChecks(elem);
+
+    if (!(elem->Attribute("filename") &&
+          elem->Attribute("seriesname") &&
+          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
+        throw XmlAttributeException("Origin remains unknown"); // TODO Better Exception
+    filename = elem->Attribute("filename");
+    seriesname = elem->Attribute("seriesname");
+}
+
+const std::string VolumeHandle::XmlElementName = "VolumeHandle";
+
+TiXmlElement* VolumeHandle::serializeToXml() const {
+    serializableSanityChecks();
+    TiXmlElement* handleElem = new TiXmlElement(getXmlElementName());
+    // Serialize Data TODO remove filename
+    //handleElem->SetAttribute("filename", getFileName());
+    handleElem->SetDoubleAttribute("timestep", getTimestep());
+    // Serialize Origin
+    handleElem->LinkEndChild(origin_.serializeToXml());
+    return handleElem;
+}
+
+void VolumeHandle::updateFromXml(TiXmlElement* elem) {
+    errors_.clear();
+    serializableSanityChecks(elem);
+    // deserialize VolumeHandle TODO remove filename
+    float timestep;
+    if (!(/*elem->Attribute("filename") &&*/
+          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
+        throw XmlAttributeException("Attributes missing on VolumeHandle element"); // TODO Better Exception
+    //setFileName(elem->Attribute("filename"));
+    setTimestep(timestep);
+    // deserialize Origin
+    origin_.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
+}
+
+void VolumeHandle::updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap) {
+    updateFromXml(elem);
+    std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >::iterator it = volumeMap.find(origin_);
+    if (it != volumeMap.end()) {
+        setVolume(it->second.first);
+        it->second.second = true; // We used the volume - now the map knows that.
+    }
+    else throw SerializerException("Origin of this handle not found");// TODO better exception
+}
+
+std::string VolumeHandle::getFileNameFromXml(TiXmlElement* elem) {
+//    errors_.clear();
+//    serializableSanityChecks(elem);
+    Origin origin;
+    origin.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
+    return origin.filename;
+}
 
 } // namespace

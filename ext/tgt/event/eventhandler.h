@@ -70,7 +70,7 @@ public:
     /**
      * Returns the number of listeners associated.
      */
-    int getListenerNumber() const;
+    size_t getListenerNumber() const;
 };
 
 }

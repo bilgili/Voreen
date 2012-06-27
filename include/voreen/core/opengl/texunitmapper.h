@@ -30,15 +30,13 @@
 #ifndef VRN_TEXUNITMAPPER_H
 #define VRN_TEXUNITMAPPER_H
 
-#include <string>
-#include <vector>
-#include <map>
 #include <set>
+#include <map>
 #include <stdexcept>
-#include "tgt/types.h"
-#include "voreen/core/vis/identifier.h"
 
 namespace voreen {
+
+class Identifier;
 
 class TexUnitMapper{
 public:
@@ -67,12 +65,12 @@ public:
     /**
      * Returns tex unit number mapped to indentifier.
      */
-    uint getTexUnit(const Identifier& ident);
+    GLint getTexUnit(const Identifier& ident);
 
     /**
      * Returns OpenGL tex unit mapped to identifier.
      */
-    uint getGLTexUnit(const Identifier& ident);
+    GLint getGLTexUnit(const Identifier& ident);
 
     /**
      * Sets the current system of texture units.
@@ -85,18 +83,18 @@ public:
 	 * Maps numeric values (0...n) to the corresponding OpenGL values (GL_TEXTUREn).
      * @param texUnit texture unit number.
      */
-    static uint getGLTexUnitFromInt(uint texUnit);
+    static GLint getGLTexUnitFromInt(GLint texUnit);
 
     /**
      * Sets tex unit number free.
      * Use this function only in combination with getFreeTexUnit().
      */
-    void setTexUnitFree(uint texUnit);
+    void setTexUnitFree(GLint texUnit);
 
     /**
      * Returns the current mapping.
      */
-    std::map<Identifier, uint>* getCurrentSystem();
+    std::map<Identifier, GLint>* getCurrentSystem();
 
     /**
      * Removes a texture unit from registered units.
@@ -107,7 +105,7 @@ private:
     /**
      * Saves use status of a GL_TEXTURE unit.
      */
-    std::set<uint> texUnits_;
+    std::set<GLint> texUnits_;
 
     /**
      * Calculates new mapping.
@@ -119,21 +117,22 @@ private:
      * Use this function only for debug purpose.
      * This function makes rendering slower than using the precomputed mapping.
      */
-    uint getFreeTexUnit();
+    GLint getFreeTexUnit();
 
     /**
      * Maps identifiers to texture units.
      */
-    std::map<Identifier, uint>* registeredUnits_;
+    std::map<Identifier, GLint>* registeredUnits_;
 
     /**
      * Gets the next free texture unit number.
      */
-    uint getFreeTexUnitInt();
+    GLint getFreeTexUnitInt();
 
     /**
      * Exception class for TexUnitMapper.
      */
+    //FIXME: use VoreenException
     struct texUnit_Exception : public std::runtime_error {
         /**
          * Constructor for a texUnit_Exception.

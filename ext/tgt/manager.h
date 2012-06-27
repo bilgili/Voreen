@@ -34,11 +34,37 @@
 #include "tgt/config.h"
 #include "tgt/types.h"
 #include "tgt/assert.h"
+#include "tgt/filesystem.h"
+#include "tgt/logmanager.h"
 
 namespace tgt {
 
 template <class T>
 class ResourceManager {
+public:
+    /// Constructor
+    ResourceManager(bool cacheResources = true);
+    
+    /// Destroy all resources in memory
+    virtual ~ResourceManager();
+    
+    /// Check if resource is loaded
+    bool isLoaded(const std::string& filename);
+    
+    /// Mark resource as unused
+    virtual void dispose(T* ptr);
+
+    // getter - setter
+    void addPath(std::string path);
+    void removePath(std::string path);
+
+    /// Searches in all paths for file and returns valid filename including complete path
+    std::string completePath(std::string filename);
+
+    bool isCaching() const { return cacheResources_; }
+
+    std::vector<std::string> getFilenames();
+
 protected:
     struct Resource {
         T*          data_;
@@ -50,56 +76,31 @@ protected:
     std::map< T*, Resource* >           resourcesByPtr_;
     bool cacheResources_;
 
-    //path_ deprecated - should be remove from derived classes
-    std::string path_;
     std::list<std::string> pathList_;
-    
+
     void reg(T *ptr, const std::string& filename);
     void increaseUsage(const std::string& filename);
-    
+
+    // tgt logging category
+    static const std::string loggerCat_;
+
     // getter - setter
     T* get(const std::string& filename) { return resourcesByFilename_[filename]->data_; }
     const T* get(const std::string& filename) const { return resourcesByFilename_[filename]->data_; }
-
-public:
-    /// A constructor
-    ResourceManager(bool cacheResources = true);
-    
-    /// Destroy all resources in memory
-    virtual ~ResourceManager();
-    
-    //virtual T* load(const std::string& filename) { return 0; }
-    
-    /// Check if resource is loaded
-    bool isLoaded(const std::string& filename);
-    
-    /// Mark resource as unused
-    virtual void dispose(T* ptr);
-
-    // getter - setter
-    void setPath(std::string path) { path_ = path; }
-    std::string getPath() { return path_; }
-    void addPath(std::string path);
-    void removePath(std::string path);
-    
-    bool isCaching() { return cacheResources_; }
-
-    std::vector<std::string> getFilenames();
 };
 
 
-
-
+template <class T>
+const std::string ResourceManager<T>::loggerCat_("tgt.Manager");
 
 template <class T>
 void ResourceManager<T>::reg(T* ptr, const std::string& filename) {
-    if(!cacheResources_ && isLoaded(filename) ) {
+    if (!cacheResources_ && isLoaded(filename)) {
         Resource* r = resourcesByFilename_[filename];
         r->data_ = ptr;
         r->usedBy_++;
         resourcesByPtr_[ptr] = r;
-    }
-    else {
+    } else {
         Resource* r = new Resource();
         r->data_ = ptr;
         r->usedBy_ = 1;
@@ -117,17 +118,16 @@ void ResourceManager<T>::increaseUsage(const std::string& filename) {
 
 template <class T>
 ResourceManager<T>::ResourceManager(bool cacheResources) {
-    //this should not be changed afterwards:
+    // this should not be changed afterwards
     cacheResources_ = cacheResources;
-    path_ = "";
 }
 
 template <class T>
 ResourceManager<T>::~ResourceManager() {
-    while(!resourcesByFilename_.empty()) {
+    while (!resourcesByFilename_.empty()) {
 #ifdef TGT_DEBUG
-        std::cout << "Un-disposed Resource: " << (*resourcesByFilename_.begin()).second->filename_
-                  << " in use by " << (*resourcesByFilename_.begin()).second->usedBy_ << std::endl;
+        LDEBUG("Un-disposed Resource: " << (*resourcesByFilename_.begin()).second->filename_
+               << " in use by " << (*resourcesByFilename_.begin()).second->usedBy_);
 #endif
         delete resourcesByFilename_.begin()->second->data_;
         delete resourcesByFilename_.begin()->second;
@@ -137,58 +137,80 @@ ResourceManager<T>::~ResourceManager() {
 
 template <class T>
 bool ResourceManager<T>::isLoaded(const std::string& filename) {
-    return( (cacheResources_) && (resourcesByFilename_.find(filename) != resourcesByFilename_.end()) );
+    return(cacheResources_ && (resourcesByFilename_.find(filename) != resourcesByFilename_.end()));
 }
 
 template <class T>
 void ResourceManager<T>::dispose(T* ptr) {
-    if(ptr == 0){
+    if (ptr == 0 || resourcesByPtr_.find(ptr) == resourcesByPtr_.end())
         return;
-    }
-    if(resourcesByPtr_.find(ptr) == resourcesByPtr_.end()) {
-        return;
-    }
+
     Resource* r = resourcesByPtr_[ptr];
     r->usedBy_--;
-    //check if resource is still in use:
-    if(r->usedBy_ == 0) {
+    
+    // check if resource is still in use
+    if (r->usedBy_ == 0) {
         std::string filename = r->filename_;
         delete r->data_;
         resourcesByFilename_.erase(filename);
         resourcesByPtr_.erase(ptr);
         delete r;
     }
-    else if(!cacheResources_) {
+    else if (!cacheResources_) {
         resourcesByPtr_.erase(ptr);
     }
     ptr = 0;
 }
 
 template <class T>
-void ResourceManager<T>::addPath( std::string path ) {
+void ResourceManager<T>::addPath(std::string path) {
     pathList_.push_front(path);
 	// remove duplicates
+    //TODO: better use std::set<> here
 	pathList_.sort();
 	pathList_.unique();
 }
 
 template <class T>
-void ResourceManager<T>::removePath( std::string path ) {
+void ResourceManager<T>::removePath(std::string path) {
     std::list<std::string>::iterator it;
-    for( it = pathList_.begin(); it != pathList_.end(); ++it ) {
-        if ( *it == path )
-            pathList_.erase( it );
+    for (it = pathList_.begin(); it != pathList_.end(); ++it) {
+        if (*it == path) {
+            pathList_.erase(it);
+            break;
+        }
     }   
+}
+
+template <class T>
+std::string ResourceManager<T>::completePath(std::string filename) {
+    std::string cplFileName = filename;
+
+    bool foundFile = false;
+    if (!cplFileName.empty()) {
+        std::list<std::string>::iterator iter = pathList_.begin();
+        while (iter != pathList_.end() && !foundFile) {
+            cplFileName = (!(*iter).empty() ? (*iter) + '/' : "") + filename;
+            LDEBUG("Completed file name to " << cplFileName);
+            if (FileSys.exists(cplFileName))
+                foundFile = true;
+            iter++;
+        }
+    }
+
+    return cplFileName;
 }
 
 template <class T>
 std::vector<std::string> ResourceManager<T>::getFilenames() {
     std::vector<std::string> filenames;
-    for (typename std::map<std::string, Resource*>::const_iterator iter = resourcesByFilename_.begin(); iter != resourcesByFilename_.end(); iter++)
+    for (typename std::map<std::string, Resource*>::const_iterator iter = resourcesByFilename_.begin();
+         iter != resourcesByFilename_.end(); iter++)
+    {
         filenames.push_back((*iter).first);
+    }
     return filenames;
 }
-
 
 } // namespace tgt
 

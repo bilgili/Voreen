@@ -67,6 +67,7 @@
 #endif
 
 #include "voreen/qt/widgets/widgetplugin.h"
+#include "voreen/qt/widgets/canvasmodifier.h"
 #include "voreen/qt/widgets/consoleplugin.h"
 #include "voreen/qt/widgets/informationplugin.h"
 #include "voreen/qt/widgets/transfunc/transfuncplugin.h"
@@ -75,7 +76,7 @@
 #include "voreen/qt/widgets/showtexcontainerwidget.h"
 #include "voreen/qt/widgets/segmentationplugin.h"
 #ifdef VRN_MODULE_DEFORMATION
-#include "voreen/qt/widgets/deformationplugin.h"
+#include "voreen/modules/deformation/deformationplugin.h"
 #endif
 #include "voreen/qt/widgets/transfunc/transfuncalphaplugin.h"
 #include "voreen/qt/widgets/pickingplugin.h"
@@ -136,6 +137,7 @@ private slots:
     void showTextureContainer(bool enable);
     void runScript();
     void showVolumeMapping();
+    void connectCanvasModifier(bool connect);
 
 private:
     enum {
@@ -178,12 +180,13 @@ private:
     QToolBox* toolBox_;
 
 #ifdef VRN_WITH_DCMTK
-    DicomDirDialog* dicomDirDialog_;
+    voreen::DicomDirDialog* dicomDirDialog_;
 #endif
 
     tgt::Camera* camera_;
     tgt::Trackball* trackball_;
     tgt::QtCanvas* canvas3D_;
+    voreen::CanvasModifier* canvasMod_;
 	voreen::NetworkEvaluator* evaluator_;
 	voreen::NetworkSerializer* networkSerializer_;
 
@@ -195,7 +198,6 @@ private:
 #ifdef VRN_MODULE_DEFORMATION
     voreen::PluginDialog* deformationDialog_;
 #endif
-    voreen::PluginDialog* backgroundDialog_;
     voreen::PluginDialog* pickingDialog_;
     voreen::PluginDialog* sketchDialog_;
 
@@ -230,12 +232,12 @@ private:
     QAction* quitAct_;
     QAction* aboutAct_;
 
+    QAction* connectCanvasModAct_;
     QAction* infoAction_;
     QAction* orientationAction_;
     QAction* snapshotAction_;
     QAction* animationAction_;
     QAction* lightMaterialAction_;
-    QAction* backgroundAction_;
     QAction* rebuildShadersAction_;
     QAction* textureContainerAction_;
     QAction* segmentationAction_;
@@ -261,10 +263,6 @@ private:
     voreen::VolumeSerializer* volumeSerializer_;
     voreen::VolumeSerializerPopulator volumeSerializerPopulator_;
     QVector<voreen::WidgetPlugin*>* pipelinePlugins_;
-
-    //TODO: only needed for auto-generated gui
-    //can be removed if auto-gen gui is deprecated
-    voreen::Processor* processor_;
 
     voreen::GeometryContainer* gc_;
     voreen::VolumeSetContainer* volumeSetContainer_;

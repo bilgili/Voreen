@@ -45,7 +45,7 @@ class TGTvec3PointListGeometry : public PointListGeometry<tgt::vec3> {
         {
             //vector<tgt::vec3>& points = static_cast< vector<tgt::vec3> >(points_);
             glBegin(GL_POINTS);
-            for( size_t i = 0; i < points_->size(); i++ )
+            for ( size_t i = 0; i < points_->size(); i++ )
             {
                 //tgt::vec3& v = static_cast<tgt::vec3>(points[i]);
                 tgt::vec3& v = this->points_->at(i);

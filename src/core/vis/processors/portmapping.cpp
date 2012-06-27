@@ -27,8 +27,11 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/portmapping.h"
+
+
+#include "voreen/core/vis/processors/processor.h"
+
 
 namespace voreen {
 
@@ -36,7 +39,7 @@ PortMapping::PortMapping(std::map<Port*,std::vector<PortData*> > portMap) {
 	portMap_=portMap;
 }
 
-LocalPortMapping* PortMapping::createLocalPortMapping(Processor *processor) {
+LocalPortMapping* PortMapping::createLocalPortMapping(Processor* processor) {
 	return new LocalPortMapping(this, processor);
 }
 
@@ -47,7 +50,7 @@ int PortMapping::getTarget(Processor* processor, Identifier ident, int pos) thro
 
 	std::vector<PortData*> targets = portMap_[p];
 
-	if ((int)targets.size() <= pos)
+	if (static_cast<int>(targets.size()) <= pos)
 		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
 
 	PortDataTexture* pdt = dynamic_cast<PortDataTexture*>(targets.at(pos));
@@ -55,7 +58,7 @@ int PortMapping::getTarget(Processor* processor, Identifier ident, int pos) thro
 	if (!pdt)
         throw VoreenException("The data mapped to this is port is not a TextureContainer target.");
 
-	return pdt->getTarget();
+	return pdt->getData();
 }
 
 std::vector<int> PortMapping::getAllTargets(Processor* processor, Identifier ident) throw(std::exception) {
@@ -71,56 +74,13 @@ std::vector<int> PortMapping::getAllTargets(Processor* processor, Identifier ide
 	std::vector<int> targets;
 	PortDataTexture* pdt;
 
-	for (size_t i=0; i < portData.size(); i++) {
+	for (size_t i=0; i < portData.size(); ++i) {
 		pdt = dynamic_cast<PortDataTexture*>(portData.at(i));
 
 		if (!pdt)
             throw VoreenException("The data mapped to this is port is not a TextureContainer target.");
 		
-		targets.push_back(pdt->getTarget());
-	}
-
-	return targets;
-}
-
-int PortMapping::getVolumeNumber(Processor* processor, Identifier ident, int pos) throw (std::exception) {
-	Port* p = processor->getPort(ident);
-	if (p==0)
-        throw VoreenException("No port with the given identifier '" + ident.getName() + "' found.");
-
-	std::vector<PortData*> portData = portMap_[p];
-
-	if ((int)portData.size() <= pos)
-		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
-
-	PortDataVolume* pdv = dynamic_cast<PortDataVolume*>(portData.at(pos));
-
-	if (!pdv)
-        throw VoreenException("The data mapped to this is port is not a volume number.");
-
-	return pdv->getTarget();
-}
-
-std::vector<int> PortMapping::getAllVolumeNumbers(Processor* processor, Identifier ident) throw(std::exception) {
-	Port* p = processor->getPort(ident);
-	if (p==0)
-        throw VoreenException("No port with the given identifier '" + ident.getName() + "' found.");
-
-	std::vector<PortData*> portData = portMap_[p];
-
-	if (portData.size() < 1)
-		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
-
-	std::vector<int> targets;
-	PortDataVolume* pdv;
-
-	for (size_t i=0; i < portData.size(); i++) {
-		pdv = dynamic_cast<PortDataVolume*>(portData.at(i));
-
-		if (!pdv)
-            throw VoreenException("The data mapped to this is port is not a volume number.");
-		
-		targets.push_back(pdv->getTarget());
+		targets.push_back(pdt->getData());
 	}
 
 	return targets;
@@ -133,7 +93,7 @@ int PortMapping::getGeometryNumber(Processor* processor, Identifier ident, int p
 
 	std::vector<PortData*> portData = portMap_[p];
 
-	if ((int)portData.size() < pos)
+	if (static_cast<int>(portData.size()) < pos)
 		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
 
 	PortDataGeometry* pdg = dynamic_cast<PortDataGeometry*>(portData.at(pos));
@@ -141,7 +101,7 @@ int PortMapping::getGeometryNumber(Processor* processor, Identifier ident, int p
 	if (!pdg)
         throw VoreenException("The data mapped to this is port is not a geometry number.");
 
-	return pdg->getTarget();
+	return pdg->getData();
 }
 
 std::vector<int> PortMapping::getAllGeometryNumbers(Processor* processor, Identifier ident) throw(std::exception) {
@@ -157,15 +117,14 @@ std::vector<int> PortMapping::getAllGeometryNumbers(Processor* processor, Identi
 	std::vector<int> targets;
 	PortDataGeometry* pdg;
 
-	for (size_t i=0; i < portData.size(); i++) {
+	for (size_t i=0; i < portData.size(); ++i) {
 		pdg= dynamic_cast<PortDataGeometry*>(portData.at(i));
 
 		if (!pdg)
             throw VoreenException("The data mapped to this is port is not a volume number.");
 		
-		targets.push_back(pdg->getTarget());
+		targets.push_back(pdg->getData());
 	}
-
 	return targets;
 }
 
@@ -176,7 +135,7 @@ PortDataCoProcessor* PortMapping::getCoProcessorData(Processor* processor, Ident
 
 	std::vector<PortData*> portData = portMap_[p];
 
-	if ((int)portData.size() < pos)
+	if (static_cast<int>(portData.size()) < pos)
 		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
 
 	PortDataCoProcessor* pdcp = dynamic_cast<PortDataCoProcessor*>(portData.at(pos));
@@ -200,7 +159,7 @@ std::vector<PortDataCoProcessor*> PortMapping::getAllCoProcessorData(Processor* 
 	std::vector<PortDataCoProcessor*> result;
 	PortDataCoProcessor* pdcp;
 
-	for (size_t i=0; i<portData.size(); i++) {
+	for (size_t i=0; i<portData.size(); ++i) {
 		pdcp = dynamic_cast<PortDataCoProcessor*>(portData.at(i));
 
 		if (!pdcp)
@@ -209,7 +168,6 @@ std::vector<PortDataCoProcessor*> PortMapping::getAllCoProcessorData(Processor* 
 		result.push_back(pdcp);
 
 	}
-
 	return result;
 }
 
@@ -217,8 +175,7 @@ std::vector<PortDataCoProcessor*> PortMapping::getAllCoProcessorData(Processor* 
 
 LocalPortMapping::LocalPortMapping(PortMapping* portMapping, Processor* processor) :
     portMapping_(portMapping), processor_(processor)
-{
-}
+{}
 
 int LocalPortMapping::getTarget(Identifier ident, int pos) throw (std::exception) {
 	return portMapping_->getTarget(processor_, ident, pos);
@@ -226,14 +183,6 @@ int LocalPortMapping::getTarget(Identifier ident, int pos) throw (std::exception
 
 std::vector<int> LocalPortMapping::getAllTargets(Identifier ident) throw(std::exception) {
 	return portMapping_->getAllTargets(processor_, ident);
-}
-
-int LocalPortMapping::getVolumeNumber(Identifier ident, int pos) throw (std::exception) {
-	return portMapping_->getVolumeNumber(processor_, ident, pos);
-}
-
-std::vector<int> LocalPortMapping::getAllVolumeNumbers(Identifier ident) throw(std::exception) {
-	return portMapping_->getAllVolumeNumbers(processor_, ident);
 }
 
 int LocalPortMapping::getGeometryNumber(Identifier ident, int pos) throw (std::exception) {

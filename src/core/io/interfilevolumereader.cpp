@@ -46,7 +46,7 @@ InterfileVolumeReader::InterfileVolumeReader()  {
     extensions_.push_back("hv");
 }
 
-VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* InterfileVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string imageDataFilename;
@@ -118,7 +118,8 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generat
             }
             else if ((key == "scaling factor (mm/pixel) [1]") ||
                      (key == "scaling factor (mm/pixel) [2]") ||
-                     (key == "scaling factor (mm/pixel) [3]")) {
+                     (key == "scaling factor (mm/pixel) [3]"))
+            {
                 if (axis_label == "x")
                     value >> sliceThickness[0];
                 else if (axis_label == "y")
@@ -143,9 +144,8 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generat
         }
     }
     if (!error) {
-
         std::transform(format.begin(), format.end(), format.begin(), toupper);
-        int bitsStored = (int)pow(2.f, atoi(bytesPerPixel.c_str()));
+        int bitsStored = static_cast<int>(pow(2.f, atoi(bytesPerPixel.c_str())));
         if (format == "FLOAT") {
             std::ostringstream oss;
 
@@ -156,8 +156,8 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generat
         rawReader.readHints(resolution, sliceThickness, bitsStored, "I", format);
 
         if ((dataFileName.substr(0,1) != "/")  && (dataFileName.substr(0,1) != "\\") &&
-            (dataFileName.substr(1,2) != ":/") && (dataFileName.substr(1,2) != ":\\")) {
-
+            (dataFileName.substr(1,2) != ":/") && (dataFileName.substr(1,2) != ":\\"))
+        {
             size_t p = fileName.find_last_of("\\");
             if (p == std::string::npos)
                 p = fileName.find_last_of("/");
@@ -168,16 +168,16 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generat
 
         VolumeSet* volumeSet = 0;
         try {
-            volumeSet = rawReader.read(dataFileName, false);
+            volumeSet = rawReader.read(dataFileName);
         }
         catch (...) {
             throw; // throw it to the caller
         }
 
         std::vector<VolumeHandle*> handles = volumeSet->getAllVolumeHandles();
-        for( size_t i = 0; i < handles.size(); i++ ) {
+        for ( size_t i = 0; i < handles.size(); i++ ) {
             Volume* volume = handles[i]->getVolume();
-            if( volume == 0 )
+            if ( volume == 0 )
                 continue;
 
             // This should mirror the z-axis, create a new Volume
@@ -190,9 +190,8 @@ VolumeSet* InterfileVolumeReader::read(const std::string &fileName, bool generat
             // one by deleting the old, non-mirrored Volume*.
             //
             handles[i]->setVolume(volume->mirrorZ());
-            if( generateVolumeGL == true )
-                handles[i]->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
         }
+        fixOrigins(volumeSet, fileName);
         return volumeSet;
     }
     else

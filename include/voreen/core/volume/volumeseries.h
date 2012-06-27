@@ -42,6 +42,9 @@
 #include "voreen/core/volume/volumehandle.h"
 #endif
 
+#include "voreen/core/xml/serializable.h"
+
+
 namespace voreen {
 
 class VolumeSet;
@@ -56,7 +59,7 @@ class VolumeSet;
  *
  * @author  Dirk Feldmann, July - September 2008
  */
-class VolumeSeries
+class VolumeSeries : public Serializable
 {
 public:
     /**
@@ -67,7 +70,7 @@ public:
     struct VolumeSeriesComparator
     {
         bool operator()(const VolumeSeries* const series1, const VolumeSeries* const series2) const {
-            if( (series1 == 0) || (series2 == 0) )
+            if ( (series1 == 0) || (series2 == 0) )
                 return false;
             return (*series1 < *series2);
         }
@@ -87,7 +90,7 @@ public:
      *  VolumeSet.
      * @param   modality    The modality of this series.
      */
-    VolumeSeries(VolumeSet* const parentSet, const std::string& name = "",
+    VolumeSeries(VolumeSet* const parentSet, const std::string& name = "unknown",
         const Modality& modality = Modality::MODALITY_UNKNOWN);
 
 	VolumeSeries(const VolumeSeries& series);
@@ -118,8 +121,19 @@ public:
     /**
      * Set the name for this object. This is required if a series with the
      * given name is already contained in a VolumeSet but insertion is enforced.
+     * The name can only be set if the parent VolumeSet (if existing) contains
+     * no other VolumeSeries with the same name as the given one. If it does, the
+     * method will fail and return "false".
+     * If setting the name succeeds, "true" is returned.
+     * If there is no parent VolumeSet, setting the name always succeeds.
      */
-    void setName(const std::string& name);
+    bool setName(const std::string& name);
+
+    /**
+     * Returns the name of the series followed by the name of the modality in
+     * brackets. Example: "unknown 2 (unknown)".
+     */
+    std::string getLabel() const;
 
     /**
      * Returns the modality of this VolumeSeries object.
@@ -251,13 +265,60 @@ public:
     bool deleteVolumeHandle(const float timestep);
 
     /**
+     * Returns the name of the file from which this VolumeSeries has been loaded.
+     * If the returned string is empty, this indicates, that the VolumeSeries is
+     * probably from the same file as the VolumeSet which might contain this
+     * series.
+     */
+    const std::string& getFileName() const;
+
+    /**
+     * Sets the name of the file from which this VolumeSeries is loaded from.
+     * Use carefully in order to prevent chaos on serialization!
+     */
+    void setFileName(const std::string& filename);
+
+    /**
+     * Indicates that the given VolumeHandle has changed its timestep.
+     * Calls this method only if necessary. It only adjusts the maximum
+     * timestep and notifies its observers about the event.
+     */
+    void timestepChanged(VolumeHandle* handle);
+
+    /**
+     * Returns the name of the xml element used when serializing the object
+     */
+    virtual std::string getXmlElementName() const { return XmlElementName; }
+
+    /**
+     * Serializes the object to XML.
+     */
+    virtual TiXmlElement* serializeToXml() const;
+
+    /**
+     * Updates the object from XML.
+     */
+    void updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap);
+    virtual void updateFromXml(TiXmlElement* elem);
+    
+    /**
+     * TODO docs
+     */
+    static std::set<std::string> getFileNamesFromXml(TiXmlElement* elem);
+
+public:
+    /**
      * This message is sent to VolumeSelectionProcessor object so that they can
      * update their properties on chanding the content of this VolumeSeries.
      */
     static const Identifier msgUpdateTimesteps_;
 
+    /** Holds the name of the xml element used when serializing the object */
+    static const std::string XmlElementName;
+
 protected:
     std::string name_;  /** name of this series */
+    std::string file_; /** the file from which this series has been loaded */
     Modality modality_; /** the modality of this series */
     VolumeHandle::HandleSet handles_;   /** all VolumeHandles stored in this series */
     float maximumTimestep_; /** currently greatest timestep from all VolumeHandles contained */
@@ -282,6 +343,8 @@ private:
      * object's dtor holding this VolumeSeries.
      */
     void freeHandles();
+
+    void notifyObservers();
 };
 
 inline std::ostream& operator<<(std::ostream& os, const VolumeSeries& m) {

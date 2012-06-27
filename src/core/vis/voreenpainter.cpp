@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/vis/voreenpainter.h"
+
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/trackballnavigation.h"
@@ -59,6 +60,7 @@ const Identifier VoreenPainter::resize_("msg.resize");
 const Identifier VoreenPainter::visibleViews_("visibleViews");
 const Identifier VoreenPainter::cameraChanged_("changed.camera");
 const Identifier VoreenPainter::switchCoarseness_("switch.coarseness");
+const Identifier VoreenPainter::renderingFinished_("msg.renderingFinished");
 
 VoreenPainter::VoreenPainter(tgt::GLCanvas* canvas, tgt::Trackball* track, const Identifier& tag)
     : tgt::Painter(canvas)
@@ -87,12 +89,12 @@ void VoreenPainter::sizeChanged(const tgt::ivec2& size) {
 	validSize.y = validSize.y ? validSize.y : 1;
 
     // setup viewport, projection etc.:
-    glViewport(0, 0, (GLint)validSize.x, (GLint)validSize.y);
+    glViewport(0, 0, static_cast<GLint>(validSize.x), static_cast<GLint>(validSize.y));
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     
-	gluPerspective(getCamera()->getFovy(), (GLfloat)validSize.x / (GLfloat)validSize.y, getCamera()->getNearDist(), getCamera()->getFarDist());
+	gluPerspective(getCamera()->getFovy(), static_cast<GLfloat>(validSize.x) / static_cast<GLfloat>(validSize.y), getCamera()->getNearDist(), getCamera()->getFarDist());
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -110,7 +112,6 @@ void VoreenPainter::sizeChanged(const tgt::ivec2& size) {
         overlayMgr_->resize(validSize.x, validSize.y);
 
     invalidateRendering();
-	
 }
 
 void VoreenPainter::invalidateRendering() {
@@ -172,28 +173,27 @@ void VoreenPainter::paint() {
 
         if (overlayMgr_)
             overlayMgr_->paint();
+    
+        MsgDistr.postMessage(new Message(renderingFinished_) );
+        
     }
 
 	//getCanvas()->swap();
 }
 
+//FIXME: where is this called? duplicating functionality from setEvaluator()? joerg
 void VoreenPainter::initialize() {
     getCanvas()->getGLFocus();
     if (evaluator_) {
         evaluator_->initializeGL();
-        if (evaluator_->getTextureContainer() )
-            evaluator_->getTextureContainer()->initializeGL();
     }
 }
 
 void VoreenPainter::setEvaluator(NetworkEvaluator* eval) {
 	getCanvas()->getGLFocus();
-    //FIXME: should the old processor be freed here?
-    // I would say no. The one who created the processor should destroy it (roland)
+
     evaluator_ = eval;
-    evaluator_->initializeGL();
-    if (evaluator_->getTextureContainer() )
-        evaluator_->getTextureContainer()->initializeGL();
+    evaluator_->initializeGL(); //TODO: check if this makes sense here. joerg
 }
 
 void VoreenPainter::setTrackball(tgt::Trackball* trackball) {
@@ -210,11 +210,7 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
     MessageReceiver::processMessage(msg, dest);
 
     if (msg->id_ == repaint_) {
-		//this caused a double repaint and is therefore unnecessary (Stephan)
-        /*
-		if(evaluator_)
-            evaluator_->invalidate();
-		*/
+        //FIXME: should this not better call update()? joerg
         getCanvas()->repaint();
     }
     else if (msg->id_ == resize_) {
@@ -250,7 +246,7 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
 
         if (evaluator_)
             evaluator_->postMessage(new BoolMsg(switchCoarseness_, true));
-        for(int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 9; i++) {
             quat tmp = tgt::slerpQuat(oldQuat, newQuat, std::min(t, 1.f));
             float tmpDist = t*(newDist - oldDist) + oldDist;
             trackball_->reset();
@@ -413,7 +409,7 @@ void VoreenPainter::renderToSnapshot(tgt::ivec2 size, std::string fileName) {
     ilEnable(IL_FILE_OVERWRITE);
     //FIXME: this should only be done for bmp-files (jms)
     //ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE);
-    if (!ilSaveImage((char*)fileName.c_str()))
+    if (!ilSaveImage(const_cast<char*>(fileName.c_str())))
         LERROR("renderToSnapshot() failed for " << fileName);
 
     ilDeleteImages(1, &img);
@@ -461,14 +457,14 @@ ILuint VoreenPainter::renderToILImage(bool (progress)(float _progress), int _aaL
     paint();
 
     // copy over rendering to temporary buffer
-    uint8_t* buffer = new uint8_t[(int)size_.x * (int)size_.y * 4];
-    glReadPixels(0, 0, (int)size_.x, (int)size_.y, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    uint8_t* buffer = new uint8_t[static_cast<int>(size_.x) * static_cast<int>(size_.y) * 4];
+    glReadPixels(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y), GL_RGBA, GL_UNSIGNED_BYTE, buffer);
     
     // transfer buffer to result ILimage
     ILuint result;
     ilGenImages(1, &result);
     ilBindImage(result);
-    ilTexImage((int)size_.x, (int)size_.y, 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, buffer);
+    ilTexImage(static_cast<int>(size_.x), static_cast<int>(size_.y), 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, buffer);
 
     if (progress != 0)
         progress(1.0);

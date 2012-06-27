@@ -43,22 +43,22 @@ DoubleSlider::DoubleSlider(QWidget *parent)
   setFixedHeight(20);  
 }
 
-void DoubleSlider::paintEvent(QPaintEvent *e)
+void DoubleSlider::paintEvent(QPaintEvent* /*e*/)
 {  
   int leftMarker = tgt::iround(minValue * width());
   int rightMarker = tgt::iround(maxValue * width());
   QPoint leftSlider[5] = {
-	  QPoint(leftMarker - sliderWidth, 0.3f * height()),
+	  QPoint(leftMarker - sliderWidth, static_cast<int>(0.3f * height())),
 	  QPoint(leftMarker - sliderWidth, height()),
 	  QPoint(leftMarker + sliderWidth, height()),
-	  QPoint(leftMarker + sliderWidth, 0.3f * height()),
+	  QPoint(leftMarker + sliderWidth, static_cast<int>(0.3f * height())),
 	  QPoint(leftMarker, 0)
   };
   QPoint rightSlider[5] = {
-	  QPoint(rightMarker - sliderWidth, 0.3f * height()),
+	  QPoint(rightMarker - sliderWidth, static_cast<int>(0.3f * height())),
 	  QPoint(rightMarker - sliderWidth, height()),
 	  QPoint(rightMarker + sliderWidth, height()),
-	  QPoint(rightMarker + sliderWidth, 0.3f * height()),
+	  QPoint(rightMarker + sliderWidth, static_cast<int>(0.3f * height())),
 	  QPoint(rightMarker, 0)
   };
   QColor sliderColor(255, 255, 255);
@@ -97,7 +97,7 @@ void DoubleSlider::mousePressEvent( QMouseEvent *e )
 	mV1 = minValue;
 	mV2 = maxValue;
 	if (e->button() == Qt::LeftButton) {
-		if (abs(minValue - normalizedMousePos) < abs(maxValue - normalizedMousePos)) {
+		if (fabs(minValue - normalizedMousePos) < fabs(maxValue - normalizedMousePos)) {
 			leftSliderActive = true;
 			rightSliderActive = false;
 		}

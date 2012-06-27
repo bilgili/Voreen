@@ -89,9 +89,9 @@ bool Frustum::isCulledXZ(const Bounds& bounds) const {
     // of the bounding box. If all four points of the box are outside of
     // a frustum-plane, then the bounding box is not visible and we return
     // true.  If the box survives all tests then it is visible.
-    for(size_t i = 0; i < 6; i++) {
+    for (size_t i = 0; i < 6; i++) {
         int outside = 0;
-        for(size_t j = 0; j < 4; j++) {
+        for (size_t j = 0; j < 4; j++) {
             vec3 pos = (i < 4) ? campos_
                 : ((i == 4) ? nearp() : farp());
             if (dot(getNormal(i), points[j] - pos) >= 0.f)
@@ -118,9 +118,9 @@ bool Frustum::isCulled(const Bounds& bounds) const {
     points[6] = vec3(urb.x, urb.y, urb.z);
     points[7] = vec3(llf.x, urb.y, urb.z);
 
-    for(size_t i = 0; i < 6; i++) {
+    for (size_t i = 0; i < 6; i++) {
         int outside = 0;
-        for(size_t j = 0; j < 8; j++) {
+        for (size_t j = 0; j < 8; j++) {
             vec3 pos = (i < 4) ? campos_
                 : ((i == 4) ? nearp() : farp());
             if (dot(getNormal(i), points[j] - pos) >= 0.f)
@@ -143,15 +143,18 @@ bool Frustum::isCulled(const vec3& v) const {
     // test the point against all 6 planes of the frustum (there are more
     // efficient algorithms for this, if you deem this to slow knock yourself out and
     // code something fancy)
-    if (dot(leftn(),   dist) >= 0.f) return true;
-    if (dot(rightn(),  dist) >= 0.f) return true;
-    if (dot(bottomn(), dist) >= 0.f) return true;
-    if (dot(topn(),    dist) >= 0.f) return true;
-    if (dot(farn(),    v - farp()) >= 0.f) return true;
-    if (dot(nearn(),   v - nearp() ) >= 0.f) return true;
-
-    // all tests survived? then the point is visible
-    return false;
+    if (
+        (dot(leftn(),   dist) >= 0.f) ||
+        (dot(rightn(),  dist) >= 0.f) ||
+        (dot(bottomn(), dist) >= 0.f) ||
+        (dot(topn(),    dist) >= 0.f) ||
+        (dot(farn(),    v - farp()) >= 0.f) ||
+        (dot(nearn(),   v - nearp() ) >= 0.f)
+        )
+        return true;
+    else
+        // all tests survived? then the point is visible
+        return false;
 }
 
 }; // namespace tgt

@@ -241,7 +241,7 @@ void FlybyPlugin::addKeyframe() {
 
     currentFlyby_.push_back(ori);
 
-    if(currentFlyby_.size() == 1)
+    if (currentFlyby_.size() == 1)
         currentFlyby_.push_back(ori);
 
     if (currentFlyby_.size() > 2) {
@@ -253,7 +253,7 @@ void FlybyPlugin::addKeyframe() {
     QString num;
     num.setNum(currentFlyby_.size() - 1);
 
-    if(currentFlyby_.size() > 2)
+    if (currentFlyby_.size() > 2)
         startFlyby_->setIcon(QIcon(":/icons/player_play.png"));
     laNumberKeyframes_->setText(" " + QString(num));
 
@@ -304,12 +304,12 @@ void FlybyPlugin::clearFlyby() {
 
 void FlybyPlugin::startFlyby(bool record, std::string filename) {
 
-    if(fbInfo_) {
+    if (fbInfo_) {
         std::cout << "Playback is already running." << std::endl;
         return;
     }
 
-    if(currentFlyby_.size() < 3) {
+    if (currentFlyby_.size() < 3) {
         std::cout << "At least 2 control-points are needed for a flyby!" << std::endl;
         return;
     }
@@ -319,7 +319,7 @@ void FlybyPlugin::startFlyby(bool record, std::string filename) {
 
     postMessage(new BoolMsg("switch.trackballSpinning", false));
 
-    if(!record) {
+    if (!record) {
         startFlyby_->setIcon(QIcon(":/icons/player_play-grey.png"));
         pauseFlyby_->setIcon(QIcon(":/icons/player_pause.png"));
         stopFlyby_->setIcon(QIcon(":/icons/player_stop.png"));
@@ -338,7 +338,7 @@ void FlybyPlugin::startFlyby(bool record, std::string filename) {
 
 //     VolumeRayCasting* volRayCast = dynamic_cast<VolumeRayCasting*>(canvas_->getVolumeRenderer());
 //
-//     if( !volRayCast) {
+//     if ( !volRayCast) {
 //         delete fbInfo_;
 //         fbInfo_ = 0;
 //         return;
@@ -356,24 +356,24 @@ void FlybyPlugin::startFlyby(bool record, std::string filename) {
     fbInfo_->filename_   = filename;
     fbInfo_->pause_      = false;
 
-    for(size_t i = 0; i < currentFlyby_.size(); i++) {
+    for (size_t i = 0; i < currentFlyby_.size(); i++) {
         fbInfo_->sp_.addControlPoint(currentFlyby_[i].position_);
 //        fbInfo_->splight_.addControlPoint(currentFlyby_[i].lightposition_);
     }
 
-    if(!record) {
+    if (!record) {
         setWidgetState();
         flybyTimer_->start(50, this);
     }else {
         float total = 0.f;
-        for(size_t i = 1; i < currentFlyby_.size() - 2; i++)
+        for (size_t i = 1; i < currentFlyby_.size() - 2; i++)
             total += 30.f * currentFlyby_[i].timeToNextFrame_;
 
         // disable main window while recording
         if (parent_)
             parent_->setEnabled(false);
 
-        QProgressDialog progress(tr("Writing files..."), tr("Abort"), 0, (int)total, parent_);
+        QProgressDialog progress(tr("Writing files..."), tr("Abort"), 0, static_cast<int>(total), parent_);
 //         postMessage(new IVec2Msg(Identifier::resize, tgt::ivec2(fbInfo_->width_, fbInfo_->height_)));
         postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         progress.update();
@@ -397,7 +397,7 @@ void FlybyPlugin::startFlyby(bool record, std::string filename) {
 void FlybyPlugin::stopFlyby() {
 // merge!!
 
-    if(!fbInfo_)
+    if (!fbInfo_)
         return;
 
     flybyTimer_->stop();
@@ -440,12 +440,12 @@ void FlybyPlugin::stopFlyby() {
 }
 
 void FlybyPlugin::pauseFlyby() {
-    if(!fbInfo_)
+    if (!fbInfo_)
         return;
 
     fbInfo_->pause_ = !fbInfo_->pause_;
 
-    if(fbInfo_->pause_) {
+    if (fbInfo_->pause_) {
         //startTracking();
         processor_->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
     }
@@ -459,7 +459,7 @@ void FlybyPlugin::pauseFlyby() {
 
 void FlybyPlugin::recordFlyby() {
 
-    if(fbInfo_) {
+    if (fbInfo_) {
         std::cout << "Please stop playback before recording." << std::endl;
         return;
     }
@@ -479,10 +479,10 @@ void FlybyPlugin::recordFlyby() {
 
 void FlybyPlugin::timerEvent(QTimerEvent* /*event*/) {
 
-    if(fbInfo_->pause_)
+    if (fbInfo_->pause_)
         return;
 
-    if(fbInfo_->t_ > fbInfo_->total_) {
+    if (fbInfo_->t_ > fbInfo_->total_) {
         bool record = fbInfo_->record_;
         stopFlyby();
         if (!record && checkLoop_->isChecked())
@@ -500,7 +500,7 @@ void FlybyPlugin::flybyStep() {
     uint current = uint(floor(fbInfo_->t_)) + 1;
     float interpol = fmod(fbInfo_->t_, 1.f);
 
-    if(current > 0 && current < (currentFlyby_.size() - 1)) {
+    if (current > 0 && current < (currentFlyby_.size() - 1)) {
         quat a = tgt::splineQuat(currentFlyby_[current - 1].tripod_,
                                  currentFlyby_[current    ].tripod_,
                                  currentFlyby_[current + 1].tripod_);
@@ -525,8 +525,8 @@ void FlybyPlugin::flybyStep() {
         track_->getCamera()->setPosition(newPos);
         track_->rotate(q);
 
-        if(!fbInfo_->record_) {
-            if(currentFlyby_[current].timeToNextFrame_ > 0.f) {
+        if (!fbInfo_->record_) {
+            if (currentFlyby_[current].timeToNextFrame_ > 0.f) {
                 fbInfo_->t_ += 1.f / (currentFlyby_[current].timeToNextFrame_ * 20.f);
                 postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()), VoreenPainter::visibleViews_);
                 postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
@@ -534,7 +534,7 @@ void FlybyPlugin::flybyStep() {
                 fbInfo_->t_ += 1.f;
         }
         else {
-            if(currentFlyby_[current].timeToNextFrame_ > 0.f)
+            if (currentFlyby_[current].timeToNextFrame_ > 0.f)
                 fbInfo_->t_ += 1.f / (currentFlyby_[current].timeToNextFrame_ * 30.f);
             else
                 fbInfo_->t_ += 1.f;
@@ -554,7 +554,7 @@ void FlybyPlugin::refreshFrameMenu() {
 
     frameMenu_->clear();
 
-    for(size_t i = 1; i < currentFlyby_.size(); i++) {
+    for (size_t i = 1; i < currentFlyby_.size(); i++) {
         QExtAction* act = new QExtAction(QString(tr("Frame %1, %2 secs")).arg
                                     (i).arg(currentFlyby_[i].timeToNextFrame_), this, i);
         act->setIcon(QIcon(currentFlyby_[i].pic_));
@@ -602,7 +602,7 @@ void FlybyPlugin::gotoFrame(int num) {
     oldLightLoc.y = tmp.y;
     oldLightLoc.z = tmp.z; */
 
-//     if(camera_->getTrackball()->isSpinning())
+//     if (camera_->getTrackball()->isSpinning())
 //         camera_->getTrackball()->setSpinning(false);
 
     processor_->postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
@@ -673,8 +673,8 @@ void FlybyPlugin::setWidgetState() {
 
 
 void FlybyPlugin::deleteFrame() {
-    if(currentFrame_ == 1) {
-        if(currentFlyby_.size() < 3) {
+    if (currentFrame_ == 1) {
+        if (currentFlyby_.size() < 3) {
             clearFlyby();
             return;
         } else {
@@ -687,12 +687,12 @@ void FlybyPlugin::deleteFrame() {
             refreshFrameMenu();
             selectFrame(currentFlyby_[1].action_, true);
         }
-    } else if(currentFrame_ > 1) {
+    } else if (currentFrame_ > 1) {
         std::vector<Orientation>::iterator it = currentFlyby_.begin();
         it += currentFrame_;
         currentFlyby_.erase(it);
         refreshFrameMenu();
-        if(currentFrame_ != static_cast<int>(currentFlyby_.size()))
+        if (currentFrame_ != static_cast<int>(currentFlyby_.size()))
             selectFrame(currentFlyby_[currentFrame_].action_, true);
         else
             selectFrame(currentFlyby_[currentFrame_ - 1].action_, true);
@@ -718,7 +718,7 @@ void FlybyPlugin::deleteLastFrame() {
     QString num;
     num.setNum(currentFlyby_.size() - 1);
 
-    if(currentFlyby_.size() < 3)
+    if (currentFlyby_.size() < 3)
         startFlyby_->setIcon(QIcon(":/icons/player_play-grey.png"));
     laNumberKeyframes_->setText(" " + QString(num));
 
@@ -729,7 +729,7 @@ void FlybyPlugin::deleteLastFrame() {
 }
 
 void FlybyPlugin::updateFrameTime(double val) {
-    if(currentFrame_ == 0)
+    if (currentFrame_ == 0)
         return;
 
     currentFlyby_[currentFrame_].timeToNextFrame_ = val;
@@ -806,7 +806,7 @@ void FlybyPlugin::loadFlyby() {
 
     QString fn = QFileDialog::getOpenFileName(this, tr("Open Flyby"), ".", tr("Flybys (*.flb)"));
     std::string s = fn.toStdString();
-    if(s.length() == 0) return;
+    if (s.length() == 0) return;
 
     TiXmlDocument doc(s.c_str());
     if (!doc.LoadFile()) return;
@@ -825,7 +825,7 @@ void FlybyPlugin::loadFlyby() {
     currentFrame_ = 0;
 
     TiXmlElement* oriNode = hRoot.FirstChild("Orientations").FirstChild("orientation").Element();
-    for( ; oriNode; oriNode = oriNode->NextSiblingElement()) {
+    for ( ; oriNode; oriNode = oriNode->NextSiblingElement()) {
         Orientation ori;
 
         TiXmlElement* tri;
@@ -859,7 +859,7 @@ void FlybyPlugin::loadFlyby() {
     QString num;
     num.setNum(currentFlyby_.size() - 1);
 
-    if(currentFlyby_.size() > 2)
+    if (currentFlyby_.size() > 2)
         startFlyby_->setIcon(QIcon(":/icons/player_play.png"));
     laNumberKeyframes_->setText(" " + num);
 

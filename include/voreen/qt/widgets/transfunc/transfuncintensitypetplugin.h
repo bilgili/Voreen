@@ -52,7 +52,7 @@
 namespace voreen {
 
 class TransFuncGradient;
-class TransFuncIntensityKeys;
+class TransFuncIntensity;
 
 /*
  * TransFuncIntensityPETPlugin is an editor widget for transfer functions with focus on PET data.
@@ -72,7 +72,7 @@ public:
     void setThresholds(int l, int u);
     void getThresholds(int &l, int &u);
     void transFuncChanged();
-    void setTransFunc(TransFuncIntensityKeys* tf);
+    void setTransFunc(TransFuncIntensity* tf);
 	void updateToThresholds();
 
 public slots:
@@ -98,8 +98,8 @@ private:
 
     DoubleSlider* doubleSlider_;
     TransFuncGradient* gradient_;
-    TransFuncIntensityKeys* tfGradient_;    //transfunc for gradient
-    TransFuncIntensityKeys* tf_;            //transfunc for volume
+    TransFuncIntensity* tfGradient_;    //transfunc for gradient
+    TransFuncIntensity* tf_;            //transfunc for volume
 
     HistogramIntensity* histogram_;
     HistogramPainter* histo_;

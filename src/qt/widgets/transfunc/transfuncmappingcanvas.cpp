@@ -35,10 +35,13 @@
 #include <QFileDialog>
 #include <QtGui>
 
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
-#include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
+#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
+
 #include "voreen/qt/widgets/transfunc/transfuncgradient.h"
+
 
 namespace voreen {
 
@@ -58,12 +61,23 @@ inline tgt::col4 QColor2Col(const QColor& color) {
 
 const std::string TransFuncMappingCanvas::loggerCat_("voreen.qt.widgets.TransFuncMappingCanvas");
 
-TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget *parent, TransFuncIntensityKeys* tf, TransFuncGradient* gradient,
-                                             MessageReceiver* msgReceiver, bool noColor,
-                                             bool rampMode, bool clipThresholds, QString xAxisText, QString yAxisText, QString transferFuncPath)
-    : QWidget(parent), gradient_(gradient),isChanged_(false), noColor_(noColor),
-      rampMode_(rampMode), clipThresholds_(clipThresholds), rampCenter_(0.f), rampWidth_(0.f), tf_(tf),
-      msgReceiver_(msgReceiver), xAxisText_(xAxisText), yAxisText_(yAxisText), transferFuncPath_(transferFuncPath)
+TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget *parent, TransFuncIntensity* tf, TransFuncGradient* gradient,
+                                               MessageReceiver* msgReceiver, bool noColor,
+                                               bool rampMode, bool clipThresholds, QString xAxisText,
+                                               QString yAxisText, QString transferFuncPath)
+    : QWidget(parent),
+      gradient_(gradient),
+      tf_(tf),
+      xAxisText_(xAxisText),
+      yAxisText_(yAxisText),
+      transferFuncPath_(transferFuncPath),
+      msgReceiver_(msgReceiver),
+      isChanged_(false),
+      rampMode_(rampMode),
+      clipThresholds_(clipThresholds),
+      rampCenter_(0.f),
+      rampWidth_(0.f),
+      noColor_(noColor)
 {
     histogram_ = 0;
     propertyKey_ = "caption";
@@ -143,7 +157,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
 
     // put origin in lower lefthand corner
     QMatrix m;
-    m.translate(0.0, (float)height()-1);
+    m.translate(0.0, static_cast<float>(height())-1);
     m.scale(1.0, -1.0);
     paint.setMatrix(m);
 
@@ -193,13 +207,13 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
 
         float max = 0.0;
         for (int i=0; i<histogramWidth; i++)
-            if ((float)(histogram_->getValue(i)) > max)
-                max = (float)(histogram_->getValue(i));
+            if (static_cast<float>(histogram_->getValue(i)) > max)
+                max = static_cast<float>(histogram_->getValue(i));
 
         for (int x=0; x<histogramWidth; x++) {
-            float value = (float)histogram_->getValue(x)/max;
+            float value = static_cast<float>(histogram_->getValue(x))/max;
             value = powf(value, 0.2f);
-            vec2 p = wtos(vec2((float)x/histogramWidth, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
+            vec2 p = wtos(vec2(static_cast<float>(x)/histogramWidth, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
             points[x].rx() = p.x;
             points[x].ry() = p.y;
         }
@@ -229,9 +243,9 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     xRange_[0] = 0.f;
     xRange_[1] = 1.f;
 
-    vec2 origin = wtos(vec2(0.0, 0.0));
-    origin.x = floor(origin.x) + 0.5;
-    origin.y = floor(origin.y) + 0.5;
+    vec2 origin = wtos(vec2(0.0f, 0.0f));
+    origin.x = floor(origin.x) + 0.5f;
+    origin.y = floor(origin.y) + 0.5f;
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
@@ -256,8 +270,8 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
 
     paint.scale(-1, 1);
     paint.rotate(180);
-    paint.drawText(width() - 6.2 * padding_ , -1 * (origin.y - 0.8 * padding_), xAxisText_);
-    paint.drawText(1.6 * padding_ , -1 * (height() - 1.85 * padding_), yAxisText_);
+    paint.drawText(static_cast<int>(width() - 6.2f * padding_), static_cast<int>(-1 * (origin.y - 0.8f * padding_)), xAxisText_);
+    paint.drawText(static_cast<int>(1.6f * padding_), static_cast<int>(-1 * (height() - 1.85f * padding_)), yAxisText_);
 
     paint.rotate(180);
     paint.scale(-1, 1);
@@ -272,7 +286,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     pen.setWidthF(1.5);
     paint.setPen(pen);
 
-    origin = wtos(vec2(0.0, 0.0));
+    origin = wtos(vec2(0.f));
 
     if (tf_->isEmpty()) {
         vec2 a = wtos(vec2(0.f, 0.f));
@@ -322,14 +336,15 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent *event) {
     // show threshold function
     paint.setPen(Qt::lightGray);
     paint.setBrush(Qt::Dense4Pattern);
-    int tw = wtos(vec2(1.f, 1.f)).x-wtos(vec2(0.f, 0.f)).x;
-    int th = wtos(vec2(1.f, 1.f)).y-wtos(vec2(0.f, 0.f)).y;
+    int tw = static_cast<int>(wtos(vec2(1.f, 1.f)).x - wtos(vec2(0.f, 0.f)).x);
+    int th = static_cast<int>(wtos(vec2(1.f, 1.f)).y - wtos(vec2(0.f, 0.f)).y);
 
     if (thresholdL_ > 0.0f) {
-        paint.drawRect(origin.x,origin.y,thresholdL_*tw+1,th);
+        paint.drawRect(static_cast<int>(origin.x), static_cast<int>(origin.y), static_cast<int>(thresholdL_ * tw + 1), th);
     }
     if (thresholdU_ < 1.0f) {
-        paint.drawRect(origin.x+floor(thresholdU_*tw),origin.y,(1-thresholdU_)*tw+1,th);
+        paint.drawRect(static_cast<int>(origin.x + floor(thresholdU_ * tw)),
+                       static_cast<int>(origin.y), static_cast<int>((1 - thresholdU_) * tw + 1), th);
     }
 
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -349,7 +364,7 @@ void TransFuncMappingCanvas::mousePressEvent(QMouseEvent* event) {
     }
 
     event->accept();
-    tgt::vec2 sHit = tgt::vec2(event->x(), (float)height() - event->y());
+    tgt::vec2 sHit = tgt::vec2(event->x(), static_cast<float>(height()) - event->y());
     tgt::vec2 hit = stow(sHit);
 
     dragLine_ = hitLine(vec2(event->x(), event->y()));
@@ -467,7 +482,7 @@ void TransFuncMappingCanvas::mouseMoveEvent(QMouseEvent* event) {
     event->accept();
     mousePos_ = event->pos();
 
-    vec2 sHit = vec2(event->x(), (float)height() - event->y());
+    vec2 sHit = vec2(event->x(), static_cast<float>(height()) - event->y());
     vec2 hit = stow(sHit);
     if (gridSnap_)
         hit = snapToGrid(hit);
@@ -809,8 +824,8 @@ void TransFuncMappingCanvas::readFromDisc(QString fileName) {
             float transparency;
             QColor color;
             bool split;
-            in >> inten; intensity = (float)inten / 255.f;
-            in >> trans; transparency = (float)trans / 255.f;
+            in >> inten; intensity = static_cast<float>(inten) / 255.f;
+            in >> trans; transparency = static_cast<float>(trans) / 255.f;
             in >> color;
             in >> split;
             TransFuncMappingKey* key = new TransFuncMappingKey(intensity, QColor2Col(color) );
@@ -822,7 +837,7 @@ void TransFuncMappingCanvas::readFromDisc(QString fileName) {
                 QColor altColor;
                 in >> altColor;
                 in >> spTrans;
-                splitTransparency = (float)spTrans / 255.f;
+                splitTransparency = static_cast<float>(spTrans) / 255.f;
                 key->setColorR( QColor2Col(altColor) );
                 key->setAlphaR(splitTransparency);
             }
@@ -849,7 +864,7 @@ void TransFuncMappingCanvas::saveToDisc(QString fileName) {
 		out << (qint32)(tf_->getKey(i)->getAlphaL() * 255.f);
         out << Col2QColor(tf_->getKey(i)->getColorL());
         out << tf_->getKey(i)->isSplit();
-        if(tf_->getKey(i)->isSplit()) {
+        if (tf_->getKey(i)->isSplit()) {
             out << Col2QColor(tf_->getKey(i)->getColorR());
             out << (qint32)(tf_->getKey(i)->getAlphaR() * 255.f);
         }
@@ -875,7 +890,7 @@ QSizePolicy TransFuncMappingCanvas::sizePolicy () const {
     return QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }
 
-void TransFuncMappingCanvas::setTransFunc(TransFuncIntensityKeys* tf) {
+void TransFuncMappingCanvas::setTransFunc(TransFuncIntensity* tf) {
     tf_ = tf;
     selectedKey_ = 0;
     repaint();
@@ -1112,7 +1127,7 @@ void TransFuncMappingCanvas::toggleShowHistogram(bool enabled) {
             break;
     }
 
-    if(enabled && !showHistogram_) {
+    if (enabled && !showHistogram_) {
         if (histogram_)
             showHistogram_ = true;
         else if (!histogram_ && curDataset_) {
@@ -1150,15 +1165,15 @@ void TransFuncMappingCanvas::calcKeysFromRampParams() {
     TransFuncMappingKey* key0 = tf_->getKey(0);
     TransFuncMappingKey* key1 = tf_->getKey(1);
     key0->setIntensity(rampCenter_ - rampWidth_/2.f);
-    key0->getColorL().a = (0.f);
+    key0->getColorL().a = 0;
     key1->setIntensity(rampCenter_ + rampWidth_/2.f);
-    key1->getColorL().a = (255.f);
+    key1->getColorL().a = 255;
     if (key0->getIntensity() < 0.f) {
-        key0->getColorL().a = 255.f*(-key0->getIntensity()*1.f/(key1->getIntensity()-key0->getIntensity()));
+        key0->getColorL().a = static_cast<unsigned char>(255.f * (-key0->getIntensity()*1.f/(key1->getIntensity()-key0->getIntensity())));
         key0->setIntensity(0.f);
     }
     if (key1->getIntensity() > 1.f) {
-        key1->getColorL().a = 255.f*((1.f-key0->getIntensity())*1.f/(key1->getIntensity()-key0->getIntensity()));
+        key1->getColorL().a = static_cast<unsigned char>(255.f * ((1.f-key0->getIntensity())*1.f/(key1->getIntensity()-key0->getIntensity())));
         key1->setIntensity(1.f);
     }
     tf_->updateKey(key0);
@@ -1186,7 +1201,7 @@ void TransFuncMappingCanvas::calcRampParamsFromKeys() {
 
 int TransFuncMappingCanvas::hitLine(const tgt::vec2& p) {
     int hit = -1;
-    vec2 sHit = vec2(p.x, (float)height() - p.y);
+    vec2 sHit = vec2(p.x, static_cast<float>(height()) - p.y);
     vec2 old;
     for (int i=0; i < tf_->getNumKeys(); i++) {
         TransFuncMappingKey *key = tf_->getKey(i);
@@ -1203,7 +1218,7 @@ int TransFuncMappingCanvas::hitLine(const tgt::vec2& p) {
             vec2 p2 = vec2(p.x - 1.0, p.y);
             float s = (p2.y - p1.y) / (p2.x - p1.x);
             float a = p1.y + (sHit.x - p1.x) * s;
-            if (sHit.x >= p1.x+10 && sHit.x <= p2.x-10 && abs((int)sHit.y - (int)a) < 5) {
+            if (sHit.x >= p1.x+10 && sHit.x <= p2.x-10 && abs(static_cast<int>(sHit.y) - static_cast<int>(a)) < 5) {
                 hit = i - 1;
             }
         }
@@ -1219,15 +1234,15 @@ int TransFuncMappingCanvas::hitLine(const tgt::vec2& p) {
 
 tgt::vec2 TransFuncMappingCanvas::wtos(tgt::vec2 p) {
     float sx, sy;
-    sx = (p.x - xRange_[0]) / (xRange_[1] - xRange_[0]) * ((float)width() - 2 * padding_ - 1.5 * arrowLength_) + padding_;
-    sy = (p.y - yRange_[0]) / (yRange_[1] - yRange_[0]) * ((float)height() - 2 * padding_ - 1.5 * arrowLength_) + padding_;
+    sx = (p.x - xRange_[0]) / (xRange_[1] - xRange_[0]) * (static_cast<float>(width()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
+    sy = (p.y - yRange_[0]) / (yRange_[1] - yRange_[0]) * (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) + padding_;
     return tgt::vec2(sx, sy);
 }
 
 tgt::vec2 TransFuncMappingCanvas::stow(tgt::vec2 p) {
     float wx, wy;
-    wx = (p.x - padding_) / ((float)width() - 2 * padding_ - 1.5 * arrowLength_) * (xRange_[1] - xRange_[0]) + xRange_[0];
-    wy = (p.y - padding_) / ((float)height() - 2 * padding_ - 1.5 * arrowLength_) * (yRange_[1] - yRange_[0]) + yRange_[0];
+    wx = (p.x - padding_) / (static_cast<float>(width()) - 2 * padding_ - 1.5 * arrowLength_) * (xRange_[1] - xRange_[0]) + xRange_[0];
+    wy = (p.y - padding_) / (static_cast<float>(height()) - 2 * padding_ - 1.5 * arrowLength_) * (yRange_[1] - yRange_[0]) + yRange_[0];
     return tgt::vec2(wx, wy);
 }
 

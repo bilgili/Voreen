@@ -276,7 +276,7 @@ bool CommandConvert::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
-    VolumeSet* volumeSet = serializer->load(parameters[1], false);
+    VolumeSet* volumeSet = serializer->load(parameters[1]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
     
     if(parameters[0] == "8") {

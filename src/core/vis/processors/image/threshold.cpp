@@ -39,14 +39,6 @@
 
 namespace voreen {
 
-//TODO: check if all of these are needed
-using tgt::vec3;
-using tgt::ivec2;
-using tgt::Color;
-using std::vector;
-
-//---------------------------------------------------------------------------
-
 Threshold::Threshold()
     : GenericFragment("pp_threshold"),
     threshold_("set.thresholdPPthreshold", "Threshold", 7.0f, 1.0f, 20.0f),
@@ -60,11 +52,13 @@ Threshold::Threshold()
 }
 
 const std::string Threshold::getProcessorInfo() const {
-	return "Performs a thresholding.The pixel color is used, when the surrounding pixel exceed a defined threshold is exceeded and black otherwise.It's probably a slow filter because an if instruction is used internally.";
+	return "Performs a thresholding.The pixel color is used, when the surrounding pixel \
+           exceed a defined threshold is exceeded and black otherwise.It's probably a slow \
+           filter because an if instruction is used internally.";
 }
 
 void Threshold::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,(int)size_.x,(int)size_.y);
+    glViewport(0,0,size_.x,size_.y);
 	int source = portMapping->getTarget("image.input");
     int dest = portMapping->getTarget("image.output");
 
@@ -85,8 +79,8 @@ void Threshold::process(LocalPortMapping* portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("delta_", delta_.get());
     program_->setUniform("threshold_", threshold_.get());
 
@@ -105,7 +99,7 @@ void Threshold::setDelta(float delta) {
     delta_.set(delta);
 }
 
-void Threshold::processMessage(Message* msg, const Identifier& dest){
+void Threshold::processMessage(Message* msg, const Identifier& dest) {
 	GenericFragment::processMessage(msg, dest);
     if (msg->id_ == "set.thresholdPPthreshold") {
         threshold_.set(msg->getValue<float>());
@@ -117,6 +111,4 @@ void Threshold::processMessage(Message* msg, const Identifier& dest){
     }
 }
 
-
 } // voreen namespace
-

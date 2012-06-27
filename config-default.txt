@@ -1,5 +1,5 @@
 ####################################################
-# Configuration file for Voreen:
+# Configuration file for Voreen.
 # Rename this file to 'config.txt' and edit.
 ####################################################
 
@@ -9,9 +9,18 @@
 CONFIG += warn_on
 
 #
+# Modules
+#
+# By default most Voreen modules are added, i.e., those which do not
+# depend on non-standard external libraries. See src/modules for a
+# list of all available modules.
+#
+VRN_MODULES += most
+
+#
 # External libraries 
 #
-# You can adjust the paths in the section "Paths" at the bottom of this file.
+# You may adjust the paths in the section "Paths" at the bottom of this file.
 #
 
 # Do we have the dcmtk libraries (DICOM support)?
@@ -35,16 +44,13 @@ DEFINES += VRN_WITH_DEVIL
 # Enable reader for Matlab files
 #DEFINES += VRN_WITH_MATLAB
 
-# Use openmp?
+# Use OpenMP?
 #DEFINES += VRN_WITH_OPENMP
 
-# Python support
+# Python scripting support
 #DEFINES += VRN_WITH_PYTHON
 
-# Do we want support for 3D-tracking?
-#DEFINES += VRN_WITH_TRACKING
-
-# Use the pvm code from Stefan Roettger?
+# Use the PVM file format code from Stefan Roettger?
 DEFINES += VRN_WITH_PVM
 
 # Do we have the libtiff?
@@ -53,55 +59,48 @@ DEFINES += VRN_WITH_TIFF
 # Do we have zip support?
 #DEFINES += VRN_WITH_ZIP
 
-# Do we have the clibpdf library?
-#DEFINES += VRN_WITH_CLIBPDF
-
-# Do we have the tinyxml library
+# Do we have the tinyxml library?
 DEFINES += VRN_WITH_TINYXML
 
-# Do we have the bugtrap library? (windows only)
+# Do we have the bugtrap library? (Windows only)
 #DEFINES += VRN_WITH_BUGTRAP
 
 # Use Windows Management Instrumentation (WMI) 
 # for hardware detection on Windows?
-#DEFINES += VRN_WITH_WMI
+#DEFINES += TGT_WITH_WMI
 
-# Use Qt Widgets for Technical Applications (Qwt)?
-# (qt toolkit for scientific plotting)
-#DEFINES += VRN_WITH_QWT
+# Do we want support for 3D-tracking?
+#DEFINES += VRN_WITH_TRACKING
 
-# Use the Boost library? 
+#
+# Libraries that are only used in some modules.
+# FIXME: these should be moved into their respective module
+#
+
+# Do we have the clibpdf library? (used in glyps module)
+#DEFINES += VRN_WITH_CLIBPDF
+
+# Use the Boost library? (used in sketchtf)
 #DEFINES += VRN_WITH_BOOST
 
-# Use the Box2D physics library? 
+# Use the Box2D physics library? (used in closeups module)
 #DEFINES += VRN_WITH_BOX2D
+
+# Use Qt Widgets for Technical Applications (Qwt)?
+# (Qt toolkit for scientific plotting)
+# (Used in sketchtf module)
+#DEFINES += VRN_WITH_QWT
 
 
 #
 # Additional settings
 #
 
-# Show splash screen
-DEFINES += VRN_SPLASHSCREEN
-
-# Enable multimodal closeups
-# (requires VRN_WITH_FREETYPE and VRN_WITH_FTGL)
-#VRN_MODULES += closeups
-
-# Enable glyphs for volume data
-#VRN_MODULES += glyphs
-
-# Enable glyphs on Meshs
-# (requires glyphs Module)
-#VRN_MODULES += glyphs_mesh
-
 # Use additional debug code in voreen
 #DEFINES += VRN_DEBUG
 
 # Write log output into a file
-#DEFINES += VRN_ADD_FILE_LOGGER
-
-DEFINES += TGT_COMPILED_FOR_VOREEN
+DEFINES += VRN_ADD_FILE_LOGGER
 
 # Disable this line in case of problems with PCH
 CONFIG += precompile_header
@@ -123,6 +122,13 @@ LIBDIR +=
 # Use GUI translations if available?
 #DEFINES += VRN_USE_TRANSLATIONS
 
+# Show splash screen
+DEFINES += VRN_SPLASHSCREEN
+
+# For debugging of shaders with includes. Saves a copy of the
+# preprocessed shader which into the Voreen path. 
+#DEFINES += TGT_SHADER_INCLUDE_DEBUG
+
 #
 # Settings for Linux
 #
@@ -140,10 +146,6 @@ unix {
 #QMAKE_CXXFLAGS -= -O2
 #QMAKE_CXXFLAGS += -O0
 
-
-# For debug of shaders with includes. Saves a copy of the Shader which 
-# really runs (without includes) in the voreen path.
-#DEFINES += TGT_SHADER_INCLUDE_DEBUG
 
 #
 # Paths

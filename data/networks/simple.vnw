@@ -1,110 +1,95 @@
-<?xml version="1.0" ?>
-<Saved_Voreen_Network_File Version="1" />
-<reuseTCTargets Value="FALSE" />
-<RptGuiDataStructure>
-    <RptProcessorItem Id="0" Type="EntryExitPoints.CubeEntryExitPoints" Processor_Name="CubeEntryExitPoints" xpos="-197" ypos="19">
-        <Inputs>
-            <Input_Port type="volumehandle.volumehandle" port_number="0">
-                <Renderer renderer_id="5" port_type="volumehandle.volumehandle" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs>
-            <CoProcessorInput_Port type="coprocessor.proxygeometry" port_number="0">
-                <Renderer renderer_id="1" port_type="coprocessor.proxygeometry" />
-            </CoProcessorInput_Port>
-        </CoProcessor-Inputs>
-        <RendererProperties>
-            <Property Property_text="Jitter entry params" Autochange="0" Property_type="2" Value="0" />
-            <Property Property_text="Scaling of EEP" Autochange="0" />
-            <Property Property_text="x-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="10" Min_value="0" />
-            <Property Property_text="y-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="10" Min_value="0" />
-            <Property Property_text="z-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="10" Min_value="0" />
-            <Property Property_text="Translation of EEP" Autochange="0" />
-            <Property Property_text="x-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="5" Min_value="-5" />
-            <Property Property_text="y-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="5" Min_value="-5" />
-            <Property Property_text="z-direction" Autochange="0" Property_type="1" Value="0.000000" Max_value="5" Min_value="-5" />
-        </RendererProperties>
-    </RptProcessorItem>
-    <RptProcessorItem Id="1" Type="ProxyGeometry.CubeProxyGeometry" Processor_Name="CubeProxyGeometry" xpos="-418" ypos="27">
-        <Inputs>
-            <Input_Port type="volumehandle.volumehandle" port_number="0">
-                <Renderer renderer_id="5" port_type="volumehandle.volumehandle" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs />
-        <RendererProperties>
-            <Property Property_text="Use Clipping" Autochange="0" Property_type="2" Value="1" />
-            <Property Property_text="Use Virtual Clipplane" Autochange="0" Property_type="2" Value="0" />
-            <Property Property_text="empty" Autochange="0" />
-            <Property Property_text="Plane equation" Autochange="0" Property_type="14" Vector_x="0.200000" Vector_y="0.400000" Vector_z="1.000000" Vector_w="0.300000" />
-            <Property Property_text="Left Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Right Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Bottom Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Top Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Front Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Back Clippingplane" Autochange="0" Property_type="3" Value="0" Max_value="100" Min_value="0" />
-            <Property Property_text="Clipping Planes" Autochange="0" />
-        </RendererProperties>
-    </RptProcessorItem>
-    <RptProcessorItem Id="2" Type="PostProcessor.Background" Processor_Name="Background" xpos="-278" ypos="210">
-        <Inputs>
-            <Input_Port type="image.input" port_number="0">
-                <Renderer renderer_id="6" port_type="image.output" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs />
-        <RendererProperties>
-            <Property Property_text="empty" Autochange="0" />
-            <Property Property_text="Layout" Autochange="0" Property_type="5" Value="0" />
-            <Property Property_text="first color" Autochange="0" Property_type="4" Color_r="1.000000" Color_g="1.000000" Color_b="1.000000" Color_a="1.000000" />
-            <Property Property_text="second color" Autochange="0" Property_type="4" Color_r="0.800000" Color_g="0.800000" Color_b="0.800000" Color_a="1.000000" />
-            <Property Property_text="angle" Autochange="0" Property_type="3" Value="180" Max_value="359" Min_value="0" />
-            <Property Property_text="Texture" Autochange="0" Property_type="7" Value="" Dialog_caption="" Dialog_directory="" Dialog_filefilter="" />
-            <Property Property_text="Repeat Background" Autochange="0" Property_type="1" Value="1.000000" Max_value="100" Min_value="0" />
-        </RendererProperties>
-    </RptProcessorItem>
-    <RptProcessorItem Id="3" Type="Miscellaneous.Canvas" Processor_Name="Canvas" xpos="-275" ypos="308">
-        <Inputs>
-            <Input_Port type="image.input" port_number="0">
-                <Renderer renderer_id="2" port_type="image.output" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs />
-        <RendererProperties>
-            <Property Property_text="Interaction Coarseness" Autochange="1" Property_type="3" Value="4" Max_value="20" Min_value="1" />
-            <Property Property_text="Use Interaction Coarseness" Autochange="0" Property_type="2" Value="0" />
-        </RendererProperties>
-    </RptProcessorItem>
-    <RptProcessorItem Id="4" Type="VolumeSetSource.VolumeSetSource" Processor_Name="VolumeSetSource" xpos="-254" ypos="-203">
-        <Inputs />
-        <CoProcessor-Inputs />
-        <RendererProperties />
-    </RptProcessorItem>
-    <RptProcessorItem Id="5" Type="VolumeSetSource.VolumeSelector" Processor_Name="VolumeSelector" xpos="-259" ypos="-110">
-        <Inputs>
-            <Input_Port type="volumeset.volumeset" port_number="0">
-                <Renderer renderer_id="4" port_type="volumeset.volumeset" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs />
-        <RendererProperties />
-    </RptProcessorItem>
-    <RptProcessorItem Id="6" Type="Raycaster.SimpleRaycaster" Processor_Name="SimpleRaycaster" xpos="-281" ypos="134">
-        <Inputs>
-            <Input_Port type="volumehandle.volumehandle" port_number="0">
-                <Renderer renderer_id="5" port_type="volumehandle.volumehandle" />
-            </Input_Port>
-            <Input_Port type="image.entrypoints" port_number="1">
-                <Renderer renderer_id="0" port_type="image.entrypoints" />
-            </Input_Port>
-            <Input_Port type="image.exitpoints" port_number="2">
-                <Renderer renderer_id="0" port_type="image.exitpoints" />
-            </Input_Port>
-        </Inputs>
-        <CoProcessor-Inputs />
-        <RendererProperties>
-            <Property Property_text="Raycasting quality: " Autochange="0" Property_type="5" Value="2" />
-        </RendererProperties>
-    </RptProcessorItem>
-</RptGuiDataStructure>
-<PropertySets />
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<ProcessorNetwork version="2">
+    <MetaData>
+        <RptAggregationItems />
+    </MetaData>
+    <Settings reuseTCTargets="false" />
+    <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="0">
+        <MetaData>
+            <RptProcessorItem x="-349" y="-27" />
+        </MetaData>
+        <Property id="set.jitterEntryParams" type="BoolProp" value="false" />
+        <Property id="set.scaleX" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleY" type="FloatProp" value="1.000000" />
+        <Property id="set.scaleZ" type="FloatProp" value="1.000000" />
+        <Property id="set.translationX" type="FloatProp" value="0.000000" />
+        <Property id="set.translationY" type="FloatProp" value="0.000000" />
+        <Property id="set.translationZ" type="FloatProp" value="0.000000" />
+        <Outport type="image.entrypoints">
+            <Processor id="6" port="image.entrypoints" />
+        </Outport>
+        <Outport type="image.exitpoints">
+            <Processor id="6" port="image.exitpoints" />
+        </Outport>
+    </Processor>
+    <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="1">
+        <MetaData>
+            <RptProcessorItem x="-578" y="-26" />
+        </MetaData>
+        <Property id="set.UseClipping" type="BoolProp" value="true" />
+        <Property id="switch.virtualClipplane" type="BoolProp" value="false" />
+        <Property id="set.virtualClipplane" type="FloatVec4Prop" x="0.200000" y="0.400000" z="1.000000" w="1.000000" />
+        <Property id="set.LeftClipPlane" type="IntProp" value="0" />
+        <Property id="set.RightClipPlane" type="IntProp" value="0" />
+        <Property id="set.BottomClipPlane" type="IntProp" value="0" />
+        <Property id="set.TopClipPlane" type="IntProp" value="0" />
+        <Property id="set.FrontClipPlane" type="IntProp" value="0" />
+        <Property id="set.BackClipPlane" type="IntProp" value="0" />
+        <Outport type="coprocessor.proxygeometry">
+            <Processor id="0" port="coprocessor.proxygeometry" />
+        </Outport>
+    </Processor>
+    <Processor type="PostProcessor.Background" name="Background" id="2">
+        <MetaData>
+            <RptProcessorItem x="-391" y="188" />
+        </MetaData>
+        <Property id="set.backgroundModeAsString" type="EnumProp" value="Monochrome" />
+        <Property id="set.backgroundFirstColor" type="ColorProp" r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
+        <Property id="set.backgroundSecondColor" type="ColorProp" r="0.800000" g="0.800000" b="0.800000" a="1.000000" />
+        <Property id="set.backgroundAngle" type="IntProp" value="180" />
+        <Property id="set.backgroundfilenameAsString" type="FileDialogProp" value="" caption="" directory="" filefilter="" />
+        <Property id="set.backgroundtile" type="FloatProp" value="1.000000" />
+        <Outport type="image.output">
+            <Processor id="3" port="image.input" />
+        </Outport>
+    </Processor>
+    <Processor type="Miscellaneous.Canvas" name="CopyToScreenRenderer" id="3">
+        <MetaData>
+            <RptProcessorItem x="-390" y="267" />
+        </MetaData>
+        <Property id="set.Coarseness" type="IntProp" autochange="true" value="4" />
+        <Property id="switch.coarseness" type="BoolProp" value="false" />
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="4">
+        <MetaData>
+            <RptProcessorItem x="-453" y="-246" />
+        </MetaData>
+        <Outport type="volumeset.volumeset">
+            <Processor id="5" port="volumeset.volumeset" />
+        </Outport>
+    </Processor>
+    <Processor type="VolumeSetSource.VolumeSelector" name="VolumeSelector" id="5">
+        <MetaData>
+            <RptProcessorItem x="-448" y="-105" />
+        </MetaData>
+        <Property id="set.currentTimestep" type="IntProp" value="0" />
+        <Outport type="volumehandle.volumehandle">
+            <Processor id="0" port="volumehandle.volumehandle" />
+            <Processor id="1" port="volumehandle.volumehandle" />
+            <Processor id="6" port="volumehandle.volumehandle" />
+        </Outport>
+    </Processor>
+    <Processor type="Raycaster.SimpleRaycaster" name="SimpleRaycaster" id="6">
+        <MetaData>
+            <RptProcessorItem x="-402" y="99" />
+        </MetaData>
+        <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
+        <Property id="set.TransferFunction" type="TransFuncProp">
+            <Marker source="0.000000" dest="0.000000" r="0" g="0" b="0" a="0" />
+            <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
+        </Property>
+        <Outport type="image.output">
+            <Processor id="2" port="image.input" />
+        </Outport>
+    </Processor>
+</ProcessorNetwork>

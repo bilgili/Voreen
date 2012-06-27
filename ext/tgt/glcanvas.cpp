@@ -129,7 +129,7 @@ bool GLCanvas::takeScreenshot(std::string fname) {
     pFile = fopen(fname.c_str(), "wb");
 
    // Check if the file opened or not.
-    if(!pFile) {
+    if (!pFile) {
         fclose(pFile);
         return false;
     }
@@ -169,8 +169,7 @@ bool GLCanvas::takeScreenshot(std::string fname) {
     Size = width * height * colorMode;
 
     // Now switch image from RGB to BGR.
-    for(index = 0; index < Size; index += colorMode)
-    {
+    for (index = 0; index < Size; index += colorMode){
         tempColors = image[index];
         image[index] = image[index + 2];
         image[index + 2] = tempColors;

@@ -85,8 +85,8 @@ RenderTexture::RenderTexture(int iWidth, int iHeight, bool bIsTexture /* = true 
   _pDpy(NULL),
   _hGLContext(NULL),
   _hPBuffer(0),
-  _hPreviousContext(0),
   _hPreviousDrawable(0),
+  _hPreviousContext(0),
 #endif
   _iTextureTarget(GL_NONE),
   _iTextureID(0),
@@ -176,7 +176,7 @@ void RenderTexture::_wglGetLastError()
  * @fn PrintExtensionError( char* strMsg, ... )
  * @brief Prints an error about missing OpenGL extensions.
  */ 
-void PrintExtensionError( char* strMsg, ... )
+void PrintExtensionError( const char* strMsg, ... )
 {
   fprintf(stderr, "Error: RenderTexture requires the following unsupported "
                   "OpenGL extensions: \n");
@@ -305,7 +305,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
   
   _bRectangle = _bRectangle || (_bFloat && bNVIDIA);
 
-  if(_bIsDepthTexture)
+  if (_bIsDepthTexture)
     _bHasDepth  = true;    // we need depth for a depth texture...
   else
     _bHasDepth  = bDepth;
@@ -654,7 +654,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     else  // RENDER_TO_TEXTURE
     {
 #ifdef _WIN32
-      if(_bRectangle)
+      if (_bRectangle)
       {
         if (!iWGLTextureTarget)  iWGLTextureTarget = WGL_TEXTURE_RECTANGLE_NV; 
         iDepthBindTarget    = WGL_BIND_TO_TEXTURE_RECTANGLE_DEPTH_NV;
@@ -800,9 +800,9 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
   }
   
   // Share lists, texture objects, and program objects.
-  if( bShare )
+  if ( bShare )
   {
-    if( !wglShareLists(hglrc, _hGLContext) )
+    if ( !wglShareLists(hglrc, _hGLContext) )
     {
       fprintf(stderr, "RenderTexture::Initialize() creation error: wglShareLists() failed\n" );
       _wglGetLastError();
@@ -919,7 +919,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     return false;
   }
 
-  if(!_hGLContext)
+  if (!_hGLContext)
   {
       // Try indirect
       _hGLContext = glXCreateContext(_pDpy, visInfo, bShare?context:NULL, False);
@@ -986,7 +986,7 @@ bool RenderTexture::_Invalidate()
 #else
   if ( _hPBuffer )
   {
-    if(glXGetCurrentContext() == _hGLContext)
+    if (glXGetCurrentContext() == _hGLContext)
       // XXX I don't know if this is right at all
       glXMakeCurrent(_pDpy, _hPBuffer, 0);
     glXDestroyGLXPbufferSGIX(_pDpy, _hPBuffer);
@@ -1145,7 +1145,7 @@ bool RenderTexture::EndCapture()
     if (RT_RENDER_TO_TEXTURE == _eUpdateMode)
     {
       // make the previous rendering context current 
-      if(!bContextReset)
+      if (!bContextReset)
       {
         if (FALSE == wglMakeCurrent( _hPreviousDC, _hPreviousContext))
         {
@@ -1188,7 +1188,7 @@ bool RenderTexture::EndCapture()
     }
   }
   
-  if(!bContextReset)
+  if (!bContextReset)
   {
     // make the previous rendering context current 
     if (FALSE == wglMakeCurrent( _hPreviousDC, _hPreviousContext))
@@ -1202,7 +1202,7 @@ bool RenderTexture::EndCapture()
   glBindTexture(_iTextureTarget, _iTextureID);
   glCopyTexSubImage2D(_iTextureTarget, 0, 0, 0, 0, 0, _iWidth, _iHeight);
 
-  if(!bContextReset)
+  if (!bContextReset)
   {
     if (False == glXMakeCurrent(_pDpy, _hPreviousDrawable, _hPreviousContext))
     {

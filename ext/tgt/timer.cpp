@@ -38,4 +38,4 @@ Timer::Timer( EventHandler* eh )
 
 Timer::~Timer() {};
 
-}
+} // namespace tgt

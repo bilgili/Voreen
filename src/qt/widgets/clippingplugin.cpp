@@ -103,7 +103,7 @@ void ClippingPlugin::cropDataset() {
 //merge!!
 /*
     Volume* volset = canvas_->getRenderer()->getVolumeContainer()->get();
-    if(volset) {
+    if (volset) {
         tgt::ivec3 dim = volset->getDimensions();
         tgt::ivec3 start, size;
         start.x = int(clipXWidget_->get1stSliderValue() / 2.0 * dim.x);
@@ -123,7 +123,7 @@ void ClippingPlugin::cropDataset() {
                         "Choose a filename to save under",
                         "../../data/",
                         "");
-        if(!volsetCropped->saveToDisc(s.toStdString()))
+        if (!volsetCropped->saveToDisc(s.toStdString()))
             QMessageBox::information(this, "Voreen",
                                          "Error saving file!\n");
         delete volsetCropped;

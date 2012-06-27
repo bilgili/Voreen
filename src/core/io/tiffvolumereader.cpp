@@ -30,6 +30,7 @@
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/io/tiffvolumereader.h"
 #include "voreen/core/io/textfilereader.h"
+#include "voreen/core/io/ioprogress.h"
 
 #include <fstream>
 #include <iostream>
@@ -48,7 +49,14 @@ namespace voreen {
 
 const std::string TiffVolumeReader::loggerCat_ = "voreen.io.VolumeReader.tiff";
 
-VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+TiffVolumeReader::TiffVolumeReader(IOProgress* progress) : VolumeReader(progress)
+{
+    name_ = "Tiff Stack Reader";
+    extensions_.push_back("tiff");
+    extensions_.push_back("tif");
+}
+
+VolumeSet* TiffVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     ivec3 dimensions;
@@ -89,25 +97,26 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
         void *data;
         int slices;
         if (TIFFGetField(tif, 33471, &count, &data)) {
-            std::istringstream stream((char*)data);
+            std::istringstream stream(static_cast<char*>(data));
             TextFileReader reader(&stream);
             reader.setSeparators("=");
-            LDEBUG((char*)data);
+            LDEBUG(static_cast<char*>(data));
             string type;
             std::istringstream args;
             while (reader.getNextLine(type, args, false)) {
                 LDEBUG(type << ": " << args.str());
                 if (type == "Band") {
                     args >> band;
-                    LDEBUG("Band: " << band);
+                    LINFO("Band: " << band);
                 }
                 else if (type == "Z") {
                     args >> slices;
-                    LDEBUG("Slices: " << slices);
+                    LINFO("Slices: " << slices);
                     dimensions.z = slices;
                 }
                 else {
-                    // FIXME: No idea what this is good for
+                    // Parse lines of type <type> <value> and log results
+                    // Later on these data should be filled into the metadata structure of a volume
                     int value;
                     int pos = type.size() - 1;
                     while (isdigit(type[pos]) && pos > 0)
@@ -115,21 +124,21 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
                     type = type.substr(0, pos+1);
                     std::stringstream valueStr(type.substr(pos+1, type.size()-1));
                     valueStr >> value;
+                    LDEBUG("Type: " << type << " with value: " << value);
                 }
             }
         }
         else
             LERROR("Error");
         TIFFClose(tif);
-        LDEBUG("depth: " << depth << " bps: " << bps);
+        LINFO("depth: " << depth << " bps: " << bps);
     }
-    else
-    {
+    else {
         LERROR("Failed to open tiffstack");
         return 0;
     }
 
-    LDEBUG("stacking " << dimensions.z*band << " images with dimensions (" << dimensions.x
+    LINFO("stacking " << dimensions.z*band << " images with dimensions (" << dimensions.x
           << ", " << dimensions.y << ") into " << band << " datasets.");
     std::vector<Volume*> targetDataset;
     std::vector<uint8_t*> scalars8;
@@ -159,21 +168,28 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
     }
 
     tif = TIFFOpen(fileName.c_str(), "r");
-    int minValue = 65536;
-    int maxValue = 0;
     if (tif) {
+        int* minValue = new int[band];
+        int* maxValue = new int[band];
+        for (int i=0; i<band; ++i) {
+            minValue[i] = 65536;
+            maxValue[i] = 0;
+        }
 		//(TIFFReadDirectory(tif));
         uint32 width, height;
         uint16 depth_, bps_;
 
-        for(int i=0; i < dimensions.z*band; i++) {
+        if (progress_)
+            progress_->setNumSteps(dimensions.z*band);
+
+        for (int i=0; i < dimensions.z*band; i++) {
             TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
             TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
             TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &depth_);
             TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps_);
 
             // if size or type of current image do not match skip the image..
-            if((dimensions.x != (int)width) || (dimensions.y != (int)height) || (bps != bps_) || (depth_ != depth)) {
+            if ((dimensions.x != static_cast<int>(width)) || (dimensions.y != static_cast<int>(height)) || (bps != bps_) || (depth_ != depth)) {
                 LWARNING("Images dimensions of " << i << ". image do not match!");
             }
             else {
@@ -192,7 +208,7 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
                 uint8_t* buffer = new uint8_t[bufferSize];
 
                 for (stripCount = 0; stripCount < stripMax; stripCount++) {
-                    if((int)(result = TIFFReadEncodedStrip (tif, stripCount,
+                    if (static_cast<int>(result = TIFFReadEncodedStrip (tif, stripCount,
                                     buffer + imageOffset,
                                     stripSize)) == -1){
                         LERROR("Read error on input strip number " << stripCount);
@@ -205,16 +221,16 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
                     }
                     imageOffset += result;
                 }
-                for (int i=0; i<dimensions.x*dimensions.y; ++i) {
+                for (int j=0; j<dimensions.x*dimensions.y; ++j) {
                     int value;
                     if (use8BitDataset)
-                        value = buffer[i];
+                        value = buffer[j];
                     else
-                        value = buffer[i*2] + 256*buffer[i*2+1];
-                    if (minValue > value)
-                        minValue = value;
-                    if (maxValue < value)
-                        maxValue = value;
+                        value = buffer[j*2] + 256*buffer[j*2+1];
+                    if (minValue[currentBand] > value)
+                        minValue[currentBand] = value;
+                    if (maxValue[currentBand] < value)
+                        maxValue[currentBand] = value;
                 }
                 if (use8BitDataset) {
                     memcpy(scalars8[currentBand], buffer, dimensions.x * dimensions.y);
@@ -227,30 +243,34 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName, bool generateVolu
                 delete[] buffer;
             }
             TIFFReadDirectory(tif);
+
+            if (progress_)
+                progress_->set(i);
         }
 
         TIFFClose(tif);
-        LINFO("min/max value: " << minValue << "/" << maxValue);
-		//if ( !use8BitDataset && maxValue < 4096) {
-			//LINFO("Recognized 12 bit dataset.");
-			//for (int i=0; i<band; ++i)
-				//targetDataset[i]->setBitsStored(12);
-		//}
+        for (int i=0; i<band; ++i) {
+            LINFO("Band " << i << ": min/max value: " << minValue[i] << "/" << maxValue[i]);
+            if ( !use8BitDataset && maxValue[i] < 4096) {
+                LINFO("Band " << i << ": Recognized 12 bit dataset.");
+			    targetDataset[i]->setBitsStored(12);
+		    }
+        }
+        delete[] minValue;
+        delete[] maxValue;
     }
-    else
-    {
+    else {
         LERROR("Failed to open tiffstack");
         return 0;
     }
 
-    VolumeSet* volumeSet = new VolumeSet(fileName);
+    VolumeSet* volumeSet = new VolumeSet(0, fileName);
     VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
     volumeSet->addSeries(volumeSeries);
-    for( int i = 0; i < band; i++ ) {   
+    for ( int i = 0; i < band; i++ ) {   
         VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, targetDataset[i], static_cast<float>(i));
+        volumeHandle->setOrigin(fileName, "unknown", static_cast<float>(i));
         volumeSeries->addVolumeHandle(volumeHandle);
-        if( generateVolumeGL == true )
-            volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
     }
     return volumeSet;
 }

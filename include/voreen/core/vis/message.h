@@ -77,7 +77,7 @@ struct Message {
     /// Gets the value which this message holds.
     template<class T>
     T getValue() {
-        if(TemplateMessage<T>* msg = dynamic_cast<TemplateMessage<T>*>(this))
+        if (TemplateMessage<T>* msg = dynamic_cast<TemplateMessage<T>*>(this))
             return msg->value_;
         else
             throw message_error("type mismatch in voreen::Message::getValue()");
@@ -90,7 +90,7 @@ struct Message {
      */
     template<class T>
     void getValue(T& value) {
-        if(TemplateMessage<T>* msg = dynamic_cast<TemplateMessage<T>*>(this))
+        if (TemplateMessage<T>* msg = dynamic_cast<TemplateMessage<T>*>(this))
             value = msg->value_;
         else
             throw message_error("type mismatch in voreen::Message::getValue()");

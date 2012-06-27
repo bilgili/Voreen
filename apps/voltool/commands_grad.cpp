@@ -56,7 +56,7 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     Volume* sourceDataset_;
     Volume* targetDataset_;
 
-    VolumeSet* volumeSet = serializer->load(parameters[1],false);
+    VolumeSet* volumeSet = serializer->load(parameters[1]);
     sourceDataset_ = volumeSet->getFirstVolume();
 
 
@@ -113,7 +113,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     Volume* sourceDataset_;
     Volume* targetDataset_;
 
-    VolumeSet* volumeSet = serializer->load(parameters[numparams-2],false);
+    VolumeSet* volumeSet = serializer->load(parameters[numparams-2]);
     sourceDataset_ = volumeSet->getFirstVolume();
 
     if(parameters[0] == "simple")

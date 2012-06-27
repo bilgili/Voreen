@@ -55,7 +55,7 @@ Modality::Modality(const std::string& name)
   : name_(name)
 {
     for (size_t i=0; i< modalities_().size(); ++i) {
-        if (name == modalities_()[i])
+        if ( (name.empty() == true) || (name == modalities_()[i]) )
             return;
     }
     modalities_().push_back(name_);

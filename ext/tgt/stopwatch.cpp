@@ -38,8 +38,8 @@ uint64_t Stopwatch::getTicks() {
     #else         
         struct timeval tp;
         int result = gettimeofday(&tp, 0);
-        if(!result)
-            return (uint64_t)( ((uint64_t)tp.tv_sec ) * 1000 + (tp.tv_usec / 1000));
+        if (!result)
+            return static_cast<uint64_t>( (static_cast<uint64_t>(tp.tv_sec) ) * 1000 + (tp.tv_usec / 1000));
         else {
             tgtAssert(false, "The system function gettimeofday returned an error code!");
             return 0;
@@ -48,7 +48,6 @@ uint64_t Stopwatch::getTicks() {
 }    
 
 uint64_t Stopwatch::getClockCycles() {
-
     uint64_t result;
 
     #ifdef __GNUC__
@@ -59,7 +58,7 @@ uint64_t Stopwatch::getClockCycles() {
         );
     #else  //__GNUC__
         tgtAssert(false, "This function is not yet implemented for your compiler and/or arch!");
-        result = 0; //REMOVED WARNING (we can never come hier)
+        result = 0; //REMOVED WARNING (we can never come here)
     #endif //__GNUC__
 
     //TODO msvc and icc version must look sth like this: NOT TESTED!!!
@@ -87,22 +86,21 @@ uint64_t Stopwatch::getClockCycles() {
 }
 
 clock_t Stopwatch::getRuntime() {
-    if(!isStopped_)
+    if (!isStopped_)
         return (static_cast<clock_t>(getTicks()) - startTime_) + runTime_;
     else
         return runTime_;
 }
 
 void Stopwatch::stop() {
-    if(!isStopped_)
-    {
+    if (!isStopped_) {
         isStopped_ = true;
         runTime_ += static_cast<clock_t>(getTicks()) - startTime_;
     }
 }
 
 void Stopwatch::start() {
-    if(isStopped_) {
+    if (isStopped_) {
         startTime_ = static_cast<clock_t>(getTicks());
         isStopped_ = false;
     }

@@ -30,16 +30,22 @@
 #ifndef VRN_RPTNETWORKEVALUATOR_H
 #define VRN_RPTNETWORKEVALUATOR_H
 
-#include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/io/volumeserializer.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/portmapping.h"
+
+#include <map>
+
+#include "voreen/core/vis/message.h"
 #include "voreen/core/vis/exception.h"
-#include "voreen/core/volume/volumesetcontainer.h"
+
 
 namespace voreen {
 
 class Processor;
+class Port;
+class GeometryContainer;
+class TextureContainer;
+class VolumeContainer;
+class PortData;
+class LocalPortMapping;
 
 /**
 * This struct holds information about one port. It stores the ports that are connected to it. 
@@ -109,7 +115,7 @@ public:
 	/**
 	* Gets the processors in this evaluator
 	*/
-	std::vector<Processor*>& getProcessors() {return processors_;}
+	std::vector<Processor*>& getProcessors();
 	
     /** Sets the GeometryContainer
      */
@@ -117,7 +123,7 @@ public:
 
     /** Gets the GeometryContainer
      */
-    GeometryContainer* getGeometryContainer() { return geoContainer_; }
+    GeometryContainer* getGeometryContainer();
 
 	/**
 	* Sets the TextureContainer
@@ -127,7 +133,15 @@ public:
 	/**
 	* Gets the TextureContainer
 	*/
-	TextureContainer* getTextureContainer() {return tc_;}
+	TextureContainer* getTextureContainer();
+
+    /**
+    * Initializes a texture container, sets it at the currently active one
+    * and returns it.
+    * \param finalTarget The final rendering target
+    * \return The created texture container
+    */
+    TextureContainer* initTextureContainer(int finalTarget);
 	
 	/** 
 	* if an invalidate is called, the entire network is evaluated (rendered) again
@@ -177,9 +191,7 @@ public:
 	/**
 	* Returns if the current network is valid and can be rendered.
 	*/
-	bool isValid() {
-		return readyToEvaluate_;
-	}
+	bool isValid();
 
 	/**
 	* Gets the rendertargets this evaluator forbids other
@@ -197,9 +209,9 @@ public:
 	* If no texture container target is mapped, -1 is returned. This is used for the preview
 	* in rptgui when selecting arrows.
 	*/
-	int getTextureContainerTarget(Port* p,int pos=0) throw (std::exception);
+	int getTextureContainerTarget(Port* p,int pos=0) throw (VoreenException);
 
-	std::map<Processor*,int> getPiorityMap() {return priorityMap_;}
+	std::map<Processor*,int> getPriorityMap();
 
 	void setVolumeContainer(VolumeContainer* volumeContainer);
 	
@@ -316,7 +328,20 @@ protected:
 	*/
 	std::list<int> getRenderTargetsUsedInCaching(std::list<int> targetList);
 
+    
+    /**
+     * Thrown when OpenGL state does not conform to default settings
+     */
+    class OpenGLStateException : public VoreenException {
+    public:
+        OpenGLStateException(std::string what = "") : VoreenException("invalid OpenGL state: " + what) {}
+    };
 
+    /**
+     * Check that OpenGL state conforms to default settings and throw an exception if not
+     */
+    void checkOpenGLState() throw (OpenGLStateException);
+    
 	/**
 	* Indicates whether the processors are ready to be evaluated (rendered) or not. This is set to true
 	* if analyze() returns 0. 
@@ -396,11 +421,6 @@ protected:
 	* remove previously forbidden targets from that evaluator. 
 	*/
 	std::map<NetworkEvaluator*,std::vector<int> > forbiddenTargetsFromOtherEvaluators_;
-	
-	/**
-	* The VolumeContainer
-	*/
-	VolumeContainer* volumeContainer_;
 
     static const std::string loggerCat_;
 

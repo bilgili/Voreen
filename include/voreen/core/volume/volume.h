@@ -32,23 +32,10 @@
 
 // Note: please ensure that no OpenGL dependencies are added into this file
 
-// This class is just a volume - just a plain volume.
-// Would be great not to see some arcane dependencies here. (roland)
-
-#include <string>
-
-#include "tgt/vector.h"
-
 #include "voreen/core/vis/message.h"
-#include "voreen/core/volume/modality.h"  //FIXME: remove
 #include "voreen/core/volume/volumemetadata.h"
 
 namespace voreen {
-
-// forward deklaration of VolumsSet and VolumeSeries to avoid circular dependency
-//
-class VolumeSet;
-class VolumeSeries;
 
 class Volume {
 public:
@@ -113,6 +100,7 @@ public:
     const VolumeMetaData& meta() const;
 
     void setSpacing(const tgt::vec3 spacing);
+    void setBitsStored(int bitsStored);
 
     /*
      * abstract access of the voxels
@@ -187,14 +175,16 @@ public:
     /// Gets a void* to the data stored with this Volume
     virtual void* getData() = 0;
     virtual Volume* mirrorZ() const = 0;
-    virtual Volume* createSubset(const tgt::ivec3& pos, const tgt::ivec3& size) const throw (std::bad_alloc) = 0;
+    virtual Volume* createSubset(const tgt::ivec3& pos, const tgt::ivec3& size) const
+        throw (std::bad_alloc) = 0;
 
     enum Filter {
         NEAREST,
         LINEAR
     };
 
-    virtual Volume* scale(const tgt::ivec3& newDims, Filter filter) const throw (std::bad_alloc) = 0;
+    virtual Volume* scale(const tgt::ivec3& newDims, Filter filter) const
+        throw (std::bad_alloc) = 0;
 
     /**
      * Use this method in order to copy over the data from \p v to this Volume

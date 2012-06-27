@@ -21,6 +21,13 @@ contains(DEFINES, TGT_WITH_TRACKING) {
                $${VRN_HOME}/ext/tgt/modules/tracking/headtracking.h
 }
 
+win32: {
+  # for CoInitializeSecurity() to be defined
+  contains(DEFINES, TGT_WITH_WMI) {
+    DEFINES += _WIN32_DCOM
+  }
+}
+
 contains(DEFINES, VRN_WITH_DEVIL) {
     DEFINES += TGT_HAS_DEVIL
 }
@@ -35,6 +42,7 @@ SOURCES += \
     $${VRN_HOME}/ext/tgt/frustum.cpp \
     $${VRN_HOME}/ext/tgt/glcanvas.cpp \
     $${VRN_HOME}/ext/tgt/gpucapabilities.cpp \
+    $${VRN_HOME}/ext/tgt/gpucapabilitieswindows.cpp \
     $${VRN_HOME}/ext/tgt/init.cpp \
     $${VRN_HOME}/ext/tgt/light.cpp \
     $${VRN_HOME}/ext/tgt/memorymanager.cpp \
@@ -73,6 +81,7 @@ HEADERS += \
     $${VRN_HOME}/ext/tgt/glcanvas.h \
     $${VRN_HOME}/ext/tgt/glmath.h \
     $${VRN_HOME}/ext/tgt/gpucapabilities.h \
+    $${VRN_HOME}/ext/tgt/gpucapabilitieswindows.h \
     $${VRN_HOME}/ext/tgt/init.h \
     $${VRN_HOME}/ext/tgt/light.h \
     $${VRN_HOME}/ext/tgt/manager.h \

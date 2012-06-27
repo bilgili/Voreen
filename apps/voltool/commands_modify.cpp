@@ -55,7 +55,7 @@ bool CommandCutToPieces::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
     
-    VolumeSet* volumeSet = serializer->load(parameters[3], false);
+    VolumeSet* volumeSet = serializer->load(parameters[3]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
 
     int cx, cy, cz; // number of pieces in each dimension
@@ -140,7 +140,7 @@ bool CommandScale::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
-    VolumeSet* volumeSet = serializer->load(parameters[4], false);
+    VolumeSet* volumeSet = serializer->load(parameters[4]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
 
     Volume* targetDataset_ = sourceDataset_->scale(dimensions, filter);
@@ -165,7 +165,7 @@ bool CommandMirrorZ::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
 
-    VolumeSet* volumeSet = serializer->load(parameters[0], false);
+    VolumeSet* volumeSet = serializer->load(parameters[0]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
     
     Volume* targetDataset_ = sourceDataset_->mirrorZ();
@@ -198,7 +198,7 @@ bool CommandSubSet::execute(const std::vector<std::string>& parameters) {
     VolumeSerializerPopulator volLoadPop;
     VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
     
-    VolumeSet* volumeSet = serializer->load(parameters[6], false);
+    VolumeSet* volumeSet = serializer->load(parameters[6]);
     Volume* sourceDataset_ = volumeSet->getFirstVolume();
 
     Volume* targetDataset_ = sourceDataset_->createSubset(start, dimensions);

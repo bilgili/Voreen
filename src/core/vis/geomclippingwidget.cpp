@@ -185,7 +185,7 @@ void ClippingWidget::render(LocalPortMapping* portMapping) {
 	glPushAttrib(GL_LIGHTING_BIT);
 
     IDManager id1;
-    if( volumeSizeValid_ )
+    if ( volumeSizeValid_ )
     {
         glEnable(GL_LIGHTING);
 
@@ -234,7 +234,7 @@ void ClippingWidget::render(LocalPortMapping* portMapping) {
             renderQuad(2);
         glEnable(GL_LIGHTING);
 
-        if(bx_control1 && bx_control2){
+        if (bx_control1 && bx_control2){
             glLineWidth(3.0f);
             glBegin(GL_LINES);
             glVertex3f(-volumeSize_.x + (x_control2 * 2 * volumeSize_.x),volumeSize_.y + 0.09f,volumeSize_.z);
@@ -307,7 +307,7 @@ void ClippingWidget::render(LocalPortMapping* portMapping) {
 		id1.startBufferRendering("clipp.z-contr1");
 		paintBoundingGeometry(-volumeSize_.x,volumeSize_.y,-volumeSize_.z + (z_control1 * 2 * volumeSize_.z), 1);
 		id1.stopBufferRendering();
-        if(bz_control1)
+        if (bz_control1)
             renderQuad(5);
         glEnable(GL_LIGHTING);
 
@@ -460,37 +460,37 @@ void ClippingWidget::mousePressEvent(tgt::MouseEvent *e)
         {
         case 1 :
             bx_control1 = true;
-            if( x_lock_.get() ) {
+            if ( x_lock_.get() ) {
                 bx_control2=true;
             }
             break;
         case 2 :
             bx_control2 = true;
-            if( x_lock_.get() ) {
+            if ( x_lock_.get() ) {
                 bx_control1=true;
             }
             break;
         case 3 :
             by_control1=true;
-            if( y_lock_.get() ) {
+            if ( y_lock_.get() ) {
                 by_control2=true;
             }
             break;
         case 4 :
             by_control2=true;
-            if( y_lock_.get() ) {
+            if ( y_lock_.get() ) {
                 by_control1=true;
             }
             break;
         case 5 :
             bz_control1 = true;
-            if( z_lock_.get() ) {
+            if ( z_lock_.get() ) {
                 bz_control2=true;
             }
             break;
         case 6 :
             bz_control2=true;
-            if( z_lock_.get() ) {
+            if ( z_lock_.get() ) {
                 bz_control1=true;
             }
             break;
@@ -501,17 +501,17 @@ void ClippingWidget::mousePressEvent(tgt::MouseEvent *e)
     else e->ignore();
     if (isClicked_ && e->modifiers() & (tgt::Event::LSHIFT | tgt::Event::RSHIFT)){
         shift_lock_ = true;
-        if(isClicked_ == 1 || isClicked_ == 2){
+        if (isClicked_ == 1 || isClicked_ == 2){
             x_lock_.set(!x_lock_.get());
             e->accept();
             return;
         }
-        if(isClicked_ == 3 || isClicked_ == 4){
+        if (isClicked_ == 3 || isClicked_ == 4){
             y_lock_.set(!y_lock_.get());
             e->accept();
             return;
         }
-        if(isClicked_ == 5 || isClicked_ == 6){
+        if (isClicked_ == 5 || isClicked_ == 6){
             z_lock_.set(!z_lock_.get());
             e->accept();
             return;
@@ -598,7 +598,7 @@ void ClippingWidget::mouseMoveEvent(tgt::MouseEvent *e)
             if (x_control1 < 0.0f) x_control1 = 0.0f;
             if (x_control1 > x_control2) x_control2 = x_control1;
             bx_control1 = true;
-            if( x_lock_.get() ) {
+            if ( x_lock_.get() ) {
                 x_control2 += x_control1 - temp;
                 if (x_control2 > 1.0f) {
                     x_control1 -= x_control2 - 1.f;
@@ -620,7 +620,7 @@ void ClippingWidget::mouseMoveEvent(tgt::MouseEvent *e)
             if (x_control2 < 0.0) x_control2 = 0.0f;
             if (x_control1 > x_control2) x_control1 = x_control2;
             bx_control2 = true;
-            if(x_lock_.get()) {
+            if (x_lock_.get()) {
                 x_control1 += x_control2 - temp;
                  if (x_control1 > 1.0f) {
                     x_control2 -= x_control1 - 1.f;
@@ -730,19 +730,19 @@ void ClippingWidget::mouseMoveEvent(tgt::MouseEvent *e)
 
 void ClippingWidget::mouseDoubleClickEvent(tgt::MouseEvent *e){
     isClicked_ = isClicked(e->coord().x, e->coord().y);
-    if(isClicked_ == 1 || isClicked_ == 2){
+    if (isClicked_ == 1 || isClicked_ == 2){
         x_lock_.set(!x_lock_.get());
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), VoreenPainter::visibleViews_);
         return;
     }
-    if(isClicked_ == 3 || isClicked_ == 4){
+    if (isClicked_ == 3 || isClicked_ == 4){
         y_lock_.set(!y_lock_.get());
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), VoreenPainter::visibleViews_);
         return;
     }
-    if(isClicked_ == 5 || isClicked_ == 6){
+    if (isClicked_ == 5 || isClicked_ == 6){
         z_lock_.set(!z_lock_.get());
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), VoreenPainter::visibleViews_);
@@ -762,7 +762,7 @@ void ClippingWidget::mouseReleaseEvent(tgt::MouseEvent *e)
         by_control2=false;
         bz_control1=false;
         bz_control2=false;
-        if(shift_lock_){
+        if (shift_lock_){
             x_lock_.set(false);
             y_lock_.set(false);
             z_lock_.set(false);

@@ -106,8 +106,7 @@ void VoreenApp::boot(int /*argc*/, char** /*argv*/) {
 
     // set shader source path; has to be set after tgt::initGL(), otherwise the Singleton is not initialised
     ShdrMgr.addPath("../../src/core/vis/glsl");
-    ShdrMgr.setPath("../../src/core/vis/glsl");
-    
+
     // initialize virtual file system for shaders
     // (only in release builds)
 #ifdef NDEBUG

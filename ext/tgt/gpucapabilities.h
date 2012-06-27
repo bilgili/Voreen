@@ -106,13 +106,17 @@ public:
         OS_WIN_VISTA,
         OS_WIN_SERVER_2003,
         OS_WIN_SERVER_2008,
-        OS_POSIX    ///< For LINUX and other POSIX-like OS. Have a look at getOSVersionString for details.
+        OS_POSIX    ///< For Linux and other POSIX-like OS. Have a look at getOSVersionString for details.
     };
 
     /**
-     * Creates an object for the detection of graphics system properties.
+     * Creates an object for the detection of graphics system properties. If detectCapabilities
+	 * is set to false, the capabilities of the graphics card aren't detected right away in the
+	 * constructor. This way you can use GpuCapabilitiesWindows to detect the amount of memory
+	 * on the graphics card before initGL() is called. Otherwise GpuCapabilities tries to
+	 * detect GL values while initGL() isn't called yet and produces a crash.
      */
-    GpuCapabilities();
+    GpuCapabilities(bool detectCaps = true);
 
     virtual ~GpuCapabilities() {}
 
@@ -303,7 +307,7 @@ public:
      * @param osString determines wether the operating system describing string
      *      is also written
      */
-    void logCapabilities(bool extensionsString = false, bool osString = true);
+    virtual void logCapabilities(bool extensionsString = false, bool osString = true);
 
     /**
      * Get the OS version.

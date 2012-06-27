@@ -817,29 +817,33 @@ unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
     memcpy(volume, ptr, (*width)*(*height)*(*depth)*numc + len1 + len2 + len3 + len4);
     free(data);
 
-    if (description != NULL)
+    if (description != NULL) {
         if (len1 > 1)
             *description = volume + (*width) * (*height) * (*depth) * numc;
         else
             *description = NULL;
-
-    if (courtesy != NULL)
+    }
+    
+    if (courtesy != NULL) {
         if (len2 > 1)
             *courtesy = volume + (*width) * (*height) * (*depth) * numc + len1;
         else
             *courtesy = NULL;
+    }
 
-    if (parameter != NULL)
+    if (parameter != NULL) {
         if (len3 > 1)
             *parameter = volume + (*width) * (*height) * (*depth) * numc + len1 + len2;
         else
             *parameter = NULL;
-
-    if (comment != NULL)
+    }
+    
+    if (comment != NULL) {
         if (len4 > 1)
             *comment = volume + (*width) * (*height) * (*depth) * numc + len1 + len2 + len3;
         else
             *comment = NULL;
+    }
 
     return (volume);
 }

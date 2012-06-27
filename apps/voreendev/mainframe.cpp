@@ -38,10 +38,6 @@
 #include "tgt/gpucapabilities.h"
 #include "tgt/qt/qttimer.h"
 
-#ifdef WIN32
-    #include "voreen/core/opengl/gpucapabilitieswindows.h"
-#endif
-
 #include "voreen/core/io/ioprogress.h"
 #include "voreen/core/io/volumeserializer.h"
 
@@ -61,12 +57,14 @@
 #include "voreen/qt/widgets/snapshotplugin.h"
 #include "voreen/qt/widgets/flybyplugin.h"
 #include "voreen/qt/widgets/lightmaterialplugin.h"
-#include "voreen/qt/widgets/backgroundplugin.h"
-#include "voreen/qt/widgets/adddialog.h"
 #include "voreen/qt/widgets/stereoplugin.h"
 #include "voreen/qt/widgets/transfunc/transfuncintensityplugin.h"
 
 #include "voreen/core/geometry/geometrycontainer.h"
+
+#ifdef VRN_WITH_SVNVERSION
+#include "voreen/svnversion.h"
+#endif
 
 #include <QMessageBox>
 
@@ -124,7 +122,6 @@ VoreenMainFrame::VoreenMainFrame(QStringList* args, QWidget *parent)
     , cmdLineParser_(args)
     , infoPlugin_(0)
     , showTexContainer_(0)
-    , processor_(0)
     , ioSystem_( new IOSystem(this) )
     , volumeSerializerPopulator_( ioSystem_->getObserver() )
     , volumeSetContainer_(0)
@@ -159,10 +156,14 @@ VoreenMainFrame::VoreenMainFrame(QStringList* args, QWidget *parent)
     QString datasetPath = settings.value("dataset", "../../data").toString();
     settings.endGroup();
 
+    volumeSetWidget_->setCurrentDirectory(datasetPath.toStdString());
+    
     // initialize canvases
     canvas3D_ = new tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, 0, true, 0);
     canvas3D_->setUpdatesEnabled(false); // disable repaints until GUI is fully initialized
     canvas3D_->setFocusPolicy(Qt::ClickFocus);
+
+    canvasMod_ = new CanvasModifier(canvas3D_);
 
     trackball_ = 0;
 
@@ -217,8 +218,10 @@ VoreenMainFrame::~VoreenMainFrame() {
 void VoreenMainFrame::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
     MessageReceiver::processMessage(msg, dest);
     MsgDistr.processMessage(msg, dest);
-
-    if (msg->id_ == "main.dataset.load")
+    
+    if (msg->id_ == Processor::delete_)
+		transferFuncPlugin_->removeProcessor(msg->getValue<Processor*>());
+    else if (msg->id_ == "main.dataset.load")
         //fileOpen(msg->getValue<std::string>().c_str(), false);
         fileOpen(msg->getValue<std::string>().c_str());
     else if (msg->id_ == StereoPlugin::setStereoMode_)
@@ -226,23 +229,10 @@ void VoreenMainFrame::processMessage(Message* msg, const Identifier& dest/*=Mess
     else if (msg->id_ == StereoPlugin::setEyeDistance_)
         camera_->setEyeSeparation(msg->getValue<int>());
     else if (msg->id_ == StereoPlugin::setFocalDistance_)
-        camera_->setFocalLength((float)msg->getValue<int>());
+        camera_->setFocalLength(static_cast<float>(msg->getValue<int>()));
 }
 
 void VoreenMainFrame::init() {
-
-    #ifdef WIN32
-        LDEBUG("Reading Windows specific graphics driver information ...");
-        GpuCapabilitiesWindows* gpuCapsWin = GpuCapabilitiesWindows::getInstance();
-        GpuCapabilitiesWindows::GraphicsDriverInformation driverInfo = gpuCapsWin->getGraphicsDriverInformation();
-        LINFO("Graphics Driver Version: " << driverInfo.driverVersion.versionString);
-        LINFO("Graphics Driver Date:    " << driverInfo.driverDate);
-        #ifdef VRN_WITH_WMI
-            LINFO("Graphics Memory Size:    " << gpuCapsWin->getVideoRamSize() << " MB");
-        #else
-            LINFO("Graphics Memory Size:    " << "<no WMI support>");
-        #endif
-    #endif
 
     MsgDistr.setAllowRepaints(false); // disallow all repaints until fully initialized
                                       // prevents some bad GFX driver crashes on Linux
@@ -271,56 +261,20 @@ void VoreenMainFrame::init() {
 
     trackNavi_ = new TrackballNavigation(trackball_, true, 0.05f, 15.f);
     timeHandler->addListenerToFront(trackNavi_);
-    
+
     ShdrMgr.addPath("../../src/core/vis/glsl");
-    ShdrMgr.setPath("../../src/core/vis/glsl");
     int finalTarget = 20;
-    //FIXME: the following lines (till 320) are really ugly
-    //       it is redundant code in every app
-    //       the initialisation of textureContainer should happen somewhere else (cdoer)
-    //	if (!tc_) {
-	tc_ = TextureContainer::createTextureContainer(finalTarget + 1);//, false, TextureContainer::VRN_TEXTURE_CONTAINER_RTT);
-    tc_->setFinalTarget(20);
-    //FIXME: if initialization goes fail and tc_ is 0
-    //nullpointer exception in line 309
-    //maybe throw exception (cdoer)
-    if (tc_->initializeGL() == false) {
-        delete tc_;
-        tc_ = 0;
-        //return std::vector<Renderer*>;
-    }
-
-    //id1_.setTC(tc_);
-
-#ifndef __APPLE__
-    int renderTargetType =
-        TextureContainer::VRN_RGBA_FLOAT16 |
-        TextureContainer::VRN_DEPTH |
-        TextureContainer::VRN_DEPTH_TEX;
-#else
-    // FIXME: support for depth textures on Apple ;)
-    int renderTargetType =
-        TextureContainer::VRN_RGBA_FLOAT16 |
-        //    TextureContainer::VRN_DEPTH |
-        TextureContainer::VRN_DEPTH_TEX;
-#endif
-
-    for (int i=0; i < finalTarget; i++) {
-        tc_->initializeTarget(i, renderTargetType);
-    }
-    tc_->initializeTarget(finalTarget, TextureContainer::VRN_FRAMEBUFFER);
-    tc_->setFinalTarget(finalTarget);
-    MsgDistr.postMessage(new BoolMsg(NetworkEvaluator::setReuseTextureContainerTargets_,false),"evaluator");
-
-	ProcessorFactory::getInstance()->setTextureContainer(tc_);
 
     evaluator_ = new NetworkEvaluator();
-	evaluator_->setTextureContainer(tc_);
+    
+    tc_ = evaluator_->initTextureContainer(finalTarget);
+
+    IDManager id1;
+	id1.setTC(tc_);
+    
+    ProcessorFactory::getInstance()->setTextureContainer(tc_);
     evaluator_->setGeometryContainer(gc_);
 
-	IDManager id1;
-	id1.setTC(tc_);
-	//evaluator_->postMessage(new BoolMsg(NetworkEvaluator::setReuseTextureContainerTargets_,false),"evaluator");
 	
     //FIXME: where is tested whether the given network works on current graphics system? (cdoer)
 	networkSerializer_ = new NetworkSerializer();
@@ -335,9 +289,9 @@ void VoreenMainFrame::init() {
     }
     
 	std::vector<Processor*> processors = net.processors;
-    for (size_t i=0; i < processors.size(); i++) {
-		processors.at(i)->setCamera(camera_);
-    }
+    for (size_t i=0; i < processors.size(); i++)
+		processors[i]->setCamera(camera_);
+    
 	evaluator_->setProcessors(processors);
 	MsgDistr.insert(evaluator_);
 	evaluator_->analyze();
@@ -377,7 +331,6 @@ void VoreenMainFrame::init() {
     transferFuncPlugin_ = new TransFuncPlugin(toolDock, this);
     transferFuncPlugin_->createWidgets();
     transferFuncPlugin_->createConnections();
-    //transferFuncPlugin_->setRenderer(processor_);
 	transferFuncPlugin_->setEvaluator(evaluator_);
     toolDock->setWidget(transferFuncPlugin_);
     addDockWidget(Qt::LeftDockWidgetArea, toolDock);
@@ -429,28 +382,16 @@ void VoreenMainFrame::init() {
     snapshotDialog_ = new PluginDialog(snapshotPlugin, this, true);
     addDockWidget(Qt::RightDockWidgetArea, snapshotDialog_);
 
-    //RPTMERGE, FlybyPlugin expects a renderer
+    //FIXME: RPTMERGE, FlybyPlugin expects a renderer
     FlybyPlugin *flybyPlugin = new FlybyPlugin(this, painter_,
         0/*painter_->getRenderer()*/, trackball_, canvas3D_->winId());
     animationDialog_ = new PluginDialog(flybyPlugin, this, true);
     addDockWidget(Qt::RightDockWidgetArea, animationDialog_);
 
-    BackgroundPlugin* backgroundPlugin = new BackgroundPlugin(this, this);
-    backgroundPlugin->disableBackgroundLayouts(BackgroundPlugin::RADIAL | BackgroundPlugin::CLOUD | BackgroundPlugin::TEXTURE);
-    backgroundPlugin->setIsSliceRenderer(cmdLineParser_.getNetworkName() == "slice.vnw");
-    backgroundDialog_ = new PluginDialog(backgroundPlugin, this, true);
-    addDockWidget(Qt::RightDockWidgetArea, backgroundDialog_);
-
-    canvas3D_->setPainter(painter_);
 #ifdef VRN_MODULE_DEFORMATION
-    // for deform
-    DeformationPlugin* deformplugin = new DeformationPlugin(0, this, canvas3D_);
+    DeformationPlugin* deformplugin = new DeformationPlugin(0, this, canvas3D_, painter_);
     deformationDialog_ = new PluginDialog(deformplugin, this);
     addDockWidget(Qt::RightDockWidgetArea, deformationDialog_);
-    if (cmdLineParser_.getNetworkName() == "deform.vnw") {
-       deformplugin->makeCutView(MsgDistr);
-       deformationDialog_->show();
-    }
 #endif
     ////pickingPlugin
     //pickingPlugin_ = new PickingPlugin(this,this);
@@ -463,7 +404,7 @@ void VoreenMainFrame::init() {
     //    addDockWidget(Qt::RightDockWidgetArea, pickingDialog_);
     //}
 
-    canvas3D_->getEventHandler()->addListenerToFront( (tgt::EventListener*)(transferFuncPlugin_->getIntensityPlugin()) );
+    canvas3D_->getEventHandler()->addListenerToFront( (tgt::EventListener*)(transferFuncPlugin_) );
 
     createActions();
     createMenus();
@@ -481,7 +422,6 @@ void VoreenMainFrame::init() {
 
     optionsToolBar->addAction(orientationAction_);
     optionsToolBar->addAction(lightMaterialAction_);
-    optionsToolBar->addAction(backgroundAction_);
 #ifdef VRN_MODULE_DEFORMATION
     toolsToolBar->addAction(deformationAction_);
 #endif
@@ -521,7 +461,7 @@ void VoreenMainFrame::init() {
         if (fn.endsWith(".tf") || fn.endsWith(".TF"))
             transferFuncPlugin_->getIntensityPlugin()->readFromDisc(fn.toStdString());
         else if (fn.endsWith(".tfi") || fn.endsWith(".TFI")) {
-            TransFuncIntensityKeys* tf = new TransFuncIntensityKeys();
+            TransFuncIntensity* tf = new TransFuncIntensity();
             tf->load(fn.toStdString());
             transferFuncPlugin_->getIntensityPlugin()->setTransFunc(tf);
         }
@@ -534,26 +474,43 @@ void VoreenMainFrame::init() {
     canvas3D_->startTimer(10);
     canvas3D_->setUpdatesEnabled(true); // everything is initialized, now allow repaints
 
+    // Load dataset specified as program arguments
+    if (!cmdLineParser_.getFileName().isEmpty()) {
+
+        if (!cmdLineParser_.getSegmentationFileName().isEmpty()) {
+            // segmentation: first load the segmentation and force the correct modality,
+            // afterwards load the main file
+            VolumeSet* volset = volumeSetWidget_->loadVolumeSet(cmdLineParser_.getSegmentationFileName().toStdString());
+            volset->forceModality(Modality::MODALITY_SEGMENTATION);
+            std::vector<std::string> v;
+            v.push_back(cmdLineParser_.getFileName().toStdString());
+            volumeSetWidget_->addVolumeSeries(v, volset);
+            postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);            
+        } else {
+            // just a simple file
+            fileOpen(cmdLineParser_.getFileName());
+        }
+    }
+
+    if (cmdLineParser_.getCanvasWidth() > 0 && cmdLineParser_.getCanvasHeight() > 0) {
+        LINFO("Canvas size set to "
+              << cmdLineParser_.getCanvasWidth() << "x"
+              << cmdLineParser_.getCanvasHeight());
+        qApp->processEvents();            // to make sure previous layout work is finished
+                                          // before resize
+        canvas3D_->resize(cmdLineParser_.getCanvasWidth(), cmdLineParser_.getCanvasHeight());
+    }
+
     // Set painter for canvas only after all widget layout is complete, to prevent several
     // calls to sizeChanged() with repaints and costly resize of all RTs
     qApp->processEvents();            // to make sure layout work is finished
-
-    // Load datasets specified as program arguments
-    if (!cmdLineParser_.getFileName().isEmpty())
-        //fileOpen(cmdLineParser_.getFileName(), false);
-        fileOpen(cmdLineParser_.getFileName());
-    if (!cmdLineParser_.getSegmentationFileName().isEmpty())
-        //fileOpen(cmdLineParser_.getSegmentationFileName(), true, Modality::MODALITY_SEGMENTATION);
-        fileOpen(cmdLineParser_.getSegmentationFileName(), Modality::MODALITY_SEGMENTATION);
-
+    
     canvas3D_->setPainter(painter_);
     canvas3D_->repaint();
 }
 
 void VoreenMainFrame::deinit() {
     delete overView_;
-
-    delete processor_;
 
     MsgDistr.remove(trackNavi_);
     MsgDistr.remove(painter_);
@@ -628,6 +585,10 @@ void VoreenMainFrame::createActions() {
     aboutAct_->setToolTip(tr("Show the application's About box"));
     connect(aboutAct_, SIGNAL(triggered()), this, SLOT(helpAbout()));
 
+    connectCanvasModAct_ = new QAction(tr("&Connect CanvasModifier"), this);
+    connectCanvasModAct_->setCheckable(true);
+    connect(connectCanvasModAct_, SIGNAL(toggled(bool)), this, SLOT(connectCanvasModifier(bool)));
+
     infoAction_ = infoDock_->toggleViewAction();
     infoAction_->setShortcut(tr("Ctrl+I"));
     infoAction_->setIcon(QIcon(":/vrn_app/icons/info.png"));
@@ -654,11 +615,6 @@ void VoreenMainFrame::createActions() {
     lightMaterialAction_->setShortcut(tr("Ctrl+L"));
     lightMaterialAction_->setStatusTip(tr("Modify light and material parameters"));
     lightMaterialAction_->setToolTip(tr("Modify light and material parameters"));
-
-    backgroundAction_ = backgroundDialog_->createAction();
-    backgroundAction_->setShortcut(tr("Ctrl+B"));
-    backgroundAction_->setStatusTip(tr("Modify appearance of the background"));
-    backgroundAction_->setToolTip(tr("Modify appearance of the background"));
 
 #ifdef VRN_MODULE_DEFORMATION
     deformationAction_ = deformationDialog_->createAction();
@@ -709,6 +665,13 @@ void VoreenMainFrame::createActions() {
 }
 
 void VoreenMainFrame::showVolumeMapping() {
+}
+
+void VoreenMainFrame::connectCanvasModifier(bool connect) {
+    if (connect)
+        canvasMod_->connect();
+    else
+        canvasMod_->disconnect();
 }
 
 
@@ -798,7 +761,7 @@ void VoreenMainFrame::createMenus() {
     optionsMenu_ = menuBar()->addMenu(tr("&Options"));
     optionsMenu_->addAction(orientationAction_);
     optionsMenu_->addAction(lightMaterialAction_);
-    optionsMenu_->addAction(backgroundAction_);
+    optionsMenu_->addAction(connectCanvasModAct_);
 
     viewsMenu_ = menuBar()->addMenu(tr("&Views"));
     viewsMenu_->addAction(viewToolActions_[MAIN_VIEW]);
@@ -846,7 +809,7 @@ void VoreenMainFrame::clearNetwork()
     gc_->clearDeleting();
     
     std::vector<voreen::Processor*>& processors = evaluator_->getProcessors();
-    for( size_t i = 0; i < processors.size(); i++ )
+    for ( size_t i = 0; i < processors.size(); i++ )
     {
         delete processors[i];
     }
@@ -899,9 +862,7 @@ void VoreenMainFrame::openNetworkFile() {
 
     transferFuncPlugin_->setEvaluator(evaluator_);
 	if (evaluator_->analyze() == 0)
-    {
 		painter_->setEvaluator(evaluator_);
-	}
 
     //pipelineBox_->removeItem(0);
     delete guiGen_;
@@ -917,9 +878,8 @@ void VoreenMainFrame::openNetworkFile() {
 //
 void VoreenMainFrame::fileOpen() {
     if (volumeSetWidget_ != 0) {
-        volumeSetWidget_->show();
-        volumeSetWidget_->raise();
-        volumeSetWidget_->activateWindow();
+        volumeSetWidget_->exec(); // show as modal dialog
+        transferFuncPlugin_->setEvaluator(evaluator_); //FIXME: just to activate threshold. joerg
     }
 }
 
@@ -944,185 +904,14 @@ void VoreenMainFrame::fileOpen(const QString& fileName, const Modality& forceMod
     postMessage( new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
-/*
-void VoreenMainFrame::fileOpen() {
-    QStringList filenames;
-    if (getFileDialog(filenames, fileDialogDir_)) {
-        VolumeContainer* newVolumeContainer = loadVolumes(filenames);
-        finishOpen(newVolumeContainer, filenames[0], false);
-    }
-    
-}
 
-//FIXME: this is only necessary because you can pass filenames as commandlinearguments
-void VoreenMainFrame::fileOpen(const QString& fileName, bool add, const Modality& forceModality) {
-
-    VolumeContainer* newVolumeContainer = loadVolumes(QStringList(fileName));
-
-    if (!newVolumeContainer)
-        return;
-
-    if (!forceModality.isUnknown())
-        newVolumeContainer->setModality(forceModality);
-
-//finishOpen(newVolumeContainer, fileName, add);
-
-    if (forceModality == Modality::MODALITY_SEGMENTATION)
-        postMessage(new StringMsg(Labeling::setSegmentDescriptionFile_, fileName.toStdString()));
-
-    showDatasetInfo(volumeContainer_->getVolume(), fileName);
-
-    if (forceModality.isUnknown()){
-        transferFuncPlugin_->dataSourceChanged(volumeContainer_->getVolume());
-        for (size_t i = 0; i < tfAlphas_.size(); ++i){
-            tfAlphas_.at(i)->dataSourceChanged(volumeContainer_->getVolume());
-        }
-    }
-
-    postMessage( new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-
-}
-
-VolumeContainer* VoreenMainFrame::loadVolumes(const QStringList& fileNames) {
-    if (fileNames.empty())
-        return 0;
-
-    // don't repaint while loading
-    setUpdatesEnabled(false);
-
-    // set to a waiting cursor
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-    // put into a std::vector of strings
-    std::vector<std::string> vFileNames(fileNames.size());
-    for (int i = 0; i < fileNames.size(); ++i)
-        vFileNames[i] = fileNames.at(i).toStdString();
-
-    VolumeContainer* newVolumeContainer;
-    try {
-        ioSystem_->show();
-        newVolumeContainer = volumeSerializer_->load(vFileNames);
-        ioSystem_->hide();
-    }
-    catch (std::exception& e) {
-        ioSystem_->hide();
-        QApplication::restoreOverrideCursor();
-        setUpdatesEnabled(true);
-        qApp->processEvents();
-        QMessageBox::warning(this, tr("Failure"), tr("Failed to load volume dataset:\n%1").arg(e.what()));
-        newVolumeContainer = NULL;
-    }
-
-    QApplication::restoreOverrideCursor();
-    canvas3D_->setUpdatesEnabled(true);
-
-    return newVolumeContainer;
-}
-
-void VoreenMainFrame::fileAddDataset() {
-    QStringList filenames;
-    if (getFileDialog(filenames, fileDialogDir_)) {
-
-        VolumeContainer* newVolumeContainer = loadVolumes(filenames);
-
-        // allow repaint
-        setUpdatesEnabled(true);
-
-        if (!newVolumeContainer)
-            return;
-
-        AddDialog* dialog = new AddDialog(this, volumeContainer_, newVolumeContainer);
-        int result = dialog->exec();
-        if (result != 1) {
-            volumeContainer_->clear();
-//finishOpen(dialog->getVolumeContainer(), filenames[0], true);
-        }
-        delete dialog;
-    }
-}
-
-void VoreenMainFrame::finishOpen(VolumeContainer* newVolcont, const QString& fileName, bool add)
-{
-    if (newVolcont) {
-        if (!add)
-        {
-            volumeContainer_->clear();
-            volumeSetContainer_->clear();
-        }
-        volumeContainer_->merge(newVolcont);
-volumeSetContainer_->insertContainer(volumeContainer_);
-        delete newVolcont;
-
-postMessage(new VolumeContainerPtrMsg(Processor::setVolumeContainer_, volumeContainer_));
-postMessage(new IntMsg(Processor::setCurrentDataset_, 0));
-        postMessage( new Message(ProxyGeometry::resetClipPlanes_) );
-
-        transferFuncPlugin_->updateTransferFunction();
-        transferFuncPlugin_->dataSourceChanged(volumeContainer_->getVolume());
-
-        for (size_t i = 0; i < tfAlphas_.size(); ++i){
-            tfAlphas_.at(i)->dataSourceChanged(volumeContainer_->getVolume());
-        }
-
-
-        showDatasetInfo(volumeContainer_->getVolume(), fileName);
-
-        // reset camera if dataset was not added
-        if (!add)
-            postMessage( new Message(TrackballNavigation::resetTrackball_) );
-
-        // repaint
-        postMessage( new Message(VoreenPainter::repaint_) , VoreenPainter::visibleViews_);
-
-        //update Gui
-        addDatasetAct_->setEnabled(true);
-        volumeMappingAction_->setEnabled(true);
-    }
-
-    // allow repaints
-    setUpdatesEnabled(true);
-
-    // if a volume was loaded with a transformationmatrix
-	// unequal identity then change camera center
-*/
-   /* RendererFactory::RayCastingType rendererType;
-       rendererType = cmdLineParser_.getRendererType();
-       if ((rendererType == RendererFactory::VRN_PETCTFUSION) ||
-           (rendererType == RendererFactory::VRN_PETCTFUSIONCLIPPING)) {
-           tgt::mat4 trafo = volumeContainer_->getVolume( (int) volumeContainer_->size()-1)->meta().getTransformation();
-           if (!(trafo.t03 == 0 && trafo.t13 == 0 && trafo.t23 == 0))
-                 camera_->setFocus(tgt::vec3(trafo.t03,trafo.t13,trafo.t23));
-                 trackball_->setCenter(tgt::vec3(trafo.t03,trafo.t13,trafo.t23));
-                 camera_->updateFrustum();
-       }*/
-
-//}
-
-/*void VoreenMainFrame::finishOpen(Volume* volume, const QString& fileName) {
-    postMessage( new Message(ProxyGeometry::resetClipPlanes_) );
-    transferFuncPlugin_->updateTransferFunction();
-
-    if( volume != 0 ) {
-        transferFuncPlugin_->dataSourceChanged(volume);
-        for (size_t i = 0; i < tfAlphas_.size(); ++i) {
-            tfAlphas_.at(i)->dataSourceChanged(volume);
-        }
-    }
-
-    postMessage( new Message(TrackballNavigation::resetTrackball_) );
-    postMessage( new Message(VoreenPainter::repaint_) , VoreenPainter::visibleViews_);
-    
-    //update Gui
-    addDatasetAct_->setEnabled(true);
-    volumeMappingAction_->setEnabled(true);
-    // allow repaints
-    setUpdatesEnabled(true);
-}*/
 
 //
 // ===========================================================================
 
 void VoreenMainFrame::fileOpenDicomFiles() {
+    QMessageBox::information(this, "Voreen", tr("Sorry, currently not working.")); //FIXME: fix and test
+/*
 #ifdef VRN_WITH_DCMTK
     QString tmp = QFileDialog::getExistingDirectory(
         this,
@@ -1136,7 +925,6 @@ void VoreenMainFrame::fileOpenDicomFiles() {
 #endif
         voreen::DicomVolumeReader volumeReader;
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        setUpdatesEnabled(false);
         VolumeSet* volumeSet = volumeReader.read(tmp.toStdString());
         if (volumeSet != 0) {
             //FIXME: ??  volsetContainer_->addVolumeSet(volumeSet);
@@ -1151,6 +939,7 @@ void VoreenMainFrame::fileOpenDicomFiles() {
 #else
     QMessageBox::information(this, "Voreen", tr("Application was compiled without DICOM support."));
 #endif // VRN_WITH_DCMTK
+*/
 }
 
 void VoreenMainFrame::fileOpenDicomDir() {
@@ -1160,18 +949,19 @@ void VoreenMainFrame::fileOpenDicomDir() {
         "Choose a File to Open",
         "../../data",
         "DICOMDIR File");
-    if (tmp == "")
+    if (tmp.isEmpty())
         return;
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     setUpdatesEnabled(false);
     voreen::DicomVolumeReader volumeReader;
     std::vector<voreen::DicomSeriesInfo> series = volumeReader.listSeries(tmp.toStdString());
+    setUpdatesEnabled(true);
     QApplication::restoreOverrideCursor();
 
     if (series.size() > 0) {
-        if(dicomDirDialog_) {
-            delete  dicomDirDialog_;
+        if (dicomDirDialog_) {
+            delete dicomDirDialog_; //FIXME: also clear in dtor
         }
         dicomDirDialog_ = new DicomDirDialog();
         connect(dicomDirDialog_, SIGNAL(dicomDirFinished()), this, SLOT(dicomDirFinished()));
@@ -1188,15 +978,7 @@ void VoreenMainFrame::fileOpenDicomDir() {
 
 void VoreenMainFrame::dicomDirFinished() {
 #ifdef VRN_WITH_DCMTK
-    voreen::DicomVolumeReader volumeReader;
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    setUpdatesEnabled(false);
-    VolumeSet* volumeSet = volumeReader.read(dicomDirDialog_->getFilename());
-    if (volumeSet != 0) {
-        //FIXME: ?? volsetContainer_->addVolumeSet(volumeSet);
-        volumeSetWidget_->updateContent();
-    }
-    QApplication::restoreOverrideCursor();
+    volumeSetWidget_->loadDicomDir(dicomDirDialog_->getFilename());
 #endif
 }
 
@@ -1239,10 +1021,13 @@ void VoreenMainFrame::closeEvent(QCloseEvent* event) {
 }
 
 void VoreenMainFrame::helpAbout() {
-
     QDialog* window = new QDialog(this);
     Ui::VoreenAboutBox ui;
     ui.setupUi(window);
+#ifdef VRN_SVN_REVISON
+    ui.labelVersion->setText("svn version " + QString(VRN_SVN_REVISON) + "\n\nhttp://www.voreen.org"); 
+#endif
+
 #ifndef WIN32
     // On Unix the windows manager should take care of this
     int posX = pos().x() + (width() - window->width()) / 2;

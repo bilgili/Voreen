@@ -44,9 +44,9 @@ namespace voreen {
 		if (color == true) {
 
 			char*** data = new char**[1216];
-			for(int i=0;i<1216;i++) {
+			for (int i=0;i<1216; i++) {
 				data[i] = new char*[2048];
-				for(int j=0; j<2048;j++) {
+				for (int j=0; j<2048; j++) {
 					data[i][j] = new char[3];
 				}
 			}
@@ -78,8 +78,8 @@ namespace voreen {
 				}
 
 				for (int i=cutTop; i<sizey-cutBottom; i++) {
-					for (int j=cutLeft;j<sizex-cutRight; j++) {
-						for (int k=0;k<3;k++) {
+					for (int j=cutLeft; j<sizex-cutRight; j++) {
+						for (int k=0; k<3; k++) {
 							charArrayBuffer[0] = data[i][j][k];
 							outputStream.write(charArrayBuffer,1);
 						}

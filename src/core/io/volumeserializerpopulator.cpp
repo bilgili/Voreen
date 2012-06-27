@@ -77,7 +77,7 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
 {
     /*
         populate array with all known VolumeReaders
-        --> if here occurs an FormatClashException it is an error in this method
+        --> if an FormatClashException occurs here it is an error in this method
     */
     readers_.push_back( new DatVolumeReader(progress_) );
     readers_.push_back( new NrrdVolumeReader() );
@@ -103,7 +103,7 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
 #endif
 
 #ifdef VRN_WITH_TIFF
-    readers_.push_back( new TiffVolumeReader() );
+    readers_.push_back( new TiffVolumeReader(progress_) );
 #endif
 
 #ifdef VRN_WITH_ZIP
@@ -115,7 +115,7 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*
 
     /*
         populate array with all known VolumeWriters
-        --> if here occurs an FormatClashException it is an error in this method
+        --> if an FormatClashException occurs here it is an error in this method
     */
     writers_.push_back( new DatVolumeWriter() );
     writers_.push_back( new NrrdVolumeWriter() );

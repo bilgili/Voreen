@@ -28,8 +28,12 @@
  **********************************************************************/
 
 #include "voreen/core/vis/property.h"
+
+
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
+#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
+
 
 namespace voreen {
 
@@ -78,7 +82,7 @@ bool Property::getAutoChange() const {
 
 void Property::setConditioned(Identifier condController, std::vector<int> condValues) {
     condValues_.clear();
-    for(unsigned int i=0; i< condValues.size(); ++i) {
+    for (unsigned int i=0; i< condValues.size(); ++i) {
         condValues_.push_back(condValues.at(i));
     }
     conditioned_ = true;
@@ -175,7 +179,9 @@ TiXmlElement* Property::serializeToXml() const {
 }
 
 void Property::updateFromXml(TiXmlElement* propElem) {
+    errors_.clear();
     serializableSanityChecks(propElem);
+
     if (propElem->Attribute("type") != PropertyType()) {
         std::stringstream errormsg;
         errormsg << "You are trying to deserialize a " << propElem->Attribute("type") << " when you expectet a " << PropertyType() << "!";
@@ -214,7 +220,7 @@ ConditionProp::ConditionProp(Identifier ident, Property* condi) {
 int ConditionProp::translateCondition(Property* prop) {
 	switch (prop->getType()) {
 		case Property::FLOAT_PROP :
-			return (int)((dynamic_cast<FloatProp*>(prop))->get());
+			return static_cast<int>((dynamic_cast<FloatProp*>(prop))->get());
 		case Property::INT_PROP :
 			return (dynamic_cast<IntProp*>(prop))->get();
 		case Property::BOOL_PROP :
@@ -415,16 +421,15 @@ void FloatProp::updateFromXml(TiXmlElement* propElem) {
     float value;
     if (propElem->QueryFloatAttribute("value", &value) == TIXML_SUCCESS)
         set(value);
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
 TiXmlElement* FloatProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("type", Property::FLOAT_PROP);
     propElem->SetDoubleAttribute("value", get());
-    //propElem->SetAttribute("Max_value" ,(int)getMaxValue());
-    //propElem->SetAttribute("Min_value" ,(int)getMinValue());
     return propElem;
 }
 
@@ -475,16 +480,15 @@ void IntProp::updateFromXml(TiXmlElement* propElem) {
     int value;
     if (propElem->QueryIntAttribute("value", &value) == TIXML_SUCCESS)
         set(value);
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
 TiXmlElement* IntProp::serializeToXml() const {
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("type", Property::INT_PROP);
     propElem->SetAttribute("value", get());
-    //propElem->SetAttribute("Max_value" ,(int)getMaxValue());
-    //propElem->SetAttribute("Min_value" ,(int)getMinValue());
     return propElem;
 }
 
@@ -507,6 +511,8 @@ void BoolProp::updateFromXml(TiXmlElement* propElem) {
     Property::updateFromXml(propElem);
     if (propElem->Attribute("value"))
         set(std::string("true").compare(propElem->Attribute("value")) == 0 ? true : false);
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -514,7 +520,6 @@ TiXmlElement* BoolProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("type", Property::BOOL_PROP);
     propElem->SetAttribute("value", get() ? "true" : "false");
     return propElem;
 }
@@ -537,6 +542,8 @@ void StringProp::updateFromXml(TiXmlElement* propElem) {
     Property::updateFromXml(propElem);
     if (propElem->Attribute("value"))
         set(propElem->Attribute("value"));
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -544,7 +551,6 @@ TiXmlElement* StringProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("type", getType());
     propElem->SetAttribute("value", get());
     return propElem;
 }
@@ -584,6 +590,8 @@ void ColorProp::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryFloatAttribute("b", &b) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("a", &a) == TIXML_SUCCESS)
         set(tgt::Color(r,g,b,a));
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -591,7 +599,6 @@ TiXmlElement* ColorProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::COLOR_PROP);
     propElem->SetDoubleAttribute("r", get().r);
     propElem->SetDoubleAttribute("g", get().g);
     propElem->SetDoubleAttribute("b", get().b);
@@ -656,6 +663,8 @@ void EnumProp::updateFromXml(TiXmlElement* propElem) {
             }
         }
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -663,7 +672,6 @@ TiXmlElement* EnumProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::ENUM_PROP);
     propElem->SetAttribute("value", strings_.at(get()));
     return propElem;
 }
@@ -693,7 +701,6 @@ TiXmlElement* ButtonProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::BUTTON_PROP);
     return propElem;
 }
 
@@ -725,7 +732,6 @@ TiXmlElement* FileDialogProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::FILEDIALOG_PROP);
     propElem->SetAttribute("value", get());
     propElem->SetAttribute("caption", getDialogCaption());
     propElem->SetAttribute("directory", getDirectory());
@@ -776,7 +782,7 @@ bool TransFuncProp::getShowThreshold() {
 void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
     Property::updateFromXml(propElem);
 
-    TransFuncIntensityKeys* tf = new TransFuncIntensityKeys();
+    TransFuncIntensity* tf = new TransFuncIntensity();
     tf->clearKeys();
 
     //iterate through all markers
@@ -821,8 +827,8 @@ void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
             tf->addKey(myKey);
         }
         else
-            throw XmlElementException("A Key in a TransFunc is messed up");
-    } // for( pElem; pElem; pElem=pElem->NextSiblingElement())
+            errors_.store(XmlElementException("A Key in a TransFunc is messed up"));
+    } // for ( pElem; pElem; pElem=pElem->NextSiblingElement())
     tf->updateTexture();
     set(tf);
     // processor->postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf) );
@@ -834,8 +840,7 @@ TiXmlElement* TransFuncProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::TRANSFUNC_PROP);
-    TransFuncIntensityKeys* tf = dynamic_cast<TransFuncIntensityKeys*>(get());
+    TransFuncIntensity* tf = dynamic_cast<TransFuncIntensity*>(get());
     if (tf) {
         // iterate through all markers
         for (int m = 0; m < tf->getNumKeys(); ++m) {
@@ -896,6 +901,8 @@ void FloatVec2Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryFloatAttribute("y", &vector.y) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -903,7 +910,6 @@ TiXmlElement* FloatVec2Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::FLOAT_VEC2_PROP);
     propElem->SetDoubleAttribute("x", get().x);
     propElem->SetDoubleAttribute("y", get().y);
     return propElem;
@@ -943,6 +949,8 @@ void FloatVec3Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryFloatAttribute("z", &vector.z) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -950,7 +958,6 @@ TiXmlElement* FloatVec3Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::FLOAT_VEC3_PROP);
     propElem->SetDoubleAttribute("x", get().x);
     propElem->SetDoubleAttribute("y", get().y);
     propElem->SetDoubleAttribute("z", get().z);
@@ -992,6 +999,8 @@ void FloatVec4Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryFloatAttribute("z", &vector.w) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -999,7 +1008,6 @@ TiXmlElement* FloatVec4Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::FLOAT_VEC4_PROP);
     propElem->SetDoubleAttribute("x", get().x);
     propElem->SetDoubleAttribute("y", get().y);
     propElem->SetDoubleAttribute("z", get().z);
@@ -1041,6 +1049,8 @@ void IntVec2Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryIntAttribute("y", &vector.y) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -1048,7 +1058,6 @@ TiXmlElement* IntVec2Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::INTEGER_VEC2_PROP);
     propElem->SetAttribute("x", get().x);
     propElem->SetAttribute("y", get().y);
     return propElem;
@@ -1089,6 +1098,8 @@ void IntVec3Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryIntAttribute("z", &vector.z) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -1096,7 +1107,6 @@ TiXmlElement* IntVec3Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::INTEGER_VEC3_PROP);
     propElem->SetAttribute("x", get().x);
     propElem->SetAttribute("y", get().y);
     propElem->SetAttribute("z", get().z);
@@ -1139,6 +1149,8 @@ void IntVec4Prop::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryIntAttribute("z", &vector.w) == TIXML_SUCCESS) {
         set(vector);
     }
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
 }
 
@@ -1146,7 +1158,6 @@ TiXmlElement* IntVec4Prop::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
 
-    //propElem->SetAttribute("Property_type", Property::INTEGER_VEC4_PROP);
     propElem->SetAttribute("x", get().x);
     propElem->SetAttribute("y", get().y);
     propElem->SetAttribute("z", get().z);

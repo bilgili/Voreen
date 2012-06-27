@@ -28,13 +28,16 @@
  **********************************************************************/
 
 #include "voreen/core/opengl/texunitmapper.h"
+
+
 #include "tgt/gpucapabilities.h"
-#include "tgt/singleton.h"
+#include "voreen/core/vis/identifier.h"
+
 
 namespace voreen {
 
 TexUnitMapper::TexUnitMapper() {
-    registeredUnits_ = new std::map<Identifier, uint>();
+    registeredUnits_ = new std::map<Identifier, GLint>();
     remap();
 }
 
@@ -47,7 +50,7 @@ TexUnitMapper::TexUnitMapper(const Identifier& ident) {
 
 TexUnitMapper::TexUnitMapper(const std::vector<Identifier>& idents) {
     TexUnitMapper();
-    for (uint i = 0; i < idents.size(); ++i) {
+    for (size_t i = 0; i < idents.size(); ++i) {
         uint mappedTo = getFreeTexUnitInt();
         texUnits_.insert(mappedTo);
         registeredUnits_->insert(std::pair<Identifier, uint>(idents.at(i), mappedTo));
@@ -58,17 +61,17 @@ TexUnitMapper::~TexUnitMapper() {
     registeredUnits_->clear();
 }
 
-void TexUnitMapper::setTexUnitFree(uint texUnit) {
+void TexUnitMapper::setTexUnitFree(GLint texUnit) {
     texUnits_.erase(texUnits_.find(texUnit));
     remap();
 }
 
 void TexUnitMapper::remap() {
     texUnits_.clear();
-    std::map<Identifier, uint>::iterator it;
+    std::map<Identifier, GLint>::iterator it;
     if (registeredUnits_->size() > 0) {
         for (it = registeredUnits_->begin(); it != registeredUnits_->end(); ++it) {
-            int findID = getFreeTexUnitInt();
+            GLint findID = getFreeTexUnitInt();
             it->second = findID;
             texUnits_.insert(findID);
         }
@@ -76,10 +79,10 @@ void TexUnitMapper::remap() {
 }
 
 void TexUnitMapper::removeTexUnit(const Identifier& ident) {
-    std::map<Identifier, uint>::iterator found = registeredUnits_->find(ident);
+    std::map<Identifier, GLint>::iterator found = registeredUnits_->find(ident);
     if (registeredUnits_->end() != found) {
         registeredUnits_->erase(found);
-        std::set<uint>::iterator foundTexUnit = texUnits_.find(found->second);
+        std::set<GLint>::iterator foundTexUnit = texUnits_.find(found->second);
         if (texUnits_.end() != foundTexUnit)
             texUnits_.erase(foundTexUnit);
     }
@@ -87,7 +90,7 @@ void TexUnitMapper::removeTexUnit(const Identifier& ident) {
 }
 
 bool TexUnitMapper::addTexUnit(const Identifier& ident) {
-    uint mappedTo = getFreeTexUnitInt();
+    GLint mappedTo = getFreeTexUnitInt();
     texUnits_.insert(mappedTo);
     registeredUnits_->insert(std::make_pair(ident, mappedTo));
     remap();
@@ -98,18 +101,18 @@ void TexUnitMapper::registerUnits(const std::vector<Identifier>& idents) {
     registeredUnits_->clear();
     remap();
     for (size_t i = 0; i < idents.size(); ++i) {
-        uint mappedTo = getFreeTexUnitInt();
+        GLint mappedTo = getFreeTexUnitInt();
         texUnits_.insert(mappedTo);
         registeredUnits_->insert(std::make_pair(idents.at(i), mappedTo));
     }
 }
 
-uint TexUnitMapper::getTexUnit(const Identifier& ident) {
-    std::map<Identifier, uint>::iterator found = registeredUnits_->find(ident);
+GLint TexUnitMapper::getTexUnit(const Identifier& ident) {
+    std::map<Identifier, GLint>::iterator found = registeredUnits_->find(ident);
     if (found == registeredUnits_->end()) {
         throw texUnit_Exception("texture unit '" + ident.getName() + "' seems to be unregistered");
     } else {
-        if (found->second < (uint)GpuCaps.getNumTextureUnits())
+        if (found->second < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
             return found->second;
         else
             throw texUnit_Exception("not enough texture units available");
@@ -118,40 +121,39 @@ uint TexUnitMapper::getTexUnit(const Identifier& ident) {
 
 //FIXME: This is a disaster waiting to happen! either use tex unit number "i" OR "GL_TEXTURE0 +
 //       i", not both!!! joerg
-uint TexUnitMapper::getGLTexUnit(const Identifier& ident) {
-    std::map<Identifier, uint>::iterator found = registeredUnits_->find(ident);
+GLint TexUnitMapper::getGLTexUnit(const Identifier& ident) {
+    std::map<Identifier, GLint>::iterator found = registeredUnits_->find(ident);
     if (found == registeredUnits_->end())
         throw texUnit_Exception("texture unit '" + ident.getName() + "' seems to be unregistered");
     else {
-        int foundID = found->second;
-        if (foundID < GpuCaps.getNumTextureUnits())
+        GLint foundID = found->second;
+        if (foundID < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
             return GL_TEXTURE0 + found->second;
         else
             throw texUnit_Exception("not enough texture units available");
     }
 }
-uint TexUnitMapper::getFreeTexUnit() {
-    uint mappedTo = getFreeTexUnitInt();
-    if (mappedTo < (uint)GpuCaps.getNumTextureUnits()) {
+GLint TexUnitMapper::getFreeTexUnit() {
+    GLint mappedTo = getFreeTexUnitInt();
+    if (mappedTo < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
         return mappedTo;
-    }
     else
         throw texUnit_Exception("no further free texture units available");
 }
 
-uint TexUnitMapper::getGLTexUnitFromInt(uint texUnit) {
+GLint TexUnitMapper::getGLTexUnitFromInt(GLint texUnit) {
     return GL_TEXTURE0 + texUnit;
 }
 
-uint TexUnitMapper::getFreeTexUnitInt( ) {
-    uint i = 0;
-    while (texUnits_.find(i) != texUnits_.end()) {
+GLint TexUnitMapper::getFreeTexUnitInt( ) {
+    GLint i = 0;
+    while (texUnits_.find(i) != texUnits_.end())
         ++i;
-    }
+
     return i;
 }
 
-std::map<Identifier, uint>* TexUnitMapper::getCurrentSystem() {
+std::map<Identifier, GLint>* TexUnitMapper::getCurrentSystem() {
     return registeredUnits_;
 }
 

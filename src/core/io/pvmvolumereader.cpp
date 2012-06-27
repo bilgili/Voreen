@@ -58,7 +58,7 @@ PVMVolumeReader::PVMVolumeReader(IOProgress* progress)
     extensions_.push_back("pvm");
 }
 
-VolumeSet* PVMVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* PVMVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     uint8_t* data;
@@ -88,8 +88,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName, bool generateVolum
                                 &scalex, &scaley, &scalez, &description, &courtesy,
                                 &parameter, &comment);
         data = new uint8_t[width * height * depth * components];
-    }
-    catch (std::bad_alloc) {
+    } catch (std::bad_alloc) {
         throw; // throw it to the caller
     }
     memcpy(data, tmpData, width * height * depth * components);
@@ -116,8 +115,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName, bool generateVolum
 				LINFO("Create 8 bit data set.");
                 dataset = new VolumeUInt8(data, tgt::ivec3(width, height, depth),
                                           tgt::vec3(scalex, scaley, scalez));
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
         }
@@ -126,8 +124,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName, bool generateVolum
 				LINFO("Create 16 bit data set.");
                 dataset = new VolumeUInt16((uint16_t*) data, tgt::ivec3(width, height, depth),
                                            tgt::vec3(scalex, scaley, scalez));
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
         }
@@ -139,18 +136,15 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName, bool generateVolum
 
     VolumeSet* volumeSet = 0;
     try {
-         volumeSet = new VolumeSet(fileName);
+         volumeSet = new VolumeSet(0, fileName);
          VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
          volumeSet->addSeries(volumeSeries);
          VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
+         volumeHandle->setOrigin(fileName, "unknown", 0.0f);
          volumeSeries->addVolumeHandle(volumeHandle);
-         if( generateVolumeGL == true )
-             volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
-    }
-    catch (std::bad_alloc) {
+    } catch (std::bad_alloc) {
         throw; // throw it to the caller
     }
-
     return volumeSet;
 }
 

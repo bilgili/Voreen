@@ -27,11 +27,16 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/vis/property.h"
 #include "voreen/core/vis/processors/propertyset.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+
+#include "voreen/core/vis/property.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
+#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
+
 
 namespace voreen {
+
+const std::string PropertySet::XmlElementName = "PropertySet";
 
 PropertySet::PropertySet(bool equalize)
 : VolumeRaycaster(""), equalize_(equalize), name_("PropertySet")
@@ -42,7 +47,8 @@ PropertySet::PropertySet(bool equalize)
 
 PropertySet::PropertySet(std::vector<Processor*> processors, bool equalize)
 : VolumeRaycaster(""),
-  equalize_(equalize), name_("PropertySet") {    
+  equalize_(equalize), name_("PropertySet")
+{    
     props_.clear();
     setProcessors(processors);
     meta_ = MetaSerializer();
@@ -59,7 +65,7 @@ void PropertySet::addProcessor(Processor* processor) {
 }
 
 bool PropertySet::removeProcessor(Processor* processor) {
-    for (size_t i=0; i<processors_.size(); i++) {
+    for (size_t i=0; i<processors_.size(); ++i) {
         if (processors_[i] == processor) {
             processors_.erase(processors_.begin() + i);
             createProperties();
@@ -75,7 +81,7 @@ void PropertySet::clear() {
 }
 
 TransFunc* PropertySet::getTransFunc() {
-    for (size_t i=0; i<processors_.size(); i++) {
+    for (size_t i=0; i<processors_.size(); ++i) {
         if (processors_[i]->getClassName().getSubString(0) == "Raycaster") {
             VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
             if (vr) {
@@ -93,66 +99,84 @@ void PropertySet::createProperties() {
     // create props from first processor
     if (processors_.size() > 0) {
         std::vector<Property*> props = processors_[0]->getProperties();
-        for (size_t i=0; i<props.size(); i++) {
+        for (size_t i=0; i<props.size(); ++i) {
             Property* p;
 
             bool found = true;
-            switch(props[i]->getType()) {
-                case Property::FLOAT_PROP:
-                    p = new FloatProp(*static_cast<FloatProp*>(props[i]));
-                    break;
-                case Property::BOOL_PROP:
-                    p = new BoolProp(*static_cast<BoolProp*>(props[i]));
-                    break;
-                case Property::INT_PROP:
-                    p = new IntProp(*static_cast<IntProp*>(props[i]));
-                    break;
-                case Property::COLOR_PROP:
-                    p = new ColorProp(*static_cast<ColorProp*>(props[i]));
-                    break;
-                case Property::ENUM_PROP:
-                    p = new EnumProp(*static_cast<EnumProp*>(props[i]));
-                    break;
-                // ? ---
-               /* case BUTTON_PROP:
-                    p = new Property();
-                    break;
-                case FILEDIALOG_PROP:
-                    p = new Property();
-                    break;
-                case CONDITION_PROP:
-                    p = new Property();
-                    break;
-                case GROUP_PROP:
-                    p = new Property();
-                    break;*/
-                // ---
-                case Property::TRANSFUNC_PROP:
-                    p = new TransFuncProp(*static_cast<TransFuncProp*>(props[i]));
-                    break;
-                case Property::TRANSFUNC_ALPHA_PROP:
-                    p = new TransFuncAlphaProp(*static_cast<TransFuncAlphaProp*>(props[i]));
-                    break;
-                case Property::FLOAT_VEC2_PROP:
-                    p = new FloatVec2Prop(*static_cast<FloatVec2Prop*>(props[i]));
-                    break;
-                case Property::FLOAT_VEC3_PROP:
-                    p = new FloatVec3Prop(*static_cast<FloatVec3Prop*>(props[i]));
-                    break;
-                case Property::FLOAT_VEC4_PROP:
-                    p = new FloatVec4Prop(*static_cast<FloatVec4Prop*>(props[i]));
-                    break;
-                case Property::INTEGER_VEC2_PROP:
-                    p = new IntVec2Prop(*static_cast<IntVec2Prop*>(props[i]));
-                    break;
-                case Property::INTEGER_VEC3_PROP:
-                    p = new IntVec3Prop(*static_cast<IntVec3Prop*>(props[i]));
-                    break;
-                case Property::INTEGER_VEC4_PROP:
-                    p = new IntVec4Prop(*static_cast<IntVec4Prop*>(props[i]));
-                    break;
-                default:
-                    found = false;
+            switch (props[i]->getType()) {
+
+            case Property::FLOAT_PROP:
+                p = new FloatProp(*static_cast<FloatProp*>(props[i]));
+                break;
+
+            case Property::BOOL_PROP:
+                p = new BoolProp(*static_cast<BoolProp*>(props[i]));
+                break;
+
+            case Property::INT_PROP:
+                p = new IntProp(*static_cast<IntProp*>(props[i]));
+                break;
+
+            case Property::COLOR_PROP:
+                p = new ColorProp(*static_cast<ColorProp*>(props[i]));
+                break;
+
+            case Property::ENUM_PROP:
+                p = new EnumProp(*static_cast<EnumProp*>(props[i]));
+                break;
+
+            // ? ---
+           /* case BUTTON_PROP:
+                p = new Property();
+                break;
+
+            case FILEDIALOG_PROP:
+                p = new Property();
+                break;
+
+            case CONDITION_PROP:
+                p = new Property();
+                break;
+
+            case GROUP_PROP:
+                p = new Property();
+                break;*/
+
+            // ---
+            case Property::TRANSFUNC_PROP:
+                p = new TransFuncProp(*static_cast<TransFuncProp*>(props[i]));
+                break;
+
+            case Property::TRANSFUNC_ALPHA_PROP:
+                p = new TransFuncAlphaProp(*static_cast<TransFuncAlphaProp*>(props[i]));
+                break;
+
+            case Property::FLOAT_VEC2_PROP:
+                p = new FloatVec2Prop(*static_cast<FloatVec2Prop*>(props[i]));
+                break;
+
+            case Property::FLOAT_VEC3_PROP:
+                p = new FloatVec3Prop(*static_cast<FloatVec3Prop*>(props[i]));
+                break;
+
+            case Property::FLOAT_VEC4_PROP:
+                p = new FloatVec4Prop(*static_cast<FloatVec4Prop*>(props[i]));
+                break;
+
+            case Property::INTEGER_VEC2_PROP:
+                p = new IntVec2Prop(*static_cast<IntVec2Prop*>(props[i]));
+                break;
+
+            case Property::INTEGER_VEC3_PROP:
+                p = new IntVec3Prop(*static_cast<IntVec3Prop*>(props[i]));
+                break;
+
+            case Property::INTEGER_VEC4_PROP:
+                p = new IntVec4Prop(*static_cast<IntVec4Prop*>(props[i]));
+                break;
+
+            default:
+                found = false;
             }
 
             if (found)
@@ -164,10 +188,10 @@ void PropertySet::createProperties() {
 
     // go through processors_ and erase properties from props_ that do not exist in every single processor
     // in other words: this->props_ is the intersection of the properties from the processors_-vector
-    for (size_t i=0; i<processors_.size(); i++) {
-        for (size_t k=0; k<props_.size(); k++) {
+    for (size_t i=0; i<processors_.size(); ++i) {
+        for (size_t k=0; k<props_.size(); ++k) {
             bool found = false;
-            for (size_t j=0; j<processors_[i]->getProperties().size(); j++) {
+            for (size_t j=0; j<processors_[i]->getProperties().size(); ++j) {
                 if (processors_[i]->getProperties()[j]->getIdent() == props_[k]->getIdent()) {
                     found = true;
                     break;
@@ -183,120 +207,105 @@ void PropertySet::createProperties() {
 
 }
 
-
 void PropertySet::setProperties(Identifier id) {
-    for (size_t i=0; i<processors_.size(); i++) {
-        for (size_t k=0; k<props_.size(); k++) {
+    for (size_t i=0; i<processors_.size(); ++i) {
+        for (size_t k=0; k<props_.size(); ++k) {
             if (id == "all" || id == props_[k]->getIdent()) {
-                for (size_t j=0; j<processors_[i]->getProperties().size(); j++) {
+                for (size_t j=0; j<processors_[i]->getProperties().size(); ++j) {
                     if (processors_[i]->getProperties()[j]->getIdent() == props_[k]->getIdent()) {                    
-                    
-                        switch (props_[k]->getType()){
-                            case Property::INT_PROP:
-                                {
-                                    IntProp* prop = dynamic_cast<IntProp*>(processors_[i]->getProperties()[j]);
-                                    IntProp* prop2 = dynamic_cast<IntProp*>(props_[k]);
-                                    prop->set(prop2->get());
-                                    processors_[i]->postMessage(new IntMsg(prop->getIdent(), prop2->get()));
-                                    break;
-                                }
-                            case Property::FLOAT_PROP:
-                                {
-                                    FloatProp* prop = dynamic_cast<FloatProp*>(processors_[i]->getProperties()[j]);
-                                    FloatProp* prop2 = dynamic_cast<FloatProp*>(props_[k]);
-
-                                    prop->set(prop2->get());
-                                    processors_[i]->postMessage(new FloatMsg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::ENUM_PROP:
-                                {
-                                    EnumProp* prop = dynamic_cast<EnumProp*>(processors_[i]->getProperties()[j]);
-                                    EnumProp* prop2 = dynamic_cast<EnumProp*>(props_[k]);
-
-                                    prop->set(prop2->get());  
-                                    if (prop->getSendStringMsg() ) {
-                                        processors_[i]->postMessage(new StringMsg(prop->getIdent(),prop2->getStrings().at(prop->get()))); 
-                                    }
-                                    else {
-                                        processors_[i]->postMessage(new IntMsg(prop->getIdent(),prop2->get()));
-                                    }
-                                    break;
-                                }
-                            case Property::BOOL_PROP:
-                                {
-                                    BoolProp* prop = dynamic_cast<BoolProp*>(processors_[i]->getProperties()[j]);
-                                    BoolProp* prop2 = dynamic_cast<BoolProp*>(props_[k]);
-
-                                    prop->set(prop2->get());
-                                    processors_[i]->postMessage(new BoolMsg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::FLOAT_VEC2_PROP:
-                                {
-                                    FloatVec2Prop* prop = dynamic_cast<FloatVec2Prop*>(processors_[i]->getProperties()[j]);
-                                    FloatVec2Prop* prop2 = dynamic_cast<FloatVec2Prop*>(props_[k]);
-
-                                    prop->set(prop2->get());  
-                                    processors_[i]->postMessage(new Vec2Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::FLOAT_VEC3_PROP:
-                                {
-                                    FloatVec3Prop* prop = dynamic_cast<FloatVec3Prop*>(processors_[i]->getProperties()[j]);
-                                    FloatVec3Prop* prop2 = dynamic_cast<FloatVec3Prop*>(props_[k]);
-
-                                    prop->set(prop2->get());  
-                                    processors_[i]->postMessage(new Vec3Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::FLOAT_VEC4_PROP:
-                                {
-                                    FloatVec4Prop* prop = dynamic_cast<FloatVec4Prop*>(processors_[i]->getProperties()[j]);
-                                    FloatVec4Prop* prop2 = dynamic_cast<FloatVec4Prop*>(props_[k]);
-
-                                    prop->set(prop2->get()); 
-                                    processors_[i]->postMessage(new Vec4Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::COLOR_PROP:
-                                {
-                                    ColorProp* prop = dynamic_cast<ColorProp*>(processors_[i]->getProperties()[j]);
-                                    ColorProp* prop2 = dynamic_cast<ColorProp*>(props_[k]);
-
-                                    prop->set(prop2->get()); 
-                                    processors_[i]->postMessage(new ColorMsg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::INTEGER_VEC2_PROP:
-                                {
-                                    IntVec2Prop* prop = dynamic_cast<IntVec2Prop*>(processors_[i]->getProperties()[j]);
-                                    IntVec2Prop* prop2 = dynamic_cast<IntVec2Prop*>(props_[k]);
-
-                                    prop->set(prop2->get()); 
-                                    processors_[i]->postMessage(new IVec2Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::INTEGER_VEC3_PROP:
-                                {
-                                    IntVec3Prop* prop = dynamic_cast<IntVec3Prop*>(processors_[i]->getProperties()[j]);
-                                    IntVec3Prop* prop2 = dynamic_cast<IntVec3Prop*>(props_[k]);
-
-                                    prop->set(prop2->get()); 
-                                    processors_[i]->postMessage(new IVec3Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                }
-                            case Property::INTEGER_VEC4_PROP:
-                                {
-                                    IntVec4Prop* prop = dynamic_cast<IntVec4Prop*>(processors_[i]->getProperties()[j]);
-                                    IntVec4Prop* prop2 = dynamic_cast<IntVec4Prop*>(props_[k]);
-
-                                    prop->set(prop2->get()); 
-                                    processors_[i]->postMessage(new IVec4Msg(prop->getIdent(), prop2->get()));  
-                                    break;
-                                } 
-                            default:
+                        switch (props_[k]->getType()) {
+                        case Property::INT_PROP: {
+                                IntProp* prop = dynamic_cast<IntProp*>(processors_[i]->getProperties()[j]);
+                                IntProp* prop2 = dynamic_cast<IntProp*>(props_[k]);
+                                prop->set(prop2->get());
+                                processors_[i]->postMessage(new IntMsg(prop->getIdent(), prop2->get()));
                                 break;
+                            }
+                        case Property::FLOAT_PROP: {
+                                FloatProp* prop = dynamic_cast<FloatProp*>(processors_[i]->getProperties()[j]);
+                                FloatProp* prop2 = dynamic_cast<FloatProp*>(props_[k]);
+
+                                prop->set(prop2->get());
+                                processors_[i]->postMessage(new FloatMsg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::ENUM_PROP: {
+                                EnumProp* prop = dynamic_cast<EnumProp*>(processors_[i]->getProperties()[j]);
+                                EnumProp* prop2 = dynamic_cast<EnumProp*>(props_[k]);
+
+                                prop->set(prop2->get());  
+                                if (prop->getSendStringMsg() )
+                                    processors_[i]->postMessage(new StringMsg(prop->getIdent(),prop2->getStrings().at(prop->get()))); 
+                                else 
+                                    processors_[i]->postMessage(new IntMsg(prop->getIdent(),prop2->get()));
+                                break;
+                            }
+                        case Property::BOOL_PROP: {
+                                BoolProp* prop = dynamic_cast<BoolProp*>(processors_[i]->getProperties()[j]);
+                                BoolProp* prop2 = dynamic_cast<BoolProp*>(props_[k]);
+
+                                prop->set(prop2->get());
+                                processors_[i]->postMessage(new BoolMsg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::FLOAT_VEC2_PROP: {
+                                FloatVec2Prop* prop = dynamic_cast<FloatVec2Prop*>(processors_[i]->getProperties()[j]);
+                                FloatVec2Prop* prop2 = dynamic_cast<FloatVec2Prop*>(props_[k]);
+
+                                prop->set(prop2->get());  
+                                processors_[i]->postMessage(new Vec2Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::FLOAT_VEC3_PROP: {
+                                FloatVec3Prop* prop = dynamic_cast<FloatVec3Prop*>(processors_[i]->getProperties()[j]);
+                                FloatVec3Prop* prop2 = dynamic_cast<FloatVec3Prop*>(props_[k]);
+
+                                prop->set(prop2->get());  
+                                processors_[i]->postMessage(new Vec3Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::FLOAT_VEC4_PROP: {
+                                FloatVec4Prop* prop = dynamic_cast<FloatVec4Prop*>(processors_[i]->getProperties()[j]);
+                                FloatVec4Prop* prop2 = dynamic_cast<FloatVec4Prop*>(props_[k]);
+
+                                prop->set(prop2->get()); 
+                                processors_[i]->postMessage(new Vec4Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::COLOR_PROP: {
+                                ColorProp* prop = dynamic_cast<ColorProp*>(processors_[i]->getProperties()[j]);
+                                ColorProp* prop2 = dynamic_cast<ColorProp*>(props_[k]);
+
+                                prop->set(prop2->get()); 
+                                processors_[i]->postMessage(new ColorMsg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::INTEGER_VEC2_PROP: {
+                                IntVec2Prop* prop = dynamic_cast<IntVec2Prop*>(processors_[i]->getProperties()[j]);
+                                IntVec2Prop* prop2 = dynamic_cast<IntVec2Prop*>(props_[k]);
+
+                                prop->set(prop2->get()); 
+                                processors_[i]->postMessage(new IVec2Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::INTEGER_VEC3_PROP: {
+                                IntVec3Prop* prop = dynamic_cast<IntVec3Prop*>(processors_[i]->getProperties()[j]);
+                                IntVec3Prop* prop2 = dynamic_cast<IntVec3Prop*>(props_[k]);
+
+                                prop->set(prop2->get()); 
+                                processors_[i]->postMessage(new IVec3Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        case Property::INTEGER_VEC4_PROP: {
+                                IntVec4Prop* prop = dynamic_cast<IntVec4Prop*>(processors_[i]->getProperties()[j]);
+                                IntVec4Prop* prop2 = dynamic_cast<IntVec4Prop*>(props_[k]);
+
+                                prop->set(prop2->get()); 
+                                processors_[i]->postMessage(new IVec4Msg(prop->getIdent(), prop2->get()));  
+                                break;
+                            }
+                        default:
+                            break;
                         }
                     }      
                 }
@@ -306,32 +315,16 @@ void PropertySet::setProperties(Identifier id) {
 }
 
 void PropertySet::processMessage(Message* msg , const Identifier& dest=Message::all_) {
-
     setProperties(msg->id_);
-	// moved here from super class VolumeRenderer. Eliminate on removing old VolumeContainer
-    if (msg->id_ == setCurrentDataset_) {
-        int oldDataset = currentDataset_;
-        msg->getValue(currentDataset_);
-        if (currentDataset_ != oldDataset) {
-            invalidate();
-        }
-    }
-    else if (msg->id_ == setVolumeContainer_) {
-        VolumeContainer* oldContainer = volumeContainer_;
-        msg->getValue(volumeContainer_);
-        if (volumeContainer_ != oldContainer) {
-            invalidate();
-        }
-    }
 
 	if (msg->id_ == VolumeRenderer::setTransFunc_) {
 		TransFunc* transferFunction= msg->getValue<TransFunc*>();
-		TransFuncIntensityKeys* tf = dynamic_cast<TransFuncIntensityKeys*>(transferFunction);
+		TransFuncIntensity* tf = dynamic_cast<TransFuncIntensity*>(transferFunction);
 		if (tf) {
-			for (size_t j=0; j<processors_.size(); j++) {
-				TransFuncIntensityKeys* newTransferFunction = new TransFuncIntensityKeys();
+			for (size_t j=0; j<processors_.size(); ++j) {
+				TransFuncIntensity* newTransferFunction = new TransFuncIntensity();
 				newTransferFunction->clearKeys();
-				for (int i=0; i<tf->getNumKeys(); i++) {
+				for (int i=0; i<tf->getNumKeys(); ++i) {
 					TransFuncMappingKey* key = new TransFuncMappingKey(*(tf->getKey(i)));
 					newTransferFunction->addKey(key);
 				}
@@ -341,13 +334,10 @@ void PropertySet::processMessage(Message* msg , const Identifier& dest=Message::
 		}
 	}
 	else {
-		for (size_t i=0; i<processors_.size(); i++) {
+		for (size_t i=0; i<processors_.size(); ++i)
 	        processors_[i]->processMessage(msg, dest);   
-		}
 	}
 }
-
-const std::string PropertySet::XmlElementName = "PropertySet";
 
 std::string PropertySet::getXmlElementName() const {
     return XmlElementName;
@@ -367,7 +357,7 @@ TiXmlElement* PropertySet::serializeToXml(const std::map<Processor*, int> idMap)
     TiXmlElement* propertysetElem = serializeToXml();
     // add Processors
     std::vector<Processor*> processors = getProcessors();
-    for (size_t i=0; i<processors.size(); i++) {
+    for (size_t i=0; i<processors.size(); ++i) {
         TiXmlElement* processor = new TiXmlElement("Processor");
         processor->SetAttribute("id", idMap.find(processors[i])->second);
         propertysetElem->LinkEndChild(processor);
@@ -376,12 +366,16 @@ TiXmlElement* PropertySet::serializeToXml(const std::map<Processor*, int> idMap)
 }
 
 void PropertySet::updateFromXml(TiXmlElement* propertysetElem) {
+    errors_.clear();
+    serializableSanityChecks(propertysetElem);
     // meta
     TiXmlElement* metaElem = propertysetElem->FirstChildElement(meta_.getXmlElementName());
-    if (metaElem)
+    if (metaElem) {
         meta_.updateFromXml(metaElem);
+        errors_.store(meta_.errors());
+    }
     else
-        throw XmlElementException("Metadata missing!");
+        errors_.store(XmlElementException("Metadata missing!")); // TODO better exception
 }
 
 void PropertySet::updateFromXml(TiXmlElement* propertysetElem, const std::map<int, Processor*> idMap) {
@@ -392,11 +386,18 @@ void PropertySet::updateFromXml(TiXmlElement* propertysetElem, const std::map<in
         processorElem;
         processorElem = processorElem->NextSiblingElement(Processor::XmlElementName))
     {
-        int id;
-        processorElem->QueryIntAttribute("id", &id);
-        std::map<int, Processor*>::const_iterator it = idMap.find(id);
-        if (it == idMap.end()) throw SerializerException("Invalid processorid in PropertySet!");
-        addProcessor(it->second);
+        try {
+            int id;
+            if (processorElem->QueryIntAttribute("id", &id) != TIXML_SUCCESS)
+                throw XmlAttributeException("Required attribute 'id' of Processor missing!");
+            std::map<int, Processor*>::const_iterator it = idMap.find(id);
+            if (it == idMap.end())
+                throw SerializerException("Invalid processorid in PropertySet!");
+            addProcessor(it->second);
+        }
+        catch (SerializerException& e) {
+            errors_.store(e);
+        }
     }
 }
 

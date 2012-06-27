@@ -43,6 +43,8 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
+//FIXME: remove these or move into glyph module
+
 /**
  * Unspecified message exception used as base class for glyph exceptions.
  */

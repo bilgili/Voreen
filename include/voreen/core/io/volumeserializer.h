@@ -89,10 +89,8 @@ public:
      * Load one data set given by \p filename.
      *
      * @param filename The file name of the dataset
-     * @param generateVolumeGL If this is true a VolumeGL will be created,
-     *      has no effect in the VRN_NO_OPENGL-Version!
      */
-    VolumeSet* load(const std::string& filename, bool generateVolumeGL = true)
+    VolumeSet* load(const std::string& filename)
         throw(tgt::UnsupportedFormatException, tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     /**

@@ -30,6 +30,7 @@
 #include "voreen/qt/cmdlineparser.h"
 
 #include <QObject>
+#include <cstdlib>
 
 namespace voreen {
 

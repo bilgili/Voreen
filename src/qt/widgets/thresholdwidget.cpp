@@ -133,18 +133,18 @@ ThresholdWidget::ThresholdWidget(QWidget* parent ) : QWidget(parent) {
 }
 
 void ThresholdWidget::setValues(int lowerValue, int upperValue) {
-    if(lowerValue<minValue_)
+    if (lowerValue<minValue_)
         lowerValue = minValue_;
-    if(upperValue>maxValue_)
+    if (upperValue>maxValue_)
         upperValue = maxValue_;
-    if(lowerValue == lowerValue_ && upperValue == upperValue_)
+    if (lowerValue == lowerValue_ && upperValue == upperValue_)
         return;
-    if(lowerValue == lowerValue_) {
+    if (lowerValue == lowerValue_) {
         upperValue_ = upperValue;
         upperValueSLB->setValue(upperValue_);
         emit upperValueChanged(upperValue_);
     }
-    else if(upperValue == upperValue_) {
+    else if (upperValue == upperValue_) {
         lowerValue_ = lowerValue;
         lowerValueSLB->setValue(lowerValue_);
         emit lowerValueChanged(lowerValue_);
@@ -159,10 +159,10 @@ void ThresholdWidget::setValues(int lowerValue, int upperValue) {
 }
 
 void ThresholdWidget::setLowerValue(int value) {
-    if(value != lowerValue_) {	
+    if (value != lowerValue_) {	
         lowerValue_ = value;	
         emit lowerValueChanged(lowerValue_);
-        if(value > upperValue_) {
+        if (value > upperValue_) {
             upperValue_ = value;
             upperValueSLB->setValue(upperValue_);
             emit upperValueChanged(upperValue_);
@@ -173,10 +173,10 @@ void ThresholdWidget::setLowerValue(int value) {
 
 
 void ThresholdWidget::setUpperValue( int value ) {
-    if(value != upperValue_) {
+    if (value != upperValue_) {
         upperValue_ = value;
         emit upperValueChanged(upperValue_);
-        if(value < lowerValue_) {
+        if (value < lowerValue_) {
             lowerValue_ = value;
             lowerValueSLB->setValue(lowerValue_);
             emit lowerValueChanged(lowerValue_);
@@ -186,14 +186,14 @@ void ThresholdWidget::setUpperValue( int value ) {
 }
 
 void ThresholdWidget::setLowerStateChecked(bool state) {
-    if(state != lowerState_) {
+    if (state != lowerState_) {
         lowerState_ = state;
         emit lowerStateToggled(lowerState_);
     }
 }
 
 void ThresholdWidget::setUpperStateChecked(bool state) {
-    if(state != upperState_) {
+    if (state != upperState_) {
         upperState_ = state;
         emit upperStateToggled(upperState_);
     }
@@ -274,11 +274,11 @@ void ThresholdWidget::setHounsfieldRange() {
     }
     lower += 1024;
     upper += 1024;
-    if(getMaxValue() < 4095) {
+    if (getMaxValue() < 4095) {
         //8 bit dataset loaded...value need to be transformed
         //
-        lower = (int)(lower / 1000.0) * getMaxValue();
-        upper = (int)(upper / 1000.0) * getMaxValue();
+        lower = static_cast<int>(lower / 1000.0) * getMaxValue();
+        upper = static_cast<int>(upper / 1000.0) * getMaxValue();
     }
     upperValueSLB->setValue(upper);
     emit upperValueChanged(upper);

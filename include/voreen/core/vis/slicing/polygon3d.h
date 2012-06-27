@@ -67,7 +67,7 @@ public:
     struct FaceComparator
     {
         bool operator()(const PolygonFace3D* const f1, const PolygonFace3D* const f2) const {
-            if( (f1 == 0) || (f2 == 0 ) )
+            if ( (f1 == 0) || (f2 == 0 ) )
                 return false;
 
             return (*f1 < *f2);
@@ -255,44 +255,44 @@ public:
     {
         public:
             EdgeSet::iterator find(Edge3D* const e) {
-                if( e == 0 )
+                if ( e == 0 )
                     return end();
 
                 EdgeSet::iterator it = begin();
-                for( ; it != end(); it++ ) {
-                    if( (*it != 0) && (*(*it) == *e) )
+                for ( ; it != end(); it++ ) {
+                    if ( (*it != 0) && (*(*it) == *e) )
                         return it;
                 }
                 return end();
             }
 
             EdgeSet::const_iterator find(Edge3D* const e) const {
-                if( e == 0 )
+                if ( e == 0 )
                     return end();
 
                 EdgeSet::const_iterator it = begin();
-                for( ; it != end(); it++ ) {
-                    if( (*it != 0) && (*(*it) == *e) )
+                for ( ; it != end(); it++ ) {
+                    if ( (*it != 0) && (*(*it) == *e) )
                         return it;
                 }
                 return end();
             }
 
             EdgeSet::iterator erase(EdgeSet::iterator itWhere) {
-                if( itWhere == end() )
+                if ( itWhere == end() )
                     return end();
 
                 return std::list<Edge3D*>::erase(itWhere);
             }
 
             size_t erase(Edge3D* const e) {
-                if( e == 0 )
+                if ( e == 0 )
                     return 0;
 
                 size_t count = 0;
                 EdgeSet::iterator it = begin();
                 while( it != end() ) {
-                    if( (*it != 0) && (*(*it) == *e) ) {
+                    if ( (*it != 0) && (*(*it) == *e) ) {
                         it = std::list<Edge3D*>::erase(it);
                         count++;
                     } else {
@@ -304,7 +304,7 @@ public:
 
             std::pair<EdgeSet::iterator, bool> insert(Edge3D* const e) {
                 const EdgeSet::iterator& itPos = this->find(e);
-                if( itPos == this->end() ) {
+                if ( itPos == this->end() ) {
                     this->push_back(e);
                     return std::pair<EdgeSet::iterator, bool>(this->end(), true);
                 }
@@ -506,7 +506,7 @@ public:
     struct VertexComparator
     {
         bool operator()(const EdgeVertex3D* const v1, const EdgeVertex3D* const v2) const {
-            if( (v1 == 0) || (v2 == 0) )
+            if ( (v1 == 0) || (v2 == 0) )
                 return false;
 
             return (*v1 < *v2);

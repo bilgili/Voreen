@@ -68,7 +68,7 @@ void RenderObjectsPlugin::readRenderingPipeline() {
     tree_->setColumnCount(2);
     for (unsigned int i = 0; i < volRayCasting->getNumRenderingObjects(); ++i) {
         RayCasting* rcObject = dynamic_cast<RayCasting*>(volRayCasting->getRenderingObject(i));
-        if(rcObject) {
+        if (rcObject) {
             type = rcObject->getType();
             name = rcObject->getName();
             QTreeWidgetItem* typeItem = new QTreeWidgetItem(tree_, QStringList(QString(type.c_str())));
@@ -84,7 +84,7 @@ void RenderObjectsPlugin::readRenderingPipeline() {
         }
     }
     pp = volRayCasting->getMergeStage();
-    if(pp) {
+    if (pp) {
         type = pp->getType();
         name = pp->getName();
         QTreeWidgetItem* typeItem = new QTreeWidgetItem(tree_, QStringList(QString(type.c_str())));

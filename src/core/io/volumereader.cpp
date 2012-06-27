@@ -51,7 +51,7 @@ void VolumeReader::read(Volume* volume, std::fstream& fin) {
     if (progress_) {
         int max = tgt::max( volume->getDimensions() );
         progress_->setNumSteps(max);
-        size_t sizeStep = volume->getNumBytes() / max; // here does not occur a rest, because max is a dim
+        size_t sizeStep = volume->getNumBytes() / static_cast<size_t>(max); // no remainder possible because getNumBytes is a multiple of max
 
         for (size_t i = 0; i < size_t(max); ++i) {
             fin.read( reinterpret_cast<char*>(volume->getData()) + sizeStep * i, sizeStep );
@@ -60,6 +60,17 @@ void VolumeReader::read(Volume* volume, std::fstream& fin) {
     }
     else
         fin.read( reinterpret_cast<char*>(volume->getData()), volume->getNumBytes() );
+}
+
+void VolumeReader::fixOrigins(VolumeSet* vs, const std::string& fn) {
+    // change all the Origins to the right filename
+    // FIXME this feels hacky
+    std::vector<VolumeHandle*> vh = vs->getAllVolumeHandles();
+    size_t i;
+    for (i=0;i<vh.size();++i) {
+        const VolumeHandle::Origin& origin = vh.at(i)->getOrigin();
+        vh.at(i)->setOrigin(fn, origin.seriesname, origin.timestep);
+    }
 }
 
 } // namespace voreen

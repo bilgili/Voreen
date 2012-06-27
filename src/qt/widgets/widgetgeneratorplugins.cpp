@@ -324,13 +324,13 @@ void AGIntWidget::setFrameControler(QGroupBox* box){
 
 void AGIntWidget::setVisibleState(bool vis){
 	setVisible(vis);
-    if(groupBox_)
+    if (groupBox_)
         groupBox_->setVisible(vis);
 }
 
 void AGIntWidget::setRange(int min, int max){
     slider_->setRange(min, max);
-    slider_->setPageStep((int)(max/10.f));
+    slider_->setPageStep(static_cast<int>(max/10.f));
     spinBox_->setRange(min, max);
 }
 
@@ -493,7 +493,7 @@ void AGColorWidget::setVisibleState(bool vis) {
 
 void AGColorWidget::changeValue(tgt::Color val) {
     QPalette newPalette = myLabel_->palette();
-    newPalette.setColor(QPalette::Window, QColor((int)(val.r*255), (int)(val.g*255), (int)(val.b*255)) );
+    newPalette.setColor(QPalette::Window, QColor(static_cast<int>(val.r*255), static_cast<int>(val.g*255), static_cast<int>(val.b*255)) );
     btnCol_->setPalette(newPalette);
     myLabel_->setPalette(newPalette);
     curColor_ = val;
@@ -511,9 +511,9 @@ void AGColorWidget::sendMessage() {
 
 void AGColorWidget::clicked() {
     QColor myColor;
-    myColor.setRgba(QColorDialog::getRgba(QColor((int)(curColor_.r*255), (int)(curColor_.g*255), (int)(curColor_.b*255),
-                                                 (int)(curColor_.a*255)).rgba()));
-    if (myColor != QColor((int)(curColor_.r*255), (int)(curColor_.g*255), (int)(curColor_.b*255), (int)(curColor_.a*255)).rgba()) {
+    myColor.setRgba(QColorDialog::getRgba(QColor(static_cast<int>(curColor_.r*255), static_cast<int>(curColor_.g*255), static_cast<int>(curColor_.b*255),
+                                                 static_cast<int>(curColor_.a*255)).rgba()));
+    if (myColor != QColor(static_cast<int>(curColor_.r*255), static_cast<int>(curColor_.g*255), static_cast<int>(curColor_.b*255), static_cast<int>(curColor_.a*255)).rgba()) {
         QPalette newPalette = myLabel_->palette();
         newPalette.setColor(QPalette::Window, myColor );
         myLabel_->setPalette(newPalette);
@@ -581,7 +581,9 @@ void AGEnumWidget::setStrings(const std::vector<std::string>& str) {
 void AGEnumWidget::valChanged(int value) {
     myProp_->set(value);
     if (sendStringMsg_)
-        msgReceiver_->postMessage(new StringMsg(msgIdent_, strings_.at(value)), myProp_->getMsgDestination());
+		// fixme: replaced msgReceiver with MsgDistr (used in voreenreg)
+		//msgReceiver_->...
+        MsgDistr.postMessage(new StringMsg(msgIdent_, strings_.at(value)), myProp_->getMsgDestination());
     else
         msgReceiver_->postMessage(new IntMsg(msgIdent_, value), myProp_->getMsgDestination());
 
@@ -690,7 +692,7 @@ void AGFileDialogWidget::changeValue() {
 
 void AGFileDialogWidget::clicked() {
     QString filename = QString(QFileDialog::getOpenFileName(parWidget_, dialogCaption_.c_str(), directory_.c_str() , fileFilter_.c_str()));
-    if(myProp_->getAutoChange())
+    if (myProp_->getAutoChange())
         myProp_->set(filename.toStdString());
     else
         msgReceiver_->postMessage(new StringMsg(msgIdent_, filename.toStdString()), myProp_->getMsgDestination());
@@ -1166,14 +1168,14 @@ void AGFloatVec2Widget::setRange(tgt::vec2 min, tgt::vec2 max) {
 	if (decimals > 2) {
 		spinBox_x->setDecimals(decimals);
 	}
-	spinBox_x->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
 	if (decimals > 2) {
 		spinBox_y->setDecimals(decimals);
 	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 
@@ -1305,21 +1307,21 @@ void AGFloatVec3Widget::setRange(tgt::vec3 min, tgt::vec3 max) {
 	if (decimals > 2) {
 		spinBox_x->setDecimals(decimals);
 	}
-	spinBox_x->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
 	if (decimals > 2) {
 		spinBox_y->setDecimals(decimals);
 	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_z->setRange(min.z, max.z);
 	decimals = calculateDecimals(min.z, max.z);
 	if (decimals > 2) {
 		spinBox_z->setDecimals(decimals);
 	}
-	spinBox_z->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 
@@ -1484,28 +1486,28 @@ void AGFloatVec4Widget::setRange(tgt::vec4 min, tgt::vec4 max) {
 	if (decimals > 2) {
 		spinBox_x->setDecimals(decimals);
 	}
-	spinBox_x->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
 	if (decimals > 2) {
 		spinBox_y->setDecimals(decimals);
 	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_z->setRange(min.z, max.z);
 	decimals = calculateDecimals(min.z, max.z);
 	if (decimals > 2) {
 		spinBox_z->setDecimals(decimals);
 	}
-	spinBox_z->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_w->setRange(min.w, max.w);
 	decimals = calculateDecimals(min.w, max.w);
 	if (decimals > 2) {
 		spinBox_w->setDecimals(decimals);
 	}
-	spinBox_w->setSingleStep(1.0f/pow(10.0f, (float)decimals));
+	spinBox_w->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 

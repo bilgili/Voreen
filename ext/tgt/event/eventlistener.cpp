@@ -33,23 +33,23 @@ void EventListener::onEvent(Event* e) {
         since we already checked which type we have we can safely use
         the faster static_cast (rl)
     */
-    if(typeid(*e) == typeid(MouseEvent)) {
+    if (typeid(*e) == typeid(MouseEvent)) {
         MouseEvent* me = static_cast<MouseEvent*>(e);
-        if(me->action() == MouseEvent::PRESSED)
+        if (me->action() == MouseEvent::PRESSED)
             mousePressEvent(me);
-        else if(me->action() == MouseEvent::RELEASED)
+        else if (me->action() == MouseEvent::RELEASED)
             mouseReleaseEvent(me);
-        else if(me->action() == MouseEvent::MOTION)
+        else if (me->action() == MouseEvent::MOTION)
             mouseMoveEvent(me);
-        else if(me->action() == MouseEvent::DOUBLECLICK)
+        else if (me->action() == MouseEvent::DOUBLECLICK)
             mouseDoubleClickEvent(me);
-        else if(me->action() == MouseEvent::WHEEL)
+        else if (me->action() == MouseEvent::WHEEL)
             wheelEvent(me);
     }
-    else if(typeid(*e) == typeid(KeyEvent)) {
+    else if (typeid(*e) == typeid(KeyEvent)) {
         keyEvent(static_cast<KeyEvent*>(e));
     }
-    else if(typeid(*e) == typeid(TimeEvent)) {
+    else if (typeid(*e) == typeid(TimeEvent)) {
         timerEvent(static_cast<TimeEvent*>(e));
     }
 }

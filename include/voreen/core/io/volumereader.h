@@ -59,12 +59,12 @@ public:
      * Loads a volume file and build a new Volume.
      *
      * @param fileName The file name of the data set which should be read
-     * @param generateVolumeGL If this is true a VolumeGL will be created,
-     *      has no effect in the VRN_NO_OPENGL-Version!
-     * @return new VolumeContainer, the caller is responsible for freeing the memory
+     * @return new VolumeSet, the caller is responsible for freeing the memory
      */
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc) = 0;
+
+    void fixOrigins(VolumeSet* vs, const std::string& fn);
 
     const std::vector<std::string>& getExtensions() const;
 

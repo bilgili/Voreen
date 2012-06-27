@@ -40,13 +40,13 @@ TransFuncMappingKey::~TransFuncMappingKey()
 
 void TransFuncMappingKey::setColorL(const tgt::col4& color) {
     colorL_ = color;
-    if(!split_)
+    if (!split_)
         colorR_ = color;
 }
 
 void TransFuncMappingKey::setColorL(const tgt::ivec4& color) {
     colorL_ = tgt::col4(color);
-    if(!split_)
+    if (!split_)
         colorR_ = tgt::col4(color);
 }
 
@@ -56,13 +56,13 @@ tgt::col4& TransFuncMappingKey::getColorL() {
 
 void TransFuncMappingKey::setColorR(const tgt::col4& color) {
     colorR_ = color;
-    if(!split_)
+    if (!split_)
         colorL_ = color;
 }
 
 void TransFuncMappingKey::setColorR(const tgt::ivec4& color) {
     colorR_ = tgt::col4(color);
-    if(!split_)
+    if (!split_)
         colorL_ = tgt::col4(color);
 }
 
@@ -72,13 +72,13 @@ tgt::col4& TransFuncMappingKey::getColorR() {
 
 void TransFuncMappingKey::setAlphaR(float a) {
     colorR_.a = (uint8_t) (a*255.0);
-    if(!split_)
+    if (!split_)
         colorL_.a = (uint8_t) (a*255.0);
 }
 
 void TransFuncMappingKey::setAlphaL(float a) {
     colorL_.a = (uint8_t) (a*255.0);
-    if(!split_)
+    if (!split_)
         colorR_.a = (uint8_t) (a*255.0);
 }
 
@@ -95,11 +95,11 @@ bool TransFuncMappingKey::isSplit() {
 }
 
 void TransFuncMappingKey::setSplit(bool split, bool useLeft/*=true*/) {
-    if(split_ == split)
+    if (split_ == split)
         return;
-    if(!split) {
+    if (!split) {
         //join colors:
-        if(useLeft)
+        if (useLeft)
             colorR_ = colorL_;
         else
             colorL_ = colorR_;

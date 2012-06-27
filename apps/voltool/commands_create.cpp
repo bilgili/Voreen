@@ -30,7 +30,6 @@
 #include "commands_create.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/volume/volumecontainer.h"
  
 namespace voreen {
 
@@ -160,7 +159,10 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
 //         fillBox(target, tgt::ivec3(border, border, border+thickness+is), tgt::ivec3(s-border, s-border, s-border), white);
         //cut hole in ceiling (lightsource)
 //         fillBox(target, tgt::ivec3(center.x-thickness*2, s-border-thickness, center.x-thickness*2), tgt::ivec3(center.x+thickness*2, s-border, center.x+thickness*2), light);
-        fillBox(target, tgt::ivec3(center.x-thickness*2, s-border-thickness, center.x-thickness*2), tgt::ivec3(center.x+thickness*2, s-border, center.x+thickness*2), 0);
+        fillBox(target,
+                tgt::ivec3(static_cast<int>(center.x-thickness*2), s-border-thickness, static_cast<int>(center.x-thickness*2)),
+                tgt::ivec3(static_cast<int>(center.x+thickness*2), s-border, static_cast<int>(center.x+thickness*2)),
+                0);
 
         //green right wall:
         fillBox(target, tgt::ivec3(s-thickness-border,thickness+border,thickness+border), tgt::ivec3(s-border,s-thickness-border,s-border), green);
@@ -378,7 +380,9 @@ void CommandCreate::fillBox(VolumeUInt8* vds, tgt::ivec3 start, tgt::ivec3 end, 
     }
 }
 
-void CommandCreate::fillOrientedBox(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 dir, float lengthA, float lengthB, float yStart, float yEnd, uint8_t value) {
+void CommandCreate::fillOrientedBox(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 dir, float lengthA, float lengthB,
+                                    float yStart, float yEnd, uint8_t value)
+{
     dir = normalize(dir);
     center.y = 0.0f;
     tgt::vec3 dir2 = cross(dir, tgt::vec3(0.0f, 1.0f, 0.0f));
@@ -387,8 +391,8 @@ void CommandCreate::fillOrientedBox(VolumeUInt8* vds, tgt::vec3 center, tgt::vec
             tgt::vec3 diff = tgt::vec3((float)voxel_x, 0.0f, (float)voxel_z) - center;
             float l = dot(dir, diff);
             float l2 = dot(dir2, diff);
-            if((fabs(l) < lengthA) && (fabs(l2) < lengthB))
-                for (int voxel_y=yStart; voxel_y<yEnd; voxel_y++) {
+            if ((fabsf(l) < lengthA) && (fabsf(l2) < lengthB))
+                for (int voxel_y = static_cast<int>(yStart); static_cast<float>(voxel_y) < yEnd; voxel_y++) {
                     vds->voxel(voxel_x, voxel_y, voxel_z) = value;
                 }
         }

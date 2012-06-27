@@ -55,7 +55,14 @@ CopyToScreenRenderer::~CopyToScreenRenderer() {
 }
 
 const std::string CopyToScreenRenderer::getProcessorInfo() const {
-	return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to render (copy) its producer's rendering result to screen. Additionally it is able to cache the producer's rendering, if no parameters regarding any element of the producer have been changed since last <i>render()</i> call. An object of this class can also be used within the network in order to cache a network's fork. The usage of multiple CopyToScreenRenderer objects in the same network is possible. A network element (Renderer object) has to indicate a change of its rendering parameters that necessiates a new rendering by calling <i>invalidate()</i>. THIS CLASS IS ONLY NEEDED BECAUSE FINAL AND COARSENESSRENDER INHERITE FROM IT!";
+	return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to \
+           render (copy) its producer's rendering result to screen. Additionally it is able to cache \
+           the producer's rendering, if no parameters regarding any element of the producer have been \
+           changed since last <i>render()</i> call. An object of this class can also be used within the \
+           network in order to cache a network's fork. The usage of multiple CopyToScreenRenderer objects \
+           in the same network is possible. A network element (Renderer object) has to indicate a change \
+           of its rendering parameters that necessiates a new rendering by calling <i>invalidate()</i>. \
+           THIS CLASS IS ONLY NEEDED BECAUSE FINAL AND COARSENESSRENDER INHERITE FROM IT!";
 }
 
 int CopyToScreenRenderer::initializeGL() {
@@ -66,9 +73,8 @@ int CopyToScreenRenderer::initializeGL() {
     raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "vrn_interactionmode.frag",
         generateHeader(), false);
 
-    if (!raycastPrg_) {
+    if (!raycastPrg_)
         initStatus_ = VRN_ERROR;
-    }
 
     return initStatus_;
 }
@@ -83,9 +89,8 @@ void CopyToScreenRenderer::processMessage(Message* msg, const Identifier& dest) 
             invalidate();
         }
     }
-    else if (msg->id_ == setCoarseness_) {
+    else if (msg->id_ == setCoarseness_)
         coarsenessFactor_.set(msg->getValue<int>());
-    }
 }
 
 void CopyToScreenRenderer::setCaching(bool caching) {

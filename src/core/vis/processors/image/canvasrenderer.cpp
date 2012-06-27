@@ -32,11 +32,12 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/opengl/texturecontainer.h"
+#include "voreen/core/vis/processors/portmapping.h"
+
 
 namespace voreen {
 
-CanvasRenderer::CanvasRenderer() : CopyToScreenRenderer()
-{
+CanvasRenderer::CanvasRenderer() : CopyToScreenRenderer() {
 	createInport("image.input");
 }
 
@@ -44,15 +45,14 @@ CanvasRenderer::~CanvasRenderer() {
 }
 
 const std::string CanvasRenderer::getProcessorInfo() const {
-	return "A Canvas is the last processor in a network. Its only purpose is to copy its input to the finaltarget of texture container. It inherits from CopyToScreenRenderer because of the coarseness properties they both share.";
+	return "A Canvas is the last processor in a network. Its only purpose is to copy its input to the finaltarget of texture container.     \
+        It inherits from CopyToScreenRenderer because of the coarseness properties they both share.";
 }
 
-void CanvasRenderer::process(LocalPortMapping*  portMapping)
-{
-	if (useCoarseness_.get() && !ignoreCoarseness_)
-    {
+void CanvasRenderer::process(LocalPortMapping*  portMapping) {
+	if (useCoarseness_.get() && !ignoreCoarseness_) {
 		CoarsenessStruct* cs = new CoarsenessStruct();
-		cs->coarsenessFactor = (float) coarsenessFactor_.get();
+		cs->coarsenessFactor = static_cast<float>(coarsenessFactor_.get());
 		cs->processor = this;
 		CoarsenessMsg* msg = new CoarsenessMsg(NetworkEvaluator::setSizeBackward_,cs);
 		MsgDistr.postMessage(msg,"evaluator");
@@ -62,7 +62,7 @@ void CanvasRenderer::process(LocalPortMapping*  portMapping)
 	int dest = tc_->getFinalTarget();
 
     tc_->setActiveTarget(dest, "CanvasRenderer::process() dest");
-		glViewport(0,0,(int)size_.x,(int)size_.y);
+		glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
 
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	if (source != -1) {
@@ -90,7 +90,7 @@ void CanvasRenderer::process(LocalPortMapping*  portMapping)
 
 		if (useCoarseness_.get() && !ignoreCoarseness_) {
 			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glViewport(0, 0, (int)size_.x, (int)size_.y);
+			glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 		}
 
 	}
@@ -116,7 +116,7 @@ const std::string CacheRenderer::getProcessorInfo() const {
 void CacheRenderer::process(LocalPortMapping*  portMapping)
 {
     LGL_ERROR;
-	glViewport(0,0,(int)size_.x,(int)size_.y);
+	glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
   
 
 //  
@@ -143,8 +143,8 @@ void CacheRenderer::process(LocalPortMapping*  portMapping)
 //
 //        if (useCoarseness_.get() && !ignoreCoarseness_) {
 //            // apply coarseness
-//            producer_->setSize(tgt::ivec2((int)size_.x/coarsenessFactor_.get(), (int)size_.y/coarsenessFactor_.get()));
-//            glViewport(0,0, (int)size_.x/coarsenessFactor_.get(), (int)size_.y/coarsenessFactor_.get());
+//            producer_->setSize(tgt::ivec2(static_cast<int>(size_.x)/coarsenessFactor_.get(), static_cast<int>(size_.y)/coarsenessFactor_.get()));
+//            glViewport(0,0, static_cast<int>(size_.x)/coarsenessFactor_.get(), static_cast<int>(size_.y)/coarsenessFactor_.get());
 //        }
 //
 //        LGL_ERROR;
@@ -154,7 +154,7 @@ void CacheRenderer::process(LocalPortMapping*  portMapping)
 //        if (useCoarseness_.get() && !ignoreCoarseness_) {
 //            // revoke coarseness
 //            producer_->setSize(size_);
-//            glViewport(0, 0, (int)size_.x, (int)size_.y);
+//            glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 //        }
 //        source = tc_->findTarget(getTargetType(ttImage_));
 //
@@ -169,7 +169,7 @@ void CacheRenderer::process(LocalPortMapping*  portMapping)
 //                tc_->setPersistent(cachedImage_, true);
 //            }
 //            else {
-////                 if(camera_->getEye() == tgt::Camera::EYE_LEFT) {
+////                 if (camera_->getEye() == tgt::Camera::EYE_LEFT) {
 ////                     cachedStereoImageLeft_ = source;
 ////                     tc_->changeType(cachedStereoImageLeft_, getTargetType(ttCachedImageStereoLeft_));
 ////                     tc_->setPersistent(cachedStereoImageLeft_, true);
@@ -229,6 +229,40 @@ void CacheRenderer::process(LocalPortMapping*  portMapping)
 		MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::setCachedBackward_,this),"evaluator");
 	}
     LGL_ERROR;
+}
+
+// ---------------------------------------------------------------------------
+
+NullRenderer::NullRenderer() : CopyToScreenRenderer() {
+	createInport("image.input");
+}
+
+NullRenderer::~NullRenderer() {
+}
+
+const std::string NullRenderer::getProcessorInfo() const {
+	return "A NullCanvas is the last processor in a network. \
+           Its only purpose is to terminate a network and to \
+           keep the id of the rendered image from the texture container. \
+           This processor does neither create any output nor does it render\
+           to the frame buffer!";
+}
+
+void NullRenderer::process(LocalPortMapping* portMapping) {
+	if (useCoarseness_.get() && !ignoreCoarseness_) {
+		CoarsenessStruct* cs = new CoarsenessStruct();
+		cs->coarsenessFactor = static_cast<float>(coarsenessFactor_.get());
+		cs->processor = this;
+		CoarsenessMsg* msg = new CoarsenessMsg(NetworkEvaluator::setSizeBackward_,cs);
+		MsgDistr.postMessage(msg,"evaluator");
+	} 
+  
+	imageID_ = portMapping->getTarget("image.input");
+	int dest = tc_->getFinalTarget();
+    tc_->setActiveTarget(dest, "NullRenderer::process() dest");
+
+    // omit the entire stuff which would be done here by the CanvasRenderer if this
+    // processor was one.
 }
 
 } // namespace voreen

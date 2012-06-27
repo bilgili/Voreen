@@ -30,17 +30,20 @@
 #include "voreen/qt/widgets/transfunc/transfuncintensitypetplugin.h"
 
 
-#include "tgt/gpucapabilities.h"
-#include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/voreenpainter.h"
-
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QFileDialog>
 
+#include "tgt/gpucapabilities.h"
+
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/processors/processor.h"
+#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
+
 #include "voreen/qt/widgets/transfunc/transfuncgradient.h"
 #include "voreen/qt/widgets/doublesliderwidget.h"
+
 
 namespace voreen {
 
@@ -56,13 +59,14 @@ inline tgt::col4 QColor2Col(const QColor& color) {
 
 } // namespace
 
-TransFuncIntensityPetPlugin::TransFuncIntensityPetPlugin(QWidget* parent, MessageReceiver* msgReceiver, Qt::Orientation widgetOrientation)
+TransFuncIntensityPetPlugin::TransFuncIntensityPetPlugin(QWidget* parent, MessageReceiver* msgReceiver,
+                                                         Qt::Orientation widgetOrientation)
     : WidgetPlugin(parent, msgReceiver),
-    TransFuncEditor(msgReceiver),
-    widgetOrientation_(widgetOrientation),
-    tf_(0),
-    tfGradient_(0),
-    histogram_(0)
+      TransFuncEditor(msgReceiver),
+      widgetOrientation_(widgetOrientation),
+      tfGradient_(0),
+      tf_(0),
+      histogram_(0)
 {
     setObjectName(tr("Intensity PET Transfer function"));
     icon_ = QIcon(":/icons/transferfunc.png");
@@ -172,28 +176,30 @@ void TransFuncIntensityPetPlugin::createConnections() {
 }
 
 void TransFuncIntensityPetPlugin::minBoxChanged(int value) {
-    if (abs(float(value) / float(greatestIntensity) - thresholds.x) > 0.00001) {
+    if (fabs(float(value) / float(greatestIntensity) - thresholds.x) > 0.00001f) {
 	    thresholds.x = float(value) / float(greatestIntensity);
 	    histo_->setLowerThreshold(thresholds.x);
         doubleSlider_->blockSignals(true);
 	    doubleSlider_->setMinValue((thresholds.x - offset.x) / (offset.y - offset.x));
         doubleSlider_->blockSignals(false);
         maxBox_->blockSignals(true);
-	    maxBox_->setValue(tgt::iround((offset.x + doubleSlider_->getMaxValue() * (offset.y - offset.x))* greatestIntensity));   // needed to avoid slider collision
+	    maxBox_->setValue(tgt::iround((offset.x + doubleSlider_->getMaxValue()
+                                       * (offset.y - offset.x))* greatestIntensity));   // needed to avoid slider collision
         maxBox_->blockSignals(false);
 	    updateToThresholds();
     }
 }
 
 void TransFuncIntensityPetPlugin::maxBoxChanged(int value) {
-    if (abs(float(value) / float(greatestIntensity) - thresholds.y) > 0.00001) {
+    if (fabs(float(value) / float(greatestIntensity) - thresholds.y) > 0.00001f) {
 	    thresholds.y = float(value) / float(greatestIntensity);
 	    histo_->setUpperThreshold(thresholds.y);
         doubleSlider_->blockSignals(true);
 	    doubleSlider_->setMaxValue((thresholds.y - offset.x) / (offset.y - offset.x));
         doubleSlider_->blockSignals(false);
         minBox_->blockSignals(true);
-	    minBox_->setValue(tgt::iround((offset.x + doubleSlider_->getMinValue() * (offset.y - offset.x)) * greatestIntensity));	// needed to avoid slider collision
+	    minBox_->setValue(tgt::iround((offset.x + doubleSlider_->getMinValue()
+                                       * (offset.y - offset.x)) * greatestIntensity));	// needed to avoid slider collision
         minBox_->blockSignals(false);
 	    updateToThresholds();
     }
@@ -268,9 +274,9 @@ void TransFuncIntensityPetPlugin::readFromDisc() {
 
 void TransFuncIntensityPetPlugin::fileOpen(std::string filename) {
 	if (!tf_)
-		tf_ = new TransFuncIntensityKeys();
+		tf_ = new TransFuncIntensity();
 	if (!tfGradient_)
-		tfGradient_ = new TransFuncIntensityKeys(256);
+		tfGradient_ = new TransFuncIntensity(256);
 		
 	tf_->load(filename);
 	tf_->updateTexture();
@@ -337,7 +343,7 @@ void TransFuncIntensityPetPlugin::transFuncChanged() {
     postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
-void TransFuncIntensityPetPlugin::setTransFunc(TransFuncIntensityKeys* tf) {
+void TransFuncIntensityPetPlugin::setTransFunc(TransFuncIntensity* tf) {
     tf_ = tf;
     gradient_->setTransFunc(tf_);
     gradient_->update();

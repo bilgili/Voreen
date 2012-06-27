@@ -32,7 +32,7 @@
 
 #include "tgt/painter.h"
 #include "tgt/vector.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 
 namespace voreen {

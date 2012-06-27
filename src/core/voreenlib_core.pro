@@ -91,9 +91,13 @@ SOURCES += \
     vis/processors/image/merge.cpp \
     vis/processors/image/threshold.cpp \
     vis/processors/render/entryexitpoints.cpp \
+    vis/processors/render/firsthitrenderer.cpp \
     vis/processors/render/idraycaster.cpp \
     vis/processors/render/proxygeometry.cpp \
     vis/processors/render/simpleraycaster.cpp \
+    vis/processors/render/singlevolumeraycaster.cpp \
+    vis/processors/render/sliceentrypoints.cpp \
+    vis/processors/render/sliceproxygeometry.cpp \
     vis/processors/render/slicerenderer.cpp \
     vis/processors/render/slicingproxygeometry.cpp \
     vis/processors/render/volumeraycaster.cpp \
@@ -104,7 +108,7 @@ SOURCES += \
     vis/transfunc/transfunc.cpp \
 	vis/transfunc/transfunceditor.cpp \
     vis/transfunc/transfuncintensitygradient.cpp \
-    vis/transfunc/transfuncintensitykeys.cpp \
+    vis/transfunc/transfuncintensity.cpp \
     vis/transfunc/transfuncmappingkey.cpp \
     vis/transfunc/transfuncpainter.cpp
 SOURCES += \
@@ -126,7 +130,7 @@ SOURCES += \
 SOURCES += \
     volume/modality.cpp \
     volume/volume.cpp \
-    volume/volumecontainer.cpp \
+#volume/volumecontainer.cpp \
     volume/volumegl.cpp \
     volume/volumehandle.cpp \
     volume/volumemetadata.cpp \
@@ -135,7 +139,8 @@ SOURCES += \
     volume/volumesetcontainer.cpp \
     volume/volumetexture.cpp \
     volume/gradient.cpp \
-    volume/histogram.cpp
+    volume/histogram.cpp \
+    volume/observer.cpp
 SOURCES += \
     xml/serializable.cpp
 SOURCES += \
@@ -145,7 +150,6 @@ SOURCES += \
     ../../ext/tinyxml/tinyxmlparser.cpp
 
 win32 {
-    SOURCES += opengl/gpucapabilitieswindows.cpp
     MSC_VER = $$find( QMAKE_COMPILER_DEFINES, "_MSC_VER")
     !isEmpty(MSC_VER) {
         SOURCES += \
@@ -155,9 +159,11 @@ win32 {
             vis/glsl/eep_simple.vert \
             vis/glsl/eep_texcoord.vert \
             vis/glsl/eep_vertex.vert \
+            vis/glsl/rc_firsthit.frag \
             vis/glsl/rc_hitpoints.frag \
             vis/glsl/rc_id.frag \
             vis/glsl/rc_simple.frag \
+            vis/glsl/rc_singlevolume.frag \
             vis/glsl/pp_blur.frag \
             vis/glsl/pp_regionmodifier.frag \
             vis/glsl/pp_colordepth.frag \
@@ -182,7 +188,6 @@ win32 {
             vis/glsl/modules/mod_gradients.frag \
             vis/glsl/modules/mod_raysetup.frag \
             vis/glsl/modules/mod_firsthit.frag \
-            vis/glsl/modules/mod_segmentation.frag \
             vis/glsl/modules/mod_shading.frag \
             vis/glsl/modules/mod_shadowing.frag \
             vis/glsl/modules/mod_sketch.frag \
@@ -249,9 +254,13 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/image/regionmodifier.h \
     ../../include/voreen/core/vis/processors/image/threshold.h \
     ../../include/voreen/core/vis/processors/render/entryexitpoints.h \
+    ../../include/voreen/core/vis/processors/render/firsthitrenderer.h \
     ../../include/voreen/core/vis/processors/render/idraycaster.h \
     ../../include/voreen/core/vis/processors/render/proxygeometry.h \
     ../../include/voreen/core/vis/processors/render/simpleraycaster.h \
+    ../../include/voreen/core/vis/processors/render/singlevolumeraycaster.h \
+    ../../include/voreen/core/vis/processors/render/sliceentrypoints.h \
+    ../../include/voreen/core/vis/processors/render/sliceproxygeometry.h \
     ../../include/voreen/core/vis/processors/render/slicerenderer.h \
     ../../include/voreen/core/vis/processors/render/slicingproxygeometry.h \
     ../../include/voreen/core/vis/processors/render/volumeraycaster.h \
@@ -263,7 +272,7 @@ HEADERS += \
 	../../include/voreen/core/vis/transfunc/transfunceditor.h \
     ../../include/voreen/core/vis/transfunc/transfuncmappingkey.h \
     ../../include/voreen/core/vis/transfunc/transfuncintensitygradient.h \
-    ../../include/voreen/core/vis/transfunc/transfuncintensitykeys.h \
+    ../../include/voreen/core/vis/transfunc/transfuncintensity.h \
     ../../include/voreen/core/vis/transfunc/transfuncpainter.h
 HEADERS += \
     ../../include/voreen/core/vis/exception.h \
@@ -283,7 +292,7 @@ HEADERS += \
     ../../include/voreen/core/volume/modality.h \
     ../../include/voreen/core/volume/volume.h \
     ../../include/voreen/core/volume/volumeatomic.h \
-    ../../include/voreen/core/volume/volumecontainer.h \
+#../../include/voreen/core/volume/volumecontainer.h \
     ../../include/voreen/core/volume/volumeelement.h \
     ../../include/voreen/core/volume/volumefusion.h \
     ../../include/voreen/core/volume/volumegl.h \
@@ -294,15 +303,14 @@ HEADERS += \
     ../../include/voreen/core/volume/volumesetcontainer.h \
     ../../include/voreen/core/volume/volumetexture.h \
     ../../include/voreen/core/volume/gradient.h \
-    ../../include/voreen/core/volume/histogram.h
+    ../../include/voreen/core/volume/histogram.h \
+    ../../include/voreen/core/volume/observer.h
 HEADERS += \
     ../../include/voreen/core/xml/serializable.h
 HEADERS += \
     ../../ext/tinyxml/tinyxml.h \
     ../../ext/tinyxml/tinystr.h \
     ../../ext/il/include/IL/il.h
-
-win32 : HEADERS += ../../include/voreen/core/opengl/gpucapabilitieswindows.h
 
 # add files, which are not available in the snapshot release
 # these files will be added to the snapshot, when they are cleaned up
@@ -322,6 +330,7 @@ SOURCES += \
     vis/processors/image/normalestimation.cpp \
     vis/processors/image/texturerenderer.cpp \
     vis/processors/render/aoraycaster.cpp \
+    vis/processors/render/cpuraycaster.cpp \
     vis/processors/render/fancyraycaster.cpp \
     vis/processors/render/optimizedentryexitpoints.cpp \
     vis/processors/render/multilayerraycaster.cpp \
@@ -346,6 +355,7 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/image/normalestimation.h \
     ../../include/voreen/core/vis/processors/image/texturerenderer.h \
     ../../include/voreen/core/vis/processors/render/aoraycaster.h \
+    ../../include/voreen/core/vis/processors/render/cpuraycaster.h \
     ../../include/voreen/core/vis/processors/render/fancyraycaster.h \
     ../../include/voreen/core/vis/processors/render/multilayerraycaster.h \
     ../../include/voreen/core/vis/processors/render/optimizedentryexitpoints.h \
@@ -355,7 +365,7 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/render/rgbraycaster.h \
     ../../include/voreen/core/vis/processors/volume/motionestimation.h \
     ../../include/voreen/core/volume/vq.h \
-    
+
 	win32 {
 		MSC_VER = $$find( QMAKE_COMPILER_DEFINES, "_MSC_VER")
 	    !isEmpty(MSC_VER) {

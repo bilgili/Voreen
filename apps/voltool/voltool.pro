@@ -13,20 +13,23 @@ include(../../commonconf.txt)
 
 include(../voreenapp.txt)
 
+contains(DEFINES, VRN_WITH_DEVIL) {
+  LIBS += -lILU
+}
+
+
 CONFIG += console
 
 SOURCES	+= voltool.cpp \
            command.cpp \   
            commands_grad.cpp \
            commands_convert.cpp \
-		   #commands_histo.cpp \
            commands_create.cpp \
            commands_modify.cpp
 
 HEADERS +=  command.h \
             commands_grad.h \
             commands_convert.h \
-            #commands_histo.h \
             commands_create.h \
             commands_modify.h
 

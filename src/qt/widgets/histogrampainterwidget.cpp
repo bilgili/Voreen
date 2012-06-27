@@ -45,7 +45,7 @@ void HistogramPainter::setHistogram(HistogramIntensity* histo_) {
 	histogram_ = histo_;
 }
 
-void HistogramPainter::paintEvent(QPaintEvent *e)
+void HistogramPainter::paintEvent(QPaintEvent* /*e*/)
 {  
 	QPainter *paint = new QPainter();  
 	paint->begin(this);
@@ -66,22 +66,22 @@ void HistogramPainter::paintEvent(QPaintEvent *e)
 
     float max = 0.0;
     for (int i=0; i<histogramWidth; i++)
-        if ((float)(histogram_->getValue(i)) > max) 
-			max = (float)(histogram_->getValue(i));
+        if (static_cast<float>(histogram_->getValue(i)) > max) 
+			max = static_cast<float>(histogram_->getValue(i));
 	for (int x=0; x<histogramWidth; x++) {
-		float value = (float)histogram_->getValue(x)/max;
+		float value = static_cast<float>(histogram_->getValue(x))/max;
 		value = powf(value, 0.2f);
-		tgt::vec2 p = tgt::vec2((float)x/histogramWidth * width(), (1.f - value) * (float)height());
+		tgt::vec2 p = tgt::vec2(static_cast<float>(x)/histogramWidth * width(), (1.f - value) * static_cast<float>(height()));
 		points[x].setX(p.x);
 		points[x].setY(p.y);
 	}
 	tgt::vec2 p;
 
-    points[histogramWidth].rx() = (float)width();
-    points[histogramWidth].ry() = (float)height();
+    points[histogramWidth].rx() = static_cast<float>(width());
+    points[histogramWidth].ry() = static_cast<float>(height());
 	
     points[histogramWidth + 1].rx() = 0.f;
-    points[histogramWidth + 1].ry() = (float)height();
+    points[histogramWidth + 1].ry() = static_cast<float>(height());
 
     paint->drawConvexPolygon(points, histogramWidth + 2);
 
@@ -94,10 +94,10 @@ void HistogramPainter::paintEvent(QPaintEvent *e)
     paint->setBrush(Qt::Dense4Pattern);
 
     if (thresholdL_ > 0.0f) {
-        paint->drawRect(0.f,0.f,thresholdL_* (float)width(), (float)height());
+        paint->drawRect(0, 0, static_cast<int>(thresholdL_* width()), height());
     }
     if (thresholdU_ < 1.0f) {
-        paint->drawRect(thresholdU_ * (float)width(),0.f, (float)width(),(float)height());
+        paint->drawRect(static_cast<int>(thresholdU_ * width()), 0, width(), height());
     }
 
     paint->setRenderHint(QPainter::Antialiasing, false);

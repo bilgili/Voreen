@@ -30,17 +30,12 @@
 #ifndef VRN_PROCESSORFACTORY_H
 #define VRN_PROCESSORFACTORY_H
 
-#include <map>
-#include <vector>
-#include <string> 
-
-#include "voreen/core/vis/processors/processor.h"
-
-#ifndef VRN_VOLUMESETCONTAINER_H
-#include "voreen/core/volume/volumesetcontainer.h"
-#endif
 
 namespace voreen {
+
+class Processor;
+class Identifier;
+class TextureContainer;
 
 class ProcessorFactory {
 public:

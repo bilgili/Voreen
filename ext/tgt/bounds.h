@@ -106,7 +106,7 @@ class Bounds
     *   Returns the volume of this box
     */
     float volume() const {
-        return fabs( (llf_.x - urb_.x) * (llf_.y - urb_.y) * (llf_.z - urb_.z) );
+        return std::abs((llf_.x - urb_.x) * (llf_.y - urb_.y) * (llf_.z - urb_.z));
     }
 
     /**
@@ -138,18 +138,8 @@ class Bounds
 
     /**
     *   Returns true if the boxes intersect
-    *   does it?? - Should be correct. See Real Time Rendering p. 600
     *   Box has to be defined!
     */
-//#ifndef DIMI_DEBUG
-//    bool intersects(const Bounds& b) const {
-//        if( (llf_.x > b.urb_.x) || (b.llf_.x > urb_.x) ) return true;
-//        if( (llf_.y > b.urb_.y) || (b.llf_.y > urb_.y) ) return true;
-//        if( (llf_.z > b.urb_.z) || (b.llf_.z > urb_.z) ) return true;
-//
-//        return false;
-//    }
-//#else
 	bool intersects(const Bounds& b) const {
         // Look for a separating axis on each box for each axis
         if ((llf_.x > b.urb_.x) || (b.llf_.x > urb_.x)) return false;
@@ -159,17 +149,6 @@ class Bounds
         // No separating axis ... they must intersect
         return true;
    }
-//#endif
-
-//     void render2D(vec3 col) {
-//         glColor3f(col.x, col.y, col.z);
-//         glBegin(GL_LINE_LOOP);
-//             glVertex3f(llf_.x, 0.f, llf_.z);
-//             glVertex3f(urb_.x, 0.f, llf_.z);
-//             glVertex3f(urb_.x, 0.f, urb_.z);
-//             glVertex3f(llf_.x, 0.f, urb_.z);
-//         glEnd();
-//     }
 
     bool insideXZ(const Bounds& bounds) const;
     bool insideXZ(const vec3& v) const;
@@ -178,20 +157,10 @@ class Bounds
     bool inside(const Bounds& bounds) const;
     ///Returns true if v is inside this.
     bool inside(const vec3& v) const;
-    /*
-    implement when needed...
-    Bounds intersection(const Bounds b&);
-    overloaded operators
-    */
 };
 
 class HasBounds {
-protected:
-
-    Bounds boundingBox_;
-
 public:
-
     HasBounds(const Bounds& bounds)
       : boundingBox_(bounds)
     {}
@@ -206,6 +175,9 @@ public:
     const Bounds& getBounds() const {
         return boundingBox_;
     }
+
+protected:
+    Bounds boundingBox_;
 };
 
 /// ostream-operator

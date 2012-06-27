@@ -26,6 +26,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <cstdlib>
 
 #ifdef TGT_DEBUG
 

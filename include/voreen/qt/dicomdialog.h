@@ -27,6 +27,9 @@
  *                                                                    *
  **********************************************************************/
 
+#ifndef DICOMDIALOG_H
+#define DICOMDIALOG_H
+
 #include <QDialog>
 #include <QString>
 #include <QLabel>
@@ -46,6 +49,8 @@
 #include <vector>
 #include "voreen/core/volume/volumeatomic.h"
 #include "voreen/core/io/dicomseriesinfo.h"
+
+namespace voreen {
 
 /**
 *   The dicom download runs in this thread while the gui thread refreshes the progressdialog.
@@ -238,4 +243,6 @@ private:
     std::string filename_;
 };
 
+} //namespace
 
+#endif

@@ -34,6 +34,12 @@
 #include "voreen/core/volume/volumeset.h"
 #endif
 
+#ifndef VRN_OBSERVER_H
+#include "voreen/core/volume/observer.h"
+#endif
+
+#include "voreen/core/xml/serializable.h"
+
 #include <vector>
 #include <set>
 #include <string>
@@ -41,11 +47,15 @@
 namespace voreen
 {
 
-class VolumeSetContainer
+class VolumeSetContainer : public Observable, public Serializable
 {
+
 public:
     static const Identifier msgUpdateVolumeSetContainer_;
     static const Identifier msgSetVolumeSetContainer_;
+
+    /** Holds the name of the xml element used when serializing the object */
+    static const std::string XmlElementName;
 
     VolumeSetContainer();
 
@@ -148,17 +158,25 @@ public:
     
     /**
      * Clears the entire container. All containing
-     * VolumeSets will be deleted and the memeroy will be
+     * VolumeSets will be deleted and the memory will be
      * freed.
      */
     void clear();
+    
+    /**
+     * Returns the name of the xml element used when serializing the object
+     */
+    virtual std::string getXmlElementName() const { return XmlElementName; }
 
     /**
-     * Method for repacking old VolumeContainer into VolumeSets
-     * and inserting them into this container. Remove method as
-     * soon as VolumeContainer is about to be eliminated.
+     * Serializes the object to XML.
      */
-    //VolumeSet* insertContainer(VolumeContainer* container, bool replace = false);
+    virtual TiXmlElement* serializeToXml() const;
+    
+    /**
+     * Updates the object from XML.
+     */
+    virtual void updateFromXml(TiXmlElement* elem);
 
 protected:
     VolumeSet::VSPSet volumesets_;

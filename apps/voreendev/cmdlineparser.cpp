@@ -33,11 +33,15 @@
 
 const QString CmdLineParser::usage_(QObject::tr(
         "Usage: voreendev "
-        "[--deform|--dynamic|--fancy|--glyph|--label|--lens|"
+        "["
+#ifdef VRN_MODULE_DEFORMATION
+        "--deform|"
+#endif
+        "--dynamic|--fancy|--glyph|--label|--lens|"
         "--simple|--slice|--vessel|--dao|--virtclip|--mirror|--petct|--raytracing|--fast|--global] "
         "[-x|--maximized] [--ncg] "
         "[--dbg level=(d(ebug)?|w(arning)?|e(rror)?|f(atal)?] [--dbg-cat category] "
-        "[<-n|--network> <filename>] "
+        "[<-n|--network> <filename>] [-w <width>] [-h <height>] [--benchmark]"
         "[<-s|--segmentation> <filename>] [<-tf> <filename>] [filename]"
     ));
 
@@ -70,10 +74,12 @@ CmdLineParser::CmdLineParser(QStringList* args)
 #else
     networkName_("../../data/networks/simple.vnw"),
 #endif
-    noCalcGradients_(false),
     maximized_(false),
     cat_(""), // default: show messages from all catagories
-    dbgLevel_(tgt::Info)
+    dbgLevel_(tgt::Info),
+    canvasWidth_(-1),
+    canvasHeight_(-1),
+    benchmark_(false)
 {
     bool fileNameFound = false;
     bool rendererTypeFound = false;
@@ -81,8 +87,6 @@ CmdLineParser::CmdLineParser(QStringList* args)
     for (int i = 1; i < args_.count(); ++i) {
         if (args_[i] == "-x" || args_[i] == "--maximized")
             maximized_ = true;
-        else if (args_[i] == "--ncg")
-            noCalcGradients_ = true;
 
         else if (args_[i] == "--dbg") {
             if (i+1 >= args_.count()) {
@@ -115,12 +119,16 @@ CmdLineParser::CmdLineParser(QStringList* args)
                 cat_ = args_[++i];
             }
         }
+#ifdef VRN_MODULE_DEFORMATION
         else if (args_[i] == "--deform")
-            RendererTypeFound(rendererTypeFound, networkName_, "deform.vnw");
+            RendererTypeFound(rendererTypeFound, networkName_, "../../src/modules/deformation/deform.vnw");
+#endif
         else if (args_[i] == "--dynamic")
             RendererTypeFound(rendererTypeFound, networkName_);
         else if (args_[i] == "--fancy")
-            RendererTypeFound(rendererTypeFound, networkName_, "standard.vnw");
+            RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/standard.vnw");
+        else if (args_[i] == "--closeups")
+            RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/overviewcloseup.vnw");
         else if (args_[i] == "--raytracing")
             RendererTypeFound(rendererTypeFound, networkName_);
         else if (args_[i] == "--global")
@@ -128,13 +136,13 @@ CmdLineParser::CmdLineParser(QStringList* args)
         else if (args_[i] == "--dao")
             RendererTypeFound(rendererTypeFound, networkName_);
         else if (args_[i] == "--glyph")
-            RendererTypeFound(rendererTypeFound, networkName_, "glyph.vnw");
+            RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/glyph.vnw");
         else if (args_[i] == "--label")
             RendererTypeFound(rendererTypeFound, networkName_);
         else if (args_[i] == "--simple")
-            RendererTypeFound(rendererTypeFound, networkName_, "simple.vnw");
+            RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/simple.vnw");
         else if (args_[i] == "--fast")
-            RendererTypeFound(rendererTypeFound, networkName_, "slice.vnw");
+            RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/slice.vnw");
         else if (args_[i] == "--slice")
             RendererTypeFound(rendererTypeFound, networkName_);
         else if (args_[i] == "--virtclip")
@@ -158,6 +166,41 @@ CmdLineParser::CmdLineParser(QStringList* args)
         else if (args_[i] == "--help") {
             std::cout << usage_.toStdString() << std::endl;
             exit(0);
+        }
+        else if (args_[i] == "-w") {
+            i++;
+            if (i < args_.count()) {
+                bool ok;
+                int number = args_[i].toInt(&ok);
+                if (ok) {
+                    canvasWidth_ = number;
+                } else {
+                    std::cerr << "parameter "  << args_[i-1].toStdString() << " expects an integer argument." << std::endl;
+                    exit(1);
+                }
+            } else {
+                std::cerr << "parameter "  << args_[i-1].toStdString() << " expects an argument." << std::endl;
+                exit(1);
+            }           
+        }
+        else if (args_[i] == "-h") {
+            i++;
+            if (i < args_.count()) {
+                bool ok;
+                int number = args_[i].toInt(&ok);
+                if (ok) {
+                    canvasHeight_ = number;
+                } else {
+                    std::cerr << "parameter "  << args_[i-1].toStdString() << " expects an integer argument." << std::endl;
+                    exit(1);
+                }
+            } else {
+                std::cerr << "parameter "  << args_[i-1].toStdString() << " expects an argument." << std::endl;
+                exit(1);
+            }           
+        }
+        else if (args_[i] == "--benchmark") {
+            benchmark_ = true;
         }
         else if (args_[i] == "--segmentation" || args_[i] == "-s") {
             i++;

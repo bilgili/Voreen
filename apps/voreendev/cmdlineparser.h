@@ -53,14 +53,16 @@ public:
         networkName_ = networkName;
     }
 
-    bool getNoCalcGradients() const { return noCalcGradients_; }
-
     tgt::LogLevel getDebugLevel() const { return dbgLevel_; }
 
     QString getCategory() const { return cat_; }
 
     bool getMaximized() const { return maximized_; }
 
+    int getCanvasWidth() const { return canvasWidth_; }
+    int getCanvasHeight() const { return canvasHeight_; }
+    bool getBenchmark() const { return benchmark_; }
+    
     static const QString usage_;
 
 private:
@@ -68,13 +70,15 @@ private:
 
     QStringList args_;
     std::string networkName_;
-    bool        noCalcGradients_;
     bool        maximized_;
     QString     fileName_;
     QString     segmentationFileName_;
     QString     tfFileName_;
     QString     cat_;
     tgt::LogLevel dbgLevel_;
+    int canvasWidth_;
+    int canvasHeight_;
+    bool benchmark_;
 };
 
 #endif // VRN_CMDLINEPARSER

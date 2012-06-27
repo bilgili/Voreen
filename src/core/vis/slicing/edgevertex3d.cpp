@@ -42,7 +42,7 @@ EdgeVertex3D::EdgeVertex3D(const tgt::vec3& v) : v_(v) {
 }
 
 EdgeVertex3D::EdgeVertex3D(const tgt::vec3& v, Edge3D* const edge) : v_(v) {
-    if( edge != 0 )
+    if ( edge != 0 )
         addEdge(edge);
 }
 
@@ -73,18 +73,18 @@ bool EdgeVertex3D::operator !=(const EdgeVertex3D& v) const
 bool EdgeVertex3D::operator <(const EdgeVertex3D& v) const
 {
     const tgt::vec3& v2 = v.getVertex();
-    if( v_.x < v2.x ) { return true; }
-    if( (v_.x == v2.x) && (v_.y < v2.y) ) { return true; }
-    if( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z < v2.z) ) { return true; }
+    if ( v_.x < v2.x ) { return true; }
+    if ( (v_.x == v2.x) && (v_.y < v2.y) ) { return true; }
+    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z < v2.z) ) { return true; }
     return false;
 }
 
 bool EdgeVertex3D::operator >(const EdgeVertex3D& v) const
 {
     const tgt::vec3& v2 = v.getVertex();
-    if( v_.x > v2.x ) { return true; }
-    if( (v_.x == v2.x) && (v_.y > v2.y) ) { return true; }
-    if( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z > v2.z) ) { return true; }
+    if ( v_.x > v2.x ) { return true; }
+    if ( (v_.x == v2.x) && (v_.y > v2.y) ) { return true; }
+    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z > v2.z) ) { return true; }
     return false;
 }
 
@@ -98,7 +98,7 @@ void EdgeVertex3D::setVertex(const tgt::vec3& v) { v_ = v; }
 
 bool EdgeVertex3D::addEdge(Edge3D* e)
 {
-    if( e != 0 )
+    if ( e != 0 )
     {
         // due to special comparison on pointers, the edge will NOT
         // be inserted, if the DEREFERENCED edge pointers are equal!
@@ -116,13 +116,13 @@ void EdgeVertex3D::removeEdge(Edge3D* const e)
 
 bool EdgeVertex3D::isAdjacentToEdge(Edge3D* e) const
 {
-    if( e == 0 )
+    if ( e == 0 )
     {
         return false;
     }
 
     Edge3D::EdgeSet::const_iterator it = edges_.find(e);
-    if( it != edges_.end() )
+    if ( it != edges_.end() )
     {
         return true;
     }
@@ -138,9 +138,9 @@ void EdgeVertex3D::clear() {
     // disconnect and will be deleted.
     //
     Edge3D::EdgeSet::iterator it = edges_.begin();
-    for( ; it != edges_.end(); it++ ) {
+    for ( ; it != edges_.end(); it++ ) {
         Edge3D* e = *it;
-        if( e != 0 )
+        if ( e != 0 )
             e->disconnect(this);
 
         delete e;

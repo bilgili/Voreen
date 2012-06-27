@@ -39,19 +39,14 @@
 
 namespace voreen {
 
-using tgt::vec3;
-using tgt::ivec2;
-using tgt::Color;
-using std::vector;
-
 PostProcessor::PostProcessor()
     : Processor(),
     minDepth_("set.minDepthPP", "Mindepth", 0.0f),
     maxDepth_("set.maxDepthPP", "Maxdepth", 1.0f)
-{
-}
+{}
 
-PostProcessor::~PostProcessor() {}
+PostProcessor::~PostProcessor() {
+}
 
 /*
  * Read back depth buffer and determine min and max depth value.
@@ -62,8 +57,8 @@ void PostProcessor::analyzeDepthBuffer(int source) {
     float curDepth = *(pixels);
     minDepth_.set(curDepth);
     maxDepth_.set(curDepth);
-    for (int x = 0;x < tc_->getSize().x;x++) {
-        for (int y = 0;y < tc_->getSize().y;y++) {
+    for (int x = 0; x < tc_->getSize().x; ++x) {
+        for (int y = 0; y < tc_->getSize().y; ++y) {
             curDepth = *(pixels++);
             if (minDepth_.get() == 0.0f)
                 minDepth_.set(curDepth);
@@ -97,6 +92,7 @@ int PostProcessor::initializeGL() {
     return VRN_OK;
 }
 
-void PostProcessor::process(LocalPortMapping* ) {}
+void PostProcessor::process(LocalPortMapping* ) {
+}
 
-} //end of namespace
+} // namespace voreen

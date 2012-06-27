@@ -206,7 +206,7 @@ void TGT_TESSELATORAPI Tesselator::Callbacks<InterleavedType>::combine(GLdouble 
         *newVertex = *newVertex + *(vertex[3]) * weight[3];
 
     for (size_t i = 0; i < newVertex->point_.size; ++i)
-        newVertex->point_[i] = (float) coords[i];
+        newVertex->point_[i] = static_cast<float>(coords[i]);
 
     *outData = newVertex;
 }

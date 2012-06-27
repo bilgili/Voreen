@@ -38,8 +38,13 @@ namespace voreen {
 
 ShowTexContainerWidget::ShowTexContainerWidget(const QGLWidget* shareWidget)
     : QGLWidget(0, shareWidget),
-      tc_(0), paintInfos_(true), selected_(0), fullscreen_(false), refreshInterval_(100),
-      floatProgram_(0), depthProgram_(0)
+      floatProgram_(0),
+      depthProgram_(0),
+      tc_(0),
+      paintInfos_(true),
+      selected_(0),
+      fullscreen_(false),
+      refreshInterval_(100)
 {
 	contextMenuMEN_ = new QMenu(this);
 	colorBufferACT_ = contextMenuMEN_->addAction("color buffer");
@@ -213,6 +218,11 @@ void ShowTexContainerWidget::timerEvent (QTimerEvent* /*event*/) {
 void ShowTexContainerWidget::closeEvent(QCloseEvent *event) {
 	emit closing(false);
 	event->accept();
+}
+
+void ShowTexContainerWidget::hideEvent(QHideEvent* e) {
+    emit hideSignal();
+    QGLWidget::hideEvent(e);
 }
 
 void ShowTexContainerWidget::initializeGL() {

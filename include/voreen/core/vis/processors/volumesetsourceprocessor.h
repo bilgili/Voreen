@@ -34,9 +34,15 @@
 
 #include "voreen/core/volume/volumesetcontainer.h"
 
+#ifndef VRN_OBSERVER_H
+#include "voreen/core/volume/observer.h"
+#endif
+
 namespace voreen {
 
-class VolumeSetSourceProcessor : public Processor {        
+class VolumeSetSourceProcessor : public Processor, public Observer
+{
+
 public: 
     VolumeSetSourceProcessor();
     ~VolumeSetSourceProcessor();
@@ -64,6 +70,18 @@ public:
     void setVolumeSetContainer(VolumeSetContainer* const volumesetContainer);
 
     static const Identifier msgUpdateCurrentVolumeset_;
+
+    /**
+     * Implementation of the method inherited from <code>class Observer</code>.
+     * Due to "abuse" of the observer role of the processors, this method is
+     * actually not needed and never called.
+     * Instead of only notifying the processors, the observed objects shall
+     * try to cast their observers to a VolumeSetSourceProcessor and call
+     * the desired method like it is done by the VolumeSelectionPlugin from
+     * kahuna: on changing the selected VolumeSet, the plugin calls
+     * <code>setVolumeSet()</code> on the casted observer.
+     */
+    virtual void notify(const Observable* const /*source = 0*/) {}
     
 protected:
     VolumeSetContainer* volumesetContainer_;

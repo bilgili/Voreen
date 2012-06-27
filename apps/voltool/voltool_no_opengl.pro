@@ -18,7 +18,9 @@ CONFIG += console
 INCLUDEPATH += ../../ext
 INCLUDEPATH += ../../include
 
-LIBS += -lIL -lILU -lILUT
+contains(DEFINES, VRN_WITH_DEVIL) {
+  LIBS += -lILU
+}
 
 DEFINES += VRN_NO_OPENGL
 DEFINES += VRN_WITH_PVM

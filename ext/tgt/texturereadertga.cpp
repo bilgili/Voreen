@@ -27,6 +27,8 @@
 #include "tgt/logmanager.h"
 #include "tgt/filesystem.h"
 
+#include <cstring>
+
 namespace tgt {
 
 //------------------------------------------------------------------------------
@@ -35,8 +37,7 @@ namespace tgt {
 
 const std::string TextureReaderTga::loggerCat_("tgt.Texture.Reader.Tga");
 
-TextureReaderTga::TextureReaderTga() 
-{
+TextureReaderTga::TextureReaderTga() {
     name_ = "TGA Reader";
     extensions_.push_back("tga");
 }
@@ -79,8 +80,8 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         return 0;
     }
 
-    if (file->read((char*)&TGAheader, sizeof(TGAheader)) != sizeof(TGAheader) ||
-        file->read((char*)&header, sizeof(header)) != sizeof(header))
+    if (file->read(reinterpret_cast<char*>(&TGAheader), sizeof(TGAheader)) != sizeof(TGAheader) ||
+        file->read(reinterpret_cast<char*>(&header), sizeof(header)) != sizeof(header))
     {
         delete file;
         LERROR("Failed to read header! file: " << filename);
@@ -142,7 +143,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
     if (TGAheader[2] == 2) {
         // file is not compressed
         LDEBUG("Reading uncompressed TGA file...");
-        if (file->read((char*)t->getPixelData(), t->getArraySize()) != t->getArraySize()) {
+        if (file->read(reinterpret_cast<char*>(t->getPixelData()), t->getArraySize()) != t->getArraySize()) {
             LERROR("Failed to read uncompressed image! file: " << filename);
             delete file;
             delete t;
@@ -154,24 +155,22 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         
         unsigned char chunk[4];
         unsigned char* at = t->getPixelData();
-        for (unsigned int bytesDone=0; bytesDone < t->getArraySize(); )
-        {
+        for (unsigned int bytesDone=0; bytesDone < t->getArraySize(); ) {
             unsigned char packetHead;
-            file->read((char*)&packetHead, 1);
-            if ((packetHead & 0x80))
-            {
+            file->read(reinterpret_cast<char*>(&packetHead), 1);
+            if ((packetHead & 0x80)) {
                 packetHead &= 0x7F;
                 packetHead++;
-                file->read((char*)&chunk, bytesPerPixel);
+                file->read(reinterpret_cast<char*>(&chunk), bytesPerPixel);
                 for (unsigned char b=0; b < packetHead; b++) {
-                        memcpy(at, chunk, bytesPerPixel);
+                        std::memcpy(at, chunk, bytesPerPixel);
                         bytesDone += bytesPerPixel;
                         at += bytesPerPixel;
                 }
             } else {
                 packetHead &= 0x7F;
                 packetHead++;
-                file->read((char*)at, bytesPerPixel * packetHead);
+                file->read(reinterpret_cast<char*>(at), bytesPerPixel * packetHead);
                 bytesDone += packetHead * bytesPerPixel;
                 at += packetHead * bytesPerPixel;
             }

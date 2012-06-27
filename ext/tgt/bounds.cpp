@@ -34,9 +34,9 @@ using std::min;
 using std::max;
 
 void Bounds::addPoint(const Vector& v) {
-    if(points_ < 2) {
+    if (points_ < 2) {
         ++points_;
-        if(points_ == 1) {
+        if (points_ == 1) {
             llf_ = v; urb_ = v;
             return;
         }

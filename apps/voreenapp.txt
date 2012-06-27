@@ -2,8 +2,8 @@
 # Generic project file for all Voreen applications
 ####################################################
 
-# common resource files
-RESOURCES = $${VRN_HOME}/resource/vrn_share/vrn_app.qrc
+# common Qt resource files
+qt : RESOURCES = $${VRN_HOME}/resource/vrn_share/vrn_app.qrc
 
 ####################################################
 # Platform-dependant configuration
@@ -16,8 +16,8 @@ win32 {
   QMAKE_LIBDIR += \
         $${VRN_HOME}/ext/glew/lib
 
-  LIBS += $${VRN_HOME}/$(ConfigurationName)/voreen_qt.lib \
-          $${VRN_HOME}/$(ConfigurationName)/voreen_core.lib \
+  qt : LIBS += $${VRN_HOME}/$(ConfigurationName)/voreen_qt.lib
+  LIBS += $${VRN_HOME}/$(ConfigurationName)/voreen_core.lib \
           $${VRN_HOME}/ext/glew/lib/$(ConfigurationName)/glew32s.lib
 
   # no libc for vc++ since we build a multithreaded executable
@@ -31,7 +31,7 @@ win32 {
 
   contains(DEFINES, VRN_WITH_DEVIL) {
     QMAKE_LIBDIR += $${DEVIL_DIR}/lib
-    LIBS += -lDevIL -lILU -lILUT
+    LIBS += -lDevIL
   }
 
   contains(DEFINES, VRN_WITH_MATLAB) {
@@ -85,7 +85,7 @@ win32 {
   LIBS += -lVersion
 
   # Windows Management Instrumentation (WMI) for hardware detection
-  contains(DEFINES, VRN_WITH_WMI) {
+  contains(DEFINES, TGT_WITH_WMI) {
     LIBS += -lWbemUuid
   }
 
@@ -111,10 +111,11 @@ unix {
 
   !macx: LIBS += -lGL -lGLU
   LIBS += -lGLEW
-  LIBS += -lvoreen_qt -lvoreen_core
+  qt : LIBS += -lvoreen_qt 
+  LIBS += -lvoreen_core
 
   contains(DEFINES, VRN_WITH_DEVIL) {
-    LIBS += -lIL -lILU -lILUT
+    LIBS += -lIL 
   }
   contains(DEFINES, VRN_WITH_TIFF) {
     LIBS += -ltiff

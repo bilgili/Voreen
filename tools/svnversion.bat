@@ -25,5 +25,6 @@ rem   echo "// svnversion binary not found or this not a working copy" >> $VERSI
 rem   echo "#undef VRN_SVN_REVISON" >> $VERSION_H
 rem else
   echo // extracted from working copy at %1 >> %2 
+  echo #undef VRN_SVN_REVISON >> %2 
   echo #define VRN_SVN_REVISON "%REV%" >> %2 
 rem fi

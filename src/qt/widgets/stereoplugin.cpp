@@ -124,7 +124,7 @@ void StereoPlugin::changeFocalDistance(int dist) {
 }
 
 void StereoPlugin::correctWindowPos(bool /*on*/) {
-    if(correctWindowPosChecker_->isChecked())
+    if (correctWindowPosChecker_->isChecked())
         postMessage(new IntMsg(setCorrectWindowPos_, 1));
     else
         postMessage(new IntMsg(setCorrectWindowPos_, 0));

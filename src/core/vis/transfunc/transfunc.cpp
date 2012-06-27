@@ -28,13 +28,14 @@
  **********************************************************************/
 
 #include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
 
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/messagedistributor.h"
 
 #include <cmath>
 #include <tinyxml/tinyxml.h>
+
+#include "voreen/core/vis/messagedistributor.h"
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 using tgt::vec2;
 using tgt::ivec2;
@@ -43,16 +44,17 @@ using tgt::ivec4;
 using tgt::col4;
 using tgt::dvec4;
 
+
 namespace voreen {
 
-void saveXml(TiXmlElement* root, const vec2& v) {
+void TransFunc::saveXml(TiXmlElement* root, const vec2& v) {
     TiXmlElement* e = new TiXmlElement("vec2");
     e->SetDoubleAttribute("x", v.x);
     e->SetDoubleAttribute("y", v.y);
     root->LinkEndChild(e);
 }
 
-void saveXml(TiXmlElement* root, const col4& c) {
+void TransFunc::saveXml(TiXmlElement* root, const col4& c) {
     TiXmlElement* e = new TiXmlElement("col4");
     e->SetAttribute("r", c.r);
     e->SetAttribute("g", c.g);
@@ -61,7 +63,7 @@ void saveXml(TiXmlElement* root, const col4& c) {
     root->LinkEndChild(e);
 }
 
-void loadXml(TiXmlElement* root, vec2& v) {
+void TransFunc::loadXml(TiXmlElement* root, vec2& v) {
     double temp;
     if (root->Attribute("x", &temp))
         v.x = static_cast<float>(temp);
@@ -69,7 +71,7 @@ void loadXml(TiXmlElement* root, vec2& v) {
         v.y = static_cast<float>(temp);
 }
 
-void loadXml(TiXmlElement* root, col4& c) {
+void TransFunc::loadXml(TiXmlElement* root, col4& c) {
     int temp;
     if (root->Attribute("r", &temp))
         c.r = temp;
@@ -81,9 +83,9 @@ void loadXml(TiXmlElement* root, col4& c) {
         c.a = temp;
 }
 
-const std::string TransFunc::loggerCat_("voreen.voreen.TransFunc");
-
 //---------------------------------------------------------------------------
+
+const std::string TransFunc::loggerCat_("voreen.voreen.TransFunc");
 
 TransFunc::TransFunc(): tex_(0) {
 }

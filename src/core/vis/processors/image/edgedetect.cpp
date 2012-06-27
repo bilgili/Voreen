@@ -73,14 +73,14 @@ EdgeDetect::~EdgeDetect() {
 }
 
 const std::string EdgeDetect::getProcessorInfo() const {
-	return "Performs an edge detection. The detected edge is then drawn in selectable colors, styles, modi of blending etc.";
+	return "Performs an edge detection. The detected edge is then drawn in selectable colors, \
+           styles, modi of blending etc.";
 }
 
 void EdgeDetect::process(LocalPortMapping*  portMapping) {
-
 	int source;
     int dest;
-    if (labelMode_.get()){
+    if (labelMode_.get()) {
         if (coarsnessOn_)
             return;
 		source = portMapping->getTarget("image.input");
@@ -90,7 +90,8 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
         tc_->setActiveTarget(dest, "EdgeDetect::process");
         glDisable(GL_DEPTH_TEST);
         glColorMask(false, false, false, true);
-    } else {
+    }
+    else {
         source = portMapping->getTarget("image.input");
 	    if (source == -1)
             return;
@@ -114,18 +115,19 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
     program_->setUniform("minDepth_", minDepth_.get());
     program_->setUniform("maxDepth_", maxDepth_.get());
     program_->setUniform("edgeColor_", edgeColor_.get());
     program_->setUniform("fillColor_", fillColor_.get());
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("backgroundColor_", backgroundColor_.get());
     program_->setUniform("edgeThreshold_", edgeThreshold_.get());
-    if (labelMode_.get()){
+    if (labelMode_.get()) {
         program_->setUniform("showImage_", 2);
         program_->setUniform("blendMode_", 3);
-    } else {
+    }
+    else {
         program_->setUniform("showImage_", showImage_.get());
         program_->setUniform("blendMode_", blendMode_->get());
     }
@@ -137,20 +139,16 @@ void EdgeDetect::process(LocalPortMapping*  portMapping) {
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
 
-    if (labelMode_.get()){
+    if (labelMode_.get()) {
         glEnable(GL_DEPTH_TEST);
         glColorMask(true, true, true, true);
     }
 }
 
-void EdgeDetect::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/)
-{
+void EdgeDetect::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
 	GenericFragment::processMessage(msg, dest);
-	if (msg->id_ == VoreenPainter::switchCoarseness_) {
+	if (msg->id_ == VoreenPainter::switchCoarseness_)
         coarsnessOn_ = msg->getValue<bool>();
-    }
 }
 
-
 } // voreen namespace
-

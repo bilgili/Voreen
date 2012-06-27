@@ -100,7 +100,6 @@ protected:
 
     voreen::InformationPlugin* infoPlugin_;
 
-    voreen::VolumeContainer* volumeContainer_;
     voreen::VolumeSerializer* volumeSerializer_;
     voreen::VolumeSerializerPopulator volumeSerializerPopulator_;
     voreen::TextureContainer* tc_;

@@ -1,47 +1,80 @@
-#include "modules/mod_shadowing.frag"
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
+
+/**
+ * This module contains all functions which can be used for shading
+ * the current voxel within a raycaster.
+ * The functions below, which implement a full shading model as for
+ * instance Phong or Toon shading, are referenced by RC_APPLY_SHADING
+ * which is used in the raycaster fragment shaders.
+ */
+
+// uniforms needed for shading
+uniform vec3 cameraPosition_;
+uniform vec3 lightPosition_;
+gl_LightSourceParameters lightParams;
+gl_MaterialParameters matParams;
+
 
 /**
  * Returns attenuation based on the currently set opengl values.
  * Incorporates constant, linear and quadratic attenuation.
- * If PHONG_APPLY_ATTENUATION is undefined 1.0 is returned.
  *
  * @param d Distance to the light source. 
  */
 float getAttenuation(in float d) {
-	#if defined(PHONG_APPLY_ATTENUATION)
-		return 1.0 / (lightParams.constantAttenuation +
-					  lightParams.linearAttenuation * d +
-					  lightParams.quadraticAttenuation * d * d);
-	#else
-		return 1.0;
-	#endif
+	return 1.0 / (lightParams.constantAttenuation +
+				  lightParams.linearAttenuation * d +
+				  lightParams.quadraticAttenuation * d * d);
 }
+
 
 /**
  * Returns the ambient term, considering the currently set opengl lighting
  * parameters. When USE_OPENGL_MATERIAL is set, opengls current ambient
  * color is used, otherwise the color ka.
- * If PHONG_ADD_AMBIENT is undefined vec3(0.0) is returned.
  *
  * @param ka The ambient color to be used. Usually this is fetched from the
  * transfer function.
  */
 vec3 getAmbientTerm(in vec3 ka) {
-	#if defined(PHONG_ADD_AMBIENT)
-		#ifdef USE_OPENGL_MATERIAL
-			ka = matParams.ambient.rgb;
-		#endif
-		return ka * lightParams.ambient.rgb;       
-	#else
-		return vec3(0.0);
+	#ifdef USE_OPENGL_MATERIAL
+		ka = matParams.ambient.rgb;
 	#endif
+	return ka * lightParams.ambient.rgb;       
 }
+
 
 /**
  * Returns the diffuse term, considering the currently set opengl lighting
  * parameters. When USE_OPENGL_MATERIAL is set, opengls current diffuse
  * color is used, otherwise the color kd.
- * if PHONG_ADD_DIFFUSE is undefined vec3(0.0) is returned.
  *
  * @param kd The diffuse color to be used. Usually this is fetched from the
  * transfer function.
@@ -49,100 +82,57 @@ vec3 getAmbientTerm(in vec3 ka) {
  * @param L The normalized light vector used for lambert shading.
  */
 vec3 getDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
-	#if defined(PHONG_ADD_DIFFUSE)
-		float NdotL = max(dot(N, L), 0.0);
-		#ifdef USE_OPENGL_MATERIAL
-			kd = matParams.diffuse.rgb;
-		#endif
-		return kd * lightParams.diffuse.rgb * NdotL;
-	#else
-		return vec3(0.0);
+	float NdotL = max(dot(N, L), 0.0);
+	#ifdef USE_OPENGL_MATERIAL
+		kd = matParams.diffuse.rgb;
 	#endif
+	return kd * lightParams.diffuse.rgb * NdotL;
 }
+
 
 /**
  * This function implements the soft lighting technique described by
  * Josip Basic in the technote 'A cheap soft lighting for real-time 3D
  * environments. When USE_OPENGL_MATERIAL is set, opengls current diffuse
- * color is used, otherwise the color kd. If PHONG_ADD_DIFFUSE is
- * undefined vec3(0.0) is returned.
+ * color is used, otherwise the color kd.
  *
  * @param kd The diffuse color to be used. Usually this is fetched from the
  * transfer function.
  * @param N The surface normal used for lambert shading.
  * @param L The normalized light vector used for lambert shading.
  */
-vec3 getLerpLambert(in vec3 kd, in vec3 N, in vec3 L) {
-	#if defined(PHONG_ADD_DIFFUSE)
-		float alpha = 0.5;
-		vec3 Nv = alpha*N + (1.0-alpha)*L;//lerp(N, L, alpha);
-		float NdotL = max(dot(Nv, L), 0.0);
-		#ifdef USE_OPENGL_MATERIAL
-			kd = matParams.diffuse.rgb;
-		#endif
-		return kd * lightParams.diffuse.rgb * NdotL;
-	#else
-		return vec3(0.0);
+vec3 getLerpDiffuseTerm(in vec3 kd, in vec3 N, in vec3 L) {
+	float alpha = 0.5;
+	vec3 NV = mix(N, L, alpha);
+	float NVdotL = max(dot(NV, L), 0.0);
+	#ifdef USE_OPENGL_MATERIAL
+		kd = matParams.diffuse.rgb;
 	#endif
+	return kd * lightParams.diffuse.rgb * NVdotL;
 }
+
 
 /**
  * Returns the specular term, considering the currently set opengl lighting
- * and material parameters.
- * If PHONG_ADD_SPECULAR is undefined vec3(0.0) is returned.
+ * parameters. When USE_OPENGL_MATERIAL is set, opengls current specular
+ * color is used, otherwise the color ks.
  *
  * @param vpos The current voxel's position in object coordinates
  * @param N The surface normal used.
  * @param L The normalized light vector used.
  */
-vec3 getSpecularTerm(in vec3 vpos, in vec3 N, in vec3 L) {
-	#if defined(PHONG_ADD_SPECULAR)
-    	vec3 V = normalize(cameraPosition_ - vpos);
-		vec3 H = normalize(V + L);       
-
-        float NdotH = pow(max(dot(N, H), 0.0), matParams.shininess);
-		return matParams.specular.rgb * lightParams.specular.rgb * NdotH;
-	#else
-		return vec3(0.0);
+vec3 getSpecularTerm(in vec3 ks, in vec3 N, in vec3 L, in vec3 V) {
+	vec3 H = normalize(V + L);       
+    float NdotH = pow(max(dot(N, H), 0.0), matParams.shininess);
+	#ifdef USE_OPENGL_MATERIAL
+		ks = matParams.specular.rgb;
 	#endif
+	return ks * lightParams.specular.rgb * NdotH;
 }
 
-/**
- * Calculates phong shading without considering the ambient term.
- * Diffuse reflection is only considered when PHONG_ADD_DIFFUSE is defined.
- * Specular reflection is only considered when PHONG_ADD_SPECULAR is defined.
- * The parameter kd is not considered when USE_OPENGL_MATERIAL is defined,
- * instead the currently set opengl diffuse material is taken into account.
- *
- * @param normal The normal given in volume object space (does not need to be normalized).
- * @param vposTex The voxel position given in volume texture space.
- * @param volumeParams the parameters of the volume to be shaded
- * @param kd The diffuse material color to be used.
- */
-vec3 phongShadingNoKa(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd) {
-    
-    // transform voxel position to the volume's object space
-    vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
-    vec3 N = normalize(normal.xyz);
-    vec3 L = lightPosition_ - vpos;
-    
-    float d = length(L);
-    L /= d; // normalize light vector (looks complicated, but easier for the optimizer)
-    vec3 shadedColor = vec3(0.0);
-
-	shadedColor += getDiffuseTerm(kd, N, L);
-	shadedColor += getSpecularTerm(vpos, N, L);
-
-    shadedColor *= getAttenuation(d);
-
-    return shadedColor;
-}
 
 /**
  * Calculates phong shading.
- * Ambient reflection is only considered when PHONG_ADD_AMBIENT is defined.
- * Diffuse reflection is only considered when PHONG_ADD_DIFFUSE is defined.
- * Specular reflection is only considered when PHONG_ADD_SPECULAR is defined.
  * The parameters ka and kd are not considered when USE_OPENGL_MATERIAL is defined,
  * instead the currently set opengl materials are taken into account.
  *
@@ -152,56 +142,28 @@ vec3 phongShadingNoKa(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volu
  * @param kd The diffuse material color to be used.
  * @param ka The ambient material color to be used.
  */
-vec3 phongShading(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd, in vec3 ka) {
-    
+vec3 phongShading(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 ka, in vec3 kd, in vec3 ks) {
     // transform voxel position to the volume's object space
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
-    vec3 N = normalize(normal.xyz);
+    vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
-    
+	vec3 V = normalize(cameraPosition_ - vpos);
+
+	// get light source distance for attenuation
     float d = length(L);
-    L /= d; // normalize light vector (looks complicated, but easier for the optimizer)
-    vec3 shadedColor = vec3(0.0);
+	L /= d;
 
-    shadedColor += getDiffuseTerm(kd, N, L);
-    shadedColor += getSpecularTerm(vpos, N, L);
-
+	vec3 shadedColor = vec3(0.0);
     shadedColor += getAmbientTerm(ka);
+    shadedColor += getDiffuseTerm(kd, N, L);
+    shadedColor += getSpecularTerm(ks, N, L, V);
     shadedColor *= getAttenuation(d);
-    
     return shadedColor;
 }
- 
-//overview version:
-// vec3 phongShading(in vec4 normal, in vec3 vpos, in vec3 kd, in vec3 ka) {
-//  
-//     vec3 N = normalize(normal.xyz);
-//     vec3 L = lightPosition_ - vpos;
-//     
-//     float d = length(L);
-//     L /= d; // normalize light vector (looks complicated, but easier for the optimizer)
-//     vec3 shadedColor = vec3(0.0);
-// 
-// 	return lightParams.diffuse.rgb;
-// 	//return vec3(max(dot(N, L), 0.0));
-// 
-// 	shadedColor += getDiffuseTerm(kd, N, L);
-// 	//shadedColor += getSpecularTerm(vpos, N, L);
-// 
-// 
-//     //shadedColor += getAmbientTerm(ka);
-// 	//shadedColor *= getAttenuation(d);
-// 
-// 	//return kd;
-// 	
-//     return shadedColor;
-// }
-
 
 
 /**
- * Calculates lambertian shading with attenuation.
- * Works only when PHONG_ADD_DIFFUSE is defined.
+ * Calculates phong shading without considering the ambient term.
  * The parameter kd is not considered when USE_OPENGL_MATERIAL is defined,
  * instead the currently set opengl diffuse material is taken into account.
  *
@@ -210,22 +172,102 @@ vec3 phongShading(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volumePa
  * @param volumeParams the parameters of the volume to be shaded
  * @param kd The diffuse material color to be used.
  */
-vec3 lambertShading(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd) {
-
+vec3 phongShadingDS(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd, in vec3 ks) {
     // transform voxel position to the volume's object space
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
-    vec3 N = normalize(normal.xyz);
+    vec3 N = normalize(gradient);
+    vec3 L = lightPosition_ - vpos;
+	vec3 V = normalize(cameraPosition_ - vpos);
+    
+	// get light source distance for attenuation
+    float d = length(L);
+    L /= d;
+
+	vec3 shadedColor = vec3(0.0);
+	shadedColor += getDiffuseTerm(kd, N, L);
+	shadedColor += getSpecularTerm(ks, N, L, V);
+    shadedColor *= getAttenuation(d);
+    return shadedColor;
+}
+
+
+/**
+ * Calculates phong shading without considering the ambient term.
+ * The parameter kd is not considered when USE_OPENGL_MATERIAL is defined,
+ * instead the currently set opengl diffuse material is taken into account.
+ *
+ * @param normal The normal given in volume object space (does not need to be normalized).
+ * @param vposTex The voxel position given in volume texture space.
+ * @param volumeParams the parameters of the volume to be shaded
+ * @param kd The diffuse material color to be used.
+ */
+vec3 phongShadingS(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 ks) {
+    // transform voxel position to the volume's object space
+    vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
+    vec3 N = normalize(gradient);
+    vec3 L = normalize(lightPosition_ - vpos);
+	vec3 V = normalize(cameraPosition_ - vpos);
+    
+	vec3 shadedColor = vec3(0.0);
+	shadedColor += getSpecularTerm(ks, N, L, V);
+    return shadedColor;
+}
+
+
+/**
+ * Calculates lambertian shading with attenuation.
+ * The parameter kd is not considered when USE_OPENGL_MATERIAL is defined,
+ * instead the currently set opengl diffuse material is taken into account.
+ *
+ * @param normal The normal given in volume object space (does not need to be normalized).
+ * @param vposTex The voxel position given in volume texture space.
+ * @param volumeParams the parameters of the volume to be shaded
+ * @param kd The diffuse material color to be used.
+ */
+vec3 phongShadingDA(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd, in vec3 ka) {
+    // transform voxel position to the volume's object space
+    vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
+    vec3 N = normalize(gradient);
     vec3 L = lightPosition_ - vpos;
     
+	// get light source distance for attenuation
     float d = length(L);
-    L /= d; // normalize light vector (looks complicated, but easier for the optimizer)
+    L /= d;
+    
+	vec3 shadedColor = vec3(0.0);
+    shadedColor += getAmbientTerm(ka);
+	shadedColor += getDiffuseTerm(kd, N, L);
+	shadedColor *= getAttenuation(d);
+    return shadedColor;
+}
+
+
+/**
+ * Calculates lambertian shading with attenuation.
+ * The parameter kd is not considered when USE_OPENGL_MATERIAL is defined,
+ * instead the currently set opengl diffuse material is taken into account.
+ *
+ * @param normal The normal given in volume object space (does not need to be normalized).
+ * @param vposTex The voxel position given in volume texture space.
+ * @param volumeParams the parameters of the volume to be shaded
+ * @param kd The diffuse material color to be used.
+ */
+vec3 phongShadingD(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd) {
+    // transform voxel position to the volume's object space
+    vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
+    vec3 N = normalize(gradient);
+    vec3 L = lightPosition_ - vpos;
+    
+	// get light source distance for attenuation
+    float d = length(L);
+    L /= d;
     
 	vec3 shadedColor = vec3(0.0);
 	shadedColor += getDiffuseTerm(kd, N, L);
 	shadedColor *= getAttenuation(d);
-	
     return shadedColor;
 }
+
 
 /**
  * Calculates a quantized toon shading.
@@ -237,11 +279,10 @@ vec3 lambertShading(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volume
  * @param volumeParams the parameters of the volume to be shaded
  * @param numShades The number of different shadings.
  */
-vec3 toonShading(in vec4 normal, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd, int numShades) {
-
+vec3 toonShading(in vec3 gradient, in vec3 vposTex, in VOLUME_PARAMETERS volumeParams, in vec3 kd, int numShades) {
     // transform voxel position to the volume's object space
     vec3 vpos = (vposTex-0.5)*volumeParams.volumeCubeSize_;
-    vec3 N = normalize(normal.xyz);
+    vec3 N = normalize(gradient);
     vec3 L = normalize(lightPosition_.xyz-vpos.xyz);
     float NdotL = max(dot(N,L),0.0);
     

@@ -29,6 +29,12 @@
 
 #include "voreen/core/vis/transfunc/transfunceditor.h"
 
+
+#include "voreen/core/vis/message.h"
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/transfunc/transfunc.h"
+
+
 namespace voreen {
 
 TransFuncEditor::TransFuncEditor(MessageReceiver* msgReceiver, Identifier target, Identifier id)

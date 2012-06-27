@@ -28,40 +28,40 @@
 
 namespace tgt {
 
-QtTimer::QtTimer( EventHandler* eh )
-    : Timer( eh )
+QtTimer::QtTimer(EventHandler* eh)
+    : Timer(eh)
 {
 }
 
 QtTimer::~QtTimer() {
 }
 
-void QtTimer::start( const int msec, const int limit ) {
-    if ( stopped_ ) {
+void QtTimer::start(const int msec, const int limit) {
+    if (stopped_) {
         limit_ = limit;
         tickTime_ = msec;
         stopped_ = false;
-        id_ = QObject::startTimer( msec );
+        id_ = QObject::startTimer(msec);
     }
 }
 
-void QtTimer::stop(){
-    if ( !stopped_ ) {
+void QtTimer::stop() {
+    if (!stopped_) {
         stopped_ = true;
         QObject::killTimer( id_ );
     }
 }
 
-void QtTimer::setTickTime( const int msec ){    
+void QtTimer::setTickTime(const int msec) {
     stop();
     start( msec, limit_ );
 }
 
-void QtTimer::timerEvent( QTimerEvent* e ){
+void QtTimer::timerEvent(QTimerEvent* /*e*/) {
     ++count_;
         
-    if ( (limit_ == 0 || count_ <= limit_) && !stopped_ ) {
-        tgt::TimeEvent* te = new tgt::TimeEvent( this );
+    if ((limit_ == 0 || count_ <= limit_) && !stopped_) {
+        tgt::TimeEvent* te = new tgt::TimeEvent(this);
         eventHandler_->broadcast(te);
     } else {
         stop();

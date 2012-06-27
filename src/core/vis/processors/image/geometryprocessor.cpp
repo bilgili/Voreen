@@ -63,13 +63,14 @@ GeometryProcessor::~GeometryProcessor() {
 }
 
 const std::string GeometryProcessor::getProcessorInfo() const {
-	return "Manages the GeometryRenderer objects. Holds a vector of GeometryRenderer Objects and renders all of them on <i>render()</i>";
+	return "Manages the GeometryRenderer objects. Holds a vector of GeometryRenderer \
+           Objects and renders all of them on <i>render()</i>";
 }
 
 void GeometryProcessor::process(LocalPortMapping* portMapping) {
     int source = portMapping->getTarget("image.inport");
     tc_->setActiveTarget(source, "GeometryProcessor::process: add geometry");
-    glViewport(0, 0, (int)size_.x, (int)size_.y);
+    glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
@@ -95,8 +96,7 @@ void GeometryProcessor::process(LocalPortMapping* portMapping) {
 
 GeometryRenderer::GeometryRenderer(tgt::Camera* camera, TextureContainer* tc)
     : Processor(camera, tc)
-{
-}
+{}
 
 tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float /* z*/) {
 	// taken from NEHE article 13
@@ -121,11 +121,11 @@ tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float /* z*/) {
     }
     viewport[0] = 0;
     viewport[1] = 0;
-    viewport[2] = (int)size_.x;
-    viewport[3] = (int)size_.y;
+    viewport[2] = size_.x;
+    viewport[3] = size_.y;
 
-	winX = ((double)x);
-	winY = ((double)viewport[3] - (double)y);
+	winX = static_cast<GLdouble>(x);
+	winY = static_cast<GLdouble>(viewport[3]) - static_cast<GLint>(y);
 	winZ = 0;
 
 	gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posXh, &posYh, &posZh);
@@ -231,39 +231,39 @@ Processor* GeomLightWidget::create() {
 }
 
 void GeomLightWidget::processMessage(Message* msg, const Identifier& /*dest*/){
-    if (msg->id_ == "set.lightPosition"){
+    if (msg->id_ == "set.lightPosition") {
         shadowLightPosX_.set(msg->getValue<tgt::vec4>().x);
         shadowLightPosY_.set(msg->getValue<tgt::vec4>().y);
         shadowLightPosZ_.set(msg->getValue<tgt::vec4>().z);
         invalidate();
     }
-    else if (msg->id_ == "rotate.lightYAxis"){
+    else if (msg->id_ == "rotate.lightYAxis") {
         float angle = msg->getValue<float>();
 		float radAngle = angle/180.f*tgt::PIf;
         shadowLightPosX_.set(cos(radAngle) * shadowLightPosX_.get()
-            + sin(radAngle) * shadowLightPosZ_.get());
+            + sinf(radAngle) * shadowLightPosZ_.get());
         shadowLightPosZ_.set(-1.f * sin(radAngle) * shadowLightPosX_.get()
-            + cos(radAngle) * shadowLightPosZ_.get());
+            + cosf(radAngle) * shadowLightPosZ_.get());
         glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
             shadowLightPosZ_.get()).elem);
         invalidate();
         MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
     }
-    else if (msg->id_ == "set.shadowLightPos.x"){
+    else if (msg->id_ == "set.shadowLightPos.x") {
         shadowLightPosX_.set(msg->getValue<float>());
         glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
             shadowLightPosZ_.get()).elem);
         invalidate();
         MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
     }
-    else if (msg->id_ == "set.shadowLightPos.y"){
+    else if (msg->id_ == "set.shadowLightPos.y") {
         glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
             shadowLightPosZ_.get()).elem);
         shadowLightPosY_.set(msg->getValue<float>());
         invalidate();
         MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
     }
-    else if (msg->id_ == "set.shadowLightPos.z"){
+    else if (msg->id_ == "set.shadowLightPos.z") {
         glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
             shadowLightPosZ_.get()).elem);
         shadowLightPosZ_.set(msg->getValue<float>());
@@ -275,9 +275,9 @@ void GeomLightWidget::processMessage(Message* msg, const Identifier& /*dest*/){
     }
 }
 
-void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e){
+void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
     IDManager id1;
-    if (id1.isClicked("lightCtrlSph", e->x(),tc_->getSize().y - e->y())){
+    if (id1.isClicked("lightCtrlSph", e->x(),tc_->getSize().y - e->y())) {
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true), VoreenPainter::visibleViews_);
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
@@ -288,11 +288,12 @@ void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e){
         oldPos_.x = e->coord().x;
 		oldPos_.y = e->coord().y;
     }
-    else e->ignore();
+    else
+        e->ignore();
 }
 
-void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e){
-    if (isClicked_){
+void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e) {
+    if (isClicked_) {
         e->accept();
 		GLint deltaX, deltaY;
 
@@ -322,8 +323,8 @@ void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e){
         }
         viewport[0] = 0;
         viewport[1] = 0;
-        viewport[2] = (int)size_.x;
-        viewport[3] = (int)size_.y;
+        viewport[2] = static_cast<GLint>(size_.x);
+        viewport[3] = static_cast<GLint>(size_.y);
 
 		posX = lightPositionAbs_.x;
 		posY = lightPositionAbs_.y;
@@ -374,7 +375,8 @@ void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e){
         MsgDistr.postMessage(new Vec4Msg(LightMaterial::setLightPosition_, lightPosition_.get()));
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
-    else e->ignore();
+    else
+        e->ignore();
 }
 
 void GeomLightWidget::mouseReleaseEvent(tgt::MouseEvent *e) {
@@ -557,8 +559,8 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
         glCullFace(GL_BACK);
         glPolygonMode(GL_FRONT, GL_LINE);
         glBegin(GL_QUADS);
-        for (int x=1;x<=tilesX_.get();x++) {
-            for (int y=1;y<=tilesY_.get();y++) {
+        for (int x=1; x<=tilesX_.get(); x++) {
+            for (int y=1; y<=tilesY_.get(); y++) {
                 glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomLlf[2]);
                 glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomLlf[2]);
                 glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1]+y*tileDimY, geomLlf[2]);
@@ -570,8 +572,8 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
                 glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1]+(y-1)*tileDimY, geomUrb[2]);
             }
         }
-        for (int x=1;x<=tilesX_.get();x++) {
-            for (int z=1;z<=tilesZ_.get();z++) {
+        for (int x=1; x<=tilesX_.get(); x++) {
+            for (int z=1; z<=tilesZ_.get(); z++) {
                 glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomLlf[1], geomLlf[2]+z*tileDimZ);
                 glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1], geomLlf[2]+z*tileDimZ);
                 glVertex3f(geomLlf[0]+x*tileDimX, geomLlf[1], geomLlf[2]+(z-1)*tileDimZ);
@@ -583,8 +585,8 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
                 glVertex3f(geomLlf[0]+(x-1)*tileDimX, geomUrb[1], geomLlf[2]+z*tileDimZ);
             }
         }
-        for (int y=1;y<=tilesY_.get();y++) {
-            for (int z=1;z<=tilesZ_.get();z++) {
+        for (int y=1; y<=tilesY_.get(); y++) {
+            for (int z=1; z<=tilesZ_.get(); z++) {
                 glVertex3f(geomLlf[0], geomLlf[1]+(y-1)*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
                 glVertex3f(geomLlf[0], geomLlf[1]+y*tileDimY, geomLlf[2]+(z-1)*tileDimZ);
                 glVertex3f(geomLlf[0], geomLlf[1]+y*tileDimY, geomLlf[2]+z*tileDimZ);
@@ -607,31 +609,31 @@ void GeomBoundingBox::processMessage(Message* msg, const Identifier& /*dest*/) {
         bboxColor_.set(msg->getValue<tgt::Color>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxWidth"){
+    else if (msg->id_ == "set.BoundingBoxWidth") {
         width_.set(msg->getValue<float>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxStippleFactor"){
+    else if (msg->id_ == "set.BoundingBoxStippleFactor") {
         stippleFactor_.set(msg->getValue<int>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxStipplePattern"){
+    else if (msg->id_ == "set.BoundingBoxStipplePattern") {
         stipplePattern_.set(msg->getValue<int>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxShowGrid"){
+    else if (msg->id_ == "set.BoundingBoxShowGrid") {
         showGrid_.set(msg->getValue<bool>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxTilesX"){
+    else if (msg->id_ == "set.BoundingBoxTilesX") {
         tilesX_.set(msg->getValue<int>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxTilesY"){
+    else if (msg->id_ == "set.BoundingBoxTilesY") {
         tilesY_.set(msg->getValue<int>());
         invalidate();
     }
-    else if (msg->id_ == "set.BoundingBoxTilesZ"){
+    else if (msg->id_ == "set.BoundingBoxTilesZ") {
         tilesZ_.set(msg->getValue<int>());
         invalidate();
     }
@@ -663,7 +665,8 @@ void PickingBoundingBox::render(LocalPortMapping* portMapping) {
     Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
     if (sizeMsg)
         dim = sizeMsg->getValue<tgt::vec3>();
-    else return;
+    else
+        return;
     delete sizeMsg;
 
     glDisable(GL_LIGHTING);
@@ -675,7 +678,7 @@ void PickingBoundingBox::render(LocalPortMapping* portMapping) {
 
     glLineWidth(1.f);
 
-    if (displaySelection_){
+    if (displaySelection_) {
         glBegin(GL_LINE_LOOP);
         // back face
         glVertex3f(lowerLeftFront_.x ,lowerLeftFront_.y ,upperRightBack_.z);
@@ -754,11 +757,10 @@ const std::string GeomRegistrationMarkers::getProcessorInfo() const {
 }
 
 void GeomRegistrationMarkers::setDescription(std::string description){
-        description_ = description;
+    description_ = description;
 }
 
 void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
-	
     PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
     tgt::vec3 dim;
     Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
@@ -778,7 +780,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
 
     glColor4f(0.16f,0.91f,0.95f,1.f);
 
-       if(marker1Selected_) {
+    if (marker1Selected_) {
         glTranslatef(-dim.x + marker1_.x *dim.x * 2,-dim.y + marker1_.y * dim.y * 2,
                      -dim.z + marker1_.z * dim.z *2);
 
@@ -786,7 +788,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
 	    gluSphere(quadric,marker1Radius_,20,20);
     }
 
-    if(marker2Selected_){
+    if (marker2Selected_) {
         glLoadIdentity();
         tgt::multMatrix(camera_->getViewMatrix());
         glTranslatef(-dim.x + marker2_.x *dim.x * 2,-dim.y + marker2_.y * dim.y * 2,
@@ -795,7 +797,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
 	    gluSphere(quadric,marker2Radius_,20,20);
     }
 
-    if(marker3Selected_){
+    if (marker3Selected_) {
         glLoadIdentity();
         tgt::multMatrix(camera_->getViewMatrix());
         glTranslatef(-dim.x + marker3_.x *dim.x * 2,-dim.y + marker3_.y * dim.y * 2,
@@ -807,60 +809,37 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
     glEnable(GL_DEPTH_TEST);
 }
 
-void GeomRegistrationMarkers::processMessage(Message* msg, const Identifier& /*dest*/)
-{
-
-   if ( (msg->id_ == "ct.Marker1Selected") && (description_ == "target.ct-renderer")) {
+void GeomRegistrationMarkers::processMessage(Message* msg, const Identifier& /*dest*/) {
+   if ( (msg->id_ == "ct.Marker1Selected") && (description_ == "target.ct-renderer"))
         marker1Selected_=msg->getValue<bool>();
-
-    }
-    else if ((msg->id_ == "ct.Marker2Selected") && (description_ == "target.ct-renderer")) {
+   else if ((msg->id_ == "ct.Marker2Selected") && (description_ == "target.ct-renderer"))
         marker2Selected_=msg->getValue<bool>();
-    }
-
-    else if ((msg->id_ == "ct.Marker3Selected") && (description_ == "target.ct-renderer")) {
+   else if ((msg->id_ == "ct.Marker3Selected") && (description_ == "target.ct-renderer"))
         marker3Selected_=msg->getValue<bool>();
-    }
-   else if ( (msg->id_ == "pet.Marker1Selected") && (description_ == "target.pet-renderer")) {
+   else if ( (msg->id_ == "pet.Marker1Selected") && (description_ == "target.pet-renderer"))
         marker1Selected_=msg->getValue<bool>();
-
-    }
-    else if ((msg->id_ == "pet.Marker2Selected") && (description_ == "target.pet-renderer")) {
+   else if ((msg->id_ == "pet.Marker2Selected") && (description_ == "target.pet-renderer"))
         marker2Selected_=msg->getValue<bool>();
-    }
-
-    else if ((msg->id_ == "pet.Marker3Selected") && (description_ == "target.pet-renderer")) {
+   else if ((msg->id_ == "pet.Marker3Selected") && (description_ == "target.pet-renderer"))
         marker3Selected_=msg->getValue<bool>();
-    }
-   else if ((msg->id_ == "ct.Marker1Position") && (description_ == "target.ct-renderer")) {
+   else if ((msg->id_ == "ct.Marker1Position") && (description_ == "target.ct-renderer"))
        marker1_ = msg->getValue<tgt::vec3>();
-    }
-   else if ((msg->id_ == "ct.Marker2Position") && (description_ == "target.ct-renderer")) {
+   else if ((msg->id_ == "ct.Marker2Position") && (description_ == "target.ct-renderer"))
        marker2_ = msg->getValue<tgt::vec3>();
-    }
-   else if ((msg->id_ == "ct.Marker3Position") && (description_ == "target.ct-renderer")) {
+   else if ((msg->id_ == "ct.Marker3Position") && (description_ == "target.ct-renderer"))
        marker3_ = msg->getValue<tgt::vec3>();
-    }
-   else if ((msg->id_ == "pet.Marker1Position") && (description_ == "target.pet-renderer")) {
+   else if ((msg->id_ == "pet.Marker1Position") && (description_ == "target.pet-renderer"))
        marker1_ = msg->getValue<tgt::vec3>();
-    }
-   else if ((msg->id_ == "pet.Marker2Position") && (description_ == "target.pet-renderer")) {
+   else if ((msg->id_ == "pet.Marker2Position") && (description_ == "target.pet-renderer"))
        marker2_ = msg->getValue<tgt::vec3>();
-    }
-   else if ((msg->id_ == "pet.Marker3Position") && (description_ == "target.pet-renderer")) {
+   else if ((msg->id_ == "pet.Marker3Position") && (description_ == "target.pet-renderer"))
        marker3_ = msg->getValue<tgt::vec3>();
-    }
-   else if (msg->id_ == "Marker1Radius") {
+   else if (msg->id_ == "Marker1Radius")
        marker1Radius_ = msg->getValue<float>();
-    }
-   else if (msg->id_ == "Marker2Radius") {
+   else if (msg->id_ == "Marker2Radius")
        marker2Radius_ = msg->getValue<float>();
-    }
-   else if (msg->id_ == "Marker3Radius") {
+   else if (msg->id_ == "Marker3Radius")
        marker3Radius_ = msg->getValue<float>();
-    }
-
-
 }
 
 } // namespace voreen

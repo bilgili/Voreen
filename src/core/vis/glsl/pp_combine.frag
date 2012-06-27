@@ -1,3 +1,31 @@
+/**********************************************************************
+ *                                                                    *
+ * Voreen - The Volume Rendering Engine                               *
+ *                                                                    *
+ * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the Voreen software package. Voreen is free   *
+ * software: you can redistribute it and/or modify it under the terms *
+ * of the GNU General Public License version 2 as published by the    *
+ * Free Software Foundation.                                          *
+ *                                                                    *
+ * Voreen is distributed in the hope that it will be useful,          *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU General Public License for more details.                       *
+ *                                                                    *
+ * You should have received a copy of the GNU General Public License  *
+ * in the file "LICENSE.txt" along with this program.                 *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ * The authors reserve all rights not expressly granted herein. For   *
+ * non-commercial academic use see the license exception specified in *
+ * the file "LICENSE-academic.txt". To get information about          *
+ * commercial licensing please contact the authors.                   *
+ *                                                                    *
+ **********************************************************************/
 
 #include "modules/mod_sampler2d.frag"
 
@@ -17,17 +45,11 @@ uniform vec4 secondModifyColor_;
 uniform float blendFactor_;
 #endif
 
-/***
- * The main method.
- ***/
 void main() {
 	
     vec2 p = gl_FragCoord.xy;
     vec4 shadeCol0 = textureLookup2D(shadeTex0_, p);
 	float depth0 = textureLookup2D(depthTex0_, p).z;
-//    depth0 -= 0.006;
-//    depth0 -= 0.005; // hand
-//    depth0 -= 0.0043; // head
 	vec4 shadeCol1 = textureLookup2D(shadeTex1_, p);
 	float depth1 = textureLookup2D(depthTex1_, p).z;
 	
@@ -44,7 +66,7 @@ void main() {
 		fragDepth = depth1;
 	}
 #elif defined(COMBINE_SECOND_HAS_PRIORITY)
-    if(shadeCol1.a > 0.0) {
+    if (shadeCol1.a > 0.0) {
 		fragColor = shadeCol1;
 		fragDepth = depth1;
 	} 

@@ -221,7 +221,7 @@ bool Plane<T>::intersect(const Line3<T>& l, T& f) const {
     T f0 = distance(l.getStart());
     T f1 = -dot(n, l.getDirection());
 
-    if (fabs(f1) < 0.00001f)
+    if (std::abs(f1) < 0.00001f)
         return false;
     else {
         f = f0 / f1;
@@ -237,7 +237,7 @@ bool Plane<T>::intersect(const Plane<T>& p, Line3<T>& l) const {
     T n11 = dot(pn, pn);
     T det = n00 * n11 - n01 * n01;
 
-    if (fabs(det) < 0.00001f)
+    if (std::abs(det) < 0.00001f)
         return false;
     else {
         T inv_det = 1.0f/det;

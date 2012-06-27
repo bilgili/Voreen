@@ -57,11 +57,14 @@ public:
 	void setTextureContainer(TextureContainer *tc);
 signals:
     void closing(bool);
+    void hideSignal();
+
 protected:
 	void mousePressEvent(QMouseEvent* e);
 	void keyPressEvent(QKeyEvent* e);
 	void timerEvent(QTimerEvent* event);
     void closeEvent(QCloseEvent* event);
+    void hideEvent(QHideEvent* e);
 
     virtual void initializeGL (); 
 	virtual void resizeGL(int width, int height); 

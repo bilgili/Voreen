@@ -72,17 +72,17 @@ public:
 		// found free light index -> create new light
 		if (index >= GL_LIGHT0){
 			Light *light = new Light(index);
-			light->setAttributes(vec4(0.0, 0.0, 1.0, 0.0), vec4(0.0, 0.0, 0.0, 1.0), vec4(1.0, 1.0, 1.0, 1.0),
-			                     vec4(0.0, 0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0), 0.0, 180.0, 1.0, 0.0, 0.0);
+			light->setAttributes(vec4(0.f, 0.f, 1.f, 0.f), vec4(0.f, 0.f, 0.f, 1.f), vec4(1.f, 1.f, 1.f, 1.f),
+			                     vec4(0.f, 0.f, 0.f, 1.f), vec3(0.f, 0.f, -1.f), 0.f, 180.f, 1.f, 0.f, 0.f);
 			light->enable(enable);
-			light->setCurve(NULL);
+			light->setCurve(0);
 			usedLightIndices_.push_back(index);
 			return light;
 		// did not find free light index (light limit reached)
 		} else {
 			tgtAssert(false,
 				"Unable to create new light source. OpenGL light source limit reached.");
-			return NULL;
+			return 0;
 		}
 	}
 
@@ -96,7 +96,7 @@ public:
 	static Light *createLight(const vec4& position, const vec4& ambient, const vec4& diffuse, const vec4& specular,
 	                          bool enable = true){
 		Light *light = createLight(enable);
-		if (light != NULL){
+		if (light != 0){
 			light->setPosition(position);
 			light->setAmbient(ambient);
 			light->setDiffuse(diffuse);
@@ -129,7 +129,7 @@ public:
 	                          GLfloat constantAttenuation, GLfloat linearAttenuation, GLfloat quadraticAttenuation,
 	                          bool enable = true){
 		Light *light = createLight(position, ambient, diffuse, specular, enable);
-		if (light != NULL){
+		if (light != 0){
 			light->setSpotDirection(spotDirection);
 			light->setSpotExponent(spotExponent);
 			light->setSpotCutoff(spotCutoff);
@@ -309,10 +309,10 @@ public:
     /// \param curveParameter curve parameter followCurve() starts with.
 	///	       Must be inside interval [0,1]
 	/// \param start determines whether light's position is set to beginning of space curve
-	void setCurve(Curve *curve, GLfloat speed = 0.01, GLfloat curveParameter = 0.0, bool start=true){
+	void setCurve(Curve *curve, GLfloat speed = 0.01f, GLfloat curveParameter = 0.0f, bool start=true){
 		curve_ = curve;
 
-        if (start && curve != NULL){
+        if (start && curve != 0){
 			setToCurvePoint(curveParameter);
 		} else {
 			setCurveParameter(curveParameter);
@@ -329,7 +329,7 @@ public:
 	/// Sets the value, that is being added to the current curve parameter each time you call
 	/// followCurve(). Must be inside interval ]0,1].
 	void setSpeed(GLfloat speed){
-		tgtAssert(speed > 0 && speed <= 1.0, "Speed is expected to be inside the interval ]0,1]");
+		tgtAssert(speed > 0.f && speed <= 1.f, "Speed is expected to be inside the interval ]0,1]");
 		speed_ = speed;
 	}
 
@@ -342,7 +342,7 @@ public:
 	/// This value will be used the next time you call followCurve().
 	/// Must be inside interval [0,1].
 	void setCurveParameter(GLfloat curveParameter){
-		tgtAssert(curveParameter >= 0 && curveParameter <= 1.0,
+		tgtAssert(curveParameter >= 0.f && curveParameter <= 1.f,
 			"Curve Parameter is expected to be inside the interval [0,1]");
 		curveParameter_ = curveParameter;
 	}
@@ -368,15 +368,15 @@ public:
 	/// \note Of course, you have to set a curve first before you can use this method !
 	void followCurve() {
 
-		if (curve_ == NULL){
+		if (curve_ == 0) {
 			tgtAssert(false, "No Curve specified.");
 		} else {
 			vec3 pos = curve_->getPoint(curveParameter_);
-			vec4 homPos = vec4(pos, 1.0);
+			vec4 homPos = vec4(pos, 1.f);
 			setPosition(homPos);
 
 			curveParameter_ += speed_;
-			if (curveParameter_ > 1.0 || curveParameter_ < 0.0){
+			if (curveParameter_ > 1.f || curveParameter_ < 0.f){
 				curveParameter_ = speed_;
 			}
 		}
@@ -397,7 +397,7 @@ public:
 	static int getMaxLights(){
 		GLint maxLights;
 		glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
-		return (int)maxLights;
+		return static_cast<int>(maxLights);
 	}
 
 	/// Returns the count of the currently instantiated Light objects.

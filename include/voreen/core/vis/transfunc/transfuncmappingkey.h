@@ -34,7 +34,6 @@
 
 namespace voreen {
 
-
 /**
 *   One of multiple Keys that define a TransfuncIntensityKeys.
 *   Each key has a intensity at which it is located and can be split in two parts

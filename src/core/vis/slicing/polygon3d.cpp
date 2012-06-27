@@ -71,8 +71,8 @@ DWORD Polygon3D::getNumFaces() const {
 
 tgt::vec3 Polygon3D::getFaceNormal(const DWORD face) const {
     PolygonFace3D::FaceSet::const_iterator it = faces_.begin();
-    for( ; it != faces_.end(); it++ ) {
-        if( (*it != 0) && ((*it)->getID() == face) )
+    for ( ; it != faces_.end(); it++ ) {
+        if ( (*it != 0) && ((*it)->getID() == face) )
             return (*it)->getNormal();
     }
     return tgt::vec3(0.0f, 0.0f, 0.0f);
@@ -80,20 +80,20 @@ tgt::vec3 Polygon3D::getFaceNormal(const DWORD face) const {
 
 list<tgt::vec3> Polygon3D::getFaceVertices(const DWORD id) {
     PolygonFace3D* face = findFace(id);
-    if( face == 0)
+    if ( face == 0)
         return list<tgt::vec3>();
 
     return face->getVertices();
 }
 
 Edge3D* Polygon3D::findEdge(EdgeVertex3D* const v1, EdgeVertex3D* const v2) {
-    if( (v1 == 0) || (v2 == 0) )
+    if ( (v1 == 0) || (v2 == 0) )
         return 0;
 
     Edge3D::EdgeSet::iterator it = edges_.begin();
-    for( ; it != edges_.end(); it++ ) {
+    for ( ; it != edges_.end(); it++ ) {
         Edge3D* e = *it;
-        if( (e != 0) && (e->isPartOf(v1) == true) && (e->isPartOf(v2) == true) )
+        if ( (e != 0) && (e->isPartOf(v1) == true) && (e->isPartOf(v2) == true) )
             return *it;
     }
 
@@ -101,18 +101,18 @@ Edge3D* Polygon3D::findEdge(EdgeVertex3D* const v1, EdgeVertex3D* const v2) {
 }
 
 Edge3D* Polygon3D::findEdge(Edge3D* const e) {
-    if( (e == 0) )
+    if ( (e == 0) )
         return 0;
 
     Edge3D::EdgeSet::iterator it = edges_.find(e);
-    if( it != edges_.end() )
+    if ( it != edges_.end() )
         return *it;
     
     return 0;
 }
 
 bool Polygon3D::removeEdge(Edge3D* const e) {
-    if( e == 0 )
+    if ( e == 0 )
         return false;
 
     return (edges_.erase(e) > 0);
@@ -124,22 +124,22 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
     // an edge is defined by 2 indices. ensure that there is an even amount of indices
     // and that a face consists of at least two different vertices!
     //
-    if( (numVertices <= 1) || (numIndices <= 1) || ((numIndices % 2) != 0) )
+    if ( (numVertices <= 1) || (numIndices <= 1) || ((numIndices % 2) != 0) )
         return false;
 
-    if( (numVertices == 2) && (vertices[0] == vertices[1]) )
+    if ( (numVertices == 2) && (vertices[0] == vertices[1]) )
         return false;
 
     // ensure, that all the indices are less than the number of vertices
     //
-    for( DWORD k = 0; k < numIndices; k++ ) {
-        if( indices[k] >= numVertices )
+    for ( DWORD k = 0; k < numIndices; k++ ) {
+        if ( indices[k] >= numVertices )
             return false;
     }
 
     PolygonFace3D* face = new PolygonFace3D(id, faceNormal);
     std::pair<PolygonFace3D::FaceSet::iterator, bool> prF = faces_.insert(face);
-    if( prF.second == false ) // if found, no insertion was made, so delete created one
+    if ( prF.second == false ) // if found, no insertion was made, so delete created one
     {
         delete face;
         face = *(prF.first);
@@ -147,7 +147,7 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
     maxFace_ = (id > maxFace_) ? id : maxFace_; // update the maximum face id
 
     queue<Edge3D*> remaining;   // used for adding edges to polygon face
-    for( DWORD ii = 0; ii < numIndices; ii += 2 )  // ii = indices index
+    for ( DWORD ii = 0; ii < numIndices; ii += 2 )  // ii = indices index
     {
         const tgt::vec3& v1 = vertices[indices[ii]];
         const tgt::vec3& v2 = vertices[indices[ii + 1]];
@@ -155,14 +155,14 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
         // ensure, that both vertices of the edge are different. elsewise omit
         // the edge
         //
-        if( v1 == v2 )
+        if ( v1 == v2 )
             continue;
 
         // try to find the vertices within the local list
         //
         EdgeVertex3D* ev1 = new EdgeVertex3D(v1);
         std::pair<EdgeVertex3D::VertexSet::iterator, bool> prV = vertices_.insert(ev1);
-        if( prV.second == false )  // if found, no insertion was made, so delete created one
+        if ( prV.second == false )  // if found, no insertion was made, so delete created one
         {
             delete ev1;
             ev1 = *(prV.first);
@@ -170,7 +170,7 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
 
         EdgeVertex3D* ev2 = new EdgeVertex3D(v2);
         prV = vertices_.insert(ev2);
-        if( prV.second == false )  // if found, no insertion was made, so delete created one
+        if ( prV.second == false )  // if found, no insertion was made, so delete created one
         {
             delete ev2;
             ev2 = *(prV.first);
@@ -178,7 +178,7 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
 
         Edge3D* e = Edge3D::createEdge(ev1, ev2, this);
         std::pair<Edge3D::EdgeSet::const_iterator, bool> prE = edges_.insert(e);
-        if( prE.second == false ) // if found, no insertion was made, so delete created one
+        if ( prE.second == false ) // if found, no insertion was made, so delete created one
         {
             delete e;
             e = *(prE.first);
@@ -194,7 +194,7 @@ bool Polygon3D::addFace(const tgt::vec3* vertices, const DWORD numVertices, cons
 PolygonFace3D* Polygon3D::findFace(const DWORD id) {
     PolygonFace3D face(id, tgt::vec3());
     PolygonFace3D::FaceSet::iterator it = faces_.find(&face);
-    if( it != faces_.end() )
+    if ( it != faces_.end() )
         return *it;
 
     return 0;
@@ -205,12 +205,12 @@ bool Polygon3D::containsFace(const DWORD id) {
 }
 
 EdgeVertex3D* Polygon3D::findVertex(const tgt::vec3& v) const {
-    if( vertices_.size() == 0 )
+    if ( vertices_.size() == 0 )
         return 0;
     
     EdgeVertex3D ev(v, 0);
     EdgeVertex3D::VertexSet::const_iterator it = vertices_.find(&ev);
-    if( it != vertices_.end() )
+    if ( it != vertices_.end() )
         return *it;
 
     return 0;
@@ -219,16 +219,16 @@ EdgeVertex3D* Polygon3D::findVertex(const tgt::vec3& v) const {
 Edge3D::EdgeSet Polygon3D::connectAdjacentVertices(EdgeVertex3D* const v)
 {
     Edge3D::EdgeSet newEdges;
-    if( v == 0 )
+    if ( v == 0 )
         return newEdges;
 
     const Edge3D::EdgeSet& edges = v->getEdges();
-    if( edges.size() <= 1 )
+    if ( edges.size() <= 1 )
         return newEdges;  // return empty list if there is only one adjacent edge or less
 
     // compare edges pair-wise and
     //
-    for( Edge3D::EdgeSet::const_iterator itE1 = edges.begin(); itE1 != edges.end(); itE1++ ) {
+    for ( Edge3D::EdgeSet::const_iterator itE1 = edges.begin(); itE1 != edges.end(); itE1++ ) {
         // get first edge and the vertex which is not this vertex
         //
         Edge3D* e1 = *itE1;
@@ -236,7 +236,7 @@ Edge3D::EdgeSet Polygon3D::connectAdjacentVertices(EdgeVertex3D* const v)
 
         Edge3D::EdgeSet::const_iterator itE2 = itE1;
         itE2++; // next edge
-        for( ; itE2 != edges.end(); itE2++ ) {
+        for ( ; itE2 != edges.end(); itE2++ ) {
             // get a second edge and the other vertex which is not this one either
             //
             Edge3D* e2 = *itE2;
@@ -248,17 +248,17 @@ Edge3D::EdgeSet Polygon3D::connectAdjacentVertices(EdgeVertex3D* const v)
             const PolygonFace3D::FaceSet& ps2 = e2->getPolygons();
             PolygonFace3D::FaceSet::const_iterator itF1 = ps1.begin();
             PolygonFace3D::FaceSet::const_iterator itF2;
-            for( ; itF1 != ps1.end(); itF1++ ) {
-                for( itF2 = ps2.begin(); itF2 != ps2.end(); itF2++ ) {
+            for ( ; itF1 != ps1.end(); itF1++ ) {
+                for ( itF2 = ps2.begin(); itF2 != ps2.end(); itF2++ ) {
                     // if two edges share a polygon face, create a new edge
                     // between the both points which are not this one
                     // 
-                    if( *(*itF2) == *(*itF1) ) {
+                    if ( *(*itF2) == *(*itF1) ) {
                         // create new edge, if it does not alread exist
                         // and add it to the shared face and the output list
                         //
                         Edge3D* newEdge = this->findEdge(v1, v2);
-                        if( newEdge == 0 ) {
+                        if ( newEdge == 0 ) {
                             newEdge = Edge3D::createEdge(v1, v2, this);
                             edges_.insert(newEdge);
                         }
@@ -266,10 +266,10 @@ Edge3D::EdgeSet Polygon3D::connectAdjacentVertices(EdgeVertex3D* const v)
                         (*itF1)->insertEdge(newEdge);
                         newEdges.insert(newEdge);
                     }
-                }   // for( itF2 ...
-            }   // for( itGF1 ...
-        }   // for( itE2 ...
-    }   // for( itE1 ...
+                }   // for ( itF2 ...
+            }   // for ( itGF1 ...
+        }   // for ( itE2 ...
+    }   // for ( itE1 ...
 
     return newEdges; // return the new created edges
 }
@@ -283,7 +283,7 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
     //
     queue<Edge3D*> newEdges;    // temporary queue for inserting new edges
     Edge3D::EdgeSet::iterator itE = edges_.begin();
-    for( ; itE != edges_.end(); itE++ ) {
+    for ( ; itE != edges_.end(); itE++ ) {
         // for each edge calculate possible intersections
         // with the plane
         //
@@ -293,7 +293,7 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
 
         // if direction and normal are nearly orthogonal, no intersection can occur
         //
-        if( ( (b < 0.0f) ? -b : b) <= 0.000001f )
+        if ( ( (b < 0.0f) ? -b : b) <= 0.000001f )
             continue;
 
         // calculate the intersection point of ray on edge and the plane
@@ -313,12 +313,12 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
         // in a queue and will be processed after all alread existing edges
         // have been tested.
         //
-        if( e->containsVertex(i) == true ) {
+        if ( e->containsVertex(i) == true ) {
             // the first vertex of the new edge generated by split() is
             // the split vertex and therefore the intersection point
             //
             Edge3D* eNew = e->split(i);
-            if( eNew != 0 )
+            if ( eNew != 0 )
                 newEdges.push(eNew);
 
             vertices_.insert(e->getSecond());
@@ -349,14 +349,14 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
         // new edges which are created by the vertex which is about to be
         // removed
         //
-        if( f > 0.00001f ) {
+        if ( f > 0.00001f ) {
             // connect the vertices which share an edge with this vertex
             // and return the new created edges. create a new face with the new edges
             //
             Edge3D::EdgeSet faceEdges = connectAdjacentVertices(*itV);
-            if( faceEdges.empty() == false ) {
+            if ( faceEdges.empty() == false ) {
                 PolygonFace3D* face = new PolygonFace3D(++maxFace_, n);
-                for( itE = faceEdges.begin(); itE != faceEdges.end(); itE++ ) {
+                for ( itE = faceEdges.begin(); itE != faceEdges.end(); itE++ ) {
                     face->insertEdge(*itE);
                 }
                 faces_.insert(face);
@@ -382,7 +382,7 @@ void Polygon3D::clip(const tgt::vec3 &n, const tgt::vec3 &p) {
 }
 
 void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace3D* clippedFace) {
-    if( clippedFace == 0 )
+    if ( clippedFace == 0 )
         return;
 
     // iterate over all faces which have been inserted during clipping and remove
@@ -395,27 +395,27 @@ void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace
 
         // only faces which have been inserted recently are of interest
         //
-        if( (face1->getID() > firstID) && (face1->getID() <= lastID) ) {
+        if ( (face1->getID() > firstID) && (face1->getID() <= lastID) ) {
             // consider all edges on the face and find those which are shared
             // with old faces
             //
             const list<Edge3D*>& edges = face1->getEdges();
-            for( list<Edge3D*>::const_iterator itE = edges.begin(); itE != edges.end(); itE++ ) {
+            for ( list<Edge3D*>::const_iterator itE = edges.begin(); itE != edges.end(); itE++ ) {
                 Edge3D* e = *itE;
                 bool add = false;
                 const PolygonFace3D::FaceSet& containingFaces = e->getPolygons();
                 PolygonFace3D::FaceSet::const_iterator itF2 = containingFaces.begin();
-                for( ; itF2 != containingFaces.end(); itF2++ ) {
+                for ( ; itF2 != containingFaces.end(); itF2++ ) {
                     // if the id is less than the one of the clipping face,
                     // the edge is also part of an old face
                     //
-                    if( ((*itF2)->getID() < firstID) ) {
+                    if ( ((*itF2)->getID() < firstID) ) {
                         add = true;
                         break;
                     }
                 }   // for
 
-                if( add == true ) {
+                if ( add == true ) {
                     // simply add the edge. the edges will be sorted later
                     //
                     clippedFace->addEdge(*itE);
@@ -430,7 +430,7 @@ void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace
             // this may happen if an AABB is clipped against a plane being paralle
             // to one of its sides, for example.
             //
-            if( face1->getNumEdges() <= 2 ) {
+            if ( face1->getNumEdges() <= 2 ) {
                 delete *itF1;
                 faces_.erase(itF1++);
             } else {
@@ -443,7 +443,7 @@ void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace
     // the face to the list of faces if the ammount of edges is >= 3.
     // otherwise delete the face.
     //
-    if( clippedFace->getNumEdges() >= 3 ) {
+    if ( clippedFace->getNumEdges() >= 3 ) {
         clippedFace->sortEdges();
         faces_.insert(clippedFace);
 
@@ -456,7 +456,7 @@ void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace
         //
         list<Edge3D*> edges = clippedFace->getEdges();
         list<Edge3D*>::iterator it = edges.begin();
-        for( ; it != edges.end(); it++ ) {
+        for ( ; it != edges.end(); it++ ) {
             delete *it;
             *it = 0;
         }
@@ -476,68 +476,68 @@ void Polygon3D::reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace
 
 void Polygon3D::clear() {
     EdgeVertex3D::VertexSet::iterator itV = vertices_.begin();
-    for( ; itV != vertices_.end(); itV++ ) {
+    for ( ; itV != vertices_.end(); itV++ ) {
         delete *itV;
     }
     vertices_.clear();
 
     PolygonFace3D::FaceSet::iterator itF = faces_.begin();
-    for( ; itF != faces_.end(); itF++ ) {
+    for ( ; itF != faces_.end(); itF++ ) {
         delete *itF;
     }
     faces_.clear();
 
     Edge3D::EdgeSet::iterator itE = edges_.begin();
-    for( ; itE != edges_.end(); itE++ ) {
+    for ( ; itE != edges_.end(); itE++ ) {
         delete *itE;
     }
     edges_.clear();
 }
 
 void Polygon3D::clone(const voreen::Polygon3D& poly) {
-    if( this == &poly )
+    if ( this == &poly )
         return;
 
     maxFace_ = poly.getMaxFace();
 
     const PolygonFace3D::FaceSet& faces = poly.getFaces();
     PolygonFace3D::FaceSet::const_iterator itF = faces.begin();
-    for( ; itF != faces.end(); itF++ ) {
+    for ( ; itF != faces.end(); itF++ ) {
         const PolygonFace3D* myFace = *itF;
-        if( myFace == 0 )
+        if ( myFace == 0 )
             continue;
 
         PolygonFace3D* clonedFace = new PolygonFace3D(*myFace);
         std::pair<PolygonFace3D::FaceSet::iterator, bool> prF = faces_.insert(clonedFace);
-        if( prF.second == false ) {
+        if ( prF.second == false ) {
             delete clonedFace;
             clonedFace = *(prF.first);
         }
 
         const std::list<Edge3D*>& edges = myFace->getEdges();
         std::list<Edge3D*>::const_iterator itE = edges.begin();
-        for( ; itE != edges.end(); itE++ ) {
+        for ( ; itE != edges.end(); itE++ ) {
             Edge3D* myEdge = *itE;
-            if( myEdge == 0 )
+            if ( myEdge == 0 )
                 continue;
 
             EdgeVertex3D* clonedFirst = new EdgeVertex3D( *(myEdge->getFirst()) );
             std::pair<EdgeVertex3D::VertexSet::iterator, bool> prV = vertices_.insert(clonedFirst);
-            if( prV.second == false ) {
+            if ( prV.second == false ) {
                 delete clonedFirst;
                 clonedFirst = *(prV.first);
             }
 
             EdgeVertex3D* clonedSecond = new EdgeVertex3D( *(myEdge->getSecond()) );
             prV = vertices_.insert(clonedSecond);
-            if( prV.second == false ) {
+            if ( prV.second == false ) {
                 delete clonedSecond;
                 clonedSecond = *(prV.first);
             }
 
             Edge3D* clonedEdge = Edge3D::createEdge(clonedFirst, clonedSecond, this);
             std::pair<std::list<Edge3D*>::iterator, bool> prE = edges_.insert(clonedEdge);
-            if( prE.second == false ) {
+            if ( prE.second == false ) {
                 delete clonedEdge;
                 clonedEdge = *(prE.first);
             }
@@ -553,7 +553,7 @@ float Polygon3D::roundFloat(const float f) const {
 
     // 1. convert float to double
     //
-    double d = (double) f;
+    double d = static_cast<double>(f);
 
     // 2. shift decimal-point by 6 positions left
     //
@@ -561,26 +561,26 @@ float Polygon3D::roundFloat(const float f) const {
 
     // 3. crop following digits by converting to long
     //
-    long l = (long) d;
+    long l = static_cast<long>(d);
 
     // 4. remove all digits left of decimal-point
     //
-    d -= (double) l;
+    d -= static_cast<double>(l);
 
     // 5. extract the first digit on righthandside of decimal-point
     //
     d *= (d > 0.0f ) ? 10.0 : -10.0;
-    unsigned int digit = (unsigned int) d;
+    unsigned int digit = static_cast<unsigned int>(d);
 
     // 6. decide wether to ceil or to floor the number and shift
     // digits 6 positions back
     //
-    d = (digit > 4) ? ((double) (l + 1.0)) : ((double) l);
+    d = (digit > 4) ? (static_cast<double>(l + 1.0)) : (static_cast<double>(l));
     d /= SCALE;
   
     // 7. convert number back to float and return
     //
-    return (float) d;
+    return static_cast<float>(d);
 }
 
 }   // namespace

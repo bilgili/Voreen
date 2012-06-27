@@ -47,22 +47,15 @@ namespace voreen {
 
 const std::string RawVolumeReader::loggerCat_ = "voreen.io.VolumeReader.raw";
 
-RawVolumeReader::RawVolumeReader(IOProgress* progress /*= 0*/)
-  : VolumeReader(progress),
-    dimensions_(),
-    spacing_()
+RawVolumeReader::RawVolumeReader(IOProgress* progress)
+    : VolumeReader(progress),
+      dimensions_(),
+      spacing_()
 {}
 
-void RawVolumeReader::readHints(ivec3 dimensions,
-                                vec3 spacing,
-                                int bitsStored,
-                                std::string objectModel,
-                                std::string format,
-                                int zeroPoint,
-                                tgt::mat4 transformation,
-                                Modality modality,
-                                float timeStep,
-                                std::string metaString) {
+void RawVolumeReader::readHints(ivec3 dimensions, vec3 spacing, int bitsStored, std::string objectModel, std::string format,
+                                int zeroPoint, tgt::mat4 transformation, Modality modality, float timeStep, std::string metaString)
+{
     dimensions_ = dimensions;
     bitsStored_ = bitsStored;
     spacing_ = spacing;
@@ -75,10 +68,10 @@ void RawVolumeReader::readHints(ivec3 dimensions,
     metaString_ = metaString;
 }
 
-VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* RawVolumeReader::read(const std::string &fileName)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
-    LINFO(fileName);
+    LINFO("Loading file " << fileName);
 
     if (dimensions_ == tgt::ivec3::zero) {
         throw tgt::CorruptedFileException("No readHints set.", fileName);
@@ -94,12 +87,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
 
     if (objectModel_ == "I") {
         if (format_ == "UCHAR") {
-            LINFO("Read 8 bit dataset");
+            LINFO("Reading 8 bit dataset");
             VolumeUInt8* v;
             try {
                 v = new VolumeUInt8(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -108,12 +100,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
 
         }
         else if ((format_ == "USHORT" && bitsStored_ == 12) || format_ == "USHORT_12") {
-            LINFO("Read 12 bit dataset");
+            LINFO("Reading 12 bit dataset");
             VolumeUInt16* v;
             try {
                 v = new VolumeUInt16(dimensions_, spacing_, 12);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -121,12 +112,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
             volume = v;
         }
         else if (format_ == "USHORT") {
-            LINFO("Read 16 bit dataset");
+            LINFO("Reading 16 bit dataset");
             VolumeUInt16* v;
             try {
                 v = new VolumeUInt16(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -134,12 +124,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
             volume = v;
         }
         else if (format_ == "FLOAT8" || format_ == "FLOAT16") {
-            LINFO("Read 32 bit float dataset, converting to 8 or 16 bit");
+            LINFO("Reading 32 bit float dataset, converting to 8 or 16 bit");
             VolumeFloat* v;
             try {
                 v = new VolumeFloat(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -152,12 +141,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
     }
     else if (objectModel_ == "RGBA") {
         if (format_ == "UCHAR") {
-            LINFO("Read 4x8 bit dataset");
+            LINFO("Reading 4x8 bit dataset");
             Volume4xUInt8* v;
             try {
                 v = new Volume4xUInt8(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -165,12 +153,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
             volume = v;
         }
         else if (format_ == "USHORT") {
-            LINFO("Read 4x16 bit dataset");
+            LINFO("Reading 4x16 bit dataset");
             Volume4xUInt16* v;
             try {
                 v = new Volume4xUInt16(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -183,12 +170,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
     }
 	else if (objectModel_ == "RGB") {
         if (format_ == "UCHAR") {
-            LINFO("Read 3x8 bit dataset");
+            LINFO("Reading 3x8 bit dataset");
             Volume3xUInt8* v;
             try {
                 v = new Volume3xUInt8(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -196,12 +182,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
             volume = v;
         }
         else if (format_ == "USHORT") {
-            LINFO("Read 3x16 bit dataset");
+            LINFO("Reading 3x16 bit dataset");
             Volume3xUInt16* v;
             try {
                 v = new Volume3xUInt16(dimensions_, spacing_);
-            }
-            catch (std::bad_alloc) {
+            } catch (std::bad_alloc) {
                 throw; // throw it to the caller
             }
             if (zeroPoint_ != 0)
@@ -213,12 +198,11 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
         }
     }
     else if (objectModel_ == "LA") { // luminance alpha
-        LINFO("Read luminance16 alpha16 dataset");
+        LINFO("Reading luminance16 alpha16 dataset");
         Volume4xUInt8* v;
         try {
             v = new Volume4xUInt8(dimensions_, spacing_);
-        }
-        catch (std::bad_alloc) {
+        } catch (std::bad_alloc) {
             throw; // throw it to the caller
         }
         if (zeroPoint_ != 0)
@@ -256,13 +240,12 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName, bool generateVolum
     volume->meta().setTransformation(transformation_);
     volume->meta().setString(metaString_);
 
-    VolumeSet* volumeSet = new VolumeSet(fileName);
-    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", modality_);
+    VolumeSet* volumeSet = new VolumeSet(0, fileName);
+    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, modality_.getName(), modality_);
     volumeSet->addSeries(volumeSeries);
     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volume, 0.0f);
+    volumeHandle->setOrigin(fileName, modality_.getName(), 0.0f);
     volumeSeries->addVolumeHandle(volumeHandle);
-    if( generateVolumeGL == true )
-        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
 
     return volumeSet;
 }

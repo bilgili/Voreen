@@ -89,8 +89,7 @@ const std::string Combine::getProcessorInfo() const {
 	return "Combines the result of two Renderer objects with a set of blending methods.";
 }
 
-void Combine::compile()
-{
+void Combine::compile() {
     std::string header;
     program_->setHeaders(generateHeader(), false);
     program_->rebuild();
@@ -120,11 +119,11 @@ void Combine::renderTwo(int source0, int source1, int /*pass*/) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex0_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex0_", (GLint) tm_.getTexUnit(depthTexUnit_));
-    program_->setUniform("shadeTex1_", (GLint) tm_.getTexUnit(shadeTexUnit1_));
-    program_->setUniform("depthTex1_", (GLint) tm_.getTexUnit(depthTexUnit1_));
-	if (blendMode_->get() == 2 || blendMode_->get() == 3){
+    program_->setUniform("shadeTex0_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex0_", tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTex1_", tm_.getTexUnit(shadeTexUnit1_));
+    program_->setUniform("depthTex1_", tm_.getTexUnit(depthTexUnit1_));
+	if (blendMode_->get() == 2 || blendMode_->get() == 3) {
         program_->setUniform("backgroundColor_", backgroundColor_.get());
     }
     if (blendMode_->get() == 2) {
@@ -158,6 +157,4 @@ void Combine::processMessage(Message* msg, const Identifier& dest) {
     }
 }
 
-
 } // voreen namespace
-

@@ -43,7 +43,6 @@ int lower_case(int c) {
 } // namespace
 
 
-
 namespace tgt {
 
 //------------------------------------------------------------------------------
@@ -53,13 +52,9 @@ namespace tgt {
 const std::string TextureManager::loggerCat_("tgt.Texture.Manager");
 
 TextureManager::TextureManager()
-{
-    path_ = "";
+{}
 
-}
-
-TextureManager::~TextureManager()
-{
+TextureManager::~TextureManager() {
     // clean up
     for (std::set<TextureReader*>::iterator iter = readerSet_.begin(); iter != readerSet_.end(); ++iter)
         delete *iter;
@@ -68,7 +63,7 @@ TextureManager::~TextureManager()
 Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Texture::Filter filter, bool compress,
                               bool keepPixels, bool createOGLTex, bool useCache, bool textureRectangle)
 {
-    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported() ){
+    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported() ) {
         LERROR("Texture Rectangles not supported!");
         return 0;
     }
@@ -78,11 +73,11 @@ Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Tex
 
     found = completeFilename.find_last_of("/\\");
 
-    if(found != std::string::npos){
+    if (found != std::string::npos){
         path = completeFilename.substr(0,found);
         filename = completeFilename.substr(found+1);
     }
-    else{
+    else {
         path = "";
         filename = completeFilename;
     }
@@ -123,7 +118,7 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
                               bool keepPixels, bool createOGLTex, bool useCache, bool textureRectangle)
 {
 
-    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported()){
+    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported()) {
         LERROR("Texture Rectangles not supported!");
         return 0;
     }
@@ -145,26 +140,11 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     
     if (readers_.find(ending) != readers_.end()) {
         LDEBUG("Found matching reader: " << readers_[ending]->getName());
-        
-        std::string completeFilename;
-        
-        std::list<std::string>::iterator iter = pathList_.begin();
-        while( iter != pathList_.end() && !t ) {
-            completeFilename = (!(*iter).empty() ? *iter + '/' : "") + filename;
-            
-            t = readers_[ending]->loadTexture(completeFilename, filter, compress,
-                                              keepPixels, createOGLTex, textureRectangle);
-            iter++;
-        }  
-        
-        // deprecated support for path_
-        if (!t) {
-            completeFilename = (!path_.empty() ? path_ + '/' : "") + filename;
-            
-            t = readers_[ending]->loadTexture(completeFilename, filter, compress,
-                                              keepPixels, createOGLTex, textureRectangle);
-        }
-        
+
+        std::string completeFilename = completePath(filename);
+        t = readers_[ending]->loadTexture(completeFilename, filter, compress,
+                                          keepPixels, createOGLTex, textureRectangle);
+
         // try just the filename
         if (!t) {
             t = readers_[ending]->loadTexture(filename, filter, compress,
@@ -185,15 +165,14 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
 }
 
 /*
- * WARN: it only loads 3D and 16bit textures for now
+ * TODO: it only loads 3D and 16bit textures for now
  */
 Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool compress,
                                         bool createOGLTex)
 {
     t->bpp_ = 2;
 
-    switch (t->bpp_)
-    {
+    switch (t->bpp_) {
         case 1:
             t->internalformat_ = GL_INTENSITY;
             break;
@@ -204,19 +183,16 @@ Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool
             t->format_ = GL_RGB;
             compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
             break;
-
         case 4:
             t->format_ = GL_RGBA;
             compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
             break;
-
         default:
-            LERROR((int)t->bpp_<< " bits per pixel...error!");
+            LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
             return false;
     }
 
-    if (createOGLTex)
-    {
+    if (createOGLTex) {
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glGenTextures(1, &t->id_);
         glBindTexture(GL_TEXTURE_3D, t->id_);
@@ -234,12 +210,10 @@ Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool
     return t;
 }
 
-std::string TextureManager::getEnding(const std::string& filename) const
-{
+std::string TextureManager::getEnding(const std::string& filename) const {
     std::string ending = "";
     size_t pos = filename.find_last_of('.');
-    if (pos != std::string::npos)
-    {
+    if (pos != std::string::npos) {
         ending = filename.substr(pos+1);
     }
     return ending;
@@ -253,8 +227,7 @@ void TextureManager::registerReader(TextureReader* r) {
     std::string formats = "";
     std::vector<std::string> knownEndings = r->getEndings();
     std::vector<std::string>::iterator i;
-    for( i = knownEndings.begin(); i != knownEndings.end(); ++i )
-    {
+    for ( i = knownEndings.begin(); i != knownEndings.end(); ++i ) {
         readers_[*i] = r;
         formats += *i + " ";
     }

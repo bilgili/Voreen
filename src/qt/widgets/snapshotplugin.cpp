@@ -36,11 +36,10 @@
 namespace voreen {
 
 SnapshotPlugin::SnapshotPlugin(QWidget* parent, VoreenPainter* painter)
-  : WidgetPlugin(parent, painter)
-  , path_("")
-  , painter_(painter)
+    : WidgetPlugin(parent, painter),
+      painter_(painter),
+      path_("")
 {
-
     setObjectName(tr("Snapshot"));
     icon_ = QIcon(":/icons/snapshot.png");
 	canvas_ = 0;
@@ -140,7 +139,7 @@ void SnapshotPlugin::makeSnapshot() {
 
 /*
   bool SnapshotPlugin::snapshotProgress(float _progress) {
-  SNAPSHOT_PLUGIN_DL_PROGESS->setValue((int)(_progress * 100.0));
+  SNAPSHOT_PLUGIN_DL_PROGESS->setValue(static_cast<int>(_progress * 100.0));
   return true;
   }
 */

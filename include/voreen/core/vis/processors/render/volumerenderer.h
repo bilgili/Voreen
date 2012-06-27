@@ -31,10 +31,7 @@
 #define VRN_VOLUMERENDERER_H
 
 #include "voreen/core/vis/processors/processor.h"
-
-#ifndef  VRN_VOLUMEHANDLE_H
 #include "voreen/core/volume/volumehandle.h"
-#endif
 
 namespace voreen {
 
@@ -44,14 +41,14 @@ namespace voreen {
  */
 class VolumeRenderer : public Processor {
 public:
-    VolumeRenderer(tgt::Camera* camera=0, TextureContainer* tc = 0);
+    VolumeRenderer(tgt::Camera* camera = 0, TextureContainer* tc = 0);
 
     /**
      * Handles:
      * - Identifier::setCurrentDataset
      * - Identifier::setVolumeContainer
      */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
     VolumeHandle* getVolumeHandle();
     const VolumeHandle* getVolumeHandle() const;
@@ -67,14 +64,24 @@ public:
      */
     virtual void setVolumeHandle(VolumeHandle* const handle);
 
-    ///Get the volumetexture for this pass:
-    const VolumeTexture* getCurrentTexture();
-
     /// returns view matrix of the camera, or identity matrix if no camera exists
     tgt::mat4 getModelViewMatrix() const;
 
-    virtual TransFunc* getTransFunc() { return 0; }
-    
+    /**
+     * Returns the current transfer function; if multiple transferfunctions exist,
+     * the first one should be returned.
+     * /return The first transfer function
+     */
+    virtual TransFunc* getTransFunc();
+
+    /**
+     * Returns the i-th transfer function of the volumerenderer.
+     * getTransFunc(0) should always be equal to getTransFunc()
+     * \param i The number of the transfer function
+     * \return A pointer to the transfer function or null if i > count(transfer functions)
+     */
+    virtual TransFunc* getTransFunc(int i);
+
     float getLowerThreshold() const;
     float getUpperThreshold() const;
   
@@ -87,7 +94,6 @@ public:
   	static const Identifier setTransFunc3_;
 
 protected:
-
     /**
      * This struct contains information about a volume. It is exclusively used
      * as parameter type for the bindVolumes() function.

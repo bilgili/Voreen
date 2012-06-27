@@ -46,7 +46,7 @@ namespace voreen {
 
 const std::string NrrdVolumeReader::loggerCat_ = "voreen.io.VolumeReader.nrrd";
 
-VolumeSet* NrrdVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* NrrdVolumeReader::read(const std::string &fileName)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string objectFilename = "";
@@ -70,7 +70,7 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName, bool generateVolu
 
     std::string magic = reader.getMagicNumber();
 
-    if(magic != "NRRD0001") {
+    if (magic != "NRRD0001") {
         LERROR("Format error");
         return 0;
     }
@@ -93,13 +93,13 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName, bool generateVolu
                   sliceThickness[1] << " " << sliceThickness[2]);
         } else if (type == "type:") {
             args >> format;
-            if( format == "uchar" ||
+            if ( format == "uchar" ||
                 format == "unsigned char" ||
                 format == "uint8" ||
                 format == "uint8_t") {
                     format = "UCHAR";
                     model = "I";
-            } else if( format == "ushort" ||
+            } else if ( format == "ushort" ||
                 format == "unsigned short" ||
                 format == "unsigned short int" ||
                 format == "uint16" ||
@@ -107,11 +107,11 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName, bool generateVolu
                     format = "USHORT";
                     model = "I";
                     break;
-            } else if( format == "float") {
+            } else if ( format == "float") {
                     format = "FLOAT16";
                     model = "I";
                     break;
-            } else if( format == "uint" ||
+            } else if ( format == "uint" ||
                 format == "unsigned int" ||
                 format == "uint32" ||
                 format == "uint32_t") {
@@ -146,7 +146,8 @@ VolumeSet* NrrdVolumeReader::read(const std::string &fileName, bool generateVolu
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = rawReader.read(objectFilename, generateVolumeGL);
+        VolumeSet* volumeSet = rawReader.read(objectFilename);
+        fixOrigins(volumeSet, fileName);
         return volumeSet;
 
     } else

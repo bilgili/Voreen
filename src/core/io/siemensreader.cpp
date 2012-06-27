@@ -58,7 +58,7 @@ SiemensReader::SiemensReader() {
     extensions_.push_back("hdr");
 }
 
-VolumeSet* SiemensReader::read(const std::string &fname, bool generateVolumeGL)
+VolumeSet* SiemensReader::read(const std::string &fname)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     tgt::ivec3 dimensions;
@@ -93,7 +93,7 @@ VolumeSet* SiemensReader::read(const std::string &fname, bool generateVolumeGL)
 
    LINFO("Loading a 8bit Siemens US dataset");
 
-   tgt::vec3 spacing(1.0f, 1.0f, (float)dimensions.x/dimensions.z);
+   tgt::vec3 spacing(1.0f, 1.0f, static_cast<float>(dimensions.x)/dimensions.z);
 
    VolumeUInt8* dataset = new VolumeUInt8(dimensions, spacing);
 
@@ -105,14 +105,13 @@ VolumeSet* SiemensReader::read(const std::string &fname, bool generateVolumeGL)
 
    fin.close();
 
-   VolumeSet* volumeSet = new VolumeSet(fileName);
-	VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
-	volumeSet->addSeries(volumeSeries);
-	VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
-	volumeSeries->addVolumeHandle(volumeHandle);
-	if( generateVolumeGL == true )
-		volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
-	return volumeSet;
+   VolumeSet* volumeSet = new VolumeSet(0, fileName);
+   VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", Modality::MODALITY_UNKNOWN);
+   volumeSet->addSeries(volumeSeries);
+   VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
+   volumeHandle->setOrigin(fileName, "unknown", 0.0f);
+   volumeSeries->addVolumeHandle(volumeHandle);
+   return volumeSet;
 }
 
 vector<string> SiemensReader::splitLine(string s, const char *ch) {

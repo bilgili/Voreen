@@ -78,7 +78,7 @@ void TrackballNavigation::resetTrackball() {
 
     trackball_->reset();
 
-    if(trackball_->getCanvas()->getPainter()) {
+    if (trackball_->getCanvas()->getPainter()) {
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, trackball_->getCamera()) );
         trackball_->getCanvas()->repaint();
     }
@@ -93,7 +93,7 @@ void TrackballNavigation::mousePressEvent(tgt::MouseEvent* e) {
         postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, true) );
 
         trackball_->mousePressEvent(e);
-        if(e->button() == trackball_->getRotateButton() && trackball_->getContinuousSpin()) {
+        if (e->button() == trackball_->getRotateButton() && trackball_->getContinuousSpin()) {
             spinit_ = true;
             moveCounter_ = 0;
         }
@@ -196,7 +196,7 @@ void TrackballNavigation::timerEvent(tgt::TimeEvent* e) {
         moveCounter_ = -1;
     }
 
-    if(trackball_->getContinuousSpin() && spinit_ && e->getTimer() == trackball_->getContinuousSpinTimer()) {
+    if (trackball_->getContinuousSpin() && spinit_ && e->getTimer() == trackball_->getContinuousSpinTimer()) {
         trackball_->timerEvent(e);
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, trackball_->getCamera()));
         postMessage( new Message(VoreenPainter::repaint_));

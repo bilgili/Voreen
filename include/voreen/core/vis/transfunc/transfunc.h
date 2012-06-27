@@ -27,49 +27,23 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VRN_TRANSFERFUNC_H
-#define VRN_TRANSFERFUNC_H
-
-#include "tgt/texturemanager.h"
+#ifndef VRN_TRANSFUNC_H
+#define VRN_TRANSFUNC_H
 
 #include "voreen/core/vis/message.h"
-#include "voreen/core/vis/processors/render/volumerenderer.h"
 
-#include <string>
-
+class string;
 class TiXmlElement;
+
 
 namespace voreen {
 
-//Some helper functions to save transfer functions as xml
-/**
-* Creates a new TinyXML Element consisting of the elements of v
-* \param root The root element to which the new element is added
-* \param v The vector containing the data which is to be saved
-*/
-void saveXml(TiXmlElement* root, const tgt::vec2& v);
+class TextureManager;
+class VolumeRenderer;
+class TransFuncIntensity;
+class TransFunc;
 
-/**
-* Creates a new TinyXML Element consisting of the elements of c
-* \param root The root element to which the new element is added
-* \param c The vector containing the data which is to be saved
-*/
-void saveXml(TiXmlElement* root, const tgt::col4& c);
-
-/**
-* Loads two entries out of the TinyXML Element root and saves them into v
-* \param root The TinyXML Element containing two elements "x" and "y"
-* \param v The adress of the vector
-*/
-void loadXml(TiXmlElement* root, tgt::vec2& v);
-
-/**
-* Loads two entries out of the TinyXML Element root and saves them into c
-* \param root The TinyXML Element containing four elements "r","g","b" and "a"
-* \param c The adress of the vector
-*/
-void loadXml(TiXmlElement* root, tgt::col4& c);
-
+typedef TemplateMessage<TransFunc*> TransFuncPtrMsg;
 
 /**
  * Base class for transfer functions.
@@ -115,15 +89,41 @@ public:
     */
     const tgt::Texture* getTexture() const;
 
+    /**
+    * Creates a new TinyXML Element consisting of the elements of v
+    * \param root The root element to which the new element is added
+    * \param v The vector containing the data which is to be saved
+    */
+    static void saveXml(TiXmlElement* root, const tgt::vec2& v);
+
+
+    /**
+    * Creates a new TinyXML Element consisting of the elements of c
+    * \param root The root element to which the new element is added
+    * \param c The vector containing the data which is to be saved
+    */
+    static void saveXml(TiXmlElement* root, const tgt::col4& c);
+
+
+    /**
+    * Loads two entries out of the TinyXML Element root and saves them into v
+    * \param root The TinyXML Element containing two elements "x" and "y"
+    * \param v The adress of the vector
+    */
+    static void loadXml(TiXmlElement* root, tgt::vec2& v);
+
+
+    /**
+    * Loads two entries out of the TinyXML Element root and saves them into c
+    * \param root The TinyXML Element containing four elements "r","g","b" and "a"
+    * \param c The adress of the vector
+    */
+    static void loadXml(TiXmlElement* root, tgt::col4& c);
+
 protected:
     tgt::Texture* tex_;
     static const std::string loggerCat_;
 };
-
-typedef TemplateMessage<TransFunc*> TransFuncPtrMsg;
-
-class TransFuncIntensity;
-
 
 /**
 * Two dimensional transfer function.
@@ -178,4 +178,4 @@ public:
 
 } // namespace
 
-#endif //VRN_TRANSFERFUNC_H
+#endif //VRN_TRANSFUNC_H

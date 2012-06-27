@@ -37,8 +37,7 @@ std::string MemoryManager::MemoryManagerValue::toString(bool free) const {
     std::ostringstream oss;
 
     if (!free) {
-        switch (allocInfo_)
-        {
+        switch (allocInfo_) {
         case (NEW):
             oss << "new";
             break;
@@ -120,15 +119,14 @@ void MemoryManager::deinit() {
 std::string MemoryManager::toString() {
     std::ostringstream oss;
     MAP::iterator iter = map_.begin();
-    while(iter != map_.end()) {
+    while (iter != map_.end()) {
         oss << "   " << iter->second.toString() << std::endl;
         ++iter;
     }
     return oss.str();
 }
 
-void MemoryManager::add(void* p, AllocInfo info, void* caller)
-{
+void MemoryManager::add(void* p, AllocInfo info, void* caller) {
     if (!isReady_ || lock_ > 0)
         return;
 
@@ -138,8 +136,7 @@ void MemoryManager::add(void* p, AllocInfo info, void* caller)
     map_[p] = val;
 }
 
-bool MemoryManager::remove(void* p, AllocInfo info, void* caller)
-{
+bool MemoryManager::remove(void* p, AllocInfo info, void* caller) {
     if (!isReady_ || lock_ > 0)
         return true;
 
@@ -186,8 +183,7 @@ bool MemoryManager::remove(void* p, AllocInfo info, void* caller)
 
 // New implementation of global new, delete and new[] and delete[]
 
-void* operator new(size_t size)
-{
+void* operator new(size_t size) {
     ++tgt::MemoryManager::callCounter_;
 
     void* p = malloc(size);
@@ -206,8 +202,7 @@ void* operator new(size_t size)
     return p;
 };
 
-void* operator new[](size_t size)
-{
+void* operator new[](size_t size) {
   ++tgt::MemoryManager::callCounter_;
 
     void* p = malloc(size);
@@ -226,8 +221,7 @@ void* operator new[](size_t size)
     return p;
 }
 
-void operator delete(void* p)
-{
+void operator delete(void* p) {
     if (tgt::MemoryManager::isReady_) {
         if (p == NULL) {
             std::cout << "ERROR. You try to delete a NULL-pointer." << std::endl;
@@ -240,8 +234,7 @@ void operator delete(void* p)
     free(p);
 }
 
-void operator delete[](void* p)
-{
+void operator delete[](void* p) {
     if (tgt::MemoryManager::isReady_) {
         if (p == NULL) {
             std::cout << "ERROR. You try to delete[] a NULL-pointer." << std::endl;
@@ -254,4 +247,4 @@ void operator delete[](void* p)
     free(p);
 }
 
-#endif //TGT_DEBUG...
+#endif //if defined(TGT_DEBUG) && defined(__GNUC__) && defined(TGT_USE_MEMORY_MANAGER)

@@ -34,20 +34,17 @@
 
 namespace voreen {
 
+class IOProgress;
+
 /**
  * Reads a multi-image TIFF file into a volume dataset.
  */
 class TiffVolumeReader : public VolumeReader {
 public:
-    TiffVolumeReader() {
-         name_ = "Tiff Stack Reader";
-         extensions_.push_back("tiff");
-         extensions_.push_back("tif");
-    }
-    
+    TiffVolumeReader(IOProgress* progress = 0);    
     ~TiffVolumeReader() {}
 
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

@@ -37,11 +37,6 @@
 #include "tgt/memorymanager.h"
 #include "tgt/singleton.h"
 
-// will remove this when unnecessary (jms)
-#ifdef VRN_WITH_MATLAB
-#include "voreen/core/io/matvolumereader.h"
-#endif
-
 #include "voreen/core/vis/messagedistributor.h"
 
 #ifndef VRN_SNAPSHOT
@@ -53,11 +48,18 @@
 #endif
 #endif
 
+#ifdef VRN_WITH_SVNVERSION
+#include "voreen/svnversion.h"
+#endif
+
+#ifdef WIN32
+    #include "tgt/gpucapabilitieswindows.h"
+#endif
+
 #if defined(VRN_WITH_BUGTRAP) && defined(WIN32)
 #include "BugTrap.h"
 #include <TCHAR.H>
 #endif
-
 
 #include <QSplashScreen>
 #include <QTranslator>
@@ -69,9 +71,9 @@ using namespace voreen;
 void initGL() {
     tgt::initGL();
 
-	// set shader source path
-	ShdrMgr.addPath("../../src/core/vis/glsl");
-	ShdrMgr.setPath("../../src/core/vis/glsl");
+    // set shader source path
+    ShdrMgr.addPath("../../src/core/vis/glsl");
+
 
     // initialize OpenGL state
     glEnable(GL_DEPTH_TEST);
@@ -84,7 +86,7 @@ int start(int argc, char** argv) {
     tgt::Singleton<voreen::MessageDistributor>::init(new MessageDistributor());
 
 #ifdef VRN_WITH_PYTHON
-    ScriptMgr.setPath("");
+    ScriptMgr.addPath("");
     initVoreenPythonModule();
     initVoreenqtPythonModule();
 #endif // VRN_WITH_PYTHON
@@ -158,11 +160,15 @@ int start(int argc, char** argv) {
 
 #ifdef VRN_ADD_FILE_LOGGER
     // add a file logger
-    tgt::Log* log = new tgt::HtmlLog("voreen-log.html");
+    tgt::Log* log = new tgt::HtmlLog("voreendev-log.html");
     log->addCat(clp.getCategory().toStdString(), true, clp.getDebugLevel());
     LogMgr.addLog(log);
 #endif
 
+#ifdef VRN_SVN_REVISON
+    LINFOC("voreendev.main", "voreendev svn version " << VRN_SVN_REVISON << " starting..."); 
+#endif
+    
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 #if defined(VRN_SPLASHSCREEN) && defined(WIN32)
     mainFrame.showMinimized();
@@ -171,118 +177,28 @@ int start(int argc, char** argv) {
 #endif
 
     initGL();
+#ifdef WIN32
+    tgt::GpuCapabilitiesWindows::getInstance()->logCapabilities(false, true);
+#else
+    GpuCaps.logCapabilities(false, true);
+#endif
     mainFrame.init();
     QApplication::restoreOverrideCursor();
 
+    
 #ifdef VRN_SPLASHSCREEN
     a.processEvents();
     splash.close();
 	mainFrame.showMaximized();
 #endif
 
-    // HACK remove later
-    if (argc >= 2 && strcmp(argv[1], "--overview") == 0) {
-        //mainFrame.fileOpen("../../data/dat-cleaned-up/mensch-anonym-ct.dat", false, Modality::MODALITY_CT);
-        //mainFrame.fileOpen("../../data/dat-cleaned-up/mensch-anonym-pet.dat", true, Modality::MODALITY_PET);
-        mainFrame.fileOpen("../../data/dat-cleaned-up/mensch-anonym-ct.dat", Modality::MODALITY_CT);
-        mainFrame.fileOpen("../../data/dat-cleaned-up/mensch-anonym-pet.dat", Modality::MODALITY_PET);
+    int result = 0;
+
+    // Start main loop unless we are benchmarking
+    if (!clp.getBenchmark()) {
+        result = a.exec();
     }
-	// used for final video
-	//mainFrame.fileOpen("V:/voreen-dao/tested/hand_48/hand.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/hand_48/hand_spread_dao.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	// used for final video
-	//mainFrame.fileOpen("V:/voreen-dao/tested/hand_24/hand.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/hand_24/hand_spread_dao.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	//mainFrame.fileOpen("V:/voreen-dao/tested/feet_16_r/feet_256x128x256_32bit.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/feet_16_r/feet_256x128x256_daof.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	//mainFrame.fileOpen("V:/voreen-dao/tested/feet_128_64_128_12/feet_32bit.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/feet_128_64_128_12/feet_dao.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	// used for final video
-	//mainFrame.fileOpen("V:/voreen-dao/tested/vmhead_half_small_16/vmhead-half-small_32bit.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/vmhead_half_small_16/vmhead-half-small_dao.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	//mainFrame.fileOpen("V:/voreen-dao/vmhead-r20-nc2048-b256-p16/vmhead-8bit-small_32bit.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/vmhead-r20-nc2048-b256-p16/vmhead-8bit-small_dao16-0.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	//mainFrame.fileOpen("V:/voreen-dao/cornell256_32bitf.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/cornell128-r32-nc1024-b256-p16/cornell128_scaled256.dat");
-
-	//mainFrame.fileOpen("D:/voreen/apps/voltool/debug/cornell128_32bit-gw13.dat");
-	//mainFrame.fileOpen("V:/voreen-dao/tested/cornell128-r32-nc1024-b256-p16/cornell128_dao16-0.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-	// used for final video
-	//mainFrame.fileOpen("D:/voreen/data/cornell128_sobel_f3.dat");
-	//mainFrame.fileOpen("H:/private/voreen-dao/cornell128-r32-nc1024-b256-p16/cornell128_32bit.dat");
-	//mainFrame.fileOpen("H:/private/voreen-dao/cornell128-r32-nc1024-b256-p16/cornell128_dao16-0.dat", true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-
-//#define VOREEN_DAO
-#ifdef VOREEN_DAO
-	// automatically load volume and dao data set. following assumptions are made:
-	// - dirName should be given without appended /
-	// - dirName should fullfill naming conventions described in /share/voreen/voreen-dao/tested/namingconventions.txt
-
-	std::string dirName;
-	//dirName = "V:/voreen-dao/tested/cornell64-r4-nc512-b256-p16";
-	//dirName = "V:/voreen-dao/tested/cornell64-r4-nc1024-b256-p16";
-	//dirName = "V:/voreen-dao/tested/cornell64-r4-nc2048-b256-p16";
-	//dirName = "V:/voreen-dao/tested/cornell128-r32-nc1024-b256-p16_nolightsource";
-	//dirName = "V:/voreen-dao/tested/cornell128-r32-nc1024-b256-p16";
-	dirName = "V:/voreen-dao/tested/cornell128-rx-nc512-b256-p16_bothhemispheres";
-	//dirName = "V:/voreen-dao/tested/cornell256-r32-nc2048-b256-p16";
-	//dirName = "V:/voreen-dao/cornell256-r48-nc1024-b256-p16";
-
-	std::ostringstream volumeFileName;
-	volumeFileName << dirName;
-	volumeFileName << dirName.substr(dirName.find_last_of("/"), dirName.find("-", dirName.find_last_of("/"))-dirName.find_last_of("/"));
-	volumeFileName << "_32bit-tf.dat";
-	mainFrame.fileOpen(QString(volumeFileName.str().c_str()));
-
-	std::ostringstream daoFileName;
-	daoFileName << dirName;
-	daoFileName << dirName.substr(dirName.find_last_of("/"), dirName.find("-", dirName.find_last_of("/"))-dirName.find_last_of("/"));
-	daoFileName << "_dao16-0.dat";
-	mainFrame.fileOpen(QString(daoFileName.str().c_str()), true, Modality::MODALITY_DYNAMICAMBIENTOCCLUSION);
-#endif
-
-    /*
-	// I need this until the new volume classes and the new loading mechanism work. (jms)
-
-    VolumeContainer* volCon = new VolumeContainer();
-
-	MatVolumeReader reader;
-
-    VolumeContainer volConX, volConY, volConZ, volConI;
-    //reader.readIntoContainer("../../../data/dawood/Datensatz1_1/Vx.mat", &volConX);
-    //reader.readIntoContainer("../../../data/dawood/Datensatz1_1/Vy.mat", &volConY);
-    //reader.readIntoContainer("../../../data/dawood/Datensatz1_1/Vz.mat", &volConZ);
-    reader.readIntoContainer("../../../data/dawood/Datensatz1_1/AltekampOriginalVol.mat", &volConI);
-	reader.readIntoContainer("../../../data/dawood/Datensatz1_1/AltekampXTo2Vol.mat", &volConI);
-    //VolumeDatasetDirections* vol = new VolumeDatasetDirections(volConX.get(0), volConY.get(0), volConZ.get(0), volConI.get(0));
-    //volCon->add(vol, "Altekamp");
-	VolumeDataset16Bit* dataset16Bit;
-	for (int i=0; i<8; ++i) {
-		VolumeDataset* orgVol = volConI.get(i);
-		dataset16Bit = new VolumeDataset16Bit(orgVol->getDimensions(), orgVol->getSpacing(), reinterpret_cast<uint16_t*>(orgVol->convertScalars(17)));
-		volCon->add(dataset16Bit, "volume");
-		reader.create3DTexture(dataset16Bit, tgt::LINEAR, false);
-	}
-	for (int i=8; i<16; ++i) {
-		VolumeDataset* orgVol = volConI.get(i);
-		dataset16Bit = new VolumeDataset16Bit(orgVol->getDimensions(), orgVol->getSpacing(), reinterpret_cast<uint16_t*>(orgVol->convertScalars(16)));
-		volCon->add(dataset16Bit, "volume");
-		reader.create3DTexture(dataset16Bit, tgt::LINEAR, false);
-	}
-
-    mainFrame.volumeContainer_ = volCon;
-    mainFrame.postMessage(new VolumeContainerPtrMsg(Identifier::setVolumeContainer, mainFrame.volumeContainer_));
-    mainFrame.postMessage(new IntMsg(Identifier::setCurrentDataset, 0));
-    */
-
-    int result = a.exec();
+    
     mainFrame.deinit();
     tgt::Singleton<voreen::MessageDistributor>::deinit();
 

@@ -31,10 +31,11 @@
 #define VOREEN_IDMANAGER_H
 
 #include "tgt/vector.h"
-#include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/message.h"
 
 namespace voreen {
+
+class TextureContainer;
 
 /**
   * Data Structure - enhanced Identifier

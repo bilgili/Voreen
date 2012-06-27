@@ -68,6 +68,11 @@ public:
 protected:
 
     void compileShader();
+
+    /**
+    * Load the needed shader.
+    *
+    */
     virtual void compile();
 
     tgt::Shader* program_;

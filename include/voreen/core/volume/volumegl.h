@@ -44,7 +44,7 @@ namespace voreen {
 class TransFunc;
 
 /**
- * This class is the OpenGL interface to Volume objects.
+ * This class is the OpenGL interface for volume objects.
  * One or several 3D-textures are created which hold the complete dataset.
  * Furthermore VolumeGL handles the application of the
  * TransFunc, see enum TFSupport.
@@ -81,9 +81,9 @@ public:
 
     /**
      * Creates the VolumeTexture instances and applies the TransFunc.
-     * \p tf ist only needed, when \a tfSupport_ isn't \A SHADER. You can set
+     * \p tf is only needed, when \a tfSupport_ isn't \A SHADER. You can set
      * Set this parameter to 0 if you want to apply the TransFunc later. Use
-     * \a applyTransFunc for this. Hower, if \a tfSupport_ is \A SHADER
+     * \a applyTransFunc for this. However, if \a tfSupport_ is \A SHADER
      * everthing will work fine and a call to \a applyTransFunc isn't
      * necessary at all.
      */
@@ -152,7 +152,7 @@ public:
      */
     static void setLargeVolumeSupport(LargeVolumeSupport lvSupport);
 
-    /// How are large datasets beeing handled?
+    /// How are large datasets being handled?
     static LargeVolumeSupport getLargeVolumeSupport();
 
     /**
@@ -169,6 +169,17 @@ public:
 
     /// What is the maximal 3d textures size used in VolumeGL?
     static int getMax3DTexSize();
+
+	/**
+	* Use this method to dictate VolumeGL how much memory on the video card
+	* is available for textures. Size has to be given in MegaByte (MB) (??? df)
+	*/
+	static void setAvailableGpuMemory(int availableGpuMemory);
+
+	/**
+	* What is the maximal memory size VolumeGL can use on the video card?
+	*/
+	static int getAvailableGpuMemory();
 
     //
     // further methods
@@ -243,6 +254,10 @@ private:
 
     static LargeVolumeSupport lvSupport_;
     static int max3DTexSize_;
+	/**
+	* The memory available on the video card in megabyte
+	*/
+	static int availableGpuMemory_;
 };
 
 typedef TemplateMessage<VolumeGL*> VolumeGLMsg;

@@ -75,7 +75,7 @@ public:
                    Modality modality = Modality::MODALITY_UNKNOWN, float timeStep_ = -1.0f,
                    std::string metaString = "");
 
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

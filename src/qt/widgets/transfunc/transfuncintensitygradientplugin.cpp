@@ -30,14 +30,20 @@
 #include "voreen/qt/widgets/transfunc/transfuncintensitygradientplugin.h"
 
 
-#include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/transfunc/transfuncpainter.h"
-
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QFileDialog>
 #include <QColorDialog>
+#include <QLabel>
+#include <QToolButton>
+#include <QSlider>
+#include <QCheckBox>
+
+#include "voreen/core/vis/voreenpainter.h"
+#include "voreen/core/vis/transfunc/transfuncpainter.h"
+#include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
+
 
 namespace voreen {
 
@@ -77,7 +83,7 @@ void TransFuncIntensityGradientPlugin::createWidgets() {
     transCanvas_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     transCanvas_->setPainter(painter_);
     painter_->initialize();
-    if(!painter_->initOk()) {
+    if (!painter_->initOk()) {
         delete painter_;
         delete eh;
         delete transCanvas_;
@@ -187,7 +193,7 @@ void TransFuncIntensityGradientPlugin::createWidgets() {
 }
 
 void TransFuncIntensityGradientPlugin::createConnections() {
-    if(!painter_)
+    if (!painter_)
         return;
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(read()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(save()));
@@ -214,7 +220,7 @@ void TransFuncIntensityGradientPlugin::read() {
                     "Choose a file",
                     "../../data/transferfuncs",
                     "Transferfunctions (*.tfig)");
-    if(s != "") {
+    if (s != "") {
         clear();
         painter_->getTransFunc()->load(s.toStdString ());
     }
@@ -248,13 +254,13 @@ void TransFuncIntensityGradientPlugin::save() {
 //                     "Choose a filename to save under",
 //                     "",
 //                     "Transferfunctions (*.xml)");
-//     if(s != "") {
+//     if (s != "") {
 //         painter_->getTransFunc()->save(s.toStdString ());
 //     }
 }
 
 void TransFuncIntensityGradientPlugin::clear() {
-    if(!painter_)
+    if (!painter_)
         return;
     painter_->clear();
     transCanvas_->update();
@@ -285,13 +291,13 @@ void TransFuncIntensityGradientPlugin::deletePrimitive() {
 
 void TransFuncIntensityGradientPlugin::colorize() {
     TransFuncPrimitive* p = painter_->getSelectedPrimitive();
-    if(p) {
+    if (p) {
         tgt::col4 c = p->getColor();
         bool ok;
         QColor qc;
         qc.setRgb(c.r,c.g,c.b,c.a);
         qc = QColorDialog::getRgba(qc.rgba(), &ok);
-        if(ok) {
+        if (ok) {
             c.r = qc.red();
             c.g = qc.green();
             c.b = qc.blue();
@@ -315,7 +321,7 @@ void TransFuncIntensityGradientPlugin::showGrid() {
 }
 
 void TransFuncIntensityGradientPlugin::dataSourceChanged(Volume* newDataset) {
-    if(!painter_)
+    if (!painter_)
         return;
 
     painter_->dataSourceChanged(newDataset);
@@ -360,7 +366,7 @@ void TransFuncIntensityGradientPlugin::setHistogramLog(int s) {
 
 void TransFuncIntensityGradientPlugin::adjustFuzziness(int p) {
     TransFuncPrimitive* pr = painter_->getSelectedPrimitive();
-    if(pr) {
+    if (pr) {
         pr->setFuzziness(p/100.0);
         painter_->changed();
     }
@@ -369,7 +375,7 @@ void TransFuncIntensityGradientPlugin::adjustFuzziness(int p) {
 
 void TransFuncIntensityGradientPlugin::adjustTransparency(int p) {
     TransFuncPrimitive* pr = painter_->getSelectedPrimitive();
-    if(pr) {
+    if (pr) {
         tgt::col4 c = pr->getColor();
         c.a = p;
         pr->setColor(c);
@@ -379,7 +385,7 @@ void TransFuncIntensityGradientPlugin::adjustTransparency(int p) {
 }
 
 void TransFuncIntensityGradientPlugin::setThresholds(int l, int u) {
-    if(!painter_)
+    if (!painter_)
         return;
     painter_->setThresholds(l*scaleFactor_,u*scaleFactor_);
     transCanvas_->update();
@@ -395,7 +401,7 @@ tgt::col4 TransFuncIntensityGradientPlugin::colorChooser(tgt::col4 c, bool &chan
     qc.setRgb(c.r,c.g,c.b,c.a);
     changed = false;
     qc = QColorDialog::getRgba(qc.rgba(), &ok);
-    if(ok) {
+    if (ok) {
         c.r = qc.red();
         c.g = qc.green();
         c.b = qc.blue();
@@ -408,8 +414,8 @@ tgt::col4 TransFuncIntensityGradientPlugin::colorChooser(tgt::col4 c, bool &chan
 
 void TransFuncIntensityGradientPlugin::selected() {
     TransFuncPrimitive* pr = painter_->getSelectedPrimitive();
-    if(pr) {
-        fuzziness_->setValue(pr->getFuzziness()*100.0);
+    if (pr) {
+        fuzziness_->setValue(static_cast<int>(pr->getFuzziness() * 100.f));
         fuzziness_->setEnabled(true);
         transparency_->setValue(pr->getColor().a);
         transparency_->setEnabled(true);

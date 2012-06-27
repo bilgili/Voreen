@@ -47,18 +47,15 @@ TextFileReader::TextFileReader(const string& filename)
     : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_WHITESPACE),
       separators_(DEFAULT_SEPARATORS), isMyOwnStream_(true),
       file_(new ifstream(filename.c_str()))
-{
-}
+{}
 
 TextFileReader::TextFileReader(istream* stream)
     : whitespace_(DEFAULT_WHITESPACE), commentChars_(DEFAULT_WHITESPACE),
       separators_(DEFAULT_SEPARATORS), isMyOwnStream_(false),
       file_(stream)
-{
-}
+{}
 
-TextFileReader::~TextFileReader() 
-{
+TextFileReader::~TextFileReader() {
     if (isMyOwnStream_)
         delete file_;
 }
@@ -99,9 +96,7 @@ bool TextFileReader::getNextLine(string& type, string& args, bool toLowercase) {
     return false;
 }
 
-bool TextFileReader::getNextLine(string& type, istringstream& args, 
-                                 bool toLowercase/*=true*/)
-{
+bool TextFileReader::getNextLine(string& type, istringstream& args, bool toLowercase/*=true*/) {
     string s;
     bool r = getNextLine(type, s, toLowercase);
     args.clear();

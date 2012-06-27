@@ -39,7 +39,7 @@ Trackball::Trackball(GLCanvas* canvas, bool defaultEventHandling, Timer* continu
       tracking_(false)
 {
 
-    if(getCamera())
+    if (getCamera())
         center_ = getCamera()->getFocus();
     else
         center_ = vec3(0.f);
@@ -75,8 +75,9 @@ vec3 Trackball::projectToSphere(const vec2 xy) const {
 
     float d = length(xy);
     if (d < size_ * sqrt2 / 2.f) {    /* Inside sphere */
-// The factor "sqrt2/2.f" make a smooth changeover from sphere to hyperbola. If we leave factor 1/sqrt(2) away, the trackball would bounce at the changeover.
-        result.z = sqrt(size_*size_ - d*d);
+        // The factor "sqrt2/2.f" make a smooth changeover from sphere to hyperbola. If we leave
+        // factor 1/sqrt(2) away, the trackball would bounce at the changeover.
+        result.z = sqrtf(size_ * size_ - d*d);
     } else {                         /* On hyperbola */
         float t = size_ / sqrt2;
         result.z = t*t / d;
@@ -113,13 +114,17 @@ void Trackball::startMouseDrag(MouseEvent* e) {
 void Trackball::endMouseDrag(MouseEvent* e) {
     if (continuousSpin_) {
         // Make sure this endMouseDrag belongs to a rotation
-        if ( mouseRotateButton_ & e->button() &&
-             (mouseRotateMod_ == e->modifiers() || mouseRotateMod_ & e->modifiers()) ) {
+        if ((mouseRotateButton_ & e->button()) &&
+            (mouseRotateMod_ == e->modifiers() || mouseRotateMod_ & e->modifiers())) {
             // Make sure mouse has been moved within the last time.
             if (continuousSpinStopwatch_->getRuntime() < 2.*continuousSpinLastOrientationChangeMSecs_) {
-                if ( continuousSpinLastOrientationChangeMSecs_ < 1000.f / 25.f ) {
-                    // Last rotation took less than 40 msecs. As all rotations with more than 25 steps per secons (less than 40 msecs) will look smooth, we do not want to rotate with a frequency that high. We will scale last orientation change to be that large that rotation with 25 Hz will make the trackball rotate with the according speed.
-                    float scale = (float) (1000 / 25) / continuousSpinLastOrientationChangeMSecs_;
+                if (continuousSpinLastOrientationChangeMSecs_ < 1000.f / 25.f) {
+                    // Last rotation took less than 40 msecs. As all rotations with more than
+                    // 25 steps per secons (less than 40 msecs) will look smooth, we do not
+                    // want to rotate with a frequency that high. We will scale last
+                    // orientation change to be that large that rotation with 25 Hz will make
+                    // the trackball rotate with the according speed.
+                    float scale = (1000.f / 25.f) / static_cast<float>(continuousSpinLastOrientationChangeMSecs_);
 //                    lastOrientationChange_.w = cosf( scale * acos( lastOrientationChange_.w ) );
                     lastOrientationChange_ = expQuat( scale * logQuat( lastOrientationChange_ ) );
                     lastOrientationChange_.normalize();
@@ -128,8 +133,8 @@ void Trackball::endMouseDrag(MouseEvent* e) {
                     continuousSpinTimer_->start(continuousSpinLastOrientationChangeMSecs_, 0);
                 }
             }
-            if ( 1 - lastOrientationChange_.w < 0.000002 ) { // FIXME: perhaps 0.000002 this is not the very best value ...
-                // Roatation is very small. Probably user did not mean to spin the trackball.
+            if (1 - lastOrientationChange_.w < 0.000002) { // FIXME: perhaps this is not the very best value...
+                // Rotation is very small. Probably user did not mean to spin the trackball.
                 lastOrientationChange_.x = 0.f;
                 lastOrientationChange_.y = 0.f;
                 lastOrientationChange_.z = 0.f;
@@ -273,7 +278,7 @@ float Trackball::getCenterDistance() {
 }
 
 void Trackball::saveCameraParameters() {
-    if(getCamera()) {
+    if (getCamera()) {
         cameraPosition_ = getCamera()->getPosition();
         cameraFocus_ = getCamera()->getFocus();
         cameraUpVector_ = getCamera()->getUpVector();
@@ -389,8 +394,8 @@ void Trackball::setKeyRoll(float acuteness, KeyEvent::KeyCode left, KeyEvent::Ke
 }
 
 vec2 Trackball::scaleMouse(const ivec2& mouse) const {
-    return vec2( (float) mouse.x*2.f / (float)canvas_->getWidth() - 1.f,
-                 1.f - (float) mouse.y*2.f / (float)canvas_->getHeight() );
+    return vec2( static_cast<float>(mouse.x*2.f) / static_cast<float>(canvas_->getWidth()) - 1.f,
+                 1.f - static_cast<float>(mouse.y*2.f) / static_cast<float>(canvas_->getHeight()) );
 }
 
 void Trackball::mousePressEvent(MouseEvent* e) {
@@ -403,7 +408,6 @@ void Trackball::mouseReleaseEvent(MouseEvent* e) {
 }
 
 void Trackball::mouseMoveEvent(MouseEvent* e) {
-
     if (!tracking_)
         return;
     

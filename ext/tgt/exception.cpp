@@ -50,7 +50,6 @@ std::string FileException::getErrorMessage(const string& exception, const string
     return s;
 }
 
-
 const char* FileException::what() const throw() {
     return getErrorMessage("FileException", what_, filename_).c_str();
 };

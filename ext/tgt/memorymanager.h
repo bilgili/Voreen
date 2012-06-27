@@ -27,9 +27,9 @@
 
 #include "tgt/config.h"
 
-#ifdef __APPLE__
+// #ifdef __APPLE__
 	#include "tgt/types.h"
-#endif // __APPLE__
+// #endif // __APPLE__
 
 #if defined(TGT_DEBUG) && defined(__GNUC__) && defined(TGT_USE_MEMORY_MANAGER)
 

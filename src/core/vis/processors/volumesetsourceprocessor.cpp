@@ -33,8 +33,7 @@
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
 #endif
 
-namespace voreen
-{
+namespace voreen {
 
 // static members
 //
@@ -58,7 +57,7 @@ VolumeSetSourceProcessor::VolumeSetSourceProcessor() :
 }
 
 VolumeSetSourceProcessor::~VolumeSetSourceProcessor() {
-    if( tgt::Singleton<voreen::MessageDistributor>::isInited() == true )
+    if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
         MsgDistr.remove(this);
 
     delete volumesetsProp_;
@@ -79,14 +78,14 @@ bool VolumeSetSourceProcessor::connect(Port* outport, Port* inport) {
     //
     bool ret = Processor::connect(outport, inport);
 
-    if( (outport == 0) || (inport == 0) )
+    if ((outport == 0) || (inport == 0))
         return ret;
     
     // check if the processor on the inport is a VolumeSelectionProcessor. If so,
     // propagate the current VolumeSet in this processor to it.
     //
     VolumeSelectionProcessor* vsp = dynamic_cast<VolumeSelectionProcessor*>(inport->getProcessor());
-    if( vsp != 0 )
+    if (vsp != 0)
         vsp->setVolumeSet(volumeset_);
     return ret;
 }
@@ -102,63 +101,75 @@ void VolumeSetSourceProcessor::processMessage(Message* msg, const Identifier& de
 {
     Processor::processMessage(msg, dest);
 
-    if( msg == 0 )
+    if (msg == 0)
         return;
 
-    if( msg->id_ == msgUpdateCurrentVolumeset_ ) {
+    if (msg->id_ == msgUpdateCurrentVolumeset_) {
         const std::string& volumesetName = msg->getValue<std::string>();
         updateCurrentVolumeSet(volumesetName);
-    } else if( msg->id_ == VolumeSetContainer::msgUpdateVolumeSetContainer_ ) {
+    } else if (msg->id_ == VolumeSetContainer::msgUpdateVolumeSetContainer_) {
         // Content of the message is not used when the container is already set.
         // The content would be a pointer to the posting VolumeSetContainer itself!
         //
-        if( volumesetContainer_ == 0 ) {
+        if (volumesetContainer_ == 0) {
             VolumeSetContainer* volsetCont = msg->getValue<VolumeSetContainer*>();
             setVolumeSetContainer(volsetCont);
         }
         else {
             updateAvailableVolumeSets();
-            if( availableVolumesets_.empty() == false ) {
+            if (availableVolumesets_.empty() == false) {
                 int curSelection = volumesetsProp_->get();
-                if( curSelection < 0 )
+                if (curSelection < 0)
                     curSelection = 0;
                 const int size = static_cast<int>(availableVolumesets_.size());
                 updateCurrentVolumeSet(availableVolumesets_[ ((curSelection < size) ? curSelection : 0) ]);
-            }
+            } else
+                setVolumeSet(0);
+
         }
-    } else if( msg->id_ == VolumeSetContainer::msgSetVolumeSetContainer_ ) {
+    } else if (msg->id_ == VolumeSetContainer::msgSetVolumeSetContainer_) {
         VolumeSetContainer* volsetCont = msg->getValue<VolumeSetContainer*>();
         setVolumeSetContainer(volsetCont);
     }
+
+	// if volumesetcontainer is cleared dont use its volumeset
+	else if (msg->id_ == "volumesetcontainer.clear") {
+        VolumeSetContainer* volsetCont = msg->getValue<VolumeSetContainer*>();
+		if (volsetCont == volumesetContainer_) {
+			volumeset_ = 0;
+			availableVolumesets_.clear();
+		}
+    }
 }
 
-VolumeSet* VolumeSetSourceProcessor::getVolumeSet()
-{
+VolumeSet* VolumeSetSourceProcessor::getVolumeSet() {
     return volumeset_;
 }
 
-VolumeSet** VolumeSetSourceProcessor::getVolumeSetAddress()
-{
+VolumeSet** VolumeSetSourceProcessor::getVolumeSetAddress() {
     return &volumeset_;
 }
 
 void VolumeSetSourceProcessor::setVolumeSet(voreen::VolumeSet* const volumeset) {
+    if( volumeset_ == volumeset )
+        return;
+
     volumeset_ = volumeset;
 
     // notify connected VolumeSelectionProcessors about the change so they can
     // update their own properties
     //
     Port* out = getOutport(outportName_);
-    if( (out == 0) || (volumeset == 0) )
+    if ( out == 0 )
         return;
 
     std::vector<Port*>& others = out->getConnected();
-    for( size_t i = 0; i < others.size(); i++ ) {
-        if( others[i] == 0 )
+    for (size_t i = 0; i < others.size(); i++) {
+        if (others[i] == 0)
             continue;
         VolumeSelectionProcessor* vsp = dynamic_cast<VolumeSelectionProcessor*>(others[i]->getProcessor());
-        if( vsp != 0 )
-            vsp->setVolumeSet(volumeset);
+        if (vsp != 0)
+            vsp->setVolumeSet(volumeset_);
     }
 }
 
@@ -167,23 +178,22 @@ const VolumeSetContainer* VolumeSetSourceProcessor::getVolumeSetContainer() cons
 }
 
 void VolumeSetSourceProcessor::setVolumeSetContainer(voreen::VolumeSetContainer* const volumesetContainer) {
-    if( volumesetContainer_ != volumesetContainer )
+    if (volumesetContainer_ != volumesetContainer)
         volumesetContainer_ = volumesetContainer;
 
-    if( volumesetContainer_ == 0 )
+    if (volumesetContainer_ == 0)
         return;
 
     updateAvailableVolumeSets();
-    if( availableVolumesets_.empty() == false )
+    if (availableVolumesets_.empty() == false)
         updateCurrentVolumeSet(availableVolumesets_[0]);
 }
 
 // private methods
 //
 void VolumeSetSourceProcessor::updateAvailableVolumeSets() {
-    if( (volumesetsProp_ == 0) || (volumesetContainer_ == 0) ) {
+    if (volumesetsProp_ == 0 || volumesetContainer_ == 0) 
         return;
-    }
 
     availableVolumesets_.clear();
     availableVolumesets_ = volumesetContainer_->getVolumeSetNames();
@@ -192,7 +202,7 @@ void VolumeSetSourceProcessor::updateAvailableVolumeSets() {
 }
 
 void VolumeSetSourceProcessor::updateCurrentVolumeSet(const std::string& volumesetName) {
-    if( (volumesetContainer_ == 0) || (volumesetName.empty() == true) )
+    if ((volumesetContainer_ == 0) || (volumesetName.empty() == true))
         return;
 
     // find the VolumeSet for the given name and call setVolumeSet() in order
@@ -200,10 +210,8 @@ void VolumeSetSourceProcessor::updateCurrentVolumeSet(const std::string& volumes
     // that the VolumeSelectionProcessors can update their modalities and
     // timesteps properties.
     //
-    if( volumesetContainer_ != 0 ) {
-        VolumeSet* volset = volumesetContainer_->findVolumeSet(volumesetName);
-        setVolumeSet(volset);
-    }
+    if (volumesetContainer_ != 0)
+        setVolumeSet( volumesetContainer_->findVolumeSet(volumesetName) );
 }
 
 }   // namespace

@@ -28,11 +28,8 @@
  **********************************************************************/
 
 #include "voreen/core/volume/volume.h"
-#include "voreen/core/volume/volumeatomic.h"
 
-#ifndef VRN_VOLUMESET_H
-#include "voreen/core/volume/volumeset.h"
-#endif
+#include "voreen/core/volume/volumeatomic.h"
 
 #include "tgt/plane.h"
 
@@ -72,10 +69,12 @@ Volume::Volume(const ivec3& dimensions,
 }
 
 void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
-    // TODO: implement smartConvert (see description in .h)
+    //TODO: implement smartConvert (see description in .h) (what does this actually mean??? joerg)
+    //TODO: this should better placed somewhere else and not introduce dependencies to VolumeAtomic here
 
-    tgtAssert( dimensions_ == v->getDimensions(), "dimensions must match here");
-    tgtAssert( getNumChannels() == v->getNumChannels(), "number of channels must match here");
+    //FIXME: do a real error check with exceptions here
+    tgtAssert(dimensions_ == v->getDimensions(), "dimensions must match here");
+    tgtAssert(getNumChannels() == v->getNumChannels(), "number of channels must match here");
 
     /*
         check what we have
@@ -86,7 +85,7 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
     const VolumeUInt8*  v_ui8  = dynamic_cast<const VolumeUInt8*>(v);
     const VolumeUInt16* v_ui16 = dynamic_cast<const VolumeUInt16*>(v);
 
-    if ( t_ui8 && v_ui16 ) {
+    if (t_ui8 && v_ui16) {
         LINFO("using accelerated conversion from VolumeUInt16 -> VolumeUInt8 without smart convert");
 
         // because the number of shifting bits varies by the number of bits used it must be calculated
@@ -95,7 +94,7 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
         for (size_t i = 0; i < t_ui8->getNumVoxels(); ++i)
             t_ui8->voxel(i) = v_ui16->voxel(i) >> shift;
     }
-    else if ( t_ui16 && v_ui8 ) {
+    else if (t_ui16 && v_ui8) {
         LINFO("using accelerated conversion from VolumeUInt8 -> VolumeUInt16 without smart convert");
 
         // because the number of shifting bits varies by the number of bits used it must be calculated
@@ -108,7 +107,7 @@ void Volume::convert(const Volume* v, bool /*smartConvert*/ /*= false*/) {
         LINFO("using fallback with setVoxelFloat and getVoxelFloat and without smart convert");
 
         VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
-            setVoxelFloat( v->getVoxelFloat(i), i );
+            setVoxelFloat(v->getVoxelFloat(i), i);
     }
 }
 
@@ -160,12 +159,16 @@ void Volume::setSpacing(const tgt::vec3 spacing) {
     spacing_ = spacing;
 }
 
+void Volume::setBitsStored(int bitsStored) {
+    bitsStored_ = bitsStored;
+}
+
 /*
  * abstract access of the voxels
  */
 
 float Volume::getVoxelFloat(size_t x, size_t y, size_t z, size_t channel /*= 0*/) const {
-    return getVoxelFloat(ivec3(x, y, z), channel);
+    return getVoxelFloat(ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel);
 }
 
 float Volume::getVoxelFloatLinear(const vec3& pos, size_t channel /*= 0*/) const {

@@ -73,12 +73,14 @@ VolumeSerializer::VolumeSerializer() {
 VolumeSerializer::~VolumeSerializer() {
 }
 
-VolumeSet* VolumeSerializer::load(const std::string& filename, bool generateVolumeGL)
+VolumeSet* VolumeSerializer::load(const std::string& filename)
     throw(tgt::UnsupportedFormatException, tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     std::string extension = extractExtensionLowerCase(filename);
-    VolumeSet* volumeSet = readers_.find(extension)->second->read(filename, generateVolumeGL);
-
+    if (readers_.find(extension) == readers_.end())
+        throw tgt::UnsupportedFormatException(extension, filename);
+    VolumeReader* reader = readers_.find(extension)->second;
+    VolumeSet* volumeSet = reader->read(filename);
     return volumeSet;
 }
 
@@ -90,8 +92,7 @@ void VolumeSerializer::save(const std::string& filename, Volume* volume)
     if (writers_.find(extension) != writers_.end()) {
         try {
             writers_.find(extension)->second->write(filename, volume);
-        }
-        catch (...) {
+        } catch (...) {
             throw; // throw to the caller
         }
     }
@@ -109,7 +110,7 @@ void VolumeSerializer::registerReader(VolumeReader* vr)
         std::pair<Readers::iterator, bool> p =
             readers_.insert( std::make_pair(extensions[i], vr) );
 
-        if (p.second == false) // if insertion was not successfull
+        if (p.second == false) // if insertion was not successful
             clashes.push_back(extensions[i]);
     }
 
@@ -128,7 +129,7 @@ void VolumeSerializer::registerWriter(VolumeWriter* vw)
         std::pair<Writers::iterator, bool> p =
             writers_.insert( std::make_pair(extensions[i], vw) );
 
-        if (p.second == false) // if insertion was not successfull
+        if (p.second == false) // if insertion was not successful
             clashes.push_back(extensions[i]);
     }
 

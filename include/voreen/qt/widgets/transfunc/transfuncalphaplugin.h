@@ -43,7 +43,7 @@ namespace voreen {
 
 class TransFuncGradient;
 class TransFuncMappingCanvas;
-class TransFuncIntensityKeys;
+class TransFuncIntensity;
 class Volume;
 
 /**
@@ -90,11 +90,11 @@ private:
 
     TransFuncMappingCanvas* transCanvas_;
     TransFuncGradient* gradient_;
-    TransFuncIntensityKeys* transferFunc_;
+    TransFuncIntensity* transferFunc_;
 
     TransFuncMappingCanvas* intTransCanvas_;
     TransFuncGradient* intGradient_;   
-    TransFuncIntensityKeys* intTransferFunc_;
+    TransFuncIntensity* intTransferFunc_;
 
     QToolButton* histogramEnabledButton_;
     

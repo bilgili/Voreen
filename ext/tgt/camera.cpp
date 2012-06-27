@@ -78,14 +78,16 @@ void Camera::look(Eye eye) {
         float ndfl        = frustum.getNearDist() / focallength;
         double cnear      = frustum.getNearDist();
 
-        if (cnear<0.1) cnear = 0.1; // avoid roundoff errors
+        if (cnear<0.1)
+            cnear = 0.1; // avoid roundoff errors
         double cfar = frustum.getFarDist();
 
         // Derive the two eye positions
         vs.x *= eyesep_ / 2.f;
         vs.y *= eyesep_ / 2.f;
         vs.z *= eyesep_ / 2.f;
-        if (eye == EYE_LEFT) vs = -vs;
+        if (eye == EYE_LEFT)
+            vs = -vs;
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -163,7 +165,7 @@ mat4 Camera::getRotateMatrix() const {
 mat4 Camera::getViewMatrixInverse() const {
     updateVM();
     mat4 inv;
-    if(viewMatrix_.invert(inv))
+    if (viewMatrix_.invert(inv))
         return inv;
     else
         return mat4::identity;

@@ -58,8 +58,7 @@ unix {
 }
 
 # this must come after all SOURCES, HEADERS and FORMS have been added
-contains(DEFINES, VRN_WITH_SVNVERSION) : revtarget.depends = $$SOURCES $$HEADERS $$FORMS
-
+contains(DEFINES, VRN_WITH_SVNVERSION) : revtarget.depends = $$SOURCES $$FORMS #$$HEADERS
 ### Local Variables:
 ### mode:conf-unix
 ### End:

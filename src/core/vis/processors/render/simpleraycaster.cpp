@@ -30,22 +30,21 @@
 #include "voreen/core/vis/processors/render/simpleraycaster.h"
 
 #include "voreen/core/vis/processors/portmapping.h"
+#include "voreen/core/volume/modality.h"
 
 namespace voreen {
 
-SimpleRaycaster::SimpleRaycaster() :
-    VolumeRaycaster() , transferFunc_(setTransFunc_, "not used", 0, true)
+SimpleRaycaster::SimpleRaycaster()
+    : VolumeRaycaster(),
+      transferFunc_(setTransFunc_, "not used", 0, true)
 {
 	setName("SimpleRaycaster");
-    addProperty(raycastingQualitiesEnumProp_);
 
     // initialize transfer function
-    TransFuncIntensityKeys* tf = new TransFuncIntensityKeys();
+    TransFuncIntensity* tf = new TransFuncIntensity();
     tf->createStdFunc();
     transferFunc_.set(tf);
     addProperty(&transferFunc_);
-
-    firstPass_ = true;
 
     createInport("volumehandle.volumehandle");
 	createInport("image.entrypoints");
@@ -53,10 +52,20 @@ SimpleRaycaster::SimpleRaycaster() :
 	createOutport("image.output");
 }
 
-
 SimpleRaycaster::~SimpleRaycaster() {
     if (MessageReceiver::getTag() != Message::all_)
         MsgDistr.remove(this);
+}
+
+TransFunc* SimpleRaycaster::getTransFunc() {
+    return transferFunc_.get();
+}
+
+TransFunc* SimpleRaycaster::getTransFunc(int i) {
+    if (i == 0)
+        return transferFunc_.get();
+    else
+        return 0;
 }
 
 const std::string SimpleRaycaster::getProcessorInfo() const {
@@ -65,13 +74,14 @@ const std::string SimpleRaycaster::getProcessorInfo() const {
 
 void SimpleRaycaster::processMessage(Message* msg, const Identifier& dest) {
     VolumeRaycaster::processMessage(msg, dest);
+
     if (msg->id_ == setTransFunc_) {
         TransFunc* tf = msg->getValue<TransFunc*>();
         if (tf != transferFunc_.get()) {
             // shader has to be recompiled, if the transferfunc header has changed
             std::string definesOld = transferFunc_.get() ? transferFunc_.get()->getShaderDefines() : "";
             std::string definesNew = tf ? tf->getShaderDefines() : "";
-            if ( definesOld != definesNew )
+            if (definesOld != definesNew)
                 invalidateShader();
             transferFunc_.set(tf);
         }
@@ -87,13 +97,14 @@ void SimpleRaycaster::setPropertyDestination(Identifier tag) {
 
 int SimpleRaycaster::initializeGL() {
     loadShader();
-    initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;;
+    initStatus_ = raycastPrg_ ? VRN_OK : VRN_ERROR;
 
     return initStatus_;
 }
 
 void SimpleRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(), generateHeader(), false);
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(),
+                                       generateHeader(), false);
 }
 
 void SimpleRaycaster::compile() {
@@ -101,30 +112,26 @@ void SimpleRaycaster::compile() {
 	raycastPrg_->rebuild();
 }
 
-void SimpleRaycaster::process(LocalPortMapping* portMapping) 
-{	
+void SimpleRaycaster::process(LocalPortMapping* portMapping) {	
 	int entryParams = portMapping->getTarget("image.entrypoints");
 	int exitParams = portMapping->getTarget("image.exitpoints");
 
 	int dest = portMapping->getTarget("image.output");	
     tc_->setActiveTarget(dest,"SimpleRaycaster::image.output");
     
-    glViewport(0,0,(int)size_.x,(int)size_.y);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, size_.x, size_.y); //FIXME: is this needed?
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
 	VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if( (volumeHandle != 0) && (volumeHandle != currentVolumeHandle_) )
-    {
+    if (volumeHandle != currentVolumeHandle_)
         setVolumeHandle(volumeHandle);
-    }
-    if( currentVolumeHandle_ == 0 )
+
+    if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
 		return;
 
 	// compile program
-	if (firstPass_) {
-		compileShader();
-		LGL_ERROR;
-	}
+    compileShader();
+    LGL_ERROR;
 
     // bind entry params
     glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
@@ -152,17 +159,20 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping)
     );
 
    	// segmentation volume
-    if (useSegmentation_.get() && volumeContainer_->getVolumeGL(Modality::MODALITY_SEGMENTATION)) {
+    VolumeGL* volumeSeg = currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
+
+    if (useSegmentation_.get() && (volumeSeg != 0) ) {
         volumeTextures.push_back(VolumeStruct(
-            volumeContainer_->getVolumeGL(Modality::MODALITY_SEGMENTATION),
+            volumeSeg,
             segmentationTexUnit_,
             "segmentation_",
             "segmentationParameters_")
         );
 
-        // set texture filters for this volume/texunit
         glActiveTexture(tm_.getGLTexUnit(segmentationTexUnit_));
 
+        // set texture filters for this texture
+        //FIXME: this does NOTHING! is this the right place to set filtering for segmentation?
         glPushAttrib(GL_TEXTURE_BIT);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -176,22 +186,22 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping)
 
 	// initialize shader
     raycastPrg_->activate();
-	if (firstPass_) {
-		// set common uniforms used by all shaders
-        setGlobalShaderParameters(raycastPrg_);
-        // bind the volumes and pass the necessary information to the shader
-        bindVolumes(raycastPrg_, volumeTextures);
+
+    // set common uniforms used by all shaders
+    setGlobalShaderParameters(raycastPrg_);
+    // bind the volumes and pass the necessary information to the shader
+    bindVolumes(raycastPrg_, volumeTextures);
+
         // pass the remaining uniforms to the shader
-        raycastPrg_->setUniform("entryParams_", (GLint) tm_.getTexUnit(entryParamsTexUnit_));
-		raycastPrg_->setUniform("entryParamsDepth_", (GLint) tm_.getTexUnit(entryParamsDepthTexUnit_));
-		raycastPrg_->setUniform("exitParams_", (GLint) tm_.getTexUnit(exitParamsTexUnit_));
-		raycastPrg_->setUniform("exitParamsDepth_", (GLint) tm_.getTexUnit(exitParamsDepthTexUnit_));
+        raycastPrg_->setUniform("entryPoints_", tm_.getTexUnit(entryParamsTexUnit_));
+		raycastPrg_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+		raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
+		raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
 		raycastPrg_->setUniform("lowerThreshold_", lowerTH_.get());
 		raycastPrg_->setUniform("upperThreshold_", upperTH_.get());
-		raycastPrg_->setUniform("transferFunc_", (GLint) tm_.getTexUnit(transferTexUnit_));
-		if (useSegmentation_.get() && volumeContainer_->getVolumeGL(Modality::MODALITY_SEGMENTATION))
-            raycastPrg_->setUniform("segment_" , (float)segment_.get());
-    }
+		raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit(transferTexUnit_));
+		if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
+            raycastPrg_->setUniform("segment_" , static_cast<float>(segment_.get()));
 
     renderQuad();
 
@@ -205,16 +215,10 @@ std::string SimpleRaycaster::generateHeader() {
 
     header += transferFunc_.get()->getShaderDefines();
 
-    if (useSegmentation_.get() && volumeContainer_->getVolumeGL(Modality::MODALITY_SEGMENTATION)){
+    if (useSegmentation_.get() && currentVolumeHandle_->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
         header += "#define USE_SEGMENTATION\n";
-    }
-    if( (currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolume()->getBitsStored() == 12) )
-    {
-        header += "#define BITDEPTH_12\n";
-    }
+
     return header;
 }
-
-
 
 } // namespace

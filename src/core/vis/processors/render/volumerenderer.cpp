@@ -49,8 +49,7 @@ VolumeRenderer::VolumeRenderer(tgt::Camera* camera, TextureContainer* tc)
     , lowerTH_(setLowerThreshold_, "Lower Threshold", 0.0f)
     , upperTH_(setUpperThreshold_, "Upper Threshold", 1.0f)
     , currentVolumeHandle_(0)
-{
-}
+{}
 
 void VolumeRenderer::processMessage(Message* msg, const Identifier& dest) {
     Processor::processMessage(msg, dest);
@@ -64,18 +63,15 @@ void VolumeRenderer::processMessage(Message* msg, const Identifier& dest) {
 	}
 }
 
-VolumeHandle* VolumeRenderer::getVolumeHandle() 
-{
+VolumeHandle* VolumeRenderer::getVolumeHandle() {
     return currentVolumeHandle_;
 }
 
-const VolumeHandle* VolumeRenderer::getVolumeHandle() const 
-{
+const VolumeHandle* VolumeRenderer::getVolumeHandle() const {
     return currentVolumeHandle_;
 }
 
-void VolumeRenderer::setVolumeHandle(VolumeHandle* const handle)
-{
+void VolumeRenderer::setVolumeHandle(VolumeHandle* const handle) {
     currentVolumeHandle_ = handle;
 }
 
@@ -86,80 +82,46 @@ tgt::mat4 VolumeRenderer::getModelViewMatrix() const {
         return tgt::mat4::identity;
 }
 
+TransFunc* VolumeRenderer::getTransFunc() {
+    return 0;
+}
+
+TransFunc* VolumeRenderer::getTransFunc(int i) {
+    if (i == 0)
+        return getTransFunc();
+    else
+        return 0;
+}
+
 std::string VolumeRenderer::generateHeader() {
     std::string header = Processor::generateHeader();
+
     if (GpuCaps.isNpotSupported())
         header += "#define VRN_TEXTURE_3D\n";
     else
         header += "#define VRN_TEXTURE_3D_SCALED\n";
-    /*
-    if( (currentVolumeHandle_ != 0) 
-        && (currentVolumeHandle_->getTextureType() == VolumeHandle::VRN_TEXTURE_3D_POWER_OF_TWO_SCALED) )
-        header += "#define VRN_TEXTURE_3D_SCALED\n";
-    else
-        header += "#define VRN_TEXTURE_3D\n";
-    */
+
     return header;
 }
 
 void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader) {
-
     Processor::setGlobalShaderParameters(shader);
 
     int loc;
     // viewmatrix, projection matrix
     loc = shader->getUniformLocation("viewMatrix_", true);
-    if ( loc != -1)
+    if (loc != -1)
         shader->setUniform(loc, camera_->getViewMatrix());
     loc = shader->getUniformLocation("projectionMatrix_", true);
-    if ( loc != -1)
+    if (loc != -1)
         shader->setUniform(loc, getProjectionMatrix());
    
 }
 
-const VolumeTexture* VolumeRenderer::getCurrentTexture() {
-    //int texture = 0;
-
-    std::vector<Port*> inp = getInports();
-    Port* dsport = 0;
-    Processor* dsProc = 0;
-	//LINFO("attached in ports: " << inp.size());
-    for(size_t i=0; i<inp.size(); ++i) {
-        if(inp[i]->getType() == "volume.dataset")
-            dsport = inp[i];
-    }
-    if(dsport) {
-        std::vector<Port*> con = dsport->getConnected();
-		//LINFO("connected to dsport: " << con.size());
-        for(size_t i=0; i<con.size(); ++i) {
-			//LINFO(i << " " << con[i]->getProcessor()->getClassName());
-            if(con[i]->getProcessor()->getClassName() == "Dataset.Dataset")
-                dsProc = con[i]->getProcessor();
-        }
-        
-        if(dsProc) {
-            DataSupplyProcessor* dsp = dynamic_cast<DataSupplyProcessor*>(dsProc);
-            if(dsp) {
-                return dsp->getCurrentTexture();
-            }
-        }
-    }
-    return 0;   // added to avoid compiler warning. (dirk)
-}
-
-void VolumeRenderer::bindVolumes(tgt::Shader* shader,
-                                 const std::vector<VolumeStruct> &volumeStructs) {
-
-    bool texCoordScaling = false;
-    /*
-    if( (currentVolumeHandle_ != 0) 
-        && (currentVolumeHandle_->getTextureType() == VolumeHandle::VRN_TEXTURE_3D_POWER_OF_TWO_SCALED) )
-        texCoordScaling = true;
-    */
-    if (GpuCaps.isNpotSupported() == false)
-        texCoordScaling = true;
-
-    for (size_t i=0; i<volumeStructs.size(); i++) {
+void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumeStructs) {
+    bool texCoordScaling = ! GpuCaps.isNpotSupported();
+    
+    for (size_t i=0; i<volumeStructs.size(); ++i) {
         // some shortcuts
         const VolumeStruct volumeStruct = volumeStructs[i];
         const VolumeGL* volumeGL = volumeStruct.volume_;
@@ -174,8 +136,8 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader,
         GLint loc = shader->getUniformLocation(volumeStruct.samplerIdentifier_, true);
         if ((loc != -1) && (volumeStruct.textureUnitIdent_ != "")) {
             tgtAssert(volumeGL->getTexture(), "No volume texture");
-            GLint texUnit = (GLint) tm_.getTexUnit(volumeStruct.textureUnitIdent_);
-            GLint OGLTexUnit = (GLint) tm_.getGLTexUnit(volumeStruct.textureUnitIdent_);
+            GLint texUnit = tm_.getTexUnit(volumeStruct.textureUnitIdent_);
+            GLint OGLTexUnit = tm_.getGLTexUnit(volumeStruct.textureUnitIdent_);
             glActiveTexture(OGLTexUnit);
 #ifdef VRN_MODULE_CLOSEUPS
 		    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -192,45 +154,52 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader,
         std::string paramsIdent = volumeStruct.volumeParametersIdentifier_;
         // volume size, i.e. dimensions of the proxy geometry in world coordinates
         loc = shader->getUniformLocation(paramsIdent + ".datasetDimensions_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, tgt::vec3(volume->getDimensions()) );
+        if (loc != -1)
+            shader->setUniform(loc, tgt::vec3(volume->getDimensions()));
         loc = shader->getUniformLocation(paramsIdent + ".datasetDimensionsRCP_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, vec3(1.f) / tgt::vec3(volume->getDimensions()) );
+        if (loc != -1)
+            shader->setUniform(loc, vec3(1.f) / tgt::vec3(volume->getDimensions()));
 
         // volume spacing, i.e. voxel size
         loc = shader->getUniformLocation(paramsIdent + ".datasetSpacing_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, volume->getSpacing() );
+        if (loc != -1)
+            shader->setUniform(loc, volume->getSpacing());
         loc = shader->getUniformLocation(paramsIdent + ".datasetSpacingRCP_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, vec3(1.f) / volume->getSpacing() );
+        if (loc != -1)
+            shader->setUniform(loc, vec3(1.f) / volume->getSpacing());
 
         // volume's size in its object coordinates
         loc = shader->getUniformLocation(paramsIdent + ".volumeCubeSize_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, volume->getCubeSize() );
+        if (loc != -1)
+            shader->setUniform(loc, volume->getCubeSize());
         loc = shader->getUniformLocation(paramsIdent + ".volumeCubeSizeRCP_", true);
-        if ( loc != -1 )
-            shader->setUniform( loc, vec3(1.f) / volume->getCubeSize() );
+        if (loc != -1)
+            shader->setUniform(loc, vec3(1.f) / volume->getCubeSize());
 
         // scaling of texture coords, if a resize of a npot texture to pot dimensions was necessary
         if (texCoordScaling) {
             // we are only interested in the scaling part of the texture matrix
             vec3 texScaleVector = volumeTex->getMatrix().getScalingPart();
-            loc = shader->getUniformLocation( paramsIdent + ".texCoordScaleFactor_", true );
-            if ( loc != -1 )
-                shader->setUniform( loc, texScaleVector);
-            loc = shader->getUniformLocation( paramsIdent + ".texCoordScaleFactorRCP_", true );
-            if ( loc != -1 )
-                shader->setUniform( loc, vec3(1.f) / texScaleVector);
+            loc = shader->getUniformLocation(paramsIdent + ".texCoordScaleFactor_", true);
+            if (loc != -1)
+                shader->setUniform(loc, texScaleVector);
+            loc = shader->getUniformLocation(paramsIdent + ".texCoordScaleFactorRCP_", true);
+            if (loc != -1)
+                shader->setUniform(loc, vec3(1.f) / texScaleVector);
         
         }
 
+        // is the volume a 12 bit volume
+        loc = shader->getUniformLocation(paramsIdent + ".bitDepthScale_", true);
+        if (loc != -1) {
+			if (volume->getBitsStored()==12)
+				shader->setUniform(loc,  16.0f);
+			else
+				shader->setUniform(loc,  1.0f);
+        }
     }
 
     LGL_ERROR;
-
 }
 
 VolumeRenderer::VolumeStruct::VolumeStruct() {
@@ -245,11 +214,10 @@ float VolumeRenderer::getUpperThreshold() const {
     return upperTH_.get();
 }
 
-VolumeRenderer::VolumeStruct::VolumeStruct(
-        const VolumeGL* volume,
-        Identifier textureUnitIdent,
-        std::string samplerIdentifier,
-        std::string volumeParametersIdentifier)
+VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeGL* volume,
+                                           Identifier textureUnitIdent,
+                                           std::string samplerIdentifier,
+                                           std::string volumeParametersIdentifier)
 {
     volume_ = volume;
     textureUnitIdent_ = textureUnitIdent;

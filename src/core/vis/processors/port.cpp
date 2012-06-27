@@ -32,48 +32,17 @@
 
 namespace voreen {
 
-
 PortData::PortData(Identifier type) 
 	: type_(type)
 {}
 
-int PortData::getTarget() {
-	return -1;
-}
-
-void PortData::setTarget(int /*target*/) {
-}
-
-void PortData::call() {
-}
-
-PortDataTexture::PortDataTexture(int target) 
-    : PortData("portdata.texture")
-    , textureContainerTarget_(target)
-{
-}
-
-PortDataVolume::PortDataVolume(int target)
-    : PortData("portdata.volume")
-    , volumeContainerTarget_(target)
-{
-}
-
-PortDataGeometry::PortDataGeometry(int target)
-    : PortData("portdata.geometry")
-    , geometryContainerTarget_(target)
-{
-}
-
 PortDataCoProcessor::PortDataCoProcessor(Processor* processor, FunctionPointer functionPointer)
-    : PortData("portdata.coprocessor")
-    , function_(functionPointer)
+    : PortDataGeneric<FunctionPointer>(functionPointer, "portdata.coprocessor")
     , processor_(processor)
-{
-}
+{}
 
-Message* PortDataCoProcessor::call(Identifier ident,LocalPortMapping* portMapping) {
-	return (processor_->*function_)(ident,portMapping);
+Message* PortDataCoProcessor::call(Identifier ident, LocalPortMapping* portMapping) {
+	return (processor_->*getData())(ident, portMapping);
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +59,7 @@ Port::Port(Identifier type, Processor* processor, bool isOutport, bool allowMult
         allowMultipleConnections_ = true;
 }
 
-Identifier Port::getType() const{
+Identifier Port::getType() const {
 	return type_;
 }
 
@@ -107,7 +76,7 @@ void Port::addConnection(Port* port) {
 }
 
 bool Port::isConnectedTo(Port* port) const {
-    for (size_t i=0; i<connectedPorts_.size(); i++) {
+    for (size_t i=0; i<connectedPorts_.size(); ++i) {
         if (connectedPorts_[i] == port)
             return true;
     }
@@ -115,7 +84,7 @@ bool Port::isConnectedTo(Port* port) const {
 }
 
 int Port::getIndexOf(Port* port) const {
-    for (size_t i=0; i<connectedPorts_.size(); i++) {
+    for (size_t i=0; i<connectedPorts_.size(); ++i) {
         if (connectedPorts_[i] == port)
             return i;
     }
@@ -133,9 +102,9 @@ bool Port::isCompatible(Identifier type) {
 std::string Port::printConnections() {
     std::stringstream connections;
     std::vector<Port*>& connectedTo = getConnected();
-    for (size_t i=0; i<connectedTo.size(); ++i) {
+    for (size_t i=0; i<connectedTo.size(); ++i)
         connections << i << ": " << connectedTo[i]->getProcessor()->getClassName().getName() << std::endl;
-    }
+    
     return connections.str();
 }
 

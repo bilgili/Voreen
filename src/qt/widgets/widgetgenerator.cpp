@@ -30,7 +30,7 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/networkanalyzer.h"
 #include "voreen/core/vis/voreenpainter.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 #include <QMessageBox>
 #include <QFrame>
@@ -115,7 +115,7 @@ void WidgetGenerator::createWidgets(){
     }
 
     //get properties from active overlays
-    for(size_t i = 0; i < overlays_.size(); ++i) {
+    for (size_t i = 0; i < overlays_.size(); ++i) {
         const Properties& props_tmp = overlays_.at(i)->getProperties();
 
         overlayPropsList_tmp = new OverlayPropsList();
@@ -127,7 +127,7 @@ void WidgetGenerator::createWidgets(){
             vboxLayout->addWidget(new OverlayProcessorHeaderWidget(parWidget_, overlayPropsList_tmp, msgReceiver_, this, props_tmp.size() > 0));
         }
 
-        for(unsigned int j=0; j<props_tmp.size();++j){
+        for (unsigned int j=0; j<props_tmp.size();++j){
             QHBoxLayout* hb = new QHBoxLayout();
             //special handling for conditional- and groupproperties needed
             if (props_tmp.at(j)->getType() != Property::CONDITION_PROP && !props_tmp.at(j)->isConditioned()
@@ -222,7 +222,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Pr
     QVBoxLayout* newVBox = new QVBoxLayout();
     PropsWidgetList* listItem_tmp;
 
-    if(prop->getType() == Property::BOOL_PROP){
+    if (prop->getType() == Property::BOOL_PROP){
         frame->setCheckable(true);
         frame->setChecked((dynamic_cast<BoolProp*>(prop))->get());
         // FIXME this is not deleted
@@ -267,7 +267,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Ov
     QVBoxLayout* newVBox = new QVBoxLayout();
     PropsWidgetList* listItem_tmp;
 
-    if(prop->getType() == Property::BOOL_PROP){
+    if (prop->getType() == Property::BOOL_PROP){
         frame->setCheckable(true);
         frame->setChecked((dynamic_cast<BoolProp*>(prop))->get());
         listItem_tmp = new PropsWidgetList();
@@ -638,13 +638,13 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                     case Property::TRANSFUNC_PROP : {
 //                         try{
 //                             TransFuncPlugin* tflg1 = dynamic_cast<TransFuncPlugin*>(propsPlugins_tmp.at(j)->widget);
-//                             TransFuncIntensityKeys* tf = tflg1->getTransferFunc();
+//                             TransFuncIntensity* tf = tflg1->getTransferFunc();
 //
 //                             //iterate through all markers
 //                             //first set conditions for the current item if there're some
 //                             if (!pElem->NoChildren()) {
 //                                 cElem = pElem->FirstChildElement();
-//                                 for(; cElem; cElem=cElem->NextSiblingElement()) {
+//                                 for (; cElem; cElem=cElem->NextSiblingElement()) {
 //                                     //first get the color
 //                                     float value_tmp;
 //                                     int int_tmp;
@@ -683,7 +683,7 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
 // 								    }
 //                                     // push key to vector
 //                                     tf->addKey(myKey);
-//                                 } // for( pElem; pElem; pElem=pElem->NextSiblingElement())
+//                                 } // for ( pElem; pElem; pElem=pElem->NextSiblingElement())
 //                                 //renderPropertyPlugin_list_[i].second.at(j).first->setConditioned(conditionIdentifier_text, cond_tmp);
 //                             } // if (!pElem->NoChildren())
 //                         } catch (const std::bad_cast& /*ex*/) {
@@ -931,7 +931,7 @@ void WidgetGenerator::loadWidgetSettings() {
     // look for processor-settings in xml
     rElem=hRoot.FirstChildElement().FirstChildElement().Element();
 
-    for(; rElem; rElem=rElem->NextSiblingElement()) {
+    for (; rElem; rElem=rElem->NextSiblingElement()) {
 
         // is there a property?
         if (!rElem->NoChildren()) {
@@ -939,8 +939,8 @@ void WidgetGenerator::loadWidgetSettings() {
             processor_name = rElem->Attribute("Processor_name");
 
             // look for a processor with processor_name in processorproperty_list
-            for(size_t i = 0; i < processorPropertyPlugin_list_.size(); i++) {
-                if( processorPropertyPlugin_list_.at(i)->processor->getName() == processor_name ) {
+            for (size_t i = 0; i < processorPropertyPlugin_list_.size(); i++) {
+                if ( processorPropertyPlugin_list_.at(i)->processor->getName() == processor_name ) {
                     // found a processor which fits processor_name
                     // iterate through all properties of the current processor and set attributes
                     int int_tmp;
@@ -961,7 +961,7 @@ void WidgetGenerator::loadWidgetSettings() {
     // look for overlay-settings in xml
     rElem = hRoot.FirstChildElement().Element()->NextSiblingElement()->FirstChildElement();
 
-    for(; rElem; rElem=rElem->NextSiblingElement()) {
+    for (; rElem; rElem=rElem->NextSiblingElement()) {
 
         // is there a property?
         if (!rElem->NoChildren()) {
@@ -1019,8 +1019,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 FloatProp* prop1 = dynamic_cast<FloatProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_PROP);
                 xmlProperty->SetDoubleAttribute("Value", prop1->get());
-                xmlProperty->SetAttribute("Max_value" ,(int)prop1->getMaxValue());
-                xmlProperty->SetAttribute("Min_value" ,(int)prop1->getMinValue());
+                xmlProperty->SetAttribute("Max_value" ,static_cast<int>(prop1->getMaxValue()));
+                xmlProperty->SetAttribute("Min_value" ,static_cast<int>(prop1->getMinValue()));
                 break;
             }
             case Property::INT_PROP : {
@@ -1069,7 +1069,7 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
 //                 TransFuncPlugin* transfer = dynamic_cast<TransFuncPlugin*>(renderPropertyPlugin_list_[j]->propWidg_list_[i]->widget);
 //
 //                 xmlProperty->SetAttribute("Property_type", Property::TRANSFERFUNC_PROP);
-//                 TransFuncIntensityKeys* tf = transfer->getTransferFunc();
+//                 TransFuncIntensity* tf = transfer->getTransferFunc();
 //
 //                 // iterate through all markers
 //                 for (size_t m = 0; m < tf->getNumKeys(); ++m) {
@@ -1150,10 +1150,10 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_VEC2_PROP);
                 xmlProperty->SetDoubleAttribute("Vector_x", prop1->get().x);
                 xmlProperty->SetDoubleAttribute("Vector_y", prop1->get().y);
-                xmlProperty->SetAttribute("Max_value_x" ,prop1->getMaximum().x);
-                xmlProperty->SetAttribute("Max_value_y" ,prop1->getMaximum().y);
-                xmlProperty->SetAttribute("Min_value_x" ,prop1->getMinimum().x);
-                xmlProperty->SetAttribute("Min_value_y" ,prop1->getMinimum().y);
+                xmlProperty->SetDoubleAttribute("Max_value_x" ,prop1->getMaximum().x);
+                xmlProperty->SetDoubleAttribute("Max_value_y" ,prop1->getMaximum().y);
+                xmlProperty->SetDoubleAttribute("Min_value_x" ,prop1->getMinimum().x);
+                xmlProperty->SetDoubleAttribute("Min_value_y" ,prop1->getMinimum().y);
                 break;
             }
             case Property::FLOAT_VEC3_PROP : {
@@ -1162,12 +1162,12 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Vector_x", prop1->get().x);
                 xmlProperty->SetDoubleAttribute("Vector_y", prop1->get().y);
                 xmlProperty->SetDoubleAttribute("Vector_z", prop1->get().z);
-                xmlProperty->SetAttribute("Max_value_x" ,prop1->getMaximum().x);
-                xmlProperty->SetAttribute("Max_value_y" ,prop1->getMaximum().y);
-                xmlProperty->SetAttribute("Max_value_z" ,prop1->getMaximum().z);
-                xmlProperty->SetAttribute("Min_value_x" ,prop1->getMinimum().x);
-                xmlProperty->SetAttribute("Min_value_y" ,prop1->getMinimum().y);
-                xmlProperty->SetAttribute("Min_value_z" ,prop1->getMinimum().z);
+                xmlProperty->SetDoubleAttribute("Max_value_x" ,prop1->getMaximum().x);
+                xmlProperty->SetDoubleAttribute("Max_value_y" ,prop1->getMaximum().y);
+                xmlProperty->SetDoubleAttribute("Max_value_z" ,prop1->getMaximum().z);
+                xmlProperty->SetDoubleAttribute("Min_value_x" ,prop1->getMinimum().x);
+                xmlProperty->SetDoubleAttribute("Min_value_y" ,prop1->getMinimum().y);
+                xmlProperty->SetDoubleAttribute("Min_value_z" ,prop1->getMinimum().z);
                 break;
             }
             case Property::FLOAT_VEC4_PROP : {
@@ -1177,14 +1177,14 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Vector_y", prop1->get().y);
                 xmlProperty->SetDoubleAttribute("Vector_z", prop1->get().z);
                 xmlProperty->SetDoubleAttribute("Vector_w", prop1->get().w);
-                xmlProperty->SetAttribute("Max_value_x" ,prop1->getMaximum().x);
-                xmlProperty->SetAttribute("Max_value_y" ,prop1->getMaximum().y);
-                xmlProperty->SetAttribute("Max_value_z" ,prop1->getMaximum().z);
-                xmlProperty->SetAttribute("Max_value_w" ,prop1->getMaximum().w);
-                xmlProperty->SetAttribute("Min_value_x" ,prop1->getMinimum().x);
-                xmlProperty->SetAttribute("Min_value_y" ,prop1->getMinimum().y);
-                xmlProperty->SetAttribute("Min_value_z" ,prop1->getMinimum().z);
-                xmlProperty->SetAttribute("Min_value_w" ,prop1->getMinimum().w);
+                xmlProperty->SetDoubleAttribute("Max_value_x" ,prop1->getMaximum().x);
+                xmlProperty->SetDoubleAttribute("Max_value_y" ,prop1->getMaximum().y);
+                xmlProperty->SetDoubleAttribute("Max_value_z" ,prop1->getMaximum().z);
+                xmlProperty->SetDoubleAttribute("Max_value_w" ,prop1->getMaximum().w);
+                xmlProperty->SetDoubleAttribute("Min_value_x" ,prop1->getMinimum().x);
+                xmlProperty->SetDoubleAttribute("Min_value_y" ,prop1->getMinimum().y);
+                xmlProperty->SetDoubleAttribute("Min_value_z" ,prop1->getMinimum().z);
+                xmlProperty->SetDoubleAttribute("Min_value_w" ,prop1->getMinimum().w);
                 break;
             }
             default:
@@ -1241,7 +1241,7 @@ void WidgetGenerator::saveWidgetSettings() {
     root->LinkEndChild(rootProcessor);
 
     //iterate through all processors from processorPropertyPlugin_list_
-    for(size_t j = 0; j < processorPropertyPlugin_list_.size() ; ++j){
+    for (size_t j = 0; j < processorPropertyPlugin_list_.size() ; ++j){
         //get vector of properties and plugins from actual processor
         propsPlugins_tmp = processorPropertyPlugin_list_[j]->propWidg_list_;
 
@@ -1262,7 +1262,7 @@ void WidgetGenerator::saveWidgetSettings() {
     root->LinkEndChild(rootOverlay);
 
    //iterate through all overlays from overlayPropertyPlugin_list_
-    for(size_t j = 0; j < overlayPropertyPlugin_list_.size() ; ++j){
+    for (size_t j = 0; j < overlayPropertyPlugin_list_.size() ; ++j){
         //get vector of properties and plugins from actual overlay
         propsPlugins_tmp = overlayPropertyPlugin_list_[j]->propWidg_list_;
 

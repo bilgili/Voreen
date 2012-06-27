@@ -37,7 +37,7 @@ namespace tgt {
 vec3 tgt::Spline::interpolateCurrent(float t, const vec3& previous,
             const vec3& current, const vec3& next, const vec3& afternext) const {
 
-    if(t < 0.f || t > 1.f)
+    if (t < 0.f || t > 1.f)
         return vec3();
 
 
@@ -62,9 +62,9 @@ vec3 tgt::Spline::interpolateCurrent(float t, const vec3& previous,
     ( = derivative of next point).
 */
 vec3 tgt::Spline::firstDeriveCurrent(float t, const vec3& previous,
-            const vec3& current, const vec3& next, const vec3& afternext) const {
-
-    if(t < 0.f || t > 1.f)
+            const vec3& current, const vec3& next, const vec3& afternext) const
+{
+    if (t < 0.f || t > 1.f)
         return vec3();
 
     float fac1, fac2, fac3, fac4;
@@ -97,7 +97,7 @@ vec3 tgt::Spline::interpolate(float t, float total) const {
 
     // with less than 4 control-Points, we don't have engough information to form a B-Spline;
     // also, the running variable must not be smaller than zero or greater than the total-run-variable
-    if(controlPoints_.size() < 4 || t < 0.f || t > total)
+    if (controlPoints_.size() < 4 || t < 0.f || t > total)
         return vec3();
 
     // This is the part of the whole 0-1-range that represents a single interpolation between two points.
@@ -108,14 +108,14 @@ vec3 tgt::Spline::interpolate(float t, float total) const {
     uint current = uint(std::floor(t / piece)) + 1;
 
     // In the current interpolation, how far have we gotten up to now?
-    float interpol = fmod(t, piece);
+    float interpol = fmodf(t, piece);
 
-    if(current > 0 && current < (controlPoints_.size() - 1)) {
+    if (current > 0 && current < (controlPoints_.size() - 1)) {
         vec3 res = interpolateCurrent(interpol / piece,  // this actually maps the piece of the "big" 0-1-range to the current 0-1-range
                                controlPoints_[current - 1],
                                controlPoints_[current],
                                controlPoints_[current + 1],
-                               controlPoints_[std::min((int)current + 2, (int)controlPoints_.size()-1)]);
+                               controlPoints_[std::min(static_cast<int>(current) + 2, static_cast<int>(controlPoints_.size())-1)]);
 
         return res;
     }
@@ -132,15 +132,15 @@ vec3 tgt::Spline::firstDerive(float t, float total) const {
 
     // with less than 4 control-Points, we don't have engough information to form an interpolation;
     // also, the running variable must not be smaller than zero or greater than the total-run-variable
-    if(controlPoints_.size() < 4  || t < 0.f || t > total)
+    if (controlPoints_.size() < 4  || t < 0.f || t > total)
         return vec3();
 
     float piece = total / (controlPoints_.size() - 3);
 
     uint current = uint(std::floor(t / piece)) + 1;
-    float interpol = fmod(t, piece);
+    float interpol = fmodf(t, piece);
 
-    if(current > 0 && current < (controlPoints_.size() - 1)) {
+    if (current > 0 && current < (controlPoints_.size() - 1)) {
         vec3 res = firstDeriveCurrent(interpol / piece,
                                controlPoints_[current - 1],
                                controlPoints_[current],

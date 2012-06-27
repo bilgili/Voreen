@@ -100,7 +100,7 @@ public:
             const vec3& focus    =  vec3(0.0f, 0.0f, -1.0f),
             const vec3& up       =  vec3(0.0f, 1.0f,  0.0f),
             float fovy           =  45.f,
-            float ratio          =  (float) GLCanvas::DEFAULT_WINDOW_WIDTH / GLCanvas::DEFAULT_WINDOW_HEIGHT,
+            float ratio          =  static_cast<float>(GLCanvas::DEFAULT_WINDOW_WIDTH) / GLCanvas::DEFAULT_WINDOW_HEIGHT,
             float distn          =  .1f,
             float distf          =  50.f);
 

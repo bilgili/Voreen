@@ -28,6 +28,12 @@
  **********************************************************************/
 
 #include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
+
+
+#include "fboClass/framebufferObject.h"
+
+#include "tinyxml/tinyxml.h"
+
 #include "tgt/tgt_gl.h"
 #include "tgt/glmath.h"
 #include "tgt/gpucapabilities.h"
@@ -37,6 +43,7 @@
 #endif
 
 using namespace tgt;
+
 
 namespace voreen {
 
@@ -159,7 +166,7 @@ TransFuncIntensityGradientPrimitiveContainer::TransFuncIntensityGradientPrimitiv
         fbo_->AttachTexture(GL_TEXTURE_2D, getTexture()->getId(), GL_COLOR_ATTACHMENT0_EXT);
 
         // Validate the FBO after attaching textures and render buffers
-        if(fbo_->IsValid()) {
+        if (fbo_->IsValid()) {
             LDEBUG("fbo valid!");
         }
         else {
@@ -181,39 +188,39 @@ std::string TransFuncIntensityGradientPrimitiveContainer::getShaderDefines() {
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::paint() {
-    if(primitives_.empty())
+    if (primitives_.empty())
         return;
-    for(size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i) {
         primitives_[i]->paint();
     }
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::paintSelection() {
-    if(primitives_.empty())
+    if (primitives_.empty())
         return;
-    for(size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i) {
         primitives_[i]->paintSelection(i);
     }
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::paintInEditor() {
-    if(primitives_.empty())
+    if (primitives_.empty())
         return;
-    for(size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i) {
         primitives_[i]->paintInEditor();
     }
 }
 
 TransFuncPrimitive* TransFuncIntensityGradientPrimitiveContainer::getControlPointUnderMouse(tgt::vec2 m) {
-    if(primitives_.empty())
+    if (primitives_.empty())
         return 0;
 
 	int min = 0;
     float mindist = 2.0f;
     float d;
-    for(size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i) {
          d = primitives_[i]->getClosestControlPointDist(m);
-         if(d < mindist) {
+         if (d < mindist) {
             mindist = d;
             min = i;
          }
@@ -229,7 +236,7 @@ void TransFuncIntensityGradientPrimitiveContainer::save(const std::string& fname
     TiXmlElement* root = new TiXmlElement( "transferfunc2d" );
     doc.LinkEndChild( root );
 
-    for(size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i) {
          primitives_[i]->save(root);
     }
     doc.SaveFile(fname);
@@ -248,17 +255,17 @@ bool TransFuncIntensityGradientPrimitiveContainer::load(const std::string& fname
     if (!hRoot) return false;
 
     pElem=hRoot->FirstChildElement("quad");
-    for( ; pElem; pElem=pElem->NextSiblingElement("quad"))
-    {
-        TransFuncQuad* q = new TransFuncQuad(tgt::vec2(0.5,0.5), 0.25, tgt::col4(255,0,0,128));
+    for ( ; pElem; pElem=pElem->NextSiblingElement("quad")) {
+        TransFuncQuad* q = new TransFuncQuad(tgt::vec2(0.5f, 0.5f), 0.25f, tgt::col4(255, 0, 0, 128));
         q->load(pElem);
         addPrimitive(q);
     }
 
     pElem=hRoot->FirstChildElement("banana");
-    for( ; pElem; pElem=pElem->NextSiblingElement("banana"))
-    {
-        TransFuncBanana* b = new TransFuncBanana(tgt::vec2(0.0,0.0), tgt::vec2(0.5,0.6), tgt::vec2(0.34,0.4), tgt::vec2(0.45,0.0),  tgt::col4(0,255,0,128));
+    for ( ; pElem; pElem=pElem->NextSiblingElement("banana")) {
+        TransFuncBanana* b = new TransFuncBanana(tgt::vec2(0.f, 0.f ), tgt::vec2(0.5f, 0.6f),
+                                                 tgt::vec2(0.34f, 0.4f), tgt::vec2(0.45f, 0.f),
+                                                 tgt::col4(0, 255, 0, 128));
         b->load(pElem);
         addPrimitive(b);
     }
@@ -270,7 +277,7 @@ void TransFuncIntensityGradientPrimitiveContainer::removePrimitive(TransFuncPrim
 
     it = primitives_.begin();
     while(it != primitives_.end()) {
-        if(*it == p) {
+        if (*it == p) {
             delete *it;
             primitives_.erase(it);
             return;
@@ -326,9 +333,9 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     
     glBegin(GL_POLYGON);
     glColor4ub(150,150,150,255);
-    for(int i=0; i<20; i++) {
-        t.x = cos((i/20.0f)*2.0f*PIf)*radius;
-        t.y = sin((i/20.0f)*2.0f*PIf)*radius;
+    for (int i=0; i<20; i++) {
+        t.x = cosf((i/20.0f)*2.0f*PIf)*radius;
+        t.y = sinf((i/20.0f)*2.0f*PIf)*radius;
         vertex(t);
     }
     glEnd();
@@ -336,13 +343,13 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     glTranslatef(0.0f,0.0f, 0.1f);
 
     glBegin(GL_LINE_LOOP);
-    if(selected_)
+    if (selected_)
         glColor4ub(255,255,255,255);
     else
         glColor4ub(128,128,128,255);
-    for(int i=0; i<20; i++) {
-        t.x = cos((i/20.0f)*2.0f*PIf)*radius;
-        t.y = sin((i/20.0f)*2.0f*PIf)*radius;
+    for (int i=0; i<20; i++) {
+        t.x = cosf((i/20.0f)*2.0f*PIf)*radius;
+        t.y = sinf((i/20.0f)*2.0f*PIf)*radius;
         vertex(t);
     }
     glEnd();
@@ -433,7 +440,7 @@ void TransFuncQuad::paintInEditor() {
     paint();
 
     glBegin(GL_LINE_LOOP);
-        if(selected_)
+        if (selected_)
             glColor4ub(255,255,255,255);
         else
             glColor4ub(128,128,128,255);
@@ -453,9 +460,9 @@ void TransFuncQuad::paintInEditor() {
 float TransFuncQuad::getClosestControlPointDist(tgt::vec2 m) {
     float min = distance(m, coords_[0]);
     float d;
-    for(int i = 1; i<4; ++i) {
+    for (int i = 1; i<4; ++i) {
         d = distance(m, coords_[i]);
-        if(d < min)
+        if (d < min)
             min = d;
     }
     return min;
@@ -466,14 +473,14 @@ bool TransFuncQuad::mousePress(tgt::vec2 m) {
     int n = 0;
     float min = distance(m, coords_[0]);
     float d;
-    for(int i = 0; i<4; ++i) {
+    for (int i = 0; i<4; ++i) {
         d = distance(m, coords_[i]);
-        if(d < min) {
+        if (d < min) {
             min = d;
             n = i;
         }
     }
-    if(min < cpSize_) {
+    if (min < cpSize_) {
         grabbed_ = n;
         return true;
     }
@@ -482,17 +489,17 @@ bool TransFuncQuad::mousePress(tgt::vec2 m) {
 
 void TransFuncQuad::save(TiXmlElement* root) {
     TiXmlElement* e = new TiXmlElement( "quad" );
-    for(int i = 0; i<4; ++i) {
-        saveXml(e, coords_[i]);
+    for (int i = 0; i<4; ++i) {
+        TransFunc::saveXml(e, coords_[i]);
     }
-    saveXml(e, color_);
+    TransFunc::saveXml(e, color_);
     e->SetDoubleAttribute("fuzzy", fuzziness_);
     root->LinkEndChild(e);
 }
 
 void TransFuncQuad::load(TiXmlElement* root) {
     double temp;
-    if(root->Attribute("fuzzy", &temp))
+    if (root->Attribute("fuzzy", &temp))
         fuzziness_ = static_cast<float>(temp);
     else
         fuzziness_ = 1.0f;
@@ -500,21 +507,21 @@ void TransFuncQuad::load(TiXmlElement* root) {
     TiXmlElement* pElem;
     pElem = root->FirstChild("vec2")->ToElement();
     int i = 0;
-    for( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
+    for ( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
     {
-        loadXml(pElem, coords_[i]);
+        TransFunc::loadXml(pElem, coords_[i]);
         i++;
     }
     pElem = root->FirstChild("col4")->ToElement();
-    if(pElem)
-        loadXml(pElem, color_);
+    if (pElem)
+        TransFunc::loadXml(pElem, color_);
 }
 
 void TransFuncQuad::mouseDrag(tgt::vec2 offset) {
-    if(grabbed_ > -1)
+    if (grabbed_ > -1)
         coords_[grabbed_] += offset;
     else
-        for(int i = 0; i<4; ++i) {
+        for (int i = 0; i<4; ++i) {
             coords_[i] += offset;
         }
 }
@@ -550,8 +557,8 @@ void TransFuncBanana::paintSelection(GLubyte id) {
     //fill the space between the two bezier curves:
     glBegin(GL_TRIANGLE_STRIP);
     vertex(coords_[0]);
-    for(int i=0; i<steps_; ++i) {
-        t = i/(float)(steps_-1);
+    for (int i=0; i<steps_; ++i) {
+        t = i/static_cast<float>(steps_-1);
         v1 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t1)+((t*t)*coords_[3]);
         v2 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t2)+((t*t)*coords_[3]);
         vertex(v1);
@@ -574,8 +581,8 @@ void TransFuncBanana::paintInner() {
     glBegin(GL_TRIANGLE_STRIP);
     glColor4ubv(color_.elem);
     vertex(coords_[0]);
-    for(int i=0; i<steps_; ++i) {
-        t = i/(float)(steps_-1);
+    for (int i=0; i<steps_; ++i) {
+        t = i/static_cast<float>(steps_-1);
         v1 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t1)+((t*t)*coords_[3]);
         v2 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t3)+((t*t)*coords_[3]);
         glColor4ub(color_.r, color_.g, color_.b, 0);
@@ -587,8 +594,8 @@ void TransFuncBanana::paintInner() {
 
     glColor4ubv(color_.elem);
     vertex(coords_[0]);
-    for(int i=0; i<steps_; ++i) {
-        t = i/(float)(steps_-1);
+    for (int i=0; i<steps_; ++i) {
+        t = i/static_cast<float>(steps_-1);
         v1 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t3)+((t*t)*coords_[3]);
         v2 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t4)+((t*t)*coords_[3]);
         vertex(v1);
@@ -597,8 +604,8 @@ void TransFuncBanana::paintInner() {
     vertex(coords_[3]);
 
     vertex(coords_[0]);
-    for(int i=0; i<steps_; ++i) {
-        t = i/(float)(steps_-1);
+    for (int i=0; i<steps_; ++i) {
+        t = i/static_cast<float>(steps_-1);
         v1 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t4)+((t*t)*coords_[3]);
         v2 = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t2)+((t*t)*coords_[3]);
         glColor4ubv(color_.elem);
@@ -620,17 +627,17 @@ void TransFuncBanana::paintInEditor() {
 
     //draw outer line of double bezier curve:
     glBegin(GL_LINE_LOOP);
-        if(selected_)
+        if (selected_)
             glColor4ub(255,255,255,255);
         else
             glColor4ub(128,128,128,255);
-        for(int i=0; i<steps_; ++i) {
-            t = i/(float)(steps_-1);
+        for (int i=0; i<steps_; ++i) {
+            t = i/static_cast<float>(steps_-1);
             v = (((1-t)*(1-t))*coords_[0])+((2*(1-t)*t)*t1)+((t*t)*coords_[3]);
             vertex(v);
         }
 
-        for(int i=0; i<steps_; ++i) {
+        for (int i=0; i<steps_; ++i) {
             t = 1.0f-(i/static_cast<float>(steps_-1));
             v = (((1.0f-t)*(1.0f-t))*coords_[0])+((2.0f*(1.0f-t)*t)*t2)+((t*t)*coords_[3]);
             vertex(v);
@@ -646,9 +653,9 @@ void TransFuncBanana::paintInEditor() {
 float TransFuncBanana::getClosestControlPointDist(tgt::vec2 m) {
     float min = distance(m, coords_[0]);
     float d;
-    for(int i = 1; i<4; ++i) {
+    for (int i = 1; i<4; ++i) {
         d = distance(m, coords_[i]);
-        if(d < min)
+        if (d < min)
             min = d;
     }
     return min;
@@ -659,14 +666,14 @@ bool TransFuncBanana::mousePress(tgt::vec2 m) {
     int n = 0;
     float min = distance(m, coords_[0]);
     float d;
-    for(int i = 0; i<4; ++i) {
+    for (int i = 0; i<4; ++i) {
         d = distance(m, coords_[i]);
-        if(d < min) {
+        if (d < min) {
             min = d;
             n = i;
         }
     }
-    if(min < cpSize_) {
+    if (min < cpSize_) {
         grabbed_ = n;
         return true;
     }
@@ -675,17 +682,17 @@ bool TransFuncBanana::mousePress(tgt::vec2 m) {
 
 void TransFuncBanana::save(TiXmlElement* root) {
     TiXmlElement* e = new TiXmlElement( "banana" );
-    for(int i = 0; i<4; ++i) {
-        saveXml(e, coords_[i]);
+    for (int i = 0; i<4; ++i) {
+        TransFunc::saveXml(e, coords_[i]);
     }
-    saveXml(e, color_);
+    TransFunc::saveXml(e, color_);
     e->SetDoubleAttribute("fuzzy", fuzziness_);
     root->LinkEndChild(e);
 }
 
 void TransFuncBanana::load(TiXmlElement* root) {
     double temp;
-    if(root->Attribute("fuzzy", &temp))
+    if (root->Attribute("fuzzy", &temp))
         fuzziness_ = static_cast<float>(temp);
     else
         fuzziness_ = 1.0f;
@@ -693,21 +700,21 @@ void TransFuncBanana::load(TiXmlElement* root) {
     TiXmlElement* pElem;
     pElem = root->FirstChild("vec2")->ToElement();
     int i = 0;
-    for( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
+    for ( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
     {
-        loadXml(pElem, coords_[i]);
+        TransFunc::loadXml(pElem, coords_[i]);
         i++;
     }
     pElem = root->FirstChild("col4")->ToElement();
-    if(pElem)
-        loadXml(pElem, color_);
+    if (pElem)
+        TransFunc::loadXml(pElem, color_);
 }
 
 void TransFuncBanana::mouseDrag(tgt::vec2 offset) {
-    if(grabbed_ > -1)
+    if (grabbed_ > -1)
         coords_[grabbed_] += offset;
     else
-        for(int i = 0; i<4; ++i) {
+        for (int i = 0; i<4; ++i) {
             coords_[i] += offset;
         }
 }

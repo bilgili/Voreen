@@ -41,7 +41,8 @@
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/core/vis/processors/render/volumerenderer.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 namespace voreen {
 
@@ -144,27 +145,6 @@ protected:
 
     static const Identifier transFuncTexUnit_;
     static const Identifier volTexUnit_;
-
-// !!! NOTE:
-// These attributes and methods haven been moved here temporary
-// from super class VolumeRenderer in order to provide compatibility
-// with old VolumeContainer.
-// This functionality is about to be eliminated in near future!
-// (Dirk)
-//
-protected:    
-    VolumeContainer* volumeContainer_;
-    int currentDataset_;
-
-public:
-    /// Returns the dataset currently used.
-    VolumeGL* getCurrentDataset() {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
-    /// Returns the dataset currently used.
-    const VolumeGL* getCurrentDataset() const {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -183,7 +163,6 @@ public:
 	virtual ~SliceRenderer3D();
 
     virtual void setPropertyDestination(Identifier tag);
-    virtual void setVolumeContainer();
 
     /**
      * Handles:
@@ -403,7 +382,6 @@ public:
     virtual Processor* create() {return new SingleSliceRenderer();}
 
 	virtual void process(LocalPortMapping* portMapping);
-    virtual void setVolumeContainer();
 	virtual void processMessage(Message* msg, const Identifier& ident);
 
     /// Sets the index of the slice to be rendered
@@ -439,7 +417,7 @@ public:
     virtual void process(LocalPortMapping* localPortMapping);
 
 protected:
-    TransFuncIntensityKeys* transferFunc1_;
+    TransFuncIntensity* transferFunc1_;
     static const Identifier transFuncTexUnit1_;
     static const Identifier volTexUnit1_;
 };

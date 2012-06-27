@@ -31,7 +31,6 @@
 #include "tgt/tgt_gl.h"
 #include "tgt/manager.h"
 #include "tgt/vector.h"
-#include "tgt/filesystem.h"
 #include "tgt/texture.h"
 
 namespace tgt {

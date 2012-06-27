@@ -28,14 +28,22 @@
  **********************************************************************/
 
 #include "voreen/core/vis/transfunc/transfuncpainter.h"
+
+
 #include "tgt/glmath.h"
 #include "tgt/shadermanager.h"
+
+#include "voreen/core/vis/transfunc/transfunceditor.h"
+#include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
 #include "voreen/core/volume/gradient.h"
+#include "voreen/core/volume/histogram.h"
+
 #ifdef VRN_WITH_DEVIL
     #include <IL/il.h>
 #endif
 
 using namespace tgt;
+
 
 namespace voreen {
 
@@ -75,14 +83,14 @@ void TransFuncPainter::paint() {
 	glActiveTexture(GL_TEXTURE0);
     glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
-    if(changed_)
+    if (changed_)
         updateTF();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
 //     glTranslatef(-0.5f,-0.5f,-2.0f);
-    if((showHistogram_) && (histogramTex_)) {
+    if ((showHistogram_) && (histogramTex_)) {
         histogramTex_->enable();
         histogramTex_->bind();
         glBegin(GL_QUADS);
@@ -95,37 +103,37 @@ void TransFuncPainter::paint() {
         glEnd();
         histogramTex_->disable();
     }
-    if(showGrid_) {
+    if (showGrid_) {
         glBegin(GL_LINES);
-        glColor3f(0.7,0.7,0.7);
-        for(int i=0; i<10; ++i) {
-            glVertex3f( 0.0f, i*0.1f,  -0.5f);
-            glVertex3f( 1.0f, i*0.1f,  -0.5f);
+        glColor3f(0.7f, 0.7f, 0.7f);
+        for (int i=0; i < 10; ++i) {
+            glVertex3f(0.0f, i*0.1f, -0.5f);
+            glVertex3f(1.0f, i*0.1f, -0.5f);
 
-            glVertex3f( i*0.1f,  0.0f,  -0.5f);
-            glVertex3f( i*0.1f,  1.0f,  -0.5f);
+            glVertex3f(i*0.1f,  0.0f, -0.5f);
+            glVertex3f(i*0.1f,  1.0f, -0.5f);
         }
         glEnd();
     }
 
     //lower threshold:
     glBegin(GL_QUADS);
-            glColor4f(0.7,0.7,0.7,0.5);
+            glColor4f(0.7f, 0.7f, 0.7f, 0.5f);
 
-            glVertex3f( 0.0f, 0.0f,  -0.5f);  // Bottom Left Of The Texture and Quad
-            glVertex3f( thres_l, 0.0f,  -0.5f);  // Bottom Right Of The Texture and Quad
-            glVertex3f( thres_l,  1.0f,  -0.5f);  // Top Right Of The Texture and Quad
-            glVertex3f(0.0f,  1.0f,  -0.5f);  // Top Left Of The Texture and Quad
+            glVertex3f(0.0f, 0.0f, -0.5f);     // Bottom Left Of The Texture and Quad
+            glVertex3f(thres_l, 0.0f, -0.5f);  // Bottom Right Of The Texture and Quad
+            glVertex3f(thres_l, 1.0f, -0.5f);  // Top Right Of The Texture and Quad
+            glVertex3f(0.0f, 1.0f, -0.5f);     // Top Left Of The Texture and Quad
     glEnd();
 
     //upper threshold:
     glBegin(GL_QUADS);
-            glColor4f(0.7,0.7,0.7,0.5);
+            glColor4f(0.7f, 0.7f, 0.7f, 0.5f);
 
-            glVertex3f( thres_u, 0.0f,  -0.5f);  // Bottom Left Of The Texture and Quad
-            glVertex3f( 1.0, 0.0f,  -0.5f);  // Bottom Right Of The Texture and Quad
-            glVertex3f( 1.0,  1.0f,  -0.5f);  // Top Right Of The Texture and Quad
-            glVertex3f(thres_u,  1.0f,  -0.5f);  // Top Left Of The Texture and Quad
+            glVertex3f(thres_u, 0.0f, -0.5f);  // Bottom Left Of The Texture and Quad
+            glVertex3f(1.0f, 0.0f, -0.5f);     // Bottom Right Of The Texture and Quad
+            glVertex3f(1.0f, 1.0f, -0.5f);     // Top Right Of The Texture and Quad
+            glVertex3f(thres_u, 1.0f, -0.5f);  // Top Left Of The Texture and Quad
     glEnd();
 
     glEnable(GL_BLEND);
@@ -136,7 +144,7 @@ void TransFuncPainter::paint() {
     getCanvas()->swap();
     glDisable(GL_BLEND);
 
-    if(changed_)
+    if (changed_)
         tfe_->transFuncChanged();
     changed_ = false;
 }
@@ -146,7 +154,7 @@ void TransFuncPainter::initialize() {
     glGetIntegerv(GL_DRAW_BUFFER, &currentDrawbuf_);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0f,1.0,0.0,1.0f,-2.0f,1.0f);
+    glOrtho(0.0f, 1.0f, 0.0f, 1.0f, -2.0f, 1.0f);
 //     gluPerspective(45.0f,(GLfloat)w/(GLfloat)h,0.1f,100.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -192,7 +200,7 @@ void TransFuncPainter::mousePress(tgt::vec2 m) {
 }
 
 void TransFuncPainter::mouseRelease(tgt::vec2 m) {
-    if(grabbedPrimitive_) {
+    if (grabbedPrimitive_) {
         grabbedPrimitive_->mouseRelease(m);
         grabbedPrimitive_ = 0;
         changed();
@@ -203,7 +211,7 @@ void TransFuncPainter::mouseRelease(tgt::vec2 m) {
 void TransFuncPainter::moveMouse(tgt::vec2 m) {
     tgt::vec2 offset = m - mouseCoord_;
     mouseCoord_ = m;
-    if(grabbedPrimitive_) {
+    if (grabbedPrimitive_) {
         grabbedPrimitive_->mouseDrag(offset);
         changed();
     }
@@ -211,12 +219,12 @@ void TransFuncPainter::moveMouse(tgt::vec2 m) {
 
 void TransFuncPainter::mouseDoubleclick(tgt::vec2 m) {
     grabbedPrimitive_ = getPrimitiveUnderMouse(m);
-    if(grabbedPrimitive_) {
+    if (grabbedPrimitive_) {
 //        bool ch;
         select(grabbedPrimitive_);
         paint();
 //        tgt::col4 newcol = tfe_->colorChooser(grabbedPrimitive_->getColor(), ch);
-//        if(ch)
+//        if (ch)
 //            selectedPrimitive_->setColor(newcol);
         changed();
 		grabbedPrimitive_ = 0;
@@ -224,7 +232,7 @@ void TransFuncPainter::mouseDoubleclick(tgt::vec2 m) {
 }
 
 void TransFuncPainter::deletePrimitive() {
-    if(selectedPrimitive_) {
+    if (selectedPrimitive_) {
         TransFuncPrimitive* p = selectedPrimitive_;
         select(0);
         tf_->removePrimitive(p);
@@ -235,9 +243,9 @@ void TransFuncPainter::deletePrimitive() {
 
 void TransFuncPainter::mouseWheelUp(tgt::vec2 m) {
     TransFuncPrimitive* p = getPrimitiveUnderMouse(m);
-    if(p) {
+    if (p) {
         tgt::col4 c = p->getColor();
-        if((c.a + 10) > 255)
+        if ((c.a + 10) > 255)
             c.a = 255;
         else
             c.a += 10;
@@ -248,9 +256,9 @@ void TransFuncPainter::mouseWheelUp(tgt::vec2 m) {
 
 void TransFuncPainter::mouseWheelDown(tgt::vec2 m) {
     TransFuncPrimitive* p = getPrimitiveUnderMouse(m);
-    if(p) {
+    if (p) {
         tgt::col4 c = p->getColor();
-        if((c.a - 10) < 0)
+        if ((c.a - 10) < 0)
             c.a = 0;
         else
             c.a -= 10;
@@ -261,7 +269,7 @@ void TransFuncPainter::mouseWheelDown(tgt::vec2 m) {
 
 TransFuncPrimitive* TransFuncPainter::getPrimitiveUnderMouse(tgt::vec2 m) {
     TransFuncPrimitive* um = tf_->getControlPointUnderMouse(mouseCoord_);
-    if((um) && (!um->mousePress(m))) {
+    if ((um) && (!um->mousePress(m))) {
         um = 0;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glLoadIdentity();
@@ -269,24 +277,25 @@ TransFuncPrimitive* TransFuncPainter::getPrimitiveUnderMouse(tgt::vec2 m) {
         tf_->paintSelection();
         glEnable(GL_BLEND);
         GLubyte pixel[3];
-        glReadPixels((int)(getCanvas()->getWidth()*m.x), (int)(getCanvas()->getHeight()*m.y), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel );
+        glReadPixels(static_cast<int>(getCanvas()->getWidth()*m.x), static_cast<int>(getCanvas()->getHeight()*m.y), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel );
 
-//         LWARNINGC("test", "pixel: " << (int)pixel[0] << " " << (int)pixel[1] << " " << (int)pixel[2]);
-        if((pixel[1] == 123) && (pixel[2] == 123))
+// TODO: Delete? (ab)
+//         LWARNINGC("test", "pixel: " << static_cast<int>(pixel[0]) << " " << static_cast<int>(pixel[1]) << " " << static_cast<int>(pixel[2]));
+        if ((pixel[1] == 123) && (pixel[2] == 123))
             um = tf_->getPrimitive(pixel[0]);
     }
     return um;
 }
 
 void TransFuncPainter::select(TransFuncPrimitive* p) {
-    if(selectedPrimitive_)
+    if (selectedPrimitive_)
         selectedPrimitive_->setSelected(false);
-    if(p) {
+    if (p) {
         p->setSelected(true);
     }
     selectedPrimitive_ = p;
 
-    if(p)
+    if (p)
         tfe_->selected();
     else
         tfe_->deselected();
@@ -296,10 +305,10 @@ void TransFuncPainter::select(TransFuncPrimitive* p) {
 void TransFuncPainter::dataSourceChanged(Volume* newDataset) {
     curDataset_ = newDataset;
     showHistogram_ = false;
-    if(histogramTex_)
+    if (histogramTex_)
         delete histogramTex_;
     histogramTex_ = 0;
-    if(curHist_)
+    if (curHist_)
         delete curHist_;
     curHist_ = 0;
     changed();
@@ -307,13 +316,13 @@ void TransFuncPainter::dataSourceChanged(Volume* newDataset) {
 
 void TransFuncPainter::setHistogramVisible(bool v) {
     showHistogram_ = v;
-    if( v && (!histogramTex_) && (curDataset_) ) {
+    if ( v && (!histogramTex_) && (curDataset_) ) {
         //histogram is enabled but no texture is available
         //=> calculate one from current dataset.
         Volume* sourceDataset = 0;
         Volume* intensityDataset = 0;
 
-        if(curDataset_->getBitsStored() != 32) {
+        if (curDataset_->getBitsStored() != 32) {
 //              sourceDataset = calcGradients<col3>(curDataset_);
             sourceDataset = calcGradientsSobel<col3>(curDataset_, false);
             intensityDataset = curDataset_;
@@ -321,33 +330,33 @@ void TransFuncPainter::setHistogramVisible(bool v) {
             sourceDataset = (Volume3xUInt8*) curDataset_;
 
         int bucketsi = 256;
-//         if(curDataset_->getBitsStored() == 16)
+//         if (curDataset_->getBitsStored() == 16)
 //             bucketsi = 512;
         int bucketsg = 256;
         histogramTex_ = new Texture(tgt::ivec3(bucketsi,bucketsg,1), GL_LUMINANCE, GL_LUMINANCE,
                                     GL_UNSIGNED_BYTE, tgt::Texture::LINEAR);
 
-        if(curHist_)
+        if (curHist_)
             delete curHist_;
         curHist_ = new HistogramIntensityGradient(sourceDataset, intensityDataset, bucketsi, bucketsg);
         updateHistogramTex();
 
-        if(curDataset_->getBitsStored() != 32)
+        if (curDataset_->getBitsStored() != 32)
             delete sourceDataset;
     }
 }
 
 void TransFuncPainter::updateHistogramTex() {
-    if(!histogramTex_)
+    if (!histogramTex_)
         return;
-    for(int i=0; i<histogramTex_->getHeight(); i++) {
-        for(int j=0; j<histogramTex_->getWidth(); j++) {
+    for (int i=0; i<histogramTex_->getHeight(); i++) {
+        for (int j=0; j<histogramTex_->getWidth(); j++) {
             int o;
-            if(histLog_)
-                o = (int)(curHist_->getLogNormalized(j,i)*255.0/**2550000.0*/*histBright_);
+            if (histLog_)
+                o = static_cast<int>(curHist_->getLogNormalized(j,i)*255.0/**2550000.0*/*histBright_);
             else
-                o = (int)(curHist_->getNormalized(j,i)*2550000.0*histBright_);
-            if(o>255)
+                o = static_cast<int>(curHist_->getNormalized(j,i)*2550000.0*histBright_);
+            if (o>255)
                 o = 255;
             else if (o<0)
                 o = 0;
@@ -384,12 +393,16 @@ void TransFuncPainter::setHistogramBrightness(float b) {
     histBright_ = b;
 }
 
+bool TransFuncPainter::initOk() {
+    return ((tf_ != 0) && (tf_->initOk()));
+}
+
 //
 // TransferEditorListener
 //
 
 void TransFuncEditorListener::keyEvent(tgt::KeyEvent* e) {
-    if(e->pressed()) {
+    if (e->pressed()) {
 //             switch(e->keyCode())                      // which key have we got
 //             {
 //                 case tgt::KeyEvent::K_F1 :                      // if it is F1
@@ -406,47 +419,52 @@ void TransFuncEditorListener::keyEvent(tgt::KeyEvent* e) {
 //                 painter_->getTransFunc()->save("test2.xml");
 //                 break;
             case tgt::KeyEvent::K_Q :
-                painter_->getTransFunc()->addPrimitive(new TransFuncQuad(tgt::vec2(0.6,0.6), 0.3, tgt::col4(255,0,0,128)));
+                painter_->getTransFunc()->addPrimitive(new TransFuncQuad(tgt::vec2(0.6f, 0.6f),
+                                                                         0.3f, tgt::col4(255, 0, 0, 128)));
                 break;
             case tgt::KeyEvent::K_B :
-                painter_->getTransFunc()->addPrimitive(new TransFuncBanana(tgt::vec2(0.0,0.0), tgt::vec2(0.5,0.6), tgt::vec2(0.34,0.4), tgt::vec2(0.45,0.0),  tgt::col4(0,255,0,128)));
+                painter_->getTransFunc()->addPrimitive(new TransFuncBanana(tgt::vec2(0.0f,0.0f),
+                                                                           tgt::vec2(0.5f, 0.6f),
+                                                                           tgt::vec2(0.34f, 0.4f),
+                                                                           tgt::vec2(0.45f,0.0f),
+                                                                           tgt::col4(0, 255, 0, 128)));
                 break;
             case tgt::KeyEvent::K_DELETE :
                 painter_->deletePrimitive();
                 break;
-            default:                                           // any other key
+            default:                                          // any other key
                 break;                                        // nothing to do
         }
     }
 }
 
 void TransFuncEditorListener::mouseMoveEvent(tgt::MouseEvent* e) {
-    painter_->moveMouse(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-((float)e->y()/painter_->getCanvas()->getHeight())));
+    painter_->moveMouse(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
     painter_->getCanvas()->repaint();
 }
 
 void TransFuncEditorListener::mousePressEvent(tgt::MouseEvent* e) {
     painter_->getCanvas()->getGLFocus();
-    painter_->mousePress(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-((float)e->y()/painter_->getCanvas()->getHeight())));
+    painter_->mousePress(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
     painter_->getCanvas()->repaint();
 }
 
 void TransFuncEditorListener::mouseReleaseEvent(tgt::MouseEvent* e) {
-    painter_->mouseRelease(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-((float)e->y()/painter_->getCanvas()->getHeight())));
+    painter_->mouseRelease(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
 }
 
 void TransFuncEditorListener::mouseDoubleClickEvent(tgt::MouseEvent* e) {
     painter_->getCanvas()->getGLFocus();
-    painter_->mouseDoubleclick(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-((float)e->y()/painter_->getCanvas()->getHeight())));
+    painter_->mouseDoubleclick(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
     painter_->getCanvas()->repaint();
 }
 
 void TransFuncEditorListener::wheelEvent(tgt::MouseEvent* e) {
     painter_->getCanvas()->getGLFocus();
-    if(e->button() == tgt::MouseEvent::MOUSE_WHEEL_DOWN)
-        painter_->mouseWheelDown(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
+    if (e->button() == tgt::MouseEvent::MOUSE_WHEEL_DOWN)
+        painter_->mouseWheelDown(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
     else
-        painter_->mouseWheelUp(tgt::vec2((float)e->x()/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
+        painter_->mouseWheelUp(tgt::vec2(static_cast<float>(e->x())/painter_->getCanvas()->getWidth(), 1.0f-(static_cast<float>(e->y())/painter_->getCanvas()->getHeight())));
     painter_->getCanvas()->repaint();
 }
 

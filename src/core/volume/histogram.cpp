@@ -100,7 +100,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
             for (int y=0; y<volume->getDimensions().y; y++) {
                 for (int x=0; x<volume->getDimensions().x; x++) {
                     bucket = static_cast<int>(floor(sourceDataset16Bit->voxel(ivec3(x,y,z))*m));
-					if (bucket < (int)hist_.size()) {
+					if (bucket < static_cast<int>(hist_.size())) {
 						hist_[bucket]++;
 
 						if ( hist_[bucket] > maxValue_ && bucket > 0)
@@ -119,7 +119,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     }
 }
 
-int HistogramIntensity::getBucketCount() {
+size_t HistogramIntensity::getBucketCount() {
     return hist_.size();
 }
 
@@ -128,11 +128,11 @@ int HistogramIntensity::getValue(int i) {
 }
 
 float HistogramIntensity::getNormalized(int i) {
-    return ((float)hist_[i] / (float)maxValue_);
+    return (static_cast<float>(hist_[i]) / static_cast<float>(maxValue_));
 }
    
 float HistogramIntensity::getLogNormalized(int i) {
-     return ( log( (float)(1+hist_[i]) ) / log( (float)(1+maxValue_) ) );
+     return (logf(static_cast<float>(1+hist_[i]) ) / log( static_cast<float>(1+maxValue_)));
 }
 
 tgt::ivec2 HistogramIntensity::getSignificantRange() const {
@@ -159,11 +159,11 @@ HistogramIntensityGradient::HistogramIntensityGradient(voreen::Volume* volumeGra
     }
 }
 
-int HistogramIntensityGradient::getBucketCountIntensity() {
+size_t HistogramIntensityGradient::getBucketCountIntensity() {
     return hist_.size();
 }
 
-int HistogramIntensityGradient::getBucketCountGradient() {
+size_t HistogramIntensityGradient::getBucketCountGradient() {
     return hist_[0].size();
 }
 
@@ -172,11 +172,11 @@ int HistogramIntensityGradient::getValue(int i, int g) {
 }
 
 float HistogramIntensityGradient::getNormalized(int i, int g) {
-    return ((float)hist_[i][g] / (float)maxValue_);
+    return (static_cast<float>(hist_[i][g]) / static_cast<float>(maxValue_));
 }
 
 float HistogramIntensityGradient::getLogNormalized(int i, int g) {
-    return ( log( (float)(1+hist_[i][g]) ) / log( (float)(1+maxValue_) ) );
+    return (logf(static_cast<float>(1+hist_[i][g]) ) / log( static_cast<float>(1+maxValue_)));
 }
 
 int HistogramIntensityGradient::getMaxValue() const {

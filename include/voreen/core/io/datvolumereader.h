@@ -52,7 +52,6 @@ namespace voreen {
  * - <tt>GridType</tt>: only \c EQUIDISTANT is supported
  * - <tt>BitsStored</tt>: specifies logical data type, e.g. 12 for 12 bit CT data where each
  *   voxel is stored in a 16 bit \c short.
- * - <tt>Unit</tt>: unit for measuring
  * - <tt>ZeroPoint</tt>: offset for the voxel data for supporting signed data
  * - <tt>MetaString</tt>: a string containing arbitrary meta-data
  *
@@ -67,7 +66,6 @@ NbrTags:        0
 ObjectType:     TEXTURE_VOLUME_OBJECT
 ObjectModel:    I
 GridType:       EQUIDISTANT
-Unit:           fm
  \endverbatim
  */
 class DatVolumeReader : public VolumeReader {
@@ -79,7 +77,7 @@ public:
         extensions_.push_back("dat");
     }
 
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

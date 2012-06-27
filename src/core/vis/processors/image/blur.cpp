@@ -77,8 +77,8 @@ void Blur::process(LocalPortMapping* portMapping) {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", (GLint) tm_.getTexUnit(shadeTexUnit_));
-    program_->setUniform("depthTex_", (GLint) tm_.getTexUnit(depthTexUnit_));
+    program_->setUniform("shadeTex_", tm_.getTexUnit(shadeTexUnit_));
+    program_->setUniform("depthTex_", tm_.getTexUnit(depthTexUnit_));
     program_->setUniform("delta_", delta_.get());
     program_->setUniform("blurChannels",    blurRed_.get() ? 1.f : 0.f,
 						                    blurGreen_.get() ? 1.f : 0.f,
@@ -125,6 +125,4 @@ void Blur::processMessage(Message* msg, const Identifier& dest){
     }
 }
 
-
 } // voreen namespace
-

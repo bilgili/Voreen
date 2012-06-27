@@ -41,8 +41,6 @@
 
 #ifdef VRN_WITH_DEVIL
     #include <IL/il.h>
-    #include <IL/ilu.h>
-    #include <IL/ilut.h>
 #endif
 
 #include <list>
@@ -301,6 +299,7 @@ public:
     static const Identifier visibleViews_;
     static const Identifier cameraChanged_;
     static const Identifier switchCoarseness_;
+    static const Identifier renderingFinished_;
 
 protected:
 	NetworkEvaluator* evaluator_;

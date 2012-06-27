@@ -63,16 +63,16 @@
     #include <freetype/ftbitmap.h>
 #endif
 
+namespace voreen {
+
 using namespace tgt;
 using namespace labeling;
-using std::string;
-using std::vector;
-using std::swap;
-
-namespace voreen {
 
 using std::min;
 using std::max;
+using std::string;
+using std::vector;
+using std::swap;
 
 const Identifier Labeling::setLabelingWidget_("set.labelingWidget");
 const Identifier Labeling::setLayout_("set.Layout");
@@ -127,7 +127,6 @@ Labeling::Labeling() :
 #endif
         
 {
-
     setName("Labeling");
 
     MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::addMouseListener_, this));
@@ -174,9 +173,9 @@ Labeling::Labeling() :
 
     createFilterKernels();
     std::vector<std::string> filterEnum;
-    for (unsigned int i=0; i<kernels_.size(); i++){
+    for (unsigned int i=0; i<kernels_.size(); i++)
         filterEnum.push_back(kernels_[i].caption);
-    }
+    
     filterKernel_ = new EnumProp("set.filterKernel", "Filter kernel", filterEnum, 2);
     GroupProp* distMapProps = new GroupProp("distMapProps", "Distance Map Settings");
     distMapProps->addGroupedProp(filterKernel_);
@@ -218,15 +217,17 @@ Labeling::Labeling() :
 
     createInport("image.idmap");
     createOutport("image.labeling");
-
 }
 
 const std::string Labeling::getProcessorInfo() const {
-	return "Performs an interactive illustration of the volume rendering. An object of this class takes the id-raycasting result and detects anchor points for all segments contained by the id map. Based on these anchor points a hybrid labeling layout is calculated. Labels are either placed externally around the convex hull of the volume rendering or internally on the corresponding segment. Also see IDRaycaster";
+	return "Performs an interactive illustration of the volume rendering. An object of this \
+           class takes the id-raycasting result and detects anchor points for all segments \
+           contained by the id map. Based on these anchor points a hybrid labeling layout is \
+           calculated. Labels are either placed externally around the convex hull of the volume \
+           rendering or internally on the corresponding segment. Also see IDRaycaster";
 }
 
 int Labeling::initializeGL() {
-
     if ( (GenericFragment::initializeGL() == VRN_OK) && 
          (labelShader_ = ShdrMgr.loadSeparate("", "pp_labeling.frag", generateHeader(), false)) != 0 )
         return VRN_OK;
@@ -235,43 +236,38 @@ int Labeling::initializeGL() {
 }
 
 // destructor
-Labeling::~Labeling(){
-
-    for (size_t i=0; i<labelPersistentData_.size(); i++){
-        if (labelPersistentData_[i]->text.textureExtern > 0){
+Labeling::~Labeling() {
+    for (size_t i=0; i<labelPersistentData_.size(); i++)
+        if (labelPersistentData_[i]->text.textureExtern > 0)
             glDeleteTextures(1, &(labelPersistentData_[i]->text.textureExtern));
-        }
-    }
 
     if ( tgt::Singleton<MessageDistributor>::isInited() )
         MsgDistr.remove(this);
-
 }
 
-void Labeling::processMessage(Message* msg, const Identifier& dest)
-{
-
+void Labeling::processMessage(Message* msg, const Identifier& dest) {
     GenericFragment::processMessage(msg, dest);
     if (msg->id_ == VoreenPainter::switchCoarseness_) {
         coarse_ = msg->getValue<bool>();
         valid_ &= !coarse_;
-    } else if (msg->id_ == setLayout_){
+    }
+    else if (msg->id_ == setLayout_){
         int layout = msg->getValue<int>();
-        if ( (layout == layout_->get()) ||
-             ( (layout != LEFTRIGHT) && (layout != SILHOUETTE) ) ){
+        if ( (layout == layout_->get()) || ( (layout != LEFTRIGHT) && (layout != SILHOUETTE) ) )
             return;
-        }
         layout_->set( static_cast<LabelLayouts>( layout ) );
         invalidate();
-    } else if (msg->id_ == "set.labelLayoutAsString"){
+    }
+    else if (msg->id_ == "set.labelLayoutAsString") {
         string layoutStr = msg->getValue<string>();
         if (layoutStr == "Silhouette")
             layout_->set( SILHOUETTE );
         else if (layoutStr == "Left-Right")
             layout_->set( LEFTRIGHT );
         invalidate();
-    } else if (msg->id_ == "set.showLabels"){
-		string showModeStr = msg->getValue<string>();
+    }
+    else if (msg->id_ == "set.showLabels") {
+        string showModeStr = msg->getValue<string>();
 		if (showModeStr == "All")
 			showLabels_->set( SHOW_ALL );
 		else if (showModeStr == "None")
@@ -281,35 +277,41 @@ void Labeling::processMessage(Message* msg, const Identifier& dest)
 		else if (showModeStr == "Internal only")
 			showLabels_->set( SHOW_INTERNAL_ONLY );
 		invalidate();
-	} else if (msg->id_ == setLabelColor_){
+	}
+    else if (msg->id_ == setLabelColor_) {
         labelColorExtern_.set(msg->getValue<tgt::Color>() );
         if (lockInternalFontSettings_.get() )
             labelColorIntern_.set(msg->getValue<tgt::Color>() );
         genTextures();
         invalidate();
-    } else if (msg->id_ == setHaloColor_){
+    }
+    else if (msg->id_ == setHaloColor_) {
         haloColorExtern_.set( msg->getValue<tgt::Color>() );
         if (lockInternalFontSettings_.get() )
             haloColorIntern_.set(msg->getValue<tgt::Color>() );
         genTextures();
         invalidate();
-    } else if (msg->id_ == switchDrawHalo_){
+    }
+    else if (msg->id_ == switchDrawHalo_) {
         drawHalo_.set( msg->getValue<bool>() );
         genTextures();
         invalidate();
-    } else if (msg->id_ == setFont_){
+    }
+    else if (msg->id_ == setFont_) {
         fontPath_ = msg->getValue<std::string>();
         loadFont();
         genTextures();
         invalidate();
-    } else if (msg->id_ == setFontSize_){
+    }
+    else if (msg->id_ == setFontSize_) {
         fontSizeExtern_.set( msg->getValue<int>() );
         if (lockInternalFontSettings_.get() )
             fontSizeIntern_.set( msg->getValue<int>() );
         loadFont();
         genTextures();
         invalidate();
-    } else if (msg->id_ == "set.lockInternalFontSettings"){
+    }
+    else if (msg->id_ == "set.lockInternalFontSettings") {
         lockInternalFontSettings_.set( msg->getValue<bool>() );
         if ( lockInternalFontSettings_.get() ){
             fontSizeIntern_.set( fontSizeExtern_.get() );
@@ -318,42 +320,48 @@ void Labeling::processMessage(Message* msg, const Identifier& dest)
             genTextures();
         }
         invalidate();
-    } else if (msg->id_ == "set.fontSizeIntern" ){
+    }
+    else if (msg->id_ == "set.fontSizeIntern" ) {
         fontSizeIntern_.set( msg->getValue<int>() );
         loadFont();
         genTextures();
         lockInternalFontSettings_.set( false );
         invalidate();
-    } else if (msg->id_ == "set.labelColorIntern"){
+    }
+    else if (msg->id_ == "set.labelColorIntern") {
         labelColorIntern_.set(msg->getValue<tgt::Color>() );
         genTextures();
         lockInternalFontSettings_.set( false );
         invalidate();
-    } else if (msg->id_ == "set.haloColorIntern"){
+    }
+    else if (msg->id_ == "set.haloColorIntern") {
         haloColorIntern_.set( msg->getValue<tgt::Color>() );
         genTextures();
         lockInternalFontSettings_.set( false );
         invalidate();
-	} else if (msg->id_ == "set.shape3D" ) {
+	}
+    else if (msg->id_ == "set.shape3D" ) {
 		shape3D_.set( msg->getValue<bool>() );
-		for (size_t i=0; i<labels_.size(); i++){
-			if (labels_[i].intern){
+		for (size_t i=0; i<labels_.size(); i++)
+			if (labels_[i].intern)
 				labels_[i].intern = findBezierPoints(labels_[i]);
-			}
-		}
 		toWorld();
 		pickedLabel_ = NULL;
 		time.reset();
         time.start();
 		invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-	} else if (msg->id_ == setSegmentDescriptionFile_){
+	}
+    else if (msg->id_ == setSegmentDescriptionFile_) {
         std::string filename = msg->getValue<std::string>();
         filename.replace(filename.length()-3, 3, "xml");
         readSegmentData(filename);
         genTextures();
         invalidate();
-    } else if (msg->id_ == setVolumeContainer_) {
+        // FIXME: obsoleted by new volume concept. Move additional code
+        // to section where the VolumeHandle is set.
+        //
+    /*} else if (msg->id_ == setVolumeContainer_) {
         VolumeContainer* volCont = msg->getValue<VolumeContainer*>();
         tgtAssert(msg->getValue<VolumeContainer*>(), "No volume container");
         if ( volCont->getVolume(Modality::MODALITY_SEGMENTATION) ) {
@@ -364,43 +372,45 @@ void Labeling::processMessage(Message* msg, const Identifier& dest)
             genTextures();
             invalidate();
         }
-    } else if ( msg->id_ == "set.filterKernel") {
+        */
+    }
+    else if ( msg->id_ == "set.filterKernel") {
         std::string filterCaption = msg->getValue<std::string>();
-        for (unsigned int i=0; i<kernels_.size(); i++){
-            if (kernels_[i].caption == filterCaption){
+        for (unsigned int i=0; i<kernels_.size(); i++)
+            if (kernels_[i].caption == filterCaption)
                 filterKernel_->set(i);
-            }
-        }
         invalidate();
-    } else if ( msg->id_ == "set.filterDelta") {
+    }
+    else if ( msg->id_ == "set.filterDelta") {
         filterDelta_.set( msg->getValue<int>() );
         invalidate();
-    } else if ( msg->id_ == "set.distanceMapStep") {
+    }
+    else if ( msg->id_ == "set.distanceMapStep") {
         distanceMapStep_.set(msg->getValue<int>());
         invalidate();
-    } else if ( msg->id_ == "add.unsegmentedLabel") {
+    }
+    else if ( msg->id_ == "add.unsegmentedLabel") {
         addUnsegmentedLabelData(msg->getValue<std::string>());
         genTextures();
-        for (size_t i=0; i<labels_.size(); i++){
-            if (!labels_[i].labelData->belongsToSegment){
+        for (size_t i=0; i<labels_.size(); i++)
+            if (!labels_[i].labelData->belongsToSegment) {
                 labels_.erase(labels_.begin()+i);
                 --i;
             }
-        }
         appendUnsegmentedLabels();
         toWorld();
         time.reset();
         time.start();
         editMode_ = true;
         invalidate();
-    } else if ( msg->id_ == "remove.unsegmentedLabel") {
+    }
+    else if ( msg->id_ == "remove.unsegmentedLabel") {
         bool finished = false;
-        for (size_t i=0; i<labels_.size() && !finished; i++){
-            if ( labels_[i].labelData->text.text == msg->getValue<std::string>() ){
+        for (size_t i=0; i<labels_.size() && !finished; i++)
+            if ( labels_[i].labelData->text.text == msg->getValue<std::string>() ) {
                 labels_.erase(labels_.begin()+i);
                 finished = true;
             }
-        }
         removeUnsegmentedLabelData(msg->getValue<std::string>());
         time.reset();
         time.start();
@@ -410,30 +420,35 @@ void Labeling::processMessage(Message* msg, const Identifier& dest)
     else if ( msg->id_ == "set.polynomialDegree") {
         polynomialDegree_.set( msg->getValue<int>() );
         invalidate();
-    } else if ( msg->id_ == "set.bezierHorzDegree") {
+    }
+    else if ( msg->id_ == "set.bezierHorzDegree") {
         bezierHorzDegree_.set( msg->getValue<int>() );
         invalidate();
-    }  else if ( msg->id_ == "set.bezierVertDegree") {
+    } 
+    else if ( msg->id_ == "set.bezierVertDegree") {
         bezierVertDegree_.set( msg->getValue<int>() );
         invalidate();
-    } else if ( msg->id_ == "set.glyphAdvance") {
+    }
+    else if ( msg->id_ == "set.glyphAdvance") {
         glyphAdvance_.set( msg->getValue<int>() );
         genTextures();
         invalidate();
-    } else if ( msg->id_ == setLabelingWidget_){
-        msg->getValue<LabelingWidget*>(labelingWidget_);
     }
+    else if ( msg->id_ == setLabelingWidget_)
+        msg->getValue<LabelingWidget*>(labelingWidget_);
 
 #ifdef labelDEBUG
-    else if (msg->id_ == "showSegmentIDs"){
+    else if (msg->id_ == "showSegmentIDs") {
         showSegmentIDs_.set(msg->getValue<bool>());
         genTextures();
         invalidate();
-    } else if (msg->id_ == "drawConvexHull"){
+    }
+    else if (msg->id_ == "drawConvexHull") {
         drawConvexHull_.set(msg->getValue<bool>());
-    } else if (msg->id_ == "drawDebugMaps"){
+    }
+    else if (msg->id_ == "drawDebugMaps") {
         drawDebugMaps_.set(msg->getValue<bool>());
-        if ( !drawDebugMaps_.get() ){
+        if ( !drawDebugMaps_.get() ) {
             if (segmentationTarget_)
                 tc_->releaseTarget(segmentationTarget_);
             if (distanceMapTarget_)
@@ -444,10 +459,8 @@ void Labeling::processMessage(Message* msg, const Identifier& dest)
 
 }
 
-
 // analyzes id-raycasting result and renders labels
 void Labeling::process(LocalPortMapping* portMapping) {
-
     valid_ = false;
 
 	int source = portMapping->getTarget("image.idmap");
@@ -467,10 +480,10 @@ void Labeling::process(LocalPortMapping* portMapping) {
     glPopAttrib();
 
     // if not in coarseness-mode, perform labeling
-	if (!coarse_ && labelPersistentData_.size() > 0){
+	if (!coarse_ && labelPersistentData_.size() > 0) {
 
         // if currently no user interaction, renew label layout
-        if (!editMode_){
+        if (!editMode_) {
 
 			pickedLabel_ = NULL;
 			deleteLabels();
@@ -479,9 +492,8 @@ void Labeling::process(LocalPortMapping* portMapping) {
             labelLayout();
 
 #ifdef labelDEBUG
-            if (drawDebugMaps_.get()){
+            if (drawDebugMaps_.get())
                renderMaps();
-            }
 #endif
         }
 
@@ -493,18 +505,14 @@ void Labeling::process(LocalPortMapping* portMapping) {
 
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
-
 }
 
 // ----------- labeling methods --------------
 
-
 // performs the labeling
-void Labeling::labelLayout(){
-
-    if (layout_->get() == SILHOUETTE){
+void Labeling::labelLayout() {
+    if (layout_->get() == SILHOUETTE)
         calcConvexHull();
-    }
 
 	calcLabelPositions();
     appendUnsegmentedLabels();
@@ -528,11 +536,11 @@ void Labeling::labelLayout(){
 void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labelColor, ColorProp haloColor,
                                     labeling::Bitmap<GLfloat> &bitmap,
                                     bool antialias, int border, int glyphAdvance,
-                                    bool drawHalo, int haloOffset ){
-
+                                    bool drawHalo, int haloOffset )
+{
     ivec2 dim;
 
-    if (!face_){
+    if (!face_) {
         dim.x = 80;
         dim.y = 10;
         GLfloat* data = new GLfloat[dim.x*dim.y*4];
@@ -554,8 +562,8 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 	int advanceSum = 0;
 
 	// determine the bitmap's dimension
-	for (size_t letter = 0; letter < text.size(); letter++){
-		glyph_index = FT_Get_Char_Index( face_, (unsigned char)(text[letter]) );
+	for (size_t letter = 0; letter < text.size(); ++letter) {
+		glyph_index = FT_Get_Char_Index( face_, static_cast<unsigned char>(text[letter]) );
 		FT_Load_Glyph( face_, glyph_index, FT_LOAD_DEFAULT );
 		if (antialias)
             FT_Render_Glyph( slot, FT_RENDER_MODE_NORMAL );
@@ -570,12 +578,13 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 
 	// initialize bitmap with label/halo color and alpha=0
     GLfloat* tempbitmap = new GLfloat[dim.x*dim.y*4];
-	for (int i=0; i<dim.x*dim.y; i++){
-		if (drawHalo){
+	for (int i=0; i<dim.x*dim.y; i++) {
+		if (drawHalo) {
 			tempbitmap[4*i] = haloColor.get().r;
 			tempbitmap[4*i+1] = haloColor.get().g;
 			tempbitmap[4*i+2] = haloColor.get().b;
-		} else {
+		}
+        else {
 			tempbitmap[4*i] = labelColor.get().r;
 			tempbitmap[4*i+1] = labelColor.get().g;
 			tempbitmap[4*i+2] = labelColor.get().b;
@@ -587,10 +596,9 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 	// render text (letterwise)
 	FT_Bitmap ftbitmap;
 	ivec2 penPos(border+haloOffset,-descender+border+haloOffset);
-	for (size_t letter = 0; letter < text.size(); letter++){
-
+	for (size_t letter = 0; letter < text.size(); ++letter) {
 		// render freetype-glyph
-		glyph_index = FT_Get_Char_Index( face_, (unsigned char)(text[letter]) );
+		glyph_index = FT_Get_Char_Index( face_, static_cast<unsigned char>(text[letter]) );
 		FT_Load_Glyph( face_, glyph_index, FT_LOAD_DEFAULT );
 		if (antialias)
             FT_Render_Glyph( slot, FT_RENDER_MODE_NORMAL );
@@ -604,8 +612,8 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 		// create RGBA glyph image from freetype-glyph
 		Bitmap<GLfloat> glyphImage(width, height, 4);
         Bitmap<GLfloat> glyphImageHalo(width, height, 4);
-		for (int buffer_y = 0; buffer_y < height; buffer_y++){
-			for (int buffer_x = 0; buffer_x < width; buffer_x++){
+		for (int buffer_y = 0; buffer_y < height; ++buffer_y) {
+			for (int buffer_x = 0; buffer_x < width; ++buffer_x) {
 				int value = ftbitmap.buffer[buffer_y*width + buffer_x];
 				int bitmap_x = buffer_x;
 				int bitmap_y = (ftbitmap.pitch > 0) ? (height-1-buffer_y) : buffer_y;
@@ -616,7 +624,7 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
                 glyphImage.setElem(bitmap_x, bitmap_y, labelColor.get().b, 2);
                 glyphImage.setElem(bitmap_x, bitmap_y, valueNorm, 3);
 
-                if (drawHalo){
+                if (drawHalo) {
                     glyphImageHalo.setElem(bitmap_x, bitmap_y, haloColor.get().r, 0);
                     glyphImageHalo.setElem(bitmap_x, bitmap_y, haloColor.get().g, 1);
                     glyphImageHalo.setElem(bitmap_x, bitmap_y, haloColor.get().b, 2);
@@ -626,7 +634,7 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 		}
 
 		// use kerning
-		if (previous){
+		if (previous) {
 			FT_Vector delta;
 			FT_Get_Kerning( face_, previous, glyph_index, FT_KERNING_DEFAULT, &delta );
 			penPos.x += delta.x >> 6;
@@ -659,13 +667,13 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, ColorProp labe
 void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, ColorProp labelColor,
                                     ColorProp /*haloColor*/, labeling::Bitmap<GLfloat> &bitmap,
                                     bool /*antialias*/, int /*border*/, int /*glyphAdvance*/,
-                                    bool /*drawHalo*/, int /*haloOffset*/ ){
-
+                                    bool /*drawHalo*/, int /*haloOffset*/ )
+{
     ivec2 dim;
     dim.x = 80;
     dim.y = 10;
     GLfloat* data = new GLfloat[dim.x*dim.y*4];
-    for (int i=0; i<dim.x*dim.y; i++){
+    for (int i=0; i<dim.x*dim.y; ++i) {
         data[4*i] = labelColor.get().r;
         data[4*i+1] = labelColor.get().g;
         data[4*i+2] = labelColor.get().b;
@@ -676,17 +684,15 @@ void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, ColorP
 }
 #endif
 
-
 // generates one texture for internal and one for
 // external labels for each label, containing its caption
 // (optionally with halo)
-void Labeling::genTextures(){
-
+void Labeling::genTextures() {
     if (labelPersistentData_.size() == 0)
         return;
 
-    GLenum targetType = tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE ?
-        GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
+    GLenum targetType = tc_->getTextureContainerTextureType() == 
+        TextureContainer::VRN_TEXTURE_RECTANGLE ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
     glActiveTexture(tm_.getGLTexUnit(labelTexUnit_));
 
     // generation of textures for external labels
@@ -698,15 +704,12 @@ void Labeling::genTextures(){
 
     // iterate over all labels (segmented and unsegmented)
     // render each segment's text to bitmap and create texture of it
-    for (size_t i=0; i<labelPersistentData_.size(); i++){
-
+    for (size_t i=0; i<labelPersistentData_.size(); i++) {
         std::string text = labelPersistentData_[i]->text.text;
 #ifdef labelDEBUG
-        if (showSegmentIDs_.get() && labelPersistentData_[i]->belongsToSegment){
+        if (showSegmentIDs_.get() && labelPersistentData_[i]->belongsToSegment)
             text = text + " (" + labelPersistentData_[i]->idstr + ")";
-        }
 #endif
-
         //
         // create textures for extern labels
 		//
@@ -716,9 +719,9 @@ void Labeling::genTextures(){
             haloColorExtern_, bitmap, false, 2, 0, false, 1);
         labelPersistentData_[i]->text.width = bitmap.getWidth();
         labelPersistentData_[i]->text.height = bitmap.getHeight();
-	    if (drawHalo_.get()){
+	    if (drawHalo_.get())
             drawHalo(bitmap, bitmap.getWidth(), bitmap.getHeight(), haloColorExtern_.get(), 0.1f);
-        }
+
         labelPersistentData_[i]->text.textureExternWidth = bitmap.getWidth();
         labelPersistentData_[i]->text.textureExternHeight = bitmap.getHeight();
 
@@ -780,22 +783,22 @@ void inline anchorAlgorithmCore(int* const &idBuffer, int* &distanceField,
         lastID = newID;
         lastDist = distance;
         offset = 0;
-    } else if (newID == 0 && distance > 0) {
+    }
+    else if (newID == 0 && distance > 0) {
         offset += step;
         distance = 0; // modDist(lastDist, offset);
-    } else {
+    }
+    else {
         if (newID != lastID)
             distance = 0;
     }
 
     if (distanceField[y*imgWidth + x] == -1)
         distanceField[y*imgWidth + x] = distance;
-	else {
-
+	else
 		distanceField[y*imgWidth + x] = min(distanceField[y*imgWidth + x], distance);
-	}
-	oldID = newID;
-
+	
+    oldID = newID;
 }
 
 } // anonymous
@@ -803,8 +806,7 @@ void inline anchorAlgorithmCore(int* const &idBuffer, int* &distanceField,
 // - find anchor points in id-raycasting result
 // - create a label for each anchor
 // - calc bounding box of rendered object
-void Labeling::findAnchors(){
-
+void Labeling::findAnchors() {
     const int maxLabelID = 255;
 
     int* idBuffer = image_.idBuffer.getData();
@@ -829,7 +831,7 @@ void Labeling::findAnchors(){
     step = distanceMapStep_.get();
 
     // initialize distance maps
-    for (int i=0; i<image_.width*image_.height; i++){
+    for (int i=0; i<image_.width*image_.height; ++i) {
         horzDistance[i] = -1;
         vertDistance[i] = -1;
         ascDiagDistance[i] = -1;
@@ -839,7 +841,7 @@ void Labeling::findAnchors(){
     // hash table for segments
     ivec2 anchors[maxLabelID+1];
     int segmentSize[maxLabelID+1];
-    for (int i=0; i<=maxLabelID; i++){
+    for (int i=0; i<=maxLabelID; ++i) {
         anchors[i] = ivec2(-1,-1);
         segmentSize[i] = 0;
     }
@@ -854,12 +856,12 @@ void Labeling::findAnchors(){
 
     image_.silPoints.clear();
     // bottom: left to right
-    for (int x=0; x < image_.width-step; x += step){
+    for (int x=0; x < image_.width-step; x += step) {
         int y = 0;
-        while (y < (image_.height - step) && image_.idImage.getElem(x,y) == 0){
+        while (y < (image_.height - step) && image_.idImage.getElem(x,y) == 0)
             y += step;
-        }
-        if (image_.idImage.getElem(x,y) > 0){
+        
+        if (image_.idImage.getElem(x,y) > 0) {
             image_.silPoints.push_back(ivec2(x,y));
             if (x < bl.x)
                 bl.x = x;
@@ -872,36 +874,34 @@ void Labeling::findAnchors(){
         }
     }
     // right: bottom to top
-    for (int y = bl.y; y < image_.height-step; y += step){
+    for (int y = bl.y; y < image_.height-step; y += step) {
         int x = tr.x;
-        while (x > bl.x && image_.idImage.getElem(x,y) == 0){
+        while (x > bl.x && image_.idImage.getElem(x,y) == 0)
             x -= step;
-        }
-        if (image_.idImage.getElem(x,y) > 0){
+        
+        if (image_.idImage.getElem(x,y) > 0) {
             image_.silPoints.push_back(ivec2(x,y));
             if (y > tr.y)
                 tr.y = y;
         }
     }
     // top: right to left
-    for (int x = tr.x; x > bl.x; x -= step){
+    for (int x = tr.x; x > bl.x; x -= step) {
         int y = tr.y;
-        while (y > bl.y && image_.idImage.getElem(x,y) == 0){
+        while (y > bl.y && image_.idImage.getElem(x,y) == 0)
             y -= step;
-        }
-        if (image_.idImage.getElem(x,y) > 0){
+        
+        if (image_.idImage.getElem(x,y) > 0)
             image_.silPoints.push_back(ivec2(x,y));
-        }
     }
     // left: top to bottom
-    for (int y = tr.y; y > bl.y; y -= step){
+    for (int y = tr.y; y > bl.y; y -= step) {
         int x = bl.x;
-        while (x < tr.x && image_.idImage.getElem(x,y) == 0){
+        while (x < tr.x && image_.idImage.getElem(x,y) == 0)
             x += step;
-        }
-        if (image_.idImage.getElem(x,y) > 0){
+        
+        if (image_.idImage.getElem(x,y) > 0)
             image_.silPoints.push_back(ivec2(x,y));
-        }
     }
 
     //
@@ -1118,19 +1118,18 @@ void Labeling::findAnchors(){
 
             int id = idBuffer[y*image_.width + x];
 
-            if (id > 0){
-
+            if (id > 0) {
                 // blur the distancemap pixel
                 int gap = (filterDelta_.get()/distanceMapStep_.get())*distanceMapStep_.get();
                 int distance = 0;
                 int* kernel = kernels_[filterKernel_->get()].kernel;
                 int kernelSize = kernels_[filterKernel_->get()].size;
-                for (int kX = 0; kX < kernelSize; kX++){
-                    for (int kY = 0; kY < kernelSize; kY++){
+                for (int kX = 0; kX < kernelSize; kX++) {
+                    for (int kY = 0; kY < kernelSize; kY++) {
                         int x_t = x + (kX - (kernelSize/2))*gap;
                         int y_t = y + (kY - (kernelSize/2))*gap;
                         if ( x_t >= bl.x && x_t <= tr.x && y_t >= bl.y && y_t <= tr.y &&
-                             idBuffer[y_t*image_.width + x_t] == id){
+                             idBuffer[y_t*image_.width + x_t] == id) {
                             int coeff = kernel[kX*kernelSize + kY];
                             distance += horzDistance[y_t*image_.width + x_t] * coeff;
                             distance += vertDistance[y_t*image_.width + x_t] * coeff;
@@ -1141,16 +1140,14 @@ void Labeling::findAnchors(){
                 }
                 distanceField[y*image_.width + x] = distance / kernels_[filterKernel_->get()].coefficientsSum;
 
-
                 // Set the anchor point.
                 // if not set anchor or if set and the new distanceField point is larger than the old
                 // it will set the new distanceField point. (anchors[id].x == -1) <=> (anchor not set)
                 if ( ( (anchors[id].x > -1) &&
                     ( distanceField[anchors[id].y*image_.width + anchors[id].x] <
                     distanceField[y*image_.width + x]) )
-                    || (anchors[id].x == -1) ){
+                    || (anchors[id].x == -1) )
                         anchors[id] = ivec2(x,y);
-                }
 
             // set all distancemap pixel not belonging to any segment (id==0) to 0
             } else {
@@ -1164,19 +1161,18 @@ void Labeling::findAnchors(){
     }
 
 
-
     // create label for each detected segment/anchor point
-    for (int i = 0; i<maxLabelID; i++){
+    for (int i = 0; i<maxLabelID; i++) {
         if ((anchors[i].x > -1) && (distanceField[anchors[i].y*image_.width + anchors[i].x] >
-            (minSegmentSize_.get() / step) )){
+            (minSegmentSize_.get() / step) )) {
             LabelData* labelData = NULL;
-            for(size_t j=0; (j<labelPersistentData_.size()) && !labelData; j++){
-                if (i == labelPersistentData_[j]->id){
+            for (size_t j=0; (j<labelPersistentData_.size()) && !labelData; j++) {
+                if (i == labelPersistentData_[j]->id)
                     labelData = labelPersistentData_[j];
-                }
             }
-            if (labelData && labelData->text.text.length() > 0){
+            if (labelData && labelData->text.text.length() > 0) {
                 Label newLabel;
+                // TODO: check if it's still the case (ab)
                 // BezierPatch does not work with display lists on ATI :(
                 if (GpuCaps.getVendor() == GpuCapabilities::GPU_VENDOR_ATI)
                     newLabel.bezierPatch = BezierPatch(false);
@@ -1201,15 +1197,12 @@ void Labeling::findAnchors(){
     image_.vertDistance.setData(vertDistance, image_.width, image_.height, 1);
     image_.ascDiagDistance.setData(ascDiagDistance, image_.width, image_.height, 1);
     image_.descDiagDistance.setData(descDiagDistance, image_.width, image_.height, 1);
-
 }
 
-
 void Labeling::appendUnsegmentedLabels() {
-
     // create unsegmented labels
     LabelVec offLabels;
-    for (size_t i=0; i<labelPersistentData_.size(); i++){
+    for (size_t i=0; i<labelPersistentData_.size(); i++) {
         if (labelPersistentData_[i]->belongsToSegment)
             continue;
         Label newLabel;
@@ -1223,7 +1216,7 @@ void Labeling::appendUnsegmentedLabels() {
     // stack off-labels in the lower-left corner of the window
     //if (offLabels.size() > 1){
         placeOffLabels(offLabels);
-        for (size_t i=0; i<offLabels.size(); i++){
+        for (size_t i=0; i<offLabels.size(); i++) {
 			Curve2DPolynomial* curve2D = new Curve2DPolynomial(1);
 			vector<vec2> points;
 			vec2 offsetVector = vec2(offLabels[i].labelData->text.width / 2.f, 0.f);
@@ -1235,10 +1228,8 @@ void Labeling::appendUnsegmentedLabels() {
     //}
 
     // append off-labels to global label vector
-    for (size_t i=0; i<offLabels.size(); i++){
+    for (size_t i=0; i<offLabels.size(); i++)
 		labels_.push_back(offLabels[i]);
-    }
-
 }
 
 // calculate label positions and connection points for external labels
@@ -1255,11 +1246,11 @@ void Labeling::calcLabelPositions() {
 
     // separate intern from extern labels
     LabelVec internLabels, externLabels;
-    for (size_t i = 0; i < labels_.size(); i++){
+    for (size_t i = 0; i < labels_.size(); i++) {
             Label label = labels_[i];
-			if (label.labelData->internPreferred){
+			if (label.labelData->internPreferred)
                 internLabels.push_back(label);
-            } else {
+            else {
 				label.intern = false;
                 externLabels.push_back(label);
             }
@@ -1268,13 +1259,13 @@ void Labeling::calcLabelPositions() {
     //
     // calculate control points for bezier patches of intern labels
     //
-    for (size_t i = 0; i < internLabels.size(); i++){
+    for (size_t i = 0; i < internLabels.size(); i++) {
 
 		// find 2D label path and and 3D bezier patch control points from it
 		// order of the conditionals is important (shortcut-evaluation!)
-		if ( findLabelPathBest(internLabels[i]) && findBezierPoints(internLabels[i]) ) {
+		if ( findLabelPathBest(internLabels[i]) && findBezierPoints(internLabels[i]) )
 			internLabels[i].intern = true;
-		} else {
+		else {
 			internLabels[i].intern = false;
 			externLabels.push_back(internLabels[i]);
 		}
@@ -1283,7 +1274,7 @@ void Labeling::calcLabelPositions() {
 
 
     // determine layout of external labels
-    switch(layout_->get()){
+    switch(layout_->get()) {
 
 	//---- left-right layout ---- //
         case LEFTRIGHT: {
@@ -1292,9 +1283,9 @@ void Labeling::calcLabelPositions() {
             LabelVec rightLabels;
 
             // sort labels by their horizontal position (ascending)
-            for (size_t i = 0; i < externLabels.size(); i++){
-                for (size_t j = i+1; j < externLabels.size(); j++){
-                    if (externLabels[i].anchorPoint.x > externLabels[j].anchorPoint.x ){
+            for (size_t i = 0; i < externLabels.size(); ++i) {
+                for (size_t j = i+1; j < externLabels.size(); ++j) {
+                    if (externLabels[i].anchorPoint.x > externLabels[j].anchorPoint.x ) {
                         swap(externLabels[i], externLabels[j]);
                     }
                 }
@@ -1306,35 +1297,36 @@ void Labeling::calcLabelPositions() {
             size_t mid = tgt::iround(externLabels.size() / 2.f);
             // calculate initial label layout
             int objectWidth = image_.tr.x-image_.bl.x;
-            for (size_t i = 0; i < externLabels.size(); i++){
+            for (size_t i = 0; i < externLabels.size(); ++i) {
                 int labelRelPos = externLabels[i].anchorPoint.x-image_.bl.x;
-                if ( ( (i >= mid) && (labelRelPos > (int)(objectWidth*(1/3.f)) )  ||
-                    ( (labelRelPos > (int)(objectWidth*(2/3.f)) ))  ) ){
+                if ( ( (i >= mid && labelRelPos > static_cast<int>(objectWidth*(1/3.f)) )  ||
+                    ( (labelRelPos > static_cast<int>(objectWidth*(2/3.f)) ))  ) ) {
                         externLabels[i].connectionPoint.x = image_.tr.x + gaps_.LR_BboxObject;
                         externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
                         rightLabels.push_back(externLabels[i]);
-                    } else {
-                        externLabels[i].connectionPoint.x = image_.bl.x - gaps_.LR_BboxObject;
-                        externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
-                        leftLabels.push_back(externLabels[i]);
-                    }
+                }
+                else {
+                    externLabels[i].connectionPoint.x = image_.bl.x - gaps_.LR_BboxObject;
+                    externLabels[i].connectionPoint.y = externLabels[i].anchorPoint.y;
+                    leftLabels.push_back(externLabels[i]);
+                }
             }
 
             externLabels.clear();
 
 			// sort left labels by their vertical label position (ascending)
-			for (size_t i = 0; i < leftLabels.size(); i++){
-				for (size_t j = i+1; j < leftLabels.size(); j++){
-					if (leftLabels[i].connectionPoint.y > leftLabels[j].connectionPoint.y ){
+			for (size_t i = 0; i < leftLabels.size(); ++i) {
+				for (size_t j = i+1; j < leftLabels.size(); ++j) {
+					if (leftLabels[i].connectionPoint.y > leftLabels[j].connectionPoint.y ) {
                         swap(leftLabels[i], leftLabels[j]);
                     }
 				}
 			}
 
 			// sort right labels by their vertical label position (ascending)
-			for (size_t i = 0; i < rightLabels.size(); i++){
-				for (size_t j = i+1; j < rightLabels.size(); j++){
-					if (rightLabels[i].connectionPoint.y > rightLabels[j].connectionPoint.y ){
+			for (size_t i = 0; i < rightLabels.size(); ++i) {
+				for (size_t j = i+1; j < rightLabels.size(); ++j) {
+					if (rightLabels[i].connectionPoint.y > rightLabels[j].connectionPoint.y ) {
 						swap(rightLabels[i], rightLabels[j]);
                     }
 				}
@@ -1342,10 +1334,10 @@ void Labeling::calcLabelPositions() {
 
 			// resolve vertical label overlaps
 			int bottom, top;
-            if (leftLabels.size() > 1){
+            if (leftLabels.size() > 1) {
                 stackLabels(leftLabels, 0, leftLabels.size()-1, bottom, top);
             }
-            if (rightLabels.size() > 1){
+            if (rightLabels.size() > 1) {
                 stackLabels(rightLabels, 0, rightLabels.size()-1, bottom, top);
             }
 
@@ -1354,22 +1346,21 @@ void Labeling::calcLabelPositions() {
 			resolveLineIntersections(rightLabels);
 
 			// recombine left and right labels to one label vector
-			for (size_t i = 0; i < leftLabels.size(); i++){
+			for (size_t i = 0; i < leftLabels.size(); ++i) {
 				externLabels.push_back(leftLabels[i]);
 			}
-			for (size_t i = 0; i < rightLabels.size(); i++){
+			for (size_t i = 0; i < rightLabels.size(); ++i) {
 				externLabels.push_back(rightLabels[i]);
 			}
 
             // finally calculate label positions from connpoints
-            for (size_t i = 0; i < externLabels.size(); i++){
+            for (size_t i = 0; i < externLabels.size(); ++i) {
                 labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
 
                 // Fixme: labelPos is now the center of the label (before bottom-left corner)
                 externLabels[i].labelPos += ivec2(externLabels[i].labelData->text.width/2,
                     externLabels[i].labelData->text.height/2);
             }
-
 
             }
             break;
@@ -1387,21 +1378,21 @@ void Labeling::calcLabelPositions() {
 
             // for each anchor point the distance to its nearest connpoint (so far) is saved
             int* nearest = new int[externLabels.size()];
-            for (size_t i=0; i<externLabels.size(); i++)
+            for (size_t i=0; i<externLabels.size(); ++i)
                 nearest[i] = image_.width*image_.height;
 
             // dir is the direction of projection (DOP); it is rotated after each iteration
             // start with a normalized direction vector
             vec2 dir = vec2(0,1);
-            mat2 rotationMatrix = mat2( cos(stepAngle) , sin(stepAngle),
-                                        -sin(stepAngle), cos(stepAngle) );
+            mat2 rotationMatrix = mat2(cosf(stepAngle), sinf(stepAngle),
+                                       -sinf(stepAngle), cosf(stepAngle));
 
             // for each anchor:
             // find projection of anchor point onto hull
             // regarding current DOP (vector dir).
             // if new connpoint is the closest for its anchor, it is saved
-            for(int step=0; step < stepCount - 1; step++){
-                for(size_t i=0; i < externLabels.size(); i++){
+            for (int step=0; step < stepCount - 1; ++step) {
+                for (size_t i=0; i < externLabels.size(); ++i) {
 
                     ivec2 anchor = externLabels[i].anchorPoint;
 
@@ -1417,10 +1408,11 @@ void Labeling::calcLabelPositions() {
                     if (scale_y < 0)
                         scale_y = (- anchor.y) / dir.y;
 
-                    if (scale_x < scale_y){
+                    if (scale_x < scale_y) {
                         end.x = anchor.x + tgt::iround(dir.x*scale_x);
                         end.y = anchor.y + tgt::iround(dir.y*scale_x);
-                    } else {
+                    }
+                    else {
                         end.x = anchor.x + tgt::iround(dir.x*scale_y);
                         end.y = anchor.y + tgt::iround(dir.y*scale_y);
                     }
@@ -1444,85 +1436,73 @@ void Labeling::calcLabelPositions() {
             }
 
          // calculate initial label positions from connpoints
-         for (size_t i = 0; i < externLabels.size(); i++){
+         for (size_t i = 0; i < externLabels.size(); ++i) {
              labelPosFromConnPoint(externLabels[i], externLabels[i].labelPos);
              correctHullGap(externLabels[i], externLabels[i].labelPos);
          }
 
          // resolve label / line overlaps
          bool finished = false;
-         for (int i=0; (i < maxIterations_.get()) && !finished ; i++){
-
+         for (int i=0; (i < maxIterations_.get()) && !finished ; ++i) {
              finished = true;
-
              finished &= resolveLineIntersections(externLabels);
              finished &= resolveLabelOverlaps(externLabels);
          }
 
          // finally calculate connpoints from corrected labelpositions
-         for (size_t i=0; i < externLabels.size(); i++){
-
+         for (size_t i=0; i < externLabels.size(); ++i)
             connPointFromLabelPos(externLabels[i], externLabels[i].connectionPoint, externLabels[i].normal);
-         }
-
-
 
 #ifdef labelDEBUG
          if (!finished)
              LINFO("Layout not finished! (iteration limit reached: " <<
                           maxIterations_.get() << ")" << std::endl );
 #endif
-
         break; }
 
 	} // switch
 
-
     // recombine intern and extern labels
     labels_.clear();
-    for (size_t i=0; i < externLabels.size(); i++){
+    for (size_t i=0; i < externLabels.size(); i++)
         labels_.push_back(externLabels[i]);
-    }
-    for (size_t i=0; i < internLabels.size(); i++){
+
+    for (size_t i=0; i < internLabels.size(); i++)
         if (internLabels[i].intern)
             labels_.push_back(internLabels[i]);
-    }
-
 }
 
 
 // maps from texture (pixel) coords to world coords (NDC).
 // if a label is supplied, only this label's coords are transformed,
 // if not, all labels are transformed
-void Labeling::toWorld(Label* pLabel){
-
+void Labeling::toWorld(Label* pLabel) {
     const vec2 scale = vec2(2.f/(image_.width-0.5f), 2.f/(image_.height-0.5f));
     const vec2 shift = vec2(-1.f, -1.f);
 
-	if (pLabel == NULL){
-		for (size_t i = 0; i < labels_.size(); i++){
+	if (pLabel == NULL) {
+		for (size_t i = 0; i < labels_.size(); i++)
 			toWorld( &(labels_[i]) );
-		}
-	} else {
-		pLabel->anchorPointWorld = (vec2)pLabel->anchorPoint*scale + shift;
+	}
+    else {
+        pLabel->anchorPointWorld = (vec2)pLabel->anchorPoint*scale + shift;
         pLabel->connectionPointWorld = (vec2)pLabel->connectionPoint*scale + shift;
         pLabel->labelPosWorld = (vec2)(pLabel->labelPos)*scale + shift;
-        pLabel->labelData->text.widthWorld = (float)(pLabel->labelData->text.width) * scale.x;
-        pLabel->labelData->text.heightWorld = (float)(pLabel->labelData->text.height) * scale.y;
-        pLabel->labelData->text.widthInternWorld = (float)(pLabel->labelData->text.widthIntern) * scale.x;
-        pLabel->labelData->text.heightInternWorld = (float)(pLabel->labelData->text.heightIntern) * scale.y;
+        pLabel->labelData->text.widthWorld = static_cast<float>(pLabel->labelData->text.width) * scale.x;
+        pLabel->labelData->text.heightWorld = static_cast<float>(pLabel->labelData->text.height) * scale.y;
+        pLabel->labelData->text.widthInternWorld = static_cast<float>(pLabel->labelData->text.widthIntern) * scale.x;
+        pLabel->labelData->text.heightInternWorld = static_cast<float>(pLabel->labelData->text.heightIntern) * scale.y;
 
-		if ( !shape3D_.get() ){
+		if ( !shape3D_.get() ) {
 			BezierPatch patch = pLabel->bezierPatch;
 			int dimS, dimT;
 			vec3* ctrlPoints = patch.getCtrlPoints(dimS, dimT);
-			for (int i=0; i<(dimS+1)*(dimT+1); i++){
+			for (int i=0; i<(dimS+1)*(dimT+1); ++i) {
 				ctrlPoints[i].x = ctrlPoints[i].x*scale.x + shift.x;
 				ctrlPoints[i].y = ctrlPoints[i].y*scale.y + shift.y;
 			}
 		}
 	}
-
 }
 
 
@@ -1535,8 +1515,7 @@ void Labeling::toWorld(Label* pLabel){
 //   2. pass: render connection lines and anchors with normal thickness
 //            + render quads at label positions mapping a font texture onto them (external),
 //              render bezier patches mapping a font texture onto them (internal)
-void Labeling::renderLabels(int dest){
-
+void Labeling::renderLabels(int dest) {
 	glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -1549,8 +1528,9 @@ void Labeling::renderLabels(int dest){
 
     tc_->setActiveTarget(dest);
 
+    // TODO: check if it's still the case (ab)
     // strange enough, but alpha test seems to work improperly on ATI ...
-    if ( GpuCaps.getVendor() != GpuCapabilities::GPU_VENDOR_ATI ){
+    if ( GpuCaps.getVendor() != GpuCapabilities::GPU_VENDOR_ATI ) {
         glEnable(GL_ALPHA_TEST);
         glAlphaFunc(GL_GREATER, 0.f);
     }
@@ -1558,51 +1538,49 @@ void Labeling::renderLabels(int dest){
     glDepthFunc(GL_ALWAYS);
     glDepthMask(false);
 
-    for (int pass = 1; pass <= 2; pass++){
-
+    for (int pass = 1; pass <= 2; ++pass) {
         // settings for different render passes
-        if (pass == 1){
-            if ( drawHalo_.get() ){
+        if (pass == 1) {
+            if ( drawHalo_.get() ) {
                 glPointSize(4.0f);
                 glLineWidth(3.0f);
                 glColor4fv(haloColorExtern_.get().elem);
-            } else {
-                continue;
             }
-        } else if (pass == 2) {
+            else
+                continue;
+        }
+        else if (pass == 2) {
             glPointSize(2.5f);
             glLineWidth(1.0f);
             glColor4fv(labelColorExtern_.get().elem);
         }
 
 		// anchor points and connection lines for external labels
-		if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_EXTERNAL_ONLY ){
-
-				// anchor points (only for extern labels)
-                glBegin(GL_POINTS);
-                for (size_t i = 0; i < labels_.size(); i++){
-                    if (    !labels_[i].intern && !(labels_[i].offLabel) &&
-                            !(drag_ && pickedLabel_ && pickedLabel_->labelData->id == labels_[i].labelData->id)){
+		if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_EXTERNAL_ONLY ) {
+            // anchor points (only for extern labels)
+            glBegin(GL_POINTS);
+            for (size_t i = 0; i < labels_.size(); ++i) {
+                if (    !labels_[i].intern && !(labels_[i].offLabel) &&
+                    !(drag_ && pickedLabel_ && pickedLabel_->labelData->id == labels_[i].labelData->id)) {
                         glVertex3f(labels_[i].anchorPointWorld.x, labels_[i].anchorPointWorld.y, -1.0 );
-                    }
                 }
-                glEnd();
+            }
+            glEnd();
 
-                // lines connecting anchors and connection points (only for extern labels)
-                glBegin(GL_LINES);
-                for (size_t i = 0; i < labels_.size(); i++){
-                    if (    !labels_[i].intern && !(labels_[i].offLabel) &&
-                            !(drag_ && pickedLabel_ && pickedLabel_->labelData->id == labels_[i].labelData->id)){
+            // lines connecting anchors and connection points (only for extern labels)
+            glBegin(GL_LINES);
+            for (size_t i = 0; i < labels_.size(); ++i) {
+                if (    !labels_[i].intern && !(labels_[i].offLabel) &&
+                    !(drag_ && pickedLabel_ && pickedLabel_->labelData->id == labels_[i].labelData->id)) {
                         glVertex3f(labels_[i].anchorPointWorld.x, labels_[i].anchorPointWorld.y, -1 );
                         glVertex3f(labels_[i].connectionPointWorld.x, labels_[i].connectionPointWorld.y, -1);
-                    }
                 }
-                glEnd();
-		}
-
+            }
+            glEnd();
+        }
 
         // render anchor and connection-line of dragged label
-        if (drag_ && pickedLabel_ && !pickedLabel_->intern && !pickedLabel_->offLabel){
+        if (drag_ && pickedLabel_ && !pickedLabel_->intern && !pickedLabel_->offLabel) {
 
             glBegin(GL_POINTS);
             glVertex3f(pickedLabel_->anchorPointWorld.x, pickedLabel_->anchorPointWorld.y, -1.0 );
@@ -1613,7 +1591,7 @@ void Labeling::renderLabels(int dest){
             ivec2 tr = pickedLabel_->labelPos
                 + ivec2(tgt::iround(pickedLabel_->labelData->text.width/2.f), tgt::iround(pickedLabel_->labelData->text.height/2.f))
                 + ivec2(gaps_.SIL_LabelLabel);
-            if (!pointInBox(bl, tr, pickedLabel_->anchorPoint)){
+            if (!pointInBox(bl, tr, pickedLabel_->anchorPoint)) {
                 glBegin(GL_LINES);
                 glVertex3f(pickedLabel_->anchorPointWorld.x, pickedLabel_->anchorPointWorld.y, -1 );
                 glVertex3f(pickedLabel_->connectionPointWorld.x, pickedLabel_->connectionPointWorld.y, -1);
@@ -1624,29 +1602,27 @@ void Labeling::renderLabels(int dest){
 
         // render text quads (second pass only)
         // FIXME: use texture rectangles, if necessary
-        if (pass == 2){
-
+        if (pass == 2) {
             glMatrixMode(GL_MODELVIEW);
-
-            for (size_t i = 0; i < labels_.size(); i++){
+            for (size_t i = 0; i < labels_.size(); ++i) {
 
                 // render quad with label texture for extern labels
                 if ( (!labels_[i].intern ) &&
 					( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_EXTERNAL_ONLY ||
-					  (drag_ && pickedLabel_->labelData->id == labels_[i].labelData->id ))  ){
+					  (drag_ && pickedLabel_->labelData->id == labels_[i].labelData->id )) ) {
 
 					labelShader_->activate();
                     setGlobalShaderParameters(labelShader_);
 
                     vec2 texCoordScale = (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ?
                         static_cast<vec2>(tc_->getSize()) :
-                        vec2((float)labels_[i].labelData->text.textureExternWidth, (float)labels_[i].labelData->text.textureExternHeight));
+                        vec2(static_cast<float>(labels_[i].labelData->text.textureExternWidth), static_cast<float>(labels_[i].labelData->text.textureExternHeight)));
                     labelShader_->setUniform("texCoordScale_", texCoordScale);
 
                     // bind label's pre-generated text texture
 					glActiveTexture(tm_.getGLTexUnit(labelTexUnit_));
                     glBindTexture(labels_[i].labelData->text.textureTargetType, labels_[i].labelData->text.textureExtern);
-					labelShader_->setUniform("labelTex_", (GLint) tm_.getTexUnit(labelTexUnit_));
+					labelShader_->setUniform("labelTex_", tm_.getTexUnit(labelTexUnit_));
 
                     // scale and translate quad
                     glPushMatrix();
@@ -1682,7 +1658,8 @@ void Labeling::renderLabels(int dest){
                     glPopMatrix();
 
                 // render internal labels by mapping their text texture onto their bezier patch
-                } else if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_INTERNAL_ONLY ){
+                }
+                else if ( showLabels_->get() == SHOW_ALL || showLabels_->get() == SHOW_INTERNAL_ONLY ) {
 
                     // render bezier patches for internal labels
 
@@ -1697,27 +1674,27 @@ void Labeling::renderLabels(int dest){
 					// if 3D shape fitting is enabled, the bezier patch's control points
 					// have been specified in model coords of the proxy geometry
 					// -> load projection and camera view matrix
-					if ( shape3D_.get() ){
+					if ( shape3D_.get() ) {
 						glMatrixMode(GL_PROJECTION);
                         tgt::loadMatrix(camera_->getProjectionMatrix());
 						glMatrixMode(GL_MODELVIEW);
 						tgt::loadMatrix(camera_->getViewMatrix());
 					}
 
-					for (size_t i=0; i<labels_.size(); i++){
-                        if (labels_[i].intern){
+					for (size_t i=0; i<labels_.size(); ++i) {
+                        if (labels_[i].intern) {
 
 							labelShader_->activate();
                             setGlobalShaderParameters(labelShader_);
 
                             vec2 texCoordScale = (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ?
                                 static_cast<vec2>(tc_->getSize()) :
-                            vec2((float)labels_[i].labelData->text.textureInternWidth, (float)labels_[i].labelData->text.textureInternHeight));
+                            vec2(static_cast<float>(labels_[i].labelData->text.textureInternWidth), static_cast<float>(labels_[i].labelData->text.textureInternHeight)));
                             labelShader_->setUniform("texCoordScale_", texCoordScale);
 
                             glActiveTexture(tm_.getGLTexUnit(labelTexUnit_));
                             glBindTexture(labels_[i].labelData->text.textureTargetType, labels_[i].labelData->text.textureIntern);
-                            labelShader_->setUniform("labelTex_", (GLint) tm_.getTexUnit(labelTexUnit_));
+                            labelShader_->setUniform("labelTex_", tm_.getTexUnit(labelTexUnit_));
 
 							labels_[i].bezierPatch.render(10, 4, true, 0);
 
@@ -1734,14 +1711,10 @@ void Labeling::renderLabels(int dest){
 					glPopMatrix();
 					glMatrixMode(GL_MODELVIEW);
 					glPopMatrix();
-
                 }
-
             }
             // disable texturing on this texture unit
-
         }
-
     }
 
     // reset settings
@@ -1754,11 +1727,11 @@ void Labeling::renderLabels(int dest){
 
 #ifdef labelDEBUG
     // convex hull for debugging
-    if ( (drawConvexHull_.get()) && (layout_->get() == SILHOUETTE) && (image_.hullPoints.size() > 0)){
+    if ( (drawConvexHull_.get()) && (layout_->get() == SILHOUETTE) && (image_.hullPoints.size() > 0)) {
         glColor4fv(vec4::red.elem);
         glLineWidth(2.0);
         glBegin(GL_LINE_LOOP);
-        for (size_t i = 0; i < image_.hullPoints.size()-1; i++){
+        for (size_t i = 0; i < image_.hullPoints.size()-1; ++i) {
             glVertex3f(image_.hullPoints[i].x*2.f/image_.width-1, image_.hullPoints[i].y*2.f/image_.height-1, -1 );
         }
         glEnd(); };
@@ -1766,7 +1739,7 @@ void Labeling::renderLabels(int dest){
     glColor4f(1.f, 0.f, 0.f, 1.f);
     glPointSize(1.f);
     glBegin(GL_POINTS);
-    for (size_t i=0; i<renderPoints_.size(); i++){
+    for (size_t i=0; i<renderPoints_.size(); ++i) {
         glVertex3f( renderPoints_[i].x, renderPoints_[i].y, -1.f );
     }
     glEnd();
@@ -1782,10 +1755,9 @@ void Labeling::renderLabels(int dest){
 }
 
 // clear current label vector
-void Labeling::deleteLabels(){
-
-    for (size_t i=0; i<labels_.size(); i++){
-        if (labels_[i].curve2D != NULL){
+void Labeling::deleteLabels() {
+    for (size_t i=0; i<labels_.size(); ++i) {
+        if (labels_[i].curve2D != NULL) {
 			delete labels_[i].curve2D;
 		}
     }
@@ -1793,14 +1765,11 @@ void Labeling::deleteLabels(){
 }
 
 // calculates connection point from label's position (external labels only)
-void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec2 &normal, bool calcNormal){
-
+void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec2 &normal, bool calcNormal) {
     Adjustments h_adjust, v_adjust;    // connPoint is placed left|right, up|down from label
 
     switch (layout_->get()){
-
         case LEFTRIGHT:
-
         case SILHOUETTE: {
 
             // gradient thresholds for chosing one of the potential centers for the line connpoint.
@@ -1825,11 +1794,12 @@ void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec
             center_semimiddle.y = pLabel.labelPos.y;
 
             center_middle.x = pLabel.labelPos.x;
-            if (h_adjust == LEFT){
+            if (h_adjust == LEFT) {
                 center_out.x = pLabel.labelPos.x + tgt::iround(pLabel.labelData->text.width/2.f) -
                     tgt::iround(pLabel.labelData->text.height/2.f);
                 center_semimiddle.x = pLabel.labelPos.x + tgt::iround( (1/4.f)*pLabel.labelData->text.width );
-            } else {
+            }
+            else {
                 center_out.x = pLabel.labelPos.x - tgt::iround(pLabel.labelData->text.width/2.f) +
                     tgt::iround(pLabel.labelData->text.height/2.f);
                 center_semimiddle.x = pLabel.labelPos.x - tgt::iround( (1/4.f)*pLabel.labelData->text.width );
@@ -1843,10 +1813,10 @@ void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec
             // now choose one center by comparing the connection lines' gradients
             // to the thresholds
             ivec2 center;
-            if ( (fabs((float)t_out.y / t_out.x) < l_thresh) &&
+            if ( (fabs(static_cast<float>(t_out.y) / t_out.x) < l_thresh) &&
                     tgt::sign( (t_middle.x-pLabel.labelData->text.width/2)*(t_middle.x+pLabel.labelData->text.width/2)) == 1 )
                 center = center_out;
-            else if ( (fabs((float)t_middle.y / t_middle.x) > u_thresh ) ||
+            else if ( (fabs(static_cast<float>(t_middle.y) / t_middle.x) > u_thresh ) ||
                 (tgt::sign(t_middle.x*t_semimiddle.x) == -1) )
                 center = center_middle;
             else
@@ -1862,14 +1832,15 @@ void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec
             else
                 s_y = static_cast<float>(image_.width*image_.height);
 
-            if (r.x != 0){
+            if (r.x != 0) {
                 if (h_adjust == LEFT)
                     s_x = ( pLabel.labelData->text.width/2.f -
-                        (center.x - pLabel.labelPos.x) + gaps_.LabelConnpoint) / (float)r.x;
+                        (center.x - pLabel.labelPos.x) + gaps_.LabelConnpoint) / static_cast<float>(r.x);
                 else
                     s_x = ( - pLabel.labelData->text.width/2.f +
-                        ( pLabel.labelPos.x - center.x) - gaps_.LabelConnpoint) / (float)r.x;
-            } else
+                        ( pLabel.labelPos.x - center.x) - gaps_.LabelConnpoint) / static_cast<float>(r.x);
+            }
+            else
                 s_x = static_cast<float>(image_.width*image_.height);
 
             // set connpoint
@@ -1877,42 +1848,41 @@ void Labeling::connPointFromLabelPos(const Label &pLabel, ivec2 &connPoint, ivec
             connPoint = center + (ivec2)(s*(vec2)r);
 
             // update hullintersection
-            if (calcNormal){
+            if (calcNormal) {
                 ivec2 inter;
                 midPointLine(connPoint, pLabel.anchorPoint, HullIntersect, inter, normal);
             }
 
             }
-
             break;
-
     }
 }
 
 
 // calc position of one label using its connpoint (external labels only)
-void Labeling::labelPosFromConnPoint(const Label &pLabel, ivec2 &labelPos){
-
+void Labeling::labelPosFromConnPoint(const Label &pLabel, ivec2 &labelPos) {
     int x_gap = gaps_.LabelConnpoint;
 
     Adjustments h_adjust, v_adjust;    // label is placed left|right, up|down from conn-point
 
-	switch(layout_->get()){
+	switch(layout_->get()) {
 		case LEFTRIGHT: {
 
             h_adjust = (pLabel.anchorPoint.x < pLabel.connectionPoint.x) ? RIGHT : LEFT;
 
-            if (h_adjust == RIGHT){
+            if (h_adjust == RIGHT) {
                 labelPos.x = pLabel.connectionPoint.x + x_gap;
-			} else {
+			}
+            else {
                 labelPos.x = static_cast<int>(pLabel.connectionPoint.x - pLabel.labelData->text.width
                                               - x_gap);
 			}
             labelPos.y = pLabel.connectionPoint.y - (pLabel.labelData->text.height-1) / 2;
 
-          	break;	}
+          	break;	
+        }
 
-		case SILHOUETTE: {
+        case SILHOUETTE: {
 
             h_adjust = (pLabel.normal.x >= 0) ? RIGHT : LEFT;
             v_adjust = (pLabel.normal.y >= 0) ? UP : DOWN;
@@ -1924,21 +1894,23 @@ void Labeling::labelPosFromConnPoint(const Label &pLabel, ivec2 &labelPos){
 
             ivec2 shift;
             // connection-line has a small gradient
-            if ((r.x != 0) && (((float)abs(r.y / r.x)) < l_thresh) ) {
+            if ((r.x != 0) && ((static_cast<float>(abs(r.y / r.x))) < l_thresh) ) {
                 if (h_adjust == LEFT)
                     shift.x = - tgt::iround(pLabel.labelData->text.width/2.f) - gaps_.LabelConnpoint;
                 else
                     shift.x = tgt::iround(pLabel.labelData->text.width/2.f) + gaps_.LabelConnpoint;
                 shift.y = 0;
             // connection-line has a huge gradient
-            } else if ((r.x == 0) || (((float)abs(r.y / r.x)) > u_thresh) ) {
+            }
+            else if ((r.x == 0) || ((static_cast<float>(abs(r.y / r.x))) > u_thresh) ) {
                 shift.x = 0;
                 if (v_adjust == DOWN)
                     shift.y = - (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
                 else
                     shift.y = (tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint);
             // connection-line gradient between lower and upper threshold
-            } else {
+            }
+            else {
                 shift.x = tgt::iround(pLabel.labelData->text.width/4.f * sign(r.x));
                 if (v_adjust == DOWN)
                     shift.y = - ( tgt::iround(pLabel.labelData->text.height/2.f) + gaps_.LabelConnpoint );
@@ -1947,16 +1919,15 @@ void Labeling::labelPosFromConnPoint(const Label &pLabel, ivec2 &labelPos){
             }
 
             labelPos = pLabel.connectionPoint + shift;
-		    break;	 }
-
+		    break;
+        }
 	}
 }
 
 // resolves intersections between two label-connecting lines depending on the current layout.
 // both label positions and connpoints are corrected!
 // @return false, if intersections have been found
-bool Labeling::resolveLineIntersections(LabelVec &pLabels){
-
+bool Labeling::resolveLineIntersections(LabelVec &pLabels) {
     bool intersectionFound = false;
     bool finished = false;
 
@@ -1965,18 +1936,18 @@ bool Labeling::resolveLineIntersections(LabelVec &pLabels){
     vec2 gapi, gapj;
 
     // while intersections are found, swap each two labels whose lines intersect
-    for (int iter=0; (iter<maxIterations_.get()) && !finished; iter++){
+    for (int iter=0; (iter<maxIterations_.get()) && !finished; ++iter) {
         finished = true;
 
         // test each label against each other
-        for (size_t i = 0; i < pLabels.size(); i++){
-            for (size_t j = i+1; j < pLabels.size(); j++) {
+        for (size_t i = 0; i < pLabels.size(); ++i) {
+            for (size_t j = i+1; j < pLabels.size(); ++j) {
 
                 // enlarge lines by line-gap
-                gapi = normalize( (vec2)(pLabels[i].connectionPoint - pLabels[i].anchorPoint) );
-                gapj = normalize( (vec2)(pLabels[j].connectionPoint - pLabels[j].anchorPoint) );
-                gapi = gapi*(float)gaps_.LineLine;
-                gapj = gapj*(float)gaps_.LineLine;
+                gapi = normalize( static_cast<vec2>(pLabels[i].connectionPoint - pLabels[i].anchorPoint) );
+                gapj = normalize( static_cast<vec2>(pLabels[j].connectionPoint - pLabels[j].anchorPoint) );
+                gapi = gapi*static_cast<float>(gaps_.LineLine);
+                gapj = gapj*static_cast<float>(gaps_.LineLine);
 
                 // test, if lines intersect
                 lineIntersection(
@@ -1985,16 +1956,15 @@ bool Labeling::resolveLineIntersections(LabelVec &pLabels){
                     pLabels[j].connectionPoint+(ivec2)gapj,
                     pLabels[j].anchorPoint-(ivec2)gapj,
                     intersection, onSegment);
-                if (onSegment){
-                    if (layout_->get() == LEFTRIGHT){
-
+                if (onSegment) {
+                    if (layout_->get() == LEFTRIGHT) {
                         // swap connpoints and recalculate label positions afterwards
                         swap(pLabels[i].connectionPoint, pLabels[j].connectionPoint);
                         labelPosFromConnPoint(pLabels[i], pLabels[i].labelPos);
                         labelPosFromConnPoint(pLabels[j], pLabels[j].labelPos);
 
-                    } else if (layout_->get() == SILHOUETTE){
-
+                    }
+                    else if (layout_->get() == SILHOUETTE) {
                         // swap connpoints
                         swap(pLabels[i].connectionPoint, pLabels[j].connectionPoint);
 
@@ -2009,14 +1979,12 @@ bool Labeling::resolveLineIntersections(LabelVec &pLabels){
                         connPointFromLabelPos(pLabels[j], pLabels[j].connectionPoint, pLabels[i].normal);
 
                     }
-
                     finished = false;
                     intersectionFound = true;
                 }
             }
         }
     }
-
     return !intersectionFound;
 }
 
@@ -2031,7 +1999,8 @@ void Labeling::lineIntersection(ivec2 P1, ivec2 Q1, ivec2 P2, ivec2 Q2,
     if (((Q2.y - P2.y) * (Q1.x - P1.x) == 0) && ((Q2.x - P2.x) * (Q1.y - P1.y) == 0)) {
         s = -1;
         t = -1;
-    } else {
+    }
+    else {
 	    s = static_cast<float>((Q2.x - P2.x) * (P1.y - P2.y) - (Q2.y - P2.y) * (P1.x - P2.x)) /
 		    ((Q2.y - P2.y) * (Q1.x - P1.x) - (Q2.x - P2.x) * (Q1.y - P1.y));
         t = static_cast<float>((Q1.x - P1.x) * (P1.y - P2.y) - (Q1.y - P1.y) * (P1.x - P2.x)) /
@@ -2042,20 +2011,18 @@ void Labeling::lineIntersection(ivec2 P1, ivec2 Q1, ivec2 P2, ivec2 Q2,
     onSegments = ((s>=0) && (s<=1) && (t>=0) && (t<=1));
 }
 
-
 // draws a one pixel thick halo with haloColor
 // around all objects in bitmap with alpha-value greater than alphaTreshold.
 // Egde halos get an alpha-value of 1.0, corner-halos 0.5 (=> rounded corners)
 // @bitmap a four-channel RGBA bitmap
 void Labeling::drawHalo(labeling::Bitmap<GLfloat> &bitmapParam, int width, int height,
-                          tgt::Color haloColor, GLfloat alphaThreshold){
-
+                          tgt::Color haloColor, GLfloat alphaThreshold)
+{
     GLfloat* result = new GLfloat[width*height*4];
 	GLfloat* bitmap = bitmapParam.getData();
 
-    for (int x=0; x<width; x++){
-        for (int y=0; y<height; y++){
-
+    for (int x=0; x<width; ++x) {
+        for (int y=0; y<height; ++y) {
             GLfloat center = bitmap[(y*width+x)*4 + 3];
 
             GLfloat alpha=0.f;
@@ -2067,7 +2034,8 @@ void Labeling::drawHalo(labeling::Bitmap<GLfloat> &bitmapParam, int width, int h
                 if (east > alphaThreshold || south > alphaThreshold ||
                     west > alphaThreshold || north > alphaThreshold) {
                         alpha = 1.f;
-                } else {
+                }
+                else {
                     GLfloat southeast = bitmap[(max(y-1,0)*width+min(x+1,width-1))*4 + 3];
                     GLfloat southwest = bitmap[(max(y-1,0)*width+max(x-1,0))*4 + 3];
                     GLfloat northwest = bitmap[(min(y+1,height-1)*width+max(x-1,0))*4 + 3];
@@ -2084,7 +2052,8 @@ void Labeling::drawHalo(labeling::Bitmap<GLfloat> &bitmapParam, int width, int h
                 result[(y*width+x)*4 + 1] = haloColor.g;
                 result[(y*width+x)*4 + 2] = haloColor.b;
                 result[(y*width+x)*4 + 3] = alpha;
-            } else {
+            }
+            else {
                 result[(y*width+x)*4] = bitmap[(y*width+x)*4];
                 result[(y*width+x)*4 + 1] = bitmap[(y*width+x)*4 + 1];
                 result[(y*width+x)*4 + 2] = bitmap[(y*width+x)*4 + 2];
@@ -2093,8 +2062,7 @@ void Labeling::drawHalo(labeling::Bitmap<GLfloat> &bitmapParam, int width, int h
         }
     }
 
-	bitmapParam.setData(result, width, height, 4);
-
+    bitmapParam.setData(result, width, height, 4);
 }
 
 // divide-and-conquer algorithm for resolving vertical label overlaps in left-right layout:
@@ -2102,17 +2070,15 @@ void Labeling::drawHalo(labeling::Bitmap<GLfloat> &bitmapParam, int width, int h
 // 2. resolve overlaps in top half of labels
 // 3. combine results: if bottom and top labeling regions overlap,
 //                     shift labels downwards or upwards respectively
-void Labeling::stackLabels(LabelVec &pLabels, int min, int max, int &bottom, int &top){
-
+void Labeling::stackLabels(LabelVec &pLabels, int min, int max, int &bottom, int &top) {
 	int y_gap = gaps_.LR_LabelLabel;
 
-    if (min == max){
+    if (min == max) {
         bottom = pLabels[min].connectionPoint.y - tgt::iround(pLabels[min].labelData->text.height/2.f);
         top = pLabels[min].connectionPoint.y + tgt::iround(pLabels[min].labelData->text.height/2.f);
         return;
-
-    } else {
-
+    }
+    else {
         // divide
         int mid = min + (max - min) / 2;
         int bottom1, top1, bottom2, top2;
@@ -2120,36 +2086,34 @@ void Labeling::stackLabels(LabelVec &pLabels, int min, int max, int &bottom, int
         stackLabels(pLabels, mid+1, max, bottom2, top2);
 
         // combine results
-        if (top1 > bottom2 - y_gap){
+        if (top1 > bottom2 - y_gap) {
 
             int overlap = top1 - bottom2 + y_gap;
             pLabels[mid].connectionPoint.y -= overlap / 2;
             pLabels[mid+1].connectionPoint.y += overlap / 2;
 
-            for (int i = mid-1; i >= min; i--){
+            for (int i = mid-1; i >= min; --i) {
                 overlap = pLabels[i+1].connectionPoint.y - pLabels[i].connectionPoint.y -
                     tgt::iround(pLabels[i+1].labelData->text.height/2.f) - tgt::iround(pLabels[i].labelData->text.height/2.f) - y_gap;
-                if (overlap < 0){
+                if (overlap < 0)
                     pLabels[i].connectionPoint.y += overlap;
-                }
             }
 
-            for (int i = mid+2; i <= max; i++){
+            for (int i = mid+2; i <= max; ++i) {
                 overlap = pLabels[i].connectionPoint.y - pLabels[i-1].connectionPoint.y  -
                     tgt::iround(pLabels[i].labelData->text.height/2.f) - tgt::iround(pLabels[i-1].labelData->text.height/2.f) - y_gap;
-                if (overlap < 0){
+                if (overlap < 0)
                     pLabels[i].connectionPoint.y += -overlap;
-                }
             }
 
             bottom = pLabels[min].connectionPoint.y - tgt::iround(pLabels[min].labelData->text.height/2.f);
             top = pLabels[max].connectionPoint.y + tgt::iround(pLabels[max].labelData->text.height/2.f);
 
-        } else {
+        }
+        else {
             bottom = bottom1;
             top = top2;
         }
-
     }
 }
 
@@ -2163,9 +2127,8 @@ void Labeling::stackLabels(LabelVec &pLabels, int min, int max, int &bottom, int
 //         false, if action==hullIntersect and no intersection found
 //         undefined otherwise
 bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineActions action,
-                              ivec2 &intersection, ivec2 &normal){
-
-
+                              ivec2 &intersection, ivec2 &normal)
+{
      // clamp coords to image boundary
     int x0 = min(max(start.x,0),image_.width-1);
     int x1 = min(max(end.x,0),image_.width-1);
@@ -2176,26 +2139,25 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
     int grad_x = end.y - start.y;;
     int grad_y = -(end.x - start.x);;
 
+	bool mirroringWH = false;
+	bool mirroringXA = false;
 
-	bool spiegelungWH = false;
-	bool spiegelungXA = false;
-
-	if (x1 < x0){
+	if (x1 < x0) {
 		swap(x0,x1);
 		swap(y0,y1);
 	}
 
-	if (y1 < y0){
+	if (y1 < y0) {
 		y1 = y0 + (y0 - y1);
-		spiegelungXA = true;
+		mirroringXA = true;
 	}
 
 	int dx = x1 - x0;
 	int dy = y1 - y0;
-	if (dy > dx){
+	if (dy > dx) {
 		swap(x0,y0);
 		swap(x1,y1);
-		spiegelungWH = true;
+		mirroringWH = true;
 	}
 
 	dx = x1 - x0;
@@ -2206,9 +2168,8 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
 	int x = x0;
 	int y = y0;
 
-    while (x <= x1){
-
-        if (spiegelungWH == true){
+    while (x <= x1) {
+        if (mirroringWH) {
             swap(x,y);
             swap(x0,y0);
         }
@@ -2216,20 +2177,19 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
         //writePixel(x, y);
         int x_t;
         int y_t;
-        if (spiegelungXA == true) {
+        if (mirroringXA) {
             x_t = x;
             y_t = 2*y0 - y;
-        } else {
+        }
+        else {
             x_t = x;
             y_t = y;
         }
 
-        switch (action){
+        switch (action) {
             case HullIntersect:
                 {
-
-                    if ( (image_.convexHull.getElem(x_t, y_t, 0) == 1) ){
-
+                    if ( (image_.convexHull.getElem(x_t, y_t, 0) == 1) ) {
                         int dist_t;
                         ivec2 res_t;
                         res_t.x = x_t;
@@ -2242,7 +2202,6 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
                             normal.y = image_.convexHull.getElem(x_t, y_t, 2);
                         }
                     }
-
                 }
                 break;
 
@@ -2254,8 +2213,8 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
                     int max_x = min(x_t + lineWidth / 2, image_.width-1);
                     int min_y = max(y_t - lineWidth / 2, 0);
                     int max_y = min(y_t + lineWidth / 2, image_.height-1);
-                    for (int x_new = min_x; x_new <= max_x; x_new++){
-                        for (int y_new = min_y; y_new <= max_y; y_new++){
+                    for (int x_new = min_x; x_new <= max_x; ++x_new) {
+                        for (int y_new = min_y; y_new <= max_y; ++y_new) {
                             // hull
                             image_.convexHull.setElem(x_new, y_new, 1, 0);
                             // normal x-value
@@ -2269,25 +2228,25 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
 
         }
 
-        if (spiegelungWH == true){
+        if (mirroringWH) {
             swap(x, y);
             swap(x0,y0);
         }
 
-        x++;
-        if (d <= 0){
+        --x;
+        if (d <= 0) {
             d += deltaE;
-        } else {
+        }
+        else {
             y++;
             d += deltaNE;
         }
     }
 
-    if (action == HullIntersect){
+    if (action == HullIntersect)
         return (dist > -1);
-    } else {
+    else
         return true;
-    }
 }
 
 
@@ -2295,21 +2254,18 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
 // by shifting each two of them to opposite directions along hull´.
 // both label positions and connpoints are corrected!
 // @return false, if an overlap was found
-bool Labeling::resolveLabelOverlaps(LabelVec &pLabels){
-
+bool Labeling::resolveLabelOverlaps(LabelVec &pLabels) {
     bool overlapFound = false;
     bool finished = false;
 
     int mask;
     int iter = 0;
-    while ( (!finished) && (iter < maxIterations_.get()) ){
-
+    while ( (!finished) && (iter < maxIterations_.get()) ) {
         finished = true;
 
         // checks each label's bounding box against each other's
-        for (size_t i=0; i< pLabels.size(); i++){
-            for (size_t j=i+1; j<pLabels.size(); j++){
-
+        for (size_t i=0; i< pLabels.size(); ++i) {
+            for (size_t j=i+1; j<pLabels.size(); ++j) {
                 ivec2 labelPos1 = pLabels[i].labelPos;
                 ivec2 labelPos2 = pLabels[j].labelPos;
                 LabelText text1 = pLabels[i].labelData->text;
@@ -2327,15 +2283,13 @@ bool Labeling::resolveLabelOverlaps(LabelVec &pLabels){
 
                 // if bounding boxes intersect, separate labels by shifting them
                 // to opposite directions parallel to hull
-                if (intersectBoxBox(bl1, tr1, bl2, tr2, mask )){
-
+                if (intersectBoxBox(bl1, tr1, bl2, tr2, mask )) {
                     // interpolate hull normal from the two label normals
                     ivec3 n1 = ivec3(pLabels[i].normal, 0);
                     ivec3 n2 = ivec3(pLabels[j].normal, 0);
                     ivec3 normal = n1+n2;
-                    if (normal == ivec3(0,0,0)){
+                    if (normal == ivec3(0,0,0))
                         normal = cross(n1, ivec3(0,0,1));
-                    }
 
                     // calculate tangent (= shift-vector) from normal
                     ivec3 t = cross(normal, ivec3(0,0,1));
@@ -2354,8 +2308,8 @@ bool Labeling::resolveLabelOverlaps(LabelVec &pLabels){
 
                     // scale factor for shift vector (tangent vector)
                     float a,b,s;
-                    a = ( tangent.x != 0 ? (float)(c.x-distx) / (2*tangent.x) : image_.width);
-                    b = ( tangent.y != 0 ? (float)(c.y-disty) / (2*tangent.y) : image_.height);
+                    a = ( tangent.x != 0 ? static_cast<float>(c.x-distx) / (2*tangent.x) : image_.width);
+                    b = ( tangent.y != 0 ? static_cast<float>(c.y-disty) / (2*tangent.y) : image_.height);
                     s = (fabs(a) < fabs(b) ? a : b);
 
                     // create shift vector
@@ -2379,18 +2333,15 @@ bool Labeling::resolveLabelOverlaps(LabelVec &pLabels){
                 }
             }
         }
-
         iter++;
     }
 
     return !overlapFound;
-
 }
 
 
 // shifts label in or out to achieve correct distance from hull
-void Labeling::correctHullGap(Label pLabel, ivec2 &labelPos){
-
+void Labeling::correctHullGap(Label pLabel, ivec2 &labelPos) {
     int gap = gaps_.SIL_LabelHull;
     float step = 2.0;       // must be greater zero
     int maxSteps = tgt::iround(max(image_.width, image_.height) / step);
@@ -2403,11 +2354,11 @@ void Labeling::correctHullGap(Label pLabel, ivec2 &labelPos){
     labelPosNew = (vec2)pLabel.labelPos;
 
     // create shift vector
-    if (pLabel.anchorPoint != pLabel.connectionPoint){
+    if (pLabel.anchorPoint != pLabel.connectionPoint)
         shift = (vec2)(pLabel.anchorPoint - pLabel.connectionPoint);
-    } else {
+    else
         shift = (vec2)(pLabel.anchorPoint - pLabel.labelPos);
-    }
+    
     shift = normalize(shift);
     shift = step*shift;
 
@@ -2419,7 +2370,7 @@ void Labeling::correctHullGap(Label pLabel, ivec2 &labelPos){
     // shift in until convex hull or anchor point are reached
     int iter = 0;
     while ( bl.x >= 0 && bl.y >= 0 && tr.x < image_.width && tr.y < image_.height &&
-        !intersectBoxHull(bl,tr) && !pointInBox(bl, tr, pLabel.anchorPoint) && (iter < maxSteps) ){
+        !intersectBoxHull(bl,tr) && !pointInBox(bl, tr, pLabel.anchorPoint) && (iter < maxSteps) ) {
             labelPosNew += shift;
             bl = ivec2( tgt::iround(labelPosNew.x - text.width/2.f) - gap,
                 tgt::iround(labelPosNew.y - text.height/2.f) - gap);
@@ -2448,8 +2399,7 @@ void Labeling::correctHullGap(Label pLabel, ivec2 &labelPos){
 // tests if the convex hull intersects an axis aligned 2D-box
 // @bl  bottom left of the box
 // @tr  top right of the box
-bool Labeling::intersectBoxHull(ivec2 const &bl, ivec2 const &tr){
-
+bool Labeling::intersectBoxHull(ivec2 const &bl, ivec2 const &tr) {
     ivec2 br = ivec2(tr.x, bl.y);
     ivec2 tl = ivec2(bl.x, tr.y);
     ivec2 t1,t2;
@@ -2473,37 +2423,34 @@ bool Labeling::intersectBoxHull(ivec2 const &bl, ivec2 const &tr){
 //              (mask & 0001) == true  means bottom-left of box 2 lies in box 1
 // @return true if intersection found
 bool Labeling::intersectBoxBox(ivec2 const &bl1, ivec2 const &tr1,
-                                 ivec2 const &bl2, ivec2 const &tr2, int &mask){
-
+                                 ivec2 const &bl2, ivec2 const &tr2, int &mask) {
     mask = 0;
 
     ivec2 br2 = ivec2(tr2.x, bl2.y);
     ivec2 tl2 = ivec2(bl2.x, tr2.y);
-mask |= (((bl1.x <= tl2.x) && (tr1.x >= tl2.x) && (bl1.y <= tl2.y) && (tr1.y >= tl2.y)) ? 1000 : 0);
-mask |= (((bl1.x <= tr2.x) && (tr1.x >= tr2.x) && (bl1.y <= tr2.y) && (tr1.y >= tr2.y)) ? 0100 : 0);
-mask |= (((bl1.x <= br2.x) && (tr1.x >= br2.x) && (bl1.y <= br2.y) && (tr1.y >= br2.y)) ? 0010 : 0);
-mask |= (((bl1.x <= bl2.x) && (tr1.x >= bl2.x) && (bl1.y <= bl2.y) && (tr1.y >= bl2.y)) ? 0001 : 0);
+
+    mask |= (((bl1.x <= tl2.x) && (tr1.x >= tl2.x) && (bl1.y <= tl2.y) && (tr1.y >= tl2.y)) ? 1000 : 0);
+    mask |= (((bl1.x <= tr2.x) && (tr1.x >= tr2.x) && (bl1.y <= tr2.y) && (tr1.y >= tr2.y)) ? 0100 : 0);
+    mask |= (((bl1.x <= br2.x) && (tr1.x >= br2.x) && (bl1.y <= br2.y) && (tr1.y >= br2.y)) ? 0010 : 0);
+    mask |= (((bl1.x <= bl2.x) && (tr1.x >= bl2.x) && (bl1.y <= bl2.y) && (tr1.y >= bl2.y)) ? 0001 : 0);
 
     ivec2 br1 = ivec2(tr1.x, bl1.y);
     ivec2 tl1 = ivec2(bl1.x, tr1.y);
-mask |= (((bl2.x <= tl1.x) && (tr2.x >= tl1.x) && (bl2.y <= tl1.y) && (tr2.y >= tl1.y)) ? 1000 : 0);
-mask |= (((bl2.x <= tr1.x) && (tr2.x >= tr1.x) && (bl2.y <= tr1.y) && (tr2.y >= tr1.y)) ? 0100 : 0);
-mask |= (((bl2.x <= br1.x) && (tr2.x >= br1.x) && (bl2.y <= br1.y) && (tr2.y >= br1.y)) ? 0010 : 0);
-mask |= (((bl2.x <= bl1.x) && (tr2.x >= bl1.x) && (bl2.y <= bl1.y) && (tr2.y >= bl1.y)) ? 0001 : 0);
+
+    mask |= (((bl2.x <= tl1.x) && (tr2.x >= tl1.x) && (bl2.y <= tl1.y) && (tr2.y >= tl1.y)) ? 1000 : 0);
+    mask |= (((bl2.x <= tr1.x) && (tr2.x >= tr1.x) && (bl2.y <= tr1.y) && (tr2.y >= tr1.y)) ? 0100 : 0);
+    mask |= (((bl2.x <= br1.x) && (tr2.x >= br1.x) && (bl2.y <= br1.y) && (tr2.y >= br1.y)) ? 0010 : 0);
+    mask |= (((bl2.x <= bl1.x) && (tr2.x >= bl1.x) && (bl2.y <= bl1.y) && (tr2.y >= bl1.y)) ? 0001 : 0);
 
     return (mask != 0);
 }
 
-
 // returns true, if point lies inside the box specified by bottem-left bl and top-right tr
-bool Labeling::pointInBox(ivec2 const &bl, ivec2 const &tr, ivec2 const &point){
-
+bool Labeling::pointInBox(ivec2 const &bl, ivec2 const &tr, ivec2 const &point) {
     return ( (point.x >= bl.x) && (point.x <= tr.x) && (point.y >= bl.y) && (point.y <= tr.y) );
 }
 
-
-bool Labeling::findLabelPathBest(Label &pLabel){
-
+bool Labeling::findLabelPathBest(Label &pLabel) {
     // step size = gap between control points in pixels
 	float radius = 10.f;
 
@@ -2526,56 +2473,63 @@ bool Labeling::findLabelPathBest(Label &pLabel){
     if ( (hValue > vValue) && (hValue > adValue) && (hValue > ddValue) ) {
 		firstValue = hValue;
         firstAngle = 0.f;
-    } else if ( (vValue > adValue) && (vValue > ddValue) ) {
+    }
+    else if ( (vValue > adValue) && (vValue > ddValue) ) {
 		firstValue = vValue;
         firstAngle = 90.f;
-    } else if ( (adValue > ddValue)) {
+    }
+    else if ( (adValue > ddValue)) {
         firstValue = adValue;
         firstAngle = 45.f;
-    } else {
+    }
+    else {
         firstValue = ddValue;
         firstAngle = 135.f;
     }
 
-	if (firstAngle == 0.f){
-            secondAngle = (adValue > ddValue ? 45.f : -45.f);
-            secondValue = max(adValue, ddValue); //(adValue > ddValue ? adValue : ddValue);
-        } else if (firstAngle == 45.f) {
-            secondAngle = (vValue > hValue ? 90.f : 0.f);
-            secondValue = max(vValue, hValue); //(vValue > hValue ? vValue : hValue);
-        } else if (firstAngle == 90.f) {
-            secondAngle = (ddValue > adValue ? 135.f : 45.f);
-            secondValue = max(ddValue, adValue); //(ddValue > adValue ? ddValue : adValue);
-        } else if (firstAngle == 135.f) {
-            secondAngle = (hValue > vValue ? 180.f : 90.f);
-            secondValue = max(hValue, vValue); //(hValue > vValue ? hValue : vValue);
-        }
-        float angle = (firstAngle*firstValue + secondAngle*secondValue) / (firstValue + secondValue);
-        if (angle < 0.f) angle += 360.f;
+	if (firstAngle == 0.f) {
+        secondAngle = (adValue > ddValue ? 45.f : -45.f);
+        secondValue = max(adValue, ddValue); //(adValue > ddValue ? adValue : ddValue);
+    }
+    else if (firstAngle == 45.f) {
+        secondAngle = (vValue > hValue ? 90.f : 0.f);
+        secondValue = max(vValue, hValue); //(vValue > hValue ? vValue : hValue);
+    }
+    else if (firstAngle == 90.f) {
+        secondAngle = (ddValue > adValue ? 135.f : 45.f);
+        secondValue = max(ddValue, adValue); //(ddValue > adValue ? ddValue : adValue);
+    }
+    else if (firstAngle == 135.f) {
+        secondAngle = (hValue > vValue ? 180.f : 90.f);
+        secondValue = max(hValue, vValue); //(hValue > vValue ? hValue : vValue);
+    }
+    float angle = (firstAngle*firstValue + secondAngle*secondValue) / (firstValue + secondValue);
+    if (angle < 0.f)
+        angle += 360.f;
 
-        float avgDist;
-        int maxIndex=-1;
-        float maxAvgDist=0.f;
+    float avgDist;
+    int maxIndex=-1;
+    float maxAvgDist=0.f;
 
-        vector<ivec2> labelPath[6];
+    vector<ivec2> labelPath[6];
 
-        if ( findLabelPathOne(pLabel, radius, angle,
-            45.f, 15.f, 90.f, (float)pLabel.labelData->text.width, labelPath[0]) ){
+    if ( findLabelPathOne(pLabel, radius, angle,
+        45.f, 15.f, 90.f, static_cast<float>(pLabel.labelData->text.width), labelPath[0]) ) {
             avgDist = 0;
-            for (size_t point=0; point<labelPath[0].size(); point++){
+            for (size_t point=0; point<labelPath[0].size(); point++)
                 avgDist += image_.distanceField.getElem(labelPath[0][point].x, labelPath[0][point].y);
-            }
+            
             avgDist /= labelPath[0].size();
             maxAvgDist = avgDist;
             maxIndex = 0;
         }
 
         if ( findLabelPathOne(pLabel, radius, firstAngle,
-             45.f, 15.f, 90.f, (float)pLabel.labelData->text.width, labelPath[1]) ){
+             45.f, 15.f, 90.f, static_cast<float>(pLabel.labelData->text.width), labelPath[1]) ) {
                 avgDist = 0;
-                for (size_t point=0; point<labelPath[1].size(); point++){
+                for (size_t point=0; point<labelPath[1].size(); point++)
                     avgDist += image_.distanceField.getElem( labelPath[1][point].x, labelPath[1][point].y );
-                }
+                
                 avgDist /= labelPath[1].size();
                 if (avgDist > maxAvgDist ){
                     maxIndex = 1;
@@ -2584,24 +2538,24 @@ bool Labeling::findLabelPathBest(Label &pLabel){
         }
 
         if ( findLabelPathOne(pLabel, radius, secondAngle,
-             45.f, 15.f, 90.f, (float)pLabel.labelData->text.width, labelPath[2]) ){
+             45.f, 15.f, 90.f, static_cast<float>(pLabel.labelData->text.width), labelPath[2]) ) {
                 avgDist = 0;
-                for (size_t point=0; point<labelPath[2].size(); point++){
+                for (size_t point=0; point<labelPath[2].size(); point++)
                     avgDist += image_.distanceField.getElem( labelPath[2][point].x, labelPath[2][point].y );
-                }
-                avgDist /= labelPath[2].size();
-                if (avgDist > maxAvgDist ){
+                
+                    avgDist /= labelPath[2].size();
+                if (avgDist > maxAvgDist ) {
                     maxIndex = 2;
                     maxAvgDist = avgDist;
                 }
         }
 
         if ( findLabelPathOne(pLabel, radius, angle,
-             45.f, 15.f, 0.f, (float)pLabel.labelData->text.width, labelPath[3]) ){
+             45.f, 15.f, 0.f, static_cast<float>(pLabel.labelData->text.width), labelPath[3]) ) {
                 avgDist = 0;
-                for (size_t point=0; point<labelPath[3].size(); point++){
+                for (size_t point=0; point<labelPath[3].size(); point++)
                     avgDist += image_.distanceField.getElem( labelPath[3][point].x, labelPath[3][point].y );
-                }
+                
                 avgDist /= labelPath[3].size();
                 if (avgDist > maxAvgDist ){
                     maxIndex = 3;
@@ -2610,11 +2564,11 @@ bool Labeling::findLabelPathBest(Label &pLabel){
         }
 
         if ( findLabelPathOne(pLabel, radius*1.5f, firstAngle,
-            45.f, 15.f, 90.f, (float)pLabel.labelData->text.width, labelPath[4]) ) {
+            45.f, 15.f, 90.f, static_cast<float>(pLabel.labelData->text.width), labelPath[4]) ) {
                 avgDist = 0;
-                for (size_t point=0; point<labelPath[4].size(); point++){
+                for (size_t point=0; point<labelPath[4].size(); point++)
                     avgDist += image_.distanceField.getElem( labelPath[4][point].x, labelPath[4][point].y );
-                }
+                
                 avgDist /= labelPath[4].size();
                 if (avgDist > maxAvgDist ){
                     maxIndex = 4;
@@ -2623,11 +2577,11 @@ bool Labeling::findLabelPathBest(Label &pLabel){
         }
 
         if ( findLabelPathOne(pLabel, radius*2.f, secondAngle,
-            45.f, 15.f, 90.f, (float)pLabel.labelData->text.width, labelPath[5]) ){
+            45.f, 15.f, 90.f, static_cast<float>(pLabel.labelData->text.width), labelPath[5]) ) {
                 avgDist = 0;
-                for (size_t point=0; point<labelPath[5].size(); point++){
+                for (size_t point=0; point<labelPath[5].size(); point++)
                     avgDist += image_.distanceField.getElem( labelPath[5][point].x, labelPath[5][point].y );
-                }
+                
                 avgDist /= labelPath[5].size();
                 if (avgDist > maxAvgDist ){
                     maxIndex = 5;
@@ -2635,53 +2589,50 @@ bool Labeling::findLabelPathBest(Label &pLabel){
                 }
         }
 
-        if (maxIndex > -1){
+        if (maxIndex > -1) {
             pLabel.controlPoints = labelPath[maxIndex];
-            float pathLength=0;
-            for (size_t point=0; point<pLabel.controlPoints.size()-1; point++){
-                pathLength += sqrt( pow( pLabel.controlPoints[point+1].x -
-                    (float)pLabel.controlPoints[point].x, 2.f ) +
-                    pow( (float)pLabel.controlPoints[point+1].y -
-                         pLabel.controlPoints[point].y, 2.f ) );
+            float pathLength = 0;
+            for (size_t point=0; point<pLabel.controlPoints.size()-1; ++point) {
+                pathLength += sqrtf(powf(pLabel.controlPoints[point+1].x -
+                                         static_cast<float>(pLabel.controlPoints[point].x), 2.f) +
+                                    powf(static_cast<float>(pLabel.controlPoints[point+1].y) -
+                                         pLabel.controlPoints[point].y, 2.f));
             }
             pLabel.intern = pLabel.labelData->internPreferred;
 
             // invert control points if curve is running from right to left
             float xsum = 0.f;
-            for (unsigned int j = 0; j < pLabel.controlPoints.size()-1; j++){
+            for (size_t j = 0; j < pLabel.controlPoints.size()-1; ++j)
                 xsum += pLabel.controlPoints[j+1].x - pLabel.controlPoints[j].x;
-            }
-            if (xsum < 0.f){
-                for (size_t j = 0; j < (pLabel.controlPoints.size() / 2); j++){
+
+            if (xsum < 0.f)
+                for (size_t j = 0; j < (pLabel.controlPoints.size() / 2); ++j)
                     swap(pLabel.controlPoints[j], pLabel.controlPoints[pLabel.controlPoints.size()-1-j]);
-                }
-            }
 
 			// calculate 2D fitting curve from control points in image space
 			Curve2DPolynomial* curve2D = new Curve2DPolynomial(polynomialDegree_.get());
 			vector<vec2> ctrlPoints2DCurve;
-			for (size_t p=0; p < pLabel.controlPoints.size(); p++){
-				vec2 ctrlPoint = vec2((float)pLabel.controlPoints[p].x, (float)pLabel.controlPoints[p].y);
+			for (size_t p=0; p < pLabel.controlPoints.size(); ++p) {
+				vec2 ctrlPoint = vec2(static_cast<float>(pLabel.controlPoints[p].x), static_cast<float>(pLabel.controlPoints[p].y));
 				ctrlPoints2DCurve.push_back(ctrlPoint);
 			}
 			if ( curve2D->setCtrlPoints(ctrlPoints2DCurve,
                 static_cast<float>(pLabel.labelData->text.widthIntern)) ) {
 				pLabel.curve2D = curve2D;
 				return true;
-			} else {
+			}
+            else {
                 delete curve2D;
                 return false;
 			}
 
-        } else {
-            return false;
         }
-
+        else
+            return false;
 }
 
 
-Labeling::Circle Labeling::generateCircle(float radius){
-
+Labeling::Circle Labeling::generateCircle(float radius) {
     Circle circle;
     CirclePixel pixel;
 
@@ -2690,9 +2641,8 @@ Labeling::Circle Labeling::generateCircle(float radius){
 	int ddSE = static_cast<int>(5 - 2*radius);
 	int x = 0;
 	int y = static_cast<int>(radius);
-	while (y >= x){
-
-        float angle = rad2deg( acos(x / radius) );
+	while (y >= x) {
+        float angle = rad2deg(acosf(x / radius));
 
         // x,y
         pixel = CirclePixel();
@@ -2744,12 +2694,13 @@ Labeling::Circle Labeling::generateCircle(float radius){
 
 		x++;
 		// East
-		if (d < 0){
+		if (d < 0) {
 			d += ddE;
 			ddE += 2;
 			ddSE += 2;
 		// SouthEast
-		} else {
+		}
+        else {
 			y--;
 			d += ddSE;
 			ddE += 2;
@@ -2761,16 +2712,16 @@ Labeling::Circle Labeling::generateCircle(float radius){
     circle.radius = radius;
     circle.numPixels = circle.pixels.size();
 
-    for (size_t i=0; i<circle.pixels.size()-1; i++){
-        for (size_t j=i+1; j<circle.pixels.size(); j++){
-            if (circle.pixels[i].angle > circle.pixels[j].angle){
+    for (size_t i = 0 ; i < circle.pixels.size()-1 ; ++i) {
+        for (size_t j = i+1 ; j < circle.pixels.size() ; ++j) {
+            if (circle.pixels[i].angle > circle.pixels[j].angle) {
                 CirclePixel tmp = circle.pixels[i];
                 circle.pixels[i] = circle.pixels[j];
                 circle.pixels[j] = tmp;
             }
         }
     }
-    for (int i= 0; i<circle.numPixels; i++){
+    for (int i = 0 ; i < circle.numPixels ; ++i) {
         CirclePixel pixel;
         pixel.coords = circle.pixels[i].coords;
         pixel.angle = circle.pixels[i].angle + 360.f;
@@ -2781,25 +2732,27 @@ Labeling::Circle Labeling::generateCircle(float radius){
 }
 
 Labeling::CirclePixel Labeling::getNextCirclePixel(int id, Circle circle, ivec2 curPoint,
-                                                    float minAngle, float maxAngle) {
-
+                                                   float minAngle, float maxAngle)
+{
     int minIndex = max(0, iround( ((minAngle*0.9)/360.f)*circle.numPixels ) - 10);
-        while (circle.pixels[minIndex].angle < minAngle){
+        while (circle.pixels[minIndex].angle < minAngle)
             ++minIndex;
-        }
-        int maxIndex = min(circle.numPixels*2-1, iround( ((maxAngle*1.1)/360.f)*circle.numPixels ) + 10);
-        while (circle.pixels[maxIndex].angle > maxAngle && maxIndex > minIndex){
+        
+        int maxIndex = min(static_cast<int>(circle.numPixels*2-1), iround( ((maxAngle*1.1)/360.f)*circle.numPixels ) + 10);
+        while (circle.pixels[maxIndex].angle > maxAngle && maxIndex > minIndex)
             --maxIndex;
-        }
-        if (minIndex == maxIndex && minIndex > 0){
-            if ( (circle.pixels[minIndex].angle-circle.pixels[minIndex-1].angle / 2.f) > maxAngle ){
+        
+        if (minIndex == maxIndex && minIndex > 0) {
+            if ( (circle.pixels[minIndex].angle-circle.pixels[minIndex-1].angle / 2.f) > maxAngle ) {
                 --minIndex;
                 --maxIndex;
             }
         }
-        else if (minIndex > maxIndex){
+        // FIXME: Still neccessary? (ab)
+        else if (minIndex > maxIndex) {
            // std::cout << "Fehler: minIndex > maxIndex" << std::endl;
-        } else {
+        }
+        else {
            // std::cout << "Pixels: " << maxIndex-minIndex << ", ";
         }
 
@@ -2808,23 +2761,22 @@ Labeling::CirclePixel Labeling::getNextCirclePixel(int id, Circle circle, ivec2 
         candidate.coords.y = 0;
         int distValue = -1;
         int x,y;
-        for (int i=minIndex; i<=maxIndex; i++){
+        for (int i=minIndex; i<=maxIndex; ++i) {
             x = curPoint.x + circle.pixels[i].coords.x;
             y = curPoint.y + circle.pixels[i].coords.y;
             if (x >= 0 && x < image_.width && y >= 0 && y < image_.height &&
                 image_.idBuffer.getElem(x,y) == id &&
-                image_.distanceField.getElem(x, y) > distValue){
+                image_.distanceField.getElem(x, y) > distValue) {
                 candidate = circle.pixels[i];
                 distValue = image_.distanceField.getElem(x, y);
             }
         }
-
         return candidate;
-
 }
 
 bool Labeling::findLabelPathOne(const Label &pLabel, float step, float initAngle, float initMaxStepAngle,
-                               float maxStepAngle, float maxAngle, float length, vector<ivec2> &result){
+                               float maxStepAngle, float maxAngle, float length, vector<ivec2> &result)
+{
     float threshold = 0.3f;
     Circle circle = generateCircle(step);
 
@@ -2839,7 +2791,7 @@ bool Labeling::findLabelPathOne(const Label &pLabel, float step, float initAngle
     float curMinAngle;
     float curMaxAngle;
 
-    if (initAngle-maxAngle < 0.f){
+    if (initAngle-maxAngle < 0.f) {
         initAngle += 360.f;
         curAngle += 360.f;
     }
@@ -2850,36 +2802,33 @@ bool Labeling::findLabelPathOne(const Label &pLabel, float step, float initAngle
 
     CirclePixel nextPixel = getNextCirclePixel(id, circle, curPoint, curMinAngle, curMaxAngle);
 
-    if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0){
+    if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0) {
         ivec2 nextPoint = curPoint + nextPixel.coords;
         result.push_back(nextPoint);
         curPoint = nextPoint;
         curAngle = nextPixel.angle;
         firstAngle = nextPixel.angle;
         distValue = image_.distanceField.getElem( nextPoint.x, nextPoint.y );
-    } else {
-        distValue = -1;
     }
-
+    else
+        distValue = -1;
 
     // find path to the right
-    while (distValue > initValue*threshold){
-
+    while (distValue > initValue*threshold) {
         curMinAngle = max(curAngle-maxStepAngle, initAngle-maxAngle);
         curMaxAngle = min(curAngle+maxStepAngle, initAngle+maxAngle);
 
         CirclePixel nextPixel = getNextCirclePixel(id, circle, curPoint, curMinAngle, curMaxAngle);
 
-        if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0){
+        if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0) {
             ivec2 nextPoint = curPoint + nextPixel.coords;
             result.push_back(nextPoint);
             curPoint = nextPoint;
             curAngle = nextPixel.angle;
             distValue = image_.distanceField.getElem(nextPoint.x, nextPoint.y);
-        } else {
-            distValue = -1;
         }
-
+        else
+            distValue = -1;
     }
 
     // find path to the left
@@ -2889,53 +2838,48 @@ bool Labeling::findLabelPathOne(const Label &pLabel, float step, float initAngle
     initAngle = curAngle;
     curPoint = pLabel.anchorPoint;
     int anchorIndex = 0;
-    while (distValue > initValue*threshold){
-
+    while (distValue > initValue*threshold) {
         curMinAngle = max(curAngle-maxStepAngle, initAngle-maxAngle);
         curMaxAngle = min(curAngle+maxStepAngle, initAngle+maxAngle);
 
         CirclePixel nextPixel = getNextCirclePixel(id, circle, curPoint, curMinAngle, curMaxAngle);
 
-        if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0){
+        if (nextPixel.coords.x != 0 || nextPixel.coords.y != 0) {
             ivec2 nextPoint = curPoint + nextPixel.coords;
             result.insert(result.begin(), nextPoint);
             ++anchorIndex;
             curPoint = nextPoint;
             curAngle = nextPixel.angle;
             distValue = image_.distanceField.getElem(nextPoint.x, nextPoint.y);
-        } else {
-            distValue = -1;
         }
-
+        else
+            distValue = -1;
     }
 
     // determine, how many control points are needed for the
     // specified path length, choose the ones with the highest
     // distance values and discard the rest (beginning at the anchor)
-    if (length > 0.f){
+    if (length > 0.f) {
         int neededPoints = static_cast<int>( length / step + 1.f );
-        if ( neededPoints > static_cast<int>(result.size()) ){
+        if ( neededPoints > static_cast<int>(result.size()) )
             return false;
-        } else {
-            neededPoints = min( neededPoints+2, (int)result.size() );
+        else {
+            neededPoints = min( neededPoints+2, static_cast<int>(result.size()) );
             int l = anchorIndex;
             int r = anchorIndex;
             int lvalue, rvalue;
-            while (r-l+1 < neededPoints){
+            while (r-l+1 < neededPoints) {
                 lvalue = (l > 0 ? image_.distanceField.getElem( result[l-1].x, result[l-1].y ) : -1);
-                rvalue = (r < (int)result.size()-1 ? image_.distanceField.getElem( result[r+1].x, result[r+1].y ) : -1);
+                rvalue = (r < static_cast<int>(result.size())-1 ? image_.distanceField.getElem( result[r+1].x, result[r+1].y ) : -1);
                 if (lvalue > rvalue)
                     --l;
                 else
                     ++r;
             }
-            if (r < (int)result.size()-1){
+            if (r < static_cast<int>(result.size())-1)
                 result.erase(result.begin()+r+1, result.end());
-            }
-            if (l > 0){
+            if (l > 0)
                 result.erase(result.begin(), result.begin()+l);
-            }
-
         }
     }
 
@@ -2948,88 +2892,86 @@ bool Labeling::findLabelPathOne(const Label &pLabel, float step, float initAngle
 // first-hit-positions.
 // In 2D the internal labeling is performed in image space, without using
 // any 3D shape information.
-bool Labeling::findBezierPoints(Label &pLabel){
+bool Labeling::findBezierPoints(Label &pLabel) {
+    // -------------------------------------------------
+    // 3D shape fitting (world space)
+    // -------------------------------------------------
+    if (shape3D_.get()) {
 
-// -------------------------------------------------
-// 3D shape fitting (world space)
-// -------------------------------------------------
-if (shape3D_.get()){
+        int hDegree = bezierHorzDegree_.get();
+        // round vertical degree to next even integral value.
+        // this eases the following calculations.
+        int vDegree = 2*((bezierVertDegree_.get()+1)/2);
+        const int samplingRate = 3;
+        const int samplings2D = 10;
 
-	int hDegree = bezierHorzDegree_.get();
-	// round vertical degree to next even integral value.
-	// this eases the following calculations.
-	int vDegree = 2*((bezierVertDegree_.get()+1)/2);
-	const int samplingRate = 3;
-	const int samplings2D = 10;
+        string text = pLabel.labelData->text.text;
 
-    string text = pLabel.labelData->text.text;
+        Curve2DPolynomial curve2D = *(pLabel.curve2D);
 
-	Curve2DPolynomial curve2D = *(pLabel.curve2D);
+        // now sample the 2D curve, transform the sample points to object space using
+        // first-hit-positions, and fit a 3D polynomial to the transformed control points
+        Curve3DPolynomial curve(polynomialDegree_.get());
+        vector<vec3> ctrlPoints;
+        float paramOffset = 1.f / (samplings2D-1);
+        for (int i=0; i < samplings2D; ++i) {
+            vec2 ctrlpoint = curve2D.getCurvePoint( i*paramOffset);
+            vec3 firstHitPoint = image_.firstHitPositions.getPixel3Ch(tgt::iround(ctrlpoint.x), tgt::iround(ctrlpoint.y));
+            ctrlPoints.push_back(firstHitPoint);
+        }
 
-	// now sample the 2D curve, transform the sample points to object space using
-	// first-hit-positions, and fit a 3D polynomial to the transformed control points
-	Curve3DPolynomial curve(polynomialDegree_.get());
-	vector<vec3> ctrlPoints;
-	float paramOffset = 1.f / (samplings2D-1);
-	for (int i=0; i < samplings2D; i++){
-		vec2 ctrlpoint = curve2D.getCurvePoint( i*paramOffset);
-		vec3 firstHitPoint = image_.firstHitPositions.getPixel3Ch(tgt::iround(ctrlpoint.x), tgt::iround(ctrlpoint.y));
-		ctrlPoints.push_back(firstHitPoint);
-	}
+        // anchor-point in 2D screen coords
+        ivec2 anchor2D = (!pLabel.offLabel ? pLabel.anchorPoint : ivec2(pLabel.curve2D->getCurvePoint(0.5f)));
+        // anchor-point in object space
+        vec3 anchorObjectSpace = image_.firstHitPositions.getPixel3Ch(anchor2D.x, anchor2D.y);
+        // anchor-point in 3D screen coords
+        vec3 anchorScreen = image_.firstHitPositions.projectToViewport(anchorObjectSpace);
 
-	// anchor-point in 2D screen coords
-	ivec2 anchor2D = (!pLabel.offLabel ? pLabel.anchorPoint : ivec2(pLabel.curve2D->getCurvePoint(0.5f)));
-	// anchor-point in object space
-	vec3 anchorObjectSpace = image_.firstHitPositions.getPixel3Ch(anchor2D.x, anchor2D.y);
-	// anchor-point in 3D screen coords
-	vec3 anchorScreen = image_.firstHitPositions.projectToViewport(anchorObjectSpace);
+        // calculate pixelScale: if the text would be put on a screen-parallel plane
+        // "through" the anchor point in object-space, pixelScale is the distance in
+        // object-coords that is projected to one pixel.
+        // in other words: if you project two points lieing in this plane, whose distance is
+        // pixelScale, the distance of their projections on the screen is one pixel
+        vec3 tempVec1 = image_.firstHitPositions.inverseProject(anchorScreen);
+        vec3 tempVec2 = image_.firstHitPositions.inverseProject(anchorScreen+vec3(0.f, 10.f, 0.f));
+        float pixelScale = length( (tempVec2 - tempVec1) ) / 10.f;
 
-	// calculate pixelScale: if the text would be put on a screen-parallel plane
-	// "through" the anchor point in object-space, pixelScale is the distance in
-	// object-coords that is projected to one pixel.
-	// in other words: if you project two points lieing in this plane, whose distance is
-	// pixelScale, the distance of their projections on the screen is one pixel
-	vec3 tempVec1 = image_.firstHitPositions.inverseProject(anchorScreen);
-	vec3 tempVec2 = image_.firstHitPositions.inverseProject(anchorScreen+vec3(0.f, 10.f, 0.f));
-	float pixelScale = length( (tempVec2 - tempVec1) ) / 10.f;
+        // h_offset is the gap between two bezier control point in horizontal direction
+        // in object-space
+        float h_offset = pLabel.labelData->text.widthIntern*pixelScale / hDegree;
 
-	// h_offset is the gap between two bezier control point in horizontal direction
-	// in object-space
-	float h_offset = pLabel.labelData->text.widthIntern*pixelScale / hDegree;
+        // calculate polynomial fitting function
+        // the desired length in object space is provided -> curve internally calculates
+        // start and end params from it
+        if (!curve.setCtrlPoints(ctrlPoints, pLabel.labelData->text.widthIntern*pixelScale))
+            return false;
 
-	// calculate polynomial fitting function
-	// the desired length in object space is provided -> curve internally calculates
-	// start and end params from it
-	if (!curve.setCtrlPoints(ctrlPoints, pLabel.labelData->text.widthIntern*pixelScale))
-		return false;
-
-	//
-	// now calculate bezier points by sampling the fitting function
-	//
-	vec3* bezierPoints = new vec3[(hDegree+1)*(vDegree+1)];
-	float param = 0.f;
-	for (int k=0; k<=hDegree; k++){
-
-		// sample curve
-		vec3 curvePoint = curve.getCurvePoint(param);
-		vec3 curvePointVP = image_.firstHitPositions.projectToViewport(curvePoint);
-        if (curvePointVP.x < 0 || curvePointVP.x >= image_.width ||
-            curvePointVP.y < 0 || curvePointVP.y >= image_.height ||
-            image_.idImage.getElem(tgt::iround(curvePointVP.x), tgt::iround(curvePointVP.y)) == 0){
-                delete bezierPoints;
-                return false;
+        //
+        // now calculate bezier points by sampling the fitting function
+        //
+        vec3* bezierPoints = new vec3[(hDegree+1)*(vDegree+1)];
+        float param = 0.f;
+        for (int k=0; k<=hDegree; ++k) {
+            // sample curve
+            vec3 curvePoint = curve.getCurvePoint(param);
+            vec3 curvePointVP = image_.firstHitPositions.projectToViewport(curvePoint);
+            if (curvePointVP.x < 0 || curvePointVP.x >= image_.width ||
+                curvePointVP.y < 0 || curvePointVP.y >= image_.height ||
+                image_.idImage.getElem(tgt::iround(curvePointVP.x), tgt::iround(curvePointVP.y)) == 0) {
+                    delete bezierPoints;
+                    return false;
             }
 
-		// find firstHitPoint corresponding to curve sample point
-		vec3 curSurfacePoint = image_.firstHitPositions.getPixel3Ch(tgt::iround(curvePointVP.x), tgt::iround(curvePointVP.y));
-		vec3 curSurfacePointVP = image_.firstHitPositions.projectToViewport(curSurfacePoint);
-		if (curSurfacePointVP.x < 0 || curSurfacePointVP.x >= image_.width ||
-			curSurfacePointVP.y < 0 || curSurfacePointVP.y >= image_.height ||
-			image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0  ){
-				delete bezierPoints;
-				return false;
-			}
-			bezierPoints[(hDegree+1)*(vDegree/2)+k] = curSurfacePoint;
+            // find firstHitPoint corresponding to curve sample point
+            vec3 curSurfacePoint = image_.firstHitPositions.getPixel3Ch(tgt::iround(curvePointVP.x), tgt::iround(curvePointVP.y));
+            vec3 curSurfacePointVP = image_.firstHitPositions.projectToViewport(curSurfacePoint);
+            if (curSurfacePointVP.x < 0 || curSurfacePointVP.x >= image_.width ||
+                curSurfacePointVP.y < 0 || curSurfacePointVP.y >= image_.height ||
+                image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0  ) {
+                    delete bezierPoints;
+                    return false;
+            }
+            bezierPoints[(hDegree+1)*(vDegree/2)+k] = curSurfacePoint;
 
 			// curve's tangent at parameter param
 			vec3 tangent = normalize( curve.getTangent( param ) );
@@ -3042,7 +2984,7 @@ if (shape3D_.get()){
 			// go from baseline up
 			// vec3 curSurfacePoint = bezierPoint;
 			// vec3 curSurfacePointVP = curvePointVP;
-			for (int l=1; l<=vDegree*samplingRate/2; l++){
+			for (int l=1; l<=vDegree*samplingRate/2; ++l) {
 				// determine the normal at the surface point from the first hit positions
 				// of the neighbourhood
 				vec3 normal = image_.firstHitPositions.calcNormal( tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y) );
@@ -3053,7 +2995,7 @@ if (shape3D_.get()){
 				if (curSurfacePointVP.x < 0 || curSurfacePointVP.x >= image_.width ||
 					curSurfacePointVP.y < 0 || curSurfacePointVP.y >= image_.height ||
 					//image_.idBuffer.getElem(round(curSurfacePointVP.x), round(curSurfacePointVP.y)) != segmentID ){
-					image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0 ){
+					image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0 ) {
 						delete bezierPoints;
 						return false;
 					}
@@ -3065,7 +3007,7 @@ if (shape3D_.get()){
 			// go from baseline down
 			curSurfacePoint = surfacePointMiddle;
 			curSurfacePointVP = surfacePointMiddleVP;
-			for (int l=1; l<=vDegree*samplingRate/2; l++){
+			for (int l=1; l<=vDegree*samplingRate/2; ++l) {
 				// determine the normal at the surface point from the first hit positions
 				// of the neighbourhood
 				vec3 normal = image_.firstHitPositions.calcNormal( tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y) );
@@ -3075,7 +3017,7 @@ if (shape3D_.get()){
 				curSurfacePointVP = image_.firstHitPositions.projectToViewport(curSurfacePoint);
 				if (curSurfacePointVP.x < 0 || curSurfacePointVP.x >= image_.width ||
 					curSurfacePointVP.y < 0 || curSurfacePointVP.y >= image_.height ||
-					image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0 ){
+					image_.idImage.getElem(tgt::iround(curSurfacePointVP.x), tgt::iround(curSurfacePointVP.y)) == 0 ) {
 						delete bezierPoints;
 						return false;
 					}
@@ -3083,27 +3025,26 @@ if (shape3D_.get()){
 					if (l % samplingRate == 0)
 						bezierPoints[(hDegree+1)*(vDegree/2 - l/samplingRate) + k] = curSurfacePoint;
 			}
-
-			curve.getNextPoint(param, h_offset);
-
-	}
+            curve.getNextPoint(param, h_offset);
+        }
 
 
-	// set bezier control points
-	pLabel.bezierPatch.setCtrlPoints(bezierPoints, hDegree, vDegree);
+        // set bezier control points
+        pLabel.bezierPatch.setCtrlPoints(bezierPoints, hDegree, vDegree);
 
-    // finally check calculated patch
-    if ( !checkPatchQuality(pLabel) ){
-        //delete bezierPoints;
-        return false;
+        // finally check calculated patch
+        if ( !checkPatchQuality(pLabel) ) {
+            //delete bezierPoints;
+            return false;
+        }
+
+
+        // --------------------------------------------------
+        // no 3D shape fitting (labeling only in image space)
+        // --------------------------------------------------
     }
-
-
-	// --------------------------------------------------
-	// no 3D shape fitting (labeling only in image space)
-	// --------------------------------------------------
-	} else if (!shape3D_.get()) {
-		// horizontal degree of bezier patch
+    else if (!shape3D_.get()) {
+        // horizontal degree of bezier patch
 		// vertical degree is always 1 here (patch is flat)
 		int id = pLabel.labelData->id;
 		int hDegree = bezierHorzDegree_.get();
@@ -3117,7 +3058,7 @@ if (shape3D_.get()){
 
 		// now sample the 2D curve and calculate bezier control points in image space
 		float param = 0.f;
-		for (int i=0; i <= hDegree; i++){
+		for (int i=0; i <= hDegree; ++i) {
 			vec2 samplepoint = curve2D.getCurvePoint( param );
 			vec3 samplepoint3D = vec3(samplepoint.x, samplepoint.y, 0.f);
 			vec2 tangent = curve2D.getTangent( param );
@@ -3140,15 +3081,12 @@ if (shape3D_.get()){
 		// set calculated control points
 		pLabel.bezierPatch.setCtrlPoints(bezierPoints, hDegree, 1);
 	}
-
     return true;
 }
 
-
 // Returns false, if the bezier patch is too distorted
 // (and thus not readable)
-bool Labeling::checkPatchQuality(Label pLabel){
-
+bool Labeling::checkPatchQuality(Label pLabel) {
     const float max_deviation = 16.f;
 
     // check if viewport-projection of bezier patch closely matches 2D-labelcurve
@@ -3172,12 +3110,11 @@ bool Labeling::checkPatchQuality(Label pLabel){
 }
 
 
-void Labeling::placeOffLabels(LabelVec &offLabels){
-
+void Labeling::placeOffLabels(LabelVec &offLabels) {
     const int H_GAP = 10;
     const int V_GAP = 8;
 
-    for (size_t i=0; i<offLabels.size(); i++){
+    for (size_t i=0; i<offLabels.size(); ++i) {
         Label* newLabel = &(offLabels[i]);
         LabelData* labelData = newLabel->labelData;
         newLabel->labelPos = ivec2(labelData->text.width/2 + H_GAP,
@@ -3185,13 +3122,12 @@ void Labeling::placeOffLabels(LabelVec &offLabels){
     }
 }
 
-void Labeling::addUnsegmentedLabelData(std::string text){
-
+void Labeling::addUnsegmentedLabelData(std::string text) {
     std::ostringstream os;
 
     int maxID = -1;
     bool found = false;
-    for (size_t i=0; i<labelPersistentData_.size() && !found; i++){
+    for (size_t i=0; i<labelPersistentData_.size() && !found; ++i) {
         maxID = (labelPersistentData_[i]->id > maxID) ? labelPersistentData_[i]->id : maxID;
         found = (labelPersistentData_[i]->text.text == text);
     }
@@ -3214,13 +3150,12 @@ void Labeling::addUnsegmentedLabelData(std::string text){
     // register segment as picking object
     idManager_.addNewPickObj(labelData->idstr);
 
-    std::cout << labelData->idstr<< std::endl;
+    //std::cout << labelData->idstr<< std::endl;
 }
 
-void Labeling::removeUnsegmentedLabelData(std::string text){
-
+void Labeling::removeUnsegmentedLabelData(std::string text) {
     int dataIndex = -1;
-    for (size_t i=0; i<labelPersistentData_.size() && dataIndex==-1; i++){
+    for (size_t i=0; i<labelPersistentData_.size() && dataIndex==-1; ++i) {
         if (!labelPersistentData_[i]->belongsToSegment && labelPersistentData_[i]->text.text == text)
             dataIndex = i;
     }
@@ -3228,7 +3163,7 @@ void Labeling::removeUnsegmentedLabelData(std::string text){
         return;
 
     int labelIndex = -1;
-    for (size_t i=0; i<labels_.size() && labelIndex==-1; i++){
+    for (size_t i=0; i<labels_.size() && labelIndex==-1; ++i) {
         if (labels_[i].labelData->text.text == text)
             labelIndex = i;
     }
@@ -3237,12 +3172,10 @@ void Labeling::removeUnsegmentedLabelData(std::string text){
 
     delete labelPersistentData_[dataIndex];
     labelPersistentData_.erase(labelPersistentData_.begin()+dataIndex);
-
 }
 
 // rotates a label's 2D curve by 'angle' degrees
-void Labeling::rotateLabel(Label &pLabel, float angle)
-{
+void Labeling::rotateLabel(Label &pLabel, float angle) {
 	const int NUM_SAMPLES = 10;
 
 	float angleRad = deg2rad(angle);
@@ -3250,30 +3183,27 @@ void Labeling::rotateLabel(Label &pLabel, float angle)
 	// find center of labels 2D curve
 	vec2 curveCenter = vec2(0.f);
 	float paramOffset = 1.f / (NUM_SAMPLES - 1);
-	for (int i=0; i<NUM_SAMPLES; i++){
+	for (int i=0; i<NUM_SAMPLES; ++i) {
 		curveCenter += pLabel.curve2D->getCurvePoint( i*paramOffset );
 	}
 	curveCenter = curveCenter * (1.f/NUM_SAMPLES);
 
 	// rotate curve's control points
-	mat2 rotationMatrix( cos(angleRad), -sin(angleRad), sin(angleRad), cos(angleRad) );
+	mat2 rotationMatrix(cosf(angleRad), -sinf(angleRad), sinf(angleRad), cosf(angleRad));
 	vector<vec2> ctrlPoints = pLabel.curve2D->getCtrlPoints();
-	for (size_t i=0; i<ctrlPoints.size(); i++){
+	for (size_t i=0; i<ctrlPoints.size(); ++i) {
 		ctrlPoints[i] = curveCenter + rotationMatrix*(ctrlPoints[i]-curveCenter);
 	}
 	pLabel.curve2D->setCtrlPoints(ctrlPoints, static_cast<float>(pLabel.labelData->text.width));
 	pLabel.rotAngle += angle;
-
 }
-
 
 // reads result of id-raycasting into image
 // - idBuffer: color coded segments (red channel)
 // - idImage: greater zero, where intensity of volume between thresholds (=> volume visible)
 //            (necessary for silhouette calculation, blue channel)
 // - distanceField: distance field internally used by find anchors (can be used for debugging)
-void Labeling::readImage(int source){
-
+void Labeling::readImage(int source) {
     image_.width = tc_->getSize().x;
     image_.height = tc_->getSize().y;
     tc_->setActiveTarget(source);
@@ -3286,18 +3216,17 @@ void Labeling::readImage(int source){
     int* idBuffer = new int[image_.width*image_.height];
     float* positionBuffer = new float[image_.width*image_.height*3];
 //    image_.depthField = new GLfloat[(image_.width+2) * (image_.height+2)];
-    for (int i=0; i<image_.width*image_.height; i++){
+    for (int i=0; i<image_.width*image_.height; ++i) {
         int value = tgt::iround(buffer[4*i+3]*255);
-        if ( value == 255 ) {
+        if ( value == 255 )
             idBuffer[i] = 0;
-        } else {
+        else
             idBuffer[i] = value;
-        }
-        if ( value > 0 ) {
+        if ( value > 0 )
             idImage[i] = 255;
-        } else {
+        else
             idImage[i] = 0;
-        }
+        
         positionBuffer[3*i] = static_cast<float>(buffer[4*i]);
         positionBuffer[3*i+1] = static_cast<float>(buffer[4*i+1]);
         positionBuffer[3*i+2] = static_cast<float>(buffer[4*i+2]);
@@ -3314,42 +3243,38 @@ void Labeling::readImage(int source){
         ivec2(image_.width, image_.height));
 
     delete buffer;
-
 }
-
 
 // compare-function for graham-scan:
 // P2 < P3 <=> polar angle of P2 is smaller than polar angle of P3
 // (with regard to the origin)
-bool angleComp(ivec2 P2, ivec2 P3){
+bool angleComp(ivec2 P2, ivec2 P3) {
     return ( (P2.x*P3.y - P3.x*P2.y) > 0 );
 }
 
 // calculates convex hull according to prior found silhouette points
 // Algorithm: Graham-Scan
-void Labeling::calcConvexHull(){
-
+void Labeling::calcConvexHull() {
     image_.hullPoints.clear();
     if (image_.silPoints.size() <= 3)
         return;
 
     // find most left point
     int index = 0;
-    for (size_t i=1; i<image_.silPoints.size(); i++) {
+    for (size_t i=1; i<image_.silPoints.size(); ++i) {
         if ( (image_.silPoints[i].x < image_.silPoints[index].x) ||
              ((image_.silPoints[i].x == image_.silPoints[index].x) &&
-             (image_.silPoints[i].y < image_.silPoints[index].y)) ) {
+             (image_.silPoints[i].y < image_.silPoints[index].y)) )
                 index = i;
-        }
     }
     swap(image_.silPoints[0], image_.silPoints[index]);
 
     // sort by polar angle (ascending) with regard to the most left point
     ivec2 shift = image_.silPoints[0];
-    for (size_t i=0; i<image_.silPoints.size(); i++)
+    for (size_t i=0; i<image_.silPoints.size(); ++i)
         image_.silPoints[i] += -shift;
     stable_sort(image_.silPoints.begin(), image_.silPoints.end(), angleComp);
-    for (size_t i=0; i<image_.silPoints.size(); i++)
+    for (size_t i=0; i<image_.silPoints.size(); ++i)
         image_.silPoints[i] += shift;
 
     // calculate convex hull points
@@ -3358,7 +3283,7 @@ void Labeling::calcConvexHull(){
     image_.hullPoints.push_back(image_.silPoints[1]);
     ivec2 P2;
     ivec2 P3;
-    for (size_t i=2; i < image_.silPoints.size(); i++) {
+    for (size_t i=2; i < image_.silPoints.size(); ++i) {
         popped = true;
         ivec2 P1 = image_.silPoints[i];
         while ((popped) && (image_.hullPoints.size() > 2)) {
@@ -3366,7 +3291,7 @@ void Labeling::calcConvexHull(){
             image_.hullPoints.pop_back();
             P3 = image_.hullPoints[image_.hullPoints.size()-1];
             int select = (P2.x - P1.x)*(P3.y - P1.y) - (P3.x-P1.x)*(P2.y-P1.y);
-            if (select < 0){
+            if (select < 0) {
                 image_.hullPoints.push_back(P2);
                 popped = false;
             }
@@ -3384,14 +3309,12 @@ void Labeling::calcConvexHull(){
 
 }
 
-
 // returns the label positioned at (x,y),
 // or NULL if there is none
-Labeling::Label* Labeling::getPickedLabel(int x, int y){
-
+Labeling::Label* Labeling::getPickedLabel(int x, int y) {
     Label* pLabel = NULL;
 
-    for (size_t i=0; i<labels_.size() && pLabel == NULL; i++){
+    for (size_t i=0; i<labels_.size() && pLabel == NULL; ++i) {
         if (idManager_.isClicked(labels_[i].labelData->idstr, x, y)){
             pLabel = &(labels_[i]);
         }
@@ -3401,49 +3324,46 @@ Labeling::Label* Labeling::getPickedLabel(int x, int y){
             pLabel = &(invisibleLabels_[i]);
         }
     } */
-
     return pLabel;
 }
 
 // Returns, if the user has moved a label into a segment
-bool Labeling::catchedBySegment(const Label &pLabel, ivec2 mousePos){
+bool Labeling::catchedBySegment(const Label &pLabel, ivec2 mousePos) {
 	ivec2 bl = pLabel.labelPos - ivec2(gaps_.SIL_LabelLabel);
     ivec2 tr = pLabel.labelPos + ivec2(pLabel.labelData->text.width, pLabel.labelData->text.height)
                     + ivec2(gaps_.SIL_LabelLabel);
     if ( mousePos.x >= 0 && mousePos.x < image_.width && mousePos.y >= 0 && mousePos.y < image_.height
-		&& image_.idBuffer.getElem(mousePos.x, mousePos.y) == pLabel.labelData->id ){
+		&& image_.idBuffer.getElem(mousePos.x, mousePos.y) == pLabel.labelData->id )
 		return true;
-	} else {
+	else
 		return false;
-	}
 }
 
 // updates caption of the segment belonging to pLabel.
 // update is written to xml-dom, xml-file, labels_ vector and segments_ vector
 // @return true, if update was completely successful
-bool Labeling::updateSegmentCaption(Label &pLabel, std::string const &newCaption){
-
-    if (!xmlDoc_.Error()){
-
+bool Labeling::updateSegmentCaption(Label &pLabel, std::string const &newCaption) {
+    if (!xmlDoc_.Error()) {
         // find segment-object corresponding to pLabel
         LabelData* segment = NULL;
-        for (size_t i=0; i<labelPersistentData_.size() && segment == NULL; i++){
-            if (labelPersistentData_[i]->idstr == pLabel.labelData->idstr){
+        for (size_t i=0; i<labelPersistentData_.size() && segment == NULL; ++i) {
+            if (labelPersistentData_[i]->idstr == pLabel.labelData->idstr)
                 segment = labelPersistentData_[i];
-            }
         }
-        if (segment == NULL) return false;
-        if (segment->text.text == newCaption) return true;
+        if (segment == NULL)
+            return false;
+        if (segment->text.text == newCaption)
+            return true;
 
         // update segment caption
         TiXmlNode* pNode = segment->xmlNode;
         TiXmlNode* pChild;
         if ((pChild = pNode->FirstChild("caption")) != 0) {
             TiXmlNode* text = pChild->FirstChild();
-			if ( (text) && (text->Type() == TiXmlNode::TEXT) ){
+			if ( (text) && (text->Type() == TiXmlNode::TEXT) ) {
                 text->SetValue(newCaption);
                 xmlDoc_.SaveFile();
-                if (!xmlDoc_.Error()){
+                if (!xmlDoc_.Error()) {
                     pLabel.labelData->text.text = newCaption;
                     segment->text.text = newCaption;
                     return true;
@@ -3452,17 +3372,14 @@ bool Labeling::updateSegmentCaption(Label &pLabel, std::string const &newCaption
         }
 
     }
-
     return false;
 }
 
-
-void Labeling::loadFont(){
+void Labeling::loadFont() {
 
 #ifdef VRN_WITH_FREETYPE
-    if (face_){
+    if (face_)
         FT_Done_Face(face_);
-    }
 
     FT_Error error = FT_New_Face( library_, fontPath_.c_str(), 0, &face_ );
     if ( error ) {
@@ -3497,8 +3414,7 @@ void Labeling::loadFont(){
 //      ...
 //  </segmentation>
 //
-void Labeling::readSegmentData(std::string filename){
-
+void Labeling::readSegmentData(std::string filename) {
     std::istringstream is;
     std::ostringstream os;
 
@@ -3516,7 +3432,7 @@ void Labeling::readSegmentData(std::string filename){
           //  segment.text = new LabelText();
 
             pChild = pLabel->FirstChildElement("id");
-            if (!pChild){
+            if (!pChild) {
                 pLabel = pLabel->NextSiblingElement("label");
                 continue;
             }
@@ -3526,7 +3442,7 @@ void Labeling::readSegmentData(std::string filename){
             labelData->idstr = pChild->GetText();
 
             pChild = pLabel->FirstChildElement("caption");
-            if (!pChild){
+            if (!pChild) {
                 pLabel = pLabel->NextSiblingElement("label");
                 continue;
             }
@@ -3586,8 +3502,7 @@ void Labeling::readSegmentData(std::string filename){
     LINFO("\n\nLabeling: read segment data from file \"" << filename << "\" \n");
 }
 
-void Labeling::createFilterKernels(){
-
+void Labeling::createFilterKernels() {
     FilterKernel f0, f1, f2, f3, f4, f5;
     // no filter
     f0.size = 1;
@@ -3601,9 +3516,9 @@ void Labeling::createFilterKernels(){
     f1.size = 3;
     f1.coefficientsSum = 9;
     f1.kernel = new int[9];
-    for (int i=0; i<9; i++){
+    for (int i=0; i<9; i++)
         f1.kernel[i] = 1;
-    }
+   
     f1.caption = "average 3x3";
     kernels_.push_back(f1);
 
@@ -3611,9 +3526,9 @@ void Labeling::createFilterKernels(){
     f2.size = 5;
     f2.coefficientsSum = 25;
     f2.kernel = new int[25];
-    for (int i=0; i<25; i++){
+    for (int i=0; i<25; i++)
         f2.kernel[i] = 1;
-    }
+    
     f2.caption = "average 5x5";
     kernels_.push_back(f2);
 
@@ -3621,9 +3536,9 @@ void Labeling::createFilterKernels(){
     f3.size = 7;
     f3.coefficientsSum = 49;
     f3.kernel = new int[49];
-    for (int i=0; i<49; i++){
+    for (int i=0; i<49; i++)
         f3.kernel[i] = 1;
-    }
+    
     f3.caption = "average 7x7";
     kernels_.push_back(f3);
 
@@ -3631,9 +3546,9 @@ void Labeling::createFilterKernels(){
     f4.size = 9;
     f4.coefficientsSum = 81;
     f4.kernel = new int[81];
-    for (int i=0; i<81; i++){
+    for (int i=0; i<81; i++)
         f4.kernel[i] = 1;
-    }
+    
     f4.caption = "average 9x9";
     kernels_.push_back(f4);
 
@@ -3654,30 +3569,27 @@ void Labeling::createFilterKernels(){
     f5.kernel[8] = 1;
     f5.caption = "gaussian 3x3";
     kernels_.push_back(f5);
-
 }
 
 #ifdef labelDEBUG
-
-bool inline inList(std::vector<ivec2> list, ivec2 elem){
+bool inline inList(std::vector<ivec2> list, ivec2 elem) {
 	bool found = false;
-	for (size_t i=0; i<list.size() && !found; i++){
+	for (size_t i=0; i<list.size() && !found; i++) {
 		if (list[i] == elem)
 			found = true;
 	}
 	return found;
 }
 
-void Labeling::renderMaps(){
-
+void Labeling::renderMaps() {
     if (image_.width == 0 || image_.height == 0)
         return;
 
-    if (segmentationTarget_ == -1){
+    if (segmentationTarget_ == -1) {
         segmentationTarget_ = tc_->allocTarget(getTargetType(Identifier::ttUnknown_), "Labeling::renderMaps (id map)");
         tc_->setPersistent(segmentationTarget_, true);
     }
-    if (distanceMapTarget_ == -1){
+    if (distanceMapTarget_ == -1) {
         distanceMapTarget_ = tc_->allocTarget(getTargetType(Identifier::ttUnknown_), "Labeling::renderMaps (distance map)");
         tc_->setPersistent(distanceMapTarget_, true);
 
@@ -3696,14 +3608,14 @@ void Labeling::renderMaps(){
 
     int maxID = 0;
     int* maxDistance = new int[255];
-    for (int i = 0; i < 255; i++){
+    for (int i = 0; i < 255; i++)
         maxDistance[i] = 0;
-    }
+    
     int maxhDistance = 0;
     int maxvDistance = 0;
     int maxadDistance = 0;
     int maxddDistance = 0;
-    for (int i=0; i<image_.width*image_.height; i++){
+    for (int i=0; i<image_.width*image_.height; i++) {
         int id = image_.idBuffer.getElem(i);
         if (image_.idBuffer.getElem(i) > maxID) maxID = image_.idBuffer.getElem(i);
         if (image_.distanceField.getElem(i) > maxDistance[id]) maxDistance[id] = image_.distanceField.getElem(i);
@@ -3714,14 +3626,14 @@ void Labeling::renderMaps(){
     }
 
     for (int x=0; x<image_.width; x++) {
-        for (int y=0; y<image_.height; y++){
+        for (int y=0; y<image_.height; y++) {
             int id = image_.idBuffer.getElem(x,y);
             idField[x + y*image_.width] = image_.idBuffer.getElem(x,y) / (float)maxID;
-            distanceField[x + y*image_.width] = image_.distanceField.getElem(x,y) / (float)(maxDistance[id]);
-            hDistanceField[x + y*image_.width] = image_.horzDistance.getElem(x,y) / (float)(maxhDistance);
-            vDistanceField[x + y*image_.width] = image_.vertDistance.getElem(x,y) / (float)(maxvDistance);
-            adDistanceField[x + y*image_.width] = image_.ascDiagDistance.getElem(x,y) / (float)(maxadDistance);
-            ddDistanceField[x + y*image_.width] = image_.descDiagDistance.getElem(x,y) / (float)(maxddDistance);
+            distanceField[x + y*image_.width] = image_.distanceField.getElem(x,y) / static_cast<float>(maxDistance[id]);
+            hDistanceField[x + y*image_.width] = image_.horzDistance.getElem(x,y) / static_cast<float>(maxhDistance);
+            vDistanceField[x + y*image_.width] = image_.vertDistance.getElem(x,y) / static_cast<float>(maxvDistance);
+            adDistanceField[x + y*image_.width] = image_.ascDiagDistance.getElem(x,y) / static_cast<float>(maxadDistance);
+            ddDistanceField[x + y*image_.width] = image_.descDiagDistance.getElem(x,y) / static_cast<float>(maxddDistance);
         }
     }
 
@@ -3748,16 +3660,16 @@ void Labeling::renderMaps(){
     glPointSize(2.f);
     saveMatrixStacks();
     glBegin(GL_POINTS);
-    for (size_t i=0; i<labels_.size(); i++){
+    for (size_t i=0; i<labels_.size(); ++i) {
         vector<ivec2> path = labels_[i].controlPoints;
         glColor3f(0.f, 0.f, 1.f);
-        for (size_t j=0; j<path.size(); j++){
-            glVertex2f(path[j].x / (float)image_.width * 2.f -1.f,
-                path[j].y / (float)image_.height * 2.f -1.f);
+        for (size_t j=0; j<path.size(); ++j) {
+            glVertex2f(path[j].x / static_cast<float>(image_.width) * 2.f -1.f,
+                path[j].y / static_cast<float>(image_.height) * 2.f -1.f);
         }
         glColor3f(0.f, 1.f, 0.f);
-        glVertex2f(labels_[i].anchorPoint.x / (float)image_.width * 2.f -1.f,
-            labels_[i].anchorPoint.y / (float)image_.height * 2.f -1.f);
+        glVertex2f(labels_[i].anchorPoint.x / static_cast<float>(image_.width) * 2.f -1.f,
+            labels_[i].anchorPoint.y / static_cast<float>(image_.height) * 2.f -1.f);
     }
     glEnd();
     restoreMatrixStacks();
@@ -3772,7 +3684,7 @@ void Labeling::renderMaps(){
 
 }
 
-void Labeling::writeDistanceMapToFile(){
+void Labeling::writeDistanceMapToFile() {
     std::ofstream myfile;
     std::ostringstream fileName;
     myfile.open ( "distancemap.dat" );
@@ -3781,8 +3693,8 @@ void Labeling::writeDistanceMapToFile(){
     myfile << "# step: " << distanceMapStep_.get() << std::endl;
     myfile << "# filter: " << kernels_[filterKernel_->get()].caption << std::endl;
     myfile << "# filter gap: " << filterDelta_.get() << std::endl;
-    for (int x=image_.bl.x; x<image_.tr.x; x+=1){
-        for (int y=image_.bl.y; y<image_.tr.y; y+=1){
+    for (int x=image_.bl.x; x<image_.tr.x; ++x) {
+        for (int y=image_.bl.y; y<image_.tr.y; ++y) {
             int value = image_.distanceField.getElem(x,y);
             myfile << x << " " << y << " " << value << std::endl;
         }
@@ -3794,25 +3706,24 @@ void Labeling::writeDistanceMapToFile(){
 
 // ---- events ------ //
 
-void Labeling::mousePressEvent(MouseEvent* e){
-
+void Labeling::mousePressEvent(MouseEvent* e) {
     e->ignore();
     if (e->button() != MouseEvent::MOUSE_BUTTON_LEFT)
         return;
 
     // only accept mouse-events, if current labeling valid
     // e.g.: invalid in coarseness-mode
-    if (valid_){
+    if (valid_) {
         int x = e->x();
         int y = image_.height - e->y();
         Label* pLabel = getPickedLabel(x,y);
 
         // if a label is picked, accept mouse event and enter edit mode
-        if (pLabel){
+        if (pLabel) {
 
             e->accept();
             editMode_ = true;
-            if (pLabel->intern){
+            if (pLabel->intern) {
                 pLabel->labelPos.x = x;
                 pLabel->labelPos.y = y;
             }
@@ -3825,27 +3736,26 @@ void Labeling::mousePressEvent(MouseEvent* e){
             time.reset();
             time.start();
         // if no label picked, stop edit mode
-        } else {
+        }
+        else {
             editMode_ = false;
             drag_ = false;
         }
 	}
-};
+}
 
-void Labeling::mouseDoubleClickEvent(MouseEvent* e){
-
+void Labeling::mouseDoubleClickEvent(MouseEvent* e) {
     e->ignore();
 
     if (labelingWidget_ == NULL)
         return;
 
-    if ( pickedLabel_ ){
+    if ( pickedLabel_ ) {
         int x = e->x();
         int y = image_.height - e->y();
         Label* pLabel = getPickedLabel(x,y);
 
         if ( pickedLabel_ && pLabel && pickedLabel_->labelData->id == pLabel->labelData->id ) {
-
             e->accept();
 
             // show input box
@@ -3856,75 +3766,70 @@ void Labeling::mouseDoubleClickEvent(MouseEvent* e){
             string text = pLabel->labelData->text.text;
             string newcaption = labelingWidget_->showInputDialog(title, label, text);
 
-            if (newcaption.length() > 0){
+            if (newcaption.length() > 0) {
                 // if label was successfully updated, recalculate label layout
                 // and request new rendering
-                if (updateSegmentCaption(*pLabel, newcaption)){
+                if (updateSegmentCaption(*pLabel, newcaption)) {
                     genTextures();
                     calcLabelPositions();
                     toWorld();
                     invalidate();
                     MsgDistr.postMessage(new BoolMsg(VoreenPainter::repaint_, true),
                         VoreenPainter::visibleViews_);
-                } else {
-                    LERROR("Labeling: failed saving new segment caption to xml-file");
                 }
+                else
+                    LERROR("Labeling: failed saving new segment caption to xml-file");
             }
             pickedLabel_ = NULL;
         }
-
     }
-
 }
 
-void Labeling::mouseReleaseEvent(MouseEvent* e){
-
+void Labeling::mouseReleaseEvent(MouseEvent* e) {
     // only accept release-event if in edit mode
     // (= a label was picked before by a keypress-event)
-    if (editMode_ && e->button() == MouseEvent::MOUSE_BUTTON_LEFT){
+    if (editMode_ && e->button() == MouseEvent::MOUSE_BUTTON_LEFT)
         e->accept();
-    } else {
+    else
         e->ignore();
-    }
 
     // dragging mode ends with releasing mouse key
-    if (drag_){
+    if (drag_) {
         drag_ = false;
 
         // a label is considered "catched", if its connection line does not intersect the convex hull
         // and the current cursor pos is inside the volume
-        if (pickedLabel_){
+        if (pickedLabel_) {
 
 			//if (pickedLabel_->offLabel){
 			//	pickedLabel_->curve2D->fixShift();
 			//}
 
             // check if label is "catched"
-			if ( pickedLabel_->offLabel || catchedBySegment(*pickedLabel_, ivec2(e->x(), image_.height - e->y())) ){
+			if ( pickedLabel_->offLabel || catchedBySegment(*pickedLabel_, ivec2(e->x(), image_.height - e->y())) )
 				pickedLabel_->labelData->internPreferred = true;
-            } else {
+            else
                 pickedLabel_->labelData->internPreferred = false;
-            }
+            
             // synchronize picked label and its segment data.
             // if label is intern, calc its intern label pos
             // + redraw labels
 			LabelData* labelData = pickedLabel_->labelData;
-            if (labelData){
-                if (labelData->internPreferred && !pickedLabel_->intern){
-
+            if (labelData) {
+                if (labelData->internPreferred && !pickedLabel_->intern) {
 					bool success = false;
 					// try to reuse 2D fitting curve by shifting it by the drag offset
-					if (pickedLabel_->curve2D != NULL){
+					if (pickedLabel_->curve2D != NULL)
                         success = true;
-					} else {
+					else
 						success = findLabelPathBest(*pickedLabel_);
-					}
+					
 					// recalculate bezier control points
-					if ( success && findBezierPoints(*pickedLabel_) ) {
+					if ( success && findBezierPoints(*pickedLabel_) )
 						pickedLabel_->intern = true;
-					} else {
+					else
 						pickedLabel_->intern = false;
-					}
+					
 					toWorld(pickedLabel_);
                 }
 			}
@@ -3932,9 +3837,7 @@ void Labeling::mouseReleaseEvent(MouseEvent* e){
             time.start();
             invalidate();
             MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
-
         }
-
         time.start();
     }
 
@@ -3943,9 +3846,7 @@ void Labeling::mouseReleaseEvent(MouseEvent* e){
 #endif
 };
 
-
-void Labeling::mouseMoveEvent(MouseEvent* e){
-
+void Labeling::mouseMoveEvent(MouseEvent* e) {
     e->ignore();
 
     // if user is dragging a label, accept mouse event
@@ -3959,23 +3860,25 @@ void Labeling::mouseMoveEvent(MouseEvent* e){
 
         // when dragging, update label position and redraw labels
         Label* label = pickedLabel_;
-        if (label){
+        if (label) {
 			ivec2 mousePos = ivec2(e->x(), image_.height-e->y());
 			if ( pickedLabel_->labelData->internPreferred && ( catchedBySegment(*pickedLabel_, mousePos) || pickedLabel_->offLabel)
-				 && pickedLabel_->curve2D != NULL){
+				 && pickedLabel_->curve2D != NULL) {
                  // try to reuse 2D fitting curve by shifting it by the drag offset
-                 vec2 shift = vec2((float)e->x() - lastDragPoint_.x, (float)image_.height-e->y() - lastDragPoint_.y);
+                 vec2 shift = vec2(static_cast<float>(e->x()) - lastDragPoint_.x, static_cast<float>(image_.height-e->y()) - lastDragPoint_.y);
                  pickedLabel_->curve2D->shift( shift );
 				 lastDragPoint_ = ivec2(e->x(), image_.height-e->y());
-				 if ( findBezierPoints(*pickedLabel_) ){
+				 if ( findBezierPoints(*pickedLabel_) ) {
 					pickedLabel_->intern = true;
-                 } else {
+                 }
+                 else {
 					pickedLabel_->intern = false;
                  }
-            } else {
+            }
+            else {
 				pickedLabel_->intern = false;
 			}
-			if (!pickedLabel_->intern){
+			if (!pickedLabel_->intern) {
 				ivec2 normal;
 				label->labelPos = ivec2(e->x(), image_.height - e->y()) - pickedPointOffset_;
 				connPointFromLabelPos(*label, label->connectionPoint, normal, true);
@@ -3984,7 +3887,6 @@ void Labeling::mouseMoveEvent(MouseEvent* e){
 			invalidate();
             MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         }
-
     }
 
 #ifdef labelDEBUG
@@ -3992,25 +3894,22 @@ void Labeling::mouseMoveEvent(MouseEvent* e){
 #endif
 };
 
-void Labeling::wheelEvent(tgt::MouseEvent* e){
-
+void Labeling::wheelEvent(tgt::MouseEvent* e) {
 	e->ignore();
 
-	if (pickedLabel_ && !pickedLabel_->labelData->belongsToSegment){
+	if (pickedLabel_ && !pickedLabel_->labelData->belongsToSegment) {
 		e->accept();
 		float angle = 4.f * ( e->button() == e->MOUSE_WHEEL_DOWN ? 1 : -1);
 		rotateLabel(*pickedLabel_, angle);
-		if ( pickedLabel_->intern && findBezierPoints(*pickedLabel_) ){
+		if ( pickedLabel_->intern && findBezierPoints(*pickedLabel_) )
 			pickedLabel_->intern = true;
-        } else {
+        else
 			pickedLabel_->intern = false;
-		}
+		
 		toWorld(pickedLabel_);
 		invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 	}
 }
 
-
 } // namespace voreen
-

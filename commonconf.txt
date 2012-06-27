@@ -7,6 +7,17 @@ CONFIG += stl thread
 # we don't use tgt's build system
 DEFINES += TGT_WITHOUT_DEFINES
 
+contains(DEFINES, VRN_SNAPSHOT) {
+  # update version for each snapshot release
+  # TODO: not sure if this works with MSVC
+  DEFINES += VRN_SVN_REVISON=\\\"snapshot-3\\\"
+}
+
+# This just changes the default params for tgt::init() to include
+# NO_SHADER_CACHING and to remove LOG_TO_CONSOLE. Should be done
+# differently.
+DEFINES += TGT_COMPILED_FOR_VOREEN
+
 contains( DEFINES, VRN_WITH_DEVIL ) {
   DEFINES += TGT_HAS_DEVIL
 }
@@ -38,12 +49,6 @@ win32: {
   CONFIG(debug, debug|release) {
     DEFINES += _DEBUG
   }
-  
-  # for CoInitializeSecurity() to be defined
-  contains(DEFINES, VRN_WITH_WMI) {
-    DEFINES += _WIN32_DCOM
-  }
-
 }
 else {
   debug : DEFINES += _DEBUG
@@ -64,6 +69,11 @@ DEFINES += TIXML_USE_STL
 # some definitions for modules
 VRN_MODULE_SRC_DIR=$${VRN_HOME}/src/modules
 VRN_MODULE_INC_DIR=$${VRN_HOME}/include/voreen/modules
+
+# meta-modules that include all modules or most modules (=modules
+# without dependancies on external libs)
+contains(VRN_MODULES, all) : include(src/modules/all.pri)
+contains(VRN_MODULES, most) : include(src/modules/most.pri)
 
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
@@ -222,15 +232,17 @@ contains(DEFINES, VRN_WITH_SVNVERSION) {
   unix {
     QMAKE_EXTRA_TARGETS += revtarget
     revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
-    revtarget.commands   = $${VRN_HOME}/svnversion.sh $${VRN_HOME} $${revtarget.target}
+    revtarget.commands   = $${VRN_HOME}/tools/svnversion.sh $${VRN_HOME} $${revtarget.target}
     PRE_TARGETDEPS      += $${revtarget.target}
   }
 
   win32 {
-    QMAKE_EXTRA_TARGETS += revtarget
     revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
-    revtarget.commands   = $${VRN_HOME}/svnversion.bat $${VRN_HOME} $${revtarget.target}
+    revtarget.commands   = $${VRN_HOME}/tools/svnversion.bat $${VRN_HOME} $${revtarget.target}
+    revtarget.CONFIG += recursive
+    revtarget.OUTPUT =  $${VRN_HOME}/include/voreen/svnversion.h
     PRE_TARGETDEPS      += $${revtarget.target}
+    QMAKE_EXTRA_TARGETS += revtarget
   }
 
   # The following must be placed in the .pro file, after all source and header file have been added

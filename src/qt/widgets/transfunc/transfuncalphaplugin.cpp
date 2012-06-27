@@ -27,9 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
-#include "voreen/core/vis/transfunc/transfunc.h"
-#include "voreen/core/vis/transfunc/transfuncintensitykeys.h"
+#include "voreen/qt/widgets/transfunc/transfuncalphaplugin.h"
+
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -38,21 +37,26 @@
 #include <QFrame>
 #include <QGroupBox>
 
+#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
+#include "voreen/core/vis/processors/render/volumerenderer.h"
+#include "voreen/core/vis/transfunc/transfunc.h"
+#include "voreen/core/vis/transfunc/transfuncintensity.h"
+
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvas.h"
 #include "voreen/qt/widgets/transfunc/transfuncgradient.h"
-#include "voreen/qt/widgets/transfunc/transfuncalphaplugin.h"
 
 
 namespace voreen {
 
 TransFuncAlphaPlugin::TransFuncAlphaPlugin(QWidget* parent, MessageReceiver* msgReceiver, 
-        TransFuncAlphaProp* prop, bool showHistogramAtDatasourceChange, QString text)
-    : WidgetPlugin(parent, msgReceiver), 
-      TemplatePlugin<TransFunc*>(), 
+                                           TransFuncAlphaProp* prop, bool /*showHistogramAtDatasourceChange*/,
+                                           QString text)
+    : WidgetPlugin(parent, msgReceiver),
+      TemplatePlugin<TransFunc*>(),
       prop_(prop),
+      yAxisText_(text),
       transferFunc_(0),
-      intTransferFunc_(0),
-      yAxisText_(text)
+      intTransferFunc_(0)
 {
     setObjectName(tr("Transfer Function Alpha"));
     icon_ = QIcon(":/icons/transferfunc.png");
@@ -74,7 +78,7 @@ TransFuncAlphaPlugin::~TransFuncAlphaPlugin() {
 void TransFuncAlphaPlugin::createWidgets() {
     resize(300,300);
 
-    transferFunc_ = new TransFuncIntensityKeys(256);
+    transferFunc_ = new TransFuncIntensity(256);
     transferFunc_->createAlphaFunc();
 
     QBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -159,8 +163,8 @@ void TransFuncAlphaPlugin::setStandardFunc() {
 }
 
 void TransFuncAlphaPlugin::updateTransferFunction() {
-    if(!transferFunc_)
-        transferFunc_ = new TransFuncIntensityKeys(maxValue_ + 1);
+    if (!transferFunc_)
+        transferFunc_ = new TransFuncIntensity(maxValue_ + 1);
 //     delete transferFunc_;
     
 //     gradient_->exportFunction(transferFunc_);
@@ -175,8 +179,8 @@ void TransFuncAlphaPlugin::updateTransferFunction() {
 }
 
 void TransFuncAlphaPlugin::updateIntTransferFunction() {
-    if(!transferFunc_)
-        transferFunc_ = new TransFuncIntensityKeys(maxValue_ + 1);
+    if (!transferFunc_)
+        transferFunc_ = new TransFuncIntensity(maxValue_ + 1);
     intTransferFunc_->updateTexture();
     postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc2_, intTransferFunc_));
     repaintCanvases();

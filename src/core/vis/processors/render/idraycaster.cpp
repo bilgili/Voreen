@@ -52,7 +52,7 @@ IDRaycaster::IDRaycaster():
 {
 
 	// initialize transfer function
-	TransFuncIntensityKeys* tf = new TransFuncIntensityKeys();
+	TransFuncIntensity* tf = new TransFuncIntensity();
 	tf->createStdFunc();
     transferFunc_.set(tf);
 
@@ -70,11 +70,6 @@ IDRaycaster::IDRaycaster():
     createInport("image.entrypoints");
     createInport("image.exitpoints");
     createOutport("image.idmap");
-
-    // temporary only
-    //
-    volumeContainer_ = 0;
-    currentDataset_ = 0;
 }
 
 IDRaycaster::~IDRaycaster() {
@@ -85,7 +80,7 @@ const std::string IDRaycaster::getProcessorInfo() const {
 	return "Writes color coded regions of a segmented dataset to the alpha channel of the rendering target. The three color channels are filled with the first-hit-positions.";
 }
 
-void IDRaycaster::setPropertyDestination(Identifier dest){
+void IDRaycaster::setPropertyDestination(Identifier dest) {
     VolumeRaycaster::setPropertyDestination(dest);
     MsgDistr.insert(this);
     transferFunc_.setMsgDestination(dest);
@@ -94,29 +89,12 @@ void IDRaycaster::setPropertyDestination(Identifier dest){
     useBlurring_.setMsgDestination(dest);
 }
 
-void IDRaycaster::processMessage(Message* msg, const Identifier& dest)
-{
+void IDRaycaster::processMessage(Message* msg, const Identifier& dest) {
 	VolumeRaycaster::processMessage(msg, dest);
-    // moved here from super class VolumeRenderer. Eliminate on removing old VolumeContainer
-    if (msg->id_ == setCurrentDataset_) {
-        int oldDataset = currentDataset_;
-        msg->getValue(currentDataset_);
-        if (currentDataset_ != oldDataset) {
-            invalidate();
-        }
-    }
-    else if (msg->id_ == setVolumeContainer_) {
-        VolumeContainer* oldContainer = volumeContainer_;
-        msg->getValue(volumeContainer_);
-        if (volumeContainer_ != oldContainer) {
-            invalidate();
-        }
-    }
 
-    if (msg->id_ == VoreenPainter::switchCoarseness_){
+    if (msg->id_ == VoreenPainter::switchCoarseness_)
         coarse_ = msg->getValue<bool>();
-    }
-    else if (msg->id_ == "set.penetrationDepth"){
+    else if (msg->id_ == "set.penetrationDepth") {
         penetrationDepth_.set( msg->getValue<float>());
         invalidate();
     }
@@ -131,10 +109,12 @@ void IDRaycaster::processMessage(Message* msg, const Identifier& dest)
             transferFunc_.set(tf);
         }
 		invalidate();
-	} else if (msg->id_ == "set.useBlurring") {
+	}
+    else if (msg->id_ == "set.useBlurring") {
 		useBlurring_.set( msg->getValue<bool>() );
 		invalidate();
-	} else if (msg->id_ == "set.blurDelta") {
+	}
+    else if (msg->id_ == "set.blurDelta") {
         blurDelta_.set( msg->getValue<float>() );
         invalidate();
     }
@@ -161,7 +141,7 @@ void IDRaycaster::loadShader() {
  * by another raycaster.
  * Default is true.
  */
-void IDRaycaster::setStandAlone(bool standAlone){
+void IDRaycaster::setStandAlone(bool standAlone) {
     standAlone_ = standAlone;
 }
 
@@ -182,7 +162,6 @@ void IDRaycaster::compile() {
  * a screen aligned quad.
  */
 void IDRaycaster::process(LocalPortMapping* portMapping) {
-
     compileShader();
     LGL_ERROR;
     int entryParams = portMapping->getTarget("image.entrypoints");
@@ -190,13 +169,16 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
     // get render target for first rendering pass: id-raycasting
 	int tempDest = portMapping->getTarget("image.idmap");
 
+    // FIXME: implement portmapping for new volume concept.
+    // Also fetch volume for segmentation...
+    //int segmentationNumber = portMapping->getVolumeNumber("volume.segmentation");
+
     tc_->setActiveTarget(tempDest, "IDRaycaster::render");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // don't render when coarse
-    if (coarse_) {
+    if (coarse_)
         return;
-    }
 
     // bind entry params
     glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
@@ -214,40 +196,34 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
     // vector containing the volumes to bind
     std::vector<VolumeStruct> volumes;
 
-    if (!getCurrentDataset())
-        return;
-	
-    // add main volume
-    int datasetNumber = portMapping->getVolumeNumber("volume.dataset");
     volumes.push_back(VolumeStruct(
-        volumeContainer_->getVolumeGL(datasetNumber),
+        currentVolumeHandle_->getVolumeGL(),
         volTexUnit_,
         "volume_",
         "volumeParameters_")
     );
 
 
-    int segmentationNumber = portMapping->getVolumeNumber("volume.segmentation");
-    if (volumeContainer_->getVolumeGL(segmentationNumber)) {
+    
+    //FIXME: if (volumeContainer_->getVolumeGL(segmentationNumber)) {
+    if( false ) {
          // segmentation volume
          volumes.push_back(VolumeStruct(
-            volumeContainer_->getVolumeGL(segmentationNumber),
+            0, // FIXME: volumeContainer_->getVolumeGL(segmentationNumber),
             segmentationTexUnit_,
             "segmentation_",
             "segmentationParameters_")
         );
         // set texture filters for this volume/texunit
         glActiveTexture(tm_.getGLTexUnit(segmentationTexUnit_));
-        volumeContainer_->getVolumeGL(segmentationNumber)->getTexture()->bind();
+        // FIXME: volumeContainer_->getVolumeGL(segmentationNumber)->getTexture()->bind();
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         // set render target to type id-raycasting
-    } else {
-        
+    }
+    else {
         LERROR("No segmentation volume");
-
         return;
-
     }
 
     // bind transfer function
@@ -259,16 +235,17 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
     bindVolumes(raycastPrg_, volumes);
     raycastPrg_->setUniform("lowerThreshold_", lowerTH_.get());
     raycastPrg_->setUniform("upperThreshold_", upperTH_.get());
-    raycastPrg_->setUniform("entryParams_", (GLint) tm_.getTexUnit(entryParamsTexUnit_));
-    raycastPrg_->setUniform("entryParamsDepth_", (GLint) tm_.getTexUnit(entryParamsDepthTexUnit_));
-    raycastPrg_->setUniform("exitParams_", (GLint) tm_.getTexUnit(exitParamsTexUnit_));
-    raycastPrg_->setUniform("exitParamsDepth_", (GLint) tm_.getTexUnit(exitParamsDepthTexUnit_));
-    if ( volumeContainer_->getVolumeGL(datasetNumber)->getVolume()->getBitsStored() == 12 )
-        raycastPrg_->setUniform("volumeScaleFactor_", 16.f);
+    raycastPrg_->setUniform("entryParams_", tm_.getTexUnit(entryParamsTexUnit_));
+    raycastPrg_->setUniform("entryParamsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    raycastPrg_->setUniform("exitParams_", tm_.getTexUnit(exitParamsTexUnit_));
+    raycastPrg_->setUniform("exitParamsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
+    if ( (currentVolumeHandle_->getVolume() != 0) 
+        && (currentVolumeHandle_->getVolume()->getBitsStored() == 12) )
+        raycastPrg_->setUniform("volumeScaleFactor_", 16.0f);
     else
-        raycastPrg_->setUniform("volumeScaleFactor_", 1.f);
+        raycastPrg_->setUniform("volumeScaleFactor_", 1.0f);
     
-    raycastPrg_->setUniform("transferFunc_", (GLint) tm_.getTexUnit(transferTexUnit_));
+    raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit(transferTexUnit_));
     // raycastPrg_->setUniform("viewMatrix_", tgt::mat4::identity);
     raycastPrg_->setUniform("penetrationDepth_", penetrationDepth_.get());
     renderQuad();
@@ -277,7 +254,6 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
 
     glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
     LGL_ERROR;
-
 }
 
 } // namespace voreen

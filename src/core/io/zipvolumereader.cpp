@@ -191,7 +191,7 @@ bool ZipVolumeReader::parseDescFile(const std::string& filename) {
     return !error;
 }
 
-VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolumeGL)
+VolumeSet* ZipVolumeReader::read(const std::string &fileName)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     LINFO("ZipVolumeReader: " << fileName);
@@ -206,7 +206,7 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolum
             LERROR("Description file not found.");
             return 0;
         }
-        VolumeSet* volumeSet = new VolumeSet(fileName);
+        VolumeSet* volumeSet = new VolumeSet(0, fileName);
         CZipMemFile descFile;
         zip.ExtractFile(descIndex, ".");
         parseDescFile("description.txt");
@@ -232,14 +232,14 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolum
                     reader.readHints( volInfo->resolution_, volInfo->sliceThickness_, 8,
                                      volInfo->objectModel_, volInfo->format_, 0,
                                      tgt::mat4::identity, Modality::MODALITY_UNKNOWN, -1.f, volInfo->metaString_ );
-                    curVolumeSet = reader.read(volInfo->filename_, generateVolumeGL);
+                    curVolumeSet = reader.read(volInfo->filename_);
                     remove(volInfo->filename_.c_str());
                 }
                 else if (volInfo->filename_.find(".pvm") != std::string::npos) {
 #ifdef VRN_WITH_PVM
                     zip.ExtractFile(indexInZip, ".");
                     PVMVolumeReader reader(NULL);
-                    curVolumeSet = reader.read(volInfo->filename_, generateVolumeGL);
+                    curVolumeSet = reader.read(volInfo->filename_);
                     remove(volInfo->filename_.c_str());
 #else // VRN_WITH_PVM
                     LERROR("PVM found in zip-file, but program was compiled without PVM-support.");
@@ -248,7 +248,7 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolum
                 else if (volInfo->filename_.find(".i4d") != std::string::npos) {
                     zip.ExtractFile(indexInZip, ".");
                     QuadHidacVolumeReader reader;
-                    curVolumeSet = reader.read(volInfo->filename_, generateVolumeGL);
+                    curVolumeSet = reader.read(volInfo->filename_);
                     remove(volInfo->filename_.c_str());
                 }
                 else {
@@ -258,8 +258,6 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolum
                     volumeSet->addSeries(volumeSeries);
                     VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volume, 0.0f);
                     volumeSeries->addVolumeHandle(volumeHandle);
-                    if( generateVolumeGL == true )
-                        volumeHandle->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
 
                     remove(volInfo->filename_.c_str());
                 }
@@ -290,6 +288,7 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName, bool generateVolum
                                 continue;
                             VolumeHandle* handle = (*itSeries)->removeVolumeHandle(*(itHandle++));
                             handle->setTimestep(volInfo->timeStamp_);
+                            handle->setOrigin(fileName, (*itSeries)->getName(), volInfo->timeStamp_);
                             newSeries->addVolumeHandle(handle, true);
                         }
                         

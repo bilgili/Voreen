@@ -80,7 +80,19 @@ public:
 
     virtual void setPropertyDestination(Identifier tag);
 
-    virtual TransFunc* getTransFunc() { return transferFunc_.get(); }
+    /**
+    * Returns the transfer function used by this raycaster
+    * \return The transfer function used by this raycaster
+    */
+    virtual TransFunc* getTransFunc();
+
+    /**
+    * Returns the i-th transfer function used by this raycaster
+    * \param i The number of the transfer function we want to get (i = 0 equals a getTransFunc()
+    call
+    * \retrurn The i-th transfer function
+    */
+    virtual TransFunc* getTransFunc(int i);
 
 protected:
 
@@ -88,31 +100,11 @@ protected:
 
     virtual void compile();
 
+
 private:
-
     TransFuncProp transferFunc_;  ///< the property that controls the transfer-function
+
     bool firstPass_; ///< may need several rendering passes, this stores if this is the first
-
-// !!! NOTE:
-// These attributes and methods haven been moved here temporary
-// from super class VolumeRenderer in order to provide compatibility
-// with old VolumeContainer.
-// This functionality is about to be eliminated in near future!
-// (Dirk)
-//
-protected:    
-    VolumeContainer* volumeContainer_;
-    int currentDataset_;
-
-public:
-    /// Returns the dataset currently used.
-    VolumeGL* getCurrentDataset() {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
-    /// Returns the dataset currently used.
-    const VolumeGL* getCurrentDataset() const {
-        return volumeContainer_ ? volumeContainer_->getVolumeGL(currentDataset_) : 0;
-    }
 };
 
 

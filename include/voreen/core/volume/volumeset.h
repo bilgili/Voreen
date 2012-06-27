@@ -35,10 +35,14 @@
 
 #include "voreen/core/vis/message.h"
 #include "voreen/core/volume/volumeseries.h"
+#include "voreen/core/xml/serializable.h"
 
 namespace voreen {
 
-class VolumeSet {
+class VolumeSetContainer;
+
+class VolumeSet : public Serializable {
+
 public:
     /**
      * Struct used as a comparator for std::set. The set stores pointers, but the comparsion
@@ -63,17 +67,17 @@ public:
     /**
      * A VolumeSet is identified by the given name which is usually the file name.
      */
-    VolumeSet(const std::string& filename);
+    VolumeSet(VolumeSetContainer* const parent, const std::string& filename);
 
     /**
      * Dtor causing all contained VolumeSeries to become deleted. The deletion of
-     * VolumeSeries causes finally everthing to become deleted, including Volume
+     * VolumeSeries causes finally everything to become deleted, including Volume
      * pointers.
      */
     ~VolumeSet();
 
     /**
-     * VolumeSet are defined to be equal when the
+     * VolumeSets are defined to be equal when the
      * name_ attributes are identical. The comparison is
      * done lexicographically.
      */
@@ -86,6 +90,12 @@ public:
      */
     const std::string& getName() const;
 
+    void setName(const std::string& name);
+
+    const VolumeSetContainer* getParentContainer() const;
+
+    void setParentContainer(VolumeSetContainer* const parent);
+
     /**
      * Returns the first Volume* from the first handle in the first
      * series being available.
@@ -96,7 +106,7 @@ public:
      * Returns a std::vector containing all VolumeHandle
      * pointers from all VolumeSeries within this VolumeSet.
      * The pointers contained in the vector are all non-NULL. Otherwise
-     * they would not haven been added.
+     * they would not have been added.
      */
     std::vector<VolumeHandle*> getAllVolumeHandles() const;
 
@@ -204,7 +214,29 @@ public:
      * Returns the names of all VolumeSeries stored in this VolumeSet.
      */
     std::vector<std::string> getSeriesNames() const;
+   
+    /**
+     * Returns the name of the xml element used when serializing the object
+     */
+    virtual std::string getXmlElementName() const { return XmlElementName; }
 
+    /**
+     * Serializes the object to XML.
+     */
+    virtual TiXmlElement* serializeToXml() const;
+    
+    /**
+     * Updates the object from XML.
+     */
+    void updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Origin, std::pair<Volume*, bool> >& volumeMap);
+    virtual void updateFromXml(TiXmlElement* elem);
+    
+    /**
+     * TODO docs
+     */
+    static std::set<std::string> getFileNamesFromXml(TiXmlElement* elem);
+
+public:
     /**
      * This message is sent to VolumeSetSourceProcessor in order to
      * indicate changes on the VolumeSet, so that the processors
@@ -213,11 +245,15 @@ public:
      * within their ctors.
      */
     static const Identifier msgUpdateVolumeSeries_;
+    
+    /** Holds the name of the xml element used when serializing the object */
+    static const std::string XmlElementName;
 
 protected:
     VolumeSeries::SeriesSet series_;    /** The VolumeSeries stored in this VolumeSet */
     std::string name_;  /** The name of the VolumeSet (usually the file name incl. path) */
     std::map<std::string, int> modalityCounter_; /** counts the different modalities. */
+    VolumeSetContainer* parentContainer_; /** The VolumeSetContainer which is parent of this object */
 };
 
 typedef TemplateMessage<VolumeSet*> VolumeSetPtrMsg;

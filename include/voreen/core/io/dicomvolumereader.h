@@ -84,7 +84,7 @@ public:
      *
      * @return Volume or 0 if an error occured.
      */
-    virtual VolumeSet* read(const std::string& fileName, bool generateVolumeGL = true)
+    virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     /**

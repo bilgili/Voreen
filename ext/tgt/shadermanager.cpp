@@ -29,20 +29,18 @@
 #include "tgt/gpucapabilities.h"
 #include "tgt/texturemanager.h"
 
-using namespace std;
+using std::string;
 
 namespace tgt {
 
-const std::string ShaderObject::loggerCat_("tgt.Shader.ShaderObject");
+const string ShaderObject::loggerCat_("tgt.Shader.ShaderObject");
 
-ShaderObject::ShaderObject(const std::string& filename, ShaderType type /*= VERTEX_SHADER*/)
-    : filename_(filename)
-    , shaderType_(type)
-    , source_(0)
-    , header_(0)
-	, inputType_(GL_TRIANGLES)
-	, outputType_(GL_TRIANGLE_STRIP)
-	, verticesOut_(16)
+ShaderObject::ShaderObject(const string& filename, ShaderType type)
+    : filename_(filename),
+      shaderType_(type),
+      inputType_(GL_TRIANGLES),
+	  outputType_(GL_TRIANGLE_STRIP),
+	  verticesOut_(16)
 {
 	LGL_ERROR;
     id_ = glCreateShader(shaderType_);
@@ -53,14 +51,11 @@ ShaderObject::ShaderObject(const std::string& filename, ShaderType type /*= VERT
 }
 
 ShaderObject::~ShaderObject() {
-    delete[] source_;
-    delete[] header_;
     if (isCompiled_)
         glDeleteShader(id_);
 }
 
-bool ShaderObject::loadSourceFromFile(const std::string &filename)
-{
+bool ShaderObject::loadSourceFromFile(const string &filename) {
 	LDEBUG("Loading " << filename);
     File* file = FileSys.open(filename);
 
@@ -69,24 +64,8 @@ bool ShaderObject::loadSourceFromFile(const std::string &filename)
 		LERROR("File not found.");
         return false;
 	}
-    size_t len = file->size();
 
-    // check if file is empty
-	if (len == 0) {
-		LWARNING("File is empty.");
-        return false;
-	}
-    delete[] source_;
-
-    // allocate memory
-    source_ = (GLchar*) new char[len+1];
-
-	if (source_ == 0) {
-		LERROR("Unable to allocate memory.");
-        return false;   // allocation failed
-	}
-    file->read(source_, len);
-    source_[len] = 0;
+    source_ = file->getAsString();
 
     file->close();
     delete file;
@@ -94,25 +73,16 @@ bool ShaderObject::loadSourceFromFile(const std::string &filename)
     return true;
 }
 
-void ShaderObject::uploadSource()
-{
-    if (source_ != 0) {
-        if (header_ != 0) {
-            GLchar* pointers[2];
-            pointers[0] = header_;
-            pointers[1] = source_;
-            glShaderSource(id_, 2, (const GLchar **) pointers, NULL);
-        }
-        else
-            glShaderSource(id_, 1, (const GLchar **) &source_, NULL);
-    }
+void ShaderObject::uploadSource() {
+    string completeSrc = replaceIncludes(header_ + source_);
+    const GLchar* tmpShaderSource = completeSrc.c_str();
+    glShaderSource(id_, 1, &tmpShaderSource, 0);
 }
 
-int ShaderObject::replaceIncludes()
-{
-    int numReplaced = 0;
+string ShaderObject::replaceIncludes(const string& completeSource) {
+	int numReplaced = 0;
 
-    std::string sourceStr(source_);
+    string sourceStr = completeSource;
 
     string::size_type curPos = sourceStr.find("#include", 0);
     int replaceStart = 0;
@@ -122,20 +92,14 @@ int ShaderObject::replaceIncludes()
         replaceStart = curPos;
         curPos = sourceStr.find("\"", curPos+1);
         replaceEnd = sourceStr.find("\"", curPos+1);
-        std::string fileName(sourceStr, curPos+1, replaceEnd-curPos-1);
-        fileName = ShdrMgr.getPath() + "/" + fileName;
+        string fileName(sourceStr, curPos + 1, replaceEnd - curPos - 1);
+
+        fileName = ShdrMgr.completePath(fileName);
 
         File* file = FileSys.open(fileName);
-        std::string content;
-        if ((!file) || (!file->open()))
-            content = "";
-        else {
-            size_t len = file->size();
-            // check if file is empty
-            if (len==0)
-                content = "";
-            else
-                content = file->getAsString();
+        string content;
+        if (file && file->open()) {
+            content = file->getAsString();
             file->close();
 
             content = "// BEGIN INCLUDE " + fileName + "\n#line 1\n" + content;
@@ -144,74 +108,68 @@ int ShaderObject::replaceIncludes()
             content += "// END INCLUDE " + fileName + "\n#line 1\n";
         }
         delete file;
-        sourceStr.replace(replaceStart, replaceEnd-replaceStart+1, content);
+        sourceStr.replace(replaceStart, replaceEnd - replaceStart + 1, content);
         numReplaced++;
         curPos = replaceEnd;
-        curPos = sourceStr.find("#include", curPos+1);
+        curPos = sourceStr.find("#include", curPos + 1);
     }
 
-    if (numReplaced > 0)
-    {
+    if (numReplaced > 0) {
       // write the complete Shader into a file for debugging the shader
+//#define TGT_SHADER_INCLUDE_DEBUG
 #ifdef TGT_SHADER_INCLUDE_DEBUG
-        std::string basename;
-        std::string::size_type first_pos = filename_.find_last_of("/");
-        if (first_pos != std::string::npos)
-          basename = filename_.substr(first_pos + 1);
+        string basename;
+        string::size_type first_pos = filename_.find_last_of("/");
+        if (first_pos != string::npos)
+            basename = filename_.substr(first_pos + 1);
         else
-          basename = filename_;
+            basename = filename_;
 
-        ofstream out(basename.c_str()); // output file
+		std::ofstream out(basename.c_str()); // output file
 
         if (!out) {
             LERROR("Cannot open output file: " << basename.c_str() << " (VRN_SHADER_INCLUDE_DEBUG)");
         } else {
-            out << sourceStr.c_str() << endl;
+			out << sourceStr.c_str() << std::endl;
             out.close();
         }
 #endif
 
-        delete[] source_;
-        source_ = (GLchar*) new GLchar[sourceStr.length()+1];
-        for (string::size_type i=0; i < sourceStr.length();i++)
-            source_[i] = sourceStr[i];
-        source_[sourceStr.length()] = 0;
-        uploadSource();
     }
-    return numReplaced;
+    return sourceStr;
 }
 
 bool ShaderObject::scanDirectives() {
 	LDEBUG("Scanning for geometry shader compile directives...");
-	std::string input = getDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
-	if(input == "GL_POINTS")
+	string input = getDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
+	if (input == "GL_POINTS")
 		inputType_ = GL_POINTS;
-	else if(input == "GL_LINES")
+	else if (input == "GL_LINES")
 		inputType_ = GL_LINES;
-	else if(input == "GL_LINES_ADJACENCY_EXT")
+	else if (input == "GL_LINES_ADJACENCY_EXT")
 		inputType_ = GL_LINES_ADJACENCY_EXT;
-	else if(input == "GL_TRIANGLES")
+	else if (input == "GL_TRIANGLES")
 		inputType_ = GL_TRIANGLES;
-	else if(input == "GL_TRIANGLES_ADJACENCY_EXT")
+	else if (input == "GL_TRIANGLES_ADJACENCY_EXT")
 		inputType_ = GL_TRIANGLES_ADJACENCY_EXT;
 	else {
-		LERROR("Unknown input type: " << input)
-		return false;
+		LERROR("Unknown input type: " << input);
+        return false;
 	};
 
-	std::string output = getDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
-	if(output == "GL_POINTS")
+	string output = getDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
+	if (output == "GL_POINTS")
 		outputType_ = GL_POINTS;
-	else if(output == "GL_LINE_STRIP")
+	else if (output == "GL_LINE_STRIP")
 		outputType_ = GL_LINE_STRIP;
-	else if(output == "GL_TRIANGLE_STRIP")
+	else if (output == "GL_TRIANGLE_STRIP")
 		outputType_ = GL_TRIANGLE_STRIP;
 	else {
-		LERROR("Unknown output type: " << output)
+		LERROR("Unknown output type: " << output);
 		return false;
 	};
 
-	std::string verticesOut = getDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
+	string verticesOut = getDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
 
 	std::istringstream myStream(verticesOut);
 	if (myStream >> verticesOut_) {
@@ -234,39 +192,36 @@ void ShaderObject::setDirectives(GLuint id) {
 	LGL_ERROR;
 }
 
-std::string ShaderObject::getDirective(std::string d) {
-	std::string sourceStr(source_);
-    string::size_type curPos = sourceStr.find(d+"(", 0);
-	string::size_type length = d.length() + 1;
-	if(curPos != string::npos) {
+string ShaderObject::getDirective(const string& directive) {
+	string sourceStr = source_;
+    string::size_type curPos = sourceStr.find(directive + "(", 0);
+	string::size_type length = directive.length() + 1;
+	if (curPos != string::npos) {
 		string::size_type endPos = sourceStr.find(")", curPos);
 
-		if(endPos != string::npos) {
-			std::string ret = sourceStr.substr(curPos+length, (endPos-curPos-length));
-			//test for space, newline:
-			if( (ret.find(" ",0) == string::npos)
-				&&(ret.find("\n",0) == string::npos) ) {
-				LINFO("Directive " << d << ": " << ret);
+		if (endPos != string::npos) {
+			string ret = sourceStr.substr(curPos + length, (endPos - curPos - length));
+			// test for space, newline
+			if ((ret.find(" ", 0) == string::npos) && (ret.find("\n", 0) == string::npos)) {
+				LINFO("Directive " << directive << ": " << ret);
 				return ret;
 			}
 			else {
-				LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << d);
+				LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << directive);
 				return "";
 			}
 		}
-		LERROR("Missing ending bracket for directive " << d);
+		LERROR("Missing ending bracket for directive " << directive);
 		return "";
 	}
 	else {
-		LWARNING("Could not locate directive " << d << "!");
+		LWARNING("Could not locate directive " << directive << "!");
 		return "";
 	}
 }
 
-bool ShaderObject::compileShader()
-{
+bool ShaderObject::compileShader() {
     isCompiled_ = false;
-    replaceIncludes();
     glCompileShader(id_);
     GLint check = 0;
     glGetShaderiv(id_, GL_COMPILE_STATUS, &check);
@@ -275,8 +230,7 @@ bool ShaderObject::compileShader()
     return true;
 }
 
-std::string ShaderObject::getCompilerLog()
-{
+string ShaderObject::getCompilerLog() {
     GLint len;
     glGetShaderiv(id_, GL_INFO_LOG_LENGTH , &len);
 
@@ -284,36 +238,31 @@ std::string ShaderObject::getCompilerLog()
         GLchar* log = new GLchar[len];
         if (len == 0)
             return "Memory allocation for log failed!";
-        GLsizei l;  //length returned
+        GLsizei l;  // length returned
         glGetShaderInfoLog(id_, len, &l, log);
-        std::string retStr(log);
+        string retStr(log);
         delete[] log;
         return retStr;
     }
     return "";
 }
 
-void ShaderObject::setHeader(const std::string& h)
-{
-    delete[] header_;
-    header_ = new GLchar[h.length()+1];
-    strncpy(header_, h.c_str(), h.length());
-    header_[h.length()] = 0;
+void ShaderObject::setHeader(const string& h) {
+    header_ = h;
 }
 
-void ShaderObject::generateHeader(const std::string& defines)
-{
+void ShaderObject::generateHeader(const string& defines) {
     string out = "// START OF PROGRAM GENERATED DEFINES";
 
     string separator = " ";
     int oldPos=0, pos=0;
     string add = "";
 
-    while( (pos=defines.find_first_of(separator, oldPos)) != -1 ) {
+    while ((pos = defines.find_first_of(separator, oldPos)) != -1 ) {
         add = defines.substr(oldPos,pos-oldPos);
         if (add != "")
             out += "\n#define " + add;
-        oldPos = pos+1;
+        oldPos = pos + 1;
     }
 
     add = defines.substr(oldPos);
@@ -346,7 +295,7 @@ bool ShaderObject::rebuildFromFile() {
 
 //------------------------------------------------------------------------------
 
-const std::string Shader::loggerCat_("tgt.Shader.Shader");
+const string Shader::loggerCat_("tgt.Shader.Shader");
 
 Shader::Shader() {
     id_ = glCreateProgram();
@@ -364,36 +313,30 @@ Shader::~Shader() {
     glDeleteShader(id_);
 }
 
-void Shader::attachObject(ShaderObject* obj)
-{
+void Shader::attachObject(ShaderObject* obj) {
     glAttachShader(id_, obj->id_);
     objects_.push_back(obj);
 }
 
-void Shader::detachObject(ShaderObject* obj)
-{
-    // Maybe check first if obj is in objects_ ?
+void Shader::detachObject(ShaderObject* obj) {
+    // Maybe first check if obj is in objects_?
     glDetachShader(id_, obj->id_);
     objects_.remove(obj);
     isLinked_ = false;
 }
 
-void Shader::activate()
-{
-    if(!isLinked_)
-        return;
-
-    glUseProgram(id_);
+void Shader::activate() {
+    if (isLinked_)
+        glUseProgram(id_);
 }
 
 bool Shader::isActivated() {
     GLint shader_nr;
     glGetIntegerv(GL_CURRENT_PROGRAM, &shader_nr);
-    return (id_ == (GLuint)shader_nr);
+    return (id_ == static_cast<GLuint>(shader_nr));
 }
 
-GLint Shader::getCurrentProgram()
-{
+GLint Shader::getCurrentProgram() {
     GLint id;
     glGetIntegerv(GL_CURRENT_PROGRAM, &id);
     return id;
@@ -401,7 +344,7 @@ GLint Shader::getCurrentProgram()
 
 void Shader::detachObjectsByType(ShaderType type) {
     for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
-        if ( (*iter)->getType() == type )
+        if ((*iter)->getType() == type)
             detachObject(*iter);
         delete (*iter);
     }
@@ -409,20 +352,19 @@ void Shader::detachObjectsByType(ShaderType type) {
 }
 
 bool Shader::linkProgram() {
-    if(isLinked_) {
+    if (isLinked_) {
         // program is already linked: detach and re-attach everything
         for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
             glDetachShader(id_, (*iter)->id_);
             glAttachShader(id_, (*iter)->id_);
-			if((*iter)->getType() == GEOMETRY_SHADER)
+			if ((*iter)->getType() == GEOMETRY_SHADER)
 				(*iter)->setDirectives(id_);
         }
     }
 	else {
 		for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
-			if((*iter)->getType() == GEOMETRY_SHADER) {
+			if ((*iter)->getType() == GEOMETRY_SHADER)
 					(*iter)->setDirectives(id_);
-			}
 		}
 	}
 
@@ -430,13 +372,13 @@ bool Shader::linkProgram() {
     glLinkProgram(id_);
     GLint check = 0;
     glGetProgramiv(id_, GL_LINK_STATUS, &check);
-    if(check)
+    if (check)
         isLinked_ = true;
 
     return isLinked_;
 }
 
-std::string Shader::getLinkerLog() {
+string Shader::getLinkerLog() {
     GLint len;
     glGetProgramiv(id_, GL_INFO_LOG_LENGTH , &len);
 
@@ -446,9 +388,9 @@ std::string Shader::getLinkerLog() {
         if (len == 0)
             return "Memory allocation for log failed!";
 
-        GLsizei l;  //length returned
+        GLsizei l;  // length returned
         glGetProgramInfoLog(id_, len, &l, log);
-        std::string retStr(log);
+        string retStr(log);
         delete[] log;
 
         return retStr;
@@ -457,15 +399,14 @@ std::string Shader::getLinkerLog() {
     return "";
 }
 
-bool Shader::rebuild()
-{
+bool Shader::rebuild() {
     if (isLinked_) {
         // program is already linked: detach and re-attach everything
-        for(ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
+        for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
             glDetachShader(id_, (*iter)->id_);
             (*iter)->uploadSource();
 
-            if ( !(*iter)->compileShader() )
+            if (!(*iter)->compileShader())
                 return false;
 
             glAttachShader(id_, (*iter)->id_);
@@ -486,11 +427,10 @@ bool Shader::rebuild()
     }
 }
 
-bool Shader::rebuildFromFile()
-{
+bool Shader::rebuildFromFile() {
     bool result = true;
 
-    for(ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter)
+    for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter)
         result &= (*iter)->rebuildFromFile();
 
     result &= rebuild();
@@ -498,10 +438,8 @@ bool Shader::rebuildFromFile()
     return result;
 }
 
-void Shader::setHeaders(const std::string& customHeader, bool processHeader)
-{
-    for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter)
-    {
+void Shader::setHeaders(const string& customHeader, bool processHeader) {
+    for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
         if (processHeader)
             (*iter)->generateHeader(customHeader);
         else
@@ -509,13 +447,12 @@ void Shader::setHeaders(const std::string& customHeader, bool processHeader)
     }
 }
 
-bool Shader::load(const std::string& filename, const std::string& customHeader, bool processHeader)
-{
-    return loadSeparate(filename+ ".vert", filename + ".frag", customHeader, processHeader);
+bool Shader::load(const string& filename, const string& customHeader, bool processHeader) {
+    return loadSeparate(filename + ".vert", filename + ".frag", customHeader, processHeader);
 }
 
-bool Shader::loadSeparate(const std::string& vert_filename, const std::string& frag_filename,
-                          const std::string& customHeader, bool processHeader, const std::string& geom_filename)
+bool Shader::loadSeparate(const string& vert_filename, const string& frag_filename,
+                          const string& customHeader, bool processHeader, const string& geom_filename)
 {
     tgt::ShaderObject* frag = 0;
     tgt::ShaderObject* vert = 0;
@@ -553,9 +490,9 @@ bool Shader::loadSeparate(const std::string& vert_filename, const std::string& f
 
         if (customHeader != "") {
             if (processHeader)
-                vert->generateHeader(customHeader);
+                geom->generateHeader(customHeader);
             else
-                vert->setHeader(customHeader);
+                geom->setHeader(customHeader);
         }
 
         if (!geom->loadSourceFromFile(geom_filename)) {
@@ -593,7 +530,7 @@ bool Shader::loadSeparate(const std::string& vert_filename, const std::string& f
             frag = 0;
         }
         else {
-            frag->uploadSource();
+			frag->uploadSource();
 
             if (!frag->compileShader()) {
                 LERROR("Failed to compile fragmentshader " << frag_filename);
@@ -612,22 +549,25 @@ bool Shader::loadSeparate(const std::string& vert_filename, const std::string& f
         attachObject(geom);
 
     if (!linkProgram()) {
-        LERROR("Failed to link shader " << vert_filename << " with "  << frag_filename << " with " << geom_filename);
+        LERROR("Failed to link shader (" << vert_filename << ","  << frag_filename << "," << geom_filename << ")\n");
         if (vert) {
-            LERROR(vert->filename_ << " vertex shader Compiler Log: \n" << vert->getCompilerLog());
+            LERROR(vert->filename_ << " Vertex shader compiler log: \n" << vert->getCompilerLog());
             detachObject(vert);
             delete vert;
         }
+        //FIXME: why is this commented out?
+		/*
 		if (geom) {
-            LERROR(geom->filename_ << " geometry shader Compiler Log: \n" << geom->getCompilerLog());
+            LERROR(geom->filename_ << " Geometry shader compiler log: \n" << geom->getCompilerLog());
             detachObject(geom);
             delete geom;
         }
 		if (frag) {
-            LERROR(frag->filename_ << " fragment shader Compiler Log: \n" << frag->getCompilerLog());
+            LERROR(frag->filename_ << " Fragment shader compiler log: \n" << frag->getCompilerLog());
             detachObject(frag);
             delete frag;
         }
+		*/
         LERROR("Linker Log: \n" << getLinkerLog());
         return false;
     }
@@ -646,7 +586,6 @@ bool Shader::loadSeparate(const std::string& vert_filename, const std::string& f
              << "': \n" << frag->getCompilerLog());
     }
 
-
     if (getLinkerLog().size() > 1) {
         LDEBUG("Linker log for '" << vert_filename << "' and '"
              << frag_filename << "' and '"
@@ -656,21 +595,20 @@ bool Shader::loadSeparate(const std::string& vert_filename, const std::string& f
     return true;
 }
 
-std::string Shader::getSource(int i)
-{
+//FIXME: this returns header AND source, rename?
+string Shader::getSource(int i) {
     int j = 0;
 
     for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter, ++j) {
         if (i == j)
-            return string((*iter)->header_) + string((*iter)->source_);
+            return (*iter)->header_ + (*iter)->source_;
     }
 
     // else
     return "";
 }
 
-GLint Shader::getUniformLocation(const std::string &name, bool ignoreError)
-{
+GLint Shader::getUniformLocation(const string &name, bool ignoreError) {
     GLint l;
     l = glGetUniformLocation(id_, name.c_str());
     if (l == -1 && !ignoreError)
@@ -679,92 +617,82 @@ GLint Shader::getUniformLocation(const std::string &name, bool ignoreError)
 }
 
 // Floats
-bool Shader::setUniform(const std::string &name, GLfloat value)
-{
+bool Shader::setUniform(const string &name, GLfloat value) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform1f(l, value);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLfloat v1, GLfloat v2)
-{
+bool Shader::setUniform(const string &name, GLfloat v1, GLfloat v2) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform2f(l, v1, v2);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLfloat v1, GLfloat v2, GLfloat v3)
-{
+bool Shader::setUniform(const string &name, GLfloat v1, GLfloat v2, GLfloat v3) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform3f(l, v1, v2, v3);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4)
-{
+bool Shader::setUniform(const string &name, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform4f(l, v1, v2, v3, v4);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, int count, GLfloat* v)
-{
+bool Shader::setUniform(const string &name, int count, GLfloat* v) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform1fv(l, count, v);
     return true;
 }
 
 // Integers
-bool Shader::setUniform(const std::string &name, GLint value)
-{
+bool Shader::setUniform(const string &name, GLint value) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform1i(l, value);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLint v1, GLint v2)
-{
+bool Shader::setUniform(const string &name, GLint v1, GLint v2) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform2i(l, v1, v2);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLint v1, GLint v2, GLint v3)
-{
+bool Shader::setUniform(const string &name, GLint v1, GLint v2, GLint v3) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform3i(l, v1, v2, v3);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, GLint v1, GLint v2, GLint v3, GLint v4)
-{
+bool Shader::setUniform(const string &name, GLint v1, GLint v2, GLint v3, GLint v4) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform4i(l, v1, v2, v3, v4);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, int count, GLint* v)
-{
+bool Shader::setUniform(const string &name, int count, GLint* v) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform1iv(l, count, v);
     return true;
@@ -773,100 +701,90 @@ bool Shader::setUniform(const std::string &name, int count, GLint* v)
 
 #ifdef __APPLE__
 
-    // Glew (1.4.0) defines 'GLint' as 'long' on Apple, so these wrappers are necessary.
-    // On all other platforms 'GLint' is defined as 'int' instead.
+// Glew (1.4.0) defines 'GLint' as 'long' on Apple, so these wrappers are necessary.
+// On all other platforms 'GLint' is defined as 'int' instead.
 
-    bool Shader::setUniform(const std::string &name, int value)
-    {
-        GLint l = getUniformLocation(name);
-        if (l==-1)
-            return false;
-        glUniform1i(l, static_cast<GLint>(value));
-        return true;
-    }
-
-    bool Shader::setUniform(const std::string &name, int v1, int v2)
-    {
-        GLint l = getUniformLocation(name);
-        if (l==-1)
-            return false;
-        glUniform2i(l, static_cast<GLint>(v1), static_cast<GLint>(v2));
-        return true;
-    }
-
-    bool Shader::setUniform(const std::string &name, int v1, int v2, int v3)
-    {
-        GLint l = getUniformLocation(name);
-        if (l==-1)
-            return false;
-        glUniform3i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3));
-        return true;
-    }
-
-    bool Shader::setUniform(const std::string &name, int v1, int v2, int v3, int v4)
-    {
-        GLint l = getUniformLocation(name);
-        if (l==-1)
-            return false;
-        glUniform4i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3), static_cast<GLint>(v4));
-        return true;
-    }
-
-    bool Shader::setUniform(const std::string &name, int count, int* v)
-    {
-        GLint l = getUniformLocation(name);
-        if (l==-1)
-            return false;
-        GLint* vector = new GLint[count];
-        for (int i=0; i<count; i++)
-            vector[i] = static_cast<GLint>( v[i] );
-        glUniform1iv(l, count, vector);
-        delete vector;
-        return true;
-    }
-
-#endif
-
-bool Shader::setUniform(const std::string &name, bool value)
-{
+bool Shader::setUniform(const string &name, int value) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform1i(l, static_cast<GLint>(value));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, bool v1, bool v2)
-{
+bool Shader::setUniform(const string &name, int v1, int v2) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform2i(l, static_cast<GLint>(v1), static_cast<GLint>(v2));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, bool v1, bool v2, bool v3)
-{
+bool Shader::setUniform(const string &name, int v1, int v2, int v3) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform3i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, bool v1, bool v2, bool v3, bool v4)
-{
+bool Shader::setUniform(const string &name, int v1, int v2, int v3, int v4) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform4i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3), static_cast<GLint>(v4));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, int count, GLboolean* v)
-{
+bool Shader::setUniform(const string &name, int count, int* v) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
+        return false;
+    GLint* vector = new GLint[count];
+    for (int i=0; i<count; i++)
+        vector[i] = static_cast<GLint>( v[i] );
+    glUniform1iv(l, count, vector);
+    delete vector;
+    return true;
+}
+
+#endif // __APPLE__
+
+bool Shader::setUniform(const string &name, bool value) {
+    GLint l = getUniformLocation(name);
+    if (l == -1)
+        return false;
+    glUniform1i(l, static_cast<GLint>(value));
+    return true;
+}
+
+bool Shader::setUniform(const string &name, bool v1, bool v2) {
+    GLint l = getUniformLocation(name);
+    if (l == -1)
+        return false;
+    glUniform2i(l, static_cast<GLint>(v1), static_cast<GLint>(v2));
+    return true;
+}
+
+bool Shader::setUniform(const string &name, bool v1, bool v2, bool v3) {
+    GLint l = getUniformLocation(name);
+    if (l == -1)
+        return false;
+    glUniform3i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3));
+    return true;
+}
+
+bool Shader::setUniform(const string &name, bool v1, bool v2, bool v3, bool v4) {
+    GLint l = getUniformLocation(name);
+    if (l == -1)
+        return false;
+    glUniform4i(l, static_cast<GLint>(v1), static_cast<GLint>(v2), static_cast<GLint>(v3), static_cast<GLint>(v4));
+    return true;
+}
+
+bool Shader::setUniform(const string &name, int count, GLboolean* v) {
+    GLint l = getUniformLocation(name);
+    if (l == -1)
         return false;
     GLint* vector = new GLint[count];
     for (int i=0; i<count; i++)
@@ -878,19 +796,17 @@ bool Shader::setUniform(const std::string &name, int count, GLboolean* v)
 
 
 // Vectors
-bool Shader::setUniform(const std::string &name, Vector2f value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector2f value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform2fv(l, count, value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, Vector2f* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector2f* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLfloat* values = new GLfloat[2*count];
     for (int i=0; i<count; i++){
@@ -901,22 +817,20 @@ bool Shader::setUniform(const std::string &name, Vector2f* vectors, GLsizei coun
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, Vector3f value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector3f value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform3fv(l, count, value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, Vector3f* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector3f* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLfloat* values = new GLfloat[3*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[3*i] = vectors[i].x;
         values[3*i+1] = vectors[i].y;
         values[3*i+2] = vectors[i].z;
@@ -925,22 +839,20 @@ bool Shader::setUniform(const std::string &name, Vector3f* vectors, GLsizei coun
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, Vector4f value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector4f value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform4fv(l, count, value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, Vector4f* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, Vector4f* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLfloat* values = new GLfloat[4*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[4*i] = vectors[i].x;
         values[4*i+1] = vectors[i].y;
         values[4*i+2] = vectors[i].z;
@@ -950,13 +862,12 @@ bool Shader::setUniform(const std::string &name, Vector4f* vectors, GLsizei coun
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, int count, Vector4f* vectors)
-{
+bool Shader::setUniform(const string &name, int count, Vector4f* vectors) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLfloat* values = new GLfloat[4*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[4*i] = vectors[i].x;
         values[4*i+1] = vectors[i].y;
         values[4*i+2] = vectors[i].z;
@@ -966,22 +877,20 @@ bool Shader::setUniform(const std::string &name, int count, Vector4f* vectors)
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec2 value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec2 value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
-    glUniform2iv(l, count, (GLint *) value.elem);
+    glUniform2iv(l, count, static_cast<GLint *>(value.elem));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec2* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec2* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLint* values = new GLint[2*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[2*i] = vectors[i].x;
         values[2*i+1] = vectors[i].y;
     }
@@ -989,22 +898,20 @@ bool Shader::setUniform(const std::string &name, ivec2* vectors, GLsizei count)
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec3 value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec3 value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
-    glUniform3iv(l, count,  (GLint *) value.elem);
+    glUniform3iv(l, count,  static_cast<GLint *>(value.elem));
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec3* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec3* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLint* values = new GLint[3*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[3*i] = vectors[i].x;
         values[3*i+1] = vectors[i].y;
         values[3*i+2] = vectors[i].z;
@@ -1013,22 +920,20 @@ bool Shader::setUniform(const std::string &name, ivec3* vectors, GLsizei count)
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec4 value, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec4 value, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniform4iv(l, count,  (GLint *) value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, ivec4* vectors, GLsizei count)
-{
+bool Shader::setUniform(const string &name, ivec4* vectors, GLsizei count) {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     GLint* values = new GLint[4*count];
-    for (int i=0; i<count; i++){
+    for (int i=0; i<count; i++) {
         values[4*i] = vectors[i].x;
         values[4*i+1] = vectors[i].y;
         values[4*i+2] = vectors[i].z;
@@ -1038,41 +943,38 @@ bool Shader::setUniform(const std::string &name, ivec4* vectors, GLsizei count)
     return true;
 }
 
-/**
-* Matrix is transposed by opengl!
-*/
-bool Shader::setUniform(const std::string &name, const Matrix2f &value, bool transpose,
-                GLsizei count)
+// Note: Matrix is transposed by OpenGL
+bool Shader::setUniform(const string &name, const Matrix2f &value, bool transpose,
+                        GLsizei count)
 {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniformMatrix2fv(l, count, !transpose, value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, const Matrix3f &value, bool transpose,
-                GLsizei count)
+bool Shader::setUniform(const string &name, const Matrix3f &value, bool transpose,
+                        GLsizei count)
 {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniformMatrix3fv(l, count, !transpose, value.elem);
     return true;
 }
 
-bool Shader::setUniform(const std::string &name, const Matrix4f &value, bool transpose,
-                GLsizei count)
+bool Shader::setUniform(const string &name, const Matrix4f &value, bool transpose,
+                        GLsizei count)
 {
     GLint l = getUniformLocation(name);
-    if (l==-1)
+    if (l == -1)
         return false;
     glUniformMatrix4fv(l, count, !transpose, value.elem);
     return true;
 }
 
-GLint Shader::getAttributeLocation(const std::string &name)
-{
+GLint Shader::getAttributeLocation(const string &name) {
     GLint l;
     l = glGetAttribLocation(id_, name.c_str());
     if (l == -1)
@@ -1084,30 +986,38 @@ GLint Shader::getAttributeLocation(const std::string &name)
 
 //------------------------------------------------------------------------------
 
-const std::string ShaderManager::loggerCat_("tgt.Shader.Manager");
+const string ShaderManager::loggerCat_("tgt.Shader.Manager");
 
 ShaderManager::ShaderManager(bool cache)
   : ResourceManager<Shader>(cache)
+{}
+
+Shader* ShaderManager::load(const string& filename, const string& customHeader,
+                            bool processHeader, bool activate)
 {
-
-}
-
-Shader* ShaderManager::load(const std::string& filename, const std::string& customHeader,
-                            bool processHeader, bool activate) {
     return loadSeparate(filename + ".vert", filename + ".frag", customHeader, processHeader, activate);
 }
 
-Shader* ShaderManager::loadSeparate(const std::string& vert_filename, const std::string& frag_filename,
-                                    const std::string& customHeader, bool processHeader, bool activate, const std::string& geom_filename) {
+Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& frag_filename,
+                                    const string& customHeader, bool processHeader,
+                                    bool activate)
+{
+    return loadSeparate(vert_filename, "", frag_filename, customHeader, processHeader, activate);
+}
+
+Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& geom_filename,
+                                    const string& frag_filename,
+                                    const string& customHeader, bool processHeader,
+                                    bool activate)
+{
 	LDEBUG("Loading files " << vert_filename << " and " << frag_filename);
     if (!GpuCaps.areShadersSupported()) {
 		LERROR("Shaders are not supported.");
         return 0;
 	}
-    if (isLoaded(vert_filename+frag_filename)) { 
-        //ugly hack - is it really that ugly?
-        //the resulting identifier is unique.
-		LDEBUG("Shader already loaded. Increase usage count.");
+    if (isLoaded(vert_filename + frag_filename)) { 
+        //FIXME: ugly hack - is it really that ugly? the resulting identifier is unique.
+        LDEBUG("Shader already loaded. Increase usage count.");
         increaseUsage(vert_filename+frag_filename);
 
         return get(vert_filename+frag_filename);
@@ -1115,89 +1025,28 @@ Shader* ShaderManager::loadSeparate(const std::string& vert_filename, const std:
 
     tgt::Shader* shdr = new tgt::Shader();
 
-    std::string vert_completeFilename;
-	std::string geom_completeFilename;
-    std::string frag_completeFilename;
-
-	// searching in all paths for vertex shader
-	bool foundShader = false;
-	if (!vert_filename.empty()) {
-		std::list<std::string>::iterator iter = pathList_.begin();
-		while (iter != pathList_.end() && !foundShader) {
-            vert_completeFilename = (!(*iter).empty() ? (*iter) + '/' : "") + vert_filename;
-			LDEBUG("Completed vertex shader file name to " << vert_completeFilename);
-			/*
-		    File* file = FileSys.open(vert_completeFilename);
-			// check if file is open
-			if (file && file->open())
-			*/
-			if (FileSys.exists(vert_completeFilename))
-				foundShader = true;
-	        iter++;
-		}
-	}
-	
-	// searching in all paths for geometry shader
-	foundShader = false;
-	if (!geom_filename.empty()) {
-		std::list<std::string>::iterator iter = pathList_.begin();
-		while (iter != pathList_.end() && !foundShader) {
-	        geom_completeFilename = (!(*iter).empty() ? (*iter) + '/' : "") + geom_filename;
-			LDEBUG("Completed geometry shader file name to " << geom_completeFilename);
-			/*
-		    File* file = FileSys.open(geom_completeFilename);
-			if (file && file->open())
-			*/
-			if (FileSys.exists(geom_completeFilename))
-				foundShader = true;
-	        iter++;
-		}
-	}
-
-	// searching in all paths for fragment shader
-	foundShader = false;
-	if (!frag_filename.empty()) {
-		std::list<std::string>::iterator iter = pathList_.begin();
-		while (iter != pathList_.end() && !foundShader) {
-            frag_completeFilename = (!(*iter).empty() ? (*iter) + '/' : "") + frag_filename;
-			LDEBUG("Completed fragment shader file name to " << frag_completeFilename);
-			/*
-		    File* file = FileSys.open(frag_completeFilename);
-			if (file && file->open())
-			*/
-			if (FileSys.exists(frag_completeFilename))
-				foundShader = true;
-	        iter++;
-		}
-	}
-
-	// loading and linking found shaders
-    if (shdr->loadSeparate(vert_completeFilename, frag_completeFilename,
-                            customHeader, processHeader, geom_completeFilename)) {            
-        reg(shdr, vert_filename+frag_filename+geom_filename);
-        if (activate)
-            shdr->activate();        
-        return shdr;
-    }
-    
-    // support for deprecated path_
+    // searching in all paths for every shader
+    string vert_completeFilename;
     if (!vert_filename.empty())
-        vert_completeFilename = (!path_.empty() ? path_ + '/' : "") + vert_filename;
-    
-    if (!geom_filename.empty())
-        geom_completeFilename = (!path_.empty() ? path_ + '/' : "") + geom_filename;
-    
-    if (!frag_filename.empty())
-        frag_completeFilename = (!path_.empty() ? path_ + '/' : "") + frag_filename;
+        vert_completeFilename = completePath(vert_filename);
 
+    string geom_completeFilename;
+    if (!geom_filename.empty())
+        geom_completeFilename = completePath(geom_filename);
+
+    string frag_completeFilename;
+    if (!frag_filename.empty())
+        frag_completeFilename = completePath(frag_filename);
+
+    // loading and linking found shaders
     if (shdr->loadSeparate(vert_completeFilename, frag_completeFilename,
-                           customHeader, processHeader, geom_completeFilename)) {
-        reg(shdr, vert_filename+frag_filename+geom_filename);        
+                           customHeader, processHeader, geom_completeFilename))
+    {
+        reg(shdr, vert_filename+frag_filename+geom_filename);
         if (activate)
             shdr->activate();
         return shdr;
     }
-    
     delete shdr;
     return 0;
 }
@@ -1206,7 +1055,7 @@ bool ShaderManager::rebuildAllShadersFromFile() {
     bool result = true;
 
     for (std::map<Shader*, ResourceManager<Shader>::Resource*>::iterator iter = resourcesByPtr_.begin();
-        iter != resourcesByPtr_.end(); ++iter)
+         iter != resourcesByPtr_.end(); ++iter)
     {
         result &= iter->first->rebuildFromFile();
     }

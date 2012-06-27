@@ -30,9 +30,10 @@
 #ifndef VRN_PORTMAPPING_H
 #define VRN_PORTMAPPING_H
 
-#include "voreen/core/vis/exception.h"
 
-#include "voreen/core/volume/volumehandle.h"
+#include "voreen/core/vis/identifier.h"
+#include "voreen/core/vis/processors/processor.h"
+
 
 namespace voreen {
 
@@ -40,9 +41,10 @@ class Port;
 class PortData;
 class PortDataCoProcessor;
 class PortDataVolume;
-class PortDataTexture;
-class Processor;
+//class PortDataTexture;
 class LocalPortMapping;
+class VolumeHandle;
+class Processor;
 
 class PortMapping {
 public:
@@ -54,12 +56,6 @@ public:
     
     std::vector<int> getAllTargets(Processor* processor, Identifier ident) throw(std::exception);
     
-    int getVolumeNumber(Processor* processor, Identifier ident, int pos=0) throw(std::exception);
-    
-    int getVolumeTextureNumber(Processor* processor, Identifier ident, int pos=0) throw(std::exception);
-    
-    std::vector<int> getAllVolumeNumbers(Processor* processor, Identifier ident) throw(std::exception);
-
 	int getGeometryNumber(Processor* processor, Identifier ident, int pos=0) throw(std::exception);
 	std::vector<int> getAllGeometryNumbers(Processor* processor, Identifier ident) throw(std::exception);
 
@@ -76,7 +72,7 @@ public:
 
 	    std::vector<PortData*> portData = portMap_[p];
 
-	    if ((int)portData.size() < pos)
+	    if (static_cast<int>(portData.size()) < pos)
             throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
         
 	    PortDataGeneric<T>* pdGeneric = dynamic_cast< PortDataGeneric<T>* >(portData.at(pos));
@@ -133,11 +129,7 @@ public:
     int getTarget(Identifier ident,int pos=0) throw(std::exception);
     
     std::vector<int> getAllTargets(Identifier ident) throw(std::exception);
-    
-    int getVolumeNumber(Identifier ident,int pos=0) throw(std::exception);
-    
-    std::vector<int> getAllVolumeNumbers(Identifier ident) throw(std::exception);
-
+   
 	int getGeometryNumber(Identifier ident, int pos=0) throw(std::exception);
 	std::vector<int> getAllGeometryNumbers(Identifier ident) throw(std::exception);
 
@@ -158,7 +150,7 @@ public:
      */
     VolumeHandle* getVolumeHandle(Identifier ident, int pos = 0) throw(std::exception) {
         VolumeHandle** handleAddr = getGenericData<VolumeHandle**>(ident, pos);
-        if (handleAddr != 0)
+        if (( handleAddr != 0) && (*handleAddr != 0) )
             return *handleAddr;
         else
             return 0;
@@ -172,8 +164,8 @@ public:
         const std::vector<VolumeHandle**>& handleAddr = getAllGenericData<VolumeHandle**>(ident);
         std::vector<VolumeHandle*> handles;
         for (size_t i = 0; i < handleAddr.size(); i++) {
-            if (handleAddr[i] != 0)
-                handles.push_back(*handleAddr[i]);
+            if ( (handleAddr[i] != 0) && (*(handleAddr[i]) != 0) )
+                handles.push_back(*(handleAddr[i]));
             else
                 handles.push_back(0);
         }

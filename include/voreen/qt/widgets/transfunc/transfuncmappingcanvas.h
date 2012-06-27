@@ -46,17 +46,17 @@ namespace voreen {
 // Forward Declarations
 class TransFuncMappingKey;
 class TransFuncGradient;
-class TransFuncIntensityKeys;
+class TransFuncIntensity;
 
 /**
-* Editor for TransFuncIntensityKeys
+* Editor for TransFuncIntensity
 * \sa QWidget
 */
 class TransFuncMappingCanvas : public QWidget {
 Q_OBJECT
 
 public:
-    TransFuncMappingCanvas(QWidget *parent, TransFuncIntensityKeys* tf, TransFuncGradient* gradient = 0,
+    TransFuncMappingCanvas(QWidget *parent, TransFuncIntensity* tf, TransFuncGradient* gradient = 0,
                           MessageReceiver* msgReceiver = 0, bool noColor = false,
                           bool rampMode = false, bool clipThresholds = false, QString xAxisText = tr("intensity"),
                           QString yAxisText = tr("opacity"), QString transferFuncPath = tr("../../data/transferfuncs"));
@@ -88,7 +88,7 @@ public:
     virtual QSize sizeHint () const;
     QSizePolicy sizePolicy () const;
 
-    void setTransFunc(TransFuncIntensityKeys* tf);
+    void setTransFunc(TransFuncIntensity* tf);
 
     void setXAxisText(const std::string& text);
     void setYAxisText(const std::string& text);
@@ -143,7 +143,7 @@ protected:
 
 private:
     TransFuncGradient* gradient_;
-    TransFuncIntensityKeys* tf_;
+    TransFuncIntensity* tf_;
     HistogramIntensity* histogram_;
     Volume* curDataset_;
 

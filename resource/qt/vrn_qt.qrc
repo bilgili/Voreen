@@ -20,6 +20,8 @@
         <file>icons/document_new_medium.png</file>
         <file>icons/dynamics.png</file>
         <file>icons/edit_copy_small.png</file>
+        <file>icons/edit-redo.png</file>
+        <file>icons/edit-undo.png</file>
         <file>icons/eraser.png</file>
         <file>icons/expand0.png</file>
         <file>icons/expand1.png</file>
@@ -27,12 +29,16 @@
         <file>icons/floppy.png</file>
         <file>icons/glyph-prototype.png</file>
         <file>icons/glyphs.png</file>
+        <file>icons/go-home.png</file>
+        <file>icons/go-next.png</file>
+        <file>icons/go-previous.png</file>
         <file>icons/grid.png</file>
         <file>icons/histogram.png</file>
         <file>icons/inferior2.png</file>
         <file>icons/information.png</file>
         <file>icons/lateral2.png</file>
         <file>icons/legend-overlay.png</file>
+		<file>icons/list-remove.png</file>
         <file>icons/magnet.png</file>
         <file>icons/mapping-function.png</file>
         <file>icons/mapping.png</file>

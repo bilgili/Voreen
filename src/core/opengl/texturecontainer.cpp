@@ -42,6 +42,8 @@
 #include <rendertotexture/rendertexture.h>
 #endif
 
+#include <sstream>
+
 using tgt::ivec2;
 using tgt::GpuCapabilities;
 
@@ -57,8 +59,7 @@ TextureContainer::RenderTarget::RenderTarget()
 #ifdef VRN_WITH_RENDER_TO_TEXTURE
      , rt_(0)
 #endif
-{
-}
+{}
 
 // not defined inline to allow forward definition of class RenderTexture
 TextureContainer::RenderTarget::~RenderTarget() {
@@ -82,7 +83,7 @@ TextureContainer::TextureContainer(int numRT, bool sharing /*=false*/)
 }
 
 TextureContainer::~TextureContainer() {
-    for (int i = 0; i < used_; i++) {
+    for (int i = 0; i < used_; ++i) {
         #ifdef VRN_WITH_FBO_CLASS
             glDeleteTextures(1, &rt_->tex_);
             glDeleteTextures(1, &rt_->depthTex_);
@@ -276,7 +277,7 @@ tgt::ivec2 TextureContainer::getSize() {
 
 std::string TextureContainer::getTypeAsString(int type) const {
     std::string str;
-    switch(type&VRN_COLOR_CONSTS_MASK) {
+    switch (type&VRN_COLOR_CONSTS_MASK) {
     case VRN_RGB:
         str = "VRN_RGB";
         break;
@@ -341,13 +342,17 @@ void TextureContainer::popActiveTarget() {
 
 void TextureContainer::setDebugLabel(int id, const std::string& s) {
     static int i = 0;
-    char ii[20];
-    sprintf((char*)&ii, "%d", i++);
-    rt_[id].debugLabel_ = s + " (@" + ii + ")";
+    std::ostringstream o;
+    o << s << " (@" << i << ")";
+    rt_[id].debugLabel_ = o.str();
+    ++i;
 }
 
 std::string TextureContainer::getDebugLabel(int id) const {
-    return rt_[id].debugLabel_;
+    if (id < capacity_)
+        return rt_[id].debugLabel_;
+    else
+        return "not a valid id";
 }
 
 //---------------------------------------------------------------------------
@@ -367,44 +372,36 @@ std::string TextureContainer::getDebugLabel(int id) const {
     #define LFBO_ERROR
 #endif
 
-std::string TextureContainerFBO::getFBOError()
-{
+std::string TextureContainerFBO::getFBOError() {
     GLenum status;                                            
     status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-    switch(status) {                                          
+    switch (status) {                                          
     case GL_FRAMEBUFFER_COMPLETE_EXT: // Everything's OK
         return "";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT\n";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT\n";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT\n";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT\n";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT\n";
-    break;
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
         return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT\n";
-    break;
     case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
         return "GL_FRAMEBUFFER_UNSUPPORTED_EXT\n";
-    break;
     default:
         return "Unknown ERROR\n";
     }
 }
 
-TextureContainerFBO::TextureContainerFBO(int numRT, bool sharing/*= false*/) : 
-    TextureContainer(numRT, sharing), isFBOActive_(false), fbo_(0)
-{
-}
+TextureContainerFBO::TextureContainerFBO(int numRT, bool sharing/*= false*/)
+    : TextureContainer(numRT, sharing),
+      isFBOActive_(false),
+      fbo_(0)
+{}
 
 TextureContainerFBO::~TextureContainerFBO() {
     delete fbo_;
@@ -414,11 +411,11 @@ TextureContainer::TextureContainerType TextureContainerFBO::getTextureContainerT
     return VRN_TEXTURE_CONTAINER_FBO;
 }
 
-bool TextureContainerFBO::initializeGL()
-{
-    if ( !TextureContainer::initializeGL() )
+bool TextureContainerFBO::initializeGL() {
+    if (!TextureContainer::initializeGL())
         return false;
-    if ( !GpuCaps.areFramebufferObjectsSupported() ) {
+    
+    if (!GpuCaps.areFramebufferObjectsSupported()) {
         LERROR("Framebuffer object extension not supported!");
         return false;
     }
@@ -432,6 +429,7 @@ bool TextureContainerFBO::initializeGL()
     else {
         LINFO("Using standard settings.")
     }
+    
     if (textureTargetType_ == VRN_TEXTURE_2D && !GpuCaps.isNpotSupported()) {
         if (GpuCaps.areTextureRectanglesSupported()){
             LINFO("Non-power-of-two textures not supported. Using texture rectangles instead.")
@@ -442,15 +440,16 @@ bool TextureContainerFBO::initializeGL()
             return false;
         }
     }
+    
     switch (textureTargetType_) {
-        case VRN_TEXTURE_2D :
-            LINFO("Type of render targets: GL_TEXTURE_2D");
-            break;
-        case VRN_TEXTURE_RECTANGLE :
-            LINFO("Type of render targets: GL_TEXTURE_RECTANGLE_ARB");
-            break;
-        case VRN_TEXTURE_RESIZED_POT :
-            break;
+    case VRN_TEXTURE_2D :
+        LINFO("Type of render targets: GL_TEXTURE_2D");
+        break;
+    case VRN_TEXTURE_RECTANGLE :
+        LINFO("Type of render targets: GL_TEXTURE_RECTANGLE_ARB");
+        break;
+    case VRN_TEXTURE_RESIZED_POT :
+        break;
     }
 
     delete fbo_;
@@ -465,11 +464,11 @@ bool TextureContainerFBO::initializeGL()
 void TextureContainerFBO::initializeTarget(int id, int attr) {
     attr = adaptToGraphicsBoard(attr);
 	TextureContainer::initializeTarget(id, attr);
-	if ( isOpenGLInitialized_) {
+	if (isOpenGLInitialized_) {
         if (attr & VRN_COLOR_CONSTS_MASK) {
-            if (!rt_[id].tex_) {
+            if (!rt_[id].tex_)
                 glGenTextures(1, &rt_[id].tex_);
-            }
+
             GLenum texTarget = getGLTexTarget(id);
             glBindTexture(texTarget, rt_[id].tex_);
             glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -482,9 +481,9 @@ void TextureContainerFBO::initializeTarget(int id, int attr) {
         }
         if (attr & VRN_DEPTH_CONSTS_MASK) {
             if (attr & VRN_DEPTH_TEX_CONSTS_MASK) {
-                if (!rt_[id].depthTex_) {
+                if (!rt_[id].depthTex_)
                     glGenTextures(1, &rt_[id].depthTex_);
-                }
+
                 glBindTexture(getGLDepthTexTarget(id), rt_[id].depthTex_);
             }
             createDepthComponent(id);
@@ -508,8 +507,7 @@ void TextureContainerFBO::setSize(const tgt::ivec2& size) {
             }
             if (attr & VRN_DEPTH_CONSTS_MASK) {
                 if (attr & VRN_DEPTH_TEX_CONSTS_MASK)
-                    glBindTexture(getGLDepthTexTarget(i),
-                                  rt_[i].depthTex_);
+                    glBindTexture(getGLDepthTexTarget(i), rt_[i].depthTex_);
                 createDepthComponent(i);
             }
         }
@@ -630,7 +628,7 @@ void TextureContainerFBO::setActiveTargets(const std::vector<int>& targets) {
     unattach(current_);
 
     current_.clear();
-    for (int i=0; i<2; i++) {
+    for (size_t i=0; i<targets.size(); i++) {
         current_.push_back(targets[i]);
         rt_[targets[i]].free_ = false;
     }
@@ -970,8 +968,7 @@ int TextureContainerFBO::adaptToGraphicsBoard(int attr) {
 
 TextureContainerRTT::TextureContainerRTT(int numRT, bool sharing) 
     : TextureContainer(numRT, sharing), curRenderTexture_(0)
-{
-}
+{}
 
 TextureContainerRTT::~TextureContainerRTT() {
 }

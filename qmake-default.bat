@@ -5,14 +5,16 @@ rem set path=c:\qt\4.3.4\bin
 rem Select your Visual Studio version
 rem set QMAKESPEC=win32-msvc.net
 rem set QMAKESPEC=win32-msvc2005
-set set QMAKESPEC=win32-msvc2008
+rem set QMAKESPEC=win32-msvc2008
+
+rem call tools\svnversion.bat . include\voreen\svnversion.h
 
 cd src\core
 qmake.exe -tp vc "CONFIG+=flat voreenlib_core.pro
 cd ..\qt
 qmake.exe -tp vc "CONFIG+=flat" voreenlib_qt.pro
-cd ..\..\apps\rptgui
-qmake.exe -tp vc "CONFIG+=flat" rptgui.pro
+cd ..\..\apps\voreenve
+qmake.exe -tp vc "CONFIG+=flat" voreenve.pro
 
 rem Optional
 rem cd ..\..\apps\voreendev

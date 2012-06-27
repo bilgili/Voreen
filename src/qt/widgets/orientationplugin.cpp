@@ -55,9 +55,9 @@ SchematicOverlayObject::SchematicOverlayObject()
     : showTextures_(false)
     , frontTex_(0)
     , backTex_(0)
-    , bottomTex_(0)
-    , leftTex_(0)
     , topTex_(0)
+    , leftTex_(0)
+    , bottomTex_(0)
     , rightTex_(0)
 {
     loadTextures();
@@ -470,9 +470,10 @@ void QtCanvasSchematicOverlay::paint() {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_DEPTH_TEST);
 
+    glMatrixMode(GL_PROJECTION);
+    tgt::loadMatrix(canvas_->getCamera()->getProjectionMatrix());
+
     glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
 
     // move cube to desired position
     glTranslatef(cubePosX_->get(), cubePosY_->get(), -3.0f);
@@ -499,8 +500,11 @@ void QtCanvasSchematicOverlay::paint() {
 
     glDisable(GL_DEPTH_TEST);
 
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
     glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    glLoadIdentity();
 
     glPopAttrib();
 }
@@ -521,11 +525,9 @@ void QtCanvasSchematicOverlay::loadTextures(Identifier set) {
 OrientationPlugin::OrientationPlugin(QWidget* parent, MessageReceiver* rec, tgt::QtCanvas* canvas,
                                      tgt::Trackball* track, TextureContainer* tc)
     : WidgetPlugin(parent, rec)
-    , canvas_(canvas)
-    , track_(track)
-    , tc_(tc)
     , schematicOverlay_(canvas)
-    , features_(ALL_FEATURES)
+    , track_(track)
+    , canvas_(canvas)
     , MIN_CAM_DIST(5)
     , MAX_CAM_DIST(1500)
     , CAM_DIST_SCALE_FACTOR(100.f)
@@ -535,6 +537,8 @@ OrientationPlugin::OrientationPlugin(QWidget* parent, MessageReceiver* rec, tgt:
     , AXIAL_INV_VIEW(tgt::vec3(0.f,0.f,1.f))
     , CORONAL_INV_VIEW(tgt::vec3(0.f,-1.f,0.f))
     , SAGITTAL_INV_VIEW(tgt::vec3(-1.f,0.f,0.f))
+    , features_(ALL_FEATURES)
+    , tc_(tc)
 {
     setObjectName(tr("Orientation"));
     icon_ = QIcon(":/icons/trackball-reset.png");
@@ -604,7 +608,7 @@ void OrientationPlugin::createWidgets() {
     gridLayout->addWidget(new QLabel(tr("Distance: ")), 2, 0);
     gridLayout->addWidget(slDistance_ = new QSlider(Qt::Horizontal, 0), 2, 1);
     slDistance_->setRange(MIN_CAM_DIST, MAX_CAM_DIST);
-    slDistance_->setSliderPosition(CAM_DIST_SCALE_FACTOR);
+    slDistance_->setSliderPosition(static_cast<int>(CAM_DIST_SCALE_FACTOR));
     slDistance_->setToolTip(tr("Adjust distance of point of view"));
 
     QFrame* separator = new QFrame();
@@ -657,7 +661,7 @@ void OrientationPlugin::createWidgets() {
     buSaveTrackball_->setIcon(QIcon(":/icons/save.png"));
     buSaveTrackball_->setToolTip(tr("Save a camera position to a file"));
     hboxLayout2->addWidget(cbRestoreOnStartup_ = new QCheckBox(tr("Restore / save trackball\non startup / shutdown")));
-    if(restore_)
+    if (restore_)
         cbRestoreOnStartup_->setCheckState(Qt::Checked);
     cbRestoreOnStartup_->setEnabled(false);
     hboxLayout2->addStretch();
@@ -900,7 +904,7 @@ void OrientationPlugin::timerEvent(QTimerEvent* /*event*/) {
 
     if (rotateX_ || rotateY_ || rotateZ_) {
         WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true));
-        WidgetPlugin::postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()), VoreenPainter::visibleViews_);
+        WidgetPlugin::postMessage(new CameraPtrMsg(VoreenPainter::cameraChanged_, track_->getCamera()));
         WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         if (comboOrientation_->currentIndex() != 0)
             comboOrientation_->setCurrentIndex(0);
@@ -938,7 +942,7 @@ void OrientationPlugin::checkCameraState() {
     }
 }
 
-void OrientationPlugin::showEvent(QShowEvent* event) {
+void OrientationPlugin::showEvent(QShowEvent* /*event*/) {
     checkCameraState();
 }
 
@@ -1018,7 +1022,7 @@ void OrientationPlugin::saveTrackballToDisk(std::string fn, bool shutdown) {
 
     TiXmlElement* sdElem = new TiXmlElement( "shutdown" );
     root->LinkEndChild(sdElem);
-    sdElem->SetAttribute("shut", (int)shutdown);
+    sdElem->SetAttribute("shut", static_cast<int>(shutdown));
 
     TiXmlElement* quatElem;
     quatElem = new TiXmlElement( "tripod" );
