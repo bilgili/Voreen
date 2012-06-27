@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/shadermanager.h"
 
@@ -43,7 +44,7 @@ namespace {
  * Returns a string containing file name and line number in that file.
  */
 std::string resolveLineNumber(int number, const std::vector<ShaderObject::LineInfo>& lineTracker) {
-    int found = lineTracker.size() - 1;
+    int found = static_cast<int>(lineTracker.size()) - 1;
     for (int i = static_cast<int>(lineTracker.size()) - 1; i >= 0 ; i--) {
         if (lineTracker[i].lineNumber_ <= number) {
             found = i;
@@ -52,76 +53,14 @@ std::string resolveLineNumber(int number, const std::vector<ShaderObject::LineIn
     }
 
     std::ostringstream result;
-    if (found >= 0) {
+    //if (found >= 0) { //found is unsigned...
         result << FileSystem::fileName(lineTracker[found].filename_) << ":"
                << (number - lineTracker[found].lineNumber_ + lineTracker[found].sourceLineNumber_);
-    }
+    //}
     return result.str();
 }
 
 } // namespace
-
-/**
- * Parses #include statements and geometry shader settings
- */
-class ShaderPreprocessor {
-public:
-    enum Mode {
-        MODE_NONE      = 0,
-        MODE_INCLUDE   = 1,
-        MODE_GEOMETRY  = 2
-    };
-
-    ShaderPreprocessor(ShaderObject* obj, Mode mode = Mode(MODE_INCLUDE | MODE_GEOMETRY));
-
-    // Returns the parsed result
-    std::string getResult() const { return result_.str(); }
-    
-    GLint getGeomShaderInputType() const { return inputType_; }
-    GLint getGeomShaderOutputType() const { return outputType_; }
-    GLint getGeomShaderVerticesOut() const { return verticesOut_; }
-    
-protected:
-    void parse();
-    void parsePart(const std::string input, const std::string& name = "");
-
-    void outputComment(const std::string comment, const std::string type = "INFO");
-    
-	/**
-     *	Scan for geometry shader directives in shader source.
-     *	
-     *	Accepted directives:
-     *	GL_GEOMETRY_INPUT_TYPE_EXT(GL_POINTS | GL_LINES | GL_LINES_ADJACENCY_EXT | GL_TRIANGLES | GL_TRIANGLES_ADJACENCY_EXT)
-     *	GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_POINTS | GL_LINE_STRIP | GL_TRIANGLE_STRIP)
-     *	GL_GEOMETRY_VERTICES_OUT_EXT(<int>)
-     *	No newline or space allowed between each pair of brackets.
-     *
-     *	Example geometry shader header:
-     *	#version 120 
-     *	#extension GL_EXT_geometry_shader4 : enable
-     *
-     *	//GL_GEOMETRY_INPUT_TYPE_EXT(GL_LINES)
-     *	//GL_GEOMETRY_OUTPUT_TYPE_EXT(GL_LINE_STRIP)
-     *	//GL_GEOMETRY_VERTICES_OUT_EXT(42)
-     *	[...]
-     */
-    bool scanGeomShaderDirectives();
-
-	std::string getGeomShaderDirective(std::string d);
-
-    
-    ShaderObject* shd_;
-    std::vector<ShaderObject::LineInfo>& lineTracker_; ///< keeps track of line numbers when includes are used
-    int activeLine_;
-    std::ostringstream result_;
-
-    GLint inputType_;
-    GLint outputType_;
-    GLint verticesOut_;
-    
-    static const std::string loggerCat_;   
-};
-
 
 const std::string ShaderPreprocessor::loggerCat_("tgt.Shader.ShaderPreprocessor");
 
@@ -131,12 +70,12 @@ ShaderPreprocessor::ShaderPreprocessor(ShaderObject* obj, Mode /*mode*/)
     parse();
 }
 
-void ShaderPreprocessor::parsePart(const std::string input, const std::string& name) {
+void ShaderPreprocessor::parsePart(const std::string& input, const std::string& name) {
     std::istringstream source(input);
     int locallinenumber = 0;
 
     lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, name, 1));
-    
+
     string line;
     while (std::getline(source, line)) {
         locallinenumber++;
@@ -158,7 +97,8 @@ void ShaderPreprocessor::parsePart(const std::string input, const std::string& n
             string content;
             if ((!file) || (!file->isOpen())) {
                 LERROR("Cannot open shader include '" << filename << "' in " << resolveLineNumber(activeLine_, lineTracker_));
-            } else {
+            }
+            else {
                 size_t len = file->size();
                 // check if file is empty
                 if (len == 0)
@@ -168,12 +108,12 @@ void ShaderPreprocessor::parsePart(const std::string input, const std::string& n
                 file->close();
 
                 outputComment("BEGIN INCLUDE " + filename, "BEGIN");
-                
+
                 if (!content.empty() && content[content.size() - 1] != '\n')
                     content += "\n";
-                
+
                 parsePart(content, filename);
-                
+
                 outputComment("END INCLUDE " + filename, "END");
 
                 lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, name, locallinenumber + 1));
@@ -190,93 +130,109 @@ void ShaderPreprocessor::parse() {
     activeLine_ = 1;
     lineTracker_.clear();
     result_.clear();
-    
+
     if (!shd_->header_.empty()) {
         outputComment("BEGIN HEADER");
         parsePart(shd_->header_, "HEADER");
         outputComment("END HEADER");
     }
-    
+
     parsePart(shd_->unparsedSource_, shd_->filename_);
 }
 
-void ShaderPreprocessor::outputComment(const std::string comment, const std::string type) {
+void ShaderPreprocessor::outputComment(const std::string& comment, const std::string& type) {
     result_ << "// " << comment << "\n";
     lineTracker_.push_back(ShaderObject::LineInfo(activeLine_, type, 0));
     activeLine_++;
 }
 
 bool ShaderPreprocessor::scanGeomShaderDirectives() {
-	LDEBUG("Scanning for geometry shader compile directives...");
-	std::string input = getGeomShaderDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
+    LDEBUG("Scanning for geometry shader compile directives...");
+    std::string input = getGeomShaderDirective("GL_GEOMETRY_INPUT_TYPE_EXT");
 
     if (input == "GL_POINTS")
-		inputType_ = GL_POINTS;
-	else if (input == "GL_LINES")
-		inputType_ = GL_LINES;
-	else if (input == "GL_LINES_ADJACENCY_EXT")
-		inputType_ = GL_LINES_ADJACENCY_EXT;
-	else if (input == "GL_TRIANGLES")
-		inputType_ = GL_TRIANGLES;
-	else if (input == "GL_TRIANGLES_ADJACENCY_EXT")
-		inputType_ = GL_TRIANGLES_ADJACENCY_EXT;
-	else {
-		LERROR("Unknown input type: " << input);
+        inputType_ = GL_POINTS;
+    else if (input == "GL_LINES")
+        inputType_ = GL_LINES;
+    else if (input == "GL_LINES_ADJACENCY_EXT")
+        inputType_ = GL_LINES_ADJACENCY_EXT;
+    else if (input == "GL_TRIANGLES")
+        inputType_ = GL_TRIANGLES;
+    else if (input == "GL_TRIANGLES_ADJACENCY_EXT")
+        inputType_ = GL_TRIANGLES_ADJACENCY_EXT;
+    else {
+        LERROR("Unknown input type: " << input);
         return false;
-	};
+    };
 
-	std::string output = getGeomShaderDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
-	if (output == "GL_POINTS")
-		outputType_ = GL_POINTS;
-	else if (output == "GL_LINE_STRIP")
-		outputType_ = GL_LINE_STRIP;
-	else if (output == "GL_TRIANGLE_STRIP")
-		outputType_ = GL_TRIANGLE_STRIP;
-	else {
-		LERROR("Unknown output type: " << output);
+    std::string output = getGeomShaderDirective("GL_GEOMETRY_OUTPUT_TYPE_EXT");
+    if (output == "GL_POINTS")
+        outputType_ = GL_POINTS;
+    else if (output == "GL_LINE_STRIP")
+        outputType_ = GL_LINE_STRIP;
+    else if (output == "GL_TRIANGLE_STRIP")
+        outputType_ = GL_TRIANGLE_STRIP;
+    else {
+        LERROR("Unknown output type: " << output);
         return false;
-	};
+    };
 
-	std::string verticesOut = getGeomShaderDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
+    std::string verticesOut = getGeomShaderDirective("GL_GEOMETRY_VERTICES_OUT_EXT");
 
-	std::istringstream myStream(verticesOut);
-	if (myStream >> verticesOut_) {
-		LDEBUG("VERTICES_OUT: " << verticesOut_);
-	}
-	else {
-		LERROR("Failed to parse argument(" << verticesOut << ") as integer for directive GL_GEOMETRY_VERTICES_OUT_EXT.");
-		return false;
-	}
+    std::istringstream myStream(verticesOut);
+    if (myStream >> verticesOut_) {
+        LDEBUG("VERTICES_OUT: " << verticesOut_);
+    }
+    else {
+        LERROR("Failed to parse argument(" << verticesOut << ") as integer for directive GL_GEOMETRY_VERTICES_OUT_EXT.");
+        return false;
+    }
 
     return true;
 }
 
-std::string ShaderPreprocessor::getGeomShaderDirective(std::string d) {
+std::string ShaderPreprocessor::getGeomShaderDirective(const std::string& d) {
     string sourceStr(shd_->source_);
     string::size_type curPos = sourceStr.find(d + "(", 0);
-	string::size_type length = d.length() + 1;
-	if (curPos != string::npos) {
-		string::size_type endPos = sourceStr.find(")", curPos);
+    string::size_type length = d.length() + 1;
+    if (curPos != string::npos) {
+        string::size_type endPos = sourceStr.find(")", curPos);
 
-		if (endPos != string::npos) {
-			std::string ret = sourceStr.substr(curPos + length, endPos - curPos - length);
-			// test for space, newline:
-			if ((ret.find(" ", 0) == string::npos) && (ret.find("\n", 0) == string::npos) ) {
-				LINFO("Directive " << d << ": " << ret);
-				return ret;
-			}
-			else {
-				LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << d);
-				return "";
-			}
-		}
-		LERROR("Missing ending bracket for directive " << d);
-		return "";
-	}
-	else {
-		LWARNING("Could not locate directive " << d << "!");
-		return "";
-	}
+        if (endPos != string::npos) {
+            std::string ret = sourceStr.substr(curPos + length, endPos - curPos - length);
+            // test for space, newline:
+            if ((ret.find(" ", 0) == string::npos) && (ret.find("\n", 0) == string::npos) ) {
+                LINFO("Directive " << d << ": " << ret);
+                return ret;
+            }
+            else {
+                LERROR("No spaces/newlines allowed inbetween directive brackets! Directive: " << d);
+                return "";
+            }
+        }
+        LERROR("Missing ending bracket for directive " << d);
+        return "";
+    }
+    else {
+        LWARNING("Could not locate directive " << d << "!");
+        return "";
+    }
+}
+
+std::string ShaderPreprocessor::getResult() const {
+    return result_.str();
+}
+
+GLint ShaderPreprocessor::getGeomShaderOutputType() const {
+    return outputType_;
+}
+
+GLint ShaderPreprocessor::getGeomShaderInputType() const {
+    return inputType_;
+}
+
+GLint ShaderPreprocessor::getGeomShaderVerticesOut() const {
+    return verticesOut_;
 }
 
 //------------------------------------------------------------------------------
@@ -284,12 +240,12 @@ std::string ShaderPreprocessor::getGeomShaderDirective(std::string d) {
 const string ShaderObject::loggerCat_("tgt.Shader.ShaderObject");
 
 ShaderObject::ShaderObject(const string& filename, ShaderType type)
-    : filename_(filename),
-      shaderType_(type),
-      isCompiled_(false),
-      inputType_(GL_TRIANGLES),
-	  outputType_(GL_TRIANGLE_STRIP),
-	  verticesOut_(16)
+    : filename_(filename)
+    , shaderType_(type)
+    , isCompiled_(false)
+    , inputType_(GL_TRIANGLES)
+    , outputType_(GL_TRIANGLE_STRIP)
+    , verticesOut_(16)
 {
     id_ = glCreateShader(shaderType_);
     if (id_ == 0)
@@ -300,26 +256,23 @@ ShaderObject::~ShaderObject() {
     glDeleteShader(id_);
 }
 
-bool ShaderObject::loadSourceFromFile(const string& filename) {
-	LDEBUG("Loading " << filename);
+void ShaderObject::loadSourceFromFile(const string& filename) throw (Exception) {
+    LDEBUG("Loading " << filename);
     File* file = FileSys.open(filename);
 
     // check if file is open
-	if (!file || !file->isOpen()) {
-		LERROR("File not found: " << filename);
-		if(file)
-			delete file;
-        return false;
-	}
+    if (!file || !file->isOpen()) {
+        LDEBUG("File not found: " << filename);
+        delete file;
+        throw FileNotFoundException("", filename);
+    }
 
-	filename_ = filename;
+    filename_ = filename;
     unparsedSource_ = file->getAsString();
     source_ = unparsedSource_;
 
     file->close();
     delete file;
-
-    return true;
 }
 
 void ShaderObject::uploadSource() {
@@ -328,9 +281,9 @@ void ShaderObject::uploadSource() {
 }
 
 void ShaderObject::setDirectives(GLuint id) {
-	glProgramParameteriEXT(id, GL_GEOMETRY_INPUT_TYPE_EXT, inputType_);
-	glProgramParameteriEXT(id, GL_GEOMETRY_OUTPUT_TYPE_EXT, outputType_);
-	glProgramParameteriEXT(id, GL_GEOMETRY_VERTICES_OUT_EXT, verticesOut_);
+    glProgramParameteriEXT(id, GL_GEOMETRY_INPUT_TYPE_EXT, inputType_);
+    glProgramParameteriEXT(id, GL_GEOMETRY_OUTPUT_TYPE_EXT, outputType_);
+    glProgramParameteriEXT(id, GL_GEOMETRY_VERTICES_OUT_EXT, verticesOut_);
 }
 
 bool ShaderObject::compileShader() {
@@ -345,9 +298,9 @@ bool ShaderObject::compileShader() {
         if (p.getGeomShaderOutputType())
             outputType_ = p.getGeomShaderOutputType();
         if (p.getGeomShaderVerticesOut())
-            verticesOut_ = p.getGeomShaderVerticesOut();        
+            verticesOut_ = p.getGeomShaderVerticesOut();
     }
-    
+
     uploadSource();
 
     glCompileShader(id_);
@@ -389,9 +342,9 @@ int parseLogLineNumberATI(const std::string& message) {
                 if (ls >> num)
                     return num;
             }
-        }        
-    }        
-    
+        }
+    }
+
     return 0;
 }
 
@@ -405,7 +358,7 @@ int parseLogLineNumber(const std::string& message) {
     n = parseLogLineNumberNVIDIA(message);
     if (n > 0)
         return n;
-        
+
     n = parseLogLineNumberATI(message);
     if (n > 0)
         return n;
@@ -427,16 +380,16 @@ string ShaderObject::getCompilerLog() const {
         glGetShaderInfoLog(id_, len, &l, log);
         std::istringstream str(log);
         delete[] log;
-        
+
         std::ostringstream result;
 
         string line;
         while (getline(str, line)) {
             result << line;
 
-            int num = parseLogLineNumber(line);            
+            int num = parseLogLineNumber(line);
             if (num > 0)
-                result << " [" << resolveLineNumber(num, lineTracker_) << "]";                
+                result << " [" << resolveLineNumber(num, lineTracker_) << "]";
 
             result << '\n';
         }
@@ -452,17 +405,20 @@ void ShaderObject::setHeader(const string& h) {
 }
 
 bool ShaderObject::rebuildFromFile() {
-    if (!loadSourceFromFile(filename_)) {
-        LWARNING("Failed to load shader " << filename_);
+    try {
+        loadSourceFromFile(filename_);
+    }
+    catch (const Exception& e) {
+        LWARNING("Failed to load shader " << filename_ << ": " << e.what());
         return false;
-    } else {
-        uploadSource();
+    }
 
-        if (!compileShader()) {
-            LERROR("Failed to compile shader object " << filename_);
-            LERROR("Compiler Log: \n" << getCompilerLog());
-            return false;
-        }
+    uploadSource();
+
+    if (!compileShader()) {
+        LERROR("Failed to compile shader object " << filename_);
+        LERROR("Compiler Log: \n" << getCompilerLog());
+        return false;
     }
 
     return true;
@@ -473,7 +429,8 @@ bool ShaderObject::rebuildFromFile() {
 const string Shader::loggerCat_("tgt.Shader.Shader");
 
 Shader::Shader()
-    : isLinked_(false), ignoreError_(false)
+    : isLinked_(false)
+    , ignoreError_(false)
 {
     id_ = glCreateProgram();
     if (id_ == 0)
@@ -540,14 +497,14 @@ bool Shader::linkProgram() {
             glDetachShader(id_, (*iter)->id_);
             glAttachShader(id_, (*iter)->id_);
             if ((*iter)->getType() == ShaderObject::GEOMETRY_SHADER)
-				(*iter)->setDirectives(id_);
+                (*iter)->setDirectives(id_);
         }
     } else {
-		for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
-			if ((*iter)->getType() == ShaderObject::GEOMETRY_SHADER)
+        for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
+            if ((*iter)->getType() == ShaderObject::GEOMETRY_SHADER)
                 (*iter)->setDirectives(id_);
-		}
-	}
+        }
+    }
 
     isLinked_ = false;
     glLinkProgram(id_);
@@ -588,7 +545,7 @@ bool Shader::rebuild() {
                 LERROR("Compiler Log: \n" << (*iter)->getCompilerLog());
                 return false;
             }
-            
+
             glAttachShader(id_, (*iter)->id_);
         }
     }
@@ -626,20 +583,21 @@ void Shader::setHeaders(const string& customHeader) {
 
 void Shader::bindFragDataLocation(GLuint colorNumber, std::string name) {
     if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
-        glBindFragDataLocationEXT(id_, colorNumber, name.c_str());
+        glBindFragDataLocation(id_, colorNumber, name.c_str()); /* was ...EXT */
     }
 }
 
-bool Shader::load(const string& filename, const string& customHeader) {
+void Shader::load(const string& filename, const string& customHeader) throw (Exception) {
     return loadSeparate(filename + ".vert", "", filename + ".frag", customHeader);
 }
 
-bool Shader::loadSeparate(const string& vert_filename, const string& geom_filename,
+void Shader::loadSeparate(const string& vert_filename, const string& geom_filename,
                           const string& frag_filename, const string& customHeader)
+                          throw (Exception)
 {
     ShaderObject* frag = 0;
     ShaderObject* vert = 0;
-	ShaderObject* geom = 0;
+    ShaderObject* geom = 0;
 
     if (!vert_filename.empty()) {
         vert = new ShaderObject(vert_filename, ShaderObject::VERTEX_SHADER);
@@ -648,43 +606,49 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
             vert->setHeader(customHeader);
         }
 
-        if (!vert->loadSourceFromFile(vert_filename)) {
-            LERROR("Failed to load vertex shader " << vert_filename);
+        try {
+            vert->loadSourceFromFile(vert_filename);
+        }
+        catch (const Exception& e) {
+            LDEBUG("Failed to load vertex shader " << vert_filename << ": " << e.what());
             delete vert;
-            return false;
-        } else {
-            vert->uploadSource();
+            throw Exception("Failed to load vertex shader " + vert_filename + ": " + e.what());
+        }
 
-            if (!vert->compileShader()) {
-                LERROR("Failed to compile vertex shader " << vert_filename);
-                LERROR("Compiler Log: \n" << vert->getCompilerLog());
-                delete vert;
-                return false;
-            }
+        vert->uploadSource();
+
+        if (!vert->compileShader()) {
+            LERROR("Failed to compile vertex shader " << vert_filename);
+            LERROR("Compiler Log: \n" << vert->getCompilerLog());
+            delete vert;
+            throw Exception("Failed to compile vertex shader: " + vert_filename);
         }
     }
 
-	if (!geom_filename.empty()) {
-		geom = new ShaderObject(geom_filename, ShaderObject::GEOMETRY_SHADER);
+    if (!geom_filename.empty()) {
+        geom = new ShaderObject(geom_filename, ShaderObject::GEOMETRY_SHADER);
 
         if (!customHeader.empty()) {
             geom->setHeader(customHeader);
         }
 
-        if (!geom->loadSourceFromFile(geom_filename)) {
-            LERROR("Failed to load geometry shader " << geom_filename);
+        try {
+            geom->loadSourceFromFile(geom_filename);
+        }
+        catch (const Exception& e) {
+            LDEBUG("Failed to load geometry shader " << geom_filename << ": " << e.what());
             delete vert;
             delete geom;
-            return false;
-        } else {
-            geom->uploadSource();
-            if (!geom->compileShader()) {
-                LERROR("Failed to compile geometry shader " << geom_filename);
-                LERROR("Compiler Log: \n" << geom->getCompilerLog());
-                delete vert;
-                delete geom;
-                return false;
-            }
+            throw Exception("Failed to load geometry shader " + geom_filename + ": " + e.what());
+        }
+
+        geom->uploadSource();
+        if (!geom->compileShader()) {
+            LERROR("Failed to compile geometry shader " << geom_filename);
+            LERROR("Compiler Log: \n" << geom->getCompilerLog());
+            delete vert;
+            delete geom;
+            throw Exception("Failed to compile geometry shader: " + geom_filename);
         }
     }
 
@@ -695,27 +659,29 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
             frag->setHeader(customHeader);
         }
 
-        if (!frag->loadSourceFromFile(frag_filename)) {
-            LERROR("Failed to load fragment shader " << frag_filename);
+        try {
+            frag->loadSourceFromFile(frag_filename);
+        }
+        catch (const Exception& e) {
+            LDEBUG("Failed to load fragment shader " << frag_filename);
             delete frag;
             delete geom;
             delete vert;
-            return false;
-        } 
-        else {
-            if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130)
-                bindFragDataLocation(0, "FragData0");
+            throw Exception("Failed to load fragment shader " + frag_filename + ": " + e.what());
+        }
 
-			frag->uploadSource();
+        if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130)
+            bindFragDataLocation(0, "FragData0");
 
-            if (!frag->compileShader()) {
-                LERROR("Failed to compile fragment shader " << frag_filename);
-                LERROR("Compiler Log: \n" << frag->getCompilerLog());
-                delete vert;
-                delete geom;
-                delete frag;
-                return false;
-            }
+        frag->uploadSource();
+
+        if (!frag->compileShader()) {
+            LERROR("Failed to compile fragment shader " << frag_filename);
+            LERROR("Compiler Log: \n" << frag->getCompilerLog());
+            delete vert;
+            delete geom;
+            delete frag;
+            throw Exception("Failed to compile fragment shader: " + frag_filename);
         }
     }
 
@@ -724,11 +690,11 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
         attachObject(frag);
     if (vert)
         attachObject(vert);
-	if (geom)
+    if (geom)
         attachObject(geom);
 
     if (!linkProgram()) {
-        LERROR("Failed to link shader (" << vert_filename << ","  << frag_filename << "," << geom_filename << ")\n");
+        LERROR("Failed to link shader (" << vert_filename << ","  << frag_filename << "," << geom_filename << ")");
         if (vert) {
             LERROR(vert->filename_ << " Vertex shader compiler log: \n" << vert->getCompilerLog());
             detachObject(vert);
@@ -739,14 +705,14 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
             detachObject(geom);
             delete geom;
         }
-		if (frag) {
+        if (frag) {
             LERROR(frag->filename_ << " Fragment shader compiler log: \n" << frag->getCompilerLog());
             detachObject(frag);
             delete frag;
         }
 
         LERROR("Linker Log: \n" << getLinkerLog());
-        return false;
+        throw Exception("Failed to link shader (" + vert_filename + "," + frag_filename + "," + geom_filename + ")");
     }
 
 
@@ -754,11 +720,11 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
         LDEBUG("Vertex shader compiler log for file '" << vert_filename
                << "': \n" << vert->getCompilerLog());
     }
-	if (geom && geom->getCompilerLog().size() > 1) {
+    if (geom && geom->getCompilerLog().size() > 1) {
         LDEBUG("Geometry shader compiler log for file '" << geom_filename
                << "': \n" << geom->getCompilerLog());
     }
-	if (frag && frag->getCompilerLog().size() > 1) {
+    if (frag && frag->getCompilerLog().size() > 1) {
         LDEBUG("Fragment shader compiler log for file '" << frag_filename
                << "': \n" << frag->getCompilerLog());
     }
@@ -768,8 +734,6 @@ bool Shader::loadSeparate(const string& vert_filename, const string& geom_filena
                << frag_filename << "' and '"
                << geom_filename << "': \n" << getLinkerLog());
     }
-
-    return true;
 }
 
 GLint Shader::getUniformLocation(const string& name) {
@@ -1035,7 +999,7 @@ bool Shader::setUniform(const string& name, const ivec4& value) {
     GLint l = getUniformLocation(name);
     if (l == -1)
         return false;
-    setUniform(l, value);    
+    setUniform(l, value);
     return true;
 }
 
@@ -1086,7 +1050,7 @@ bool Shader::setUniform(const string& name, const Matrix4f& value, bool transpos
 void Shader::setUniform(GLint l, GLfloat value) {
     glUniform1f(l, value);
 }
-    
+
 void Shader::setUniform(GLint l, GLfloat v1, GLfloat v2) {
     glUniform2f(l, v1, v2);
 }
@@ -1318,12 +1282,14 @@ ShaderManager::ShaderManager()
 
 Shader* ShaderManager::load(const string& filename, const string& customHeader,
                             bool activate)
+                            throw (Exception)
 {
     return loadSeparate(filename + ".vert", filename + ".frag", customHeader, activate);
 }
 
 Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& frag_filename,
                                     const string& customHeader, bool activate)
+                                    throw (Exception)
 {
     return loadSeparate(vert_filename, "", frag_filename, customHeader, activate);
 }
@@ -1331,17 +1297,18 @@ Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& f
 Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& geom_filename,
                                     const string& frag_filename,
                                     const string& customHeader, bool activate)
+                                    throw (Exception)
 {
-	LDEBUG("Loading files " << vert_filename << " and " << frag_filename);
+    LDEBUG("Loading files " << vert_filename << " and " << frag_filename);
     if (!GpuCaps.areShadersSupported()) {
-		LERROR("Shaders are not supported.");
-        return 0;
-	}
+        LERROR("Shaders are not supported.");
+        throw Exception("Shaders are not supported.");
+    }
 
     // create a somewhat unique identifier for this shader triple
     string identifier = vert_filename + "#" +  frag_filename + "#" + geom_filename;
-    
-    if (isLoaded(identifier)) { 
+
+    if (isLoaded(identifier)) {
         LDEBUG("Shader already loaded. Increase usage count.");
         increaseUsage(identifier);
         return get(identifier);
@@ -1363,19 +1330,20 @@ Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& g
         frag_completeFilename = completePath(frag_filename);
 
     // loading and linking found shaders
-    if (shdr->loadSeparate(vert_completeFilename, geom_completeFilename, 
-                           frag_completeFilename, customHeader))
-    {
+    try {
+        shdr->loadSeparate(vert_completeFilename, geom_completeFilename,
+                           frag_completeFilename, customHeader);
         // register even when caching is disabled, needed for rebuildFromFile()
         reg(shdr, identifier);
 
         if (activate)
             shdr->activate();
-        
+
         return shdr;
-    } else {
+    }
+    catch (const Exception& /*e*/) {
         delete shdr;
-        return 0;
+        throw;
     }
 }
 

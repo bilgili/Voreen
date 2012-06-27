@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="ImageSource" name="ImageSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-454" y="-581" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearButton" />
+                        <Property name="imageFile" value="input/images/nucleon_background.png" />
+                        <Property name="imageSize" id="ref7">
+                            <value x="321" y="319" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-580" y="-319" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="60" y="143" width="321" height="319" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref8">
+                            <value x="321" y="319" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/grayscale-00.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 2" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-453" y="-319" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="408" y="143" width="321" height="319" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref9">
+                            <value x="321" y="319" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/grayscale-05.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 3" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-323" y="-317" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="60" y="508" width="321" height="319" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref10">
+                            <value x="321" y="319" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/grayscale-10.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GrayscaleCL" name="GrayscaleCL" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-581" y="-427" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="saturation" value="0" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GrayscaleCL" name="GrayscaleCL 2" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-459" y="-426" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="saturation" value="0.5" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GrayscaleCL" name="GrayscaleCL 3" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-330" y="-427" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="saturation" value="1" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GrayscaleCL" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GrayscaleCL" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GrayscaleCL" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="outport">
+                        <Processor type="GrayscaleCL" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="outport">
+                        <Processor type="GrayscaleCL" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="outport">
+                        <Processor type="GrayscaleCL" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref6" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref7" />
+                    <DestinationProperty type="IntVec2Property" ref="ref8" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref7" />
+                    <DestinationProperty type="IntVec2Property" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref7" />
+                    <DestinationProperty type="IntVec2Property" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+            </PropertyLinks>
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

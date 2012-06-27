@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-466" y="-277" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="ProxyGeometry Clipped" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-386" y="-161" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="56.62000275" />
+                        <Property name="bottomClippingPlane" value="9.72000027" />
+                        <Property name="frontClippingPlane" value="9.60000038" />
+                        <Property name="leftClippingPlane" value="106.73000336" />
+                        <Property name="resetClipPlanes" />
+                        <Property name="rightClippingPlane" value="28.37000084" />
+                        <Property name="topClippingPlane" value="110.56999969" />
+                        <Property name="useClipping" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="CubeProxyGeometry" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-577" y="-162" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="95" />
+                        <Property name="bottomClippingPlane" value="0" />
+                        <Property name="frontClippingPlane" value="0" />
+                        <Property name="leftClippingPlane" value="127" />
+                        <Property name="resetClipPlanes" />
+                        <Property name="rightClippingPlane" value="0" />
+                        <Property name="topClippingPlane" value="113" />
+                        <Property name="useClipping" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-559" y="-61" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="file" value="output/proxygeometry.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 2" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-365" y="-59" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="file" value="output/proxygeometry-clipped.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref2" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref4" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

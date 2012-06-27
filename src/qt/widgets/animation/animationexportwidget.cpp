@@ -1,36 +1,33 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/animation/animationexportwidget.h"
 #include "voreen/core/voreenapplication.h"
-#include "voreen/core/processors/canvasrenderer.h"
 #include "voreen/core/network/networkevaluator.h"
+
+#include "modules/core/processors/output/canvasrenderer.h" //< core module is always available
 
 #include <QApplication>
 #include <QLabel>
@@ -73,9 +70,14 @@ void AnimationExportWidget::networkChanged() {
     canvas_ = 0;
     painter_ = 0;
     allCanvases_.clear();
+    allCameraPropertys_.clear();
 
-    const std::vector<Processor*>& processors = network_->getProcessorNetwork()->getProcessors();;
+    const std::vector<Processor*>& processors = network_->getProcessorNetwork()->getProcessors();
     for (size_t i = 0; i < processors.size(); ++i) {
+        std::vector<CameraProperty*> camPropsProcessor = processors[i]->getPropertiesByType<CameraProperty>();
+        if (!camPropsProcessor.empty())
+            allCameraPropertys_.insert(std::make_pair(camPropsProcessor[0], processors[i]->getName()));
+
         CanvasRenderer* cr = dynamic_cast<CanvasRenderer*>(processors[i]);
         if (cr != 0) {
             tgt::QtCanvas* canvas = dynamic_cast<tgt::QtCanvas*>(cr->getCanvas());
@@ -128,7 +130,6 @@ void AnimationExportWidget::createConnections() {
 
 void AnimationExportWidget::setWidgetState() {
     comboCanvases_->setEnabled(true);
-
 }
 
 void AnimationExportWidget::refreshComboBoxes() {
@@ -143,7 +144,6 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     QGroupBox* recordBox = new QGroupBox(tr("Recording"), parent);
     QVBoxLayout* layout = new QVBoxLayout();
     QHBoxLayout* rowLayout = new QHBoxLayout();
-
 
     comboCanvases_ = new QComboBox(recordBox);
     rowLayout->addWidget(new QLabel(tr("Canvas:"), recordBox));
@@ -163,12 +163,12 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     spinWidth_ = new QSpinBox(recordBox);
     spinHeight_ = new QSpinBox(recordBox);
 
-    spinWidth_->setRange(64, 1280);
+    spinWidth_->setRange(64, 2048);
     spinWidth_->setSingleStep(4);
     spinWidth_->setValue(512);
     spinWidth_->setAccelerated(true);
 
-    spinHeight_->setRange(64, 1280);
+    spinHeight_->setRange(64, 2048);
     spinHeight_->setSingleStep(4);
     spinHeight_->setValue(512);
     spinHeight_->setAccelerated(true);
@@ -200,10 +200,11 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     saveAsFrameSequenceButton_ = new QPushButton(tr("Save as frame sequence"));
     saveAsVideoButton_ = new QPushButton(tr("Save as video file"));
     videoSetupButton_ = new QPushButton(tr("Setup video..."));
-    #ifndef VRN_WITH_FFMPEG
+#ifndef VRN_MODULE_FFMPEG
     saveAsVideoButton_->setVisible(false);
     videoSetupButton_->setVisible(false);
-    #endif
+#endif
+
     rowLayout->addWidget(saveAsFrameSequenceButton_);
     rowLayout->addWidget(saveAsVideoButton_);
     rowLayout->addWidget(videoSetupButton_);
@@ -226,17 +227,16 @@ void AnimationExportWidget::recordAnimation(bool recordVideo) {
     QStringList fileList;
     if (renderingVideo_ == false) {
         renderState_= Snapshot;
-        QString s = QFileDialog::getExistingDirectory(this, tr("Select Output Directory"),
-                                                      VoreenApplication::app()->getDocumentsPath().c_str());
+        QString s = QFileDialog::getExistingDirectory(this, tr("Select Output Directory"), VoreenApplication::app()->getUserDataPath().c_str());
 
         if (!s.isEmpty())
             fileList.push_back(s);
     }
-#ifdef VRN_WITH_FFMPEG
+#ifdef VRN_MODULE_FFMPEG
     else {
         renderState_= Recording;
-        std::vector<std::string> formats = tgt::VideoEncoder::getSupportedFormatsByFileEnding();
-        std::vector<std::string> descs = tgt::VideoEncoder::getSupportedFormatDescriptions();
+        std::vector<std::string> formats = VideoEncoder::getSupportedFormatsByFileEnding();
+        std::vector<std::string> descs = VideoEncoder::getSupportedFormatDescriptions();
         QStringList lstFormats;
         for (size_t i = 0; i < formats.size(); ++i) {
             formats[i] = (descs[i] + " (*." + formats[i] + ")");
@@ -246,7 +246,7 @@ void AnimationExportWidget::recordAnimation(bool recordVideo) {
         QFileDialog dialog(this);
         dialog.setDefaultSuffix("avi");
         dialog.setWindowTitle(tr("Export As Video File"));
-        dialog.setDirectory(VoreenApplication::app()->getDocumentsPath().c_str());
+        dialog.setDirectory(VoreenApplication::app()->getUserDataPath().c_str());
         #if QT_VERSION >= 0x040400
         dialog.setNameFilters(lstFormats);
         #endif
@@ -255,7 +255,7 @@ void AnimationExportWidget::recordAnimation(bool recordVideo) {
         if (dialog.exec())
             fileList = dialog.selectedFiles();
     }
-#endif // VRN_WITH_FFMPEG
+#endif // VRN_MODULE_FFMPEG
     if (fileList.size() > 0) {
         recordPathName_ = fileList.first().toStdString();
         startRendering();
@@ -275,7 +275,7 @@ void AnimationExportWidget::startRendering() {
     canvas_->resize(spinWidth_->value(), spinHeight_->value());
     qApp->processEvents();
 
-#ifdef VRN_WITH_FFMPEG
+#ifdef VRN_MODULE_FFMPEG
     if (renderState_== Recording) {
         tgt::Texture* texture_ = painter_->getCanvasRenderer()->getImageColorTexture();
         try {
@@ -288,7 +288,7 @@ void AnimationExportWidget::startRendering() {
             return;
         }
     }
-#endif // VRN_WITH_FFMPEG
+#endif // VRN_MODULE_FFMPEG
 
     setWidgetState();
     canvas_->resize(spinWidth_->value(), spinHeight_->value());
@@ -308,6 +308,23 @@ void AnimationExportWidget::startRendering() {
     }
 }
 
+// rotate the camera about an arbitrary axis and angle
+void AnimationExportWidget::rotateView(CameraProperty* camProp, float angle, const tgt::vec3& axis, const tgt::vec3& camPos, const tgt::vec3& camLook) {
+    float cosA = cos(angle);
+    float sinA = sin(angle);
+    float ux2 = axis[0]*axis[0];
+    float uy2 = axis[1]*axis[1];
+    float uz2 = axis[2]*axis[2];
+    float ux_uy = axis[0]*axis[1];
+    float ux_uz = axis[0]*axis[2];
+    float uy_uz = axis[1]*axis[2];
+    tgt::mat3 mat(cosA + ux2*(1-cosA), ux_uy*(1-cosA)-axis[2]*sinA, ux_uz*(1-cosA)+axis[1]*sinA, ux_uy*(1-cosA)+axis[2]*sinA, cosA+uy2*(1-cosA), uy_uz*(1-cosA)-axis[0]*sinA, ux_uz*(1-cosA)-axis[1]*sinA, uy_uz*(1-cosA)+axis[0]*sinA, cosA+uz2*(1-cosA));
+    tgt::vec3 look = mat*camLook;
+
+    // set new focus-point
+    camProp->setFocus(camPos + look);
+}
+
 void AnimationExportWidget::renderingStep(){
     if (animation_ == 0)
         return;
@@ -318,7 +335,7 @@ void AnimationExportWidget::renderingStep(){
     }
     else {
         animation_->renderAt((float)currentFrame_*fpsFactor_/ fps_);
-        #ifdef VRN_WITH_FFMPEG
+        #ifdef VRN_MODULE_FFMPEG
         if ((renderState_== Recording) &&(painter_->getCanvasRenderer())) {
             if (canvas_->getSize() != tgt::ivec2(spinWidth_->value(), spinHeight_->value())) {
                 canvas_->resize(spinWidth_->value(), spinHeight_->value());
@@ -338,11 +355,15 @@ void AnimationExportWidget::renderingStep(){
         #endif
             // render frame to file
             char fn[1024];
+
             sprintf(fn, "%s%05d%s", std::string(recordPathName_ + "/frame").c_str(), currentFrame_, ".png");
             try {
                 painter_->renderToSnapshot(fn, tgt::ivec2(spinWidth_->value(), spinHeight_->value()));
-            } catch (...) {}
-        #ifdef VRN_WITH_FFMPEG
+            }
+            catch (const VoreenException& e) {
+                LERRORC("voreen.AnimationExportWidget", "Failed to write image: " << std::string(fn) << " with error: " << e.what());
+            }
+        #ifdef VRN_MODULE_FFMPEG
         }
         #endif
         ++currentFrame_;
@@ -351,17 +372,17 @@ void AnimationExportWidget::renderingStep(){
 
 void AnimationExportWidget::endRendering(){
     renderState_= Inactive;
-    #ifdef VRN_WITH_FFMPEG
+#ifdef VRN_MODULE_FFMPEG
     if(renderingVideo_){
         ffmpegEncoder_.stopVideoEncoding();
         renderingVideo_ = false;
     }
-    #endif
+#endif
     canvas_->resize(canvasSize_.x, canvasSize_.y);
 }
 
 void AnimationExportWidget::videoSetup() {
-    #ifdef VRN_WITH_FFMPEG
+#ifdef VRN_MODULE_FFMPEG
     int curPreset = ffmpegEncoder_.getPreset();
     int curBitrate = ffmpegEncoder_.getBitrate();
     QDialog* dialog = createVideoSetupDialog(this, curPreset, curBitrate);
@@ -369,10 +390,10 @@ void AnimationExportWidget::videoSetup() {
         ffmpegEncoder_.setup(preset_->currentIndex(), bitrate_->value() * 1024);
 
     delete dialog;
-    #endif
+#endif
 }
 
-#ifdef VRN_WITH_FFMPEG
+#ifdef VRN_MODULE_FFMPEG
 
 QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curPreset, int curBitrate) {
     QDialog* dialog = new QDialog(parent);
@@ -386,8 +407,8 @@ QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curP
     rowLayout->addWidget(new QLabel(tr("Preset:")));
 
     rowLayout->addWidget(preset_);
-    const char** ccPairNames = tgt::VideoEncoder::getContainerCodecPairNames();
-    for (int i = tgt::VideoEncoder::GUESS; i < tgt::VideoEncoder::LAST; ++i)
+    const char** ccPairNames = VideoEncoder::getContainerCodecPairNames();
+    for (int i = VideoEncoder::GUESS; i < VideoEncoder::LAST; ++i)
         preset_->addItem(ccPairNames[i]);
     preset_->setCurrentIndex(curPreset);
     layout->addLayout(rowLayout);
@@ -417,6 +438,6 @@ QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curP
     return dialog;
 }
 
-#endif // VRN_WITH_FFMPEG
+#endif // VRN_MODULE_FFMPEG
 
 } // namespace voreen

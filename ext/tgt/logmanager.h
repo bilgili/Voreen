@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_LOGMANAGER_H
 #define TGT_LOGMANAGER_H
@@ -29,10 +30,10 @@
 #include <sstream>
 #include <vector>
 
-#include "tgt/config.h"
 #include "tgt/assert.h"
 #include <stdarg.h>
 #include "tgt/singleton.h"
+#include "tgt/types.h"
 
 namespace tgt {
 
@@ -51,7 +52,7 @@ enum LogLevel {
 /**
  * Holds the information for filtering messages.
  */
-struct LogFilter {
+struct TGT_API LogFilter {
     std::string cat_;
     bool children_;
     LogLevel level_;
@@ -60,13 +61,13 @@ struct LogFilter {
 /**
  * Abstract basis class for logging messages.
  */
-class Log {
+class TGT_API Log {
 public:
-	virtual ~Log() {}
+    virtual ~Log() {}
 
     /// Log a message in this Log (message is filtered based on cat and level)
-	virtual void log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
-    
+    virtual void log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
+
     /**
      * Add a category that is accepted to this log.
      * @param cat All messages with category = cat are accepted and logged in this log.
@@ -75,49 +76,49 @@ public:
      * tgt.Texture.Reader is a subcategory of tgt.Texture
      * @param level All messages below this LogLevel are discarded, even if the category matches.
      */
-	virtual void addCat(const std::string &cat, bool Children = true, LogLevel level = Debug);
-	virtual bool isOpen() = 0;
+    virtual void addCat(const std::string &cat, bool Children = true, LogLevel level = Debug);
+    virtual bool isOpen() = 0;
 
     /// Returns if the messages are time-stamped.
-	inline bool getTimeStamping() const { return timeStamping_; }
-	inline void setTimeStamping(const bool timeStamping) { timeStamping_ = timeStamping; }
+    inline bool getTimeStamping() const { return timeStamping_; }
+    inline void setTimeStamping(const bool timeStamping) { timeStamping_ = timeStamping; }
 
     /// Returns if the messages are date-stamped.
-	inline bool getDateStamping() const { return dateStamping_; }
- 	inline void setDateStamping(const bool dateStamping) { dateStamping_ = dateStamping; }
+    inline bool getDateStamping() const { return dateStamping_; }
+     inline void setDateStamping(const bool dateStamping) { dateStamping_ = dateStamping; }
 
     /// Returns if the category is printed along with the messages
-	inline bool getShowCat() const { return showCat_; }
-	inline void setShowCat(const bool showCat) { showCat_ = showCat; }
+    inline bool getShowCat() const { return showCat_; }
+    inline void setShowCat(const bool showCat) { showCat_ = showCat; }
 
     /// Returns if the LogLevel is printed along with the messages.
-	inline bool getShowLevel() const { return showLevel_; }
-	inline void setShowLevel(const bool showLevel) { showLevel_ = showLevel; }
+    inline bool getShowLevel() const { return showLevel_; }
+    inline void setShowLevel(const bool showLevel) { showLevel_ = showLevel; }
 
 protected:
-	virtual bool testFilter(const std::string &cat, LogLevel level);
-	virtual void logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
+    virtual bool testFilter(const std::string &cat, LogLevel level);
+    virtual void logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
                              const std::string &extendedInfo = "") = 0;
-	virtual std::string getTimeString();
-	virtual std::string getDateString();
-	virtual std::string getLevelString(LogLevel level);
+    virtual std::string getTimeString();
+    virtual std::string getDateString();
+    virtual std::string getLevelString(LogLevel level);
 
-	bool timeStamping_, dateStamping_, showCat_, showLevel_;
-	std::vector<LogFilter> filters_;
+    bool timeStamping_, dateStamping_, showCat_, showLevel_;
+    std::vector<LogFilter> filters_;
 };
 
 
 /// Implements logging to a plain Textfile
-class TextLog : public Log {
+class TGT_API TextLog : public Log {
 public:
-	TextLog(const std::string &filename, bool dateStamping = true, bool timeStamping= true,
+    TextLog(const std::string &filename, bool dateStamping = true, bool timeStamping= true,
             bool showCat = true, bool showLevel = true);
-	virtual ~TextLog();
-	bool isOpen();
+    virtual ~TextLog();
+    bool isOpen();
 
 protected:
-	FILE* file_;
-	void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
+    FILE* file_;
+    void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
     std::string getLevelColor(LogLevel level);
 };
 
@@ -125,7 +126,7 @@ protected:
  * Implements logging to stdout. Colored output on unix systems.
  * You can only have one ConsoleLog in the LogMgr
  */
-class ConsoleLog : public Log {
+class TGT_API ConsoleLog : public Log {
 public:
     ConsoleLog(bool dateStamping = false, bool timeStamping= false, bool showCat = true, bool showLevel = true);
     ~ConsoleLog() {};
@@ -140,20 +141,26 @@ protected:
 };
 
 ///Implements a colored html log.
-class HtmlLog : public Log {
+class TGT_API HtmlLog : public Log {
 public:
-	HtmlLog(const std::string &filename, bool dateStamping = false, bool timeStamping= true,
+    HtmlLog(const std::string &filename, bool dateStamping = false, bool timeStamping= true,
             bool showCat = true, bool showLevel = true);
     ~HtmlLog();
-	bool isOpen();
+    bool isOpen();
 
 protected:
-	void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
+    void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
     std::string getLevelString(LogLevel level);
     std::string getLevelColor(LogLevel level);
 
-	FILE* file_;
+    FILE* file_;
 };
+
+
+class LogManager;
+#ifdef DLL_TEMPLATE_INST
+template class TGT_API Singleton<LogManager>;
+#endif
 
 /**
  * The Logmanager distributes logmessages to all Logs registered to the manager.
@@ -168,38 +175,40 @@ protected:
  * LDEBUG statements are removed if TGT_DEBUG is not defined!
  * @author Stefan Diepenbrock
  */
-class LogManager {
+class TGT_API LogManager : public Singleton<LogManager> {
 public:
-	LogManager(const std::string& logDir = "");
-	~LogManager();
+    LogManager(const std::string& logDir = "");
+    ~LogManager();
 
     /// Initialize logmanager, put all logfiles in logDir
-	void reinit(const std::string& logDir);
-	std::string getLogDir() const { return logDir_; }
+    void reinit(const std::string& logDir);
+    std::string getLogDir() const { return logDir_; }
 
     /// Log message
-	void log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
+    void log(const std::string& cat, LogLevel level, const std::string& msg, const std::string& extendedInfo="");
 
     /// Add a log to the manager, from now all messages received by the manager are also distributed to this log.
     /// All logs are deleted upon destruction of the manager.
     /// If a ConsoleLog is added it will replace an existing one, the old one will be deleted.
-	void addLog(Log* log);
+    void addLog(Log* log);
 
     // Remove a log from the manager.
-	void removeLog(Log* log);
-    
+    void removeLog(Log* log);
+
     /// Return the ConsoleLog (or 0 if there is none)
     ConsoleLog* getConsoleLog() { return consoleLog_; }
 
 protected:
     std::string logDir_;
-	std::vector<Log*> logs_;
+    std::vector<Log*> logs_;
     ConsoleLog* consoleLog_;
+
+
 };
 
 } // namespace
 
-#define LogMgr tgt::Singleton<tgt::LogManager>::getRef()
+#define LogMgr tgt::LogManager::getRef()
 
 // Use "do { ... } while (0)" to allow "if (foo) LINFO("bar"); else ...", which would fail
 // otherwise.
@@ -246,7 +255,7 @@ protected:
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Fatal, _tmp.str(), _tmp2.str()); \
         } while (0)
-        
+
         //with category parameter:
         #define LDEBUGC(cat, msg) \
         do { \
@@ -327,7 +336,7 @@ protected:
             _tmp << msg; \
             LogMgr.log(loggerCat_, tgt::Fatal, _tmp.str(), _tmp2.str()); \
         } while (0)
-        
+
         //with category parameter:
         #define LDEBUGC(cat, msg) \
         do { \
@@ -433,7 +442,7 @@ protected:
         _tmp << msg; \
         LogMgr.log(cat, tgt::Fatal, _tmp.str()); \
     } while (0)
-    
+
 #endif //TGT_DEBUG
 
 #endif //TGT_LOGMANAGER_H

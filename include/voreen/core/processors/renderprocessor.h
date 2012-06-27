@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_RENDERPROCESSOR_H
 #define VRN_RENDERPROCESSOR_H
@@ -39,6 +35,7 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/renderport.h"
 #include "voreen/core/ports/genericport.h"
+#include "voreen/core/ports/geometryport.h"
 
 
 namespace voreen {
@@ -46,7 +43,7 @@ namespace voreen {
 /**
  * The base class for all processor classes that render to RenderPorts.
  */
-class RenderProcessor : public Processor {
+class VRN_CORE_API RenderProcessor : public Processor {
 public:
 
     RenderProcessor();
@@ -95,12 +92,12 @@ protected:
     /**
      * Initializes all private RenderPorts.
      */
-    virtual void initialize() throw (VoreenException);
+    virtual void initialize() throw (tgt::Exception);
 
     /**
      * Deinitializes all private RenderPorts.
      */
-    virtual void deinitialize() throw (VoreenException);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
      * Calls adjustRenderOutportDimensions().
@@ -130,7 +127,7 @@ protected:
      * \note If you overwrite this function in a subclass, you have to the call the superclass' function first and
      * append your additions to its result!
      */
-    virtual std::string generateHeader();
+    virtual std::string generateHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
 
     /**
      * Sets some uniforms potentially needed by every shader.

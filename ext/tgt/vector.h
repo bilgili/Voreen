@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_VECTOR_H
 #define TGT_VECTOR_H
@@ -29,8 +30,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "tgt/config.h"
-#include "tgt/math.h"
+#include "tgt/tgt_math.h"
 
 /*
     Performance remarks:
@@ -502,31 +502,31 @@ struct Vector4 {
 /*
     statics
 */
-    static const Vector4<float> white;
-    static const Vector4<float> black;
-    static const Vector4<float> gray;
-    static const Vector4<float> red;
-    static const Vector4<float> green;
-    static const Vector4<float> blue;
-    static const Vector4<float> brown;
-    static const Vector4<float> yellow;
+    //static Vector4<float> white;
+    //static Vector4<float> black;
+    //static Vector4<float> gray;
+    //static Vector4<float> red;
+    //static Vector4<float> green;
+    //static Vector4<float> blue;
+    //static Vector4<float> brown;
+    //static Vector4<float> yellow;
 
-    static Vector4<T> zero;
+    //static Vector4<T> zero;
 };
 
 
-template<class T> const Vector4<float> Vector4<T>::white (1.f, 1.f, 1.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::black (0.f, 0.f, 0.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::gray  (.5f, .5f, .5f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::red   (1.f, 0.f, 0.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::green (0.f, 1.f, 0.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::blue  (0.f, 0.f, 1.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::yellow(1.f, 1.f, 0.f, 1.f);
-template<class T> const Vector4<float> Vector4<T>::brown (0.6f, 0.4f, 0.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::white (1.f, 1.f, 1.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::black (0.f, 0.f, 0.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::gray  (.5f, .5f, .5f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::red   (1.f, 0.f, 0.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::green (0.f, 1.f, 0.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::blue  (0.f, 0.f, 1.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::yellow(1.f, 1.f, 0.f, 1.f);
+//template<class T> Vector4<float> Vector4<T>::brown (0.6f, 0.4f, 0.f, 1.f);
 
 /// init statics
-template<class T>
-Vector4<T> Vector4<T>::zero = Vector4<T>(T(0), T(0), T(0), T(0));
+//template<class T>
+//Vector4<T> Vector4<T>::zero = Vector4<T>(T(0), T(0), T(0), T(0));
 
 /*
     typedefs for easy usage
@@ -561,6 +561,26 @@ typedef Vector4<size_t> svec4;
 typedef Vector2<bool>   bvec2;
 typedef Vector3<bool>   bvec3;
 typedef Vector4<bool>   bvec4;
+
+#ifdef DLL_TEMPLATE_INST
+template struct TGT_API Vector2<float>;
+template struct TGT_API Vector3<float>;
+template struct TGT_API Vector4<float>;
+template struct TGT_API Vector2<double>;
+template struct TGT_API Vector3<double>;
+template struct TGT_API Vector4<double>;
+template struct TGT_API Vector2<int>;
+template struct TGT_API Vector3<int>;
+template struct TGT_API Vector4<int>;
+template struct TGT_API Vector2<size_t>;
+template struct TGT_API Vector3<size_t>;
+template struct TGT_API Vector4<size_t>;
+template struct TGT_API Vector2<bool>;
+template struct TGT_API Vector3<bool>;
+template struct TGT_API Vector4<bool>;
+template struct TGT_API Vector3<uint8_t>;
+template struct TGT_API Vector4<uint8_t>;
+#endif
 
 /*
     uint8_t types
@@ -790,6 +810,24 @@ template<class T> inline T max(const TGT_BASE_TYPE<T>& v) { \
     return res; \
 }
 
+#define TGT_VEC_MIN_ELEM \
+template<class T> inline size_t minElem(const TGT_BASE_TYPE<T>& v) { \
+    size_t minElem = 0; \
+    for (size_t i = 1; i < v.size; ++i) \
+        if(v.elem[i] > v.elem[minElem]) \
+            minElem = i; \
+    return minElem; \
+}
+
+#define TGT_VEC_MAX_ELEM \
+template<class T> inline size_t maxElem(const TGT_BASE_TYPE<T>& v) { \
+    size_t maxElem = 0; \
+    for (size_t i = 1; i < v.size; ++i) \
+        if(v.elem[i] > v.elem[maxElem]) \
+            maxElem = i; \
+    return maxElem; \
+}
+
 #define TGT_VEC_CLAMP \
 template<class T> inline TGT_BASE_TYPE<T> clamp(const TGT_BASE_TYPE<T>& v, const TGT_BASE_TYPE<T>& minVal, const TGT_BASE_TYPE<T>& maxVal) { \
     return min( max(v, minVal), maxVal ); \
@@ -982,6 +1020,8 @@ template<class T> inline bool hxor(const TGT_BASE_TYPE<T>& v) { \
     TGT_VEC_MAX_SINGLE \
     TGT_VEC_MIN_SELF \
     TGT_VEC_MAX_SELF \
+    TGT_VEC_MIN_ELEM \
+    TGT_VEC_MAX_ELEM \
     TGT_VEC_CLAMP \
     TGT_VEC_CLAMP_SINGLE \
     TGT_VEC_REL_OP_EQUAL  \
@@ -1170,7 +1210,7 @@ template<class T> inline bool hxor(const TGT_BASE_TYPE<T>& v) { \
 
     TGT_IMPLEMENT_VEC_FUNCTIONS
 #undef TGT_BASE_TYPE
-        
+
 /**
     cross product
 */

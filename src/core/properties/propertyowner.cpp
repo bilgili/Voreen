@@ -1,40 +1,37 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/properties/property.h"
-#include "voreen/core/properties/propertywidget.h"
+//#include "voreen/core/properties/propertywidget.h"
+
+#include <fstream>
 
 namespace voreen {
 
 void PropertyOwnerObserver::preparePropertyRemoval(Property*) {}
-
 
 const std::string PropertyOwner::loggerCat_("voreen.PropertyOwner");
 
@@ -47,8 +44,13 @@ PropertyOwner::~PropertyOwner() {
 
 void PropertyOwner::addProperty(Property* prop) {
     tgtAssert(prop, "Null pointer passed");
+    if (prop->getID().empty()) {
+        LERROR(getName() << ": Property with empty id (type: " << prop->getClassName() << ")");
+        return;
+    }
     if (getProperty(prop->getID())) {
         LERROR(getName() << ": Duplicate property id '" << prop->getID() << "'");
+        return;
     }
     properties_.push_back(prop);
     prop->setOwner(this);
@@ -77,6 +79,17 @@ void PropertyOwner::removeProperty(Property& prop) {
     removeProperty(&prop);
 }
 
+void PropertyOwner::notifyPropertiesChanged() const {
+    std::vector<PropertyOwnerObserver*> propObservers = /*Observable<PropertyOwnerObserver>::*/getObservers();
+    for (size_t i = 0; i < propObservers.size(); ++i)
+        propObservers[i]->propertiesChanged(this);
+}
+
+void PropertyOwner::resetAllProperties(){
+    for (size_t i = 0; i < properties_.size(); ++i)
+        properties_[i]->reset();
+}
+
 const std::vector<Property*>& PropertyOwner::getProperties() const {
     return properties_;
 }
@@ -89,32 +102,40 @@ Property* PropertyOwner::getProperty(const std::string& id) const {
     return 0;
 }
 
-void PropertyOwner::setPropertyGroupWidget(const std::string& id, PropertyWidget* widget) {
-    propertyGroupWidgets_[id] = widget;
+Property* PropertyOwner::getPropertyByName(const std::string& guiName) const {
+    for (size_t i = 0; i < properties_.size(); ++i) {
+        if (properties_[i]->getGuiName() == guiName)
+            return properties_[i];
+    }
+    return 0;
 }
 
 void PropertyOwner::setPropertyGroupGuiName(const std::string& groupID, const std::string& name) {
-    propertyGroupNames_[groupID] = name;
+    for(size_t i = 0; i < properties_.size() ; ++i)
+        if(properties_[i]->getGroupID().compare(groupID) == 0)
+            properties_[i]->setGroupName(name);
 }
 
 std::string PropertyOwner::getPropertyGroupGuiName(const std::string& id) const {
-    if (propertyGroupNames_.find(id) != propertyGroupNames_.end())
-        return propertyGroupNames_.find(id)->second;
-    else
-        return "";
+    for(size_t i = 0; i < properties_.size(); ++i)
+        if (properties_[i]->getGroupID().compare(id) == 0)
+            return properties_[i]->getGroupName();
+
+    return "";
 }
 
 void PropertyOwner::setPropertyGroupVisible(const std::string& id, bool visible) {
-    propertyGroupVisibilities_[id] = visible;
-    if (propertyGroupWidgets_.find(id) != propertyGroupWidgets_.end())
-        propertyGroupWidgets_[id]->setVisible(visible);
+    for(size_t i = 0; i < properties_.size() ; ++i)
+        if (properties_[i]->getGroupID().compare(id) == 0)
+            properties_[i]->setVisible(visible);
 }
 
 bool PropertyOwner::isPropertyGroupVisible(const std::string& id) const {
-    if (propertyGroupVisibilities_.find(id) != propertyGroupVisibilities_.end())
-        return propertyGroupVisibilities_.find(id)->second;
-    else
-        return true;
+    for(size_t i = 0; i < properties_.size(); ++i)
+        if (properties_[i]->getGroupID().compare(id) == 0 && properties_[i]->isVisible())
+            return true;
+    //if all properties of the group are not visible
+    return false;
 }
 
 int PropertyOwner::getInvalidationLevel() const {
@@ -193,6 +214,59 @@ void PropertyOwner::deserialize(XmlDeserializer& s) {
         LWARNING(e.what());
     }
     s.setUsePointerContentSerialization(usePointerContentSerialization);
+}
+
+bool serializeSettings(const PropertyOwner* po, const std::string& filename) {
+    std::ofstream stream(filename.c_str(), std::ios_base::out);
+    if (stream.fail()) {
+        LWARNINGC("VoreenSettings", "Unable to open file " << filename << " for writing.");
+        return false;
+    }
+
+    bool success = true;
+    try {
+        XmlSerializer xmlSerializer;
+        po->serialize(xmlSerializer);
+        xmlSerializer.write(stream);
+        if (stream.bad()) {
+            LWARNINGC("VoreenSettings", "Unable to write to file: " << filename);
+            success = false;
+        }
+        stream.close();
+    }
+    catch (SerializationException &e) {
+        LWARNINGC("VoreenSettings", "SerializationException: " << e.what());
+        stream.close();
+        success = false;
+    }
+    return success;
+}
+
+bool deserializeSettings(PropertyOwner* po, const std::string& filename) {
+    std::ifstream stream;
+    stream.open(filename.c_str(), std::ios_base::in);
+    if(stream.fail()) {
+        stream.close();
+        return false;
+    }
+    else {
+        XmlDeserializer xmlDeserializer;
+        try {
+            xmlDeserializer.read(stream);
+            po->deserialize(xmlDeserializer);
+            stream.close();
+        }
+        catch (XmlSerializationNoSuchDataException) {
+            // no data present => ignore
+            xmlDeserializer.removeLastError();
+            return false;
+        }
+        catch (SerializationException &e) {
+            LWARNINGC("VoreenSettingsDialog", std::string("Deserialization failed: ") + e.what());
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace voreen

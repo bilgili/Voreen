@@ -1,0 +1,170 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-621" y="-372" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometryClipping" name="GeometryClipping" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-754" y="-165" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="enabled" value="true" />
+                        <Property name="invert_" value="false" />
+                        <Property name="planeNormal">
+                            <value x="0.22499999" y="0.35100001" z="0.11090852" />
+                        </Property>
+                        <Property name="planePosition" value="0.262768" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="CubeProxyGeometry" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-640" y="-279" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="95" />
+                        <Property name="bottomClippingPlane" value="0" />
+                        <Property name="frontClippingPlane" value="0" />
+                        <Property name="leftClippingPlane" value="127" />
+                        <Property name="resetClipPlanes" />
+                        <Property name="rightClippingPlane" value="0" />
+                        <Property name="topClippingPlane" value="113" />
+                        <Property name="useClipping" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-757" y="-72" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="file" value="output/clipped.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometryClipping" name="GeometryClipping 2" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-623" y="-165" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="enabled" value="true" />
+                        <Property name="invert_" value="true" />
+                        <Property name="planeNormal">
+                            <value x="0.22499999" y="0.35100001" z="0.11090852" />
+                        </Property>
+                        <Property name="planePosition" value="0.262768" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 2" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-628" y="-73" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="file" value="output/clipped-inverted.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometryClipping" name="GeometryClipping 3" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-477" y="-166" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="enabled" value="false" />
+                        <Property name="invert_" value="false" />
+                        <Property name="planeNormal">
+                            <value x="0.22499999" y="0.35100001" z="0.11090852" />
+                        </Property>
+                        <Property name="planePosition" value="0.262768" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 3" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-481" y="-74" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="file" value="output/disabled.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry.clippedgeometry">
+                        <Processor type="GeometryClipping" ref="ref2" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="geometry.geometry">
+                        <Processor type="GeometryClipping" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="geometry.geometry">
+                        <Processor type="GeometryClipping" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="geometry.geometry">
+                        <Processor type="GeometryClipping" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry.clippedgeometry">
+                        <Processor type="GeometryClipping" ref="ref4" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry.clippedgeometry">
+                        <Processor type="GeometryClipping" ref="ref5" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref7" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

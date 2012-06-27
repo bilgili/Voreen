@@ -1,0 +1,33 @@
+<!DOCTYPE RCC><RCC version="1.0">
+  <qresource prefix="/voreenve/icons" >
+    <file alias="aggregate.png">icons/aggregate.png</file>
+    <file alias="deaggregate.png">icons/deaggregate.png</file>
+    <file alias="clear_dependency.png">icons/clear_dependency.png</file>
+    <file alias="dataflow-mode.png">icons/dataflow-mode.png</file>
+    <file alias="linking-camera.png">icons/linking-camera.png</file>
+    <file alias="linking-camera-auto.png">icons/linking-camera-auto.png</file>
+    <file alias="linking-mode.png">icons/linking-mode.png</file>
+    <file alias="linking-remove.png">icons/linking-remove.png</file>
+    <file alias="player-start.png">icons/player-start.png</file>
+    <file alias="player-pause.png">icons/player-pause.png</file>
+    <file alias="development-mode.png">icons/development-mode.png</file>
+    <file alias="visualization-mode.png">icons/visualization-mode.png</file>
+  </qresource>
+  
+  <qresource prefix="/voreenve/image" >
+    <file alias="aboutbox.png">image/aboutbox.png</file>
+    <file alias="splash.png">image/splash.png</file>
+  </qresource>
+
+  <qresource prefix="/voreenve/widgetstyle" >
+    <file alias="closebutton.png">widgetstyle/closebutton.png</file>
+    <file alias="highlight-dockwidget.png">widgetstyle/highlight-dockwidget.png</file>
+    <file alias="highlight-menu.png">widgetstyle/highlight-menu.png</file>
+    <file alias="maximizebutton.png">widgetstyle/maximizebutton.png</file>
+    <file alias="menu.png">widgetstyle/menu.png</file>
+    <file alias="scrollbar.png">widgetstyle/scrollbar.png</file>
+    <file alias="toolbarhandle.png">widgetstyle/toolbarhandle.png</file>
+    <file alias="undockbutton.png">widgetstyle/undockbutton.png</file>
+    <file alias="voreen.qss">widgetstyle/voreen.qss</file>
+  </qresource>
+</RCC>

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "portgraphicsitem.h"
 
@@ -36,6 +32,10 @@
 #include "processorgraphicsitem.h"
 #include "rootgraphicsitem.h"
 #include "textgraphicsitem.h"
+
+#ifdef VRN_MODULES_PLOTTING
+#include "modules/plotting/ports/plotport.h"
+#endif
 
 #include "voreen/qt/widgets/volumeviewhelper.h"
 
@@ -49,16 +49,6 @@
 #endif
 
 namespace {
-    // the colors for the different port types
-    const QColor colorVolumePort = Qt::red;
-    const QColor colorCoProcessorPort = Qt::green;
-    const QColor colorRenderPort = Qt::blue;
-    const QColor colorTextPort = Qt::cyan;
-    const QColor colorVolumeCollectionPort = Qt::magenta;
-    const QColor colorPlotPort = Qt::cyan;
-    const QColor colorGeometryPort = Qt::yellow;
-    const QColor colorUnknownPort = Qt::gray;
-
     // the inner color of the PortGraphicsItem
     const QColor colorBrush = Qt::lightGray;
 
@@ -119,34 +109,9 @@ void PortGraphicsItem::setLayer(NetworkEditorLayer layer) {
 }
 
 QColor PortGraphicsItem::getColor() const {
-    QColor result;
-
-    if (dynamic_cast<RenderPort*>(port_)) {
-        result = colorRenderPort;
-    }
-    else if (dynamic_cast<VolumePort*>(port_)) {
-        result = colorVolumePort;
-    }
-    else if (dynamic_cast<CoProcessorPort*>(port_)) {
-        result = colorCoProcessorPort;
-    }
-    else if (dynamic_cast<VolumeCollectionPort*>(port_)) {
-        result = colorVolumeCollectionPort;
-    }
-    else if (dynamic_cast<GeometryPort*>(port_)) {
-        result = colorGeometryPort;
-    }
-    else if (dynamic_cast<TextPort*>(port_)) {
-        result = colorTextPort;
-    }
-    else if (dynamic_cast<PlotPort*>(port_)) {
-        result = colorPlotPort;
-    }
-    else {
-        result = colorUnknownPort;
-    }
+    tgt::col3 portCol = port_->getColorHint();
+    QColor result = QColor(portCol.x, portCol.y, portCol.z);
     result.setAlpha(100);
-
     return result;
 }
 
@@ -224,8 +189,18 @@ void PortGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     if (option->state & QStyle::State_MouseOver)
         painter->setBrush(color);
 
-    if (getPort()->isLoopPort())
-        painter->drawEllipse(boundingRect());
+    if (getPort()->isLoopPort()) {
+        if (getPort()->isOutport())
+            painter->drawEllipse(boundingRect());
+        else {
+            QPolygonF triangle;
+            const QPointF& topLeftPoint = boundingRect().topLeft();
+            const QPointF bottomPoint = QPointF((boundingRect().left() + boundingRect().right()) / 2.f, boundingRect().bottom());
+            const QPointF& topRightPoint = boundingRect().topRight();
+            triangle << topLeftPoint << bottomPoint << topRightPoint;
+            painter->drawConvexPolygon(triangle);
+        }
+    }
     else
         painter->drawRect(boundingRect());
 }
@@ -252,45 +227,44 @@ void PortGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
         currentArrow_->setDestinationPoint(scenePos);
 
         if (currentArrow_->getOldPortGraphicsItem() == 0) {
+            QGraphicsItem* item = scene()->itemAt(scenePos);
+            if (item && (item != this)) {
+                switch (item->type()) {
+                case PortGraphicsItem::Type:
+                    {
+                        PortGraphicsItem* destPort = qgraphicsitem_cast<PortGraphicsItem*>(item);
+                        if (getParent()->connect(this, destPort, true))
+                            currentArrow_->setNormalColor(Qt::green);
+                        else {
+                            RenderPort* rSrc = dynamic_cast<RenderPort*>(getPort());
+                            RenderPort* rDest = dynamic_cast<RenderPort*>(destPort->getPort());
 
-        QGraphicsItem* item = scene()->itemAt(scenePos);
-        if (item && (item != this)) {
-            switch (item->type()) {
-            case PortGraphicsItem::Type:
-                {
-                    PortGraphicsItem* destPort = qgraphicsitem_cast<PortGraphicsItem*>(item);
-                    if (getParent()->connect(this, destPort, true))
-                        currentArrow_->setNormalColor(Qt::green);
-                    else {
-                        RenderPort* rSrc = dynamic_cast<RenderPort*>(getPort());
-                        RenderPort* rDest = dynamic_cast<RenderPort*>(destPort->getPort());
-
-                        if (rSrc && rDest && rSrc->doesSizeOriginConnectFailWithPort(rDest))
-                            currentArrow_->setNormalColor(Qt::yellow);
-                        else
-                            currentArrow_->setNormalColor(Qt::red);
+                            if (rSrc && rDest && rSrc->doesSizeOriginConnectFailWithPort(rDest))
+                                currentArrow_->setNormalColor(Qt::yellow);
+                            else
+                                currentArrow_->setNormalColor(Qt::red);
+                        }
+                    break;
                     }
-                break;
+                case TextGraphicsItem::Type:
+                case OpenPropertyListButton::Type:
+                    item = item->parentItem();
+                case AggregationGraphicsItem::Type:
+                case ProcessorGraphicsItem::Type:
+                    {
+                    RootGraphicsItem* p = static_cast<RootGraphicsItem*>(item);
+                    if (getParent()->connect(this, p, true))
+                        currentArrow_->setNormalColor(Qt::green);
+                    else
+                        currentArrow_->setNormalColor(Qt::red);
+                    break;
+                    }
+                default:
+                    currentArrow_->setNormalColor(Qt::black);
                 }
-            case TextGraphicsItem::Type:
-            case OpenPropertyListButton::Type:
-                item = item->parentItem();
-            case AggregationGraphicsItem::Type:
-            case ProcessorGraphicsItem::Type:
-                {
-                RootGraphicsItem* p = static_cast<RootGraphicsItem*>(item);
-                if (getParent()->connect(this, p, true))
-                    currentArrow_->setNormalColor(Qt::green);
-                else
-                    currentArrow_->setNormalColor(Qt::red);
-                break;
-                }
-            default:
-                currentArrow_->setNormalColor(Qt::black);
             }
-        }
-        else
-            currentArrow_->setNormalColor(Qt::black);
+            else
+                currentArrow_->setNormalColor(Qt::black);
         }
     }
 
@@ -372,7 +346,8 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
     QString portInfo;
 
     // RenderPort information with preview
-    if (RenderPort* rp = dynamic_cast<RenderPort*>(getPort())) {
+    RenderPort* rp = dynamic_cast<RenderPort*>(getPort());
+    if (rp) {
         if (rp->isConnected()) {
             // max dimensions of the render tooltip
             tgt::ivec2 maxSize(100, 100);
@@ -395,12 +370,11 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
 
             // create render tooltip
             TCTooltip* tooltip = new TCTooltip(-(maxSize.x+8), 0, maxSize.x, maxSize.y);
-            RenderPort* rp = dynamic_cast<RenderPort*>(getPort());
-            if (rp)
-                tooltip->initialize(rp->getRenderTarget());
+            tooltip->initialize(rp->getRenderTarget());
 
             // name item
-            QGraphicsSimpleTextItem* tooltipText = new QGraphicsSimpleTextItem(QString::fromStdString(getPort()->getName()));
+            QString textString = QString::fromStdString(getPort()->getName()) + "\n" + QString::number(rp->getSize().x) + " x " + QString::number(rp->getSize().y);
+            QGraphicsSimpleTextItem* tooltipText = new QGraphicsSimpleTextItem(textString);
             QGraphicsRectItem* tooltipTextRect = new QGraphicsRectItem((tooltipText->boundingRect()).adjusted(-3, -2, 3, 2));
             tooltipText->setParentItem(tooltipTextRect);
             tooltipTextRect->translate(-(maxSize.x+5), -tooltipTextRect->rect().height() + 1);
@@ -419,19 +393,20 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
     }
     // volume information
     else if (VolumePort* volport = dynamic_cast<VolumePort*>(getPort())) {
-        if (volport->getData() && volport->getData()->getVolume()) {
+        if (volport->getData() && volport->getData()->getRepresentation<VolumeRAM>()) {
             portInfo = QObject::tr("VolumePort: ") + std::string(getPort()->getName()).c_str();
             portInfo +=  "\n";
 
-            Volume* v = volport->getData()->getVolume();
-            if (!volport->getData()->getOrigin().getURL().empty()) {
-                std::string file = tgt::FileSystem::fileName(volport->getData()->getOrigin().getPath());
-                portInfo += QObject::tr("Filename: %1\n").arg(file.c_str());
-            }
+            const VolumeBase* h = volport->getData();
+            const VolumeRAM* v = volport->getData()->getRepresentation<VolumeRAM>();
+//            if (!h)->getOrigin().getURL().empty()) {
+//                std::string file = tgt::FileSystem::fileName(h->getOrigin().getPath());
+//                portInfo += QObject::tr("Filename: %1\n").arg(file.c_str());
+//            }
 
             portInfo += QString::fromStdString("Data Type: " + VolumeViewHelper::getVolumeType(v) + "\n");
-            portInfo += QObject::tr("Dimension: ") + QString::fromStdString(VolumeViewHelper::getVolumeDimension(v) + "\n");
-            portInfo += QObject::tr("Spacing: ") + QString::fromStdString(VolumeViewHelper::getVolumeSpacing(v) + "\n");
+            portInfo += QObject::tr("Dimension: ") + QString::fromStdString(VolumeViewHelper::getVolumeDimension(h) + "\n");
+            portInfo += QObject::tr("Spacing: ") + QString::fromStdString(VolumeViewHelper::getVolumeSpacing(h) + "\n");
             portInfo += QObject::tr("Bits Per Voxel: %1\n").arg(v->getBitsAllocated());
             QString numVoxelString;
             numVoxelString.setNum(static_cast<int>(v->getNumVoxels()));
@@ -441,6 +416,26 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
         else {
             portInfo = QObject::tr("VolumePort: ") + "\n" + std::string(getPort()->getName()).c_str();
             //portInfo +=  "\n" + QObject::tr("no volume");
+        }
+    } else if (TextPort* textport = dynamic_cast<TextPort*>(getPort())) {
+        portInfo = QObject::tr("TextPort: ") + std::string(getPort()->getName()).c_str();
+        if (!textport->getData().empty()) {
+            portInfo +=  "\n";
+            portInfo += QString::fromStdString("Content: " + textport->getData());
+        }
+    }
+    // tgt Texture information
+    else if (GenericPort<tgt::Texture>* texport = dynamic_cast<GenericPort<tgt::Texture>*>(getPort())) {
+        portInfo = QObject::tr("TexturePort: ") + std::string(getPort()->getName()).c_str();
+        portInfo +=  "\n";
+
+        if (texport->getData()) {
+            const tgt::Texture* tex = texport->getData();
+            std::stringstream out;
+            out << tex->getDimensions().x << " x " << tex->getDimensions().y << " x " << tex->getDimensions().z;
+
+            portInfo += QObject::tr("Dimension: ") + QString::fromStdString(out.str() + "\n");
+            portInfo += QObject::tr("Bits Per Pixel: %1").arg(tex->getBpp());
         }
     }
     // just show port name
@@ -455,6 +450,41 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
     tooltipRect->translate(-tooltipRect->rect().width() - 4, 10);
     tooltipRect->setBrush(QBrush(QColor(255, 255, 220), Qt::SolidPattern));
     return tooltipRect;
+}
+
+QImage* PortGraphicsItem::getRenderPortImage() const {
+    RenderPort* rp = dynamic_cast<RenderPort*>(getPort());
+    if (rp) {
+        if (rp->isConnected()) {
+            // max dimensions of the render tooltip
+            tgt::ivec2 maxSize(100, 100);
+
+            // fit rect
+            float image_aspect = static_cast<float>(rp->getSize().x) / static_cast<float>(rp->getSize().y);
+            float tip_aspect = maxSize.x / maxSize.y;
+            if (image_aspect > tip_aspect) {
+                // image is wider - lower tooltip's height
+                float newheight = maxSize.x / image_aspect;
+                float dh = maxSize.y - newheight;
+                maxSize.y -= static_cast<int>(dh);
+            }
+            else if (image_aspect < tip_aspect) {
+                // image is higher - lower tooltip's width
+                float newwidth = maxSize.y * image_aspect;
+                float dw = maxSize.x - newwidth;
+                maxSize.x -= static_cast<int>(dw);
+            }
+
+            // create render tooltip
+            TCTooltip* tooltip = new TCTooltip(-(maxSize.x+8), 0, maxSize.x, maxSize.y);
+            tooltip->initialize(rp->getRenderTarget());
+
+            QImage* image = tooltip->getImage();
+
+            return image;
+        }
+    }
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -532,6 +562,10 @@ void PortGraphicsItem::TCTooltip::paint(QPainter *painter, const QStyleOptionGra
     painter->drawRect(rect());
     if (image_)
         painter->drawImage(rect(), *image_);
+}
+
+QImage* PortGraphicsItem::TCTooltip::getImage() const {
+    return image_;
 }
 
 } // namespace

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/processors/profiling.h"
 #include <iomanip>
@@ -42,7 +38,13 @@ namespace voreen {
 //const std::string ProfilingBlock::loggerCat_ = "voreen.ProfilingBlock";
 const std::string PerformanceSample::loggerCat_ = "voreen.PerformanceSample";
 
-PerformanceSample::PerformanceSample(PerformanceSample* parent, std::string name) : parent_(parent), name_(name), time_(-1.0f) {
+PerformanceSample::PerformanceSample() : parent_(NULL), name_(""), time_(-1.0f) {
+}
+
+PerformanceSample::PerformanceSample(PerformanceSample* sample) : parent_(sample->getParent()), name_(sample->getName()), time_(sample->getTime()), measurements_(sample->getMeasurementCount()) {
+}
+
+PerformanceSample::PerformanceSample(PerformanceSample* parent, std::string name) : parent_(parent), name_(name), time_(-1.0f), measurements_(1) {
 }
 
 PerformanceSample* PerformanceSample::addChild(std::string name) {
@@ -50,7 +52,12 @@ PerformanceSample* PerformanceSample::addChild(std::string name) {
     return &(children_.back());
 }
 
-void PerformanceSample::print(int level) const {
+PerformanceSample* PerformanceSample::addChild(PerformanceSample sample) {
+    children_.push_back(sample);
+    return &(children_.back());
+}
+
+void PerformanceSample::print(int level, std::string recordName) const {
     std::string spaces = "";
     for(int j=0; j<level; j++)
         spaces += ' ';
@@ -62,16 +69,25 @@ void PerformanceSample::print(int level) const {
     float percentChildren = 100.0f * (getChildrenTime()) / time_;
 
     if (children_.size() > 0 && parent_)
-        LINFO(spaces << name_ << " (" << children_.size() << " children): " << std::setprecision(10) << time_ << " secs (" << percent << "% of parent) (" << percentChildren << "% in children)");
+        LINFO(spaces << recordName << name_ << " (" << children_.size() << " children): " << std::setprecision(10) << time_ << " secs (" << percent << "% of parent) (" << percentChildren << "% in children)");
     else if (children_.size() > 0 && !parent_)
-        LINFO(spaces << name_ << " (" << children_.size() << " children): " << std::setprecision(10) << time_ << " secs (" << percentChildren << "% in children)");
+        LINFO(spaces << recordName << name_ << " (" << children_.size() << " children): " << std::setprecision(10) << time_ << " secs (" << percentChildren << "% in children)");
     else if (children_.size() == 0 && parent_)
-        LINFO(spaces << name_ << ": " << std::setprecision(10) << time_ << " secs (" << percent << "% of parent)");
+        LINFO(spaces << recordName << name_ << ": " << std::setprecision(10) << time_ << " secs (" << percent << "% of parent)");
     else
-        LINFO(spaces << name_ << ": " << std::setprecision(10) << time_ << " secs");
+        LINFO(spaces << recordName << name_ << ": " << std::setprecision(10) << time_ << " secs");
 
     for(size_t i=0; i<children_.size(); i++)
         children_[i].print(level+1);
+}
+
+float PerformanceSample::getChildTime(std::string name) const {
+    float time = 0.0f;
+    for(size_t i=0; i<children_.size(); i++){
+        if(children_[i].getName() == name)
+            return children_[i].getTime();
+    }
+    return time;
 }
 
 float PerformanceSample::getChildrenTime() const {
@@ -79,6 +95,22 @@ float PerformanceSample::getChildrenTime() const {
     for(size_t i=0; i<children_.size(); i++)
         time += children_[i].getTime();
     return time;
+}
+
+PerformanceSample* PerformanceSample::getChild(std::string name) {
+    for (size_t i = 0; i < children_.size(); ++i) {
+        if(children_[i].getName() == name)
+            return &(children_[i]);
+    }
+    return NULL;
+}
+
+std::vector<PerformanceSample*> PerformanceSample::getChildren() {
+    std::vector<PerformanceSample*> sampleChildren;
+    for (size_t i = 0; i < children_.size(); ++i) {
+        sampleChildren.push_back(&(children_[i]));
+    }
+    return sampleChildren;
 }
 
 void PerformanceSample::setTime(float time) {
@@ -89,16 +121,51 @@ float PerformanceSample::getTime() const {
     return time_;
 }
 
+std::string PerformanceSample::getName() const {
+    return name_;
+}
+
+PerformanceSample PerformanceSample::operator+ (PerformanceSample other_sample) {
+    PerformanceSample sum(this);
+    std::vector<PerformanceSample*> this_children = this->getChildren();
+    std::vector<PerformanceSample*> other_children = other_sample.getChildren();
+    size_t min_children = std::min(this_children.size(), other_children.size());
+    for(size_t i=0; i<min_children; i++){
+        sum.addChild((*this_children[i]) + (*other_children[i]));
+    }
+    sum.setTime(this->getTime() + other_sample.getTime());
+    sum.increaseMeasurementCount();
+    return sum;
+}
+
+int PerformanceSample::getMeasurementCount(){
+    return measurements_;
+}
+
+void PerformanceSample::setMeasurementCount(int val){
+    measurements_ = val;
+}
+
+void PerformanceSample::increaseMeasurementCount(){
+    measurements_++;
+}
+
+void PerformanceSample::normalize(){
+    std::vector<PerformanceSample*> this_children = this->getChildren();
+    for(size_t i=0; i<this_children.size(); i++){
+        this_children[i]->normalize();
+    }
+    this->setTime(this->getTime() / (float)this->getMeasurementCount());
+    this->setMeasurementCount(1);
+}
+
 //----------------------------------------------------------------
 
 PerformanceRecord::PerformanceRecord() : current_(0) {
 }
 
 PerformanceRecord::~PerformanceRecord() {
-    while(!samples_.empty()) {
-        delete samples_.back();
-        samples_.pop_back();
-    }
+    deleteSamples();
 }
 
 void PerformanceRecord::startBlock(const ProfilingBlock* const pb) {
@@ -126,6 +193,21 @@ PerformanceSample* PerformanceRecord::getLastSample() const {
         return 0;
     else
         return samples_.back();
+}
+
+void PerformanceRecord::deleteSamples() {
+    while(!samples_.empty()) {
+        delete samples_.back();
+        samples_.pop_back();
+    }
+}
+
+void PerformanceRecord::setName(std::string str){
+    name_ = str;
+}
+
+std::string PerformanceRecord::getName() const {
+    return name_;
 }
 
 //----------------------------------------------------------------

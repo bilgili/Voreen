@@ -1,37 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/animation/interpolation/camerainterpolationfunctions.h"
 
 #include "voreen/core/animation/interpolation/vec3interpolationfunctions.h"
 #include "tgt/quaternion.h"
 #include <cmath>
+#include "voreen/core/animation/propertykeyvalue.h"
 
 using tgt::vec3;
 using tgt::Camera;
@@ -54,7 +51,7 @@ Camera CameraLinearInterpolationFunction::interpolate(Camera startvalue, Camera 
     vec3 posvec = intfunc->interpolate(startvalue.getPosition(), endvalue.getPosition(), time);
     vec3 focvec = intfunc->interpolate(startvalue.getFocus(), endvalue.getFocus(), time);
     vec3 upvec = normalize(intfunc2->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
-    vec3 direction = normalize(endvalue.getPosition() - startvalue.getPosition());
+    //vec3 direction = normalize(endvalue.getPosition() - startvalue.getPosition());
     Camera node = Camera(posvec, focvec, upvec);
 /*    Camera node = new Camera(posvec, focvec, upvec, direction);
     if (startvalue->isTangential() && endvalue->isTangential())
@@ -80,10 +77,8 @@ Camera CameraSphericalLinearInterpolationFunction::interpolate(Camera startvalue
     Vec3SphericalLinearInterpolationFunction* sphericalintfunc = new Vec3SphericalLinearInterpolationFunction();
 
     vec3 posvec = sphericalintfunc->interpolate(startvalue.getPosition(), endvalue.getPosition(), time);
-
     vec3 focvec = sphericalintfunc->interpolate(startvalue.getFocus(), endvalue.getFocus(), time);
-
-    vec3 upvec = normalize(sphericalintfunc->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
+    vec3 upvec  = normalize(sphericalintfunc->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
 
     vec3 direction;
 //    float eps = 0.0001f;
@@ -92,7 +87,8 @@ Camera CameraSphericalLinearInterpolationFunction::interpolate(Camera startvalue
         // small angle => linear interpolation
         direction = (endvalue.getPosition() - startvalue.getPosition());
     }
-    Camera node = Camera(posvec, focvec, upvec);
+    Camera node(startvalue);
+    node.positionCamera(posvec, focvec, upvec);
 /*    float theta = acosf(dotVal);
     direction = (-1.0f * cosf((1.0f - time) * theta)/(sinf(theta) + eps)) * startvalue->getPosition()
                 + (cosf(time * theta)/(sinf(theta) + eps)) * endvalue->getPosition();
@@ -134,7 +130,7 @@ Camera CameraCubicSplineInterpolationFunction::interpolate(std::vector<PropertyK
     tgt::vec3 fm1;
     if (it!= controlpoints.begin()) {
         it--;
-        tgt::vec3 p0 = (*it)->getValue().getPosition();
+        //tgt::vec3 p0 = (*it)->getValue().getPosition();
         tgt::vec3 f0 = (*it)->getValue().getFocus();
         fm1 = 0.5f*(f2 - f0);
         it++;
@@ -186,7 +182,8 @@ Camera CameraCubicSplineInterpolationFunction::interpolate(std::vector<PropertyK
     const float db33 = 3.0f*t*t;
     direction = db03 * p0 + db13 * p1 + db23 * p2 + db33 * p3;
 
-    Camera node = Camera(position, focus, upVector);
+    Camera node = Camera(startvalue);
+    node.positionCamera(position, focus, upVector);
 /*    Camera node = new Camera(position, focus, upVector, direction);
     if (startvalue->isTangential() && endvalue->isTangential())
         node->setTangential(true); */
@@ -338,7 +335,8 @@ Camera CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyKe
     direction.y = dh00 * p1.y + dh10 * m1.y + dh01 * p2.y + dh11 * m2.y;
     direction.z = dh00 * p1.z + dh10 * m1.z + dh01 * p2.z + dh11 * m2.z;
 
-    Camera node = Camera(position, focus, upVector);
+    Camera node = Camera(camera1);
+    node.positionCamera(position, focus, upVector);
 /*    Camera node = new Camera(position, focus, upVector, direction);
     if (camera1->isTangential() && camera2->isTangential())
         node->setTangential(true); */
@@ -425,7 +423,8 @@ Camera CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyValu
     Vec3SphericalLinearInterpolationFunction* intfunc2 = new Vec3SphericalLinearInterpolationFunction();
     upVector = normalize(intfunc2->interpolate(camera1.getUpVector(), camera2.getUpVector(), t));
 
-    Camera node = Camera(position, focus, upVector);
+    Camera node = Camera(camera1);
+    node.positionCamera(position, focus, upVector);
 /*    vec3 direction;
     direction = intf->interpolate(camera1->getDirection(), camera2->getDirection(), t );
 

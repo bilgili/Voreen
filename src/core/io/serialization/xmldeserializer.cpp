@@ -1,35 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/io/serialization/xmldeserializer.h"
-#include "voreen/core/plotting/plotbase.h"
-#include "voreen/core/plotting/plotselection.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 
 namespace voreen {
 
@@ -39,6 +35,16 @@ XmlDeserializer::XmlDeserializer(std::string documentPath)
     : XmlSerializerBase()
     , documentPath_(documentPath)
 {
+    // retrieve serialization factories from modules
+    if (VoreenApplication::app()) {
+        const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
+        for (size_t i=0; i<modules.size(); i++)
+            registerFactories(modules.at(i)->getSerializerFactories());
+        registerFactories(VoreenApplication::app()->getSerializerFactories());
+    }
+    else {
+        LWARNING("Unable to retrieve factories from modules: VoreenApplication not instantiated");
+    }
 }
 
 XmlDeserializer::~XmlDeserializer() {
@@ -65,9 +71,9 @@ void XmlDeserializer::deserialize(const std::string& key, bool& data)
 
     std::transform(boolValue.begin(), boolValue.end(), boolValue.begin(), tolower);
 
-    if (boolValue == "true")
+    if (boolValue == "true" || boolValue == "1")
         data = true;
-    else if (boolValue == "false")
+    else if (boolValue == "false" || boolValue == "0")
         data = false;
     else
         raise(XmlSerializationFormatException("XML node with key '" + key + "' contains unknown bool value."));
@@ -91,37 +97,45 @@ void XmlDeserializer::deserialize(const std::string& key, unsigned char& data)
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, signed short& data)
+void XmlDeserializer::deserialize(const std::string& key, uint16_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, unsigned short& data)
+void XmlDeserializer::deserialize(const std::string& key, int16_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, signed int& data)
+void XmlDeserializer::deserialize(const std::string& key, uint32_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, unsigned int& data)
+#ifdef __APPLE__
+void XmlDeserializer::deserialize(const std::string& key, long unsigned int& data)
+    throw (SerializationException)
+{
+    deserializeSimpleTypes(key, data);
+}
+#endif
+
+void XmlDeserializer::deserialize(const std::string& key, int32_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, signed long& data)
+void XmlDeserializer::deserialize(const std::string& key, uint64_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, unsigned long& data)
+void XmlDeserializer::deserialize(const std::string& key, int64_t& data)
     throw (SerializationException)
 {
     deserializeSimpleTypes(key, data);
@@ -278,47 +292,6 @@ void XmlDeserializer::deserialize(const std::string& key, tgt::Matrix4d& data)
     data = tgt::Matrix4d(row0, row1, row2, row3);
 }
 
-void XmlDeserializer::deserialize(const std::string& key, PlotCellValue& data)
-    throw (SerializationException)
-{
-    TemporaryNodeChanger nodeChanger(*this, getNextXmlElement(key));
-
-    // first aquire flags
-    bool isHighlighted, isTag, isValue;
-    plot_t value;
-    std::string tag;
-    deserializeSimpleTypes("isValue", isValue);
-    deserializeSimpleTypes("isTag", isTag);
-    deserializeSimpleTypes("isHighlighted", isHighlighted);
-
-    // now call the according constructors
-    if (isValue) {
-        deserializeSimpleTypes("value", value);
-        data = PlotCellValue(value);
-    }
-    else if (isTag) {
-        deserializeSimpleTypes("tag", tag);
-        data = PlotCellValue(tag);
-    }
-    else { // neither value nor tag
-        data = PlotCellValue();
-    }
-
-    // finally set highlighted flag
-    data.setHighlighted(isHighlighted);
-}
-
-void XmlDeserializer::deserialize(const std::string& key, PlotSelectionEntry& data)
-    throw (SerializationException)
-{
-    TemporaryNodeChanger nodeChanger(*this, getNextXmlElement(key));
-
-    deserialize("selection", data.selection_);
-    deserializeSimpleTypes("highlight", data.highlight_);
-    deserializeSimpleTypes("renderLabel", data.renderLabel_);
-    deserializeSimpleTypes("zoomTo", data.zoomTo_);
-}
-
 void XmlDeserializer::deserialize(const std::string& key, Serializable& data)
     throw (SerializationException)
 {
@@ -436,5 +409,82 @@ void XmlDeserializer::freePointer(void* pointer) {
         if (it->second == pointer)
             it->second = 0;
 }
+
+void XmlDeserializer::deserializeBinaryBlob(const std::string& key, unsigned char*& inputBuffer)
+    throw (SerializationException)
+{
+    std::string tmp;
+    deserialize(key, tmp);
+    std::vector<unsigned char> dataVec = base64Decode(tmp);
+    inputBuffer = new unsigned char[dataVec.size()];
+    std::copy(inputBuffer, inputBuffer + dataVec.size(), dataVec.begin());
+}
+
+void XmlDeserializer::deserializeBinaryBlob(const std::string& key, std::vector<unsigned char>& buffer)
+    throw (SerializationException)
+{
+    std::string tmp;
+    deserialize(key, tmp);
+    buffer = base64Decode(tmp);
+}
+
+std::vector<unsigned char> XmlDeserializer::base64Decode(const std::string& input) {
+    //input.erase(std::remove(input.begin(), input.end(), '\n'), input.end());
+
+    const char padCharacter = '=';
+
+    if (input.length() % 4) //Sanity check
+            raise(XmlSerializationFormatException("Non-Valid base64!"));
+
+    size_t padding = 0;
+    if (input.length()) {
+        if (input[input.length()-1] == padCharacter)
+                padding++;
+        if (input[input.length()-2] == padCharacter)
+                padding++;
+    }
+
+    //Setup a vector to hold the result
+    std::vector<unsigned char> decodedBytes;
+    decodedBytes.reserve(((input.length()/4)*3) - padding);
+    long temp = 0; //Holds decoded quanta
+    std::string::const_iterator cursor = input.begin();
+    while (cursor < input.end()) {
+        for (size_t quantumPosition = 0; quantumPosition < 4; quantumPosition++) {
+            temp <<= 6;
+            if       (*cursor >= 0x41 && *cursor <= 0x5A) // This area will need tweaking if
+                temp |= *cursor - 0x41;                       // you are using an alternate alphabet
+            else if  (*cursor >= 0x61 && *cursor <= 0x7A)
+                temp |= *cursor - 0x47;
+            else if  (*cursor >= 0x30 && *cursor <= 0x39)
+                temp |= *cursor + 0x04;
+            else if  (*cursor == 0x2B)
+                temp |= 0x3E; //change to 0x2D for URL alphabet
+            else if  (*cursor == 0x2F)
+                temp |= 0x3F; //change to 0x5F for URL alphabet
+            else if  (*cursor == padCharacter) { //pad
+                switch( input.end() - cursor ) {
+                    case 1: //One pad character
+                        decodedBytes.push_back((temp >> 16) & 0x000000FF);
+                        decodedBytes.push_back((temp >> 8 ) & 0x000000FF);
+                        return decodedBytes;
+                    case 2: //Two pad characters
+                        decodedBytes.push_back((temp >> 10) & 0x000000FF);
+                        return decodedBytes;
+                    default:
+                        raise(XmlSerializationFormatException("Invalid Padding in Base 64!"));
+                }
+            }  else
+                raise(XmlSerializationFormatException("Non-Valid Character in Base 64!"));
+            cursor++;
+        }
+        decodedBytes.push_back((temp >> 16) & 0x000000FF);
+        decodedBytes.push_back((temp >> 8 ) & 0x000000FF);
+        decodedBytes.push_back((temp      ) & 0x000000FF);
+    }
+
+    return decodedBytes;
+}
+
 
 } // namespace

@@ -1,43 +1,45 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
-
-#include <map>
-
-#include "tgt/glmath.h"
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/datastructures/geometry/facegeometry.h"
+
+#include <map>
+#include "tgt/glmath.h"
+
+#include "voreen/core/io/serialization/xmlserializer.h"
+#include "voreen/core/io/serialization/xmldeserializer.h"
 
 namespace voreen {
 
 FaceGeometry::FaceGeometry()
     : Geometry()
-{
+    , normalIsSet_(false)
+{}
+
+Geometry* FaceGeometry::create() const {
+    return new FaceGeometry();
 }
 
 size_t FaceGeometry::getVertexCount() const {
@@ -62,8 +64,17 @@ VertexGeometry& FaceGeometry::getVertex(size_t index) {
     return vertices_.at(index);
 }
 
+
+void FaceGeometry::setFaceNormal(const tgt::vec3& normal) {
+    normalIsSet_ = true;
+    normal_ = normal;
+
+    setHasChanged(true);
+}
+
 void FaceGeometry::clear() {
     vertices_.clear();
+    normalIsSet_ = false;
 
     setHasChanged(true);
 }
@@ -88,14 +99,35 @@ VertexGeometry& FaceGeometry::operator[](size_t index) {
     return vertices_[index];
 }
 
-void FaceGeometry::render() {
-    glBegin(GL_POLYGON);
-    for (iterator it = begin(); it != end(); ++it) {
-        glColor4fv(it->getColor().elem);
-        tgt::texCoord(it->getTexCoords());
-        tgt::vertex(it->getCoords());
+void FaceGeometry::render() const {
+    if(getVertexCount() >= 3) {
+        glBegin(GL_POLYGON);
+        for (const_iterator it = begin(); it != end(); it++) {
+            glColor4fv(it->getColor().elem);
+            tgt::texCoord(it->getTexCoords());
+
+            if (normalIsSet_)
+                tgt::normal(normal_);
+            else if (it->isNormalDefined())
+                tgt::normal(it->getNormal());
+
+            tgt::vertex(it->getCoords());
+        }
+        glEnd();
     }
-    glEnd();
+    else {
+        glBegin(GL_LINES);
+        for (const_iterator it = begin(); it != end(); it++) {
+            glColor4fv(it->getColor().elem);
+            tgt::texCoord(it->getTexCoords());
+
+            if (normalIsSet_)
+                tgt::normal(normal_);
+
+            tgt::vertex(it->getCoords());
+        }
+        glEnd();
+    }
 }
 
 void FaceGeometry::transform(const tgt::mat4& transformation) {
@@ -105,17 +137,18 @@ void FaceGeometry::transform(const tgt::mat4& transformation) {
     setHasChanged(true);
 }
 
-void FaceGeometry::clip(const tgt::vec4& clipplane, double epsilon) {
+void FaceGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
+    tgtAssert(epsilon >= 0.0, "negative epsilon");
     if (vertices_.size() < 2)
         return;
 
     // Since the clipped face vertices are appended to the vertex list, remember the current vertex list size.
     size_t vertexCount = vertices_.size();
-    double lastDistance = vertices_.at(0).getDistanceToPlane(clipplane, epsilon);
+    double lastDistance = vertices_.at(0).getDistanceToPlane(clipPlane, epsilon);
 
     // Process face edges...
     for (size_t i = 0; i < vertexCount; ++i) {
-        double distance = vertices_.at((i + 1) % vertexCount).getDistanceToPlane(clipplane, epsilon);
+        double distance = vertices_.at((i + 1) % vertexCount).getDistanceToPlane(clipPlane, epsilon);
 
         // Keep both vertices?
         if (lastDistance <= 0 && distance <= 0) {
@@ -159,5 +192,56 @@ void FaceGeometry::clip(const tgt::vec4& clipplane, double epsilon) {
     setHasChanged(true);
 }
 
+bool FaceGeometry::equals(const FaceGeometry& face, double epsilon /*= 1e-6*/) const {
+    if (getVertexCount() != face.getVertexCount())
+        return false;
+    for (size_t i=0; i<getVertexCount(); i++) {
+        if (!vertices_[i].equals(face.vertices_[i], epsilon))
+            return false;
+    }
+    return true;
+}
+
+bool FaceGeometry::equals(const Geometry* geometry, double epsilon /*= 1e-6*/) const {
+    const FaceGeometry* faceGeometry = dynamic_cast<const FaceGeometry*>(geometry);
+    if (!faceGeometry)
+        return false;
+    else
+        return equals(*faceGeometry, epsilon);
+}
+
+tgt::Bounds FaceGeometry::getBoundingBox() const {
+    tgt::Bounds bounds;
+    for (size_t i = 0; i < vertices_.size(); i++)
+        bounds.addPoint(vertices_[i].getCoords());
+    return bounds;
+}
+
+void FaceGeometry::serialize(XmlSerializer& s) const {
+    s.serialize("vertices", vertices_);
+    if (normalIsSet_)
+        s.serialize("normal", normal_);
+}
+
+void FaceGeometry::deserialize(XmlDeserializer& s) {
+    s.deserialize("vertices", vertices_);
+    try {
+        s.deserialize("normal", normal_);
+        normalIsSet_ = true;
+    }
+    catch (...) {
+        s.removeLastError();
+        normalIsSet_ = false;
+    }
+    setHasChanged(true);
+}
+
+bool FaceGeometry::operator==(const FaceGeometry& rhs) const {
+    return (this->getVertexCount() == rhs.getVertexCount());
+}
+
+bool FaceGeometry::operator!=(const FaceGeometry& rhs) const {
+    return !(*this == rhs);
+}
 
 } // namespace

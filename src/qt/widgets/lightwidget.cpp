@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/property/floatvec4propertywidget.h"
 #include "voreen/qt/widgets/lightwidget.h"
@@ -48,26 +44,26 @@ LightWidget::LightWidget(QWidget* parent)
     , radius_(50)
     , hemisphere_(false)
     , distance_(4.f)
+    , offset_(tgt::vec2(0.f))
 {
-    DoubleSliderSpinBoxWidget* distanceSlider = new DoubleSliderSpinBoxWidget(this);
-    distanceSlider->setMaxValue(10.0f);
-    distanceSlider->setMinValue(1.0f);
-    distanceSlider->setValue(distance_);
-    connect(distanceSlider, SIGNAL(valueChanged(double)), this, SLOT(updateDistance(double)));
-    distanceSlider->move(QPoint(0,85));
-    distanceSlider->setMaximumWidth(110);
-    distanceSlider->setSingleStep(0.1f);
-    distanceSlider->show();
+    distanceSlider_ = new DoubleSliderSpinBoxWidget(this);
+    distanceSlider_->setMaxValue(10.0f);
+    distanceSlider_->setMinValue(1.0f);
+    distanceSlider_->setValue(distance_);
+    connect(distanceSlider_, SIGNAL(valueChanged(double)), this, SLOT(updateDistance(double)));
+    distanceSlider_->move(QPoint(0,110));
+    distanceSlider_->setMaximumWidth(110);
+    distanceSlider_->setSingleStep(0.1f);
+    distanceSlider_->show();
 
-    mousePosition_ = QPointF(50,50);
-    QPushButton* hemisphereButton = new QPushButton(this);
-    hemisphereButton->setCheckable(true);
-    hemisphereButton->setChecked(hemisphere_);
-    hemisphereButton->setText("Z");
-    hemisphereButton->setGeometry(QRect(0, 0, 20, 20));
-    connect(hemisphereButton, SIGNAL(toggled(bool)), this, SLOT(setHemisphere(bool)));
-    hemisphereButton->move(QPoint(90, 95));
-    hemisphereButton->show();
+    hemisphereButton_ = new QPushButton(this);
+    hemisphereButton_->setCheckable(true);
+    hemisphereButton_->setChecked(hemisphere_);
+    hemisphereButton_->setText("Z");
+    hemisphereButton_->setGeometry(QRect(0, 0, 20, 20));
+    connect(hemisphereButton_, SIGNAL(toggled(bool)), this, SLOT(setHemisphere(bool)));
+    hemisphereButton_->move(QPoint(120, 110));
+    hemisphereButton_->show();
 
     lightPosition_ = QPointF(50,50);
 
@@ -103,30 +99,29 @@ void LightWidget::setHemisphere(bool hemibool) {
     int hem = 1;
     if(hemisphere_)
         hem = -1;
-    emit(lightWidgetChanged(tgt::vec4(x_ * distance_, y_ * distance_, hem * sqrt(distance_ - (x_ * x_)*distance_ - (y_ * y_ )* distance_), 0)));
+    emit(lightWidgetChanged(distance_ * tgt::vec4(offset_, hem * sqrt(std::max(0.f, 1.f - lengthSq(offset_))), 0.f)));
     update();
 }
 
 void LightWidget::mousePressEvent(QMouseEvent *event) {
-    mousePosition_ = event->pos();
     mouseMoveEvent(event);
     update();
 }
 
 void LightWidget::mouseMoveEvent(QMouseEvent *event) {
-    mousePosition_ = event->pos();
-    x_ =  -60+(float)mousePosition_.x();
-    y_ = -60+(float)mousePosition_.y();
-    x_ = x_/60;
-    y_ = y_/60;
+    tgt::vec2 tmp = tgt::vec2(event->pos().x() - 60, event->pos().y() - 60) / 60.f;
+    if(lengthSq(tmp) > 1.f)
+        tmp = normalize(tmp);
+
     int hem = 1;
     if(hemisphere_) {
         hem = -1;
     }
-    if((x_ * x_ + y_ * y_) <= 1) {
-        lightPosition_ = mousePosition_;
-        emit(lightWidgetChanged(tgt::vec4(x_ * distance_, y_ * distance_, hem * sqrt(distance_ - (x_ * x_)*distance_ - (y_ * y_ )* distance_), 0)));
-    }
+
+    lightPosition_ = QPointF((tmp.x + 1.f)*60.f, (tmp.y + 1.f)*60.f);
+    offset_ = tgt::vec2(tmp.x, -1.f * tmp.y);
+
+    emit(lightWidgetChanged(distance_ * tgt::vec4(offset_, hem * sqrt(std::max(0.f, 1.f - lengthSq(offset_))), 0.f)));
     update();
 }
 
@@ -137,14 +132,37 @@ void LightWidget::updateDistance(double distance) {
     if(hemisphere_) {
         hem = -1;
     }
-    emit(lightWidgetChanged(tgt::vec4(x_ * distance_, y_ * distance_, hem * sqrt(distance_ - (x_ * x_)*distance_ - (y_ * y_ )* distance_), 0)));
+    emit(lightWidgetChanged(distance_ * tgt::vec4(offset_, hem * sqrt(std::max(0.f, 1.f - lengthSq(offset_))), 0.f)));
 }
 
-void LightWidget::setLightPosition(tgt::vec4 position) {
-    x_ = position.x;
-    y_ = position.y;
-    distance_ = position.z;
+void LightWidget::setLightPosition(const tgt::vec4& position) {
+
+    hemisphere_ = position.z < 0.f ? true : false;
+    distance_ = std::max(1.f, std::min(10.f, length(position.xyz())));
+
+    tgt::vec2 pos(0.f);
+    offset_ = position.xy() / length(position.xyz());
+    if(lengthSq(offset_) > 1.f)
+        offset_ = normalize(offset_);
+
+    //offset_.y *= -1.f;
+    lightPosition_ = QPointF((offset_.x + 1.f)*60.f, (1.f - offset_.y)*60.f);
+
+    distanceSlider_->blockSignals(true);
+    distanceSlider_->setValue(distance_);
+    distanceSlider_->blockSignals(false);
+    hemisphereButton_->blockSignals(true);
+    hemisphereButton_->setChecked(hemisphere_);
+    hemisphereButton_->blockSignals(false);
     update();
 }
 
-} //namespace voreen
+tgt::vec4 LightWidget::getLightPosition() const {
+    return distance_ * tgt::vec4(offset_, (hemisphere_ ? -1.f : 1.f) * sqrt(std::max(0.f, 1.f - lengthSq(offset_))), 0.f);
+}
+
+bool LightWidget::getHemisphereStatus() const {
+    return hemisphereButton_->isChecked();
+}
+
+} // namespace voreen

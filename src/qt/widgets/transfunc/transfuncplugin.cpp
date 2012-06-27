@@ -1,41 +1,36 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/transfunc/transfuncplugin.h"
 
-#include "voreen/qt/widgets/transfunc/transfunceditorintensity.h"
-#include "voreen/qt/widgets/transfunc/transfunceditorintensitygradient.h"
-#include "voreen/qt/widgets/transfunc/transfunceditorintensitypet.h"
-#include "voreen/qt/widgets/transfunc/transfunceditorintensityramp.h"
+#include "voreen/qt/widgets/transfunc/transfunc1dkeyseditor.h"
+#include "voreen/qt/widgets/transfunc/transfunc1drampeditor.h"
+#include "voreen/qt/widgets/transfunc/transfunc2dprimitiveseditor.h"
 
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
+#include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 
 #include <QComboBox>
 #include <QMessageBox>
@@ -57,19 +52,15 @@ TransFuncPlugin::TransFuncPlugin(TransFuncProperty* prop, QWidget* parent, Qt::O
 void TransFuncPlugin::createEditors(QWidget* parent, Qt::Orientation orientation) {
     TransFuncEditor* tfEditor;
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY)) {
-        tfEditor = new TransFuncEditorIntensity(property_, parent, orientation);
+        tfEditor = new TransFunc1DKeysEditor(property_, parent, orientation);
         editors_.push_back(tfEditor);
     }
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_RAMP)) {
-        tfEditor = new TransFuncEditorIntensityRamp(property_, parent, orientation);
+        tfEditor = new TransFunc1DRampEditor(property_, parent, orientation);
         editors_.push_back(tfEditor);
     }
-/*    if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_PET)) {
-        tfEditor = new TransFuncEditorIntensityPet(property_, parent);
-        editors_.push_back(tfEditor);
-    } */
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_GRADIENT)) {
-        tfEditor = new TransFuncEditorIntensityGradient(property_, parent, orientation);
+        tfEditor = new TransFunc2DPrimitivesEditor(property_, parent, orientation);
         editors_.push_back(tfEditor);
     }
 }
@@ -93,24 +84,24 @@ void TransFuncPlugin::createWidgets() {
 
     // select editor according to currently assigned transfer function
     // (needs to be revised in the near future)
-    if (dynamic_cast<TransFuncIntensity*>(property_->get())) {
+    if (dynamic_cast<TransFunc1DKeys*>(property_->get())) {
         for (size_t i=0; i < editors_.size(); ++i) {
-            if (dynamic_cast<TransFuncEditorIntensity*>(editors_[i])) {
-                oldIndex_ = i;
+            if (dynamic_cast<TransFunc1DKeysEditor*>(editors_[i])) {
+                oldIndex_ = static_cast<int>(i);
                 break;
             }
         }
     }
-    else if (dynamic_cast<TransFuncIntensityGradient*>(property_->get())) {
+    else if (dynamic_cast<TransFunc2DPrimitives*>(property_->get())) {
         for (size_t i=0; i < editors_.size(); ++i) {
-            if (dynamic_cast<TransFuncEditorIntensityGradient*>(editors_[i])) {
-                oldIndex_ = i;
+            if (dynamic_cast<TransFunc2DPrimitivesEditor*>(editors_[i])) {
+                oldIndex_ = static_cast<int>(i);
                 break;
             }
         }
     }
 
-    tabWidget_->setCurrentIndex(oldIndex_);
+    tabWidget_->setCurrentIndex(static_cast<int>(oldIndex_));
 }
 
 void TransFuncPlugin::createConnections() {
@@ -134,7 +125,7 @@ void TransFuncPlugin::editorChanged(int index) {
 
         // set tabwidget back to previous editor
         tabWidget_->blockSignals(true);
-        tabWidget_->setCurrentIndex(oldIndex_);
+        tabWidget_->setCurrentIndex(static_cast<int>(oldIndex_));
         tabWidget_->blockSignals(false);
         QString text(tr("The Editor you selected is not compatible with the previous one.\n"));
         text.append(tr("The transfer function and the thresholds will be reset to default.\n\n"));

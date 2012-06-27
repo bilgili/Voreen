@@ -1,0 +1,349 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <MetaData>
+                <MetaItem name="Zoom" type="ZoomMetaData">
+                    <transform.row0 x="0.77160185575485229" y="0" z="0" />
+                    <transform.row1 x="0" y="0.77160185575485229" z="0" />
+                    <transform.row2 x="-234" y="122" z="1" />
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="ImageSource" name="ImageSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-91" y="-547" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearButton" />
+                        <Property name="imageFile" value="input/images/nucleon_large.png" />
+                        <Property name="imageSize">
+                            <value x="1024" y="1024" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageSource" name="ImageSource 2" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="30" y="-547" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearButton" />
+                        <Property name="imageFile" value="input/images/walnut_background.png" />
+                        <Property name="imageSize">
+                            <value x="512" y="512" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-309" y="-244" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="41" y="113" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref10">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/disabled.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageOverlay" name="ImageOverlay disabled" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-340" y="-342" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="borderColor">
+                            <value x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="borderWidth" value="1" />
+                        <Property name="overlayBottomLeft">
+                            <value x="230" y="15" />
+                        </Property>
+                        <Property name="overlayBottomLeftRelative">
+                            <value x="0.05" y="0.05" />
+                        </Property>
+                        <Property name="overlayDimensions">
+                            <value x="150" y="150" />
+                        </Property>
+                        <Property name="overlayDimensionsRelative">
+                            <value x="0.25" y="0.25" />
+                        </Property>
+                        <Property name="overlayOpacity" value="1" />
+                        <Property name="renderBorder" value="false" />
+                        <Property name="renderOverlay" value="false" />
+                        <Property name="usePixelCoordinates" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageOverlay" name="ImageOverlay abs full-opac" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-154" y="-343" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="borderColor">
+                            <value x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="borderWidth" value="1" />
+                        <Property name="overlayBottomLeft">
+                            <value x="230" y="15" />
+                        </Property>
+                        <Property name="overlayBottomLeftRelative">
+                            <value x="0.05" y="0.05" />
+                        </Property>
+                        <Property name="overlayDimensions">
+                            <value x="150" y="150" />
+                        </Property>
+                        <Property name="overlayDimensionsRelative">
+                            <value x="0.25" y="0.25" />
+                        </Property>
+                        <Property name="overlayOpacity" value="1" />
+                        <Property name="renderBorder" value="false" />
+                        <Property name="renderOverlay" value="true" />
+                        <Property name="usePixelCoordinates" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 2" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-244" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="56" y="351" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref11">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/overlay-abs-fullopac.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageOverlay" name="ImageOverlay abs half-pac" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="59" y="-344" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="borderColor">
+                            <value x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="borderWidth" value="1" />
+                        <Property name="overlayBottomLeft">
+                            <value x="230" y="15" />
+                        </Property>
+                        <Property name="overlayBottomLeftRelative">
+                            <value x="0.05" y="0.05" />
+                        </Property>
+                        <Property name="overlayDimensions">
+                            <value x="150" y="150" />
+                        </Property>
+                        <Property name="overlayDimensionsRelative">
+                            <value x="0.25" y="0.25" />
+                        </Property>
+                        <Property name="overlayOpacity" value="0.64999998" />
+                        <Property name="renderBorder" value="false" />
+                        <Property name="renderOverlay" value="true" />
+                        <Property name="usePixelCoordinates" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 3" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="100" y="-244" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="476" y="111" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref12">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/overlay-abs-halfopac.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageOverlay" name="ImageOverlay rel half-opac" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="265" y="-344" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="borderColor">
+                            <value x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="borderWidth" value="1" />
+                        <Property name="overlayBottomLeft">
+                            <value x="230" y="15" />
+                        </Property>
+                        <Property name="overlayBottomLeftRelative">
+                            <value x="0.56999999" y="0.03" />
+                        </Property>
+                        <Property name="overlayDimensions">
+                            <value x="150" y="150" />
+                        </Property>
+                        <Property name="overlayDimensionsRelative">
+                            <value x="0.38" y="0.38" />
+                        </Property>
+                        <Property name="overlayOpacity" value="0.64999998" />
+                        <Property name="renderBorder" value="false" />
+                        <Property name="renderOverlay" value="true" />
+                        <Property name="usePixelCoordinates" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 4" id="ref9">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="305" y="-240" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="490" y="456" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref13">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/overlay-rel-halfopac.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.in">
+                        <Processor type="ImageOverlay" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.in">
+                        <Processor type="ImageOverlay" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.in">
+                        <Processor type="ImageOverlay" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.in">
+                        <Processor type="ImageOverlay" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.overlay">
+                        <Processor type="ImageOverlay" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.overlay">
+                        <Processor type="ImageOverlay" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.overlay">
+                        <Processor type="ImageOverlay" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSource" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.overlay">
+                        <Processor type="ImageOverlay" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageOverlay" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageOverlay" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageOverlay" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref8" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageOverlay" ref="ref4" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref9" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref10" />
+                    <DestinationProperty type="IntVec2Property" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref11" />
+                    <DestinationProperty type="IntVec2Property" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref11" />
+                    <DestinationProperty type="IntVec2Property" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref12" />
+                    <DestinationProperty type="IntVec2Property" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref12" />
+                    <DestinationProperty type="IntVec2Property" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref13" />
+                    <DestinationProperty type="IntVec2Property" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+            </PropertyLinks>
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

@@ -1,59 +1,69 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/condition.h"
 #include "voreen/core/datastructures/transfunc/transfuncfactory.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
+#include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
-#include "voreen/core/properties/propertywidgetfactory.h"
 
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumeminmax.h"
 
 namespace voreen {
 
 const std::string TransFuncProperty::loggerCat_("voreen.TransFuncProperty");
 
-TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string& guiText, Processor::InvalidationLevel invalidationLevel,
+TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string& guiText, int invalidationLevel,
                              TransFuncProperty::Editors editors, bool lazyEditorInstantiation)
     : TemplateProperty<TransFunc*>(ident, guiText, 0, invalidationLevel)
     , volumeHandle_(0)
     , editors_(editors)
     , lazyEditorInstantiation_(lazyEditorInstantiation)
-{
-}
+    , alwaysFitDomain_(false)
+{}
+
+TransFuncProperty::TransFuncProperty()
+    : TemplateProperty<TransFunc*>("", "", 0, Processor::INVALID_RESULT)
+    , volumeHandle_(0)
+{}
 
 TransFuncProperty::~TransFuncProperty() {
-    if (value_) {
+/*    if (value_) {
         LWARNING(getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
-    }
+    } */
+}
+
+Property* TransFuncProperty::create() const {
+    return new TransFuncProperty();
+}
+
+void TransFuncProperty::reset() {
+    if(value_)
+        value_->reset();
 }
 
 void TransFuncProperty::enableEditor(TransFuncProperty::Editors editor) {
@@ -80,10 +90,10 @@ void TransFuncProperty::set(TransFunc* tf) {
     }
 
     // new tf object assigned -> check if contents are equal
-    TransFuncIntensity* tf_int = dynamic_cast<TransFuncIntensity*>(tf);
-    TransFuncIntensity* value_int = dynamic_cast<TransFuncIntensity*>(value_);
-    TransFuncIntensityGradient* tf_grad = dynamic_cast<TransFuncIntensityGradient*>(tf);
-    TransFuncIntensityGradient* value_grad = dynamic_cast<TransFuncIntensityGradient*>(value_);
+    TransFunc1DKeys* tf_int = dynamic_cast<TransFunc1DKeys*>(tf);
+    TransFunc1DKeys* value_int = dynamic_cast<TransFunc1DKeys*>(value_);
+    TransFunc2DPrimitives* tf_grad = dynamic_cast<TransFunc2DPrimitives*>(tf);
+    TransFunc2DPrimitives* value_grad = dynamic_cast<TransFunc2DPrimitives*>(value_);
 
     // assign new object, but store previous one for deletion
     TransFunc* oldValue = value_;
@@ -121,7 +131,7 @@ void TransFuncProperty::set(TransFunc* tf) {
     delete oldValue;
 }
 
-void TransFuncProperty::setVolumeHandle(VolumeHandle* handle) {
+void TransFuncProperty::setVolumeHandle(const VolumeBase* handle) {
 
     if (volumeHandle_ != handle) {
 
@@ -129,25 +139,44 @@ void TransFuncProperty::setVolumeHandle(VolumeHandle* handle) {
         if (volumeHandle_) {
 
             // Resize texture of tf according to bitdepth of volume
-            int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
+            int bits = volumeHandle_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volumeHandle_->getRepresentation<VolumeRAM>()->getNumChannels();
             if (bits > 16)
                 bits = 16; // handle float data as if it was 16 bit to prevent overflow
 
             int max = static_cast<int>(pow(2.f, bits));
-            if (dynamic_cast<TransFuncIntensity*>(value_))
+
+            if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
                 value_->resize(max);
-            else if (dynamic_cast<TransFuncIntensityGradient*>(value_)) {
+                RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
+                if((((rwm.getOffset() != 0.0f) || (rwm.getScale() != 1.0f) || (rwm.getUnit() != "")) && *tfi == TransFunc1DKeys()) || alwaysFitDomain_)
+                    fitDomainToData();
+            } else if (dynamic_cast<TransFunc2DPrimitives*>(value_)) {
                 // limit 2D tfs to 10 bit for reducing memory consumption
                 max = std::min(max, 1024);
                 value_->resize(max, max);
             }
+
         }
 
         updateWidgets();
     }
 }
 
-VolumeHandle* TransFuncProperty::getVolumeHandle() const {
+void TransFuncProperty::fitDomainToData() {
+    if(!volumeHandle_)
+        return;
+
+    if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
+        RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
+        float min = rwm.normalizedToRealWorld(volumeHandle_->getDerivedData<VolumeMinMax>()->getMinNormalized());
+        float max = rwm.normalizedToRealWorld(volumeHandle_->getDerivedData<VolumeMinMax>()->getMaxNormalized());
+        tfi->setDomain(tgt::vec2(min, max));
+        //notifyChange();
+        invalidateOwner();
+    }
+}
+
+const VolumeBase* TransFuncProperty::getVolumeHandle() const {
     return volumeHandle_;
 }
 
@@ -168,6 +197,7 @@ void TransFuncProperty::serialize(XmlSerializer& s) const {
     Property::serialize(s);
 
     s.serialize("TransferFunction", value_);
+    s.serialize("AlwaysFitDomain", alwaysFitDomain_);
 }
 
 void TransFuncProperty::deserialize(XmlDeserializer& s) {
@@ -176,24 +206,26 @@ void TransFuncProperty::deserialize(XmlDeserializer& s) {
     TransFunc* tf = 0;
     s.deserialize("TransferFunction", tf);
     set(tf);
+
+    try {
+        s.deserialize("AlwaysFitDomain", alwaysFitDomain_);
+    } catch (XmlSerializationNoSuchDataException&) {
+        s.removeLastError();
+    }
 }
 
-PropertyWidget* TransFuncProperty::createWidget(PropertyWidgetFactory* f) {
-    return f->createWidget(this);
-}
-
-void TransFuncProperty::initialize() throw (VoreenException) {
+void TransFuncProperty::initialize() throw (tgt::Exception) {
 
     TemplateProperty<TransFunc*>::initialize();
 
     // create initial transfer function, if it has not been created during deserialization
     if (!value_) {
-        set(new TransFuncIntensity());
+        set(new TransFunc1DKeys());
         LGL_ERROR;
     }
 }
 
-void TransFuncProperty::deinitialize() throw (VoreenException) {
+void TransFuncProperty::deinitialize() throw (tgt::Exception) {
     if (value_) {
         delete value_;
         value_ = 0;
@@ -201,10 +233,6 @@ void TransFuncProperty::deinitialize() throw (VoreenException) {
     }
 
     TemplateProperty<TransFunc*>::deinitialize();
-}
-
-std::string TransFuncProperty::getTypeString() const {
-    return "TransferFunction";
 }
 
 } // namespace voreen

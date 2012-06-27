@@ -1,37 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/animation/templatepropertytimelinestate.h"
 #include "voreen/core/animation/animation.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
-#include "voreen/core/properties/volumecollectionproperty.h"
+#include "voreen/core/properties/volumeurllistproperty.h"
+#include "voreen/core/animation/interpolation/camerainterpolationfunctions.h"
 #include "tgt/camera.h"
 
 using tgt::Camera;
@@ -805,15 +802,15 @@ const PropertyKeyValue<Camera>* CameraPropertyTimelineState::newKeyValue(float t
 
     std::map<float,PropertyKeyValue<Camera>*>::iterator it;
     it = values_.find(time);
-    tgt::vec3 ownPosition = value.getPosition();
+    //tgt::vec3 ownPosition = value.getPosition();
     // if new value is the first value:
     if (it == values_.begin()) {
         // only do something if there are multiple values
         it++;
         if (it != values_.end()) {
-            InterpolationFunction<Camera>* func = new InterpolationFunction<Camera>();
+            InterpolationFunction<Camera>* func = new CameraSphericalLinearInterpolationFunction();
             it->second->setForegoingInterpolationFunction(func);
-            tgt::vec3 followingPosition = (*it).second->getValue().getPosition();
+            //tgt::vec3 followingPosition = (*it).second->getValue().getPosition();
             it--;
             it->second->setFollowingInterpolationFunction(func);
             // (*it).second->getValue()->setDirection(followingPosition - ownPosition);
@@ -824,7 +821,7 @@ const PropertyKeyValue<Camera>* CameraPropertyTimelineState::newKeyValue(float t
         // if the new value is the last one
         if (it == values_.end()) {
             it--;
-            InterpolationFunction<Camera>* func = new InterpolationFunction<Camera>();
+            InterpolationFunction<Camera>* func = new CameraSphericalLinearInterpolationFunction();
             it->second->setForegoingInterpolationFunction(func);
             it--;
             it->second->setFollowingInterpolationFunction(func);
@@ -832,7 +829,7 @@ const PropertyKeyValue<Camera>* CameraPropertyTimelineState::newKeyValue(float t
             it++;
             if (values_.size() >= 3) {
                 // set direction of predecessor
-                tgt::vec3 followingPosition = it->second->getValue().getPosition();
+                //tgt::vec3 followingPosition = it->second->getValue().getPosition();
                 it--;
                 it--;
                 foregoingPosition = it->second->getValue().getPosition();
@@ -842,18 +839,18 @@ const PropertyKeyValue<Camera>* CameraPropertyTimelineState::newKeyValue(float t
         }
         else {
             // if the new value is in between
-            InterpolationFunction<Camera>* func1 = new InterpolationFunction<Camera>();
-            InterpolationFunction<Camera>* func2 = new InterpolationFunction<Camera>();
+            InterpolationFunction<Camera>* func1 = new CameraSphericalLinearInterpolationFunction();
+            InterpolationFunction<Camera>* func2 = new CameraSphericalLinearInterpolationFunction();
 
             it->second->setForegoingInterpolationFunction(func2);
-            tgt::vec3 followingPosition = it->second->getValue().getPosition();
+            //tgt::vec3 followingPosition = it->second->getValue().getPosition();
             it--;
             it->second->setFollowingInterpolationFunction(func2);
             it->second->setForegoingInterpolationFunction(func1);
             it--;
             delete it->second->getFollowingInterpolationFunction();
             it->second->setFollowingInterpolationFunction(func1);
-            tgt::vec3 foregoingPosition = it->second->getValue().getPosition();
+            //tgt::vec3 foregoingPosition = it->second->getValue().getPosition();
             it++;
         }
     }
@@ -1035,7 +1032,5 @@ template class TemplatePropertyTimelineState<tgt::Camera>;
 template class TemplatePropertyTimelineState<std::string>;
 template class TemplatePropertyTimelineState<ShaderSource>;
 template class TemplatePropertyTimelineState<TransFunc*>;
-template class TemplatePropertyTimelineState<VolumeCollection*>;
-template class TemplatePropertyTimelineState<VolumeHandle*>;
 
 } // namespace voreen

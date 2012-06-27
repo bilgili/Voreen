@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/textureunit.h"
 #include "tgt/gpucapabilities.h"
@@ -51,26 +52,26 @@ TextureUnit::~TextureUnit() {
     }
 }
 
-void TextureUnit::activate() {
+void TextureUnit::activate() const {
     if (!assigned_)
         assignUnit();
     glActiveTexture(getEnum());
 }
 
-GLint TextureUnit::getEnum() {
+GLint TextureUnit::getEnum() const {
     if (!assigned_)
         assignUnit();
     return glEnum_;
 }
 
-GLint TextureUnit::getUnitNumber() {
+GLint TextureUnit::getUnitNumber() const {
     if (!assigned_)
         assignUnit();
     return number_;
 }
 
 void TextureUnit::setZeroUnit() {
-        glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0);
 }
 
 void TextureUnit::cleanup() {
@@ -91,7 +92,7 @@ unsigned short TextureUnit::numLocalActive() {
     return (totalActive_ - numKeptUnits_);
 }
 
-void TextureUnit::assignUnit() {
+void TextureUnit::assignUnit() const {
     tgtAssert(totalActive_ <= maxTexUnits_, "No more texture units available");
 
     assigned_ = true;
@@ -101,8 +102,8 @@ void TextureUnit::assignUnit() {
             number_ = (GLint)i;
             busyUnits_.at(i) = true;
             totalActive_++;
-	    if(keep_)
-		numKeptUnits_++;
+            if(keep_)
+                numKeptUnits_++;
             break;
         }
     }

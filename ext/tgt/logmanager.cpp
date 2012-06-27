@@ -1,28 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/logmanager.h"
+
+#include "tgt/filesystem.h"
 
 #include <ctime>
 #include <stdio.h>
@@ -32,56 +35,56 @@ using namespace std;
 namespace tgt {
 
 bool Log::testFilter(const std::string &cat, LogLevel level) {
-	for (size_t i = 0; i < filters_.size(); i++) 	{
-		if (filters_[i].children_) {
-			if (cat.find(filters_[i].cat_, 0) == 0) {
+    for (size_t i = 0; i < filters_.size(); i++)     {
+        if (filters_[i].children_) {
+            if (cat.find(filters_[i].cat_, 0) == 0) {
                 if (filters_[i].level_ <= level)
-				    return true;
-			}
-		}
-		else {
-			if (filters_[i].cat_ == cat) {
+                    return true;
+            }
+        }
+        else {
+            if (filters_[i].cat_ == cat) {
                 if (filters_[i].level_ <= level)
-				    return true;
-			}
-		}
-	}
-	return false;
+                    return true;
+            }
+        }
+    }
+    return false;
 }
 
 void Log::log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo) {
-	if (testFilter(cat, level))
-		logFiltered(cat, level, msg, extendedInfo);
+    if (testFilter(cat, level))
+        logFiltered(cat, level, msg, extendedInfo);
 }
 
 void Log::addCat(const std::string &cat, bool children, LogLevel level) {
-	LogFilter newFilter;
-	newFilter.cat_ = cat;
-	newFilter.children_ = children;
+    LogFilter newFilter;
+    newFilter.cat_ = cat;
+    newFilter.children_ = children;
     newFilter.level_ = level;
-	filters_.push_back(newFilter);
+    filters_.push_back(newFilter);
 }
 
 std::string Log::getTimeString() {
-	time_t long_time = 0;
-	tm *now = 0;
-	time(&long_time);
-	now = localtime(&long_time);
-	char SzBuffer[256];
+    time_t long_time = 0;
+    tm *now = 0;
+    time(&long_time);
+    now = localtime(&long_time);
+    char SzBuffer[256];
     sprintf(SzBuffer, "%.2i:%.2i:%.2i", now->tm_hour, now->tm_min, now->tm_sec);
-	string temp(SzBuffer);
-	return temp;
+    string temp(SzBuffer);
+    return temp;
 }
 
 std::string Log::getDateString() {
-	time_t long_time = 0;
-	tm *now = 0;
-	time(&long_time);
-	now = localtime(&long_time);
-	char SzBuffer[256];
+    time_t long_time = 0;
+    tm *now = 0;
+    time(&long_time);
+    now = localtime(&long_time);
+    char SzBuffer[256];
     sprintf(SzBuffer, "%.2i.%.2i.%.4i", now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
-	string temp(SzBuffer);
-	return temp;
+    string temp(SzBuffer);
+    return temp;
 }
 
 std::string Log::getLevelString(LogLevel level) {
@@ -92,7 +95,7 @@ std::string Log::getLevelString(LogLevel level) {
     case Error: return "Error";
     case Fatal: return "Fatal";
     default: return "UNKNOWN";
-	}
+    }
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -102,40 +105,45 @@ void TextLog::logFiltered(const std::string& cat, LogLevel level, const std::str
 {
     if (!file_)
         return;
-    
-	std::string output = "";
-	if (dateStamping_)
+
+    std::string output = "";
+    if (dateStamping_)
         output += "[" + getDateString() + "] ";
-	if (timeStamping_)
+    if (timeStamping_)
         output += "[" + getTimeString() + "] ";
-	if (showCat_)
+    if (showCat_)
         output += cat + " ";
-	if (showLevel_)
+    if (showLevel_)
         output += "(" + getLevelString(level) + ") ";
-	if (output != "")
+    if (output != "")
         output += '\t';
-	fputs((output +  msg + "\n").c_str(), file_);
-	fflush(file_);
+    fputs((output +  msg + "\n").c_str(), file_);
+    fflush(file_);
 }
 
 TextLog::TextLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-    std::string path = (LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/");
-	file_ = fopen((path + filename).c_str(),"w");
-	timeStamping_ = timeStamping;
-	dateStamping_ = dateStamping;
-	showCat_ = showCat;
-	showLevel_ = showLevel;
+    std::string absFilename;
+    if (FileSystem::isAbsolutePath(filename))
+        absFilename = filename;
+    else
+        absFilename = FileSystem::absolutePath(LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/") + filename;
+
+    file_ = fopen(absFilename.c_str(),"w");
+    timeStamping_ = timeStamping;
+    dateStamping_ = dateStamping;
+    showCat_ = showCat;
+    showLevel_ = showLevel;
 }
 
 TextLog::~TextLog() {
     if (!file_)
         return;
-	fputs("---\n", file_);
-	fclose(file_);
+    fputs("---\n", file_);
+    fclose(file_);
 }
 
 bool TextLog::isOpen() {
-	return (file_ != 0);
+    return (file_ != 0);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -197,7 +205,7 @@ void ConsoleLog::enableColors(bool enable) {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 std::string HtmlLog::getLevelString(LogLevel level) {
-	switch (level) {
+    switch (level) {
         case Debug:
             return "<td>Debug</TD>";
         case Info:
@@ -210,7 +218,7 @@ std::string HtmlLog::getLevelString(LogLevel level) {
             return "<td>Fatal</TD>";
         default:
             return "<td>Unknown</TD>";
-	}
+    }
 }
 
 std::string HtmlLog::getLevelColor(LogLevel level) {
@@ -237,26 +245,30 @@ void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::str
         return;
 
     std::string output = "\t\t\t<tr bgcolor=\"" + getLevelColor(level) + "\">\n";
-	if (dateStamping_)
+    if (dateStamping_)
         output += "\t\t\t\t<td>" + getDateString() + "</td>\n";
-	if (timeStamping_)
+    if (timeStamping_)
         output += "\t\t\t\t<td>" + getTimeString() + "</td>\n";
     if (showCat_)
         output += "\t\t\t\t<td>" + cat + "</td>\n";
-	if (showLevel_)
+    if (showLevel_)
         output += "\t\t\t\t" + getLevelString(level) + "\n";
-	fputs((output +  "\t\t\t\t<td title=\"" + extendedInfo + "\">" + msg + "</td>\n\t\t\t</tr>\n").c_str(), file_);
-	fflush(file_);
+    fputs((output +  "\t\t\t\t<td title=\"" + extendedInfo + "\">" + msg + "</td>\n\t\t\t</tr>\n").c_str(), file_);
+    fflush(file_);
 }
 
 HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-    std::string path = (LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/");
-	file_ = fopen((path + filename).c_str(), "w");
+    std::string absFilename;
+    if (FileSystem::isAbsolutePath(filename))
+        absFilename = filename;
+    else
+        absFilename = FileSystem::absolutePath((LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/") + filename);
+    file_ = fopen(absFilename.c_str(), "w");
 
-	timeStamping_ = timeStamping;
-	dateStamping_ = dateStamping;
-	showCat_ = showCat;
-	showLevel_ = showLevel;
+    timeStamping_ = timeStamping;
+    dateStamping_ = dateStamping;
+    showCat_ = showCat;
+    showLevel_ = showLevel;
 
     if (!file_)
         return;
@@ -264,28 +276,28 @@ HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStampi
     std::string output = "<html>\n\t<head>\n\t\t<title>TGT Logfile</title>\n\t</head>\n\t"
         "<body>\n\n\t<table cellpadding=3 cellspacing=0 border=1>\n\t\t"
         "<CAPTION>TGT Logfile</CAPTION>\n\n\t\t<THEAD>\n\t\t\t<TR>\n";
-	if (dateStamping_)
+    if (dateStamping_)
         output += "\t\t\t\t<th>Date</th>\n";
-	if (timeStamping_)
+    if (timeStamping_)
         output += "\t\t\t\t<th>Time</th>\n";
     if (showCat_)
         output += "\t\t\t\t<th>Category</th>\n";
-	if (showLevel_)
+    if (showLevel_)
         output += "\t\t\t\t<th>Type</th>\n";
-	output += "\t\t\t\t<th>Message</th>\n\t\t\t</tr>\n\t\t<tbody>\n";
-	fputs(output.c_str(), file_);
-	fflush(file_);
+    output += "\t\t\t\t<th>Message</th>\n\t\t\t</tr>\n\t\t<tbody>\n";
+    fputs(output.c_str(), file_);
+    fflush(file_);
 }
 
 HtmlLog::~HtmlLog() {
     if (!file_)
         return;
-	fputs("\t\t</tbody>\n\t</table>\n\t</body>\n</html>", file_);
-	fclose(file_);
+    fputs("\t\t</tbody>\n\t</table>\n\t</body>\n</html>", file_);
+    fclose(file_);
 }
 
 bool HtmlLog::isOpen() {
-	return (file_ != 0);
+    return (file_ != 0);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -296,10 +308,10 @@ LogManager::LogManager(const std::string& logDir)
 
 
 LogManager::~LogManager() {
-	vector<Log*>::iterator it;
- 	for (it = logs_.begin(); it != logs_.end(); it++)
+    vector<Log*>::iterator it;
+     for (it = logs_.begin(); it != logs_.end(); it++)
         delete (*it);
-    
+
     delete consoleLog_;
 }
 
@@ -341,7 +353,7 @@ void LogManager::removeLog(Log* log) {
                 iter = logs_.erase(iter);
             else
                 ++iter;
-        }        
+        }
     }
 }
 

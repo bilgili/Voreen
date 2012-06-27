@@ -1,0 +1,178 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="12">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="GeometrySave" ref="ref7" />
+                    </values>
+                </MetaItem>
+                <MetaItem name="Zoom" type="ZoomMetaData">
+                    <transform.row0 x="0.60239970684051514" y="0" z="0" />
+                    <transform.row1 x="0" y="0.60239970684051514" z="0" />
+                    <transform.row2 x="-716.23193359375" y="46.81759262084960938" z="1" />
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="SliceProxyGeometry" name="SliceProxyGeometry" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="89" y="-68" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="planeNormal">
+                            <value x="0" y="1" z="0" />
+                        </Property>
+                        <Property name="planePosition" value="0" />
+                        <Property name="size" value="10" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="106" y="48" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="file" noPathSet="false" value="output/standard.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 2" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="260" y="47" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="file" noPathSet="false" value="output/distance_changed.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SliceProxyGeometry" name="SliceProxyGeometry 2" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="246" y="-71" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="planeNormal">
+                            <value x="0" y="1" z="0" />
+                        </Property>
+                        <Property name="planePosition" value="4.19999981" />
+                        <Property name="size" value="10" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 3" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="429" y="49" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="file" noPathSet="false" value="output/normal_changed.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SliceProxyGeometry" name="SliceProxyGeometry 3" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="418" y="-70" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="planeNormal">
+                            <value x="0" y="0" z="-1" />
+                        </Property>
+                        <Property name="planePosition" value="0" />
+                        <Property name="size" value="10" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="GeometrySave" name="GeometrySave 4" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="606" y="50" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="file" noPathSet="false" value="output/size_changed.vge" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SliceProxyGeometry" name="SliceProxyGeometry 4" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="594" y="-69" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="planeNormal">
+                            <value x="0" y="1" z="0" />
+                        </Property>
+                        <Property name="planePosition" value="0" />
+                        <Property name="size" value="20" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="geometry">
+                        <Processor type="SliceProxyGeometry" ref="ref0" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry">
+                        <Processor type="SliceProxyGeometry" ref="ref2" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry">
+                        <Processor type="SliceProxyGeometry" ref="ref4" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="geometry">
+                        <Processor type="SliceProxyGeometry" ref="ref6" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref7" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PROCESSORNETWORK_H
 #define VRN_PROCESSORNETWORK_H
@@ -45,10 +41,13 @@ class PropertyLink;
 class LinkEvaluatorBase;
 class Port;
 
+#ifdef DLL_TEMPLATE_INST
+template class VRN_CORE_API Observable<ProcessorNetworkObserver>;
+#endif
 /**
  * Manages a network of processors.
  */
-class ProcessorNetwork : public Serializable, public PropertyOwnerObserver, public Observable<ProcessorNetworkObserver> {
+class VRN_CORE_API ProcessorNetwork : public Serializable, public PropertyOwnerObserver, public Observable<ProcessorNetworkObserver> {
 public:
     ProcessorNetwork();
     ~ProcessorNetwork();
@@ -86,7 +85,7 @@ public:
     /**
      * Returns the number of processor of the network.
      */
-    int numProcessors() const;
+    size_t numProcessors() const;
 
     /**
      * Returns true, if the network does not contain any processors.
@@ -97,6 +96,22 @@ public:
      * Returns the network's processors.
      */
     const std::vector<Processor*>& getProcessors() const;
+
+    /**
+     * Merges a ProcessorNetwork into this.
+     * Adds Processors, Connections and PropertyLinks.
+     *
+     * @param pnw the network to add. It will be deleted afterwards.
+     */
+    void mergeSubNetwork(ProcessorNetwork* pnw);
+
+     /**
+      * Clones a list of Processors and returns a ProcessorNetwork including these Processors.
+      * Connections and Links between these Processors are cloned as well.
+      *
+      * @param vec vector of processors to bulid a subnetwork. The Processors must be part of this.
+      */
+    ProcessorNetwork* cloneSubNetwork(std::vector<Processor*> vec);
 
     /**
      * Returns all processors in the network matching
@@ -196,7 +211,7 @@ public:
      * @param dest the destination property of the link. Must be owned by processor of this network
      *      and must not equal src.
      * @param linkEvaluator the link evaluator defining the type of the link.
-     *      If not passed, an identity link is created.
+     *      If not passed, an identity link is created. Will be deleted by the PropertyLink.
      *
      * @return the created property link or null, if the link could not be created.
      */
@@ -391,7 +406,13 @@ public:
 
     void processorWidgetCreated(const Processor* processor);
     void processorWidgetDeleted(const Processor* processor);
-    void portsAndPropertiesChanged(const Processor*);
+    void portsChanged(const Processor*);
+    void propertiesChanged(const PropertyOwner*);
+
+    /**
+     * Get a list of all the referenced files.
+     */
+    const std::vector<std::string>& getReferencedFiles() const;
 
 private:
     /// Calls networkChanged() on the registered observers.
@@ -418,9 +439,13 @@ private:
     /// Calls propertyLinkRemoved() on the registered observers.
     void notifyPropertyLinkRemoved(const PropertyLink* link) const;
 
+    /// List of all \sa Processor contained in the network
     std::vector<Processor*> processors_;
+
+    /// List of all \sa PropertyList contained in the network
     std::vector<PropertyLink*> propertyLinks_;
 
+    /// The network version
     int version_;
     std::vector<std::string> errorList_;
 
@@ -434,120 +459,6 @@ private:
     mutable MetaDataContainer metaDataContainer_;
 
     static const std::string loggerCat_; ///< category used in logging
-};
-
-//-------------------------------------------------------------------------------------------------
-
-/**
- * The @c PortConnection is responsible for serialization and deserialization
- * of connections between different processor ports.
- *
- * @see Serializable
- */
-class PortConnection : public Serializable {
-public:
-    /**
-     * Creates a @c PortConnection from given outport to given inport.
-     *
-     * @param outport the outport
-     * @param inport the inport
-     */
-    PortConnection(Port* outport, Port* inport);
-
-    /**
-     * @see Serializable::serialize
-     */
-    virtual void serialize(XmlSerializer& s) const;
-
-    /**
-     * @see Serializable::deserialize
-     */
-    virtual void deserialize(XmlDeserializer& s);
-
-    /**
-     * Sets the outport of the connection.
-     *
-     * @param value the outport
-     */
-    void setOutport(Port* value);
-
-    /**
-     * Returns the outport of the connection.
-     *
-     * @return the outport
-     */
-    Port* getOutport() const;
-
-    /**
-     * Sets the inport of the connection.
-     *
-     * @param value the inport
-     */
-    void setInport(Port* value);
-
-    /**
-     * Returns the inport of the connection.
-     *
-     * @return the inport
-     */
-    Port* getInport() const;
-
-private:
-    /**
-     * The @c PortEntry class processes the port data
-     * to get a well readable XML file.
-     *
-     * @see PortConnection
-     * @see Serializable
-     */
-    class PortEntry : public Serializable {
-    public:
-        /**
-         * Creates a @c PortEntry for given @c Port.
-         *
-         * @param port the port
-         */
-        PortEntry(Port* port);
-
-        /**
-        * @see Serializable::serialize
-        */
-        virtual void serialize(XmlSerializer& s) const;
-
-        /**
-        * @see Serializable::deserialize
-        */
-        virtual void deserialize(XmlDeserializer& s);
-
-        /**
-         * Returns the port which data will be processed.
-         *
-         * @return the port
-         */
-        Port* getPort() const;
-
-    private:
-        /**
-         * Port which data will be processed.
-         */
-        Port* port_;
-    };
-
-    friend class XmlDeserializer;
-    /**
-     * Default constructor for serialization purposes.
-     */
-    PortConnection();
-
-    /**
-     * Outport entry of connection.
-     */
-    PortEntry outport_;
-
-    /**
-     * Inport entry of connection.
-     */
-    PortEntry inport_;
 };
 
 //---------------------------------------------------------------------------

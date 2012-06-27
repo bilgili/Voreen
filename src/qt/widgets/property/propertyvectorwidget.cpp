@@ -1,39 +1,50 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 
-#include "voreen/core/properties/propertyvector.h"
-#include "voreen/core/properties/allproperties.h"
-#include "voreen/modules/base/processors/utility/propertycontainer.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 
-#include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/fontproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/matrixproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/propertyvector.h"
+#include "voreen/core/properties/shaderproperty.h"
+#include "voreen/core/properties/stringproperty.h"
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/volumeurllistproperty.h"
+#include "voreen/core/properties/volumeurlproperty.h"
+
 #include "voreen/qt/widgets/customlabel.h"
 
 #include "tgt/logmanager.h"
@@ -46,6 +57,7 @@
 #include <QFrame>
 #include <QMenu>
 #include <QScrollArea>
+
 
 namespace voreen {
 
@@ -91,9 +103,8 @@ PropertyVectorWidget::PropertyVectorWidget(PropertyVector* prop, QWidget* parent
     widgetLayout->addWidget(scrollArea);
 
     // add property widgets to properties layout
-    QPropertyWidgetFactory f;
     for (size_t i=0; i<property_->getProperties().size(); ++i) {
-        createAndAddPropertyWidget(property_->getProperties().at(i), &f);
+        createAndAddPropertyWidget(property_->getProperties().at(i));
     }
 
     setFixedHeight(230);
@@ -132,24 +143,33 @@ void PropertyVectorWidget::setProperty(PropertyVector* /*change*/) {
 
 }
 
-void PropertyVectorWidget::createAndAddPropertyWidget(Property* prop, QPropertyWidgetFactory* factory) {
+void PropertyVectorWidget::createAndAddPropertyWidget(Property* prop) {
 
-    QPropertyWidget* propertyWidget = dynamic_cast<QPropertyWidget*>(prop->createAndAddWidget(factory));
+    if (!VoreenApplication::app()) {
+        LERRORC("voreen.qt.ProcessorPropertiesWidget", "VoreenApplication not instantiated");
+        return;
+    }
 
-    if (propertyWidget) {
-        propertyWidget->hideLODControls();
-        propertyWidget->setMinimumWidth(250);
-        CustomLabel* nameLabel = propertyWidget->getNameLabel();
+    PropertyWidget* propWidget = VoreenApplication::app()->createPropertyWidget(prop);
+    if (propWidget)
+        prop->addWidget(propWidget);
+
+    QPropertyWidget* qPropWidget = dynamic_cast<QPropertyWidget*>(propWidget);
+    if (qPropWidget) {
+        qPropWidget->hideLODControls();
+        qPropWidget->setMinimumWidth(250);
+        CustomLabel* nameLabel = qPropWidget->getNameLabel();
         int row = propertiesLayout_->rowCount();
         propertiesLayout_->addWidget(nameLabel, row, 1);
-        propertiesLayout_->addWidget(propertyWidget, row, 2);
+        propertiesLayout_->addWidget(qPropWidget, row, 2);
     }
     else {
-        LERRORC("voreen.qt.CompactPropertyVectorWidget", "Unable to create property widget");
+        LERRORC("voreen.qt.PropertyVectorWidget", "Unable to create property widget");
     }
 }
 
-void PropertyVectorWidget::createAndAddPropertyWidgetByAction(QAction* action) {
+void PropertyVectorWidget::createAndAddPropertyWidgetByAction(QAction* /*action*/) {
+/*#ifdef VRN_MODULE_BASE
     std::map<QAction*, int>::const_iterator it;
     it = propertyMap_.find(action);
     PropertyContainer* pc = dynamic_cast<PropertyContainer*>(prop_->getOwner());
@@ -201,44 +221,30 @@ void PropertyVectorWidget::createAndAddPropertyWidgetByAction(QAction* action) {
         case FLOATMAT4:
             pc->addNewProperty(new FloatMat4Property("floatmat4", "floatmat4", tgt::mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)));
             break;
-        /*case OPTION:
-            pc->addNewProperty(new OptionProperty("option", "option"));
-            break;*/
-
         default:
             break;
         }
-   /* propertyMap_[new QAction("bool", this)] = BOOL;
-    propertyMap_[new QAction("button", this)] = BUTTON;
-    propertyMap_[new QAction("color", this)] = COLOR;
-    propertyMap_[new QAction("float", this)] = FLOAT;
-    propertyMap_[new QAction("int", this)] = INT;
-    propertyMap_[new QAction("light", this)] = LIGHT;
-    propertyMap_[new QAction("string", this)] = STRING;*/
     //propertyMap_[new QAction("option", this)] = OPTION;
 
     }
+#endif */
 }
 
 void PropertyVectorWidget::propertyAdded() {
-    QPropertyWidgetFactory f;
-    createAndAddPropertyWidget(property_->getProperties().at(property_->getProperties().size()-1), &f);
+    createAndAddPropertyWidget(property_->getProperties().at(property_->getProperties().size()-1));
 }
 
-void PropertyVectorWidget::contextMenuEvent(QContextMenuEvent* e) {
+void PropertyVectorWidget::contextMenuEvent(QContextMenuEvent* /*e*/) {
+/*#ifdef VRN_MODULE_BASE
     if(dynamic_cast<PropertyContainer*>(prop_->getOwner())) {
         QAction* ac = propertyMenu_->exec(e->globalPos());
 
-        /*if(actest = ac) {
-            PropertyContainer* pc = dynamic_cast<PropertyContainer*>(prop_->getOwner());
-            pc->addNewProperty(new StringProperty("testnew", "testnew", "testnew"));
-        }*/
         if(ac != 0) {
             createAndAddPropertyWidgetByAction(ac);
             propertyAdded();
         }
     }
-
+#endif */
 }
 
 } // namespace

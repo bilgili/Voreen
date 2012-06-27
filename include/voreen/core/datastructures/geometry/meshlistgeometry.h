@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_MESHLISTGEOMETRY_H
 #define VRN_MESHLISTGEOMETRY_H
@@ -84,6 +80,10 @@ public:
      * Default constructor.
      */
     MeshListGeometry();
+
+    virtual Geometry* create() const;
+
+    virtual std::string getClassName() const { return "MeshListGeometry"; }
 
     /**
      * Returns the number of mesh geometries contained by this mesh list geometry.
@@ -189,30 +189,59 @@ public:
      * @returns the mesh geometry at the given @c index
      */
     MeshGeometry& operator[](size_t index);
+    const MeshGeometry& operator[](size_t index) const;
+
+    /**
+     * Returns the axis-aligned bounding box of the union
+     * of the bounding boxes of the contained meshes.
+     */
+    virtual tgt::Bounds getBoundingBox() const;
 
     /**
      * @see Geometry::render
      */
-    virtual void render();
+    virtual void render() const;
 
     /**
-     * Transforms the face geometry using the given transformation matrix.
+     * Transforms the mesh list geometry using the given transformation matrix.
      *
      * @param transformation the transformation matrix
      */
-    void transform(const tgt::mat4& transformation);
+    virtual void transform(const tgt::mat4& transformation);
 
     /**
      * Calls the @c clip function of each contained mesh geometry.
      *
      * @see MeshGeometry::clip
      *
-     * @param clipplane an arbitrary clipping plane
+     * @param clipPlane an arbitrary clipping plane
+     * @param closingFaces the clipping faces generated for closing the clipped meshes
      * @param epsilon the accuracy for vertex geometry comparison
-     *
-     * @return The clipping faces generated for closing the clipped meshes.
      */
-    MeshListGeometry clip(const tgt::vec4& clipplane, double epsilon = 1e-6);
+    void clip(const tgt::vec4& clipPlane, MeshListGeometry& closingFaces, double epsilon = 1e-6);
+
+    /// @overload
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+
+    /**
+     * Returns true, if all meshes of the passed MeshListGeometry are equal to this one's.
+     *
+     * @param meshList the mesh list to compare
+     * @param epsilon maximum distance at which two vertices are to be considered equal
+     */
+    bool equals(const MeshListGeometry& meshList, double epsilon = 1e-6) const;
+
+    /**
+     * Returns true, if the passed Geometry is a MeshListGeometry
+     * and all its meshes are equal to this one's.
+     *
+     * @see Geometry::equals
+     */
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+
+    virtual void serialize(XmlSerializer& s) const;
+
+    virtual void deserialize(XmlDeserializer& s);
 
 private:
     /**

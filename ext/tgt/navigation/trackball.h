@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_TRACKBALL_H
 #define TGT_TRACKBALL_H
@@ -28,7 +29,6 @@
 #include <cmath>
 #include <vector>
 
-#include "tgt/config.h"
 #include "tgt/matrix.h"
 #include "tgt/quaternion.h"
 #include "tgt/vector.h"
@@ -58,7 +58,7 @@ class Trackball : public Navigation {
         ///                             want to specify different behavior than default, give false
         ///                             here. You will then have to call some setMouseFoo and
         ///                             setKeyBar methods to make the trackball work.
-        /// \param continousSpinTimer To offer continous spin feature, trackball needs a 
+        /// \param continousSpinTimer To offer continous spin feature, trackball needs a
         ///                           tgt::Timer-object. As we need a toolkit-specific timer,
         ///                           trackball cannot create it itself, the user has to provide
         ///                           it to the constructor.
@@ -258,7 +258,7 @@ class Trackball : public Navigation {
         Stopwatch* continuousSpinStopwatch_;
         /// msecs between the last two mouse motion events (the time the last orientation change took)
         clock_t continuousSpinLastOrientationChangeMSecs_;
-        
+
         /// Old mouse coordinates to allow calculation of the relative change.
         /// Ought to be relative coordinates within range [-1, 1]x[-1, 1].
         vec2 mouse_;
@@ -277,7 +277,7 @@ class Trackball : public Navigation {
         vec3 cameraPosition_;
         vec3 cameraFocus_;
         vec3 cameraUpVector_;
- 
+
         /// last rotation applied to trackball
         quat lastOrientationChange_;
 
@@ -296,7 +296,7 @@ class Trackball : public Navigation {
 
         /// transform vectors given in camera coordinates to vectors in world coordinates
         vec3 coordTransform(vec3 const axis) const;
-        
+
         /// prepare trackball for usage of continuous spin feature
         void initializeContinuousSpin();
 
@@ -348,9 +348,9 @@ class Trackball : public Navigation {
         bool tracking_; ///< Are we tracking mouse move events? Only when we received a
                         ///< mousePressEvent before.
 
-    
+
         void initializeEventHandling() {
-            mouseRotateButton_ = mouseMoveButton_ = mouseZoomButton_ = mouseRollButton_ 
+            mouseRotateButton_ = mouseMoveButton_ = mouseZoomButton_ = mouseRollButton_
                 = MouseEvent::MOUSE_BUTTON_NONE;
             keyRotateLeft_ = keyRotateRight_ = keyRotateUp_ = keyRotateDown_
                 = keyMoveLeft_ = keyMoveRight_ = keyMoveUp_ = keyMoveDown_

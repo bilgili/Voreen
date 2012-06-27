@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/network/networkgraph.h"
 
@@ -494,7 +490,7 @@ NetworkGraph::GraphNode* NetworkGraph::addNode(Processor* const processor, bool*
         return 0;
     }
 
-    GraphNode* node = new GraphNode(processor, nodeCounter_++);
+    GraphNode* node = new GraphNode(processor, static_cast<int>(nodeCounter_++));
     std::pair<NodeSet::iterator, bool> res = nodes_.insert(node);
 
     if (added != 0)
@@ -545,9 +541,9 @@ void NetworkGraph::connectNodes(const PortTypeCheck& ptc) {
                 continue;
 
             ++outportCounter;
-            const std::vector<Port*>& connectedPorts = outports[p]->getConnected();
+            const std::vector<const Port*> connectedPorts = outports[p]->getConnected();
             for (size_t c = 0; c < connectedPorts.size(); ++c) {
-                Port* const outport = connectedPorts[c];
+                const Port* const outport = connectedPorts[c];
                 if (!ptc.isA(outport))
                     continue;
 
@@ -579,7 +575,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
 
     // vector containing the loop initiator and loop finalizer
     // of all valid loops in the graph
-    std::vector<std::pair<Port*, Port*> > loops;
+    std::vector<std::pair<const Port*, Port*> > loops;
 
     // iterate over all graph nodes
     for (NodeSet::const_iterator it = nodes_.begin(); it != nodes_.end(); ++it) {
@@ -603,7 +599,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
             }
 
             Port* destPort = outports[p];
-            Port* srcPort = destPort->getConnected().front();
+            const Port* srcPort = destPort->getConnected().front();
             Processor* srcProc = srcPort->getProcessor();
             Processor* destProc = destPort->getProcessor();
 
@@ -641,7 +637,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
                 continue;
             }
 
-            loops.push_back(std::pair<Port*, Port*>(srcPort, destPort));
+            loops.push_back(std::pair<const Port*, Port*>(srcPort, destPort));
 
         }   // for (p
     }   // for (it  (processors)
@@ -649,7 +645,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
     // discard overlapping loops (nested loops are allowed)
     std::set<int> overlappings;
     for (size_t i=0; i<loops.size(); ++i) {
-        if (overlappings.find(i) != overlappings.end())
+        if (overlappings.find(static_cast<const int>(i)) != overlappings.end())
             continue;
         for (size_t j=0; j<loops.size(); ++j) {
             if (i==j)
@@ -658,14 +654,14 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
                 isPathElement(loops[j].second->getProcessor(), loops[i].first->getProcessor(), loops[i].second->getProcessor())  ) {
                 LWARNING("Loops \"" << loops[i].first->getProcessor()->getName() << "\" -> \"" << loops[i].second->getProcessor()->getName() << "\" and \"" <<
                           loops[j].first->getProcessor()->getName() << "\" -> \"" << loops[j].second->getProcessor()->getName() << "\" overlap. Skipping.");
-                overlappings.insert(i);
-                overlappings.insert(j);
+                overlappings.insert(static_cast<int>(i));
+                overlappings.insert(static_cast<int>(j));
             }
         }
     }
-    std::vector<std::pair<Port*, Port*> > validLoops;
+    std::vector<std::pair<const Port*, Port*> > validLoops;
     for (size_t i=0; i<loops.size(); ++i) {
-        if (overlappings.find(i) == overlappings.end())
+        if (overlappings.find(static_cast<int>(i)) == overlappings.end())
             validLoops.push_back(loops[i]);
     }
 
@@ -721,7 +717,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
                 for (std::set<GraphNode*>::iterator iter = pathNodes.begin(); iter!=pathNodes.end(); ++iter) {
                     GraphNode* duplicate = new GraphNode(*(*iter));
                     duplicateMap[*iter] = duplicate;
-                    duplicate->id_ = nodeCounter_++;
+                    duplicate->id_ = static_cast<int>(nodeCounter_++);
                     nodes_.insert(duplicate);
                     duplicateNodes.insert(duplicate);
                 }
@@ -847,7 +843,7 @@ void NetworkGraph::pruneGraph(const std::set<GraphNode*>& nodes) {
     for (iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
         GraphNode* node = *iter;
         node->inDegree_ = 0;
-        node->outDegree_ = node->successors_.size();
+        node->outDegree_ = static_cast<int>(node->successors_.size());
     }
     // update inDegree
     for (iter = nodes_.begin(); iter != nodes_.end(); ++iter) {

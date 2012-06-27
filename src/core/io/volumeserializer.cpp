@@ -1,65 +1,43 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/io/volumeserializer.h"
 
 #include <cstring>
 
 #include "voreen/core/io/volumereader.h"
-#include "voreen/core/io/brickedvolumereader.h"
 #include "voreen/core/io/volumewriter.h"
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/utils/stringutils.h"
 #include "tgt/filesystem.h"
 
 namespace voreen {
 
 //------------------------------------------------------------------------------
 
-FormatClashException::FormatClashException(const Extensions& extensions)
-    : extensions_(extensions)
-{
-    message_ = "FormatClashException: ";
-    for (size_t i=0; i<extensions_.size(); i++) {
-        message_ += extensions_[i] + " ";
-    }
-}
-
-const FormatClashException::Extensions& FormatClashException::getExtensions() const throw() {
-    return extensions_;
-}
-
-const char* FormatClashException::what() const throw() {
-    return message_.c_str();
-}
-
-
-//------------------------------------------------------------------------------
+const std::string VolumeSerializer::loggerCat_("voreen.VolumeSerializer");
 
 VolumeSerializer::VolumeSerializer() {
 }
@@ -67,113 +45,13 @@ VolumeSerializer::VolumeSerializer() {
 VolumeSerializer::~VolumeSerializer() {
 }
 
-VolumeCollection* VolumeSerializer::load(const std::string& url) const
-    throw (tgt::FileException, std::bad_alloc)
-{
-    VolumeReader* reader = getReader(url);
-    return reader->read(url);
-}
-
-VolumeCollection* VolumeSerializer::loadSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
-    throw (tgt::FileException, std::bad_alloc)
-{
-    VolumeReader* reader = getReader(url);
-    return reader->readSlices(url, firstSlice, lastSlice);
-}
-
-VolumeCollection* VolumeSerializer::loadBrick(const std::string& url, tgt::ivec3 brickStartPos,
-    int brickSize) const throw (tgt::FileException, std::bad_alloc)
-{
-    VolumeReader* reader = getReader(url);
-    return reader->readBrick(url, brickStartPos, brickSize);
-}
-
-VolumeHandle* VolumeSerializer::load(const VolumeOrigin& origin) const
-    throw (tgt::FileException, std::bad_alloc)
-{
-    VolumeReader* reader = getReader(origin.getURL());
-    VolumeHandle* volumeHandle = reader->read(origin);
-    return volumeHandle;
-}
-
-void VolumeSerializer::save(const std::string& filename, VolumeHandle* volumeHandle) const throw (tgt::FileException)
-{
-    VolumeWriter* writer = getWriter(filename);
-    writer->write(filename, volumeHandle);
-}
-
-void VolumeSerializer::save(const std::string& filename, Volume* volume) const throw (tgt::FileException) {
-    save(filename, new VolumeHandle(volume));
-}
-
-VolumeOrigin VolumeSerializer::convertOriginToRelativePath(const VolumeOrigin& origin, std::string& basePath) const
+std::vector<VolumeReader*> VolumeSerializer::getReaders(const std::string& url) const
     throw (tgt::UnsupportedFormatException)
 {
-    VolumeReader* reader = getReader(origin.getURL());
-    return reader->convertOriginToRelativePath(origin, basePath);
-}
+    if (url.empty())
+        return readers_;
 
-VolumeOrigin VolumeSerializer::convertOriginToAbsolutePath(const VolumeOrigin& origin, std::string& basePath) const
-    throw (tgt::UnsupportedFormatException)
-{
-    VolumeReader* reader = getReader(origin.getURL());
-    return reader->convertOriginToAbsolutePath(origin, basePath);
-}
-
-void VolumeSerializer::registerReader(VolumeReader* vr)
-    throw (FormatClashException)
-{
-    std::vector<std::string> clashes; // already inserted extensions are tracked here
-
-    // update extensions map
-    const std::vector<std::string>& extensions = vr->getExtensions();
-    for (size_t i = 0; i < extensions.size(); ++i) {
-        std::pair<std::map<std::string, VolumeReader*>::iterator, bool> p =
-            readersExtensionMap_.insert( std::make_pair(extensions[i], vr) );
-
-        if (p.second == false) // if insertion was not successful
-            clashes.push_back(extensions[i]);
-    }
-
-    // update formats map
-    const std::vector<std::string>& formats = vr->getProtocols();
-    for (size_t i = 0; i < formats.size(); ++i) {
-        std::pair<std::map<std::string, VolumeReader*>::iterator, bool> p =
-            readersProtocolMap_.insert( std::make_pair(formats[i], vr) );
-
-        if (p.second == false) // if insertion was not successful
-            clashes.push_back(formats[i]);
-    }
-
-    // was there a format clash?
-    if (!clashes.empty())
-        throw FormatClashException(clashes);
-}
-
-void VolumeSerializer::registerWriter(VolumeWriter* vw)
-    throw (FormatClashException)
-{
-    std::vector<std::string> clashes; // already inserted extensions are tracked here
-
-    // update extensions map
-    const std::vector<std::string>& extensions = vw->getExtensions();
-    for (size_t i = 0; i < extensions.size(); ++i) {
-        std::pair<std::map<std::string, VolumeWriter*>::iterator, bool> p =
-            writersMap_.insert( std::make_pair(extensions[i], vw) );
-
-        if (p.second == false) // if insertion was not successful
-            clashes.push_back(extensions[i]);
-    }
-
-    // was there a format clash?
-    if (!clashes.empty())
-        throw FormatClashException(clashes);
-}
-
-VolumeReader* VolumeSerializer::getReader(const std::string& url) const
-    throw (tgt::UnsupportedFormatException)
-{
-    VolumeOrigin origin(url);
+    VolumeURL origin(url);
 
     // check if a reader for the URL's resource type is available
     std::string protocol = origin.getProtocol();
@@ -184,24 +62,379 @@ VolumeReader* VolumeSerializer::getReader(const std::string& url) const
             throw tgt::UnsupportedFormatException(protocol, url);
     }
 
+    // check if a reader for the filename is available
+    std::string filename = tgt::FileSystem::fileName(origin.getPath());
+    if (readersFilenameMap_.find(filename) != readersFilenameMap_.end())
+        return readersFilenameMap_.find(filename)->second;
+
     // check if a reader for the filename extension is available
     std::string extension = tgt::FileSystem::fileExtension(origin.getPath(), true);
-
     if (readersExtensionMap_.find(extension) != readersExtensionMap_.end())
         return readersExtensionMap_.find(extension)->second;
     else
         throw tgt::UnsupportedFormatException(extension, url);
 }
 
-VolumeWriter* VolumeSerializer::getWriter(const std::string& filename) const
+VolumeReader* VolumeSerializer::getReaderByName(const std::string& className) const {
+    for (size_t i=0; i<readers_.size(); i++) {
+        if (readers_.at(i)->getClassName() == className)
+            return readers_.at(i);
+    }
+    return 0;
+}
+
+std::vector<VolumeWriter*> VolumeSerializer::getWriters(const std::string& url) const
     throw (tgt::UnsupportedFormatException)
 {
-    std::string extension = tgt::FileSystem::fileExtension(filename, true);
+    if (url.empty())
+        return writers_;
 
-    if (writersMap_.find(extension) == writersMap_.end())
-        throw tgt::UnsupportedFormatException(extension, filename);
+    VolumeURL origin(url);
 
-    return writersMap_.find(extension)->second;
+    // check if a writer for the resource type is available
+    std::string protocol = origin.getProtocol();
+    if (!protocol.empty()) {
+        if (writersProtocolMap_.find(protocol) != writersProtocolMap_.end())
+            return writersProtocolMap_.find(protocol)->second;
+        else
+            throw tgt::UnsupportedFormatException(protocol, url);
+    }
+
+    // check if a reader for the filename is available
+    std::string filename = tgt::FileSystem::fileName(origin.getPath());
+    if (writersFilenameMap_.find(filename) != writersFilenameMap_.end())
+        return writersFilenameMap_.find(filename)->second;
+
+    // check if a reader for the filename extension is available
+    std::string extension = tgt::FileSystem::fileExtension(origin.getPath(), true);
+    if (writersExtensionMap_.find(extension) != writersExtensionMap_.end())
+        return writersExtensionMap_.find(extension)->second;
+    else
+        throw tgt::UnsupportedFormatException(extension, url);
+}
+
+VolumeWriter* VolumeSerializer::getWriterByName(const std::string& className) const {
+    for (size_t i=0; i<writers_.size(); i++) {
+        if (writers_.at(i)->getClassName() == className)
+            return writers_.at(i);
+    }
+    return 0;
+}
+
+VolumeCollection* VolumeSerializer::read(const std::string& url) const
+    throw (tgt::FileException, std::bad_alloc)
+{
+    std::vector<VolumeReader*> matchingReaders = getReaders(url);
+    tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
+    if (matchingReaders.size() == 1) {
+        VolumeCollection* collection = matchingReaders.front()->read(url);
+        if (collection)
+            appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
+        return collection;
+    }
+    else {
+         std::vector<std::string> errors;
+
+        // if preferred reader is specified and available, use it for loading the data set
+        VolumeReader* prefReader = 0;
+        VolumeURL urlOrigin(url);
+        std::string prefReaderStr = urlOrigin.getSearchParameter("preferredReader");
+        if (prefReaderStr != "")
+            prefReader = getReaderByName(prefReaderStr);
+        if (prefReader) {
+            try {
+                VolumeCollection* collection = prefReader->read(url);
+                if (collection)
+                    appendPreferredReaderToOriginURLs(collection,  prefReader);
+                return collection;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+
+        // if no preferred reader or preferred reader could not load the data set,
+        // iterate over all possibly matching readers and try to load data set, collect error messages
+        for (size_t i=0; i<matchingReaders.size(); i++) {
+            if (matchingReaders.at(i) == prefReader)
+                continue;
+            try {
+                VolumeCollection* collection = matchingReaders.at(i)->read(url);
+                if (collection)
+                    appendPreferredReaderToOriginURLs(collection,  matchingReaders.at(i));
+                return collection;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+        std::string errorMsg = "No VolumeReader was able to read the data set: " + strJoin(errors, "; ");
+        throw tgt::FileException(errorMsg);
+
+    }
+}
+
+VolumeCollection* VolumeSerializer::readSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
+    throw (tgt::FileException, std::bad_alloc)
+{
+    std::vector<VolumeReader*> matchingReaders = getReaders(url);
+    tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
+    if (matchingReaders.size() == 1) {
+        VolumeCollection* collection = matchingReaders.front()->readSlices(url, firstSlice, lastSlice);
+        if (collection)
+            appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
+        return collection;
+    }
+    else {
+        // iterate over all possibly matching readers try to load data set, collect error messages
+        std::vector<std::string> errors;
+        for (size_t i=0; i<matchingReaders.size(); i++) {
+            try {
+                VolumeCollection* collection = matchingReaders.at(i)->readSlices(url, firstSlice, lastSlice);
+                if (collection)
+                    appendPreferredReaderToOriginURLs(collection, matchingReaders.at(i));
+                return collection;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+        std::string errorMsg = "No VolumeReader was able to read the data set: " + strJoin(errors, "; ");
+        throw tgt::FileException(errorMsg);
+    }
+}
+
+VolumeCollection* VolumeSerializer::readBrick(const std::string& url, tgt::ivec3 brickStartPos,
+    int brickSize) const throw (tgt::FileException, std::bad_alloc)
+{
+    std::vector<VolumeReader*> matchingReaders = getReaders(url);
+    tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
+    if (matchingReaders.size() == 1) {
+        VolumeCollection* collection = matchingReaders.front()->readBrick(url, brickStartPos, brickSize);
+        if (collection)
+            appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
+        return collection;
+    }
+    else {
+        // iterate over all possibly matching readers try to load data set, collect error messages
+        std::vector<std::string> errors;
+        for (size_t i=0; i<matchingReaders.size(); i++) {
+            try {
+                VolumeCollection* collection = matchingReaders.at(i)->readBrick(url, brickStartPos, brickSize);
+                if (collection)
+                    appendPreferredReaderToOriginURLs(collection, matchingReaders.at(i));
+                return collection;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+        std::string errorMsg = "No VolumeReader was able to read the data set: " + strJoin(errors, "; ");
+        throw tgt::FileException(errorMsg);
+    }
+}
+
+VolumeBase* VolumeSerializer::read(const VolumeURL& origin) const
+    throw (tgt::FileException, std::bad_alloc)
+{
+    std::vector<VolumeReader*> matchingReaders = getReaders(origin.getURL());
+    tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
+    if (matchingReaders.size() == 1) {
+        return matchingReaders.front()->read(origin);
+    }
+    else {
+        std::vector<std::string> errors;
+
+        // if preferred reader is specified and available, use it for loading the data set
+        VolumeReader* prefReader = 0;
+        std::string prefReaderStr = origin.getSearchParameter("preferredReader");
+        if (prefReaderStr != "")
+            prefReader = getReaderByName(prefReaderStr);
+        if (prefReader) {
+            try {
+                VolumeBase* handle = prefReader->read(origin);
+                if (handle)
+                    appendPreferredReaderToOriginURLs(handle,  prefReader);
+                return handle;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+
+        // if no preferred reader or preferred reader could not load the data set,
+        // iterate over all possibly matching readers and try to load data set, collect error messages
+        for (size_t i=0; i<matchingReaders.size(); i++) {
+            if (matchingReaders.at(i) == prefReader)
+                continue;
+            try {
+                VolumeBase* handle = matchingReaders.at(i)->read(origin);
+                if (handle)
+                    appendPreferredReaderToOriginURLs(handle,  matchingReaders.at(i));
+                return handle;
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+        std::string errorMsg = "No VolumeReader was able to read the data set: " + strJoin(errors, "; ");
+        throw tgt::FileException(errorMsg);
+    }
+}
+
+void VolumeSerializer::write(const std::string& url, const VolumeBase* volumeHandle) const throw (tgt::FileException)
+{
+    std::vector<VolumeWriter*> matchingWriters = getWriters(url);
+    tgtAssert(!matchingWriters.empty(), "writers vector empty (exception expected)");
+    if (matchingWriters.size() == 1) {
+        return matchingWriters.front()->write(url, volumeHandle);
+    }
+    else {
+        // iterate over all possibly matching writers try to load data set, collect error messages
+        std::vector<std::string> errors;
+        for (size_t i=0; i<matchingWriters.size(); i++) {
+            try {
+                return matchingWriters.at(i)->write(url, volumeHandle);
+            }
+            catch (const tgt::FileException& e) {
+                errors.push_back(e.what());
+            }
+        }
+        std::string errorMsg = "No VolumeWriter was able to write the data set: " + strJoin(errors, "; ");
+        throw tgt::FileException(errorMsg);
+    }
+}
+
+VolumeURL VolumeSerializer::convertOriginToRelativePath(const VolumeURL& origin, const std::string& basePath) const
+    throw (tgt::UnsupportedFormatException)
+{
+    std::vector<VolumeReader*> readers = getReaders(origin.getURL());
+    tgtAssert(!readers.empty(), "readers vector must not be empty");
+    return readers.front()->convertOriginToRelativePath(origin, basePath); // TODO: how to to select appropriate reader?
+}
+
+VolumeURL VolumeSerializer::convertOriginToAbsolutePath(const VolumeURL& origin, const std::string& basePath) const
+    throw (tgt::UnsupportedFormatException)
+{
+    std::vector<VolumeReader*> readers = getReaders(origin.getURL());
+    tgtAssert(!readers.empty(), "readers vector must not be empty");
+    return readers.front()->convertOriginToAbsolutePath(origin, basePath); // TODO: how to to select appropriate reader?
+}
+
+void VolumeSerializer::registerReader(VolumeReader* vr) {
+    tgtAssert(vr, "null pointer passed");
+    readers_.push_back(vr);
+
+    // update extensions map
+    const std::vector<std::string>& extensions = vr->getSupportedExtensions();
+    for (size_t i = 0; i < extensions.size(); ++i) {
+        // insert new entry (empty vector), if extension is not already mapped
+        if (readersExtensionMap_.find(extensions[i]) == readersExtensionMap_.end()) {
+            std::vector<VolumeReader*> readersVec;
+            readersExtensionMap_.insert(std::make_pair(extensions[i], readersVec));
+        }
+        // add reader to mapped vector
+        tgtAssert(readersExtensionMap_.find(extensions[i]) != readersExtensionMap_.end(), "map entry should exist here");
+        readersExtensionMap_.find(extensions[i])->second.push_back(vr);
+    }
+
+    // update filename map
+    const std::vector<std::string>& filenames = vr->getSupportedFilenames();
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        // insert new entry (empty vector), if filename is not already mapped
+        if (readersFilenameMap_.find(filenames[i]) == readersFilenameMap_.end()) {
+            std::vector<VolumeReader*> readersVec;
+            readersFilenameMap_.insert(std::make_pair(filenames[i], readersVec));
+        }
+        // add reader to mapped vector
+        tgtAssert(readersFilenameMap_.find(filenames[i]) != readersFilenameMap_.end(), "map entry should exist here");
+        readersFilenameMap_.find(filenames[i])->second.push_back(vr);
+    }
+
+    // update protocols map
+    const std::vector<std::string>& formats = vr->getSupportedProtocols();
+    for (size_t i = 0; i < formats.size(); ++i) {
+        // insert new entry (empty vector), if extension is not already mapped
+        if (readersProtocolMap_.find(formats[i]) == readersProtocolMap_.end()) {
+            std::vector<VolumeReader*> readersVec;
+            readersProtocolMap_.insert(std::make_pair(formats[i], readersVec));
+        }
+        // add reader to mapped vector
+        tgtAssert(readersProtocolMap_.find(formats[i]) != readersProtocolMap_.end(), "map entry should exist here");
+        readersProtocolMap_.find(formats[i])->second.push_back(vr);
+    }
+}
+
+void VolumeSerializer::registerWriter(VolumeWriter* vw) {
+    tgtAssert(vw, "null pointer passed");
+    writers_.push_back(vw);
+
+    // update extensions map
+    const std::vector<std::string>& extensions = vw->getSupportedExtensions();
+    for (size_t i = 0; i < extensions.size(); ++i) {
+        // insert new entry (empty vector), if extension is not already mapped
+        if (writersExtensionMap_.find(extensions[i]) == writersExtensionMap_.end()) {
+            std::vector<VolumeWriter*> writersVec;
+            writersExtensionMap_.insert(std::make_pair(extensions[i], writersVec));
+        }
+        // add writer to mapped vector
+        tgtAssert(writersExtensionMap_.find(extensions[i]) != writersExtensionMap_.end(), "map entry should exist here");
+        writersExtensionMap_.find(extensions[i])->second.push_back(vw);
+    }
+
+    // update filename map
+    const std::vector<std::string>& filenames = vw->getSupportedFilenames();
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        // insert new entry (empty vector), if filename is not already mapped
+        if (writersFilenameMap_.find(filenames[i]) == writersFilenameMap_.end()) {
+            std::vector<VolumeWriter*> writersVec;
+            writersFilenameMap_.insert(std::make_pair(filenames[i], writersVec));
+        }
+        // add writer to mapped vector
+        tgtAssert(writersFilenameMap_.find(filenames[i]) != writersFilenameMap_.end(), "map entry should exist here");
+        writersFilenameMap_.find(filenames[i])->second.push_back(vw);
+    }
+
+    // update protocols map
+    const std::vector<std::string>& formats = vw->getSupportedProtocols();
+    for (size_t i = 0; i < formats.size(); ++i) {
+        // insert new entry (empty vector), if protocol is not already mapped
+        if (writersProtocolMap_.find(formats[i]) == writersProtocolMap_.end()) {
+            std::vector<VolumeWriter*> writersVec;
+            writersProtocolMap_.insert(std::make_pair(formats[i], writersVec));
+        }
+        // add writer to mapped vector
+        tgtAssert(writersProtocolMap_.find(formats[i]) != writersProtocolMap_.end(), "map entry should exist here");
+        writersProtocolMap_.find(formats[i])->second.push_back(vw);
+    }
+}
+
+void VolumeSerializer::setProgressBar(ProgressBar* progressBar) {
+    for (size_t i=0; i<readers_.size(); i++)
+        readers_.at(i)->setProgressBar(progressBar);
+
+    for (size_t i=0; i<writers_.size(); i++)
+        writers_.at(i)->setProgressBar(progressBar);
+}
+
+void VolumeSerializer::appendPreferredReaderToOriginURLs(const VolumeCollection* collection, const VolumeReader* volumeReader) const {
+    tgtAssert(collection, "null pointer passed");
+    tgtAssert(volumeReader, "null pointer passed");
+
+    for (size_t i=0; i<collection->size(); i++) {
+        if (collection->at(i) == 0) {
+            LERROR("collection contains null pointer");
+            return;
+        }
+        appendPreferredReaderToOriginURLs(collection->at(i), volumeReader);
+    }
+}
+
+void VolumeSerializer::appendPreferredReaderToOriginURLs(VolumeBase* handle, const VolumeReader* volumeReader) const {
+    tgtAssert(handle, "null pointer passed");
+    tgtAssert(volumeReader, "null pointer passed");
+
+    handle->getOrigin().addSearchParameter("preferredReader", volumeReader->getClassName());
 }
 
 

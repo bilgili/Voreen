@@ -1,254 +1,218 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/datastructures/volume/histogram.h"
-#include "voreen/core/datastructures/volume/bricking/brickedvolume.h"
+#include "voreen/core/datastructures/volume/volume.h"
+
+#include "voreen/core/io/serialization/xmlserializer.h"
+#include "voreen/core/io/serialization/xmldeserializer.h"
 
 namespace voreen {
 
-HistogramIntensity::HistogramIntensity(const Volume* volume, int bucketCount) {
-    tgtAssert(volume, "HistogramIntensity: No volume");
-    tgtAssert(bucketCount > 0, "HistogramIntensity: Invalid bucket count");
+Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount) {
+    const VolumeRAM* vol = handle->getRepresentation<VolumeRAM>();
+    RealWorldMapping rwm = handle->getRealWorldMapping();
 
-    // Limit to 16 bit
-    if (bucketCount > 65536)
-        bucketCount = 65536;
+    float min = handle->getDerivedData<VolumeMinMax>()->getMinNormalized();
+    float max = handle->getDerivedData<VolumeMinMax>()->getMaxNormalized();
+    min = rwm.normalizedToRealWorld(min);
+    max = rwm.normalizedToRealWorld(max);
 
-    // set all buckets to zero
-    hist_.assign(bucketCount, 0);
+    Histogram1D h(min, max, bucketCount);
 
-    maxValue_ = 0;
-    significantRange_ = tgt::ivec2(bucketCount, -1);
+    for(size_t i=0; i<vol->getNumVoxels(); i++) {
+        float v = vol->getVoxelNormalized(i);
+        v = rwm.normalizedToRealWorld(v);
 
-    const Volume* currentVolume = volume;
-
-    const BrickedVolume* brickedVolume = dynamic_cast<const BrickedVolume*>(volume);
-    if (brickedVolume) {
-        currentVolume = brickedVolume->getPackedVolume();
+        h.addSample(v);
     }
 
-    const VolumeUInt8* sourceDataset8Bit = dynamic_cast<const VolumeUInt8*>(currentVolume);
-    if (sourceDataset8Bit) {
-        int bucket;
-        float m = (bucketCount - 1.f) / 255.f;
-
-        for (size_t i=0; i < sourceDataset8Bit->getNumVoxels(); ++i) {
-            bucket = static_cast<int>(floor(sourceDataset8Bit->voxel(i) * m));
-            int value = hist_[bucket] + 1;
-            hist_[bucket] = value;
-
-            if (value > maxValue_)
-                maxValue_ = value;
-
-            if (bucket < significantRange_.x)
-                significantRange_.x = bucket;
-            if (bucket > significantRange_.y)
-                significantRange_.y = bucket;
-        }
-    }
-
-    const Volume4xUInt8* sourceDataset32Bit = dynamic_cast<const Volume4xUInt8*>(currentVolume);
-    if (sourceDataset32Bit) {
-        int bucket;
-        float m = (bucketCount - 1.f) / 255.f;
-
-        for (size_t i=0; i < sourceDataset32Bit->getNumVoxels(); ++i) {
-            bucket = static_cast<int>(floor(sourceDataset32Bit->voxel(i)[3] * m));
-            int value = hist_[bucket] + 1;
-            hist_[bucket] = value;
-
-            if (value > maxValue_)
-                maxValue_ = value;
-
-            if (bucket < significantRange_.x)
-                significantRange_.x = bucket;
-            if (bucket > significantRange_.y)
-                significantRange_.y = bucket;
-        }
-    }
-
-    const VolumeUInt16* sourceDataset16Bit = dynamic_cast<const VolumeUInt16*>(currentVolume);
-    if (sourceDataset16Bit) {
-        int bucket;
-        float maxValue = (sourceDataset16Bit->getBitsStored() == 12) ? 4095.f : 65535.f;
-        float m = (bucketCount - 1.f) / maxValue;
-
-        for (size_t i=0; i < sourceDataset16Bit->getNumVoxels(); ++i) {
-            bucket = static_cast<int>(floor(sourceDataset16Bit->voxel(i) * m));
-            if (bucket < static_cast<int>(hist_.size())) {
-                int value = hist_[bucket] + 1;
-                hist_[bucket] = value;
-
-                if (value > maxValue_)
-                    maxValue_ = value;
-
-                if (bucket < significantRange_.x)
-                    significantRange_.x = bucket;
-                if (bucket > significantRange_.y)
-                    significantRange_.y = bucket;
-            }
-        }
-    }
-
-    const VolumeFloat* sourceDatasetFloat = dynamic_cast<const VolumeFloat*>(currentVolume);
-    if (sourceDatasetFloat) {
-        float m = (bucketCount - 1.f);
-        int count = static_cast<int>(hist_.size());
-
-        for (size_t i=0; i < sourceDatasetFloat->getNumVoxels(); ++i) {
-            int bucket = static_cast<int>(floor(sourceDatasetFloat->voxel(i) * m));
-            if (bucket < count && bucket >= 0) {
-                int value = hist_[bucket] + 1;
-                hist_[bucket] = value;
-
-                if (value > maxValue_)
-                    maxValue_ = value;
-
-                if (bucket < significantRange_.x)
-                    significantRange_.x = bucket;
-                if (bucket > significantRange_.y)
-                    significantRange_.y = bucket;
-            }
-        }
-    }
+    return h;
 }
 
-size_t HistogramIntensity::getBucketCount() const {
-    return hist_.size();
+//-----------------------------------------------------------------------------
+
+VolumeHistogramIntensity::VolumeHistogramIntensity() :
+    VolumeDerivedData(),
+    hist_(0.0f, 1.0f, 1)
+{}
+
+VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeHistogramIntensity& h) : hist_(h.hist_) {
 }
 
-int HistogramIntensity::getValue(int i) const {
-    return hist_[i];
+VolumeHistogramIntensity::VolumeHistogramIntensity(const Histogram1D& h) : hist_(h) {
 }
 
-int HistogramIntensity::getValue(size_t i) const {
-    return getValue(static_cast<int>(i));
+VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeBase* vol, int bucketCount) : hist_(createHistogram1DFromVolume(vol, bucketCount)) {
 }
 
-int HistogramIntensity::getValue(float i) const {
-    size_t bucketCount = hist_.size();
+VolumeDerivedData* VolumeHistogramIntensity::createFrom(const VolumeBase* handle) const {
+    tgtAssert(handle, "no volume handle");
+    VolumeHistogramIntensity* h = new VolumeHistogramIntensity();
+    Histogram1D hist = createHistogram1DFromVolume(handle, 256);
+    h->hist_ = hist;
+    return h;
+}
+
+size_t VolumeHistogramIntensity::getBucketCount() const {
+    return hist_.getNumBuckets();
+}
+
+uint64_t VolumeHistogramIntensity::getValue(int bucket) const {
+    return hist_.getBucket(bucket);
+}
+
+uint64_t VolumeHistogramIntensity::getValue(size_t bucket) const {
+    return getValue(static_cast<int>(bucket));
+}
+
+uint64_t VolumeHistogramIntensity::getValue(float i) const {
+    size_t bucketCount = hist_.getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
     return getValue(bucket);
 }
 
-float HistogramIntensity::getNormalized(int i) const {
-    return (static_cast<float>(hist_[i]) / static_cast<float>(maxValue_));
+float VolumeHistogramIntensity::getNormalized(int i) const {
+    return hist_.getBucketNormalized(i);
 }
 
-float HistogramIntensity::getNormalized(float i) const {
-    size_t bucketCount = hist_.size();
+float VolumeHistogramIntensity::getNormalized(float i) const {
+    size_t bucketCount = hist_.getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
     return getNormalized(bucket);
 }
 
-float HistogramIntensity::getLogNormalized(int i) const {
-     return (logf(static_cast<float>(1+hist_[i]) ) / log( static_cast<float>(1+maxValue_)));
+float VolumeHistogramIntensity::getLogNormalized(int i) const {
+     return (logf(static_cast<float>(1+hist_.getBucket(i)) ) / log( static_cast<float>(1+hist_.getMaxBucket())));
 }
 
-float HistogramIntensity::getLogNormalized(float i) const {
-    size_t bucketCount = hist_.size();
+float VolumeHistogramIntensity::getLogNormalized(float i) const {
+    size_t bucketCount = hist_.getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
     return getLogNormalized(bucket);
 }
 
-tgt::ivec2 HistogramIntensity::getSignificantRange() const {
-    return significantRange_;
+void VolumeHistogramIntensity::serialize(XmlSerializer& s) const  {
+    s.serialize("histogram", hist_);
 }
 
+void VolumeHistogramIntensity::deserialize(XmlDeserializer& s) {
+    s.deserialize("histogram", hist_);
+}
+
+const Histogram1D& VolumeHistogramIntensity::getHistogram() const {
+    return hist_;
+}
+
+Histogram1D& VolumeHistogramIntensity::getHistogram() {
+    return hist_;
+}
 
 //-----------------------------------------------------------------------------
 
-HistogramIntensityGradient::HistogramIntensityGradient(const Volume* volumeGrad, const Volume* volumeIntensity,
+VolumeHistogramIntensityGradient::VolumeHistogramIntensityGradient(const VolumeBase* volumeHandleGrad, const VolumeBase* volumeHandleIntensity,
                                                        int bucketCounti, int bucketCountg, bool scale)
     : scaleFactor_(1.f)
 {
-    if (dynamic_cast<const Volume3xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<const Volume3xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    const VolumeRAM* volumeGrad = volumeHandleGrad->getRepresentation<VolumeRAM>();
+    const VolumeRAM* volumeIntensity = volumeHandleIntensity->getRepresentation<VolumeRAM>();
+
+    if (dynamic_cast<const VolumeRAM_3xUInt8*>(volumeGrad)) {
+        calcHG(static_cast<const VolumeRAM_3xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<const Volume4xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<const Volume4xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const VolumeRAM_4xUInt8*>(volumeGrad)) {
+        calcHG(static_cast<const VolumeRAM_4xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<const Volume3xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<const Volume3xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const VolumeRAM_3xUInt16*>(volumeGrad)) {
+        calcHG(static_cast<const VolumeRAM_3xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<const Volume4xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<const Volume4xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const VolumeRAM_4xUInt16*>(volumeGrad)) {
+        calcHG(static_cast<const VolumeRAM_4xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
     else {
-        LERRORC("voreen.HistogramIntensityGradient",
-                "HistogramIntensityGradient needs 24 or 32 bit DS as input!");
+        LERRORC("voreen.VolumeVolumeHistogramIntensityGradient",
+                "VolumeVolumeHistogramIntensityGradient needs 24 or 32 bit DS as input!");
     }
 }
 
-size_t HistogramIntensityGradient::getBucketCountIntensity() const {
-    return hist_.size();
+VolumeHistogramIntensityGradient::VolumeHistogramIntensityGradient() :
+    VolumeDerivedData(),
+    maxValue_(-1),
+    significantRangeIntensity_(-1),
+    significantRangeGradient_(-1),
+    scaleFactor_(-1.f)
+{}
+
+VolumeDerivedData* VolumeHistogramIntensityGradient::createFrom(const VolumeBase* /*handle*/) const {
+    // unable to create 2D histogram without gradient volume
+    return 0;
 }
 
-size_t HistogramIntensityGradient::getBucketCountGradient() const {
-    return hist_[0].size();
+size_t VolumeHistogramIntensityGradient::getBucketCountIntensity() const {
+    return histValues_.size();
 }
 
-int HistogramIntensityGradient::getValue(int i, int g) const {
-    return hist_[i][g];
+size_t VolumeHistogramIntensityGradient::getBucketCountGradient() const {
+    return histValues_[0].size();
 }
 
-float HistogramIntensityGradient::getNormalized(int i, int g) const {
-    return (static_cast<float>(hist_[i][g]) / static_cast<float>(maxValue_));
+int VolumeHistogramIntensityGradient::getValue(int i, int g) const {
+    return histValues_[i][g];
 }
 
-float HistogramIntensityGradient::getLogNormalized(int i, int g) const {
-    return (logf(static_cast<float>(1+hist_[i][g]) ) / log(static_cast<float>(1+maxValue_)));
+float VolumeHistogramIntensityGradient::getNormalized(int i, int g) const {
+    return (static_cast<float>(histValues_[i][g]) / static_cast<float>(maxValue_));
 }
 
-int HistogramIntensityGradient::getMaxValue() const {
+float VolumeHistogramIntensityGradient::getLogNormalized(int i, int g) const {
+    return (logf(static_cast<float>(1+histValues_[i][g]) ) / log(static_cast<float>(1+maxValue_)));
+}
+
+int VolumeHistogramIntensityGradient::getMaxValue() const {
     return maxValue_;
 }
 
-tgt::ivec2 HistogramIntensityGradient::getSignificantRangeIntensity() const {
+tgt::ivec2 VolumeHistogramIntensityGradient::getSignificantRangeIntensity() const {
     return significantRangeIntensity_;
 }
 
-tgt::ivec2 HistogramIntensityGradient::getSignificantRangeGradient() const {
+tgt::ivec2 VolumeHistogramIntensityGradient::getSignificantRangeGradient() const {
     return significantRangeGradient_;
 }
 
-float HistogramIntensityGradient::getScaleFactor() const {
+float VolumeHistogramIntensityGradient::getScaleFactor() const {
     return scaleFactor_;
 }
 
 template<class U>
-void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const Volume* volumeIntensity, int bucketCounti, int bucketCountg, bool scale) {
+void VolumeHistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const VolumeRAM* volumeIntensity, int bucketCounti, int bucketCountg, bool scale) {
     // bits used for gradients
-    int bitsG = volumeGrad->getBitsStored() / volumeGrad->getNumChannels();
+    int bitsG = volumeGrad->getBitsAllocated() / volumeGrad->getNumChannels();
     float halfMax = (pow(2.f, bitsG) - 1.f) / 2.f;
     const tgt::ivec3 gradDim = volumeGrad->getDimensions();
 
@@ -284,7 +248,7 @@ void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const
 
     // init histogram with 0 values
     for (int j = 0; j < bucketCounti; j++)
-        hist_.push_back(std::vector<int>(bucketCountg));
+        histValues_.push_back(std::vector<int>(bucketCountg));
 
 
     int bucketg, bucketi;
@@ -297,9 +261,9 @@ void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const
             for (int x = 0; x < gradDim.x; ++x) {
                 float intensity;
                 if (volumeIntensity)
-                    intensity = volumeIntensity->getVoxelFloat(x,y,z);
+                    intensity = volumeIntensity->getVoxelNormalized(x,y,z);
                 else
-                    intensity = volumeGrad->getVoxelFloat(x,y,z,volumeGrad->getNumChannels()-1);
+                    intensity = volumeGrad->getVoxelNormalized(x,y,z,volumeGrad->getNumChannels()-1);
 
                 if (intensity > 1.f)
                     intensity = 1.f;
@@ -309,9 +273,9 @@ void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const
                 bucketi = tgt::ifloor(intensity * (bucketCounti - 1));
                 bucketg = tgt::ifloor((gradientLengths[pos] / maxLength) * (bucketCountg - 1));
 
-                hist_[bucketi][bucketg]++;
-                if ((hist_[bucketi][bucketg]) > maxValue_)
-                    maxValue_ = hist_[bucketi][bucketg];
+                histValues_[bucketi][bucketg]++;
+                if ((histValues_[bucketi][bucketg]) > maxValue_)
+                    maxValue_ = histValues_[bucketi][bucketg];
 
                 if (bucketi < significantRangeIntensity_.x)
                     significantRangeIntensity_.x = bucketi;
@@ -324,6 +288,22 @@ void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const
             }
         }
     }
+}
+
+void VolumeHistogramIntensityGradient::serialize(XmlSerializer& s) const {
+    s.serialize("values", histValues_);
+    s.serialize("maxValue", maxValue_);
+    s.serialize("significantRangeIntensity", significantRangeIntensity_);
+    s.serialize("significantRangeGradient", significantRangeGradient_);
+    s.serialize("scaleFactor", scaleFactor_);
+}
+
+void VolumeHistogramIntensityGradient::deserialize(XmlDeserializer& s) {
+    s.deserialize("values", histValues_);
+    s.deserialize("maxValue", maxValue_);
+    s.deserialize("significantRangeIntensity", significantRangeIntensity_);
+    s.deserialize("significantRangeGradient", significantRangeGradient_);
+    s.deserialize("scaleFactor", scaleFactor_);
 }
 
 } // namespace voreen

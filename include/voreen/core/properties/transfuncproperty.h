@@ -1,52 +1,52 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_TRANSFERFUNCPROPERTY_H
 #define VRN_TRANSFERFUNCPROPERTY_H
 
 #include "voreen/core/properties/templateproperty.h"
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/utils/observer.h"
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/transfunc/transfunc.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 namespace voreen {
 
-class TransFunc;
-class VolumeHandle;
+class Volume;
 class Volume;
 
+#ifdef DLL_TEMPLATE_INST
+template class VRN_CORE_API TemplateProperty<TransFunc*>;
+#endif
 /**
  * Property for transfer functions. The widget for this property contains several editors
  * to modify the transfer function. You can change the shown editors via the constructor or
  * by calling enableEditor() or disableEditor().
  */
-class TransFuncProperty : public TemplateProperty<TransFunc*> {
+class VRN_CORE_API TransFuncProperty : public TemplateProperty<TransFunc*> {
 public:
 
     ///< enum for all editors that can be used in the widget for this property
@@ -54,7 +54,6 @@ public:
         NONE               = 0, ///< no editor appears in the widget
         INTENSITY          = 1, ///< general widget for 1D transfer functions
         INTENSITY_RAMP     = 2, ///< widget for 1D transfer functions which only allows 2 keys
-        //INTENSITY_PET      = 4, ///< widget for 1D transfer functions for pet datasets
         INTENSITY_GRADIENT = 8, ///< widget for 2D transfer functions
         ALL                = 15 ///< aggregation of all editor widgets
     };
@@ -73,12 +72,16 @@ public:
      *       to deserialization or initialization, respectively.
      */
     TransFuncProperty(const std::string& ident, const std::string& guiText,
-        Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT,
-        Editors editors = ALL, bool lazyEditorInstantiation = true);
-
+        int invalidationLevel = Processor::INVALID_RESULT,
+        Editors editors = Editors(INTENSITY | INTENSITY_GRADIENT), bool lazyEditorInstantiation = true);
+    TransFuncProperty();
     virtual ~TransFuncProperty();
 
-    virtual std::string getTypeString() const;
+    virtual Property* create() const;
+
+    virtual std::string getClassName() const       { return "TransFuncProperty"; }
+    virtual std::string getTypeDescription() const { return "TransferFunction"; }
+    virtual void reset();
 
     /**
      * Enables the given editor in the widget for the property. Must be called before creation
@@ -121,14 +124,14 @@ public:
      *
      * @param handle volumehandle that should be assigned to this property
      */
-    void setVolumeHandle(VolumeHandle* handle);
+    void setVolumeHandle(const VolumeBase* handle);
 
     /**
      * Returns the volume handle that is assigned to this property.
      *
      * @return volume handle that is associated with this property
      */
-    VolumeHandle* getVolumeHandle() const;
+    const VolumeBase* getVolumeHandle() const;
 
     /**
      * Executes all member actions that belong to the property. Generally the owner of the
@@ -147,18 +150,29 @@ public:
     virtual void deserialize(XmlDeserializer& s);
 
     /**
-     * Creates a widget for the transfer function property using the given factory.
-     *
-     * @param f the factory that is used to create a widget for the transfer function property
-     * @return widget that was created for the property
-     */
-    PropertyWidget* createWidget(PropertyWidgetFactory* f);
-
-    /**
      * Returns whether the transfer function editor of this property should be instantiated on
      * construction of the property widget or when the user is first accessing it (lazy)
      */
     bool getLazyEditorInstantiation() const { return lazyEditorInstantiation_; }
+
+    /**
+     * Returns whether the tf domain is always adapted when a new volume handle is passed.
+     */
+    void setAlwaysFitToDomain(bool b) {
+        alwaysFitDomain_ = b;
+    }
+
+    /**
+     * Turn automatic domain fitting on / off.
+     */
+    bool getAlwaysFitToDomain() const {
+        return alwaysFitDomain_;
+    }
+
+    /**
+     * Sets the tf domain bounds from the current volume handle.
+     */
+    void fitDomainToData();
 
 protected:
     /**
@@ -167,22 +181,26 @@ protected:
      *
      * @see Property::initialize
      */
-    void initialize() throw (VoreenException);
+    void initialize() throw (tgt::Exception);
 
     /**
      * Deletes the stored transfer function.
      *
      * @see Property::deinitialize
      */
-    void deinitialize() throw (VoreenException);
+    void deinitialize() throw (tgt::Exception);
 
-    VolumeHandle* volumeHandle_; ///< volumehandle that is associated with the transfer function property
+    const VolumeBase* volumeHandle_; ///< volumehandle that is associated with the transfer function property
 
     int editors_; ///< number that indicates what editors will appear in the tf widget
 
     /// Determines whether the transfer function editor of this property is instantiated on
     /// construction of the property widget or when the user is first accessing it (lazy)
     bool lazyEditorInstantiation_;
+
+    /// Determines whether the transfer function value domain is always apated when an new volumehandle is passed to the
+    /// property.
+    bool alwaysFitDomain_;
 
     static const std::string loggerCat_; ///< logger category
 };

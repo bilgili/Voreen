@@ -1,38 +1,37 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/network/networkevaluator.h"
 
+#include "voreen/core/voreenapplication.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/interaction/idmanager.h"
 #include "voreen/core/network/networkgraph.h"
-#include "voreen/core/processors/canvasrenderer.h"
+#include "voreen/core/utils/exception.h"
+
+#include "modules/core/processors/output/canvasrenderer.h" //< core module is always available
 
 #include "tgt/textureunit.h"
 #include "tgt/framebufferobject.h"
@@ -44,22 +43,22 @@ using std::vector;
 namespace voreen {
 
 const std::string NetworkEvaluator::loggerCat_("voreen.NetworkEvaluator");
-bool NetworkEvaluator::reuseRenderTargets_ = true;
 
-NetworkEvaluator::NetworkEvaluator(tgt::GLCanvas* sharedContext)
+NetworkEvaluator::NetworkEvaluator(bool glMode, tgt::GLCanvas* sharedContext)
     : network_(0)
-    , renderingOrder_()
-    , processWrappers_()
     , sharedContext_(sharedContext)
+    , glMode_(glMode)
+    , processWrappers_()
+    , reuseRenderTargets_(false)
+    , renderingOrder_()
     , networkChanged_(false)
     , locked_(false)
     , processPending_(false)
 {
-
 #ifdef VRN_DEBUG
-    addProcessWrapper(new CheckOpenGLStateProcessWrapper());
+    if (glMode_)
+        addProcessWrapper(new CheckOpenGLStateProcessWrapper());
 #endif
-
 }
 
 NetworkEvaluator::~NetworkEvaluator() {
@@ -91,7 +90,7 @@ const std::set<Processor*> NetworkEvaluator::getEndProcessors() const {
 bool NetworkEvaluator::initializeNetwork()  {
 
     if (isLocked()) {
-        LWARNING("initializeNetwork() called on locked evaluator.");
+        LDEBUG("initializeNetwork() called on locked evaluator.");
         return false;
     }
 
@@ -103,33 +102,50 @@ bool NetworkEvaluator::initializeNetwork()  {
     // prevent parallel execution in multithreaded/event dispatching environments
     lock();
 
+    if (glMode_ && sharedContext_)
+        sharedContext_->getGLFocus();
+
+    // notify wrappers
+    for (size_t i = 0; i < processWrappers_.size(); ++i)
+        processWrappers_[i]->beforeNetworkInitialize();
+    if (glMode_)
+        LGL_ERROR;
+
     // Voreen's default depth buffer settings
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    if (glMode_) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+    }
 
     bool failed = false;
     for (size_t i = 0; i < network_->getProcessors().size(); ++i) {
         Processor* processor = network_->getProcessors()[i];
         if (!processor->isInitialized()) {
             try {
-                if (sharedContext_)
+                if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->initialize();
-                if (sharedContext_)
-                    sharedContext_->getGLFocus();
-                LGL_ERROR;
+                processor->initialized_ = true;
+                processor->invalidate();
+                if (glMode_ ) {
+                    if (sharedContext_)
+                        sharedContext_->getGLFocus();
+                    LGL_ERROR;
+                }
             }
-            catch (const VoreenException& e) {
-                LERROR("Failed to initialize '" << processor->getName()
-                        << "' (" << processor->getClassName() << "): " << e.what());
+            catch (const tgt::Exception& e) {
+                LERROR("Failed to initialize processor '" << processor->getName()
+                        << "' (" << processor->getClassName() << "): ");
+                LERROR(" - " << e.what());
 
                 // deinitialize processor, in order to make sure that all resources are freed
                 LINFO("Deinitializing '" << processor->getName()
                     << "' (" << processor->getClassName() << ") ...");
-                if (sharedContext_)
+                if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->initialized_ = true;
                 processor->deinitialize();
+                processor->initialized_ = false;
 
                 // don't break, try to initialize the other processors even if one failed
                 failed = true;
@@ -140,6 +156,13 @@ bool NetworkEvaluator::initializeNetwork()  {
     assignRenderTargets();
 
     unlock();
+
+    // notify wrappers
+    for (size_t i = 0; i < processWrappers_.size(); ++i)
+        processWrappers_[i]->afterNetworkInitialize();
+    if (glMode_)
+        LGL_ERROR;
+
     return !failed;
 }
 
@@ -157,21 +180,34 @@ bool NetworkEvaluator::deinitializeNetwork() {
     // prevent parallel execution in multithreaded/event dispatching environments
     lock();
 
+    // notify wrappers
+    for (size_t i = 0; i < processWrappers_.size(); ++i)
+        processWrappers_[i]->beforeNetworkDeinitialize();
+    if (glMode_) {
+        if (sharedContext_)
+            sharedContext_->getGLFocus();
+        LGL_ERROR;
+    }
+
     bool failed = false;
     for (size_t i = 0; i < network_->getProcessors().size(); ++i) {
         Processor* processor = network_->getProcessors()[i];
         if (processor->isInitialized()) {
             try {
-                if (sharedContext_)
+                if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->deinitialize();
-                if (sharedContext_)
-                    sharedContext_->getGLFocus();
-                LGL_ERROR;
+                processor->initialized_ = false;
+                if (glMode_) {
+                    if (sharedContext_)
+                        sharedContext_->getGLFocus();
+                    LGL_ERROR;
+                }
             }
-            catch (VoreenException e) {
-                LERROR("Failed to deinitialize '" << processor->getName()
-                    << "' (" << processor->getClassName() << "): " << e.what());
+            catch (const tgt::Exception& e) {
+                LERROR("Failed to deinitialize processor '" << processor->getName()
+                    << "' (" << processor->getClassName() << "): ");
+                LERROR(" - " << e.what());
                 // don't break, try to deinitialize the other processors even if one failed
                 failed = true;
             }
@@ -179,6 +215,16 @@ bool NetworkEvaluator::deinitializeNetwork() {
     }
 
     unlock();
+
+    // notify wrappers
+    for (size_t i = 0; i < processWrappers_.size(); ++i)
+        processWrappers_[i]->afterNetworkDeinitialize();
+    if (glMode_) {
+        if (sharedContext_)
+            sharedContext_->getGLFocus();
+        LGL_ERROR;
+    }
+
     return !failed;
 }
 
@@ -210,10 +256,13 @@ void NetworkEvaluator::onNetworkChange() {
         {
             PROFILING_BLOCK("initialize");
             initializeNetwork();
-            LGL_ERROR;
+            if (glMode_)
+                LGL_ERROR;
         }
     }
-    //performanceRecord_.getLastSample()->print();
+#ifdef VRN_PRINT_PROFILING
+    performanceRecord_.getLastSample()->print();
+#endif
 
 }
 
@@ -253,14 +302,16 @@ void NetworkEvaluator::process() {
         for (size_t j = 0; j < loopPortMap_[processor].size(); ++j)
             loopPortMap_[processor][j]->setLoopIteration(-1);
 
-        if (!processor->isValid())
-            processor->setProgress(0.f);
+        // this may lead to continuous network invalidations/evaluations (infinite loop)
+        //if (!processor->isValid())
+        //    processor->setProgress(0.f);
     }
 
     // notify process wrappers
     for (size_t j = 0; j < processWrappers_.size(); ++j)
         processWrappers_[j]->beforeNetworkProcess();
-    LGL_ERROR;
+    if (glMode_)
+        LGL_ERROR;
 
     // Iterate over processing in rendering order
     for (size_t i = 0; i < renderingOrder_.size(); ++i) {
@@ -276,9 +327,6 @@ void NetworkEvaluator::process() {
         bool needsProcessing = true;
         if (currentProcessor->isValid())
             needsProcessing = false;
-        //if (currentProcessor->isEndProcessor())
-        if (dynamic_cast<CanvasRenderer*>(currentProcessor))
-            needsProcessing = true;
 
         // run the processor, if it needs processing and is ready
         if (needsProcessing && currentProcessor->isReady()) {
@@ -293,27 +341,47 @@ void NetworkEvaluator::process() {
             // notify process wrappers
             for (size_t j=0; j < processWrappers_.size(); ++j)
                 processWrappers_[j]->beforeProcess(currentProcessor);
-            LGL_ERROR;
+            if (glMode_)
+                LGL_ERROR;
 
             try {
+                currentProcessor->performanceRecord_.setName(currentProcessor->getName());
+
+                if (glMode_ && sharedContext_)
+                    sharedContext_->getGLFocus();
                 {
-                    ProfilingBlock block(currentProcessor->getName() + ".beforeprocess", currentProcessor->performanceRecord_);
+                    ProfilingBlock block("beforeprocess", currentProcessor->performanceRecord_);
                     currentProcessor->beforeProcess();
                 }
-                //currentProcessor->performanceRecord_.getLastSample()->print();
-                LGL_ERROR;
+                if (glMode_) {
+                    if (sharedContext_)
+                        sharedContext_->getGLFocus();
+                    LGL_ERROR;
+                }
+#ifdef VRN_PRINT_PROFILING
+                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+#endif
+                if (!currentProcessor->isValid())
                 {
-                    ProfilingBlock block(currentProcessor->getName() + ".process", currentProcessor->performanceRecord_);
+                    ProfilingBlock block("process", currentProcessor->performanceRecord_);
                     currentProcessor->process();
                 }
-                //currentProcessor->performanceRecord_.getLastSample()->print();
-                LGL_ERROR;
+                if (glMode_ && sharedContext_)
+                    sharedContext_->getGLFocus();
+#ifdef VRN_PRINT_PROFILING
+                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+#endif
+                if (glMode_)
+                    LGL_ERROR;
                 {
-                    ProfilingBlock block(currentProcessor->getName() + ".afterprocess", currentProcessor->performanceRecord_);
+                    ProfilingBlock block("afterprocess", currentProcessor->performanceRecord_);
                     currentProcessor->afterProcess();
                 }
-                //currentProcessor->performanceRecord_.getLastSample()->print();
-                LGL_ERROR;
+#ifdef VRN_PRINT_PROFILING
+                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+#endif
+                if (glMode_)
+                    LGL_ERROR;
                 // mark processor as processed during this rendering pass
                 processed.insert(currentProcessor);
             }
@@ -328,10 +396,13 @@ void NetworkEvaluator::process() {
                     << " (" << currentProcessor->getName() << "): " << e.what());
              }
 
+             if (glMode_ && sharedContext_)
+                 sharedContext_->getGLFocus();
              // notify process wrappers
              for (size_t j = 0; j < processWrappers_.size(); ++j)
                 processWrappers_[j]->afterProcess(currentProcessor);
-             LGL_ERROR;
+             if (glMode_)
+                LGL_ERROR;
 
              // break loop if network topology has changed (due to changes in loop port configurations)
              if (checkForInvalidPorts()) {
@@ -339,7 +410,8 @@ void NetworkEvaluator::process() {
 
                  for (size_t j = 0; j < processWrappers_.size(); ++j)
                      processWrappers_[j]->afterNetworkProcess();
-                 LGL_ERROR;
+                 if (glMode_)
+                    LGL_ERROR;
 
                  onNetworkChange();
                  return;
@@ -348,20 +420,23 @@ void NetworkEvaluator::process() {
 
     }   // for (rendering order)
 
-    LGL_ERROR;
+    if (glMode_)
+        LGL_ERROR;
 
     // assumption: a processor is valid after calling process(), except ports or processor itself is invalid
     for (std::set<Processor*>::iterator iter = processed.begin(); iter != processed.end(); ++iter)
         if ((*iter)->getInvalidationLevel() < Processor::INVALID_PORTS)
             (*iter)->setValid();
-    LGL_ERROR;
+    if (glMode_)
+        LGL_ERROR;
+
+    unlock();
 
     // notify process wrappers
     for (size_t j = 0; j < processWrappers_.size(); ++j)
         processWrappers_[j]->afterNetworkProcess();
-    LGL_ERROR;
-
-    unlock();
+    if (glMode_)
+        LGL_ERROR;
 
     if (processPending_) {
         // make sure that canvases are repainted, if their update has been blocked by the locked evaluator
@@ -519,9 +594,9 @@ void NetworkEvaluator::assignRenderTargets() {
         std::vector<RenderPort*> successors;
 
         // iterate over all connected processors and add their render outports to the successors list
-        const std::vector<Port*>& connectedPorts = port->getConnected();
+        const std::vector<const Port*> connectedPorts = port->getConnected();
         for (size_t connPortID = 0; connPortID < connectedPorts.size(); ++connPortID) {
-            tgtAssert(dynamic_cast<RenderPort*>(connectedPorts.at(connPortID)), "RenderPort connected to Non-RenderPort");
+            tgtAssert(dynamic_cast<const RenderPort*>(connectedPorts.at(connPortID)), "RenderPort connected to Non-RenderPort");
             tgtAssert(connectedPorts.at(connPortID)->getProcessor(), "RenderPort without owner");
             std::vector<Port*> succOutports = connectedPorts.at(connPortID)->getProcessor()->getOutports();
             for (size_t i = 0; i < succOutports.size(); ++i) {
@@ -602,15 +677,67 @@ std::vector<RenderPort*> NetworkEvaluator::collectRenderPorts() const {
     return renderPorts;
 }
 
-void NetworkEvaluator::updateCanvases() {
+std::vector<const PerformanceRecord*> NetworkEvaluator::collectPerformanceRecords() const {
+
+    std::vector<const PerformanceRecord*> performanceRecords;
+    if (isLocked()) {
+        LWARNING("collectPerformanceRecords() called on locked evaluator.");
+        return performanceRecords;
+    }
+
+    if (!network_) {
+        return performanceRecords;
+    }
+
+    std::vector<Processor*> processors = network_->getProcessors();
+    for (size_t p = 0; p < processors.size(); ++p) {
+        Processor* pro = processors[p];
+
+        if (!pro->isInitialized())
+            continue;
+
+        performanceRecords.push_back(pro->getPerformanceRecord());
+    }
+
+    return performanceRecords;
+}
+
+void NetworkEvaluator::clearPerformanceRecords() {
 
     if (isLocked()) {
-        LWARNING("updateCanvases() called on locked evaluator.");
+        LWARNING("clearPerformanceRecords() called on locked evaluator.");
         return;
     }
 
     if (!network_) {
-        LWARNING("updateCanvases() called on evaluator without network.");
+        return;
+    }
+
+    std::vector<Processor*> processors = network_->getProcessors();
+    for (size_t p = 0; p < processors.size(); ++p) {
+        Processor* pro = processors[p];
+
+        if (!pro->isInitialized())
+            continue;
+
+        pro->resetPerformanceRecord();
+    }
+}
+
+void NetworkEvaluator::updateCanvases() {
+
+    if (!glMode_) {
+        LWARNING("updateCanvases() called in non OpenGL mode!");
+        return;
+    }
+
+    if (isLocked()) {
+        LWARNING("updateCanvases() called on locked evaluator!");
+        return;
+    }
+
+    if (!network_) {
+        LWARNING("updateCanvases() called on evaluator without network!");
         return;
     }
 
@@ -653,16 +780,20 @@ void NetworkEvaluator::processorRemoved(const Processor* processor) {
 
     if (processor->isInitialized()) {
         try {
-            if (sharedContext_)
+            if (glMode_ && sharedContext_)
                 sharedContext_->getGLFocus();
             const_cast<Processor*>(processor)->deinitialize();
-            if (sharedContext_)
-                sharedContext_->getGLFocus();
-            LGL_ERROR;
+            const_cast<Processor*>(processor)->initialized_ = false;
+            if (glMode_ && sharedContext_) {
+                if (sharedContext_)
+                    sharedContext_->getGLFocus();
+                LGL_ERROR;
+            }
          }
-         catch (VoreenException e) {
+         catch (const VoreenException& e) {
             LERROR("Failed to deinitialize '" << processor->getName()
-                    << "' (" << processor->getClassName() << "): " << e.what());
+                    << "' (" << processor->getClassName() << "): ");
+            LERROR(" - " << e.what());
          }
     }
 

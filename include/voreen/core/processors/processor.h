@@ -1,69 +1,67 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PROCESSOR_H
 #define VRN_PROCESSOR_H
 
 #include "voreen/core/properties/propertyowner.h"
-#include "tgt/event/eventlistener.h"
-#include "voreen/core/processors/profiling.h"
-#include "voreen/core/io/progressbar.h"
 #include "voreen/core/utils/observer.h"
+#include "voreen/core/processors/profiling.h"
+
+#include "tgt/exception.h"
+#include "tgt/event/eventlistener.h"
 
 #include <vector>
 
 namespace voreen {
 
-class VoreenModule;
-class ProcessorFactory;
-class Processor;
-
-class Port;
 class CoProcessorPort;
-
 class EventPropertyBase;
 class InteractionHandler;
-
+class Port;
+class Processor;
+class ProcessorFactory;
 class ProcessorWidget;
+class ProgressBar;
+class VoreenModule;
 
-class ProcessorObserver : public PropertyOwnerObserver {
+class VRN_CORE_API ProcessorObserver : public PropertyOwnerObserver {
 public:
     virtual void processorWidgetCreated(const Processor* processor) = 0;
     virtual void processorWidgetDeleted(const Processor* processor) = 0;
 
-    virtual void portsAndPropertiesChanged(const Processor* processor) = 0;
+    virtual void portsChanged(const Processor* processor) = 0;
 };
 
+#ifdef DLL_TEMPLATE_INST
+template class VRN_CORE_API Observable<ProcessorObserver>;
+#endif
 /**
  * The base class for all processor classes used in Voreen.
  */
-class Processor : public PropertyOwner, public tgt::EventListener, public Observable<ProcessorObserver> {
+class VRN_CORE_API Processor : public PropertyOwner, public tgt::EventListener, public Observable<ProcessorObserver> {
 
     friend class NetworkEvaluator;
     friend class VoreenModule;
@@ -103,14 +101,14 @@ public:
     virtual ~Processor();
 
     /**
-     * Returns a copy of the processor.
-     */
-    virtual Processor* clone() const;
-
-    /**
      * Virtual constructor: supposed to return an instance of the concrete Processor class.
      */
     virtual Processor* create() const = 0;
+
+    /**
+     * Returns a copy of the processor.
+     */
+    virtual Processor* clone() const;
 
     /**
      * Returns the name of this class as a string.
@@ -139,13 +137,6 @@ public:
     virtual CodeState getCodeState() const;
 
     /**
-     * Returns a description of the processor's functionality.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
-     */
-    virtual std::string getProcessorInfo() const;
-
-    /**
      * Returns true if this Processor is a utility Processor (i.e., performs smaller tasks).
      *
      * The default implementation returns false. Override it in order to define a processor
@@ -163,8 +154,6 @@ public:
     /**
      * Returns a string identifying the name of the module
      * this processor's class belongs to.
-     *
-     * @see setModuleName
      */
     std::string getModuleName() const;
 
@@ -249,6 +238,16 @@ public:
     Port* getPort(const std::string& name) const;
 
     /**
+     * Returns the performance record of this processor.
+     */
+    const PerformanceRecord* getPerformanceRecord() const;
+
+    /**
+     * Resets the performance record of this processor.
+     */
+    void resetPerformanceRecord();
+
+    /**
      * Processors may overwrite this function in order to gain access to
      * events that are propagated through the network.
      *
@@ -286,6 +285,7 @@ public:
 
     /**
      * A derived class should return true, if its process() method
+     * Returns if this processor uses expensive computation.
      * is time-consuming, i.e., causes noticable delay.
      *
      * Normal renderers without expensive data processing should return false (default).
@@ -326,6 +326,18 @@ public:
      */
     virtual MetaDataContainer& getMetaDataContainer() const;
 
+    /**
+     * @brief Returns the cache path for this processor.
+     * Cache path = Application cache path + Classname
+     *
+     * @see VoreenApplication::getCachePath()
+     */
+    std::string getCachePath() const;
+
+    std::string getDescription() const;
+    std::string getPropertyDescription(const std::string& propId) const;
+    std::string getPortDescription(const std::string& portId) const;
+
 protected:
     /**
      * @brief This method is called by the NetworkEvaluator when the processor should be processed.
@@ -348,9 +360,9 @@ protected:
      *       instead of the constructor! Time-consuming operations
      *       should also happen here.
      *
-     * @throw VoreenException if the initialization failed
+     * @throw tgt::Exception if the initialization failed
      */
-    virtual void initialize() throw (VoreenException);
+    virtual void initialize() throw (tgt::Exception);
 
     /**
      * Deinitializes the processor.
@@ -360,9 +372,9 @@ protected:
      * @note All OpenGL deinitializations must be done here,
      *       instead of the destructor!
      *
-     * @throw VoreenException if the deinitialization failed
+     * @throw tgt::Exception if the deinitialization failed
      */
-    virtual void deinitialize() throw (VoreenException);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
      * Is called by the NetworkEvaluator immediately before it calls process().
@@ -408,9 +420,9 @@ protected:
      *  function, unless a port is added \e after its processor
      *  has been initialized.
      *
-     * @throw VoreenException If port initialization has failed.
+     * @throw tgt::Exception If port initialization has failed.
      */
-    void initializePort(Port* port) throw (VoreenException);
+    void initializePort(Port* port) throw (tgt::Exception);
 
     /**
      * Deinitializes the passed port.
@@ -420,9 +432,9 @@ protected:
      *  function, unless a port is to be removed \e before its processor
      *  has been deinitialized.
      *
-     * @throw VoreenException If port deinitialization has failed.
+     * @throw tgt::Exception If port deinitialization has failed.
      */
-    void deinitializePort(Port* port) throw (VoreenException);
+    void deinitializePort(Port* port) throw (tgt::Exception);
 
     /// Adds an event property to this processor.
     void addEventProperty(EventPropertyBase* prop);
@@ -454,14 +466,12 @@ protected:
      */
     virtual void toggleInteractionMode(bool interactionMode, void* source);
 
-    /**
-     * Sets the name of the module the processor's class belongs to.
-     * To be called by VoreenModule and ProcessorFactory.
-     *
-     * @note It is usually not necessary to explicitly set
-     *       the module name in a derived class.
-     */
-    void setModuleName(const std::string& moduleName);
+    virtual void notifyPortsChanged() const;
+
+    virtual void setDescriptions() = 0;
+
+    /// Sets the description
+    void setDescription(std::string desc);
 
     /// Set to true after successful initialization.
     bool initialized_;
@@ -484,6 +494,11 @@ protected:
     ProgressBar* progressBar_;
 
 private:
+    /**
+     * Sets the name of the module the processor's class belongs to.
+     * To be called by VoreenModule and ProcessorFactory.
+     */
+    void setModuleName(const std::string& moduleName);
 
     /**
      * Set a name for this processor instance. To be called
@@ -542,6 +557,9 @@ private:
      * mutable appears justifiable.
      */
     mutable MetaDataContainer metaDataContainer_;
+
+    /// Description for display in GUI etc.
+    std::string description_;
 };
 
 } // namespace voreen

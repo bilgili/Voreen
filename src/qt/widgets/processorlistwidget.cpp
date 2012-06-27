@@ -1,37 +1,35 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/voreenmodule.h"
 
 #include "voreen/qt/widgets/processorlistwidget.h"
 #include "voreen/qt/widgets/lineeditresetwidget.h"
 #include "voreen/qt/voreenapplicationqt.h"
+
+#include "voreen/core/utils/stringutils.h"
 
 #include <QAction>
 #include <QApplication>
@@ -44,6 +42,8 @@
 #include <QStringList>
 #include <QTextBrowser>
 #include <QVBoxLayout>
+#include <QMap>
+#include <QList>
 
 namespace voreen {
 
@@ -53,9 +53,12 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     , resetIcon_()
     , info_(new QTextBrowser())
     , splitter_(new QSplitter(Qt::Vertical))
+    , recentlyUsedModule_(0)
+    , recentlyUsedProcessor_(0)
+    , resetSettings_(false)
 {
     QPushButton* sortButton = new QPushButton(this);
-    sortButton->setIcon(QIcon(":/voreenve/icons/configure.png"));
+    sortButton->setIcon(QIcon(":/qt/icons/configure.png"));
     sortButton->setGeometry(0,0,32,32);
     sortButton->setFlat(true);
     sortButton->setToolTip(tr("Sort processor list"));
@@ -66,15 +69,15 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     QHBoxLayout* filterSortLayout = new QHBoxLayout();
     info_->resize(120, 100);
-    info_->setContextMenuPolicy(Qt::NoContextMenu);
+    info_->setContextMenuPolicy(Qt::CustomContextMenu);
     info_->setReadOnly(true);
+    info_->setOpenExternalLinks(true);
 
     connect(edit_, SIGNAL(textChanged(const QString&)), tree_, SLOT(filter(const QString&)));
     connect(tree_, SIGNAL(itemSelectionChanged()), this, SLOT(setInfo()));
     connect(sortButton, SIGNAL(clicked()), this, SLOT(sortMenu()));
     connect(this, SIGNAL(sort(int)), tree_, SLOT(sort(int)));
     connect(this, SIGNAL(hideStatus(bool)), tree_, SLOT(hideStatus(bool)));
-    connect(this, SIGNAL(searchDescription(bool)), tree_, SLOT(searchDescription(bool)));
 
     connect(this, SIGNAL(showModule(QString, bool)), tree_, SLOT(setModuleNameVisibility(QString, bool)));
 
@@ -88,40 +91,33 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     mainLayout->addLayout(filterSortLayout);
     mainLayout->addWidget(splitter_);
 
-    hideAction_ = new QAction(QString::fromStdString("Show Code State"), this);
-    hideAction_->setCheckable(true);
-    hideAction_->setChecked(true);
-    searchDescription_ = new QAction(QString::fromStdString("Search Processor Descriptions"), this);
-    searchDescription_->setCheckable(true);
+    showCodeState_ = new QAction(tr("Show Code State"), this);
+    showCodeState_->setCheckable(true);
+    showCodeState_->setChecked(true);
 
-    ProcessorFactory::KnownClassesVector processors = ProcessorFactory::getInstance()->getKnownClasses();
+    const std::vector<Processor*>& processors = ProcessorFactory::getInstance()->getRegisteredProcessors();
+
     //get all moduleNames and set bool for visibility filtration
-    ProcessorFactory* pf = ProcessorFactory::getInstance();
     std::string moduleName;
-    //pf->initializeClassList();
     for (size_t i = 0; i < processors.size(); ++i) {
-        moduleName = pf->getProcessorModuleName(processors.at(i).second);
+        moduleName = processors.at(i)->getModuleName();
         moduleVisibility_[moduleName] = true;
-        //emit showModule(QString::fromStdString(moduleName), false);     // this must be done another way
         tree_->moduleVisibility_[moduleName] = true;
     }
-    sbc_ = new QAction("Sort by Category", this);
-    sbm_ = new QAction("Sort by Module", this);
-    sbmtc_ = new QAction("Sort by Module, then Category", this);
-    sbctm_ = new QAction("Sort by Category, then Module", this);
-    sbc_->setCheckable(true);
-    sbm_->setCheckable(true);
-    sbctm_->setCheckable(true);
-    sbmtc_->setCheckable(true);
 
-    sbmtc_->setChecked(true);
+    sortByCategory_ = new QAction("Sort by Category", this);
+    sortByModule_ = new QAction("Sort by Module", this);
+    sortByModuleThenCategory_ = new QAction("Sort by Module, then Category", this);
+    sortByCategory_->setCheckable(true);
+    sortByModule_->setCheckable(true);
+    sortByModuleThenCategory_->setCheckable(true);
 
-    css_ = new QAction("Show Code State 'stable'", this);
-    cst_ = new QAction("Show Code State 'testing'", this);
-    csb_ = new QAction("Show Code State 'experimental'", this);
-    css_->setCheckable(true);
-    cst_->setCheckable(true);
-    csb_->setCheckable(true);
+    showCodeStateStable_ = new QAction("Show Code State 'stable'", this);
+    showCodeStateExperimental_ = new QAction("Show Code State 'testing'", this);
+    showCodeStateBroken_ = new QAction("Show Code State 'experimental'", this);
+    showCodeStateStable_->setCheckable(true);
+    showCodeStateExperimental_->setCheckable(true);
+    showCodeStateBroken_->setCheckable(true);
     moduleVisibilityMenu_ = new QMenu("Show Modules", this);
     std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
     moduleVisibilityMenu_->addAction("Check All");
@@ -139,35 +135,47 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
 }
 
 ProcessorListWidget::~ProcessorListWidget() {
-    saveSettings();
+    if (!resetSettings_)
+        saveSettings();
 }
 
 void ProcessorListWidget::loadSettings()
 {
     QSettings settings;
     settings.beginGroup("ProcessorListWidget");
-    if(!settings.contains("core")) {    // first time load without any data written in the settings
-        sbc_->setChecked(true);         // first time and no data is stored in qsettings
+    if(!settings.contains("core")) {      // first time load without any data written in the settings
+        sortByModuleThenCategory_->setChecked(true);         // first time and no data is stored in qsettings
         std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
         while(it != moduleVisibility_.end()) {
             moduleVisibility_[(*it).first] = true;
             tree_->setModuleNameVisibility(QString::fromStdString((*it).first), true);
             it++;
         }
-        hideAction_->setChecked(true);
-        searchDescription_->setChecked(false);
-        css_->setChecked(true);
-        cst_->setChecked(true);
-        csb_->setChecked(true);
+        showCodeState_->setChecked(true);
+        showCodeStateStable_->setChecked(true);
+        showCodeStateExperimental_->setChecked(true);
+        showCodeStateBroken_->setChecked(true);
         tree_->codeState_.insert(Processor::CODE_STATE_STABLE);
         tree_->codeState_.insert(Processor::CODE_STATE_TESTING);
         tree_->codeState_.insert(Processor::CODE_STATE_BROKEN);
         tree_->codeState_.insert(Processor::CODE_STATE_OBSOLETE);
         tree_->codeState_.insert(Processor::CODE_STATE_EXPERIMENTAL);
-        settings.endGroup();
-        sort(ProcessorListTreeWidget::SORT_BY_CATEGORY);
         setModuleNameVisibility("Check All", true);
     }
+    else {
+        if (settings.value("sbc").toBool()) {
+            sortByCategory_->setChecked(true);
+        }
+        else if(settings.value("sbm").toBool()) {
+            sortByModule_->setChecked(true);
+        }
+        else if(settings.value("sbmtc").toBool()) {
+            sortByModuleThenCategory_->setChecked(true);
+        }
+
+        showCodeState_->setChecked(settings.value("showCodeState").toBool());
+    }
+
     std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
     while(it != moduleVisibility_.end()) {
         if(settings.value(QString::fromStdString((*it).first)).toString() == "") {
@@ -180,60 +188,50 @@ void ProcessorListWidget::loadSettings()
         }
         it++;
     }
-    tree_->filterText_ = settings.value("filtertext").toString().toStdString() ;
-    edit_->setText(QString::fromStdString(tree_->filterText_));
 
-    hideAction_->setChecked(settings.value("hideCodeStatus").toBool());
-    searchDescription_->setChecked(settings.value("searchDescription").toBool());
-    if(settings.contains("cst")) {
-        css_->setChecked(settings.value("csw").toBool());
-        cst_->setChecked(settings.value("cst").toBool());
-        csb_->setChecked(settings.value("csb").toBool());
+    if (settings.contains("cst")) {
+        showCodeStateStable_->setChecked(settings.value("csw").toBool());
+        showCodeStateExperimental_->setChecked(settings.value("cst").toBool());
+        showCodeStateBroken_->setChecked(settings.value("csb").toBool());
     }
-    if(css_->isChecked()) {
+    if(showCodeStateStable_->isChecked()) {
         tree_->codeState_.insert(Processor::CODE_STATE_STABLE);
-        css_->setChecked(true);
+        showCodeStateStable_->setChecked(true);
     }
     else {
         tree_->codeState_.erase(Processor::CODE_STATE_STABLE);
-        css_->setChecked(false);
+        showCodeStateStable_->setChecked(false);
     }
-    if(cst_->isChecked()) {
+    if(showCodeStateExperimental_->isChecked()) {
         tree_->codeState_.insert(Processor::CODE_STATE_TESTING);
-        cst_->setChecked(true);
+        showCodeStateExperimental_->setChecked(true);
     }
     else {
         tree_->codeState_.erase(Processor::CODE_STATE_TESTING);
-        cst_->setChecked(false);
+        showCodeStateExperimental_->setChecked(false);
     }
 
-    if(csb_->isChecked()) {
+    if(showCodeStateBroken_->isChecked()) {
         tree_->codeState_.insert(Processor::CODE_STATE_BROKEN);
         tree_->codeState_.insert(Processor::CODE_STATE_OBSOLETE);
         tree_->codeState_.insert(Processor::CODE_STATE_EXPERIMENTAL);
-        csb_->setChecked(true);
+        showCodeStateBroken_->setChecked(true);
     }
     else {
         tree_->codeState_.erase(Processor::CODE_STATE_BROKEN);
         tree_->codeState_.erase(Processor::CODE_STATE_OBSOLETE);
         tree_->codeState_.erase(Processor::CODE_STATE_EXPERIMENTAL);
-        csb_->setChecked(false);
+        showCodeStateBroken_->setChecked(false);
     }
-    if(settings.value("sbc").toBool()) {
-        sbc_->setChecked(true);
-        sort(ProcessorListTreeWidget::SORT_BY_CATEGORY);
+
+    if (sortByCategory_->isChecked()) {
+        sort(ProcessorListTreeWidget::GroupTypeCategory);
     }
-    else if(settings.value("sbm").toBool()) {
-        sbm_->setChecked(true);
-        sort(ProcessorListTreeWidget::SORT_BY_MODULENAME);
+    else if(sortByModule_->isChecked()) {
+        sort(ProcessorListTreeWidget::GroupTypeModule);
     }
-    else if(settings.value("sbctm").toBool()) {
-        sbctm_->setChecked(true);
-        sort(ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE);
-    }
-    else if(settings.value("sbmtc").toBool()) {
-        sbmtc_->setChecked(true);
-        sort(ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY);
+    else if(sortByModuleThenCategory_->isChecked()) {
+        sort(ProcessorListTreeWidget::GroupTypeModuleCategory);
     }
 
     if(settings.contains("infoBoxSize")) {
@@ -243,6 +241,8 @@ void ProcessorListWidget::loadSettings()
     }
 
     settings.endGroup();
+
+    emit hideStatus(showCodeState_->isChecked());
 }
 
 void ProcessorListWidget::saveSettings() {
@@ -256,104 +256,168 @@ void ProcessorListWidget::saveSettings() {
     }
     settings.setValue("filtertext", QString::fromStdString(tree_->filterText_));
 
-    settings.setValue("sbc", sbc_->isChecked());
-    settings.setValue("sbm", sbm_->isChecked());
-    settings.setValue("sbmtc", sbmtc_->isChecked());
-    settings.setValue("sbctm", sbctm_->isChecked());
+    settings.setValue("sbc", sortByCategory_->isChecked());
+    settings.setValue("sbm", sortByModule_->isChecked());
+    settings.setValue("sbmtc", sortByModuleThenCategory_->isChecked());
 
-    settings.setValue("csw", css_->isChecked());
-    settings.setValue("cst", cst_->isChecked());
-    settings.setValue("csb", csb_->isChecked());
+    settings.setValue("csw", showCodeStateStable_->isChecked());
+    settings.setValue("cst", showCodeStateExperimental_->isChecked());
+    settings.setValue("csb", showCodeStateBroken_->isChecked());
 
-    settings.setValue("hideCodeStatus", hideAction_->isChecked());
-    settings.setValue("searchDescription", searchDescription_->isChecked());
+    settings.setValue("showCodeState", showCodeState_->isChecked());
     settings.setValue("processorListSize", tree_->height());
     settings.setValue("infoBoxSize", info_->height());
     settings.endGroup();
 }
 
 void ProcessorListWidget::setInfo() {
-    ProcessorListItem* currentItem = dynamic_cast<ProcessorListItem *>(tree_->currentItem());
-    if (currentItem && currentItem->getInfo() != "")
-        info_->setHtml(QString::fromStdString(currentItem->getInfo()));
-    else if(currentItem)
-        info_->setHtml(QString::fromStdString("<b>" + currentItem->getId() + "</b>"));
-    else
-        info_->setHtml("");
+    clearInfo();
 
+    QTreeWidgetItem* currentItem = tree_->currentItem();
+    if (currentItem) {
+        std::string selectionName = currentItem->text(0).toStdString();
+        const Processor* processor = ProcessorFactory::getInstance()->getProcessor(selectionName);
+        if (processor)
+            setInfo(processor);
+        else {
+            // selected item is a module or a category
+            const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
+            foreach (VoreenModule* module, modules) {
+                if (module->getName() == selectionName)
+                    setInfo(module);
+            }
+        }
+    }
 }
 
-void ProcessorListWidget::setInfo(Processor* processor) {
-    if (processor && !processor->getProcessorInfo().empty())
-        info_->setHtml(QString::fromStdString("<b>" + processor->getClassName() + "</b><br>" + processor->getProcessorInfo()));
-    else
-        info_->setHtml("");
+void ProcessorListWidget::reloadInfoText() {
+    if (recentlyUsedProcessor_)
+        setInfo(recentlyUsedProcessor_);
+    else if (recentlyUsedModule_)
+        setInfo(recentlyUsedModule_);
 }
 
-void ProcessorListWidget::setInfo(std::string text) {
-    info_->setHtml(QString::fromStdString(text));
+void ProcessorListWidget::clearInfo() {
+    recentlyUsedModule_ = 0;
+    recentlyUsedProcessor_ = 0;
+    info_->setHtml("");
+}
+
+std::string getGUINameFromID(const Processor* processor, const std::string& propertyID) {
+    const std::vector<Property*>& properties = processor->getProperties();
+    foreach (Property* prop, properties) {
+        if (prop->getID() == propertyID)
+            return prop->getGuiName();
+    }
+    LERRORC("voreen.ProcesserListWidget", "Property ID '" + propertyID + "' was not found in processor '" + processor->getClassName() + "'");
+    return "";
+}
+
+void ProcessorListWidget::setInfo(const Processor* processor) {
+    tgtAssert(processor, "null pointer passed");
+    std::string processorClass = processor->getClassName();
+    std::string processorModule = processor->getModuleName();
+
+    clearInfo();
+    recentlyUsedProcessor_ = processor;
+
+    const VoreenModule* module = VoreenApplication::app()->getModule(processorModule);
+    if (module) {
+        std::string info;
+        info = "<b>" + processorClass + "</b><br>";
+        info += module->getDocumentationDescription(processorClass);
+
+        std::vector<std::pair<std::string, std::string> > properties = module->getDocumentationProperties(processorClass);
+        if (!properties.empty()) {
+            info += "<br><br>";
+            info += "<i><b>Properties</b></i><br>";
+            std::pair<std::string, std::string> p;
+            for (size_t i = 0; i < properties.size(); ++i) {
+                std::pair<std::string, std::string> p = properties[i];
+                std::string guiName = getGUINameFromID(processor, p.first);
+                info += "<b>" + guiName + "</b>: " + p.second;
+                if (i != properties.size() - 1) {
+                    info += "<br>";
+                }
+            }
+        }
+
+        std::vector<std::pair<std::string, std::string> > ports = module->getDocumentationPorts(processorClass);
+        if (!ports.empty()) {
+            info += "<br><br>";
+            info += "<i><b>Ports</b></i><br>";
+            for (size_t i = 0; i < ports.size(); ++i) {
+                std::pair<std::string, std::string> p = ports[i];
+                info += "<b>" + p.first + "</b>: " + p.second;
+                if (i != ports.size() - 1) {
+                    info += "<br>";
+                }
+            }
+        }
+
+        info_->setHtml(QString::fromStdString(info));
+
+        return;
+    }
+
+    LERRORC("voreen.ProcesserListWidget", "No module contains the processor '" + processor->getClassName() + "'");
+}
+
+void ProcessorListWidget::setInfo(VoreenModule* module) {
+    clearInfo();
+    recentlyUsedModule_ = module;
+    info_->setHtml(QString::fromStdString("<b>" + module->getName() + "</b><br>" + module->getDescription()));
 }
 
 void ProcessorListWidget::sortMenu() {
     QMenu* menu = new QMenu();
     QActionGroup* sortActions = new QActionGroup(this);
-    sortActions->addAction(sbc_);
-    sortActions->addAction(sbm_);
-    sortActions->addAction(sbctm_);
-    sortActions->addAction(sbmtc_);
+    sortActions->addAction(sortByCategory_);
+    sortActions->addAction(sortByModule_);
+    sortActions->addAction(sortByModuleThenCategory_);
     // sort by category
-    menu->addAction(sbc_);
+    menu->addAction(sortByCategory_);
     // sort by module
-    menu->addAction(sbm_);
-    // sort by category then module
-    menu->addAction(sbctm_);
+    menu->addAction(sortByModule_);
     //sort by module then category
-    menu->addAction(sbmtc_);
+    menu->addAction(sortByModuleThenCategory_);
     menu->addSeparator();
 
-    menu->addAction(hideAction_);
-    menu->addAction(searchDescription_);
+    menu->addAction(showCodeState_);
     menu->addSeparator();
 
-    menu->addAction(css_);
-    menu->addAction(cst_);
-    menu->addAction(csb_);
+    menu->addAction(showCodeStateStable_);
+    menu->addAction(showCodeStateExperimental_);
+    menu->addAction(showCodeStateBroken_);
     menu->addSeparator();
 
     menu->addMenu(moduleVisibilityMenu_);
     QAction* action = menu->exec(QCursor::pos());
     if (action) {
-        if(action == sbc_) {
-            emit sort(ProcessorListTreeWidget::SORT_BY_CATEGORY);
-
+        if(action == sortByCategory_) {
+            emit sort(ProcessorListTreeWidget::GroupTypeCategory);
         }
-        else if (action == sbm_) {
-            emit sort(ProcessorListTreeWidget::SORT_BY_MODULENAME);
-
+        else if (action == sortByModule_) {
+            emit sort(ProcessorListTreeWidget::GroupTypeModule);
         }
-        else if (action == sbctm_) {
-            emit sort(ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE);
-
+        else if (action == sortByModuleThenCategory_) {
+            emit sort(ProcessorListTreeWidget::GroupTypeModuleCategory);
         }
-        else if (action == sbmtc_) {
-            emit sort(ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY);
-
-        }
-        if(action == css_ || action == cst_ || action == csb_) {
-            if (action == css_) {
-                if(css_->isChecked())
+        if(action == showCodeStateStable_ || action == showCodeStateExperimental_ || action == showCodeStateBroken_) {
+            if (action == showCodeStateStable_) {
+                if(showCodeStateStable_->isChecked())
                     tree_->codeState_.insert(Processor::CODE_STATE_STABLE);
                 else
                     tree_->codeState_.erase(Processor::CODE_STATE_STABLE);
             }
-            else if (action == cst_) {
-                if(cst_->isChecked())
+            else if (action == showCodeStateExperimental_) {
+                if(showCodeStateExperimental_->isChecked())
                     tree_->codeState_.insert(Processor::CODE_STATE_TESTING);
                 else
                     tree_->codeState_.erase(Processor::CODE_STATE_TESTING);
             }
-            else if (action == csb_) {
-                    if(csb_->isChecked()) {
+            else if (action == showCodeStateBroken_) {
+                    if(showCodeStateBroken_->isChecked()) {
                         tree_->codeState_.insert(Processor::CODE_STATE_BROKEN);
                         tree_->codeState_.insert(Processor::CODE_STATE_OBSOLETE);
                         tree_->codeState_.insert(Processor::CODE_STATE_EXPERIMENTAL);
@@ -364,33 +428,26 @@ void ProcessorListWidget::sortMenu() {
                         tree_->codeState_.erase(Processor::CODE_STATE_EXPERIMENTAL);
                     }
             }
-            if(sbc_->isChecked())
-                emit sort(ProcessorListTreeWidget::SORT_BY_CATEGORY);
-            if(sbm_->isChecked())
-                emit sort(ProcessorListTreeWidget::SORT_BY_MODULENAME);
-            if(sbctm_->isChecked())
-                emit sort(ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE);
-            if(sbmtc_->isChecked())
-                emit sort(ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY);
+            if (sortByCategory_->isChecked())
+                emit sort(ProcessorListTreeWidget::GroupTypeCategory);
+            if (sortByModule_->isChecked())
+                emit sort(ProcessorListTreeWidget::GroupTypeModule);
+            if (sortByModuleThenCategory_->isChecked())
+                emit sort(ProcessorListTreeWidget::GroupTypeModuleCategory);
         }
-        else if (action == hideAction_) {
-            emit hideStatus(hideAction_->isChecked());
-
-        }
-        else if (action == searchDescription_) {
-            emit searchDescription(searchDescription_->isChecked());
+        else if (action == showCodeState_) {
+            emit hideStatus(showCodeState_->isChecked());
         }
         else {
             emit showModule(action->text(), action->isChecked());
             setModuleNameVisibility(action->text().toStdString(), action->isChecked());
         }
-        //saveSettings();
     }
 }
 
 void ProcessorListWidget::setModuleNameVisibility(std::string name, bool visibility) {
-    bool checked;
     if(name == "Uncheck All" || name == "Check All"){
+        bool checked;
         if(name == "Uncheck All") {
             checked = false;
         }
@@ -420,18 +477,25 @@ void ProcessorListWidget::processorsSelected(const QList<Processor*>& processors
     if (processors.size() == 1)
         setInfo(processors.front());
     else
-        setInfo(0);
+        clearInfo();
+}
+
+void ProcessorListWidget::resetSettings() {
+    QSettings settings;
+    settings.remove("ProcessorListWidget");
+
+    resetSettings_ = true;
 }
 
 // ----------------------------------------------------------------------------
 
 ProcessorListTreeWidget::ProcessorListTreeWidget(ProcessorListWidget* processorListWidget, QWidget* parent)
-    : QTreeWidget(parent),
-      processorListWidget_(processorListWidget),
-      sortType_(ProcessorListTreeWidget::SORT_BY_CATEGORY),
-      showCodeState_(true),
-      searchDescription_(false)
+    : QTreeWidget(parent)
+    , processorListWidget_(processorListWidget)
+    , sortType_(ProcessorListTreeWidget::GroupTypeCategory)
+    , showCodeState_(true)
 {
+    setHeaderHidden(true);
     QStringList headeritems = QStringList();
     headeritems << "Processor" << "State";
     setHeaderLabels(headeritems);
@@ -440,19 +504,13 @@ ProcessorListTreeWidget::ProcessorListTreeWidget(ProcessorListWidget* processorL
     header()->setResizeMode(1, QHeaderView::ResizeToContents);
     header()->setStretchLastSection(false);
 
-
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setColumnCount(2);
-    processorVector_ = ProcessorFactory::getInstance()->getKnownClasses();
 
-    ProcessorFactory::KnownClassesVector processors = ProcessorFactory::getInstance()->getKnownClasses();
-
-    //get all moduleNames and set bool for visibility filtration
-    ProcessorFactory* pf = ProcessorFactory::getInstance();
-    std::string moduleName;
-    for (size_t i = 0; i < processors.size(); ++i) {
-        moduleName = pf->getProcessorModuleName(processors.at(i).second);
+    const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
+    foreach (VoreenModule* module, modules) {
+        std::string moduleName = module->getName();
         moduleVisibility_[moduleName] = true;
     }
     sortByCategory();
@@ -460,16 +518,13 @@ ProcessorListTreeWidget::ProcessorListTreeWidget(ProcessorListWidget* processorL
 
 void ProcessorListTreeWidget::filter(const QString& text) {
     filterText_ = text.toStdString();
-    ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
-
+    items_.clear();
     clear();
-    if(sortType_ == ProcessorListTreeWidget::SORT_BY_CATEGORY)
+    if(sortType_ == ProcessorListTreeWidget::GroupTypeCategory)
         sortByCategory();
-    else if(sortType_ == ProcessorListTreeWidget::SORT_BY_MODULENAME)
+    else if(sortType_ == ProcessorListTreeWidget::GroupTypeModule)
         sortByModuleName();
-    else if(sortType_ == ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE)
-        sortByCategoryThenModule();
-    else if(sortType_ == ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY)
+    else if(sortType_ == ProcessorListTreeWidget::GroupTypeModuleCategory)
         sortByModuleThenCategory();
 }
 
@@ -488,11 +543,11 @@ void ProcessorListTreeWidget::mousePressEvent(QMouseEvent *event) {
     // if no ProcessorListItem selected, return
     if (!item) {
         const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
-        std::vector<VoreenModule*>::const_iterator it = modules.begin();
-        while(it != modules.end()) {
-            if(itemAt(event->pos()) && (*it)->getName() == itemAt(event->pos())->text(0).toStdString())
-                processorListWidget_->setInfo("<b>"+(*it)->getName()+":</b> "+(*it)->getDescription());
-            ++it;
+        foreach (VoreenModule* module, modules) {
+            QTreeWidgetItem* item = itemAt(event->pos());
+
+            if (item && (item->text(0).toStdString() == module->getName()))
+                processorListWidget_->setInfo(module);
         }
         return;
 
@@ -512,14 +567,15 @@ void ProcessorListTreeWidget::mousePressEvent(QMouseEvent *event) {
 }
 
 void ProcessorListTreeWidget::setModuleNameVisibility(QString module, bool visible) {
-    bool checked;
     if(module == "Uncheck All" || module == "Check All"){
+        bool checked;
         if(module == "Uncheck All") {
             checked = false;
         }
         else
             checked = true;
-            std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
+
+        std::map<std::string, bool>::iterator it = moduleVisibility_.begin();
         while(it != moduleVisibility_.end()) {
             (*it).second = checked;
             it++;
@@ -532,108 +588,52 @@ void ProcessorListTreeWidget::setModuleNameVisibility(QString module, bool visib
 
 }
 
-ProcessorFactory::KnownClassesVector ProcessorListTreeWidget::getVisibleProcessors() {
-    processorVector_.clear();
-    items_.clear();
-
-    ProcessorFactory* pf = ProcessorFactory::getInstance();
-    // Get all available processor ids
-    ProcessorFactory::KnownClassesVector processors = ProcessorFactory::getInstance()->getKnownClasses();
-
-    for (size_t i = 0; i < processors.size(); ++i) {
-        QString proc = QString::fromStdString(processors[i].second);
-
-        if(codeState_.find(pf->getProcessorCodeState(processors[i].second)) != codeState_.end()/*pf->getProcessorCodeState(processors[i].second) == Processor::CODE_STATE_EXPERIMENTAL ||*/) {
-
-            if(moduleVisibility_[pf->getProcessorModuleName(proc.toStdString())]) {
-                if (proc.indexOf(QString::fromStdString(filterText_), 0, Qt::CaseInsensitive) != -1)
-                    processorVector_.push_back(processors[i]);
-                else if(searchDescription_) {
-                    QString des = QString::fromStdString(pf->getProcessorInfo(processors[i].second));
-                    if (des.indexOf(QString::fromStdString(filterText_), 0, Qt::CaseInsensitive) != -1)
-                        processorVector_.push_back(processors[i]);
-                }
+std::vector<const Processor*> ProcessorListTreeWidget::getVisibleProcessors() const {
+    const std::vector<Processor*>& knownProcessors = ProcessorFactory::getInstance()->getRegisteredProcessors();
+    std::vector<const Processor*> visibleProcessors;
+    for (size_t i = 0; i < knownProcessors.size(); ++i) {
+        const Processor* processor = knownProcessors[i];
+        QString procClassName = QString::fromStdString(processor->getClassName());
+        if (codeState_.find(processor->getCodeState()) != codeState_.end()) {
+            std::string moduleName = processor->getModuleName();
+            std::map<std::string, bool>::const_iterator it = moduleVisibility_.find(moduleName);
+            if (it != moduleVisibility_.end() && (it->second == true)) {
+                if (procClassName.indexOf(QString::fromStdString(filterText_), 0, Qt::CaseInsensitive) != -1)
+                    visibleProcessors.push_back(processor);
             }
         }
-
     }
-    return processors;
+
+    return visibleProcessors;
 }
 
 void ProcessorListTreeWidget::sortByCategory() {
-    sortType_ = ProcessorListTreeWidget::SORT_BY_CATEGORY;
-
-    ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
-
+    sortType_ = ProcessorListTreeWidget::GroupTypeCategory;
+    items_.clear();
     clear();
-    QString categoryIdentifier("");
-    std::map<QString, QTreeWidgetItem*> categories;
 
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        categoryIdentifier = processorVector_[i].first.c_str();
-        if(categories.find(categoryIdentifier) == categories.end()) {
-            categories[categoryIdentifier] = new QTreeWidgetItem(QStringList(categoryIdentifier));
-        }
-    }
+    QList<QTreeWidgetItem*> categoryItems = createCategoryHierarchy(getVisibleProcessors(), 0);
+    addTopLevelItems(categoryItems);
 
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        QString categoryIdentifier = processorVector_[i].first.c_str();
-        ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
-        categories[categoryIdentifier]->addChild(tempListItem);
-        tempListItem->setProcessorInfo(processorVector_[i].second);
-        if (showCodeState_) {
-            switch (ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second)) {
-                case Processor::CODE_STATE_BROKEN:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-                    tempListItem->setToolTip(1, "Code state: broken");
-                    break;
-                case Processor::CODE_STATE_OBSOLETE:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-                    tempListItem->setToolTip(1, "Code state: obsolete");
-                    break;
-                case Processor::CODE_STATE_EXPERIMENTAL:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-                    tempListItem->setToolTip(1, "Code state: experimental");
-                    break;
-                case Processor::CODE_STATE_TESTING:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
-                    tempListItem->setToolTip(1, "Code state: testing");
-                    break;
-                case Processor::CODE_STATE_STABLE:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
-                    tempListItem->setToolTip(1, "Code state: stable");
-                    break;
-                default:
-                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-                    tempListItem->setToolTip(1, "Code state: unknown");
-                    break;
-            }
-        }
-    }
-
-    std::map<QString, QTreeWidgetItem*>::iterator it = categories.begin();
-    while(it != categories.end()) {
-        addTopLevelItem((*it).second);
-        ++it;
-    }
     expandAll();
-    if(!showCodeState_)
+    if (!showCodeState_)
         header()->hide();
     else
         header()->show();
 }
 void ProcessorListTreeWidget::sortByModuleName() {
-    sortType_ = ProcessorListTreeWidget::SORT_BY_MODULENAME;
-    // First clear the former searches
-    ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
+    sortType_ = ProcessorListTreeWidget::GroupTypeModule;
+    items_.clear();
+
+    const std::vector<const Processor*> visibleProcessors = getVisibleProcessors();
     clear();
 
     QString moduleIdentifier("");
     std::map<QString, QTreeWidgetItem*> modules;
 
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        moduleIdentifier = QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second));
-        if(modules.find(moduleIdentifier) == modules.end()) {
+    for (size_t i = 0; i < visibleProcessors.size(); ++i) {
+        moduleIdentifier = QString::fromStdString(visibleProcessors[i]->getModuleName());
+        if (modules.find(moduleIdentifier) == modules.end()) {
             QTreeWidgetItem* item = new QTreeWidgetItem(QStringList(moduleIdentifier));
             QFont font = item->font(0);
             font.setBold(true);
@@ -642,203 +642,174 @@ void ProcessorListTreeWidget::sortByModuleName() {
         }
     }
 
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        QString moduleIdentifier = QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second));
-        ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
+    for (size_t i = 0; i < visibleProcessors.size(); ++i) {
+        moduleIdentifier = QString::fromStdString(visibleProcessors[i]->getModuleName());
+        ProcessorListItem* tempListItem = new ProcessorListItem(visibleProcessors[i]->getClassName());
 
         modules[moduleIdentifier]->addChild(tempListItem);
-        ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second);
-        tempListItem->setProcessorInfo(processorVector_[i].second);
 
-        if(showCodeState_) {
-            setCodeStateIcon(processorVector_[i].second, tempListItem);
+        if (showCodeState_) {
+            setCodeStateIcon(visibleProcessors[i]->getClassName(), tempListItem);
         }
     }
 
     std::map<QString, QTreeWidgetItem*>::iterator it = modules.begin();
-    while(it != modules.end()) {
+    while (it != modules.end()) {
         addTopLevelItem((*it).second);
         ++it;
     }
 
     expandAll();
-    if(!showCodeState_)
+    if (!showCodeState_)
         header()->hide();
     else
         header()->show();
 }
 
 void ProcessorListTreeWidget::sortByModuleThenCategory() {
-
-    sortType_ = ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY;
-    ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
+    sortType_ = ProcessorListTreeWidget::GroupTypeModuleCategory;
+    items_.clear();
     clear();
 
-    //int position;
-    QStringList moduleNames;
-    QString moduleName("");
+    const std::vector<const Processor*> visibleProcessors = getVisibleProcessors();
 
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        QString moduleIdentifier = QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second));
-        if (! moduleNames.contains(moduleIdentifier)){
-            moduleNames << moduleIdentifier;
-        }
+    // group visible processors by module
+    QMap<QString, std::vector<const Processor*> > moduleToProcessorsMap;
+    for (size_t i = 0; i < visibleProcessors.size(); ++i) {
+        QString moduleIdentifier = QString::fromStdString(visibleProcessors[i]->getModuleName());
+        if (!moduleToProcessorsMap.contains(moduleIdentifier))
+            moduleToProcessorsMap.insert(moduleIdentifier, std::vector<const Processor*>());
+        moduleToProcessorsMap[moduleIdentifier].push_back(visibleProcessors[i]);
     }
 
-    // do this evaluation for every category
-    for (int ii = 0; ii < moduleNames.size(); ++ii) {
+    // create tree item with sub-hierarchy for each visible module
+    QList<QString> modules = moduleToProcessorsMap.keys();
+    QTreeWidgetItem* coreModuleItem = 0;
+    QTreeWidgetItem* baseModuleItem = 0;
+    for (int i=0; i<modules.size(); i++) {
+        QString curModule = modules.at(i);
+        std::vector<const Processor*> moduleProcessors = moduleToProcessorsMap[curModule];
 
-        //QString categoryIdentifier=categories.at(i);
-        QTreeWidgetItem* moduleItem = new QTreeWidgetItem(QStringList(moduleNames.at(ii)));
+        // module tree item
+        QTreeWidgetItem* moduleItem = new QTreeWidgetItem(QStringList(curModule));
         QFont font = moduleItem->font(0);
         font.setBold(true);
         moduleItem->setFont(0, font);
-        items_.append(moduleItem);
 
-        QStringList categories;
-        QString categoryIdentifier("");
+        // category sub-hierarchy
+        QList<QTreeWidgetItem*> categoryHierarchy = createCategoryHierarchy(moduleProcessors, 0);
+        moduleItem->addChildren(categoryHierarchy);
 
-        for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-            QString categoryIdentifier = processorVector_[i].first.c_str();
-            if (! categories.contains(categoryIdentifier)){
-                categories << categoryIdentifier;
-            }
-        }
-
-        //for every module in the current category check processors
-        for (int j = 0; j < categories.size(); ++j) {
-            QTreeWidgetItem* categoryItem = new QTreeWidgetItem(QStringList(categories.at(j)));
-            moduleItem->addChild(categoryItem);
-
-            for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-
-                if(categories.at(j) == processorVector_[i].first.c_str()
-                    && moduleNames.at(ii) == QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second))) {
-
-                    QString categoryIdentifier = processorVector_[i].first.c_str();
-                    ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
-
-                    //position = categories.indexOf(categoryIdentifier);
-                    categoryItem->addChild(tempListItem);
-                    tempListItem->setProcessorInfo(processorVector_[i].second);
-                    if(showCodeState_) {
-                        setCodeStateIcon(processorVector_[i].second, tempListItem);
-                    }
-                }
-            }
-            if (categoryItem->childCount() == 0) {
-                    moduleItem->removeChild(categoryItem);
-            }
+        if (curModule == "Core")
+            coreModuleItem = moduleItem; //< will be inserted later
+        else if (curModule == "Base")
+            baseModuleItem = moduleItem; //< will be inserted later
+        else
+            items_.append(moduleItem);
     }
 
+    // add and sort top level items
     addTopLevelItems(items_);
-    expandAll();
-    if(!showCodeState_)
-        header()->hide();
-    else
-        header()->show();
-    }
     QTreeWidget::sortItems(0, Qt::AscendingOrder);
-}
 
-void ProcessorListTreeWidget::sortByCategoryThenModule() {
+    // insert core and base module items at top
+    if (baseModuleItem)
+        insertTopLevelItem(0, baseModuleItem);
+    if (coreModuleItem)
+        insertTopLevelItem(0, coreModuleItem);
+    /*else
+        LWARNINGC("voreenqt.ProcessorListTreeWidget", "no core module item"); */
 
-    sortType_ = ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE;
-    ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
-    clear();
-
-    //int position;
-    QStringList categories;
-    QString categoryIdentifier("");
-
-    for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-        QString categoryIdentifier = processorVector_[i].first.c_str();
-        if (!categories.contains(categoryIdentifier)){
-            categories << categoryIdentifier;
-        }
-    }
-
-    // do this evaluation for every category
-    for (int i = 0; i < categories.size(); ++i) {
-
-        QString categoryIdentifier=categories.at(i);
-        QTreeWidgetItem* categoryItem = new QTreeWidgetItem(QStringList(categoryIdentifier));
-        items_.append(categoryItem);
-
-        QStringList moduleNames;
-        QString moduleName("");
-
-        for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-            QString moduleIdentifier = QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second));
-            if (!moduleNames.contains(moduleIdentifier)){
-                moduleNames << moduleIdentifier;
-            }
-        }
-
-        //for every module in the current category check processors
-        for (int j = 0; j < moduleNames.size(); ++j) {
-            QTreeWidgetItem* moduleItem = new QTreeWidgetItem(QStringList(moduleNames.at(j)));
-            QFont font = moduleItem->font(0);
-            font.setBold(true);
-            moduleItem->setFont(0, font);
-            categoryItem->addChild(moduleItem);
-
-            for (unsigned int i = 0; i < processorVector_.size(); ++i) {
-
-                if(categoryIdentifier == processorVector_[i].first.c_str()
-                    && moduleNames.at(j) == QString::fromStdString(ProcessorFactory::getInstance()->getProcessorModuleName(processorVector_[i].second))) {
-
-                    QString categoryIdentifier = processorVector_[i].first.c_str();
-                    ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
-
-                    //position = categories.indexOf(categoryIdentifier);
-                    moduleItem->addChild(tempListItem);
-                    tempListItem->setProcessorInfo(processorVector_[i].second);
-                    if(showCodeState_) {
-                        setCodeStateIcon(processorVector_[i].second, tempListItem);
-                    }
-
-
-                }
-            }
-            if (moduleItem->childCount() == 0) {
-                    categoryItem->removeChild(moduleItem);
-            }
-    }
-
-    addTopLevelItems(items_);
     expandAll();
-    if(!showCodeState_)
+    if (!showCodeState_)
         header()->hide();
     else
         header()->show();
-    }
+
 }
 
-void ProcessorListTreeWidget::setCodeStateIcon(std::string codeState, QTreeWidgetItem* item) {
-    switch (ProcessorFactory::getInstance()->getProcessorCodeState(codeState)) {
+QList<QTreeWidgetItem*> ProcessorListTreeWidget::createCategoryHierarchy(
+        const std::vector<const Processor*>& processors, int categoryLevel) const {
+    tgtAssert(categoryLevel >= 0, "invalid category level");
+
+    // separate processors at current category level from those with more sub-categories
+    std::map<std::string, QTreeWidgetItem*> categoryToTreeItemMap;
+    std::map<std::string, std::vector<const Processor*> > categoryToProcessorsMap; //< for processors with more sub-cats
+    for (size_t i=0; i<processors.size(); i++) {
+        const Processor* curProc = processors.at(i);
+
+        // extract sub-category string for current level
+        std::vector<std::string> subcategories = strSplit(curProc->getCategory(), '/');
+        tgtAssert(subcategories.size() > (size_t)categoryLevel, "too few sub-categories for this category level");
+        std::string subCategoryStr = subcategories.at(categoryLevel);
+
+        // create tree item for sub-category, if not already present
+        if (categoryToTreeItemMap.find(subCategoryStr) == categoryToTreeItemMap.end()) {
+            categoryToTreeItemMap.insert(std::make_pair(subCategoryStr,
+                new QTreeWidgetItem(QStringList(QString::fromStdString(subCategoryStr)))));
+        }
+        QTreeWidgetItem* curCategoryItem = categoryToTreeItemMap[subCategoryStr];
+
+        // if processor has no more sub-categories => add processor item directly
+        if (subcategories.size() == static_cast<size_t>(categoryLevel+1)) {
+            ProcessorListItem* processorItem = new ProcessorListItem(curProc->getClassName());
+            curCategoryItem->addChild(processorItem);
+            if (showCodeState_)
+                setCodeStateIcon(curProc->getClassName(), processorItem);
+        }
+        // else queue processor for sub-category creation
+        else {
+            if (categoryToProcessorsMap.find(subCategoryStr) == categoryToProcessorsMap.end())
+                categoryToProcessorsMap.insert(std::make_pair(subCategoryStr, std::vector<const Processor*>()));
+            categoryToProcessorsMap[subCategoryStr].push_back(curProc);
+        }
+    }
+
+    // recursively create sub-hierarchies for processors with more sub-categories than current category level
+    for (std::map<std::string, std::vector<const Processor*> >::const_iterator it = categoryToProcessorsMap.begin();
+            it != categoryToProcessorsMap.end(); it++) {
+        std::string subCategory = it->first;
+        QTreeWidgetItem* categoryItem = categoryToTreeItemMap[subCategory];
+        tgtAssert(categoryItem, "not category tree item");
+
+        QList<QTreeWidgetItem*> subHierarchy = createCategoryHierarchy(it->second, categoryLevel+1);
+        categoryItem->addChildren(subHierarchy);
+    }
+
+    // return created top-level tree items
+    QList<QTreeWidgetItem*> resultList;
+    for (std::map<std::string, QTreeWidgetItem*>::const_iterator it = categoryToTreeItemMap.begin();
+            it != categoryToTreeItemMap.end(); it++) {
+        resultList.append(it->second);
+    }
+    return resultList;
+}
+
+void ProcessorListTreeWidget::setCodeStateIcon(const std::string& classname, QTreeWidgetItem* item) const {
+    tgtAssert(ProcessorFactory::getInstance()->getProcessor(classname), "unknown class name");
+    switch (ProcessorFactory::getInstance()->getProcessor(classname)->getCodeState()) {
         case Processor::CODE_STATE_BROKEN:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-broken.png"));
             item->setToolTip(1, "Code state: broken");
             break;
         case Processor::CODE_STATE_OBSOLETE:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-broken.png"));
             item->setToolTip(1, "Code state: obsolete");
             break;
         case Processor::CODE_STATE_EXPERIMENTAL:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-broken.png"));
             item->setToolTip(1, "Code state: experimental");
             break;
         case Processor::CODE_STATE_TESTING:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-testing.png"));
             item->setToolTip(1, "Code state: testing");
             break;
         case Processor::CODE_STATE_STABLE:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-stable.png"));
             item->setToolTip(1, "Code state: stable");
             break;
         default:
-            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setIcon(1, QIcon(":/qt/icons/processor-broken.png"));
             item->setToolTip(1, "Code state: unknown");
             break;
     }
@@ -849,34 +820,22 @@ void ProcessorListTreeWidget::hideStatus(bool hidden) {
     filter(QString::fromStdString(filterText_));
 }
 
-void ProcessorListTreeWidget::searchDescription(bool search) {
-    searchDescription_ = search;
-    filter(QString::fromStdString(filterText_));
-}
-
 void ProcessorListTreeWidget::sort(int type) {
-    if(type == ProcessorListTreeWidget::SORT_BY_CATEGORY)
+    if (type == ProcessorListTreeWidget::GroupTypeCategory)
         sortByCategory();
-    if(type == ProcessorListTreeWidget::SORT_BY_MODULENAME)
+    if (type == ProcessorListTreeWidget::GroupTypeModule)
         sortByModuleName();
-    if(type == ProcessorListTreeWidget::SORT_BY_CATEGORY_MODULE)
-        sortByCategoryThenModule();
-    if(type == ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY)
+    if (type == ProcessorListTreeWidget::GroupTypeModuleCategory)
         sortByModuleThenCategory();
 }
 
+
 // ----------------------------------------------------------------------------
 
-ProcessorListItem::ProcessorListItem (const std::string& id)
+ProcessorListItem::ProcessorListItem(const std::string& id)
     :  QTreeWidgetItem(QStringList(QString(id.c_str()))),
     id_(id)
 {}
 
-void ProcessorListItem::setProcessorInfo(const std:: string& name) {
-    if (!name.empty() && !ProcessorFactory::getInstance()->getProcessorInfo(name).empty())
-        info_ = "<b>" + name + "</b><br>" + ProcessorFactory::getInstance()->getProcessorInfo(name);
-    else
-        info_ = "";
-}
 
 } //namespace voreen

@@ -1,0 +1,140 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="StreamlineRenderer3D" ref="ref1" />
+                    </values>
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-59" y="-317" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/flow/carotid.flow?preferredReader=FlowReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-52" y="14" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="47" y="138" width="655" height="535" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="655" y="535" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/rendering.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Background" name="Background" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-53" y="-96" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="angle" value="0" />
+                        <Property name="backgroundModeAsString" value="monochrome" />
+                        <Property name="color1">
+                            <value x="0.49803901" y="0.49803901" z="0.49803901" w="1" />
+                        </Property>
+                        <Property name="color2">
+                            <value x="0.2" y="0.2" z="0.2" w="1" />
+                        </Property>
+                        <Property name="repeat" value="1" />
+                        <Property name="texture" value="" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="StreamlineRenderer3D" name="StreamlineRenderer3D" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-82" y="-209" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="boundingBoxColorProp">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="520" y="245" />
+                            </MetaData>
+                            <position x="0.63414001" y="1.18274999" z="0.65557301" />
+                            <focus x="-0.015788" y="0.016482" z="-0.013395" />
+                            <upVector x="-0.20903105" y="-0.3963111" z="0.89400423" />
+                        </Property>
+                        <Property name="colorTableProp_" value="hot metal" />
+                        <Property name="geometrySizeProp" value="2" />
+                        <Property name="geometrySpacing" value="4" />
+                        <Property name="magnitudeThreshold">
+                            <value x="0.5" y="100" />
+                        </Property>
+                        <Property name="maxStreamlineLength" value="150" />
+                        <Property name="numberStreamlines" value="250" />
+                        <Property name="streamlineStyle" value="arrow plot (equidistant)" />
+                        <Property name="useAlphaBlendingProp" value="true" />
+                        <Property name="useBoundingBoxProp" value="true" />
+                        <Property name="useCoordinateAxisProp" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.flow">
+                        <Processor type="StreamlineRenderer3D" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="Background" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.streamlines">
+                        <Processor type="StreamlineRenderer3D" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Background" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

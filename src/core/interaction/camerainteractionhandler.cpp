@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
@@ -56,6 +52,10 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     : InteractionHandler(id, guiName)
     , cameraProp_(cameraProp)
     , navigationMetaphor_(id + ".interactionMetaphor", guiName + " Interaction", Processor::VALID)
+    , shiftTrackballCenter_(id + ".shiftTrackballCenter", "Rotate trackball around...", Processor::VALID)
+    , adjustCamera_(id + ".adjustCamera", "Adapt camera to scene size...", Processor::VALID)
+    , resetTrackballCenter_(id + ".resetTrackballCenter", "Reset Trackball Center")
+    , currentSceneMesh_(MeshListGeometry())
 {
     tgtAssert(cameraProp, "No camera property");
     cameraProp_ = cameraProp;
@@ -66,10 +66,24 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     navigationMetaphor_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::adjustWidgetStates));
     addProperty(navigationMetaphor_);
 
+    shiftTrackballCenter_.addOption("origin",      "World origin");
+    shiftTrackballCenter_.addOption("scenecenter", "Scene center");
+    shiftTrackballCenter_.addOption("shift",       "Camera shift");
+    shiftTrackballCenter_.select("scenecenter");
+    shiftTrackballCenter_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::adjustCenterShift));
+    addProperty(shiftTrackballCenter_);
+
+    adjustCamera_.addOption("never", "Never");
+    adjustCamera_.addOption("bigsizechange", "Only on large difference");
+    adjustCamera_.addOption("always", "Always");
+    adjustCamera_.select("bigsizechange");
+    addProperty(adjustCamera_);
+
+    resetTrackballCenter_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::resetTrackballCenter));
+    addProperty(resetTrackballCenter_);
+
     // navigations
-    rotateNavi_ = new TrackballNavigation(cameraProp_, TrackballNavigation::ROTATE_MODE, 0.05f, 15.f);
-    zoomNavi_ = new TrackballNavigation(cameraProp_,   TrackballNavigation::ZOOM_MODE, 0.05f, 15.f);
-    shiftNavi_ = new TrackballNavigation(cameraProp_,  TrackballNavigation::SHIFT_MODE, 0.05f, 15.f);
+    tbNavi_ = new TrackballNavigation(cameraProp_, TrackballNavigation::ROTATE_MODE);
     fpNavi_ = new FirstPersonNavigation(cameraProp_);
 
     // event properties trackball
@@ -157,9 +171,7 @@ CameraInteractionHandler::~CameraInteractionHandler() {
 
     // event properties are deleted by base class InteractionHandler
 
-    delete rotateNavi_;
-    delete zoomNavi_;
-    delete shiftNavi_;
+    delete tbNavi_;
     delete fpNavi_;
     delete timerEventHandler_;
     delete motionTimer_;
@@ -169,29 +181,29 @@ CameraInteractionHandler::~CameraInteractionHandler() {
 void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
     if (navigationMetaphor_.isSelected("trackball")){
         tgtAssert(cameraProp_, "No camera property");
-        tgtAssert(rotateNavi_, "No trackball navigation");
+        tgtAssert(tbNavi_, "No trackball navigation");
 
         //TODO: remove if it works (stefan)
         //// assign new camera object to navigation, if it has changed
-        //if (rotateNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //rotateNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
         //}
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
-            rotateNavi_->mousePressEvent(e);
+            tbNavi_->mousePressEvent(e);
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
-            rotateNavi_->mouseReleaseEvent(e);
+            tbNavi_->mouseReleaseEvent(e);
         }
         else if (e->action() == MouseEvent::MOTION)
-            rotateNavi_->mouseMoveEvent(e);
+            tbNavi_->mouseMoveEvent(e);
         else if (e->action() == MouseEvent::DOUBLECLICK)
-            rotateNavi_->mouseDoubleClickEvent(e);
+            tbNavi_->mouseDoubleClickEvent(e);
         else if (e->action() == MouseEvent::WHEEL)
-            rotateNavi_->wheelEvent(e);
+            tbNavi_->wheelEvent(e);
     }
     else if (navigationMetaphor_.isSelected("first-person")){
         if (e->action() == MouseEvent::PRESSED){
@@ -225,29 +237,32 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
 void CameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
     if (navigationMetaphor_.isSelected("trackball")){
         tgtAssert(cameraProp_, "No camera property");
-        tgtAssert(zoomNavi_, "No trackball navigation");
+        tgtAssert(tbNavi_, "No trackball navigation");
 
         //TODO: remove if it works (stefan)
         // assign new camera object to navigation, if it has changed
-        //if (zoomNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //zoomNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
         //}
+        tbNavi_->setMode(TrackballNavigation::ZOOM_MODE);
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
-            zoomNavi_->mousePressEvent(e);
+            tbNavi_->mousePressEvent(e);
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
-            zoomNavi_->mouseReleaseEvent(e);
+            tbNavi_->mouseReleaseEvent(e);
         }
         else if (e->action() == MouseEvent::MOTION)
-            zoomNavi_->mouseMoveEvent(e);
+            tbNavi_->mouseMoveEvent(e);
         else if (e->action() == MouseEvent::DOUBLECLICK)
-            zoomNavi_->mouseDoubleClickEvent(e);
+            tbNavi_->mouseDoubleClickEvent(e);
         else if (e->action() == MouseEvent::WHEEL)
-            zoomNavi_->wheelEvent(e);
+            tbNavi_->wheelEvent(e);
+
+        tbNavi_->setMode(TrackballNavigation::ROTATE_MODE);
     }
     else if (navigationMetaphor_.isSelected("first-person")){
         if (e->action() == MouseEvent::PRESSED){
@@ -278,29 +293,33 @@ void CameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
 void CameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
     if (navigationMetaphor_.isSelected("trackball")){
         tgtAssert(cameraProp_, "No camera property");
-        tgtAssert(shiftNavi_, "No trackball navigation");
+        tgtAssert(tbNavi_, "No trackball navigation");
 
         //TODO: remove if it works (stefan)
         // assign new camera object to navigation, if it has changed
-        //if (shiftNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //shiftNavi_->getTrackball()->setCamera(cameraProp_->get());
+        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
+            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
         //}
+
+        tbNavi_->setMode(TrackballNavigation::SHIFT_MODE);
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
-            shiftNavi_->mousePressEvent(e);
+            tbNavi_->mousePressEvent(e);
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
-            shiftNavi_->mouseReleaseEvent(e);
+            tbNavi_->mouseReleaseEvent(e);
         }
         else if (e->action() == MouseEvent::MOTION)
-            shiftNavi_->mouseMoveEvent(e);
+            tbNavi_->mouseMoveEvent(e);
         else if (e->action() == MouseEvent::DOUBLECLICK)
-            shiftNavi_->mouseDoubleClickEvent(e);
+            tbNavi_->mouseDoubleClickEvent(e);
         else if (e->action() == MouseEvent::WHEEL)
-            shiftNavi_->wheelEvent(e);
+            tbNavi_->wheelEvent(e);
+
+        tbNavi_->setMode(TrackballNavigation::ROTATE_MODE);
     }
     else if (navigationMetaphor_.isSelected("first-person")){
         // Hack: prevents camerainteraction handler from executing shift events, if fpNavi is activated
@@ -388,6 +407,8 @@ void CameraInteractionHandler::adjustWidgetStates() {
     bool firstPersonSelected = navigationMetaphor_.isSelected("first-person");
 
     // trackball properties
+    shiftTrackballCenter_.setVisible(trackballSelected);
+    resetTrackballCenter_.setVisible(trackballSelected);
     rotateEvent_->setVisible(trackballSelected);
     zoomEvent_->setVisible(trackballSelected);
     shiftEvent_->setVisible(trackballSelected);
@@ -402,11 +423,82 @@ void CameraInteractionHandler::adjustWidgetStates() {
     moveDownEvent_->setVisible(firstPersonSelected);
 }
 
+void CameraInteractionHandler::adjustCenterShift() {
+    if(shiftTrackballCenter_.isSelected("origin")) {
+        cameraProp_->getTrackball()->setMoveCenter(false);
+    } else if (shiftTrackballCenter_.isSelected("scenecenter")) {
+        cameraProp_->getTrackball()->setMoveCenter(false);
+        tgt::Bounds bBox(tgt::vec3(0.f));
+        if (!currentSceneMesh_.empty())
+            bBox = currentSceneMesh_.getBoundingBox();
+        cameraProp_->getTrackball()->setCenter(bBox.center());
+    } else if (shiftTrackballCenter_.isSelected("shift")) {
+        cameraProp_->getTrackball()->setMoveCenter(true);
+    }
+}
+
+void CameraInteractionHandler::resetTrackballCenter() {
+    cameraProp_->getTrackball()->getCamera()->setFocus(tgt::vec3(0.f));
+    cameraProp_->getTrackball()->setCenter(tgt::vec3(0.f));
+}
+
 void CameraInteractionHandler::setVisible(bool state) {
     InteractionHandler::setVisible(state);
     navigationMetaphor_.setVisible(state);
     if (state)
         adjustWidgetStates();
+}
+
+void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& geometry) {
+    if(geometry.empty())
+        return;
+
+    tgt::Bounds bounds = geometry.getBoundingBox();
+
+    tgt::vec3 extentOld = tgt::vec3(0.f);
+    if (!currentSceneMesh_.empty()) {
+        extentOld = currentSceneMesh_.getBoundingBox().diagonal();
+    }
+
+    currentSceneMesh_ = geometry;
+
+    if(hmul(extentOld) != 0.f) {
+        if(adjustCamera_.isSelected("never"))
+            return;
+        else if(adjustCamera_.isSelected("bigsizechange")) {
+            // resize only if the size of the scene has drastically changed
+            float relSize = hmul(extentOld) / hmul(bounds.diagonal());
+            if(relSize > 0.2f && relSize < 5.f)
+                return;
+        }
+    } else {
+        // always adapt far distance if there was no previous scene geometry
+        tgt::Camera cam = cameraProp_->get();
+        float newMaxDist = 250.f * tgt::max(bounds.diagonal());
+        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(bounds.diagonal())));
+        cameraProp_->set(cam);
+        return;
+    }
+
+    LINFOC("voreen.CameraInteractionHandler", "Adapting camera handling to new scene size...");
+
+    tgt::Camera cam = cameraProp_->get();
+    float oldRelCamDist = cam.getFocalLength() / tbNavi_->getMaxDist();
+    float maxSideLength = tgt::max(bounds.diagonal());
+
+    // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
+    float newMaxDist = 250.f * maxSideLength;
+    float newAbsCamDist = oldRelCamDist * newMaxDist;
+
+    tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
+    tgt::vec3 newPos   = cam.getPosition() * (newAbsCamDist / cam.getFocalLength());
+
+    tbNavi_->setMaxDist(newMaxDist);
+    cameraProp_->setMaxValue(newMaxDist);
+    cam.setFocus(newFocus);
+    cam.setPosition(newPos);
+    cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
+    cameraProp_->set(cam);
 }
 
 } // namespace

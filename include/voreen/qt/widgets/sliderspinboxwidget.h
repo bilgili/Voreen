@@ -1,62 +1,57 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_SLIDERSPINBOXWIDGET_H
 #define VRN_SLIDERSPINBOXWIDGET_H
 
-#include <QApplication>
-#include <QHBoxLayout>
-#include <QSlider>
-#include <QSpacerItem>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
-#include <QVBoxLayout>
 #include <QWidget>
+
+class QDoubleSpinBox;
+class QHBoxLayout;
+class QLineEdit;
+class QSlider;
+class QSpinBox;
 
 #include "voreen/core/properties/property.h"
 
 namespace voreen {
 
 class SliderSpinBoxWidget : public QWidget {
-    Q_OBJECT;
-    Q_PROPERTY( int value READ getValue WRITE setValue );
-    Q_PROPERTY( int minValue READ getMinValue WRITE setMinValue );
-    Q_PROPERTY( int maxValue READ getMaxValue WRITE setMaxValue );
+Q_OBJECT
+Q_PROPERTY(int value READ getValue WRITE setValue)
+Q_PROPERTY(int minValue READ getMinValue WRITE setMinValue)
+Q_PROPERTY(int maxValue READ getMaxValue WRITE setMaxValue)
+
 public:
     SliderSpinBoxWidget(QWidget* parent = 0);
-    virtual int getValue()const;
-    virtual int getMinValue()const;
-    virtual int getMaxValue()const;
-    virtual bool isSliderDown()const;
-    virtual QSize sizeHint () const;
-    virtual void setFocusPolicy(Qt::FocusPolicy policy);
-    virtual void setView(Property::View);
+    int getValue() const;
+    int getMinValue() const;
+    int getMaxValue() const;
+    bool isSliderDown() const;
+    void setFocusPolicy(Qt::FocusPolicy policy);
+    void setView(Property::View);
 
     /**
      * If slider tracking is disabled, valueChanged signals
@@ -71,7 +66,7 @@ public:
      *
      * @see QAbstractSlider
      */
-    virtual void setSliderTracking(bool tracking);
+    void setSliderTracking(bool tracking);
 
     /// Returns whether slider tracking is enabled (default: true).
     bool hasSliderTracking() const;
@@ -95,26 +90,27 @@ signals:
     void valueChanged(int);
     void sliderPressedChanged(bool);
     void editingFinished();
-public slots:
-    virtual void setValue( int value );
-    virtual void setMaxValue( int value );
-    virtual void setMinValue( int value );
-    virtual void setSingleStep(int value);
 
-protected slots:
-    virtual void spinEditingFinished();
-    virtual void sliderPressed();
-    virtual void sliderReleased();
+public slots:
+    void setValue(int value);
+    void setMaxValue(int value);
+    void setMinValue(int value);
+    void setSingleStep(int value);
+
+private slots:
+    void spinEditingFinished();
+    void sliderPressed();
+    void sliderReleased();
 
 protected:
-    QVBoxLayout *vboxLayout;
-    QHBoxLayout *hboxLayout;
-    QSlider *sliderSLD;
-    QSpinBox *spinBoxSPB;
-    QSpacerItem *spacerItem;
+    void changeEvent(QEvent*);
 
-    bool sliderTracking_;
-    bool spinboxTracking_;
+    QHBoxLayout* layout_;
+    QSlider* slider_;
+    QSpinBox* spinbox_;
+
+    bool isSliderTrackingEnabled_;
+    bool isSpinboxTrackingEnabled_;
     int value_;
 };
 
@@ -123,21 +119,21 @@ protected:
 
 
 class DoubleSliderSpinBoxWidget : public QWidget {
-    Q_OBJECT
-    Q_PROPERTY( double value READ getValue WRITE setValue )
-    Q_PROPERTY( double minValue READ getMinValue WRITE setMinValue )
-    Q_PROPERTY( double maxValue READ getMaxValue WRITE setMaxValue )
+Q_OBJECT
+Q_PROPERTY(double value READ getValue WRITE setValue)
+Q_PROPERTY(double minValue READ getMinValue WRITE setMinValue)
+Q_PROPERTY(double maxValue READ getMaxValue WRITE setMaxValue)
+
 public:
     DoubleSliderSpinBoxWidget(QWidget* parent = 0);
-    virtual double getValue() const;
-    virtual double getMinValue() const;
-    virtual double getMaxValue() const;
-    virtual double getSingleStep() const;
-    virtual int getDecimals() const;
-    virtual bool isSliderDown() const;
-    virtual QSize sizeHint () const;
-    virtual void setFocusPolicy(Qt::FocusPolicy policy);
-    virtual void setView(Property::View);
+    double getValue() const;
+    double getMinValue() const;
+    double getMaxValue() const;
+    double getSingleStep() const;
+    int getDecimals() const;
+    bool isSliderDown() const;
+    void setFocusPolicy(Qt::FocusPolicy policy);
+    void setView(Property::View);
 
     /**
      * If slider tracking is disabled, valueChanged signals
@@ -152,7 +148,7 @@ public:
      *
      * @see QAbstractSlider
      */
-    virtual void setSliderTracking(bool tracking);
+    void setSliderTracking(bool tracking);
 
     /// Returns whether slider tracking is enabled (default: true).
     bool hasSliderTracking() const;
@@ -167,7 +163,7 @@ public:
      *
      * @see QAbstractSpinbox
      */
-    virtual void setSpinboxTracking(bool tracking);
+    void setSpinboxTracking(bool tracking);
 
     /// Returns whether spin box tracking is enabled (default: false).
     bool hasSpinboxTracking() const;
@@ -176,29 +172,30 @@ signals:
     void valueChanged(double);
     void sliderPressedChanged(bool);
     void editingFinished();
+
 public slots:
-    virtual void setValue( double value );
-    virtual void setMaxValue( double value );
-    virtual void setMinValue( double value );
-    virtual void setSingleStep( double step );
-    virtual void setDecimals( int decimals );
-    virtual void sliderPressed();
-    virtual void sliderReleased();
+    void setValue(double value);
+    void setMaxValue(double value);
+    void setMinValue(double value);
+    void setSingleStep(double step);
+    void setDecimals(int decimals);
+    void sliderPressed();
+    void sliderReleased();
 
 protected slots:
-    virtual void sliderValueChanged( int value );
-    virtual void spinEditingFinished();
-    virtual void adjustSliderScale();
+    void sliderValueChanged(int value);
+    void spinEditingFinished();
+    void adjustSliderScale();
 
 protected:
-    QVBoxLayout *vboxLayout;
-    QHBoxLayout *hboxLayout;
-    QSlider *sliderSLD;
-    QDoubleSpinBox *spinBoxSPB;
-    QSpacerItem *spacerItem;
+    void changeEvent(QEvent*);
 
-    bool sliderTracking_;
-    bool spinboxTracking_;
+    QHBoxLayout* layout_;
+    QSlider* slider_;
+    QDoubleSpinBox* spinbox_;
+
+    bool isSliderTrackingEnabled_;
+    bool isSpinboxTrackingEnabled_;
     double value_;
 };
 

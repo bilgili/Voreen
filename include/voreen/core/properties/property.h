@@ -1,39 +1,38 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PROPERTY_H
 #define VRN_PROPERTY_H
 
-#include "tgt/vector.h"
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/properties/link/propertylink.h"
 #include "voreen/core/io/serialization/serialization.h"
 #include "voreen/core/processors/processor.h"
+
+#include "tgt/exception.h"
+#include "tgt/vector.h"
 
 #include <string>
 #include <vector>
@@ -53,7 +52,7 @@ class ProcessorNetwork;
  *
  * @see TemplateProperty
  */
-class Property : public AbstractSerializable {
+class VRN_CORE_API Property : public AbstractSerializable {
 
     friend class PropertyLink;
     friend class PropertyVector;
@@ -91,15 +90,40 @@ public:
      * @param invalidationLevel the level the owner is invalidated with upon change
      */
     Property(const std::string& id, const std::string& guiName,
-             Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
+             int invalidationLevel = Processor::INVALID_RESULT);
+
+    /**
+     * Default constructor. Used for serialization. Do not call directly!
+     */
+    Property();
 
     virtual ~Property();
+
+    /**
+     * Virtual constructor: supposed to return an instance of the concrete Property class.
+     */
+    virtual Property* create() const = 0;
+
+    /**
+     * Returns the name of this class as a string.
+     * Necessary due to the lack of code reflection in C++.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     */
+    virtual std::string getClassName() const = 0;
+
+    /**
+     * Resets the property to its default value.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     */
+    virtual void reset() = 0;
 
     /**
      * Returns a textual description of the property type,
      * usually corresponding to the type of the stored value.
      */
-    virtual std::string getTypeString() const;
+    virtual std::string getTypeDescription() const;
 
     /**
      * Returns the identifier of the property.
@@ -111,7 +135,9 @@ public:
      *
      * @return The owner is invalidated with this InvalidationLevel upon change.
      */
-    Processor::InvalidationLevel getInvalidationLevel();
+    int getInvalidationLevel() const;
+
+    void setInvalidationLevel(int invalidationLevel);
 
     /**
      * Returns the identifier of the property preceeded by
@@ -213,12 +239,6 @@ public:
     void toggleInteractionMode(bool interactionmode, void* source);
 
     /**
-     * Creates a widget for this property, but does not add it to the Property.
-     * The passed PropertyWidgetFactory will actually build the widget.
-     */
-    virtual PropertyWidget* createWidget(PropertyWidgetFactory* f);
-
-    /**
      * Registers a widget at this property. This widget is considered the property
      * in the user interface and is affected by setVisible and setWidgetsEnabled.
      */
@@ -241,14 +261,6 @@ public:
     void disconnectWidgets();
 
     /**
-     * Convenience function that creates and registers a widget
-     * for this property.
-     *
-     * @see createWidget, addWidget
-     */
-    PropertyWidget* createAndAddWidget(PropertyWidgetFactory* f);
-
-    /**
      * Returns all property widgets assigned to this property.
      */
     const std::set<PropertyWidget*> getPropertyWidgets() const;
@@ -263,10 +275,25 @@ public:
     void setGroupID(const std::string& id);
 
     /**
+     * Sets the guiname of the group the property is in.
+     *
+     * The group membership of a property has no effect on the property itself,
+     * but may be considered in a GUI representation. The default group name
+     * is the empty string. For representation the first not empty string of all group members is used.
+     */
+    void setGroupName(const std::string& name);
+
+    /**
      * Returns the id of the property group to which the property is assigned to.
      * If the property does not belong to a group, an empty string is returned.
      */
     std::string getGroupID() const;
+
+    /**
+     * Returns the name of the property group to which the property is assigned to.
+     * If the property does not belong to a group, an empty string is returned.
+     */
+    std::string getGroupName() const;
 
     /**
      * Returns the property links currently registered
@@ -315,6 +342,11 @@ public:
 
     ///Deserialize the value of the property without the meta data/LOD/guiName
     virtual void deserializeValue(XmlDeserializer& s);
+
+    std::string getDescription() const;
+
+    /// Sets the description
+    void setDescription(std::string desc);
  protected:
 
     /**
@@ -326,9 +358,9 @@ public:
      *       instead of the constructor! Time-consuming operations
      *       should also happen here.
      *
-     * @throw VoreenException if the initialization failed
+     * @throw tgt::Exception if the initialization failed
      */
-    virtual void initialize() throw (VoreenException);
+    virtual void initialize() throw (tgt::Exception);
 
     /**
      * Override this method for performing deinitializations
@@ -337,9 +369,9 @@ public:
      * @note All OpenGL deinitializations must be done here,
      *       instead of the destructor!
      *
-     * @throw VoreenException if the deinitialization failed
+     * @throw tgt::Exception if the deinitialization failed
      */
-    virtual void deinitialize() throw (VoreenException);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
      * Invalidates the owner with the InvalidationLevel set in the constructor
@@ -351,18 +383,19 @@ public:
      *
      * @param invalidationLevel Use this InvalidationLevel to invalidate
      */
-    void invalidateOwner(Processor::InvalidationLevel invalidationLevel);
+    void invalidateOwner(int invalidationLevel);
 
     std::string id_;
     std::string guiName_;
 
     PropertyOwner* owner_;
-    Processor::InvalidationLevel invalidationLevel_;
+    int invalidationLevel_;
     bool widgetsEnabled_;
     bool visible_;
     LODSetting lod_;
-    int views_;
+    View views_;
     std::string groupId_;
+    std::string groupName_;
 
     std::set<PropertyWidget*> widgets_;
     std::vector<PropertyLink*> links_;
@@ -404,6 +437,9 @@ private:
      * The gui name is only serialized, if it differs from the initial one.
      */
     std::string initialGuiName_;
+
+    /// Description for display in GUI etc.
+    std::string description_;
 };
 
 } // namespace voreen

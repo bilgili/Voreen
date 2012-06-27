@@ -1,0 +1,180 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="ImageSelector" ref="ref3" />
+                        <item type="ImageSelector" ref="ref1" />
+                        <item type="ImageSequenceSource" ref="ref0" />
+                        <item type="ImageSelector" ref="ref2" />
+                    </values>
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="ImageSequenceSource" name="ImageSequenceSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="165" y="-341" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearSequence" />
+                        <Property name="imageDirectory" value="input/images/sequence" />
+                        <Property name="numImages" value="3" />
+                        <Property name="reloadSequence" />
+                        <Property name="showProgressBar" value="false" />
+                        <Property name="textureFiltering" value="true" />
+                        <Property name="uploadTextures" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageSelector" name="ImageSelector" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="51" y="-197" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="imageID" value="0" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="wheelHandler.imageCycling">
+                            <Properties>
+                                <Property name="wheelHandler.imageCycling" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="56" y="-98" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="140" y="144" width="256" height="256" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="256" y="256" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/image1.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageSelector" name="ImageSelector 2" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="185" y="-199" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="imageID" value="1" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="wheelHandler.imageCycling">
+                            <Properties>
+                                <Property name="wheelHandler.imageCycling" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="ImageSelector" name="ImageSelector 3" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="342" y="-198" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="imageID" value="2" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="wheelHandler.imageCycling">
+                            <Properties>
+                                <Property name="wheelHandler.imageCycling" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas 2" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="196" y="-100" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="201" y="220" width="256" height="256" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="256" y="256" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/image2.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas 3" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="353" y="-99" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="260" y="312" width="256" height="256" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="256" y="256" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/image3.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="imagesequence.out">
+                        <Processor type="ImageSequenceSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="imagesequence.in">
+                        <Processor type="ImageSelector" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="imagesequence.out">
+                        <Processor type="ImageSequenceSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="imagesequence.in">
+                        <Processor type="ImageSelector" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="imagesequence.out">
+                        <Processor type="ImageSequenceSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="imagesequence.in">
+                        <Processor type="ImageSelector" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSelector" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSelector" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.out">
+                        <Processor type="ImageSelector" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref6" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

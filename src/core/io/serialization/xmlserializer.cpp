@@ -1,34 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/io/serialization/xmlserializer.h"
-#include "voreen/core/plotting/plotselection.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 
 namespace voreen {
 
@@ -52,13 +49,23 @@ XmlSerializer::XmlSerializer(std::string documentPath)
         XmlSerializationConstants::VERSION);
     document_.LinkEndChild(root);
 
+    // retrieve serialization factories from modules
+    if (VoreenApplication::app()) {
+        const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
+        for (size_t i=0; i<modules.size(); i++)
+            registerFactories(modules.at(i)->getSerializerFactories());
+        registerFactories(VoreenApplication::app()->getSerializerFactories());
+    }
+    else {
+        LWARNING("Unable to retrieve factories from modules: VoreenApplication not instantiated");
+    }
+
     node_ = root;
 }
 
 XmlSerializer::~XmlSerializer() {
     for (UnresolvedReferencesType::iterator it = unresolvedReferences_.begin();
-        it != unresolvedReferences_.end(); ++it)
-    {
+        it != unresolvedReferences_.end(); ++it) {
         delete it->referenceContentSerializer;
     }
 }
@@ -239,37 +246,45 @@ void XmlSerializer::serialize(const std::string& key, const unsigned char& data)
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const signed short& data)
+void XmlSerializer::serialize(const std::string& key, const uint16_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const unsigned short& data)
+void XmlSerializer::serialize(const std::string& key, const int16_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const signed int& data)
+void XmlSerializer::serialize(const std::string& key, const uint32_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const unsigned int& data)
+void XmlSerializer::serialize(const std::string& key, const int32_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const signed long& data)
+#ifdef __APPLE__
+void XmlSerializer::serialize(const std::string& key, const long unsigned int& data)
+    throw (SerializationException)
+{
+    serializeSimpleTypes(key, data);
+}
+#endif
+
+void XmlSerializer::serialize(const std::string& key, const uint64_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
 }
 
-void XmlSerializer::serialize(const std::string& key, const unsigned long& data)
+void XmlSerializer::serialize(const std::string& key, const int64_t& data)
     throw (SerializationException)
 {
     serializeSimpleTypes(key, data);
@@ -413,40 +428,6 @@ void XmlSerializer::serialize(const std::string& key, const tgt::Matrix4d& data)
     serializeTgtVector(key+".row3", data[3]);
 }
 
-void XmlSerializer::serialize(const std::string& key, const PlotCellValue& data)
-    throw (SerializationException)
-{
-    // first create new node for this cell
-    TiXmlNode* newNode = new TiXmlElement(key);
-    node_->LinkEndChild(newNode);
-    TemporaryNodeChanger nodeChanger(*this, newNode);
-
-    // then add subnodes withs cell flags and values
-    serializeSimpleTypes("isValue", data.isValue());
-    serializeSimpleTypes("isTag", data.isTag());
-    serializeSimpleTypes("isHighlighted", data.isHighlighted());
-
-    if (data.isTag())
-        serializeSimpleTypes("tag", data.getTag());
-    if (data.isValue())
-        serializeSimpleTypes("value", data.getValue());
-}
-
-void XmlSerializer::serialize(const std::string& key, const PlotSelectionEntry& data)
-    throw (SerializationException)
-{
-    // first create new node for this cell
-    TiXmlNode* newNode = new TiXmlElement(key);
-    node_->LinkEndChild(newNode);
-    TemporaryNodeChanger nodeChanger(*this, newNode);
-
-    // then add subnodes withs cell flags and values
-    serialize("selection", data.selection_);
-    serializeSimpleTypes("highlight", data.highlight_);
-    serializeSimpleTypes("renderLabel", data.renderLabel_);
-    serializeSimpleTypes("zoomTo", data.zoomTo_);
-}
-
 void XmlSerializer::serialize(const std::string& key, const Serializable& data)
     throw (SerializationException)
 {
@@ -460,5 +441,62 @@ void XmlSerializer::write(std::ostream& stream) {
     document_.Accept(&printer);
     stream << printer.Str();
 }
+
+void XmlSerializer::serializeBinaryBlob(const std::string& key, const unsigned char* inputBuffer, size_t length)
+    throw (SerializationException)
+{
+    serialize(key, base64Encode(std::vector<unsigned char>(inputBuffer, inputBuffer + length)));
+}
+
+void XmlSerializer::serializeBinaryBlob(const std::string& key, const std::vector<unsigned char>& inputBuffer)
+    throw (SerializationException)
+{
+    serialize(key, base64Encode(inputBuffer));
+}
+
+//Encoding to base64.  Adapted from en.wikibooks.org.
+std::string XmlSerializer::base64Encode(const std::vector<unsigned char>& inputBuffer) {
+    const char encodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const char padCharacter = '=';
+
+    std::string encodedString;
+    encodedString.reserve(((inputBuffer.size()/3) + (inputBuffer.size() % 3 > 0)) * 4);
+    long temp;
+    std::vector<unsigned char>::const_iterator cursor = inputBuffer.begin();
+    for(size_t idx = 0; idx < inputBuffer.size()/3; idx++) {
+            temp  = (*cursor++) << 16; //Convert to big endian
+            temp += (*cursor++) << 8;
+            temp += (*cursor++);
+            encodedString.append(1,encodeLookup[(temp & 0x00FC0000) >> 18]);
+            encodedString.append(1,encodeLookup[(temp & 0x0003F000) >> 12]);
+            encodedString.append(1,encodeLookup[(temp & 0x00000FC0) >> 6 ]);
+            encodedString.append(1,encodeLookup[(temp & 0x0000003F)      ]);
+            //if(encodedString.size() % 72 < 4)
+                //encodedString.append(1, '\n');
+    }
+
+    switch(inputBuffer.size() % 3) {
+        case 1:
+                temp  = (*cursor++) << 16; //Convert to big endian
+                encodedString.append(1,encodeLookup[(temp & 0x00FC0000) >> 18]);
+                encodedString.append(1,encodeLookup[(temp & 0x0003F000) >> 12]);
+                encodedString.append(2,padCharacter);
+                //if(encodedString.size() % 72 < 3)
+                    //encodedString.append(1, '\n');
+                break;
+        case 2:
+                temp  = (*cursor++) << 16; //Convert to big endian
+                temp += (*cursor++) << 8;
+                encodedString.append(1,encodeLookup[(temp & 0x00FC0000) >> 18]);
+                encodedString.append(1,encodeLookup[(temp & 0x0003F000) >> 12]);
+                encodedString.append(1,encodeLookup[(temp & 0x00000FC0) >> 6 ]);
+                encodedString.append(1,padCharacter);
+                //if(encodedString.size() % 72 < 3)
+                    //encodedString.append(1, '\n');
+                break;
+    }
+    return encodedString;
+}
+
 
 } // namespace

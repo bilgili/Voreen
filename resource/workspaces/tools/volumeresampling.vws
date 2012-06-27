@@ -1,0 +1,78 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="" readonly="true">
+        <ProcessorNetwork version="12">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="VolumeSave" ref="ref2" />
+                        <item type="VolumeResample" ref="ref1" />
+                        <item type="VolumeSource" ref="ref0" />
+                    </values>
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-55" y="-223" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeResample" name="VolumeResample" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-63" y="-128" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="allowUpsampling" value="true" />
+                        <Property name="clearCache" />
+                        <Property name="enableProcessing" value="true" />
+                        <Property name="filteringMode" value="linear" />
+                        <Property name="keepVoxelSizeRatio" value="true" />
+                        <Property name="outputSizeMB" value="0" />
+                        <Property name="outputSizeVoxels" value="0" />
+                        <Property name="resampleDimensionX" value="1" tracking="false" />
+                        <Property name="resampleDimensionY" value="1" tracking="false" />
+                        <Property name="resampleDimensionZ" value="1" tracking="false" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-49" y="-33" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" noPathSet="false" value="" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeResample" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeResample" ref="ref1" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

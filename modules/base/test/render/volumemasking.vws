@@ -1,0 +1,297 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-896" y="-361" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_uint16.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeMasking" name="Pass Through" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-1102" y="-215" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearCache" />
+                        <Property name="continousUpdates" value="true" />
+                        <Property name="enableProcessing" value="true" />
+                        <Property name="maskFunction" id="ref9">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="85" y="132" width="571" height="274" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.31874999" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.50937498" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.65625" split="false">
+                                        <colorL r="255" g="255" b="255" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="27.31999969" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="passedVoxelAction" value="passThrough" />
+                        <Property name="update" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeMasking" name="Max Intensity" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-960" y="-215" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearCache" />
+                        <Property name="continousUpdates" value="true" />
+                        <Property name="enableProcessing" value="true" />
+                        <Property name="maskFunction" id="ref10">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.31874999" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.50937498" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.65625" split="false">
+                                        <colorL r="255" g="255" b="255" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="27.31999969" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="passedVoxelAction" value="maxIntensity" />
+                        <Property name="update" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-1097" y="-115" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/pass-through.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 2" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-962" y="-115" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/max-intensity.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeMasking" name="Alpha Value" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-812" y="-213" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearCache" />
+                        <Property name="continousUpdates" value="true" />
+                        <Property name="enableProcessing" value="true" />
+                        <Property name="maskFunction" id="ref11">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.31874999" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.50937498" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.65625" split="false">
+                                        <colorL r="255" g="255" b="255" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="27.31999969" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="passedVoxelAction" value="alpha" />
+                        <Property name="update" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 3" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-817" y="-114" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/alpha-value.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeMasking" name="Disabled" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-675" y="-213" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="clearCache" />
+                        <Property name="continousUpdates" value="true" />
+                        <Property name="enableProcessing" value="false" />
+                        <Property name="maskFunction" id="ref12">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.31874999" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.50937498" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.65625" split="false">
+                                        <colorL r="255" g="255" b="255" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="27.31999969" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="passedVoxelAction" value="passThrough" />
+                        <Property name="update" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 4" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-680" y="-115" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/disabled.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeMasking" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeMasking" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeMasking" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeMasking" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeMasking" ref="ref2" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeMasking" ref="ref1" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeMasking" ref="ref3" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeMasking" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref8" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref9" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref10" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref10" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref11" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref11" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref12" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+            </PropertyLinks>
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

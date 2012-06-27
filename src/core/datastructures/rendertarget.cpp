@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/datastructures/rendertarget.h"
 
@@ -61,28 +57,26 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
         LWARNING("Neither non-power-of-two textures nor texture rectangles seem to be supported!");
     }
 
-    bool textureRectangles = !GpuCaps.isNpotSupported() && GpuCaps.areTextureRectanglesSupported();
-
     tgt::ivec3 size(128, 128, 1);
 
     switch(internalColorFormat) {
         case GL_RGB:
-            colorTex_ = new Texture(0, size, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, Texture::LINEAR);
             break;
         case GL_RGBA:
-            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, Texture::LINEAR);
             break;
         case GL_RGBA16:
-            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16, GL_UNSIGNED_SHORT, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16, GL_UNSIGNED_SHORT, Texture::LINEAR);
             break;
         case GL_RGB16F_ARB:
-            colorTex_ = new Texture(0, size, GL_RGB, GL_RGB16F_ARB, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGB, GL_RGB16F_ARB, GL_FLOAT, Texture::LINEAR);
             break;
         case GL_RGBA16F_ARB:
-            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16F_ARB, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16F_ARB, GL_FLOAT, Texture::LINEAR);
             break;
         case GL_RGBA32F_ARB:
-            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA32F_ARB, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA32F_ARB, GL_FLOAT, Texture::LINEAR);
             break;
         default:
             LERROR("Unknown internal format!");
@@ -92,21 +86,21 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
 
     switch(internalDepthFormat) {
         case GL_DEPTH_COMPONENT16:
-            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT16, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT16, GL_FLOAT, Texture::LINEAR);
             break;
         case GL_DEPTH_COMPONENT24:
-            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT24, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT24, GL_FLOAT, Texture::LINEAR);
             break;
         case GL_DEPTH_COMPONENT32:
-            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32, GL_FLOAT, Texture::LINEAR);
             break;
 #ifdef GL_DEPTH_COMPONENT32F
         case GL_DEPTH_COMPONENT32F:
-            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32F, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32F, GL_FLOAT, Texture::LINEAR);
             break;
 #endif
         default:
-            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, internalDepthFormat, GL_FLOAT, Texture::LINEAR, textureRectangles);
+            depthTex_ = new Texture(0, size, GL_DEPTH_COMPONENT, internalDepthFormat, GL_FLOAT, Texture::LINEAR);
             LERROR("Unknown internal depth format!");
     }
     depthTex_->uploadTexture();

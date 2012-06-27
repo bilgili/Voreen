@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PROCESSORFACTORY_H
 #define VRN_PROCESSORFACTORY_H
@@ -41,43 +37,36 @@ namespace voreen {
 
 class Processor;
 
-class ProcessorFactory : public SerializableFactory {
+class VRN_CORE_API ProcessorFactory : public SerializableFactory {
 public:
-    typedef std::pair<std::string, std::string> StringPair;
-    typedef std::vector<StringPair> KnownClassesVector;
-
     ~ProcessorFactory();
-
-    Processor* create(const std::string& name);
-    const ProcessorFactory::KnownClassesVector& getKnownClasses() const { return knownClasses_; }
-
     static ProcessorFactory* getInstance();
 
-    /// Returns true, if a processor instance with the passed class name has been registered
+    /**
+     * Creates an instance of the passed Processor class.
+     */
+    Processor* create(const std::string& className);
+
+    /**
+     * Returns a vector containing instances of the registered Processors.
+     */
+    const std::vector<Processor*>& getRegisteredProcessors() const;
+
+    /**
+     * Returns the mapping from Processor class name to the corresponding Processor instance.
+     */
+    const std::map<std::string, Processor*>& getClassMap() const;
+
+    /**
+     * Returns true, if a processor instance with the passed class name has been registered.
+     */
     bool isProcessorKnown(const std::string& className) const;
 
-    /// Returns processor information
-    std::string getProcessorInfo(const std::string& name) const;
-
-    /// Returns processor category
-    std::string getProcessorCategory(const std::string& name) const;
-
-    /// Returns processor modulename
-    std::string getProcessorModuleName(const std::string& name) const;
-
-    /// Returns processor codestate
-    Processor::CodeState getProcessorCodeState(const std::string& name) const;
-
     /**
-     * Destroys the instance of this Singleton.
+     * Returns an instance of the passed Processor class.
+     * If the class name is not known, null is returned.
      */
-    static void destroy();
-
-    /**
-     * intializes the ClassList by registering processors
-     * adding new processors will happen here.
-     */
-    void initializeClassList();
+    const Processor* getProcessor(const std::string& className) const;
 
     /**
      * @see SerializableFactory::getTypeString
@@ -91,12 +80,27 @@ public:
 
 private:
     ProcessorFactory();
-    void registerClass(Processor* const newClass, bool isCore = false);
-
     static ProcessorFactory* instance_;
 
-    std::map<std::string, Processor*> classList_;
-    ProcessorFactory::KnownClassesVector knownClasses_;
+    /**
+     * Retrieves the registered processors from the VoreenApplication
+     * and initializes the processor list and class map.
+     * Internally called on first access of the factory instance.
+     */
+    void initialize() const;
+
+    /**
+     * Adds the passed processor to the processor vector and the classmap.
+     */
+    void registerClass(Processor* const newClass) const;
+
+    /// Contains the registered processors.
+    mutable std::vector<Processor*> processors_;
+
+    /// Maps from Processor class name to the corresponding Processor instance.
+    mutable std::map<std::string, Processor*> classMap_;
+
+    mutable bool initialized_;
 
     /// category used for logging
     static const std::string loggerCat_;

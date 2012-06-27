@@ -1,48 +1,50 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PORT_H
 #define VRN_PORT_H
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/processors/processor.h"
+
+#include "tgt/exception.h"
 
 #include <string>
 #include <vector>
 
 namespace voreen {
 
+class PortCondition;
+
 /**
  * This class describes a port of a Processor. Processors are connected
  * by their ports.
  */
-class Port {
+class VRN_CORE_API Port {
 
+    friend class PortCondition;
     friend class Processor;
     friend class ProcessorNetwork;
     friend class NetworkEvaluator;
@@ -72,9 +74,18 @@ public:
     virtual ~Port();
 
     /**
+     * Adds a port condition for checking the validity of the assigned port data.
+     * If any of the assigned conditions is not fulfilled, isReady() returns false.
+     * The port takes ownership of the passed object.
+     *
+     * @note PortConditions may only be added to inports.
+     */
+    void addCondition(PortCondition* condition);
+
+    /**
      * Returns all ports that are connected to this port.
      */
-    const std::vector<Port*>& getConnected() const;
+    const std::vector<const Port*> getConnected() const;
 
     /**
      * @brief Test if this (out)port can connect to a given inport.
@@ -143,6 +154,13 @@ public:
     bool isInport() const;
 
     /**
+     * Returns whether the port contains data.
+     * To be overridden by a concrete subclass.
+     * The default implementation returns false.
+     */
+    virtual bool hasData() const;
+
+    /**
      * Returns whether the port is ready to be used
      * by its owning processor.
      *
@@ -164,9 +182,19 @@ public:
     std::string getName() const;
 
     /**
+     * Returns the name of the port, prefixed by the name of its processor.
+     */
+    std::string getQualifiedName() const;
+
+    /**
      * Marks the port as valid. Is called by by Processor::setValid()
      */
     void setValid();
+
+    /**
+     * Returns whether the port has been initialized.
+     */
+    bool isInitialized() const;
 
     /**
      * Specifies whether this port is to be used as loop port.
@@ -203,9 +231,74 @@ public:
      */
     int getNumLoopIterations() const;
 
+    /**
+     * Indicates whether the port supports caching of its content,
+     * default: false.
+     *
+     * A cachable port type is supposed to override this method
+     * and return true. In this case, the subclass must also re-implement
+     * getHash, saveData and loadData.
+     *
+     * @see Cache
+     */
+    virtual bool supportsCaching() const;
+
+    /**
+     * Returns an hash of the port's data. This method has to be
+     * re-implemented by a concrete port type, if it supports caching.
+     * The default implementation returns an empty string.
+     *
+     * @see supportsCaching
+     */
+    virtual std::string getHash() const;
+
+    /**
+     * Saves the port's data to the given path.
+     *
+     * Since implementing the saving routine is up to the
+     * concrete subclasses, saving is not necessarily supported
+     * by all port types. A cachable port type, however,
+     * is required to provide saving and loading of its data.
+     *
+     * @see supportsCaching
+     *
+     * @throws VoreenException If saving failed or is generally
+     *      not supported by the port type.
+     */
+    virtual void saveData(const std::string& path) const
+        throw (VoreenException);
+
+    /**
+     * Loads port data from the given path and assigns it
+     * to the port on success.
+     *
+     * Since implementing the loading routine is up to the
+     * concrete subclasses, loading is not necessarily supported
+     * by all port types. A cachable port type, however,
+     * is required to provide saving and loading of its data.
+     *
+     * @see supportsCaching
+     *
+     * @throws VoreenException If loading failed or is generally
+     *      not supported by the port type.
+     */
+    virtual void loadData(const std::string& path)
+        throw (VoreenException);
+
     virtual void distributeEvent(tgt::Event* e);
 
     void toggleInteractionMode(bool interactionMode, void* source);
+
+    std::string getDescription() const;
+
+    /// Sets the description
+    void setDescription(std::string desc);
+
+    /**
+     * Returns this port-type's suggested color in case of a GUI representation.
+     *
+     */
+    virtual tgt::col3 getColorHint() const;
 
 protected:
     /**
@@ -218,9 +311,9 @@ protected:
      * @note Is called by the owning processor during its initialization.
      *       Do not call it directly in a subclass.
      *
-     * @throw VoreenException if the initialization failed
+     * @throw tgt::Exception if the initialization failed
      */
-    virtual void initialize() throw (VoreenException);
+    virtual void initialize() throw (tgt::Exception);
 
     /**
      * Performs OpenGL dependent deinitializations.
@@ -235,14 +328,17 @@ protected:
      * @note Is called by the owning processor during its initialization.
      *       Do not call it directly in a subclass.
      *
-     * @throw VoreenException if the deinitialization failed
+     * @throw tgt::Exception if the deinitialization failed
      */
-    virtual void deinitialize() throw (VoreenException);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
-     * Returns whether the port has been initialized.
+     * Iterates over all assigned port conditions and returns false,
+     * if any of them fails. Additionally, an error message is logged.
+     *
+     * To be called by isReady() of the subclasses.
      */
-    bool isInitialized() const;
+    virtual bool checkConditions() const;
 
     virtual bool connect(Port* inport);
     ///Disconnect from other port (must not be NULL or this port)
@@ -257,6 +353,8 @@ protected:
     const PortDirection direction_;       ///< Is this port an outport or not
     bool allowMultipleConnections_;       ///< Is this port allowed to have multiple connections?
     bool hasChanged_;
+
+    std::vector<PortCondition*> conditions_;
 
     Processor::InvalidationLevel invalidationLevel_;
 
@@ -278,6 +376,9 @@ private:
 
     /// Set to true by after successful initialization.
     bool initialized_;
+
+    /// Description for display in GUI etc.
+    std::string description_;
 
     /// category used in logging
     static const std::string loggerCat_;

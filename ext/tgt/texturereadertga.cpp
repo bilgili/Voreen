@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/texturereadertga.h"
 
@@ -57,7 +58,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
     GLubyte TGAheader[12];
     GLubyte header[6];
 //    GLuint  bytesPerPixel;//FIXME: this is never initialized!
-    
+
     File* file = FileSys.open(filename);
 
     // Check if file is open
@@ -89,8 +90,8 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
     }
 
     Texture* t = new Texture();
-    t->setName(filename);   
-    
+    t->setName(filename);
+
     ivec3 dimensions;
     dimensions.x = header[1] * 256 + header[0];           // determine the TGA width  (highbyte*256+lowbyte)
     dimensions.y = header[3] * 256 + header[2];           // determine the TGA height (highbyte*256+lowbyte)
@@ -112,7 +113,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
 
     int bpp = header[4];
     t->setBpp(bpp / 8);  // divide by 8 to get the bytes per pixel
-    
+
     switch (t->getBpp()) {
 //         case 1:
 //             t->setFormat(GL_RGB);
@@ -129,14 +130,14 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         default:
             LERROR("unsupported bpp " << filename);
     }
-    
+
 #ifdef GL_TEXTURE_RECTANGLE_ARB
     if (textureRectangle)
         t->setType( GL_TEXTURE_RECTANGLE_ARB );
     else
 #endif
         t->setType( GL_TEXTURE_2D );
-        
+
     t->setDataType( GL_UNSIGNED_BYTE );
     t->alloc();
 
@@ -153,16 +154,16 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         // file is compressed
         LDEBUG("Reading compressed TGA file " << filename << " ...");
 
-		//TODO: error handling
+        //TODO: error handling
         unsigned char chunk[4];
         unsigned char* at = t->getPixelData();
-		int Bpp = bpp / 8;
+        int Bpp = bpp / 8;
         for (unsigned int bytesDone=0; bytesDone < t->getArraySize(); ) {
             unsigned char packetHead;
             file->read(reinterpret_cast<char*>(&packetHead), 1);
             if (packetHead > 128) {
-				//RLE
-				packetHead -= 127;
+                //RLE
+                packetHead -= 127;
                 file->read(reinterpret_cast<char*>(&chunk), Bpp);
                 for (unsigned char b=0; b < packetHead; b++) {
                         std::memcpy(at, chunk, Bpp);
@@ -170,7 +171,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
                         at += Bpp;
                 }
             } else {
-				//RAW
+                //RAW
                 packetHead++;
                 file->read(reinterpret_cast<char*>(at), Bpp * packetHead);
                 bytesDone += packetHead * Bpp;
@@ -189,7 +190,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         t->texel<col3>(i).r = t->texel<col3>(i).b;
         t->texel<col3>(i).b = temp;
     }
-    
+
     // flip image horizontally
     //col3 tmp;
     //for (int y=0; y < dimensions.y/2; ++y) {
@@ -199,7 +200,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
             //t->texel<col3>(x,dimensions.y-1-y) = tmp;
         //}
     //}
-    
+
 
     bool success;
     if (textureRectangle) {
@@ -210,7 +211,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
         else
             success = create2DTexture(t, filter, compress, createOGLTex);
     }
-    
+
     if (!success) {
         LERROR("Failed to create texture for " << filename);
         delete t;

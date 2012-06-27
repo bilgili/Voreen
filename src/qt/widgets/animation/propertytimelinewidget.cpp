@@ -1,36 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/animation/animationeditor.h"
 #include "voreen/qt/widgets/animation/animationexportwidget.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
-#include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
 #include "voreen/qt/widgets/animation/currentframegraphicsitem.h"
 #include "voreen/qt/widgets/animation/keyframegraphicsitem.h"
 #include "voreen/qt/widgets/animation/propertytimelinewidget.h"
@@ -41,7 +36,7 @@
 #include "voreen/core/animation/interpolationfunctionfactory.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
-#include "voreen/core/properties/volumecollectionproperty.h"
+#include "voreen/core/properties/volumeurllistproperty.h"
 
 #include "tgt/camera.h"
 #include "tgt/vector.h"
@@ -111,7 +106,7 @@ PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimelin
     inInterpolationSelector_->setZValue(2);
     outInterpolationSelector_->setZValue(2);
 
-    activateTimelineButton_ = new QPushButton(QIcon(":/icons/apply.png"), "", this);
+    activateTimelineButton_ = new QPushButton(QIcon(":/qt/icons/apply.png"), "", this);
     showFrameHUD(false);
 
     activateTimelineButton_->setToolTip(tr("Activate or deactivate timeline"));
@@ -125,9 +120,9 @@ PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimelin
 
     // note: this is duplicated in activateTimeline() below
     if (!propertyTimeline->getActiveOnRendering())
-        activateTimelineButton_->setIcon(QIcon(":/icons/button_cancel.png"));
+        activateTimelineButton_->setIcon(QIcon(":/qt/icons/button_cancel.png"));
     else
-        activateTimelineButton_->setIcon(QIcon(":/icons/apply.png"));
+        activateTimelineButton_->setIcon(QIcon(":/qt/icons/apply.png"));
 
 
     connect(activateTimelineButton_, SIGNAL(toggled(bool)), this, SLOT(activateTimeline(bool)));
@@ -236,9 +231,9 @@ void PropertyTimelineWidget::snapshot(int pos, bool force) {
 void PropertyTimelineWidget::activateTimeline(bool active) {
     activateTemplateTimeline(active);
     if (!active)
-        activateTimelineButton_->setIcon(QIcon(":/icons/button_cancel.png"));
+        activateTimelineButton_->setIcon(QIcon(":/qt/icons/button_cancel.png"));
     else
-        activateTimelineButton_->setIcon(QIcon(":/icons/apply.png"));
+        activateTimelineButton_->setIcon(QIcon(":/qt/icons/apply.png"));
 }
 
 PropertyTimelineView* PropertyTimelineWidget::getPropertyTimelineView() {

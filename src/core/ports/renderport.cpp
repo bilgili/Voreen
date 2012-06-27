@@ -1,38 +1,38 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/ports/renderport.h"
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/processors/renderprocessor.h"
 
-#ifdef VRN_WITH_DEVIL
-    #include <IL/il.h>
+#include "tgt/filesystem.h"
+
+#ifdef VRN_MODULE_DEVIL
+#include <IL/il.h>
+#include <IL/ilu.h>
+#include "modules/devil/devilmodule.h"
 #endif
 
 namespace voreen {
@@ -71,7 +71,7 @@ void RenderPort::setProcessor(Processor* p) {
                 << p->getName() << "." << getName());
 }
 
-void RenderPort::initialize() throw (VoreenException) {
+void RenderPort::initialize() throw (tgt::Exception) {
 
     Port::initialize();
 
@@ -92,7 +92,7 @@ void RenderPort::initialize() throw (VoreenException) {
     LGL_ERROR;
 }
 
-void RenderPort::deinitialize() throw (VoreenException) {
+void RenderPort::deinitialize() throw (tgt::Exception) {
     if (isOutport() && renderTarget_) {
         renderTarget_->deinitialize();
         delete renderTarget_;
@@ -130,8 +130,10 @@ void RenderPort::activateTarget(const std::string& debugLabel) {
 
 void RenderPort::deactivateTarget() {
     if (isOutport()) {
-        if (renderTarget_)
+        if (renderTarget_){
             renderTarget_->deactivateTarget();
+            invalidate();
+        }
         else
             LERROR("Trying to activate RenderPort without RenderTarget");
     }
@@ -248,7 +250,7 @@ void RenderPort::setTextureParameters(tgt::Shader* shader, const std::string& un
         bool oldIgnoreError = shader->getIgnoreUniformLocationError();
         shader->setIgnoreUniformLocationError(true);
         shader->setUniform(uniform + ".dimensions_", tgt::vec2(getSize()));
-        shader->setUniform(uniform + ".dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(getSize()));
+        shader->setUniform(uniform + ".dimensionsRCP_", tgt::vec2(1.f) / tgt::vec2(getSize()));
         shader->setUniform(uniform + ".matrix_", tgt::mat4::identity);
         shader->setIgnoreUniformLocationError(oldIgnoreError);
     }
@@ -269,8 +271,8 @@ bool RenderPort::connect(Port* inport) {
 void* RenderPort::getSizeOrigin() const {
     if (isOutport()) {
         for (size_t i=0; i<getNumConnections(); ++i) {
-            if (static_cast<RenderPort*>(getConnected()[i])->getSizeOrigin())
-                return static_cast<RenderPort*>(getConnected()[i])->getSizeOrigin();
+            if (static_cast<const RenderPort*>(getConnected()[i])->getSizeOrigin())
+                return static_cast<const RenderPort*>(getConnected()[i])->getSizeOrigin();
         }
         return 0;
     }
@@ -348,6 +350,10 @@ void RenderPort::resize(const tgt::ivec2& newsize) {
     }
 }
 
+void RenderPort::resize(int x, int y) {
+    resize(tgt::ivec2(x, y));
+}
+
 void RenderPort::bindColorTexture() {
     if (getRenderTarget())
         getRenderTarget()->bindColorTexture();
@@ -414,9 +420,14 @@ tgt::Texture* RenderPort::getDepthTexture() {
         return 0;
 }
 
-#ifdef VRN_WITH_DEVIL
+#ifdef VRN_MODULE_DEVIL
 
 void RenderPort::saveToImage(const std::string& filename) throw (VoreenException) {
+
+    if (filename.empty())
+        throw VoreenException("filename is empty");
+    else if (FileSystem::fileExtension(filename).empty())
+        throw VoreenException("filename has no extension");
 
     // get color buffer content
     tgt::Vector4<uint16_t>* colorBuffer = readColorBuffer<uint16_t>();
@@ -429,28 +440,24 @@ void RenderPort::saveToImage(const std::string& filename) throw (VoreenException
     // put pixels into IL-Image
     ilTexImage(size.x, size.y, 1, 4, IL_RGBA, IL_UNSIGNED_SHORT, colorBuffer);
     ilEnable(IL_FILE_OVERWRITE);
+    ilResetWrite();
     ILboolean success = ilSaveImage(const_cast<char*>(filename.c_str()));
     ilDeleteImages(1, &img);
 
     delete[] colorBuffer;
 
     if (!success) {
-        if (ilGetError() == IL_COULD_NOT_OPEN_FILE)
-            throw VoreenException("Unable to open file " + filename + " for writing");
-        else if (ilGetError() == IL_INVALID_EXTENSION)
-            throw VoreenException("Invalid image file extension: " + filename);
-        else
-            throw VoreenException("Could not save rendering to file " + filename);
+        throw VoreenException(DevILModule::getDevILError());
     }
 }
 
 #else
 
 void RenderPort::saveToImage(const std::string& /*filename*/) throw (VoreenException) {
-    throw VoreenException("Unable to write rendering to file: Voreen was compiled without Devil support.");
+    throw VoreenException("Unable to write rendering to file: Voreen was compiled without Devil module.");
 }
 
-#endif // VRN_WITH_DEVIL
+#endif // VRN_MODULE_DEVIL
 
 void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
     if (isOutport()) {
@@ -466,12 +473,12 @@ const RenderTarget* RenderPort::getRenderTarget() const {
     if (isOutport())
         return renderTarget_;
     else {
-        const std::vector<Port*> connectedPorts = getConnected();
+        const std::vector<const Port*> connectedPorts = getConnected();
         // first connected port is authoritative
         for (size_t i = 0; i < connectedPorts.size(); ++i) {
             if (!connectedPorts[i]->isOutport())
                 continue;
-            else if (RenderPort* p = dynamic_cast<RenderPort*>(connectedPorts[i]))
+            else if (const RenderPort* p = dynamic_cast<const RenderPort*>(connectedPorts[i]))
                 return p->getRenderTarget();
         }
     }
@@ -496,6 +503,13 @@ bool RenderPort::getRenderTargetSharing() const {
     return renderTargetSharing_;
 }
 
+bool RenderPort::hasData() const {
+    return hasValidResult();
+}
+
+tgt::col3 RenderPort::getColorHint() const {
+    return tgt::col3(0, 0, 255);
+}
 
 //-------------------------------------------------------------------------------
 // PortGroup
@@ -557,7 +571,7 @@ void PortGroup::activateTargets(const std::string& debugLabel) {
     int count=0;
     for (size_t i=0; i < ports_.size();++i) {
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
-            buffers[count] = GL_COLOR_ATTACHMENT0_EXT+i;
+            buffers[count] = static_cast<GLenum>(GL_COLOR_ATTACHMENT0_EXT+i);
             ports_[i]->validateResult();
             ports_[i]->getRenderTarget()->setDebugLabel(ports_[i]->getProcessor()->getName() + "::"
                                                 + ports_[i]->getName() + (debugLabel.empty() ? "" : ": " + debugLabel));
@@ -572,6 +586,11 @@ void PortGroup::activateTargets(const std::string& debugLabel) {
 
 void PortGroup::deactivateTargets() {
     fbo_->deactivate();
+    for (size_t i=0; i < ports_.size();++i) {
+        if (ignoreConnectivity_ || ports_[i]->isConnected()) {
+            ports_[i]->invalidate();
+        }
+    }
 }
 
 void PortGroup::clearTargets() {
@@ -597,7 +616,7 @@ void PortGroup::reattachTargets() {
             continue;
 
         if (p->getColorTexture())
-            fbo_->attachTexture(p->getColorTexture(), GL_COLOR_ATTACHMENT0_EXT+i);
+            fbo_->attachTexture(p->getColorTexture(), static_cast<GLenum>(GL_COLOR_ATTACHMENT0_EXT+i));
         if (!hasDepth_ && p->getDepthTexture()) {
             hasDepth_ = true;
             fbo_->attachTexture(p->getDepthTexture(), GL_DEPTH_ATTACHMENT_EXT);
@@ -608,6 +627,7 @@ void PortGroup::reattachTargets() {
 
     if (hasDepth_)
         fbo_->isComplete();
+    fbo_->deactivate();
 }
 
 void PortGroup::resize(const tgt::ivec2& newsize) {
@@ -627,7 +647,7 @@ std::string PortGroup::generateHeader(tgt::Shader* shader) {
         out << "FragData" << targetidx;
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
             headerSource += "#define OP" + op.str() + " " + num.str() + "\n";
-            if (tgt::Singleton<tgt::GpuCapabilities>::isInited() && GpuCaps.getShaderVersion() >= tgt::GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+            if (tgt::GpuCapabilities::isInited() && GpuCaps.getShaderVersion() >= tgt::GpuCapabilities::GlVersion::SHADER_VERSION_130) {
                 if (targetidx > 0)
                     headerSource += "out vec4 " + out.str() + ";\n";
                 if (shader)
@@ -643,7 +663,5 @@ std::string PortGroup::generateHeader(tgt::Shader* shader) {
 
     return headerSource;
 }
-
-
 
 } // namespace

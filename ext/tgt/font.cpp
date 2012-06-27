@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2009 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/font.h"
 
@@ -29,7 +30,6 @@
 #include <sstream>
 
 #ifdef TGT_HAS_FTGL
-#include <FTGL/ftgl.h>
 #include "tgt/tgt_gl.h"
 #endif
 
@@ -180,11 +180,11 @@ void Font::update() {
         font_ = new FTExtrudeFont(fontName_.c_str()); break;
     case OutlineFont:
         font_ = new FTOutlineFont(fontName_.c_str()); break;
-    case PixmapFont: 
+    case PixmapFont:
         font_ = new FTPixmapFont(fontName_.c_str()); break;
-    case PolygonFont: 
+    case PolygonFont:
         font_ = new FTPolygonFont(fontName_.c_str()); break;
-    case TextureFont: 
+    case TextureFont:
         font_ = new FTTextureFont(fontName_.c_str()); break;
     default:
         LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
@@ -275,7 +275,7 @@ Font::VerticalTextAlignment Font::getVerticalTextAlignment() {
     return vAlign_;
 }
 
-void Font::render(const vec3& pos, const std::string& text) {
+void Font::render(const vec3& pos, const std::string& text) const {
     if (simpleLayout_) {
         float delta = 0;
 
@@ -287,7 +287,7 @@ void Font::render(const vec3& pos, const std::string& text) {
                       static_cast<double>(pos.z));
         FTBBox box = font_->BBox(line.c_str(), -1, point);
         delta -= box.Upper().Yf() - box.Lower().Yf(); // height of first line
-        
+
         Bounds bounds = getBounds(pos, text);
         float height = bounds.getURB().y - bounds.getLLF().y;
         switch(vAlign_) {
@@ -309,7 +309,7 @@ void Font::render(const vec3& pos, const std::string& text) {
     }
 }
 
-Bounds Font::getBounds(const vec3& pos, const std::string& text) {
+Bounds Font::getBounds(const vec3& pos, const std::string& text) const {
     if (!font_)
         return Bounds();
 
@@ -325,8 +325,6 @@ Bounds Font::getBounds(const vec3& pos, const std::string& text) {
     FTBBox box_tmp = font_->BBox(line.c_str(), -1, point);
     delta -= box_tmp.Upper().Yf() - box_tmp.Lower().Yf(); // height of first line
 
-    vec3 dpos = vec3(pos.x, pos.y, pos.z);
-    
     FTBBox box = simpleLayout_->BBox(text.c_str(), -1, point);
     FTPoint upper = box.Upper();
     FTPoint lower = box.Lower();
@@ -420,9 +418,9 @@ void Font::setTextAlignment(TextAlignment /*textAlignment*/) {}
 
 void Font::setVerticalTextAlignment(VerticalTextAlignment /*verticalTextAlignment*/) {}
 
-void Font::render(const vec3& /*pos*/, const std::string& /*text*/) {}
+void Font::render(const vec3& /*pos*/, const std::string& /*text*/) const {}
 
-Bounds Font::getBounds(const vec3& /*pos*/, const std::string& /*text*/) {
+Bounds Font::getBounds(const vec3& /*pos*/, const std::string& /*text*/) const {
     return Bounds();
 }
 

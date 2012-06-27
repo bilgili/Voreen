@@ -1,40 +1,38 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/network/networkconverter.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/properties/property.h"
 #include "voreen/core/processors/processorfactory.h"
-#include "voreen/core/utils/stringconversion.h"
+#include "voreen/core/utils/stringutils.h"
 
 #include "tinyxml/tinyxml.h"
 #include "tgt/logmanager.h"
+
+#include <map>
 
 namespace voreen {
 
@@ -153,9 +151,6 @@ void NetworkConverter4to5::convert(TiXmlElement* elem) {
     changePropertyName(elem, "", "set.imageoverlayTop", "top");
     changePropertyName(elem, "", "set.imageoverlayHeight", "height");
     changePropertyName(elem, "", "set.imageoverlayOpacity", "opacity");
-    // ImageProcessorDepth processor
-    changePropertyName(elem, "", "set.minDepthPP", "minDepth");
-    changePropertyName(elem, "", "set.maxDepthPP", "maxDepth");
     // Labeling processor
     changePropertyName(elem, "", "set.labelingWidget", "labelingWidget");
     changePropertyName(elem, "", "set.Layout", "layout");
@@ -216,6 +211,123 @@ void NetworkConverter6to7::convert(TiXmlElement* elem) {
     changeProcessorType(elem, "ClippingPlaneWidget", "PlaneWidgetProcessor");
     changeProcessorType(elem, "CylinderRenderer", "QuadricRenderer");
     changeProcessorType(elem, "SphereRenderer", "QuadricRenderer");
+}
+
+void NetworkConverter7to8::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "VolumeSubSet", "VolumeCrop");
+}
+
+void NetworkConverter8to9::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "FiberWriter", "FiberSave");
+    changeProcessorType(elem, "RawTextureWriter", "RawTextureSave");
+}
+
+void NetworkConverter9to10::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "TensorEllipsoidRenderer", "TensorGlyphRenderer");
+    changeProcessorType(elem, "FiberTracker", "FiberTrackerFACT");
+    changeProcessorType(elem, "TensorlineTracker", "FiberTrackerTensorline");
+    changeProcessorType(elem, "VolumeBitScale", "VolumeFormatConversion");
+    changeProcessorType(elem, "BoundingBox", "BoundingBoxRenderer");
+}
+
+void NetworkConverter10to11::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "CubeMeshProxyGeometry", "CubeProxyGeometry");
+}
+
+// -------------------------------------------------------------------------------------
+
+void NetworkConverter11to12::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "CoordinateTransformation", "GeometryTransformationVolume");
+    changeProcessorType(elem, "MeshClipping", "GeometryClipping");
+    changeProcessorType(elem, "MeshSlabClipping", "GeometrySlabClipping");
+    changeProcessorType(elem, "MeshClippingWidget", "GeometryClippingWidget");
+    changeProcessorType(elem, "VolumeScaling", "VolumeSpacing");
+    changeProcessorType(elem, "VolumeTranslation", "VolumeOffset");
+    changeProcessorType(elem, "VolumeRegistration", "VolumeLandmarkRegistration");
+}
+
+void NetworkConverter11to12::convertVolumeContainer(TiXmlElement* workspaceNode) {
+    if (!workspaceNode) {
+        LERRORC("voreen.NetworkConverter11to12", "no workspace node");
+        return;
+    }
+
+    // construct map from Volume-refID to URL
+    std::map<std::string, std::string> refToUrl;
+    TiXmlElement* volumeContainerNode = workspaceNode->FirstChildElement("VolumeContainer");
+    if (!volumeContainerNode)
+        return;
+    LWARNINGC("voreen.NetworkConverter11to12", "converting volume container ...");
+    TiXmlElement* volumeHandlesNode = volumeContainerNode->FirstChildElement("VolumeHandles");
+    if (!volumeHandlesNode)
+        return;
+    for (TiXmlElement* handleNode = volumeHandlesNode->FirstChildElement("VolumeHandle"); handleNode != 0; handleNode = handleNode->NextSiblingElement("VolumeHandle")) {
+        const std::string* refID = handleNode->Attribute(std::string("id"));
+        if (!refID)
+            continue;
+        TiXmlElement* originNode = handleNode->FirstChildElement("Origin");
+        if (!originNode)
+            continue;
+        const std::string* url = originNode->Attribute(std::string("url"));
+        if (!url)
+            url = originNode->Attribute(std::string("filename"));
+        if (!url)
+            continue;
+
+        tgtAssert(refID, "no refID");
+        tgtAssert(url, "no url");
+        refToUrl.insert(std::pair<std::string, std::string>(*refID, *url));
+    }
+
+    // look for VolumeSource processors and replace their VolumeHandleProperty (with specific refID)
+    // with a VolumeURLProperty with the corresponding volume URL
+    TiXmlElement* networkNode = workspaceNode->FirstChildElement("ProcessorNetwork");
+    if (!networkNode)
+        return;
+    TiXmlElement* processorsNode = networkNode->FirstChildElement("Processors");
+    if (!processorsNode)
+        return;
+    for (TiXmlElement* procNode = processorsNode->FirstChildElement("Processor"); procNode != 0; procNode = procNode->NextSiblingElement("Processor")) {
+        const std::string* type = procNode->Attribute(std::string("type"));
+        if (!type || *type != "VolumeSource")
+            continue;
+
+        // it's a VolumeSource => extract VolumeHandleProperty node
+        TiXmlElement* propertiesNode = procNode->FirstChildElement("Properties");
+        if (!propertiesNode)
+            continue;
+        TiXmlElement* handlePropNode = propertiesNode->FirstChildElement("Property");
+        if (!handlePropNode)
+            continue;
+        const std::string* propName = handlePropNode->Attribute(std::string("name"));
+        if (!propName || *propName != "volumeHandle")
+            continue;
+
+        // convert VolumeHandleProperty to VolumeURLProperty
+        handlePropNode->SetAttribute("name", "volumeURL");
+
+        // retrieve Volume reference
+        TiXmlElement* valueNode = handlePropNode->FirstChildElement("value");
+        if (!valueNode)
+            continue;
+        const std::string* refID = valueNode->Attribute(std::string("ref"));
+        if (!refID)
+            continue;
+
+        // insert referenced URL into converted VolumeHandleProperty
+        if (refToUrl.find(*refID) == refToUrl.end())
+            LWARNINGC("voreen.NetworkConverter11to12", "convertVolumeContainer(): unknown refID: " << *refID);
+        else
+            handlePropNode->SetAttribute("url", refToUrl[*refID]);
+    }
+
+
+}
+//----------------------------------------------------------------------------
+
+void NetworkConverter12to13::convert(TiXmlElement* elem) {
+    changePropertyName(elem, "UnaryImageProcessor", "shader", "shader.program");
+    changePropertyName(elem, "BinaryImageProcessor", "shader", "shader.program");
 }
 
 } // namespace

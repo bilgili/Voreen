@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/rendertargetviewer.h"
 
@@ -63,7 +59,7 @@ namespace {
 #ifdef __APPLE__
     int fontSize = 11;
 #else
-#ifdef VRN_WITH_FONTRENDERING
+#ifdef VRN_MODULE_FONTRENDERING
     int fontSize = 12;
 #else
     int fontSize = 8;
@@ -76,35 +72,35 @@ namespace voreen {
 const std::string RenderTargetViewer::loggerCat_ = "voreen.RenderTargetViewer";
 
 RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
-    : QGLWidget(0, sharedContext),
-        NetworkEvaluator::ProcessWrapper(),
-        colorProgram_(0),
-        inversecolorProgram_(0),
-        evaluator_(0),
-        paintInfos_(true),
-        selected_(0),
-        fullscreen_(false),
-        mouseX_(0),
-        mouseY_(0),
-        dimX_(0),
-        dimY_(0),
-        scaledWidth_(0),
-        scaledHeight_(0),
-        initialized_(false),
-        currentDepthBuffer_(0),
-        zoomScale_(1),
-        zoomTranslateX_(0),
-        zoomTranslateY_(0),
-        zoomMouseX_(0),
-        zoomMouseY_(0),
-        zoomOffsetX_(0),
-        zoomOffsetY_(0),
-        freezeInfos_(false),
-        fbo_(0),
-        colorTex_(0),
-        fontTex_(0),
-        sharedContext_(sharedContext),
-        isSubWidget_(false)
+    : QGLWidget(0, sharedContext)
+    , NetworkEvaluator::ProcessWrapper()
+    , colorProgram_(0)
+    , inversecolorProgram_(0)
+    , evaluator_(0)
+    , paintInfos_(true)
+    , selected_(0)
+    , fullscreen_(false)
+    , mouseX_(0)
+    , mouseY_(0)
+    , dimX_(0)
+    , dimY_(0)
+    , scaledWidth_(0)
+    , scaledHeight_(0)
+    , initialized_(false)
+    , currentDepthBuffer_(0)
+    , zoomScale_(1)
+    , zoomTranslateX_(0)
+    , zoomTranslateY_(0)
+    , zoomMouseX_(0)
+    , zoomMouseY_(0)
+    , zoomOffsetX_(0)
+    , zoomOffsetY_(0)
+    , freezeInfos_(false)
+    , fbo_(0)
+    , colorTex_(0)
+    , fontTex_(0)
+    , sharedContext_(sharedContext)
+    , isSubWidget_(false)
 {
     mouseIsInside_ = underMouse();
     if(mouseIsInside_) {
@@ -201,7 +197,7 @@ RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
 
     setWindowTitle(tr("Render Target Viewer:"));
 
-#ifdef VRN_WITH_FONTRENDERING
+#ifdef VRN_MODULE_FONTRENDERING
     font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), fontSize, tgt::Font::TextureFont);
 #else
     font_ = QFont("Monospace", fontSize);
@@ -274,7 +270,7 @@ void RenderTargetViewer::updateSelected() {
     if (index >= renderPorts.size())
         selected_ = -1;
     else
-        selected_ = index;
+        selected_ = static_cast<int>(index);
 }
 
 void RenderTargetViewer::updateMousePosition(QMouseEvent* e) {
@@ -378,13 +374,13 @@ void RenderTargetViewer::mousePressEvent(QMouseEvent* e) {
         // release keyboard, must not interfere with global shortcuts
         releaseKeyboard();
 
-        if(currentAction == saveScreenshotACT_)
-            takeSnapshot(false);
-        if(currentAction == saveScreenshotWithOverlayACT_)
-            takeSnapshot(true);
-        if(currentAction == openInNewWindowACT_)
+        if (currentAction == saveScreenshotACT_)
+            takeScreenshot(false);
+        if (currentAction == saveScreenshotWithOverlayACT_)
+            takeScreenshot(true);
+        if (currentAction == openInNewWindowACT_)
             openSubWindow();
-        if(currentAction == showHelpACT_)
+        if (currentAction == showHelpACT_)
             showHelp();
 
         if (colorRGBAACT_->isChecked())
@@ -406,11 +402,11 @@ void RenderTargetViewer::mousePressEvent(QMouseEvent* e) {
             showType_[selected_] = V;
 
 
-        if(backgroundBlackACT_->isChecked())
+        if (backgroundBlackACT_->isChecked())
             showType_[selected_] |= BackgroundBlack;
-        if(backgroundWhiteACT_->isChecked())
+        if (backgroundWhiteACT_->isChecked())
             showType_[selected_] |= BackgroundWhite;
-        if(backgroundCheckerboardPatternACT_->isChecked())
+        if (backgroundCheckerboardPatternACT_->isChecked())
             showType_[selected_] |= CheckerboardPattern;
     }
 
@@ -543,26 +539,22 @@ QString RenderTargetViewer::internalTypeToString(GLint internalType) {
 }
 
 void RenderTargetViewer::initializeGL() {
-    glDisable(GL_DEPTH_TEST);
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    //glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
     glDisable(GL_BLEND);
     glEnable(GL_TEXTURE_2D);
 
     glViewport(0,0, width(), height());
-    std::string header = "";
-    if(!GpuCaps.isNpotSupported())
-        header += "#define VRN_TEXTURE_RECTANGLE\n";
-    else
-        header += "#define VRN_TEXTURE_2D\n";
+    std::string header = "#version 130\n";
 
-    colorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/color.frag", header, false);
-    inversecolorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/inversecolor.frag", header, false);
-    if (!colorProgram_ || !inversecolorProgram_) {
-        LERROR("Could not compile shaders");
+    try {
+        colorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/color.frag", header, false);
+        inversecolorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/inversecolor.frag", header, false);
     }
-
-    if (!GpuCaps.isNpotSupported() && !GpuCaps.areTextureRectanglesSupported()) {
-        LWARNING("Neither non-power-of-two textures nor texture rectangles seem to be supported!");
+    catch(tgt::Exception& e) {
+        LERROR(e.what());
     }
 
     if (!fbo_)
@@ -570,20 +562,23 @@ void RenderTargetViewer::initializeGL() {
 
     if (!fbo_) {
         LERROR("Failed to initialize framebuffer object!");
+        glPopAttrib();
         return;
     }
 
-    bool textureRectangles = !GpuCaps.isNpotSupported() && GpuCaps.areTextureRectanglesSupported();
-
     tgt::ivec3 size(width(), height(), 1);
 
-    colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16, GL_FLOAT, Texture::LINEAR, textureRectangles);
+    //colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16F_ARB, GL_FLOAT, Texture::LINEAR);
+    //colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA32F_ARB, GL_FLOAT, Texture::LINEAR);
+    colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA16, GL_UNSIGNED_SHORT, Texture::LINEAR);
     colorTex_->uploadTexture();
     colorTex_->setWrapping(tgt::Texture::CLAMP_TO_EDGE);
 
-    fontTex_ = new Texture(0, size, GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT, Texture::LINEAR, textureRectangles);
+    fontTex_ = new Texture(0, size, GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT, Texture::LINEAR);
     fontTex_->uploadTexture();
     fontTex_->setWrapping(tgt::Texture::CLAMP_TO_EDGE);
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::deinit() {
@@ -667,8 +662,9 @@ void RenderTargetViewer::paintGL() {
     }
 
     // update layout dimensions
-    dimX_ = dimY_ = (int)ceil(sqrt((float)renderPorts.size()));
-    //dimY_ -= ((dimX_ * (dimY_ - 1) >= size) ? 1 : 0);
+    dimX_ = (int)ceil(sqrt((float)renderPorts.size()));
+    dimY_ = ceil((float)renderPorts.size() / dimX_);
+
     scaledWidth_ = width() / dimX_;
     scaledHeight_ = height() / dimY_;
 
@@ -680,15 +676,15 @@ void RenderTargetViewer::paintGL() {
         }
     }
     else {
-        for (size_t y = 0; y < dimY_; ++y) {
-            for (size_t x = 0; x < dimX_; ++x) {
-                size_t index = (dimX_*y)+x;
-                if (index >= renderPorts.size())
+        for (int y = 0; y < dimY_; ++y) {
+            for (int x = 0; x < dimX_; ++x) {
+                int index = (dimX_*y)+x;
+                if (index >= static_cast<int>(renderPorts.size()))
                     break;
 
                 glPushMatrix();
                 glTranslatef(scaledWidth_ * x, scaledHeight_ * y, 0.0);
-                paintPort(renderPorts[index], index);
+                paintPort(renderPorts[index], static_cast<int>(index));
                 glPopMatrix();
             }
         }
@@ -726,10 +722,11 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
     }
 
     // calculate scaling
-    float scaleX = 1.0f;
-    float scaleY = 1.0f;
-    tgt::ivec2 size = rt->getSize();
     if (keepAspectRatioACT_->isChecked()) {
+        float scaleX = 1.0f;
+        float scaleY = 1.0f;
+        tgt::ivec2 size = rt->getSize();
+
         float aspectRatioRT = (float)size.x / size.y;
         if(currentHeight_ * aspectRatioRT > currentWidth_) {
             scaleY = (currentWidth_ / aspectRatioRT) / currentHeight_;
@@ -745,6 +742,7 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
     glLoadIdentity();
 
     if (fullscreen_) {
+
         glScalef(zoomScale_, zoomScale_, 1.0);
         glTranslatef(zoomTranslateX_, zoomTranslateY_, 0);
 
@@ -755,21 +753,50 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
         fbo_->activate();
         fbo_->attachTexture(colorTex_);
         fbo_->isComplete();
-        GLfloat* depthBuffer = new GLfloat[1];
-        glReadPixels(mouseX_, mouseY_, 1, 1, GL_RED, GL_FLOAT, depthBuffer);
-        currentDepthBuffer_ = pow(depthBuffer[0], 50);
-        delete[] depthBuffer;
+        GLfloat depthBuffer;
+        glReadPixels(mouseX_, mouseY_, 1, 1, GL_RED, GL_FLOAT, &depthBuffer);
+        currentDepthBuffer_ = pow(depthBuffer, 50);
         fbo_->deactivate();
 
         // fetch texel value under cursor
         renderTargetToTexture(rt, Color|R|G|B|A|BackgroundBlack, colorTex_);
         fbo_->activate();
-        fbo_->attachTexture(colorTex_);
+        fbo_->attachTexture(rp->getColorTexture());
         fbo_->isComplete();
-        unsigned char* texelBuffer = new unsigned char [4 * (1+1) * (1+1) + 4];
-        glReadPixels(mouseX_, mouseY_, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, texelBuffer);
-        currentTexel_ = tgt::vec4(texelBuffer[0], texelBuffer[1], texelBuffer[2], texelBuffer[3]);
-        delete[] texelBuffer;
+
+        tgt::vec2 p = (tgt::vec2(mouseX_, mouseY_) / tgt::vec2(currentWidth_, currentHeight_));
+        p /= zoomScale_;
+        p -= tgt::vec2(zoomTranslateX_, zoomTranslateY_) / tgt::vec2(currentWidth_, currentHeight_);
+
+        if(p.x < 1.f && p.x > 0.f && p.y < 1.f && p.y > 0.f) {
+            tgt::ivec2 origPos = p * tgt::vec2(rp->getColorTexture()->getDimensions().xy());
+
+            // The following are the internal formats used in RenderTarget.  If other formats are added in that class, this will have to be extended.
+            if(rp->getColorTexture()->getInternalFormat() == GL_RGB) {
+                tgt::Vector3<GLubyte> val;
+                glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, val.elem);
+                currentTexel_ = tgt::vec4(tgt::vec3(val), 255.f);
+                currentValueScale_ = 255.f;
+            }
+            else if(rp->getColorTexture()->getInternalFormat() == GL_RGBA) {
+                tgt::Vector4<GLubyte> val;
+                glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, val.elem);
+                currentTexel_ = tgt::vec4(val);
+                currentValueScale_ = 255.f;
+            }
+            else if(rp->getColorTexture()->getInternalFormat() == GL_RGBA16) {
+                tgt::Vector4<GLushort> val;
+                glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT, val.elem);
+                currentTexel_ = tgt::vec4(val);
+                currentValueScale_ = 65535.f;
+            }
+            else {  // all float formats are treated equally
+                glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGBA, GL_FLOAT, currentTexel_.elem);
+                currentValueScale_ = 1.f;
+            }
+        }
+
+        fbo_->detachAll();
         fbo_->deactivate();
     }
 
@@ -892,12 +919,10 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
     glPushMatrix();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    int deltaY = 15; // Zeilenhöhe
     tgt::ivec3 size(currentWidth_, currentHeight_, 1);
 
-    stringstream ss;
-
     glLoadIdentity();
+    LGL_ERROR;
 
     glActiveTexture(GL_TEXTURE0);
     // resize texture if necessary
@@ -919,10 +944,12 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
     LGL_ERROR;
 
     if (showInfosACT_->isChecked()) {
+
         // render fonts
         QString colorStr = "";
         QString depthStr = "";
         QString sizeStr = tr("%1x%2").arg(rt->getSize().x).arg(rt->getSize().y);
+        int deltaY = 15; // Zeilenhöhe
 
         if (rt->getColorTexture())
             colorStr += internalTypeToString(rt->getColorTexture()->getInternalFormat());
@@ -947,45 +974,46 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
 
         if(mouseIsInside_ || freezeInfos_) {
             if(fullscreen_ && showInfosDetailsACT_->isChecked()){
-                int numLines = 7;
-                int offsetX = 3;
-                int offsetY = currentHeight_ - numLines * deltaY - 3;
-
                 int textureCoordX = static_cast<int>((float)(zoomOffsetX_ + (mouseX_ - zoomOffsetX_) / zoomScale_) * rt->getSize().x / currentWidth_);
                 int textureCoordY = static_cast<int>((float)(zoomOffsetY_ + (mouseY_ - zoomOffsetY_) / zoomScale_) * rt->getSize().y / currentHeight_);
 
                 if(textureCoordX < rt->getSize().x && textureCoordY < rt->getSize().y) {
+                    int numLines = 7;
+                    int offsetX = 3;
+                    int offsetY = currentHeight_ - numLines * deltaY - 3;
+
                     renderFont(offsetX, offsetY, tr("Y: %1").arg(textureCoordY));
 
                     offsetY += deltaY;
                     renderFont(offsetX, offsetY, tr("X: %1").arg(textureCoordX));
 
                     offsetY += deltaY;
-                    ss << "A: " << setfill('0') << setw(3) << (int)currentTexel_[3] << " " << setprecision(2) << fixed << (currentTexel_[3] / 255.0);
-                    renderFont(offsetX, offsetY, tr(ss.str().c_str()));
-
-                    tgt::vec3 hsv = rgbToHsv(tgt::vec3(currentTexel_[0] / 255.0, currentTexel_[1] / 255.0, currentTexel_[2] / 255.0));
-
-                    offsetY += deltaY;
-                    ss.str("");
-                    ss << "B: " << setfill('0') << setw(3) << (int)currentTexel_[2] << " " << setprecision(2) << fixed << (currentTexel_[2] / 255.0);
-                    ss << " " << "V: " << setfill('0') << setprecision(2) << fixed << hsv[2];
-                    renderFont(offsetX, offsetY, tr(ss.str().c_str()));
-
-                    offsetY += deltaY;
-                    ss.str("");
-                    ss << "G: " << setfill('0') << setw(3) << (int)currentTexel_[1] << " " << setprecision(2) << fixed << (currentTexel_[1] / 255.0);
-                    ss << " " << "S: " << setfill('0') << setprecision(2) << fixed << hsv[1];
-                    renderFont(offsetX, offsetY, tr(ss.str().c_str()));
-
-                    offsetY += deltaY;
-                    ss.str("");
-                    ss << "R: " << setfill('0') << setw(3) << (int)currentTexel_[0] << " " << setprecision(2) << fixed << (currentTexel_[0] / 255.0);
-                    ss << " " << "H: " << setfill('0') << setw(3) << (int)hsv[0];
-                    renderFont(offsetX, offsetY, tr(ss.str().c_str()));
-
-                    offsetY += deltaY;
                     renderFont(offsetX, offsetY, tr("D: %1").arg(currentDepthBuffer_));
+
+                    offsetY += deltaY;
+                    stringstream ssA;
+                    ssA << "A: " << currentTexel_[3] << " " << setprecision(2) << fixed << currentTexel_[3] / currentValueScale_;
+                    renderFont(offsetX, offsetY, tr(ssA.str().c_str()));
+
+                    tgt::vec3 hsv = rgbToHsv(currentTexel_.xyz() / currentValueScale_);
+
+                    offsetY += deltaY;
+                    stringstream ssB;
+                    ssB << "B: " << currentTexel_[2] << " " << setprecision(2) << fixed << currentTexel_[2] / currentValueScale_;
+                    ssB << " " << "V: " << fixed << hsv[2];
+                    renderFont(offsetX, offsetY, tr(ssB.str().c_str()));
+
+                    offsetY += deltaY;
+                    stringstream ssG;
+                    ssG << "G: " <<  currentTexel_[1] << " " << setprecision(2) << fixed << currentTexel_[1] / currentValueScale_;
+                    ssG << " " << "S: " << fixed << hsv[1];
+                    renderFont(offsetX, offsetY, tr(ssG.str().c_str()));
+
+                    offsetY += deltaY;
+                    stringstream ssR;
+                    ssR << "R: " << currentTexel_[0] << " " << setprecision(2) << fixed << currentTexel_[0] / currentValueScale_;
+                    ssR << " " << "H: " << setfill('0') << setw(3) << (int)hsv[0];
+                    renderFont(offsetX, offsetY, tr(ssR.str().c_str()));
                 }
             }
         }
@@ -1083,7 +1111,7 @@ void RenderTargetViewer::renderQuad() {
 }
 
 void RenderTargetViewer::renderFont(float x, float y, QString text) {
-#ifdef VRN_WITH_FONTRENDERING
+#ifdef VRN_MODULE_FONTRENDERING
     font_->render(tgt::vec3(x, y, 0.0), text.toStdString());
 #else
     renderText(x, y, 0.0, text, font_);
@@ -1091,7 +1119,7 @@ void RenderTargetViewer::renderFont(float x, float y, QString text) {
     LGL_ERROR;
 }
 
-void RenderTargetViewer::takeSnapshot(bool withOverlay) {
+void RenderTargetViewer::takeScreenshot(bool withOverlay) {
     QString path;
 
     //tgtAssert(initialized_, "Not initialized");
@@ -1099,16 +1127,18 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
 
     if (!fullscreen_) {
         // should not get here
-        QMessageBox::critical(this, tr("Error saving snapshot"), tr("Only supported in fullscreen."));
+        QMessageBox::critical(this, tr("Error saving screenshot"), tr("Only supported in fullscreen."));
         return;
     }
 
     std::vector<RenderPort*> renderPorts = collectRenderPorts();
+
     tgtAssert(selected_ >= 0 && selected_ < (int)renderPorts.size(), "Invalid render port index");
 
     QFileDialog filedialog(this);
+    filedialog.setWindowTitle(tr("Save Screenshot"));
+    filedialog.setDirectory(VoreenApplication::app()->getUserDataPath("screenshots").c_str());
     filedialog.setDefaultSuffix(tr("png"));
-    filedialog.setWindowTitle(tr("Save Snapshot"));
 
     QStringList filter;
     filter << tr("PNG image (*.png)");
@@ -1117,8 +1147,7 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
     filedialog.setAcceptMode(QFileDialog::AcceptSave);
 
     QList<QUrl> urls;
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getSnapshotPath().c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getDocumentsPath().c_str());
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath("screenshots").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     filedialog.setSidebarUrls(urls);
@@ -1127,7 +1156,7 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
     time_t currentTime = time(NULL);
     Tm = localtime(&currentTime);
     std::stringstream timestamp;
-    timestamp << "snapshot " << (Tm->tm_year+1900) << "-" << (Tm->tm_mon+1) << "-" << Tm->tm_mday << "-" << Tm->tm_hour << "-" << Tm->tm_min << "-" << Tm->tm_sec;
+    timestamp << "screenshot " << (Tm->tm_year+1900) << "-" << (Tm->tm_mon+1) << "-" << Tm->tm_mday << "-" << Tm->tm_hour << "-" << Tm->tm_min << "-" << Tm->tm_sec;
     timestamp << ".png";
     filedialog.selectFile(tr(timestamp.str().c_str()));
 
@@ -1140,14 +1169,14 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
     path = filedialog.directory().absolutePath();
 
     if (!fileList.at(0).endsWith(".jpg") && !fileList.at(0).endsWith(".png")) {
-        std::string text = "Snapshot could not be saved.\n";
+        std::string text = "Screenshot could not be saved.\n";
         int index = fileList[0].lastIndexOf(".");
         if ((index == -1) || (index+1 == fileList[0].size()))
             text += "No file extension specified.";
         else
             text += "Invalid file extension: " + fileList[0].right(fileList[0].size()-index-1).toStdString();
 
-        QMessageBox::critical(this, tr("Error saving snapshot"), tr(text.c_str()));
+        QMessageBox::critical(this, tr("Error saving screenshot"), tr(text.c_str()));
         return;
     }
 
@@ -1157,19 +1186,32 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
         try {
             if(withOverlay) {
                 if(!grabFrameBuffer(true).save(tr(fileList.at(0).toStdString().c_str())))
-                    throw VoreenException("No additional information available.");
+                    throw VoreenException("Could not grab framebuffer.");
             } else {
-                renderPorts[selected_]->saveToImage(fileList.at(0).toStdString());
+                // repaint the widget without overlay if necessary, then grab screenshot
+                bool showInfos = false;
+                if(showInfosACT_->isChecked()) {
+                    showInfos = true;
+                    showInfosACT_->setChecked(false);
+                    updateGL();
+                }
+
+                if(!grabFrameBuffer(true).save(tr(fileList.at(0).toStdString().c_str())))
+                    throw VoreenException("Could not grab framebuffer.");
+
+                if(showInfos)
+                    showInfosACT_->setChecked(true);
+
             }
         }
-        catch (VoreenException e) {
-            QString text = tr("Snapshot could not be saved:\n%1").arg(e.what());
-            QMessageBox::warning(this, tr("Error saving snapshot"), text);
+        catch (const VoreenException& e) {
+            QString text = tr("Screenshot could not be saved:\n%1").arg(e.what());
+            QMessageBox::warning(this, tr("Error saving screenshot"), text);
         }
     }
     catch (const std::exception& e) {
-        QString text = tr("Snapshot could not be saved:\n%1").arg(e.what());
-        QMessageBox::warning(this, tr("Error saving snapshot"), text);
+        QString text = tr("Screenshot could not be saved:\n%1").arg(e.what());
+        QMessageBox::warning(this, tr("Error saving screenshot"), text);
     }
     QApplication::restoreOverrideCursor();
 }

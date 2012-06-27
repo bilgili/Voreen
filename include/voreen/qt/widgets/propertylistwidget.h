@@ -1,37 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_PROPERTYLISTWIDGET_H
 #define VRN_PROPERTYLISTWIDGET_H
 
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/qt/voreenqtapi.h"
 
 #include <map>
 #include <QScrollArea>
@@ -41,15 +38,14 @@
 namespace voreen {
 
 class ProcessorPropertiesWidget;
-class VolumeContainer;
 
 /**
  * This class displays a list of ProcessorPropertiesWidgets representing the processors' properties in a network.
  *
  * PropertyListWidget objects register themselves as observers at the assigned ProcessorNetwork.
  */
-class PropertyListWidget : public QScrollArea, public ProcessorNetworkObserver {
-    Q_OBJECT
+class VRN_QT_API PropertyListWidget : public QScrollArea, public ProcessorNetworkObserver {
+Q_OBJECT
 public:
     /**
      * Determines the widget's GUI mode.
@@ -122,12 +118,6 @@ public slots:
     void setProcessorNetwork(ProcessorNetwork* network);
 
     /**
-     * Assigns the volume container that is to be propagated to the
-     * VolumeSource processors.
-     */
-    void setVolumeContainer(VolumeContainer* volumeContainer);
-
-    /**
      * This method is called by the NetworkEditor when a processor is selected or unselected.
      * It will unfold the header widget of the selected processors.
      *
@@ -183,7 +173,6 @@ protected:
     void updateState();
 
     ProcessorNetwork* processorNetwork_;
-    VolumeContainer* volumeContainer_;
 
     /// mapping from processors to the property widgets
     std::map<const Processor*, ProcessorPropertiesWidget*> processorWidgetMap_;

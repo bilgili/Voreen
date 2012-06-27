@@ -1,35 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "rootgraphicsitem.h"
 
-#include "voreen/modules/base/processors/utility/scale.h"
+#include "modules/base/processors/utility/scale.h"
 #include "voreen/core/ports/coprocessorport.h"
 #include "voreen/core/ports/renderport.h"
 #include "aggregationgraphicsitem.h"
@@ -52,6 +48,8 @@ namespace {
     const QColor selectedColor = Qt::red;
     const QColor highlightColor = Qt::blue;
     const QColor shadowColor = Qt::black;
+
+    const qreal minimumDistanceToStartDrawingArrow = 10.0;
 }
 
 namespace voreen {
@@ -115,6 +113,9 @@ void RootGraphicsItem::deleteChildItems() {
 }
 
 void RootGraphicsItem::layoutChildItems() {
+    if (!networkEditor_ || !networkEditor_->updatesEnabled())
+        return;
+
     // ports should be distributed evenly across the side of the item
 
     // regular inports
@@ -237,6 +238,9 @@ void RootGraphicsItem::removePropertyGraphicsItem(PropertyGraphicsItem* item) {
 }
 
 void RootGraphicsItem::togglePropertyList() {
+    if (!networkEditor_ || !networkEditor_->updatesEnabled())
+        return;
+
     prepareGeometryChange();
     if (propertyListItem_.isVisible())
         propertyListItem_.setVisible(false);
@@ -416,7 +420,11 @@ void RootGraphicsItem::nameChanged() {
         scene()->invalidate();
 }
 
-void RootGraphicsItem::portsAndPropertiesChanged() {
+void RootGraphicsItem::propertiesChanged() {
+    portsChanged(); //could probably be optimized
+}
+
+void RootGraphicsItem::portsChanged() {
     if (!networkEditor_ || !networkEditor_->getProcessorNetwork())
         return;
 
@@ -530,9 +538,14 @@ qreal RootGraphicsItem::getMinimumHeightForPorts() const {
 // event methods
 // ------------------------------------------------------------------------------------------------
 
-void RootGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+void RootGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* e) {
+    clickPosition_ = e->pos();
+    QGraphicsItem::mousePressEvent(e);
+}
+
+void RootGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* e) {
     if (currentLayer() == NetworkEditorLayerLinking) {
-        if (event->modifiers() == Qt::ControlModifier) {
+        if (e->modifiers() == Qt::ControlModifier) {
             setFlag(ItemIsMovable, true);
 
             delete currentLinkArrow_;
@@ -542,25 +555,41 @@ void RootGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
         }
         else {
             setFlag(ItemIsMovable, false);
-            if (currentLinkArrow_ == 0) {
-                currentLinkArrow_ = new LinkArrowGraphicsItemStub(this);
-                scene()->addItem(currentLinkArrow_);
-                emit startedArrow();
-            }
+            const QLineF line(e->pos(), clickPosition_);
+            if (currentLinkArrow_ || (line.length() > minimumDistanceToStartDrawingArrow)) {
+                if (currentLinkArrow_ == 0) {
+                    currentLinkArrow_ = new LinkArrowGraphicsItemStub(this);
+                    scene()->addItem(currentLinkArrow_);
+                    emit startedArrow();
+                }
 
-            QPointF pos = mapToScene(event->pos());
-            currentLinkArrow_->adjust(pos);
+                QPointF pos = mapToScene(e->pos());
+                currentLinkArrow_->adjust(pos);
+            }
         }
     }
 
-    networkEditor_->adjustLinkArrowGraphicsItems();
-    QGraphicsItem::mouseMoveEvent(event);
+    if (currentLinkArrow_)
+        networkEditor_->adjustLinkArrowGraphicsItems();
+
+    scene()->update();
+    QGraphicsItem::mouseMoveEvent(e);
+    networkEditor_->updateCurrentBundles();
 }
 
-void RootGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+void RootGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e) {
     if (currentLayer() == NetworkEditorLayerLinking) {
         if (currentLinkArrow_) {
-            QGraphicsItem* item = scene()->itemAt(event->scenePos());
+            QGraphicsItem* item = 0;
+            QList<QGraphicsItem*> items = scene()->items(e->scenePos());
+            foreach (QGraphicsItem* i, items) {
+                if (i->type() != LinkArrowGraphicsItemStub::Type) {
+                    item = i;
+                    break;
+                }
+            }
+
+            //QGraphicsItem* item = scene()->item(event->scenePos());
 
             if (item) {
                 if ((item->type() == OpenPropertyListButton::Type) && (item->parentItem() != this))
@@ -596,7 +625,7 @@ void RootGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     //scene()->setSceneRect(scene()->sceneRect().adjusted(-1,-1,2,2));
     //scene()->setSceneRect(tmpRect);
 
-    QGraphicsItem::mouseReleaseEvent(event);
+    QGraphicsItem::mouseReleaseEvent(e);
 }
 
 // ------------------------------------------------------------------------------------------------

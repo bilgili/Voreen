@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_ROOTGRAPHICSITEM_H
 #define VRN_ROOTGRAPHICSITEM_H
@@ -54,7 +50,7 @@ class PropertyGraphicsItem;
  * which contains a \sa Processor. Currently this holds for \sa ProcessorGraphicsItem
  * with only one contained Processor and \sa AggregationGraphicsItem which may hold
  * multiple AggregationGraphicsItems and ProcessorGraphicsItems. Both cases should behave
- * similiarly and therefore most of the code is combined here.</br>
+ * similiarly and therefore most of the code is combined here.
  * The RootGraphicsItem has only ownership over the \sa PortGraphicsItems, not the contained
  * Processors because those are owned by the \sa ProcessorNetwork.
  */
@@ -152,7 +148,7 @@ public:
     void removePropertyGraphicsItem(PropertyGraphicsItem* item);
 
     /**
-     * Adds a aggregation prefix to the name of the form:  [prefix] - "old name"</br>
+     * Adds a aggregation prefix to the name of the form:  [prefix] - "old name"
      * Will emit the \sa renameFinished() signal afterwards.
      * \param prefix The prefix which should be added
      */
@@ -310,7 +306,8 @@ public slots:
      */
     virtual void nameChanged();
 
-    virtual void portsAndPropertiesChanged();
+    virtual void propertiesChanged();
+    virtual void portsChanged();
 
     /**
      * This slot should be called if the renaming is finished and subclasses need to save their
@@ -326,8 +323,9 @@ public slots:
      */
     void togglePropertyList();
 
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+    void mousePressEvent(QGraphicsSceneMouseEvent* e);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* e);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* e);
 
 signals:
     /**
@@ -422,7 +420,7 @@ protected:
     /// The TextGraphicsItem which shows (and allows editing of) the name of the item
     TextGraphicsItem textItem_;
 
-    /// In this list all \s PropertyGraphicsItem are collected and layouted
+    /// In this list all \sa PropertyGraphicsItem are collected and layouted
     PropertyListGraphicsItem propertyListItem_;
 
     /// This button toggles the visibility of the \sa PropertyListGraphicsItem
@@ -443,6 +441,8 @@ protected:
 
     /// The opacity with which this RootGraphicsItem will draw itself
     qreal opacity_;
+
+    QPointF clickPosition_;
 };
 
 

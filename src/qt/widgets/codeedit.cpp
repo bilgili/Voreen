@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/codeedit.h"
 
@@ -33,15 +29,15 @@
 #include <QTextBlock>
 
 CodeEdit::CodeEdit(QWidget* parent) : QPlainTextEdit(parent) {
-    statusArea = new StatusArea(this);
-    QFont font;
-    font.setFamily("Courier New");
-    font.setStyleHint(QFont::TypeWriter);
-    font.insertSubstitution("Courier New", "monospace");
-    font.setFixedPitch(true);
-    font.setPointSize(9);
-    setFont(font);
-    QFontMetrics metrics(font);
+    statusArea_ = new StatusArea(this);
+
+    font_.setFamily("Courier New");
+    font_.setStyleHint(QFont::TypeWriter);
+    font_.insertSubstitution("Courier New", "monospace");
+    font_.setFixedPitch(true);
+    font_.setPointSize(9);
+    setFont(font_);
+    QFontMetrics metrics(font_);
     setTabStopWidth(metrics.width(" ")*4);
 
     connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateStatusAreaWidth(int)));
@@ -50,6 +46,10 @@ CodeEdit::CodeEdit(QWidget* parent) : QPlainTextEdit(parent) {
 
     updateStatusAreaWidth(0);
     highlightCurrentLine();
+}
+
+CodeEdit::~CodeEdit() {
+    delete statusArea_;
 }
 
 int CodeEdit::statusAreaWidth() {
@@ -71,19 +71,26 @@ void CodeEdit::updateStatusAreaWidth(int /* newBlockCount */) {
 
 void CodeEdit::updateStatusArea(const QRect& rect, int dy) {
     if (dy)
-        statusArea->scroll(0, dy);
+        statusArea_->scroll(0, dy);
     else
-        statusArea->update(0, rect.y(), statusArea->width(), rect.height());
+        statusArea_->update(0, rect.y(), statusArea_->width(), rect.height());
 
     if (rect.contains(viewport()->rect()))
         updateStatusAreaWidth(0);
+}
+
+void CodeEdit::updateFontSize(unsigned char s) {
+    font_.setPointSize(s);
+    setFont(font_);
+    QFontMetrics metrics(font_);
+    setTabStopWidth(metrics.width(" ")*4);
 }
 
 void CodeEdit::resizeEvent(QResizeEvent* e) {
     QPlainTextEdit::resizeEvent(e);
 
     QRect cr = contentsRect();
-    statusArea->setGeometry(QRect(cr.left(), cr.top(), statusAreaWidth(), cr.height()));
+    statusArea_->setGeometry(QRect(cr.left(), cr.top(), statusAreaWidth(), cr.height()));
 }
 
 void CodeEdit::highlightCurrentLine() {
@@ -105,7 +112,7 @@ void CodeEdit::highlightCurrentLine() {
 }
 
 void CodeEdit::statusAreaPaintEvent(QPaintEvent* event) {
-    QPainter painter(statusArea);
+    QPainter painter(statusArea_);
     painter.fillRect(event->rect(), Qt::lightGray);
 
     QTextBlock block = firstVisibleBlock();
@@ -117,7 +124,7 @@ void CodeEdit::statusAreaPaintEvent(QPaintEvent* event) {
         if (block.isVisible() && bottom >= event->rect().top()) {
             QString number = QString::number(blockNumber + 1);
             painter.setPen(Qt::black);
-            painter.drawText(0, top, statusArea->width(), fontMetrics().height(),
+            painter.drawText(0, top, statusArea_->width(), fontMetrics().height(),
                     Qt::AlignRight, number);
         }
 

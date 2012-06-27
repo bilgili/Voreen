@@ -1,37 +1,33 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/animation/interpolationfunction.h"
 #include "voreen/core/properties/property.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
-#include "voreen/core/properties/volumecollectionproperty.h"
+#include "voreen/core/properties/volumeurllistproperty.h"
 #include "voreen/core/animation/interpolation/basicintinterpolation.h"
 #include "voreen/core/animation/interpolation/basicfloatinterpolation.h"
 #include "voreen/core/animation/interpolation/camerainterpolationfunctions.h"
@@ -39,7 +35,7 @@
 #include "voreen/core/animation/interpolation/transfuncinterpolationfunctions.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/datastructures/transfunc/transfuncprimitive.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 
 #include "tgt/camera.h"
 #include "tgt/quaternion.h"
@@ -48,17 +44,17 @@ using tgt::Camera;
 
 namespace voreen {
 
-template <class T>
-InterpolationFunction<T>::InterpolationFunction() {
-}
+//template <class T>
+//InterpolationFunction<T>::InterpolationFunction() {
+//}
+//
+//template <class T>
+//InterpolationFunction<T>::~InterpolationFunction() {}
 
-template <class T>
-InterpolationFunction<T>::~InterpolationFunction() {}
-
-template <class T>
-std::string InterpolationFunction<T>::getName() const {
-    return getIdentifier() + ": " + getMode();
-}
+//template <class T>
+//std::string InterpolationFunction<T>::getName() const {
+//    return getIdentifier() + ": " + getMode();
+//}
 
 template <>
 std::string InterpolationFunction<int>::getMode() const {
@@ -146,16 +142,6 @@ std::string InterpolationFunction<TransFunc*>::getMode() const {
 }
 
 template <>
-std::string InterpolationFunction<VolumeCollection*>::getMode() const {
-    return "focus on startvalue";
-}
-
-template <>
-std::string InterpolationFunction<VolumeHandle*>::getMode() const {
-    return "focus on startvalue";
-}
-
-template <>
 std::string InterpolationFunction<int>::getIdentifier() const {
     return "default linear";
 }
@@ -240,20 +226,10 @@ std::string InterpolationFunction<TransFunc*>::getIdentifier() const {
     return "default linear (keywise if possible)";
 }
 
-template <>
-std::string InterpolationFunction<VolumeCollection*>::getIdentifier() const {
-    return "default boolean";
-}
-
-template <>
-std::string InterpolationFunction<VolumeHandle*>::getIdentifier() const {
-    return "default boolean";
-}
-
-template <class T>
-InterpolationFunction<T>* InterpolationFunction<T>::clone() const{
-    return new InterpolationFunction<T>();
-}
+//template <class T>
+//InterpolationFunction<T>* InterpolationFunction<T>::clone() const{
+//    return new InterpolationFunction<T>();
+//}
 
 template <>
 int InterpolationFunction<int>::interpolate(int startvalue, int endvalue, float time) const {
@@ -362,7 +338,9 @@ Camera InterpolationFunction<Camera>::interpolate(Camera startvalue, Camera endv
             tgt::vec3 upvec = normalize(intfunc2->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
 /*            tgt::vec3 direction = intfunc2->interpolate(startvalue->getDirection(), endvalue->getDirection(), time);
             return new CameraNode(posvec, focvec, upvec, direction); */
-            return Camera(posvec, focvec, upvec);
+            Camera cam(startvalue);
+            cam.positionCamera(posvec, focvec, upvec);
+            return cam;
 }
 
 template <>
@@ -390,13 +368,13 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
         return 0;
     }
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    TransFunc1DKeys* func1 = dynamic_cast<TransFunc1DKeys*>(startvalue);
+    TransFunc1DKeys* func2 = dynamic_cast<TransFunc1DKeys*>(endvalue);
     if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
-            TransFuncIntensity* func = new TransFuncIntensity();
+            TransFunc1DKeys* func = new TransFunc1DKeys();
 
             tgt::vec2 t1 = func1->getThresholds();
             tgt::vec2 t2 = func2->getThresholds();
@@ -471,73 +449,53 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
     return func;
 }
 
-template <>
-VolumeCollection* InterpolationFunction<VolumeCollection*>::interpolate(VolumeCollection* startvalue, VolumeCollection* endvalue, float time) const {
-    if (time < 1)
-        return startvalue;
-    else
-        return endvalue;
-}
+//template <class T>
+//void InterpolationFunction<T>::serialize(XmlSerializer& s) const {
+//    s.serialize("properties", this->getProperties());
+//}
+//
+//template <class T>
+//void InterpolationFunction<T>::deserialize(XmlDeserializer& s) {
+//    std::vector<Property*> props;
+//    s.deserialize("properties", props);
+//    for (size_t i = 0; i < props.size(); ++i)
+//        addProperty(props.at(i));
+//}
 
-template <>
-VolumeHandle* InterpolationFunction<VolumeHandle*>::interpolate(VolumeHandle* startvalue, VolumeHandle* endvalue, float time) const {
-    if (time < 1)
-        return startvalue;
-    else
-        return endvalue;
-}
-
-template <class T>
-void InterpolationFunction<T>::serialize(XmlSerializer& s) const {
-    s.serialize("properties", this->getProperties());
-}
-
-template <class T>
-void InterpolationFunction<T>::deserialize(XmlDeserializer& s) {
-    std::vector<Property*> props;
-    s.deserialize("properties", props);
-    for (size_t i = 0; i < props.size(); ++i)
-        addProperty(props.at(i));
-}
-
-template class InterpolationFunction<float>;
-template class InterpolationFunction<int>;
-template class InterpolationFunction<bool>;
-template class InterpolationFunction<tgt::ivec2>;
-template class InterpolationFunction<tgt::ivec3>;
-template class InterpolationFunction<tgt::ivec4>;
-template class InterpolationFunction<tgt::vec2>;
-template class InterpolationFunction<tgt::vec3>;
-template class InterpolationFunction<tgt::vec4>;
-template class InterpolationFunction<tgt::quat>;
-template class InterpolationFunction<tgt::mat2>;
-template class InterpolationFunction<tgt::mat3>;
-template class InterpolationFunction<tgt::mat4>;
-template class InterpolationFunction<tgt::Camera>;
-template class InterpolationFunction<std::string>;
-template class InterpolationFunction<ShaderSource>;
-template class InterpolationFunction<TransFunc*>;
-template class InterpolationFunction<VolumeCollection*>;
-template class InterpolationFunction<VolumeHandle*>;
-
-template class MultiPointInterpolationFunction<float>;
-template class MultiPointInterpolationFunction<int>;
-template class MultiPointInterpolationFunction<bool>;
-template class MultiPointInterpolationFunction<tgt::ivec2>;
-template class MultiPointInterpolationFunction<tgt::ivec3>;
-template class MultiPointInterpolationFunction<tgt::ivec4>;
-template class MultiPointInterpolationFunction<tgt::vec2>;
-template class MultiPointInterpolationFunction<tgt::vec3>;
-template class MultiPointInterpolationFunction<tgt::vec4>;
-template class MultiPointInterpolationFunction<tgt::quat>;
-template class MultiPointInterpolationFunction<tgt::mat2>;
-template class MultiPointInterpolationFunction<tgt::mat3>;
-template class MultiPointInterpolationFunction<tgt::mat4>;
-template class MultiPointInterpolationFunction<tgt::Camera>;
-template class MultiPointInterpolationFunction<std::string>;
-template class MultiPointInterpolationFunction<ShaderSource>;
-template class MultiPointInterpolationFunction<TransFunc*>;
-template class MultiPointInterpolationFunction<VolumeCollection*>;
-template class MultiPointInterpolationFunction<VolumeHandle*>;
+//template class InterpolationFunction<float>;
+//template class InterpolationFunction<int>;
+//template class InterpolationFunction<bool>;
+//template class InterpolationFunction<tgt::ivec2>;
+//template class InterpolationFunction<tgt::ivec3>;
+//template class InterpolationFunction<tgt::ivec4>;
+//template class InterpolationFunction<tgt::vec2>;
+//template class InterpolationFunction<tgt::vec3>;
+//template class InterpolationFunction<tgt::vec4>;
+//template class InterpolationFunction<tgt::quat>;
+//template class InterpolationFunction<tgt::mat2>;
+//template class InterpolationFunction<tgt::mat3>;
+//template class InterpolationFunction<tgt::mat4>;
+//template class InterpolationFunction<tgt::Camera>;
+//template class InterpolationFunction<std::string>;
+//template class InterpolationFunction<ShaderSource>;
+//template class InterpolationFunction<TransFunc*>;
+//
+//template class MultiPointInterpolationFunction<float>;
+//template class MultiPointInterpolationFunction<int>;
+//template class MultiPointInterpolationFunction<bool>;
+//template class MultiPointInterpolationFunction<tgt::ivec2>;
+//template class MultiPointInterpolationFunction<tgt::ivec3>;
+//template class MultiPointInterpolationFunction<tgt::ivec4>;
+//template class MultiPointInterpolationFunction<tgt::vec2>;
+//template class MultiPointInterpolationFunction<tgt::vec3>;
+//template class MultiPointInterpolationFunction<tgt::vec4>;
+//template class MultiPointInterpolationFunction<tgt::quat>;
+//template class MultiPointInterpolationFunction<tgt::mat2>;
+//template class MultiPointInterpolationFunction<tgt::mat3>;
+//template class MultiPointInterpolationFunction<tgt::mat4>;
+//template class MultiPointInterpolationFunction<tgt::Camera>;
+//template class MultiPointInterpolationFunction<std::string>;
+//template class MultiPointInterpolationFunction<ShaderSource>;
+//template class MultiPointInterpolationFunction<TransFunc*>;
 
 } // namespace voreen

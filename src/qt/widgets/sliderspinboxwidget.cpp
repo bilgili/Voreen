@@ -1,36 +1,32 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/sliderspinboxwidget.h"
 
-#include "tgt/math.h"
-
+#include <QDoubleSpinBox>
+#include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QSlider>
 #include <QSpinBox>
@@ -39,101 +35,92 @@ namespace voreen {
 
 SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent)
     : QWidget(parent)
-    , sliderTracking_(true)
-    , spinboxTracking_(false)
+    , isSliderTrackingEnabled_(true)
+    , isSpinboxTrackingEnabled_(false)
 {
-    setObjectName("SliderSpinBoxWidget");
-    resize(QSize(156, 86).expandedTo(minimumSizeHint()));
-    QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
-    sizePolicy.setHorizontalStretch(0);
-    sizePolicy.setVerticalStretch(0);
-    sizePolicy.setHeightForWidth(sizePolicy.hasHeightForWidth());
-    setSizePolicy(sizePolicy);
-    vboxLayout = new QVBoxLayout(this);
-    vboxLayout->setSpacing(6);
-    vboxLayout->setMargin(0);
-    vboxLayout->setObjectName("vboxLayout");
-    hboxLayout = new QHBoxLayout();
-    hboxLayout->setSpacing(6);
-    hboxLayout->setMargin(0);
-    hboxLayout->setObjectName("hboxLayout");
-    sliderSLD = new QSlider(this);
-    sliderSLD->setObjectName("sliderSLD");
-    sliderSLD->setOrientation(Qt::Horizontal);
-    sliderSLD->setTickPosition(QSlider::NoTicks);
-    sliderSLD->setTickInterval(5);
+    layout_ = new QHBoxLayout(this);
+    layout_->setSpacing(6);
+    layout_->setMargin(0);
+    slider_ = new QSlider(this);
+    slider_->setOrientation(Qt::Horizontal);
+    slider_->setTickPosition(QSlider::NoTicks);
+    slider_->setTickInterval(5);
 
-    hboxLayout->addWidget(sliderSLD);
+    layout_->addWidget(slider_);
+    spinbox_ = new QSpinBox(this);
+    layout_->addWidget(spinbox_);
 
-    spinBoxSPB = new QSpinBox(this);
-    spinBoxSPB->setObjectName("spinBoxSPB");
-
-    hboxLayout->addWidget(spinBoxSPB);
-    vboxLayout->addLayout(hboxLayout);
-
-    setWindowTitle("SliderSpinBoxWidget");
 
     // signals and slots connections
-    connect( sliderSLD, SIGNAL( valueChanged(int) ), this, SLOT( setValue(int) ) );
-    connect( sliderSLD, SIGNAL( sliderPressed() ), this, SLOT( sliderPressed() ) );
-    connect( sliderSLD, SIGNAL( sliderReleased() ), this, SLOT( sliderReleased() ) );
-    connect( spinBoxSPB, SIGNAL( valueChanged(int) ), this, SLOT( setValue(int) ) );
-    connect( spinBoxSPB, SIGNAL( editingFinished() ), this, SLOT( spinEditingFinished() ) );
+    connect(slider_, SIGNAL(valueChanged(int)), this, SLOT(setValue(int)));
+    connect(slider_, SIGNAL(sliderPressed()), this, SLOT(sliderPressed()));
+    connect(slider_, SIGNAL(sliderReleased()), this, SLOT(sliderReleased()));
+    connect(spinbox_, SIGNAL(valueChanged(int)), this, SLOT(setValue(int)));
+    connect(spinbox_, SIGNAL(editingFinished()), this, SLOT(spinEditingFinished()));
 
     value_ = getValue();
 
-    setSliderTracking(sliderTracking_);
-    setSpinboxTracking(spinboxTracking_);
+    setSliderTracking(isSliderTrackingEnabled_);
+    setSpinboxTracking(isSpinboxTrackingEnabled_);
 }
 
 void SliderSpinBoxWidget::setView(Property::View view) {
-    if(view == Property::SLIDER)
-        spinBoxSPB->hide();
-    else if(view == Property::SPINBOX)
-        sliderSLD->hide();
+    if (!(view & Property::SPINBOX))
+        spinbox_->hide();
+    if (!(view & Property::SLIDER))
+        slider_->hide();
 }
 
-QSize SliderSpinBoxWidget::sizeHint () const {
-    return QSize(320,22);
+void SliderSpinBoxWidget::setSingleStep(int step) {
+    spinbox_->setSingleStep(step);
+    slider_->setSingleStep(step);
 }
 
-void SliderSpinBoxWidget::setSingleStep( int step ) {
-    spinBoxSPB->setSingleStep(step);
+void SliderSpinBoxWidget::changeEvent(QEvent* e) {
+    if (e->type() == QEvent::EnabledChange) {
+        // this event will be fired _after_ the widget has been changed
+        if (!isEnabled()) {
+            spinbox_->setVisible(true);
+            slider_->setVisible(false);
+        }
+        else {
+            spinbox_->setVisible(true);
+            slider_->setVisible(true);
+        }
+    }
 }
-
 
 void SliderSpinBoxWidget::setValue(int value) {
-    if (value != value_ || sliderSLD->value() != value || spinBoxSPB->value() != value) {
+    if (value != value_ || slider_->value() != value || spinbox_->value() != value) {
         value_ = value;
-        sliderSLD->setValue(value_);
-        spinBoxSPB->setValue(value_);
-        if (sliderTracking_ || !sliderSLD->isSliderDown())
+        slider_->setValue(value_);
+        spinbox_->setValue(value_);
+        if (isSliderTrackingEnabled_ || !slider_->isSliderDown())
             emit valueChanged(value_);
     }
 }
 
-void SliderSpinBoxWidget::setMaxValue( int value ) {
-    sliderSLD->setMaximum(value);
-    spinBoxSPB->setMaximum(value);
-    spinBoxSPB->updateGeometry();
+void SliderSpinBoxWidget::setMaxValue(int value) {
+    slider_->setMaximum(value);
+    spinbox_->setMaximum(value);
+    spinbox_->updateGeometry();
 }
 
-
-void SliderSpinBoxWidget::setMinValue( int value ) {
-    sliderSLD->setMinimum(value);
-    spinBoxSPB->setMinimum(value);
+void SliderSpinBoxWidget::setMinValue(int value) {
+    slider_->setMinimum(value);
+    spinbox_->setMinimum(value);
 }
 
-int SliderSpinBoxWidget::getMinValue()const {
-    return sliderSLD->minimum();
+int SliderSpinBoxWidget::getMinValue() const {
+    return slider_->minimum();
 }
 
-int SliderSpinBoxWidget::getMaxValue()const {
-    return sliderSLD->maximum();
+int SliderSpinBoxWidget::getMaxValue() const {
+    return slider_->maximum();
 }
 
-int SliderSpinBoxWidget::getValue()const {
-    return sliderSLD->value();
+int SliderSpinBoxWidget::getValue() const {
+    return slider_->value();
 }
 
 void SliderSpinBoxWidget::sliderPressed() {
@@ -143,7 +130,7 @@ void SliderSpinBoxWidget::sliderPressed() {
 void SliderSpinBoxWidget::sliderReleased() {
     emit sliderPressedChanged(false);
     emit editingFinished();
-    if (!sliderTracking_)
+    if (!isSliderTrackingEnabled_)
         emit valueChanged(value_);
 }
 
@@ -151,150 +138,143 @@ void SliderSpinBoxWidget::spinEditingFinished() {
     emit editingFinished();
 }
 
-bool SliderSpinBoxWidget::isSliderDown()const {
-    return sliderSLD->isSliderDown();
+bool SliderSpinBoxWidget::isSliderDown() const {
+    return slider_->isSliderDown();
 }
 
 void SliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
     QWidget::setFocusPolicy(policy);
-    sliderSLD->setFocusPolicy(policy);
-    spinBoxSPB->setFocusPolicy(policy);
+    slider_->setFocusPolicy(policy);
+    spinbox_->setFocusPolicy(policy);
 }
 
 void SliderSpinBoxWidget::setSliderTracking(bool tracking) {
-    sliderTracking_ = tracking;
+    isSliderTrackingEnabled_ = tracking;
     // do not disable tracking of the slider, since we want
     // to keep the spinbox in sync anyway.
 }
 
 void SliderSpinBoxWidget::setSpinboxTracking(bool tracking) {
-    spinboxTracking_ = tracking;
-    spinBoxSPB->setKeyboardTracking(tracking);
+    isSpinboxTrackingEnabled_ = tracking;
+    spinbox_->setKeyboardTracking(tracking);
 }
 
 bool SliderSpinBoxWidget::hasSliderTracking() const {
-    return sliderTracking_;
+    return isSliderTrackingEnabled_;
 }
 
 bool SliderSpinBoxWidget::hasSpinboxTracking() const {
-    return spinboxTracking_;
+    return isSpinboxTrackingEnabled_;
 }
 
 // ---------------------------------------------------------------------------
 
-
 DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent )
     : QWidget(parent)
-    , sliderTracking_(true)
-    , spinboxTracking_(false)
+    , isSliderTrackingEnabled_(true)
+    , isSpinboxTrackingEnabled_(false)
 {
-    setObjectName("DoubleSliderSpinBoxWidget");
-    resize(QSize(156, 86).expandedTo(minimumSizeHint()));
-    QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
-    sizePolicy.setHorizontalStretch(0);
-    sizePolicy.setVerticalStretch(0);
-    sizePolicy.setHeightForWidth(sizePolicy.hasHeightForWidth());
-    setSizePolicy(sizePolicy);
-    vboxLayout = new QVBoxLayout(this);
-    vboxLayout->setSpacing(6);
-    vboxLayout->setMargin(0);
-    vboxLayout->setObjectName("vboxLayout");
-    hboxLayout = new QHBoxLayout();
-    hboxLayout->setSpacing(6);
-    hboxLayout->setMargin(0);
-    hboxLayout->setObjectName("hboxLayout");
-    sliderSLD = new QSlider(this);
-    sliderSLD->setObjectName("sliderSLD");
-    sliderSLD->setOrientation(Qt::Horizontal);
-    sliderSLD->setTickPosition(QSlider::NoTicks);
-    sliderSLD->setTickInterval(5);
-    hboxLayout->addWidget(sliderSLD);
+    layout_ = new QHBoxLayout(this);
+    layout_->setSpacing(6);
+    layout_->setMargin(0);
+    slider_ = new QSlider(this);
+    slider_->setOrientation(Qt::Horizontal);
+    slider_->setTickPosition(QSlider::NoTicks);
+    slider_->setTickInterval(5);
+    layout_->addWidget(slider_);
 
-    spinBoxSPB = new QDoubleSpinBox(this);
-    spinBoxSPB->setObjectName("spinBoxSPB");
+    spinbox_ = new QDoubleSpinBox(this);
 
-    hboxLayout->addWidget(spinBoxSPB);
-    vboxLayout->addLayout(hboxLayout);
-
-    setWindowTitle("DoubleSliderSpinBoxWidget");
+    layout_->addWidget(spinbox_);
 
     // signals and slots connections
-    connect( sliderSLD, SIGNAL( valueChanged(int) ), this, SLOT( sliderValueChanged(int) ) );
-    connect( sliderSLD, SIGNAL( sliderPressed() ), this, SLOT( sliderPressed() ) );
-    connect( sliderSLD, SIGNAL( sliderReleased() ), this, SLOT( sliderReleased() ) );
-    connect( spinBoxSPB, SIGNAL( valueChanged(double) ), this, SLOT( setValue(double) ) );
-    connect( spinBoxSPB, SIGNAL( editingFinished() ), this, SLOT( spinEditingFinished() ) );
+    connect(slider_, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
+    connect(slider_, SIGNAL(sliderPressed()), this, SLOT(sliderPressed()));
+    connect(slider_, SIGNAL(sliderReleased()), this, SLOT(sliderReleased()));
+    connect(spinbox_, SIGNAL(valueChanged(double)), this, SLOT(setValue(double)));
+    connect(spinbox_, SIGNAL(editingFinished()), this, SLOT(spinEditingFinished()));
 
     value_ = getValue();
     adjustSliderScale();
 
-    setSliderTracking(sliderTracking_);
-    setSpinboxTracking(spinboxTracking_);
+    setSliderTracking(isSliderTrackingEnabled_);
+    setSpinboxTracking(isSpinboxTrackingEnabled_);
 }
 
 void DoubleSliderSpinBoxWidget::setView(Property::View view) {
-    if (!(view & Property::SLIDER))
-        spinBoxSPB->hide();
     if (!(view & Property::SPINBOX))
-        sliderSLD->hide();
+        spinbox_->hide();
+    if (!(view & Property::SLIDER))
+        slider_->hide();
 }
 
-QSize DoubleSliderSpinBoxWidget::sizeHint () const {
-    return QSize(320,22);
+void DoubleSliderSpinBoxWidget::changeEvent(QEvent* e) {
+    if (e->type() == QEvent::EnabledChange) {
+        // this event will be fired _after_ the widget has been changed
+        if (!isEnabled()) {
+            spinbox_->setVisible(true);
+            slider_->setVisible(false);
+        }
+        else {
+            spinbox_->setVisible(true);
+            slider_->setVisible(true);
+        }
+    }
 }
+
 
 void DoubleSliderSpinBoxWidget::setValue(double value) {
     if (value != value_) {
         value_ = value;
-        spinBoxSPB->setValue(value_);
-        sliderSLD->blockSignals(true);
-        sliderSLD->setValue( static_cast<int>((spinBoxSPB->value() - spinBoxSPB->minimum()) /
-                                   (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum()) );
-        sliderSLD->blockSignals(false);
-        if (sliderTracking_ || !sliderSLD->isSliderDown())
+        spinbox_->setValue(value_);
+        slider_->blockSignals(true);
+        slider_->setValue( static_cast<int>((spinbox_->value() - spinbox_->minimum()) /
+                                   (spinbox_->maximum() - spinbox_->minimum()) * slider_->maximum()) );
+        slider_->blockSignals(false);
+        if (isSliderTrackingEnabled_ || !slider_->isSliderDown())
             emit valueChanged(value_);
     }
 }
 
 void DoubleSliderSpinBoxWidget::setMaxValue( double value ) {
-    spinBoxSPB->setMaximum(value);
-    spinBoxSPB->updateGeometry();
+    spinbox_->setMaximum(value);
+    spinbox_->updateGeometry();
     adjustSliderScale();
 }
 
 void DoubleSliderSpinBoxWidget::setMinValue( double value ) {
-    spinBoxSPB->setMinimum(value);
+    spinbox_->setMinimum(value);
     adjustSliderScale();
 }
 
 double DoubleSliderSpinBoxWidget::getMinValue() const {
-    return spinBoxSPB->minimum();
+    return spinbox_->minimum();
 }
 
 void DoubleSliderSpinBoxWidget::setSingleStep( double step ) {
-    spinBoxSPB->setSingleStep(step);
+    spinbox_->setSingleStep(step);
     adjustSliderScale();
 }
 
 void DoubleSliderSpinBoxWidget::setDecimals(int decimals) {
 
-    spinBoxSPB->setDecimals(decimals);
+    spinbox_->setDecimals(decimals);
 }
 
 double DoubleSliderSpinBoxWidget::getMaxValue() const {
-    return spinBoxSPB->maximum();
+    return spinbox_->maximum();
 }
 
 double DoubleSliderSpinBoxWidget::getValue() const {
-    return spinBoxSPB->value();
+    return spinbox_->value();
 }
 
 double DoubleSliderSpinBoxWidget::getSingleStep() const {
-    return spinBoxSPB->singleStep();
+    return spinbox_->singleStep();
 }
 
 int DoubleSliderSpinBoxWidget::getDecimals() const {
-    return spinBoxSPB->decimals();
+    return spinbox_->decimals();
 }
 
 void DoubleSliderSpinBoxWidget::sliderPressed() {
@@ -304,7 +284,7 @@ void DoubleSliderSpinBoxWidget::sliderPressed() {
 void DoubleSliderSpinBoxWidget::sliderReleased() {
     emit sliderPressedChanged(false);
     emit editingFinished();
-    if (!sliderTracking_)
+    if (!isSliderTrackingEnabled_)
         emit valueChanged(value_);
 }
 
@@ -313,47 +293,47 @@ void DoubleSliderSpinBoxWidget::spinEditingFinished() {
 }
 
 bool DoubleSliderSpinBoxWidget::isSliderDown() const {
-    return sliderSLD->isSliderDown();
+    return slider_->isSliderDown();
 }
 
 void DoubleSliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
     QWidget::setFocusPolicy(policy);
-    sliderSLD->setFocusPolicy(policy);
-    spinBoxSPB->setFocusPolicy(policy);
+    slider_->setFocusPolicy(policy);
+    spinbox_->setFocusPolicy(policy);
 }
 
 void DoubleSliderSpinBoxWidget::adjustSliderScale() {
-    double sliderScale = ( spinBoxSPB->maximum() - spinBoxSPB->minimum() ) / spinBoxSPB->singleStep();
-    sliderSLD->setMinimum(0);
-    sliderSLD->setMaximum(tgt::iround(sliderScale));
+    double sliderScale = ( spinbox_->maximum() - spinbox_->minimum() ) / spinbox_->singleStep();
+    slider_->setMinimum(0);
+    slider_->setMaximum(tgt::iround(sliderScale));
 
-    sliderSLD->blockSignals(true);
-    sliderSLD->setValue(static_cast<int>((spinBoxSPB->value() - spinBoxSPB->minimum()) /
-                              (spinBoxSPB->maximum() - spinBoxSPB->minimum()) * sliderSLD->maximum()));
-    sliderSLD->blockSignals(false);
+    slider_->blockSignals(true);
+    slider_->setValue(static_cast<int>((spinbox_->value() - spinbox_->minimum()) /
+                              (spinbox_->maximum() - spinbox_->minimum()) * slider_->maximum()));
+    slider_->blockSignals(false);
 }
 
 void DoubleSliderSpinBoxWidget::sliderValueChanged(int value) {
-    setValue( spinBoxSPB->minimum() + ((double)value / sliderSLD->maximum()) * (spinBoxSPB->maximum() - spinBoxSPB->minimum()) );
+    setValue(spinbox_->minimum() + ((double)value / slider_->maximum()) * (spinbox_->maximum() - spinbox_->minimum()));
 }
 
 void DoubleSliderSpinBoxWidget::setSliderTracking(bool tracking) {
-    sliderTracking_ = tracking;
+    isSliderTrackingEnabled_ = tracking;
     // do not disable tracking of the slider, since we want
     // to keep the spinbox in sync anyway.
 }
 
 void DoubleSliderSpinBoxWidget::setSpinboxTracking(bool tracking) {
-    spinboxTracking_ = tracking;
-    spinBoxSPB->setKeyboardTracking(tracking);
+    isSpinboxTrackingEnabled_ = tracking;
+    spinbox_->setKeyboardTracking(tracking);
 }
 
 bool DoubleSliderSpinBoxWidget::hasSliderTracking() const {
-    return sliderTracking_;
+    return isSliderTrackingEnabled_;
 }
 
 bool DoubleSliderSpinBoxWidget::hasSpinboxTracking() const {
-    return spinboxTracking_;
+    return isSpinboxTrackingEnabled_;
 }
 
 } // namespace voreen

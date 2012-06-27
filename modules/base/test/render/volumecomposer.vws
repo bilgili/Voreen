@@ -1,0 +1,89 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="VolumeComposer" ref="ref2" />
+                    </values>
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-476" y="-216" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeDecomposer" name="VolumeDecomposer" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-492" y="-118" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="endSlice" value="113" />
+                        <Property name="startSlice" value="0" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeComposer" name="VolumeComposer" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-482" y="-12" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="voxelSpacing">
+                            <value x="0.0156" y="0.0156" z="0.0156" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-467" y="90" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/walnut-composed.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volume.in">
+                        <Processor type="VolumeDecomposer" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="imagesequence.out">
+                        <Processor type="VolumeDecomposer" ref="ref1" />
+                    </Outport>
+                    <Inport name="imagesequence.in">
+                        <Processor type="VolumeComposer" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volume.out">
+                        <Processor type="VolumeComposer" ref="ref2" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref3" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

@@ -1,0 +1,64 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-478" y="-230" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeDecomposer" name="VolumeDecomposer" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-494" y="-125" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="endSlice" value="52" />
+                        <Property name="startSlice" value="40" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="ImageSequenceSave" name="ImageSequenceSave" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-496" y="-21" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="basename" value="walnut" />
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputDirectory" value="output" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volume.in">
+                        <Processor type="VolumeDecomposer" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="imagesequence.out">
+                        <Processor type="VolumeDecomposer" ref="ref1" />
+                    </Outport>
+                    <Inport name="imagesequence.input">
+                        <Processor type="ImageSequenceSave" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

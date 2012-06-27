@@ -1,3 +1,28 @@
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
+
 #ifndef TGT_TYPES_H
 #define TGT_TYPES_H
 
@@ -60,25 +85,29 @@
     TGT_UNUSED
 */
 
-#include "tgt/config.h"
-
 /**
  * This is needed for .dll or .so support respectively
  */
-
-#ifdef TGT_BUILD_DLL
-    #ifdef WIN32
-        #define TGT_API __declspec(dllexport)
-    #else //WIN32 - so it is UNIX -> I assume gcc
-        #define TGT_API __attribute__ ((externally_visible))
-    #endif //WIN32
-#else //TGT_BUILD_DLL
-    #ifdef WIN32
-        #define TGT_API __declspec(dllimport)
-    #else //WIN32 - so it is UNIX -> I assume gcc
-        #define TGT_API __attribute__ ((externally_visible))
-    #endif //WIN32
-#endif //TGT_BUILD_DLL
+#ifdef VRN_SHARED_LIBS
+    #ifdef TGT_BUILD_DLL
+        // building library -> export symbols
+        #ifdef WIN32
+            #define TGT_API __declspec(dllexport)
+        #else
+            #define TGT_API
+        #endif
+    #else
+        // including library -> import symbols
+        #ifdef WIN32
+            #define TGT_API __declspec(dllimport)
+        #else
+            #define TGT_API
+        #endif
+    #endif
+#else
+    // building/including static library -> do nothing
+    #define TGT_API
+#endif
 
 /**
  * With this macro you can get rid of annoying "unused parameter" warnings
@@ -90,9 +119,9 @@
     #define TGT_UNUSED
 #endif
 
-#ifdef _MSC_VER
-    #pragma warning( disable : 4100 )
-#endif
+//#ifdef _MSC_VER
+//    #pragma warning( disable : 4100 )
+//#endif
 
 
 // For size_t
@@ -105,12 +134,12 @@
 typedef unsigned long ulong;
 
 #if defined(__APPLE__) || (defined(WIN32) && defined(__GNUC__))
-	/* unsigned int type */
-	typedef unsigned int uint;
+    /* unsigned int type */
+    typedef unsigned int uint;
 #endif
 
-#ifdef _MSC_VER
-    // For nasty microsoft compiler
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+    // MSVC++ prior to Visual Studio 2010 does not provide stdint.h
     #define _USE_MATH_DEFINES
 
     #include <windows.h>
@@ -293,7 +322,7 @@ typedef unsigned long ulong;
 
     #endif /* __STDC_CONSTANT_MACROS */
 
-#else // So it must be UNIX
+#else // So it must be UNIX or VS2010 (or later)
 
     /*
         The ISO C99 standard specifies that in C++ implementations limit

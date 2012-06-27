@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2009 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_FONT_H
 #define TGT_FONT_H
@@ -30,7 +31,6 @@
 
 #ifdef TGT_HAS_FTGL
 #include <FTGL/ftgl.h>
-class FTFont;
 #endif
 
 namespace tgt {
@@ -41,7 +41,7 @@ namespace tgt {
  * By default a font size of 72 is set, but can be changed via the \sa setSize method.
  * If TGT_HAS_FTGL is not set, the methods do nothing but will be present anyway.
  */
-class Font {
+class TGT_API Font {
 public:
     enum FontType {
         NIL,
@@ -51,7 +51,7 @@ public:
         OutlineFont,
         PixmapFont,
         PolygonFont,
-        TextureFont    
+        TextureFont
     };
 
     enum TextAlignment {
@@ -75,7 +75,7 @@ public:
     Font(const std::string& fontName
         , int size = 72
         , FontType fontType = TextureFont
-        , float lineWidth = 4096.0f // this makes sure there are no unexpected line breaks 
+        , float lineWidth = 4096.0f // this makes sure there are no unexpected line breaks
                                     // where exactly one line is expected
         , TextAlignment textAlignment = Left
         , VerticalTextAlignment verticalTextAlignment = Top); // Top is compatible to previous one-line render
@@ -155,7 +155,7 @@ public:
     static TextAlignment getTextAlignment(const std::string& textAlignment);
 
     /**
-     * Returns the passed enum as string, which 
+     * Returns the passed enum as string, which
      * might be used for serialisation.
      */
     static std::string getTextAlignmentName(TextAlignment textAlignment);
@@ -171,7 +171,7 @@ public:
     static VerticalTextAlignment getVerticalTextAlignment(const std::string& verticalTextAlignment);
 
     /**
-     * Returns the passed enum as string, which 
+     * Returns the passed enum as string, which
      * might be used for serialisation.
      */
     static std::string getVerticalTextAlignmentName(VerticalTextAlignment verticalTextAlignment);
@@ -189,18 +189,18 @@ public:
     virtual void setVerticalTextAlignment(VerticalTextAlignment verticalTextAlignment);
 
     /**
-     * Renders the text 'text' to the position 'pos'. 
+     * Renders the text 'text' to the position 'pos'.
      * \sa pos The pen position of the first character
      * \sa text The text to be rendered
      */
-    virtual void render(const tgt::vec3& pos, const std::string& text);
+    virtual void render(const tgt::vec3& pos, const std::string& text) const;
 
     /**
      * Computes the bounding box for the the text 'text' beginning at position 'pos'.
      * \sa pos The pen position of the first character
      * \sa text The text for which the bounding box should be computed
      */
-    virtual tgt::Bounds getBounds(const tgt::vec3& pos, const std::string& text);
+    virtual tgt::Bounds getBounds(const tgt::vec3& pos, const std::string& text) const;
 
 protected:
 #ifdef TGT_HAS_FTGL
@@ -213,7 +213,7 @@ private:
      * Updates the font.
      */
     void update();
-    
+
     int fontSize_;
     std::string fontName_;
     FontType fontType_;

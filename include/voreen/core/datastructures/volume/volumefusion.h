@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_VOLUMEFUSION_H
 #define VRN_VOLUMEFUSION_H
@@ -46,9 +42,9 @@ namespace voreen {
  * All \a voxel methods have an additonal parameter which specifies the channel.
  */
 template<class T, size_t N>
-class VolumeFusion : public Volume {
+class VolumeFusion : public VolumeRAM {
 public:
-    typedef T* VoxelType; ///< So that Volume::getData\< VolumeFusion\<T, N> will return T**.
+    typedef T* VoxelType; ///< So that VolumeRAM::getData\< VolumeFusion\<T, N> will return T**.
 
     //
     // constructors
@@ -64,6 +60,11 @@ public:
 
     /// The \p data parameter must be a T**.
     virtual VolumeFusion<T, N>* clone(void* data) const throw (std::bad_alloc);
+
+    virtual VolumeFusion<T, N>* createNew(const tgt::svec3& dimensions, bool allocMem = false) const throw (std::bad_alloc);
+
+    virtual VolumeFusion<T, N>* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc);
+    virtual void setSubVolume(const VolumeRAM* vol, tgt::svec3 offset = tgt::svec3(0,0,0));
 
     //
     // getters and setters.
@@ -124,11 +125,11 @@ public:
         return volumes_[channel]->voxel(i);
     }
 
-    // getVoxelFloat and setVoxelFloat
-    virtual float getVoxelFloat(const tgt::ivec3& pos, size_t channel = 0) const;
-    virtual float getVoxelFloat(size_t x, size_t y, size_t z, size_t channel = 0) const;
-    virtual void setVoxelFloat(float value, const tgt::ivec3& pos, size_t channel = 0);
-    virtual void setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel = 0);
+    // getVoxelNormalized and setVoxelNormalized
+    virtual float getVoxelNormalized(const tgt::ivec3& pos, size_t channel = 0) const;
+    virtual float getVoxelNormalized(size_t x, size_t y, size_t z, size_t channel = 0) const;
+    virtual void setVoxelNormalized(float value, const tgt::ivec3& pos, size_t channel = 0);
+    virtual void setVoxelNormalized(float value, size_t x, size_t y, size_t z, size_t channel = 0);
 
     //
     // getters and setters
@@ -231,28 +232,67 @@ VolumeFusion<T, N>* VolumeFusion<T, N>::clone(void* data) const throw (std::bad_
     return new VolumeFusion<T, N>(volumes);
 }
 
+template<class T, size_t N>
+VolumeFusion<T, N>* VolumeFusion<T, N>::createNew(const tgt::svec3& dimensions, bool allocMem) const
+throw (std::bad_alloc)
+{
+    VolumeAtomic<T>* volumes[N];
+
+    // create new volumes
+    for (size_t i = 0; i < N; ++i) {
+        volumes[i] = volumes_[i]->createNew(dimensions, allocMem);
+    }
+
+    return new VolumeFusion<T, N>(volumes);
+}
+
+template<class T, size_t N>
+VolumeFusion<T, N>* VolumeFusion<T, N>::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const throw (std::bad_alloc) {
+    VolumeAtomic<T>* volumes[N];
+
+    try {
+        for (size_t i = 0; i < N; ++i) {
+                volumes[i] = volumes_[i]->getSubVolume(dimensions, offset);
+        }
+    }
+    catch (std::bad_alloc) {
+        throw; // throw it to the caller
+    }
+
+    return new VolumeFusion<T, N>(volumes);
+}
+
+template<class T, size_t N>
+void VolumeFusion<T, N>::setSubVolume(const VolumeRAM* vol, tgt::svec3 offset) {
+    const VolumeFusion<T, N>* vols = static_cast<const VolumeFusion<T, N>*>(vol);
+
+    for (size_t i = 0; i < N; ++i) {
+        volumes_[i]->setSubVolume(vols->getVolumeAtomic(i), offset);
+    }
+}
+
 //
-// getVoxelFloat and setVoxelFloat
+// getVoxelNormalized and setVoxelNormalized
 //
 
 template<class T, size_t N>
-float VolumeFusion<T, N>::getVoxelFloat(const tgt::ivec3& pos, size_t channel /*= 0*/) const {
-    return volumes_[channel]->getVoxelFloat(pos);
+float VolumeFusion<T, N>::getVoxelNormalized(const tgt::ivec3& pos, size_t channel /*= 0*/) const {
+    return volumes_[channel]->getVoxelNormalized(pos);
 }
 
 template<class T, size_t N>
-float VolumeFusion<T, N>::getVoxelFloat(size_t x, size_t y, size_t z, size_t channel /*= 0*/) const {
-    return volumes_[channel]->getVoxelFloat(x, y, z);
+float VolumeFusion<T, N>::getVoxelNormalized(size_t x, size_t y, size_t z, size_t channel /*= 0*/) const {
+    return volumes_[channel]->getVoxelNormalized(x, y, z);
 }
 
 template<class T, size_t N>
-void VolumeFusion<T, N>::setVoxelFloat(float value, const tgt::ivec3& pos, size_t channel /*= 0*/) {
-    volumes_[channel]->setVoxelFloat(value, pos);
+void VolumeFusion<T, N>::setVoxelNormalized(float value, const tgt::ivec3& pos, size_t channel /*= 0*/) {
+    volumes_[channel]->setVoxelNormalized(value, pos);
 }
 
 template<class T, size_t N>
-void VolumeFusion<T, N>::setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel /*= 0*/) {
-    volumes_[channel]->setVoxelFloat(value, x, y, z);
+void VolumeFusion<T, N>::setVoxelNormalized(float value, size_t x, size_t y, size_t z, size_t channel /*= 0*/) {
+    volumes_[channel]->setVoxelNormalized(value, x, y, z);
 }
 
 //
@@ -287,7 +327,7 @@ void* VolumeFusion<T, N>::getData() {
     if (result) {
         // fill the array with data pointers
         for (size_t i = 0; i < N; ++i)
-            result[i] = Volume::getData< VolumeAtomic<T> >(volumes_[i]);
+            result[i] = VolumeRAM::getData< VolumeAtomic<T> >(volumes_[i]);
     }
 
     return reinterpret_cast<void*>(result);

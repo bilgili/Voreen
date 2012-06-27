@@ -1,42 +1,46 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_CAMERAINTERACTIONHANDLER_H
 #define VRN_CAMERAINTERACTIONHANDLER_H
 
+#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include "voreen/core/interaction/interactionhandler.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
 #include "tgt/event/eventhandler.h"
 
 #include <bitset>
+
+namespace tgt {
+    class Timer;
+}
 
 namespace voreen {
 
@@ -55,7 +59,7 @@ class FirstPersonNavigation;
  * @see TrackballNavigation
  * @see FirstPersonNavigation
  */
-class CameraInteractionHandler : public InteractionHandler {
+class VRN_CORE_API CameraInteractionHandler : public InteractionHandler {
 
     friend class EventProperty<CameraInteractionHandler>;
 
@@ -100,6 +104,18 @@ public:
      */
     void setVisible(bool state);
 
+    /**
+     * Should the trackball center shift with the camera?
+     */
+    void adjustCenterShift();
+
+    /**
+     * After shifting, reset the center of the trackball to 0.
+     */
+    void resetTrackballCenter();
+
+    void adaptInteractionToScene(const MeshListGeometry& geometry);
+
 private:
 
     /// @see InteractionHandler::onEvent
@@ -126,6 +142,15 @@ private:
     // trackball <-> first-person navigation
     OptionProperty<NavigationMetaphor> navigationMetaphor_;
 
+    // trackball: move around world origin, scene center or shifted center?
+    StringOptionProperty shiftTrackballCenter_;
+
+    // if the scene changes in size, adapt camera?
+    StringOptionProperty adjustCamera_;
+
+    // trackball: reset center after shifting
+    ButtonProperty resetTrackballCenter_;
+
     // trackball properties
     EventProperty<CameraInteractionHandler>* rotateEvent_;
     EventProperty<CameraInteractionHandler>* zoomEvent_;
@@ -141,9 +166,7 @@ private:
     EventProperty<CameraInteractionHandler>* moveDownEvent_;
 
     // navigation objects
-    TrackballNavigation* rotateNavi_;
-    TrackballNavigation* zoomNavi_;
-    TrackballNavigation* shiftNavi_;
+    TrackballNavigation* tbNavi_;
     FirstPersonNavigation* fpNavi_;
 
     // Needed for FirstPersonNavigation for continuous movement
@@ -152,6 +175,9 @@ private:
 
     // Stores if a mousebutton (LEFT, MIDDLE, RIGHT) has been pressed but not released yet.
     std::bitset<3> pressedMouseButtons_;
+
+    // Stores the current entry-exit point mesh of the scene (if present) to adapt interaction to the scene size
+    MeshListGeometry currentSceneMesh_;
 };
 
 } // namespace

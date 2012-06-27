@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/properties/property.h"
@@ -36,6 +32,7 @@
 #include "tgt/textureunit.h"
 
 #include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/processors/processorwidget.h"
@@ -45,8 +42,7 @@
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
-#include "voreen/core/processors/processorfactory.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
+#include "voreen/core/io/progressbar.h"
 
 #include <sstream>
 
@@ -73,6 +69,7 @@ Processor::Processor()
     , interactionModeVisited_(false)
     , eventVisited_(false)
 {
+    //setDescriptions(); // not allowed
 }
 
 Processor::~Processor() {
@@ -83,82 +80,105 @@ Processor::~Processor() {
 }
 
 Processor* Processor::clone() const {
-    std::stringstream stream;
+    try {
+        std::stringstream stream;
 
-    // first serialize
-    XmlSerializer s;
-    s.registerFactory(ProcessorFactory::getInstance());
-    s.registerFactory(TransFuncFactory::getInstance());
-    s.serialize("this", this);
-    s.write(stream);
+        // first serialize
+        XmlSerializer s;
+        s.serialize("this", this);
+        s.write(stream);
 
-    // then deserialize again
-    XmlDeserializer d;
-    d.registerFactory(ProcessorFactory::getInstance());
-    d.registerFactory(TransFuncFactory::getInstance());
-    d.read(stream);
-    Processor* proc = 0;
-    d.deserialize("this", proc);
+        // then deserialize again
+        XmlDeserializer d;
+        d.read(stream);
+        Processor* proc = 0;
+        d.deserialize("this", proc);
 
-    return proc;
+        proc->setDescriptions();
+        return proc;
+    }
+    catch (std::exception& e) {
+        LERROR("Failed to clone processor '" << getName() << "': " << e.what());
+        return 0;
+    }
 }
 
-void Processor::initialize() throw (VoreenException) {
 
-    tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
+void Processor::initialize() throw (tgt::Exception) {
+    if(description_ == "")
+        setDescriptions();
+
+    if (!VoreenApplication::app()) {
+        LERROR("VoreenApplication not instantiated");
+        throw new VoreenException("VoreenApplication not instantiated");
+    }
 
     if (isInitialized()) {
         LWARNING("initialize(): '" << getName() << "' already initialized");
         return;
     }
 
-    // create and initialize processor widget
-    if (VoreenApplication::app()->getProcessorWidgetFactory()) {
-        processorWidget_ = VoreenApplication::app()->getProcessorWidgetFactory()->createWidget(this);
-        if (processorWidget_) {
-            processorWidget_->initialize();
+    bool glMode = VoreenApplication::app() && VoreenApplication::app()->isInitializedGL();
+    if (!glMode)
+        LDEBUG("initialize() not in OpenGL mode");
 
-            // inform the observers about the new widget
-            std::vector<ProcessorObserver*> observers = Observable<ProcessorObserver>::getObservers();
-            for (size_t i = 0; i < observers.size(); ++i)
-                observers[i]->processorWidgetCreated(this);
-        }
+    // create and initialize processor widget
+    processorWidget_ = VoreenApplication::app()->createProcessorWidget(this);
+    if (processorWidget_) {
+        processorWidget_->initialize();
+        if (glMode)
+            LGL_ERROR;
+        // inform the observers about the new widget
+        std::vector<ProcessorObserver*> observers = Observable<ProcessorObserver>::getObservers();
+        for (size_t i = 0; i < observers.size(); ++i)
+            observers[i]->processorWidgetCreated(this);
     }
+
 
     // initialize ports
     const std::vector<Port*>& ports = getPorts();
     for (size_t i=0; i < ports.size(); ++i) {
         if (!ports[i]->isInitialized())
             ports[i]->initialize();
+        if (glMode)
+            LGL_ERROR;
     }
 
     // initialize properties
     const std::vector<Property*>& properties = getProperties();
-    for (size_t i=0; i < properties.size(); ++i)
+    for (size_t i=0; i < properties.size(); ++i) {
         properties[i]->initialize();
-
-    initialized_ = true;
+        if (glMode)
+            LGL_ERROR;
+    }
 }
 
-void Processor::deinitialize() throw (VoreenException) {
+void Processor::deinitialize() throw (tgt::Exception) {
     if (!isInitialized()) {
         LWARNING("deinitialize(): '" << getName() << "' (" << getClassName() << ") not initialized");
         return;
     }
 
-    LGL_ERROR;
+    bool glMode = VoreenApplication::app() && VoreenApplication::app()->isInitializedGL();
+    if (!glMode)
+        LDEBUG("deinitialize() not in OpenGL mode");
+
+    if (glMode)
+        LGL_ERROR;
 
     // deinitialize ports
     const std::vector<Port*>& ports = getPorts();
     for (size_t i=0; i < ports.size(); ++i)
         ports[i]->deinitialize();
-    LGL_ERROR;
+    if (glMode)
+        LGL_ERROR;
 
     // deinitialize properties
     const std::vector<Property*>& properties = getProperties();
     for (size_t i=0; i < properties.size(); ++i)
         properties[i]->deinitialize();
-    LGL_ERROR;
+    if (glMode)
+        LGL_ERROR;
 
     // delete processor widget
     delete processorWidget_;
@@ -168,8 +188,6 @@ void Processor::deinitialize() throw (VoreenException) {
     std::vector<ProcessorObserver*> observers = Observable<ProcessorObserver>::getObservers();
     for (size_t i = 0; i < observers.size(); ++i)
         observers[i]->processorWidgetDeleted(this);
-
-    initialized_ = false;
 }
 
 void Processor::beforeProcess() {
@@ -274,10 +292,6 @@ bool Processor::isUtility() const {
     return false;
 }
 
-std::string Processor::getProcessorInfo() const {
-    return "No information available";
-}
-
 const std::vector<Port*>& Processor::getInports() const {
     return inports_;
 }
@@ -323,6 +337,14 @@ Port* Processor::getPort(const std::string& name) const {
     return 0;
 }
 
+const PerformanceRecord* Processor::getPerformanceRecord() const {
+    return &performanceRecord_;
+}
+
+void Processor::resetPerformanceRecord() {
+    performanceRecord_.deleteSamples();
+}
+
 void Processor::invalidate(int inv) {
     PropertyOwner::invalidate(inv);
 
@@ -335,19 +357,13 @@ void Processor::invalidate(int inv) {
     if (!invalidationVisited_) {
         invalidationVisited_ = true;
 
-        for (size_t i=0; i<outports_.size(); ++i)
-            outports_[i]->invalidate();
-
         for (size_t i=0; i<coProcessorOutports_.size(); ++i)
             coProcessorOutports_[i]->invalidate();
 
-        if (isEndProcessor()) {
-            tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
-            // triggers non-blocking network update
-            VoreenApplication::app()->scheduleNetworkProcessing();
-        }
-
         invalidationVisited_ = false;
+
+        tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
+        VoreenApplication::app()->scheduleNetworkProcessing();
     }
 }
 
@@ -483,6 +499,47 @@ MetaDataContainer& Processor::getMetaDataContainer() const {
     return metaDataContainer_;
 }
 
+std::string Processor::getCachePath() const {
+    return VoreenApplication::app()->getCachePath() + "/" + getClassName();
+}
+
+std::string Processor::getDescription() const {
+    if(description_ == "")
+        const_cast<Processor*>(this)->setDescriptions(); //make setDescriptions const?
+
+    return description_;
+}
+
+void Processor::setDescription(std::string desc) {
+    description_ = desc;
+}
+
+std::string Processor::getPropertyDescription(const std::string& propId) const {
+    if(description_ == "")
+        const_cast<Processor*>(this)->setDescriptions(); //make setDescriptions const?
+
+    const Property* p = getProperty(propId);
+    if(p)
+        return p->getDescription();
+    else {
+        LWARNING("No such property: " << propId);
+        return "";
+    }
+}
+
+std::string Processor::getPortDescription(const std::string& portId) const {
+    if(description_ == "")
+        const_cast<Processor*>(this)->setDescriptions(); //make setDescriptions const?
+
+    const Port* p = getPort(portId);
+    if(p)
+        return p->getDescription();
+    else {
+        LWARNING("No such port: " << portId);
+        return "";
+    }
+}
+
 void Processor::setProgressBar(ProgressBar* progressBar) {
     progressBar_ = progressBar;
 }
@@ -494,10 +551,6 @@ void Processor::setProgress(float progress) {
 
 ProcessorWidget* Processor::getProcessorWidget() const {
     return processorWidget_;
-}
-
-bool Processor::usesExpensiveComputation() const {
-    return false;
 }
 
 void Processor::addEventProperty(EventPropertyBase* prop) {
@@ -536,6 +589,9 @@ void Processor::onEvent(tgt::Event* e) {
     if (eventVisited_)
         return;
 
+    //if (e->isAccepted())
+        //return;
+
     eventVisited_ = true;
     e->ignore();
 
@@ -569,7 +625,7 @@ void Processor::deregisterWidget() {
     processorWidget_ = 0;
 }
 
-void Processor::initializePort(Port* port) throw (VoreenException) {
+void Processor::initializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (port->isInitialized()) {
         LWARNING("initializePort() port '" << getName() << "." << port->getName()
@@ -580,7 +636,7 @@ void Processor::initializePort(Port* port) throw (VoreenException) {
     port->initialize();
 }
 
-void Processor::deinitializePort(Port* port) throw (VoreenException) {
+void Processor::deinitializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (!port->isInitialized()) {
         LWARNING("deinitializePort() port '" << getName() << "." << port->getName()
@@ -589,6 +645,16 @@ void Processor::deinitializePort(Port* port) throw (VoreenException) {
     }
 
     port->deinitialize();
+}
+
+void Processor::notifyPortsChanged() const {
+    std::vector<ProcessorObserver*> procObservers = Observable<ProcessorObserver>::getObservers();
+    for (size_t i = 0; i < procObservers.size(); ++i)
+        procObservers[i]->portsChanged(this);
+}
+
+bool Processor::usesExpensiveComputation() const {
+    return false;
 }
 
 } // namespace voreen

@@ -1,0 +1,779 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <MetaData>
+                <MetaItem name="Zoom" type="ZoomMetaData">
+                    <transform.row0 x="0.7087056040763855" y="0" z="0" />
+                    <transform.row1 x="0" y="0.7087056040763855" z="0" />
+                    <transform.row2 x="-270.41128540039062" y="228.40931701660156" z="1" />
+                </MetaItem>
+                <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
+            </MetaData>
+            <Processors>
+                <Processor type="Canvas" name="Canvas Front" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-720" y="122" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="28" y="89" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref22">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/front.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-444" y="-465" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="MeshProxyGeometry" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-463" y="-361" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="95" />
+                        <Property name="bottomClippingPlane" value="0" />
+                        <Property name="frontClippingPlane" value="0" />
+                        <Property name="leftClippingPlane" value="127" />
+                        <Property name="resetClipPlanes" />
+                        <Property name="rightClippingPlane" value="0" />
+                        <Property name="topClippingPlane" value="113" />
+                        <Property name="useClipping" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-689" y="-69" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45" id="ref28">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.40870979" y="-2.93274689" z="-4.35653639" />
+                            <focus x="0.06413492" y="0.25111693" z="-0.19963163" />
+                            <upVector x="-0.09158415" y="-0.78549963" z="0.61204797" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas Back" id="ref10">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-593" y="122" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="44" y="128" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref23">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/back.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SingleScale" name="SingleScale" id="ref9">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-592" y="31" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="distributeEvents" value="true" />
+                        <Property name="scaling" value="keep-ratio-all" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints 2" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-341" y="-67" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.35993347" y="-1.03481305" z="-1.10235584" />
+                            <focus x="-0.21147715" y="-0.07631281" z="0.08783492" />
+                            <upVector x="-0.11764572" y="-0.7662102" z="0.63172889" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas InVolume Front" id="ref11">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-430" y="124" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="64" y="168" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref24">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/involume-front.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas InVolumeBack" id="ref13">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-252" y="124" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="84" y="211" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref25">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/involume-back.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SingleScale" name="SingleScale 2" id="ref12">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-228" y="35" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="distributeEvents" value="true" />
+                        <Property name="scaling" value="keep-ratio-all" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints 3" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="6" y="-68" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45" id="ref29">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.40870979" y="-2.93274689" z="-4.35653639" />
+                            <focus x="0.06413492" y="0.25111693" z="-0.19963163" />
+                            <upVector x="-0.09158415" y="-0.78549963" z="0.61204797" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="true" />
+                        <Property name="jitterStepLength" value="0.01" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas Jittered Front" id="ref14">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-44" y="124" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="107" y="256" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref26">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/jittered-front.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas Jittered Back" id="ref16">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="120" y="123" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="128" y="295" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref27">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/jittered-back.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SingleScale" name="SingleScale 3" id="ref15">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="141" y="35" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="distributeEvents" value="true" />
+                        <Property name="scaling" value="keep-ratio-all" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints 4" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="375" y="-58" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45" id="ref30">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.40870979" y="-2.93274689" z="-4.35653639" />
+                            <focus x="0.06413492" y="0.25111693" z="-0.19963163" />
+                            <upVector x="-0.09158415" y="-0.78549963" z="0.61204797" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.01" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="true" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas Float Front" id="ref17">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="321" y="123" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="151" y="340" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref33">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/float-front.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="Canvas" name="Canvas Float Back" id="ref19">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="483" y="124" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="178" y="382" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref34">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/float-back.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SingleScale" name="SingleScale 4" id="ref18">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="496" y="31" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="distributeEvents" value="true" />
+                        <Property name="scaling" value="keep-ratio-all" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints 5" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="133" y="-422" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45" id="ref32">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.40870979" y="-2.93274689" z="-4.35653639" />
+                            <focus x="0.06413492" y="0.25111693" z="-0.19963163" />
+                            <upVector x="-0.09158415" y="-0.78549963" z="0.61204797" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas Front Only" id="ref20">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="120" y="-317" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="202" y="425" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref36">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/front-only.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints 6" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="347" y="-419" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="900.17199707" fovy="45" id="ref31">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
+                            </MetaData>
+                            <position x="-0.40870979" y="-2.93274689" z="-4.35653639" />
+                            <focus x="0.06413492" y="0.25111693" z="-0.19963163" />
+                            <upVector x="-0.09158415" y="-0.78549963" z="0.61204797" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas Back Only" id="ref21">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="387" y="-313" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="225" y="470" width="400" height="400" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" id="ref35">
+                            <value x="400" y="400" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" value="output/back-only.png" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref8" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref2" />
+                    </Outport>
+                    <Inport name="image.inport">
+                        <Processor type="SingleScale" ref="ref9" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.outport">
+                        <Processor type="SingleScale" ref="ref9" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref10" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref11" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.inport">
+                        <Processor type="SingleScale" ref="ref12" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.outport">
+                        <Processor type="SingleScale" ref="ref12" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref13" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref4" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref14" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref4" />
+                    </Outport>
+                    <Inport name="image.inport">
+                        <Processor type="SingleScale" ref="ref15" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.outport">
+                        <Processor type="SingleScale" ref="ref15" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref16" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref17" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref5" />
+                    </Outport>
+                    <Inport name="image.inport">
+                        <Processor type="SingleScale" ref="ref18" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.outport">
+                        <Processor type="SingleScale" ref="ref18" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref19" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref6" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref20" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref7" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref21" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref22" />
+                    <DestinationProperty type="IntVec2Property" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref23" />
+                    <DestinationProperty type="IntVec2Property" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref23" />
+                    <DestinationProperty type="IntVec2Property" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref24" />
+                    <DestinationProperty type="IntVec2Property" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref24" />
+                    <DestinationProperty type="IntVec2Property" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref25" />
+                    <DestinationProperty type="IntVec2Property" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref25" />
+                    <DestinationProperty type="IntVec2Property" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref26" />
+                    <DestinationProperty type="IntVec2Property" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref26" />
+                    <DestinationProperty type="IntVec2Property" ref="ref27" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref27" />
+                    <DestinationProperty type="IntVec2Property" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref28" />
+                    <DestinationProperty type="CameraProperty" ref="ref29" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref29" />
+                    <DestinationProperty type="CameraProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref29" />
+                    <DestinationProperty type="CameraProperty" ref="ref30" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref30" />
+                    <DestinationProperty type="CameraProperty" ref="ref29" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref30" />
+                    <DestinationProperty type="CameraProperty" ref="ref31" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref31" />
+                    <DestinationProperty type="CameraProperty" ref="ref30" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref31" />
+                    <DestinationProperty type="CameraProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref32" />
+                    <DestinationProperty type="CameraProperty" ref="ref31" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref27" />
+                    <DestinationProperty type="IntVec2Property" ref="ref33" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref33" />
+                    <DestinationProperty type="IntVec2Property" ref="ref27" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref33" />
+                    <DestinationProperty type="IntVec2Property" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref34" />
+                    <DestinationProperty type="IntVec2Property" ref="ref33" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref34" />
+                    <DestinationProperty type="IntVec2Property" ref="ref35" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref35" />
+                    <DestinationProperty type="IntVec2Property" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref35" />
+                    <DestinationProperty type="IntVec2Property" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref36" />
+                    <DestinationProperty type="IntVec2Property" ref="ref35" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+            </PropertyLinks>
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

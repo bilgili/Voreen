@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
@@ -50,12 +46,12 @@ HistogramPainter::HistogramPainter(QWidget* parent, tgt::vec2 xRange, tgt::vec2 
 }
 
 HistogramPainter::~HistogramPainter() {
-    delete histogram_;
+    //delete histogram_;
     delete cache_;
 }
 
-void HistogramPainter::setHistogram(HistogramIntensity* histogram) {
-    delete histogram_;
+void HistogramPainter::setHistogram(VolumeHistogramIntensity* histogram) {
+    //delete histogram_;
     histogram_ = histogram;
     delete cache_;
     cache_ = 0;
@@ -95,91 +91,74 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
             int histogramWidth = static_cast<int>(histogram_->getBucketCount());
             tgt::vec2 p;
 
-            QPointF* points = new QPointF[histogramWidth + 2];
+            // Qt can't handle polygons that have more than 65536 points
+            // so we have to split the polygon
+            int maxSize = 65536; //max size of polygon
+            std::vector<QPointF*> points;
+            int vi = 0; //iterator in the points vector
+            points.push_back(new QPointF[maxSize]);
             int count = 0;
 
             for (int x=0; x < histogramWidth; ++x) {
                 float xpos = static_cast<float>(x) / histogramWidth;
+                xpos = histogram_->getHistogram().getMinValue() + (histogram_->getHistogram().getMaxValue() - histogram_->getHistogram().getMinValue()) * xpos;
                 // Do some simple clipping here, as the automatic clipping of drawPolygon()
                 // gets very slow if lots of polygons have to be clipped away, e.g. when
                 // zooming to small part of the histogram.
                 if (xpos >= xRange_[0] && xpos <= xRange_[1]) {
+                    //open new list, if old one is full
+                    if( count == maxSize-2 ){
+                        count = 0;
+                        points.push_back(new QPointF[maxSize]);
+                        vi++;
+                        //copy last point to connect two polygons
+                        points[vi][count].rx() = p.x;
+                        points[vi][count].ry() = p.y;
+                        count++;
+                    }
                     float value = histogram_->getLogNormalized(x);
                     p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
 
                     // optimization: if the y-coord has not changed from the two last points
                     // then just update the last point's x-coord to the current one
-                    if( (count >= 2 ) && (points[count - 2].ry() == p.y) && (points[count - 1].ry() == p.y) && (count >= 2) ){
-                        points[count - 1].rx() = p.x;
+                    if( (count >= 2 ) && (points[vi][count - 2].ry() == p.y) && (points[vi][count - 1].ry() == p.y) && (count >= 2) ){
+                        points[vi][count - 1].rx() = p.x;
                     } else {
-                        points[count].rx() = p.x;
-                        points[count].ry() = p.y;
+                        points[vi][count].rx() = p.x;
+                        points[vi][count].ry() = p.y;
                         count++;
                     }
                 }
             }
 
-            // Qt can't handle polygons that have more than 65536 points
-            // so we have to split the polygon
-            bool needSplit = false;
-            if (count > 65536 - 2) { // 16 bit dataset
-                needSplit = true;
-                count = 65536 - 2; // 2 points needed for closing the polygon
-            }
-
-            if (count > 0) {
-                // move x coordinate of first and last points to prevent vertical holes caused
-                // by clipping
-                points[0].rx() = wtos(tgt::vec2(xRange_[0], 0.f)).x;
-                if (count < histogramWidth - 2) // only when last point was actually clipped
-                    points[count - 1].rx() = wtos(tgt::vec2(xRange_[1], 0.f)).x;
-
-                // needed for a closed polygon
-                p = wtos(tgt::vec2(0.f, yRange_[0]));
-                points[count].rx() = points[count - 1].rx();
-                points[count].ry() = p.y;
-                count++;
-                p = wtos(tgt::vec2(0.f, yRange_[0]));
-                points[count].rx() = points[0].rx();
-                points[count].ry() = p.y;
-                count++;
-
-                paint.drawPolygon(points, count);
-            }
-
-            // draw last points when splitting is needed
-            if (needSplit && false) {
-                delete[] points;
-                points = new QPointF[5];
-                count = 0;
-                for (int x=histogramWidth - 2; x < histogramWidth; ++x) {
-                    float xpos = static_cast<float>(x) / histogramWidth;
-                    if (xpos >= xRange_[0] && xpos <= xRange_[1]) {
-                        float value = histogram_->getLogNormalized(x);
-                        p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
-                        points[x-histogramWidth+3].rx() = p.x;
-                        points[x-histogramWidth+3].ry() = p.y;
-                        count++;
-                    }
-                }
+            for(size_t i = 0; i < points.size(); ++i){
                 if (count > 0) {
-                    // move x coordinate of last point to prevent vertical holes caused by clipping
-                    points[count - 1].rx() = wtos(tgt::vec2(xRange_[1], 0.f)).x;
+                    if (i == vi){
+                        // needed for a closed polygon
+                        p = wtos(tgt::vec2(0.f, yRange_[0]));
+                        points[i][count].rx() = points[i][count -1].rx();
+                        points[i][count].ry() = p.y;
+                        count++;
+                        points[i][count].rx() = points[i][0].rx();
+                        points[i][count].ry() = p.y;
+                        count++;
 
-                    // needed for a closed polygon
-                    p = wtos(tgt::vec2(0.f, yRange_[0]));
-                    points[count].rx() = points[count - 1].rx();
-                    points[count].ry() = p.y;
-                    count++;
-                    p = wtos(tgt::vec2(0, yRange_[0]));
-                    points[count].rx() = points[0].rx();
-                    points[count].ry() = p.y;
-                    count++;
+                        paint.drawPolygon(points[i], count);
+                    } else {
+                        // needed for a closed polygon
+                        p = wtos(tgt::vec2(0.f, yRange_[0]));
+                        points[i][maxSize - 2].rx() = points[i][maxSize - 3].rx();
+                        points[i][maxSize - 2].ry() = p.y;
+                        points[i][maxSize - 1].rx() = points[i][0].rx();
+                        points[i][maxSize - 1].ry() = p.y;
 
-                    paint.drawPolygon(points, 5);
+                        paint.drawPolygon(points[i], maxSize);
+                    }
                 }
             }
-            delete[] points;
+
+            for (size_t i = 0; i < points.size(); ++i)
+                delete[] points[i];
         }
     }
 

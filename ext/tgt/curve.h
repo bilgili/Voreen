@@ -1,31 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_CURVE_H
 #define TGT_CURVE_H
 
-#include "tgt/config.h"
 #include "tgt/assert.h"
 #include "tgt/matrix.h"
 #include "tgt/renderable.h"
@@ -46,8 +46,7 @@ namespace tgt {
  does normally not need to be reimplemented by the subclasses.
  \note Bounds are not implemented yet!
 */
-class Curve : public Renderable {
-
+class TGT_API Curve : public Renderable {
 public:
 
     /// This struct is used to specifie the curves draw style.
@@ -62,12 +61,7 @@ public:
     /// \param bounds Spacecurve's boundary. You can pass an empty boundary.
     /// \param _static True if the spacecurve is fix and will not be moved
     /// \param visible curve is only rendered, if visible == true
-    Curve(GLuint stepCount, const Bounds &bounds, bool _static, bool visible)
-            : Renderable (bounds, _static, visible)
-    {
-        setStepCount(stepCount);
-        setDrawStyle(LINE);
-    }
+    Curve(GLuint stepCount, const Bounds &bounds, bool _static, bool visible);
 
     virtual ~Curve() {}
 
@@ -81,11 +75,7 @@ public:
 
     /// Renders the whole spacecurve using the specified draw style (Lines by default)
     /// if curve is visible
-    void render() {
-		if (visible_){
-			render(0.0, 1.0);
-		}
-	}
+    void render();
 
     //! Renders a part of the curve: Starting at startParam and ending at endParam.
     /// if curve is visible. \n
@@ -94,27 +84,18 @@ public:
 
     //! Step count is the number of parts the curve is divided into for rendering. \n
     /// Default value is 100.
-    void setStepCount(GLuint stepCount) {
-        tgtAssert(stepCount > 0, "Step count is expected to be greater zero.");
-        stepCount_ = stepCount;
-    }
+    void setStepCount(GLuint stepCount);
 
     //! Get step count.
-    GLuint getStepCount() {
-        return stepCount_;
-    }
+    GLuint getStepCount();
 
     //! Sets the draw style for rendering.
     /// \see DrawStyle
-    void setDrawStyle(DrawStyle drawStyle) {
-        drawStyle_ = drawStyle;
-    }
+    void setDrawStyle(DrawStyle drawStyle);
 
     //! Gets the draw style for rendering.
     /// \see DrawStyle
-    DrawStyle getDrawStyle() {
-        return drawStyle_;
-    }
+    DrawStyle getDrawStyle();
 
     virtual void init() {}
     virtual void deinit() {}
@@ -140,23 +121,12 @@ public:
 
     //! Standard Constructor. \n
     /// Creates a circle with radius 1.0, lying in the x-y-Plane and centered at the origin.
-    Circle() : Curve(100, Bounds(), false, true) {
-        setRadius(1.0);
-        setCenter(vec3(0.0, 0.0, 0.0));
-        setNormal(vec3(0.0, 0.0, 1.0));
-        setRotationMatrix();
-    }
+    Circle();
 
     //! Constructor.
     /// Creates a circle with the specified properties.
     Circle(GLfloat radius, const vec3& center, const vec3& normal,
-           GLuint stepCount = 100, bool _static = false, bool visible = true)
-            : Curve(stepCount, Bounds(), _static, visible) {
-        setRadius(radius);
-        setCenter(center);
-        setNormal(normal);
-        setRotationMatrix();
-    }
+           GLuint stepCount = 100, bool _static = false, bool visible = true);
 
     //! Evaluate the circle for parameter t. \n
     /// The direction of rotation is counterclockwise. \n
@@ -168,25 +138,16 @@ public:
     vec3 getDerivative(GLfloat t);
 
     /// Set radius. Must be positive.
-    void setRadius(GLfloat radius) {
-        tgtAssert(radius > 0.f, "Radius must be positive." );
-        radius_ = radius;
-    }
+    void setRadius(GLfloat radius);
 
     /// Get radius.
-    GLfloat getRadius() {
-        return radius_;
-    }
+    GLfloat getRadius();
 
     /// Set center of the circle.
-    void setCenter(const vec3& center) {
-        center_ = center;
-    }
+    void setCenter(const vec3& center);
 
     /// Get center of the circle.
-    vec3 getCenter() {
-        return center_;
-    }
+    vec3 getCenter();
 
     //! Set the circle's normal vector in order to specifie its orientation. \n
     /// The circle lies in the plane, which is perpendicular to the normal. \n
@@ -194,9 +155,7 @@ public:
     void setNormal(const vec3& normal);
 
     /// Get circle's normal vector.
-    vec3 getNormal() {
-        return normal_;
-    }
+    vec3 getNormal();
 
 private:
 
@@ -224,33 +183,19 @@ private:
  \attention{ Class Ellipse also exists in Windows GDI. Declare objects of this class always as
              tgt::Ellipse to avoid namespace conflicts ! }
 */
-class Ellipse : public Curve {
+class TGT_API Ellipse : public Curve {
 
 public:
 
     //! Standard constructor. \n
     /// Creates a circle with radius 1.0, lying in the x-y-plane and centered at the origin.
     /// Semi major axis direction is parallel to the x-axis.
-    Ellipse() : Curve(100, Bounds(), false, true) {
-        setCenter(vec3(0.0, 0.0, 0.0));
-        setSemiMajorAxisLength(1.0);
-        setSemiMinorAxisLength(1.0);
-        setNormal(vec3(0.0, 0.0, 1.0));
-        setSemiMajorAxisDirection(vec3(1.0, 0.0, 0.0));
-    }
+    Ellipse();
 
     /// Constructor. Creates an ellipse with the specified properties.
     Ellipse(const vec3& center, GLfloat semiMajorAxisLength, GLfloat semiMinorAxisLength,
                vec3 normal, vec3 semiMajorAxisDirection,
-               GLuint stepCount = 100, bool _static = false, bool visible = true)
-            : Curve(stepCount, Bounds(), _static, visible) {
-
-        setCenter(center);
-        setSemiMajorAxisLength(semiMajorAxisLength);
-        setSemiMinorAxisLength(semiMinorAxisLength);
-        setNormal(normal);
-        setSemiMajorAxisDirection(semiMajorAxisDirection);
-    }
+               GLuint stepCount = 100, bool _static = false, bool visible = true);
 
     //! Evaluate the ellipse for parameter t. \n
     /// The direction of rotation is counterclockwise. \n
@@ -262,46 +207,30 @@ public:
     vec3 getDerivative(GLfloat t);
 
     //! Set the ellipse's center.
-    void setCenter(const vec3& center) {
-        center_ = center;
-    }
+    void setCenter(const vec3& center);
 
     //! Get the ellipse's center;
-    vec3 getCenter() {
-        return center_;
-    }
+    vec3 getCenter();
 
     //! Sets the length of the semi major axis. Must be positive.
-    void setSemiMajorAxisLength(GLfloat a) {
-        tgtAssert(a > 0, "Semi major axis length must be positive.");
-        a_ = a;
-    }
+    void setSemiMajorAxisLength(GLfloat a);
 
     //! Gets the length of the semi major axis.
-    GLfloat getSemiMajorAxisLength() {
-        return a_;
-    }
+    GLfloat getSemiMajorAxisLength();
 
 
     //! Sets the length of the semi minor axis. Must be positive.
-    void setSemiMinorAxisLength(GLfloat b) {
-        tgtAssert(b > 0, "Semi minor axis length must be positive.");
-        b_ = b;
-    }
+    void setSemiMinorAxisLength(GLfloat b);
 
     //! Gets the length of the semi minor axis.
-    GLfloat getSemiMinorAxisLength() {
-        return b_;
-    }
+    GLfloat getSemiMinorAxisLength();
 
     //! Sets the ellipse's normal vector. \n
     /// The ellipse lies in the plane, which is perpendicular to the normal.
     void setNormal(const vec3& normal);
 
     //! Gets the ellipse's normal vector.
-    vec3 getNormal() {
-        return normal_;
-    }
+    vec3 getNormal();
 
     //! Sets the direction of one of the semi major axis.
     /// If it is not perpendicular to the normal vector, it is
@@ -311,15 +240,11 @@ public:
     void setSemiMajorAxisDirection(const vec3& semiMajor);
 
     //! Gets the semi major axis direction.
-    vec3 getSemiMajorAxisDirection() {
-        return semiMajor_;
-    }
+    vec3 getSemiMajorAxisDirection();
 
     //! Gets the semi minor axis direction.
     /// Cannot be set, as it is calculated automatically.
-    vec3 getSemiMinorAxisDirection() {
-        return semiMinor_;
-    }
+    vec3 getSemiMinorAxisDirection();
 
 private:
 

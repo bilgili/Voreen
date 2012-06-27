@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_MESHGEOMETRY_H
 #define VRN_MESHGEOMETRY_H
@@ -64,7 +60,7 @@ namespace voreen {
  * @see VertexGeometry
  * @see MeshListGeometry
  */
-class MeshGeometry : public Geometry {
+class VRN_CORE_API MeshGeometry : public Geometry {
 public:
     /**
      * Type of the face geometry list.
@@ -86,6 +82,10 @@ public:
      */
     MeshGeometry();
 
+    virtual Geometry* create() const;
+
+    virtual std::string getClassName() const { return "MeshGeometry"; }
+
     /**
      * Creates a cube mesh with given dimension and properties.
      *
@@ -95,17 +95,54 @@ public:
      * @param texUrb the texture coordinates of the upper right back vertex
      * @param colorLlf the vertex color of the lower left front vertex
      * @param colorUrb the vertex color of the upper right back vertex
+     * @param alpha the alpha value used in the color
      *
      * @returns the cube mesh
      */
     static MeshGeometry createCube(
-        tgt::vec3 coordLlf = tgt::vec3(0, 0, 0),
-        tgt::vec3 coordUrb = tgt::vec3(1, 1, 1),
-        tgt::vec3 texLlf = tgt::vec3(0, 0, 0),
-        tgt::vec3 texUrb = tgt::vec3(1, 1, 1),
-        tgt::vec3 colorLlf = tgt::vec3(0, 0, 0),
-        tgt::vec3 colorUrb = tgt::vec3(0, 0, 0));
+        tgt::vec3 coordLlf = tgt::vec3(0.f, 0.f, 0.f),
+        tgt::vec3 coordUrb = tgt::vec3(1.f, 1.f, 1.f),
+        tgt::vec3 texLlf = tgt::vec3(0.f, 0.f, 0.f),
+        tgt::vec3 texUrb = tgt::vec3(1.f, 1.f, 1.f),
+        tgt::vec3 colorLlf = tgt::vec3(0.f, 0.f, 0.f),
+        tgt::vec3 colorUrb = tgt::vec3(0.f, 0.f, 0.f),
+        float alpha = 1.f
+        );
 
+    /**
+     * Creates a cube mesh with given dimension and properties.
+     *
+     * @param coordLlf the vertex coordinates of the lower left front vertex
+     * @param coordUrb the vertex coordinates of the upper right back vertex
+     * @param texLlf the texture coordinates of the lower left front vertex
+     * @param texUrb the texture coordinates of the upper right back vertex
+     * @param colorLlf the vertex color of the lower left front vertex
+     * @param colorUrb the vertex color of the upper right back vertex
+     * @param normalTop the normal direction of the top face
+     * @param normalFront the normal direction of the front face
+     * @param normalLeft the normal direction of the left face
+     * @param normalBack the normal direction of the back face
+     * @param normalRight the normal direction of the right face
+     * @param normalBottom the normal direction of the bottom face
+     * @param alpha the alpha value used in the color
+     *
+     * @returns the cube mesh
+     */
+    static MeshGeometry createCube(
+        tgt::vec3 coordLlf,
+        tgt::vec3 coordUrb,
+        tgt::vec3 texLlf,
+        tgt::vec3 texUrb,
+        tgt::vec3 colorLlf,
+        tgt::vec3 colorUrb,
+        tgt::vec3 normalTop,
+        tgt::vec3 normalFront,
+        tgt::vec3 normalLeft,
+        tgt::vec3 normalBack,
+        tgt::vec3 normalRight,
+        tgt::vec3 normalBottom,
+        float alpha = 1.f
+        );
     /**
      * Returns the number of face geometries contained by this mesh geometry.
      *
@@ -206,14 +243,14 @@ public:
     /**
      * @see Geometry::render
      */
-    virtual void render();
+    virtual void render() const;
 
     /**
      * Transforms the mesh geometry using the given transformation matrix.
      *
      * @param transformation the transformation matrix
      */
-    void transform(const tgt::mat4& transformation);
+    virtual void transform(const tgt::mat4& transformation);
 
     /**
      * Clips the mesh geometry by the given arbitrary clipping plane.
@@ -235,20 +272,57 @@ public:
      *       by David Eberly. For further information see:
      *       http://www.geometrictools.com/Documentation/ClipMesh.pdf
      *
-     * @param clipplane the arbitrary clipping plane
+     * @param clipPlane the arbitrary clipping plane
+     * @param closingMesh the clipping face generated for closing the clipped mesh
      * @param epsilon the accuracy for vertex geometry comparison
-     *
-     * @return The clipping face generated for closing the clipped mesh.
      */
-    MeshGeometry clip(const tgt::vec4& clipplane, double epsilon = 1e-6);
+    void clip(const tgt::vec4& clipPlane, MeshGeometry& closingMesh, double epsilon = 1e-6);
+
+    /// @overload
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+
+    /**
+     * Returns true, if all faces of the passed MeshGeometry are equal to this one's.
+     *
+     * @param mesh the mesh to compare
+     * @param epsilon maximum distance at which two vertices are to be considered equal
+     */
+    bool equals(const MeshGeometry& mesh, double epsilon = 1e-6) const;
+
+    /**
+     * Returns true, if the passed Geometry is a MeshGeometry
+     * and all its faces are equal to this one's.
+     *
+     * @see Geometry::equals
+     */
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+
+    /**
+     * Returns the axis-aligned bounding box of the union
+     * of the bounding boxes of the mesh's faces.
+     */
+    virtual tgt::Bounds getBoundingBox() const;
+
+    virtual void serialize(XmlSerializer& s) const;
+
+    virtual void deserialize(XmlDeserializer& s);
 
 private:
+    static void createCubeFaces(FaceGeometry& topFace, FaceGeometry& frontFace, FaceGeometry& leftFace,
+                                FaceGeometry& backFace,FaceGeometry& rightFace, FaceGeometry& bottomFace,
+                                tgt::vec3 coordLlf = tgt::vec3(0.f, 0.f, 0.f),
+                                tgt::vec3 coordUrb = tgt::vec3(1.f, 1.f, 1.f),
+                                tgt::vec3 texLlf = tgt::vec3(0.f, 0.f, 0.f),
+                                tgt::vec3 texUrb = tgt::vec3(1.f, 1.f, 1.f),
+                                tgt::vec3 colorLlf = tgt::vec3(0.f, 0.f, 0.f),
+                                tgt::vec3 colorUrb = tgt::vec3(0.f, 0.f, 0.f),
+                                float alpha = 1.f);
     /**
      * Face geometry list.
      */
     FaceListType faces_;
 };
 
-}    // namespace
+} // namespace
 
 #endif  //VRN_MESHGEOMETRY_H

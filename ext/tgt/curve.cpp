@@ -1,34 +1,64 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/curve.h"
 #include "tgt/types.h"
 
 namespace tgt {
 
-void Curve::render(GLfloat startParam, GLfloat endParam) {
 
+Curve::Curve(GLuint stepCount, const Bounds &bounds, bool _static, bool visible)
+    : Renderable (bounds, _static, visible)
+{
+    setStepCount(stepCount);
+    setDrawStyle(LINE);
+}
+
+void Curve::render() {
+    if (visible_)
+        render(0.0, 1.0);
+}
+
+void Curve::setStepCount(GLuint stepCount) {
+    tgtAssert(stepCount > 0, "Step count is expected to be greater zero.");
+    stepCount_ = stepCount;
+}
+
+GLuint Curve::getStepCount() {
+    return stepCount_;
+}
+
+void Curve::setDrawStyle(DrawStyle drawStyle) {
+    drawStyle_ = drawStyle;
+}
+
+tgt::Curve::DrawStyle Curve::getDrawStyle() {
+    return drawStyle_;
+}
+
+void Curve::render(GLfloat startParam, GLfloat endParam) {
     if (!visible_)
         return ;
 
@@ -48,6 +78,25 @@ void Curve::render(GLfloat startParam, GLfloat endParam) {
         glVertex3fv(getPoint(endParam).elem);
         glEnd();
     }
+}
+
+
+Circle::Circle()
+    : Curve(100, Bounds(), false, true)
+{
+    setRadius(1.0);
+    setCenter(vec3(0.0, 0.0, 0.0));
+    setNormal(vec3(0.0, 0.0, 1.0));
+    setRotationMatrix();
+}
+
+Circle::Circle(GLfloat radius, const vec3& center, const vec3& normal, GLuint stepCount /*= 100*/, bool _static /*= false*/, bool visible /*= true*/ )
+    : Curve(stepCount, Bounds(), _static, visible)
+{
+    setRadius(radius);
+    setCenter(center);
+    setNormal(normal);
+    setRotationMatrix();
 }
 
 // The circle point is first calculated in the x-y-plane, then translated by its center
@@ -90,10 +139,51 @@ void Circle::setRotationMatrix() {
         rx = normalize(cross(ry, normal_));
     }
 // warning: statement has no effect
-// 	sign(1);
+//     sign(1);
     rotationMatrix_ = transpose(mat3(rx, ry, normal_));
 }
 
+void Circle::setRadius(GLfloat radius) {
+    tgtAssert(radius > 0.f, "Radius must be positive." );
+    radius_ = radius;
+}
+
+GLfloat Circle::getRadius() {
+    return radius_;
+}
+
+void Circle::setCenter(const vec3& center) {
+    center_ = center;
+}
+
+vec3 Circle::getCenter() {
+    return center_;
+}
+
+vec3 Circle::getNormal() {
+    return normal_;
+}
+
+
+Ellipse::Ellipse()
+    : Curve(100, Bounds(), false, true)
+{
+    setCenter(vec3(0.0, 0.0, 0.0));
+    setSemiMajorAxisLength(1.0);
+    setSemiMinorAxisLength(1.0);
+    setNormal(vec3(0.0, 0.0, 1.0));
+    setSemiMajorAxisDirection(vec3(1.0, 0.0, 0.0));
+}
+
+Ellipse::Ellipse(const vec3& center, GLfloat semiMajorAxisLength, GLfloat semiMinorAxisLength, vec3 normal, vec3 semiMajorAxisDirection, GLuint stepCount /*= 100*/, bool _static /*= false*/, bool visible /*= true*/)
+    : Curve(stepCount, Bounds(), _static, visible)
+{
+    setCenter(center);
+    setSemiMajorAxisLength(semiMajorAxisLength);
+    setSemiMinorAxisLength(semiMinorAxisLength);
+    setNormal(normal);
+    setSemiMajorAxisDirection(semiMajorAxisDirection);
+}
 
 // The ellipse point is first calculated in the x-y-plane, then translated by its center
 // and then rotated by multiplying it with the prior calculated rotation matrix.
@@ -142,5 +232,42 @@ void Ellipse::setSemiMajorAxisDirection(const vec3& semiMajor) {
     setRotationMatrix();
 }
 
+void Ellipse::setCenter(const vec3& center) {
+    center_ = center;
+}
+
+vec3 Ellipse::getCenter() {
+    return center_;
+}
+
+void Ellipse::setSemiMajorAxisLength(GLfloat a) {
+    tgtAssert(a > 0, "Semi major axis length must be positive.");
+    a_ = a;
+}
+
+GLfloat Ellipse::getSemiMajorAxisLength() {
+    return a_;
+}
+
+void Ellipse::setSemiMinorAxisLength(GLfloat b) {
+    tgtAssert(b > 0, "Semi minor axis length must be positive.");
+    b_ = b;
+}
+
+GLfloat Ellipse::getSemiMinorAxisLength() {
+    return b_;
+}
+
+vec3 Ellipse::getNormal() {
+    return normal_;
+}
+
+vec3 Ellipse::getSemiMajorAxisDirection() {
+    return semiMajor_;
+}
+
+vec3 Ellipse::getSemiMinorAxisDirection() {
+    return semiMinor_;
+}
 
 } // namespace tgt

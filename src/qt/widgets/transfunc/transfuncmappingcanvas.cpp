@@ -1,40 +1,37 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvas.h"
 
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
+#include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumedecorator.h"
 #include "voreen/core/datastructures/volume/histogram.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 
 #include <QAction>
@@ -53,7 +50,7 @@ namespace voreen {
 
 using tgt::vec2;
 
-HistogramThread::HistogramThread(Volume* volume, int count, QObject* parent)
+HistogramThread::HistogramThread(const VolumeBase* volume, int count, QObject* parent)
     : QThread(parent)
     , volume_(volume)
     , count_(count)
@@ -62,19 +59,18 @@ HistogramThread::HistogramThread(Volume* volume, int count, QObject* parent)
 }
 
 void HistogramThread::run() {
-    HistogramIntensity* hist = new HistogramIntensity(volume_, count_);
+    Histogram1D h = createHistogram1DFromVolume(volume_, count_);
+    VolumeHistogramIntensity* hist = new VolumeHistogramIntensity(h);
     emit setHistogram(hist);
 }
 
 //-----------------------------------------------------------------------------
 
-TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFuncIntensity* tf, bool noColor,
-                                               bool clipThresholds, QString xAxisText,
+TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys* tf, bool noColor,
+                                               QString xAxisText,
                                                QString yAxisText)
     : QWidget(parent)
     , tf_(tf)
-    , maximumIntensity_(255)
-    , clipThresholds_(clipThresholds)
     , noColor_(noColor)
     , xAxisText_(xAxisText)
     , yAxisText_(yAxisText)
@@ -665,18 +661,6 @@ void TransFuncMappingCanvas::resetTransferFunc() {
     update();
 }
 
-void TransFuncMappingCanvas::toggleClipThresholds(bool enabled) {
-    clipThresholds_ = enabled;
-    if (clipThresholds_)
-        xRange_ = vec2(thresholdL_, thresholdU_);
-    else
-        xRange_ = vec2(0.f, 1.f);
-
-    histogramPainter_->setxRange(xRange_);
-
-    update();
-}
-
 //--------- protected helper functions ---------//
 
 void TransFuncMappingCanvas::changeCurrentColor() {
@@ -870,14 +854,16 @@ QSizePolicy TransFuncMappingCanvas::sizePolicy () const {
     return QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }
 
+void TransFuncMappingCanvas::domainChanged() {
+    if(tf_)
+        histogramPainter_->setxRange(tf_->getDomain());
+
+    update();
+}
 
 void TransFuncMappingCanvas::setThreshold(float l, float u) {
     thresholdL_ = l;
     thresholdU_ = u;
-    if (clipThresholds_)
-        xRange_ = vec2(thresholdL_, thresholdU_);
-
-    histogramPainter_->setxRange(xRange_);
 
     update();
 }
@@ -890,7 +876,12 @@ void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
     std::ostringstream os;
     os.precision(2);
     os.setf(std::ios::fixed, std::ios::floatfield);
-    os << values.x*maximumIntensity_ << " / " << values.y*255.f;
+
+    float intensity = values.x;
+    if(tf_) {
+        intensity  = tf_->getDomain().x + (tf_->getDomain().y - tf_->getDomain().x) * intensity;
+    }
+    os << intensity << " / " << values.y; // intensity / alpha
     QToolTip::showText(mapToGlobal(pos), QString(os.str().c_str()));
 }
 
@@ -902,30 +893,38 @@ void TransFuncMappingCanvas::updateHistogram() {
 
     tgtAssert(histogramPainter_, "No histogram painter");
 
-    // calculate new histogram in background thread and propagate to HistogramPainter
-    if (volumeHandle_ && volumeHandle_->getVolume()) {
-        int bits = volumeHandle_->getVolume()->getBitsStored() / volumeHandle_->getVolume()->getNumChannels();
-        if (bits > 16)
-            bits = 16; // handle float data as if it was 16 bit to prevent overflow
-        int maximumIntensity = (1 << bits) - 1;
+    // retrieve histogram from base volumehandle (hack!), or calculate new one in background thread
+    const VolumeBase* baseHandle = volumeHandle_;
+    while (dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle))
+        baseHandle = dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle)->getDecorated();
+    if (baseHandle && baseHandle->hasDerivedData<VolumeHistogramIntensity>()) {
+        setHistogram(baseHandle->getDerivedData<VolumeHistogramIntensity>());
+    }
+    else if (volumeHandle_ && volumeHandle_->getRepresentation<VolumeRAM>()) {
+        int bits = volumeHandle_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volumeHandle_->getRepresentation<VolumeRAM>()->getNumChannels();
 
-        histogramThread_ = new HistogramThread(volumeHandle_->getVolume(), maximumIntensity + 1, this);
-        connect(histogramThread_, SIGNAL(setHistogram(HistogramIntensity*)),
-                histogramPainter_, SLOT(setHistogram(HistogramIntensity*)));
+        int numBuckets = 1024;
+        if(bits == 8)
+            numBuckets = 256;
+
+        histogramThread_ = new HistogramThread(volumeHandle_, numBuckets, this);
+        connect(histogramThread_, SIGNAL(setHistogram(VolumeHistogramIntensity*)),
+                this, SLOT(setHistogram(VolumeHistogramIntensity*)));
         connect(histogramThread_, SIGNAL(finished()),
                 this, SLOT(update()));
         histogramThread_->start();
     }
     else {
-        histogramPainter_->setHistogram(0);
+        setHistogram(0);
     }
 }
 
-void TransFuncMappingCanvas::volumeChanged(VolumeHandle* volumeHandle) {
+void TransFuncMappingCanvas::volumeChanged(const VolumeBase* volumeHandle) {
     // stop histogram thread and deregister from volume handle as observer
     if (histogramThread_) {
         stopObservation(volumeHandle_);
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        //histogramThread_->terminate();
         histogramThread_->wait(); // wait for old thread to finish before deleting
         delete histogramThread_;
         histogramThread_ = 0;
@@ -946,7 +945,7 @@ void TransFuncMappingCanvas::volumeChanged(VolumeHandle* volumeHandle) {
     update();
 }
 
-void TransFuncMappingCanvas::setTransFunc(TransFuncIntensity* tf) {
+void TransFuncMappingCanvas::setTransFunc(TransFunc1DKeys* tf) {
     tf_ = tf;
     selectedKey_ = 0;
     update();
@@ -960,18 +959,35 @@ void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
     yAxisText_ = QString(text.c_str());
 }
 
-void TransFuncMappingCanvas::volumeChange(const VolumeHandle* source) {
+void TransFuncMappingCanvas::volumeChange(const VolumeBase* source) {
     tgtAssert(source, "No volume handle");
     // perform calculations on new volume
     if (volumeHandle_ == source)
-        volumeChanged(const_cast<VolumeHandle*>(source));
+        volumeChanged(const_cast<VolumeBase*>(source));
 }
 
-void TransFuncMappingCanvas::volumeHandleDelete(const VolumeHandle* source) {
+void TransFuncMappingCanvas::volumeHandleDelete(const VolumeBase* source) {
     tgtAssert(source, "No volume handle");
     // make sure to stop calculations on the volume
     if (volumeHandle_ == source)
         volumeChanged(0);
+}
+
+void TransFuncMappingCanvas::setHistogram(VolumeHistogramIntensity* histogram) {
+    tgtAssert(histogramPainter_, "no histogram painter");
+    histogramPainter_->setHistogram(histogram);
+
+    // write histogram to base handle (hack!)
+    const VolumeBase* baseHandle = volumeHandle_;
+    while (dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle))
+        baseHandle = dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle)->getDecorated();
+    if (!baseHandle) {
+        LWARNINGC("voreen.qt.TransFuncMappingCanvas", "No base handle");
+        return;
+    }
+
+    if (baseHandle && !baseHandle->hasDerivedData<VolumeHistogramIntensity>())
+        const_cast<VolumeBase*>(baseHandle)->addDerivedData<VolumeHistogramIntensity>(histogram);
 }
 
 } // namespace voreen

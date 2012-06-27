@@ -1,87 +1,149 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/condition.h"
-#include "voreen/core/properties/propertywidgetfactory.h"
+
+#include "tgt/filesystem.h"
+#include "tgt/shadermanager.h"
 
 namespace voreen {
 
 void ShaderSource::serialize(XmlSerializer& s) const {
     //fragment:
     s.serialize("fragmentModified", fragmentModified_);
-    s.serialize("fragmentFilename", fragmentFilename_);
-    if (fragmentModified_)
-        s.serialize("fragmentSource", fragmentSource_);
+    s.serialize("fragmentIsExternal", fragmentIsExternal_);
+
+    if (fragmentIsExternal_) {
+        std::string relFragPath = tgt::FileSystem::relativePath(tgt::FileSystem::dirName(externalFragmentFilename_), tgt::FileSystem::dirName(s.getDocumentPath()));
+        if (!relFragPath.empty()) relFragPath = relFragPath + "/";
+        std::string relFragmentFilename =  relFragPath + tgt::FileSystem::fileName(externalFragmentFilename_);
+        s.serialize("externalFragmentFilename", relFragmentFilename);
+    }
 
     //vertex:
     s.serialize("vertexModified", vertexModified_);
-    s.serialize("vertexFilename", vertexFilename_);
-    if (vertexModified_)
-        s.serialize("vertexSource", vertexSource_);
+    s.serialize("vertexIsExternal", vertexIsExternal_);
+
+    if (vertexIsExternal_) {
+        std::string relVertPath = tgt::FileSystem::relativePath(tgt::FileSystem::dirName(externalVertexFilename_), tgt::FileSystem::dirName(s.getDocumentPath()));
+        if (!relVertPath.empty()) relVertPath = relVertPath + "/";
+        std::string relVertexFilename = relVertPath + tgt::FileSystem::fileName(externalVertexFilename_);
+        s.serialize("externalVertexFilename", relVertexFilename);
+    }
 
     //geometry:
     s.serialize("geometryModified", geometryModified_);
-    s.serialize("geometryFilename", geometryFilename_);
+    s.serialize("geometryIsExternal", geometryIsExternal_);
+
+    if(geometryIsExternal_) {
+        std::string relGeomPath = tgt::FileSystem::relativePath(tgt::FileSystem::dirName(externalGeometryFilename_), tgt::FileSystem::dirName(s.getDocumentPath()));
+        if (!relGeomPath.empty()) relGeomPath = relGeomPath + "/";
+        std::string relGeometryFilename = relGeomPath + tgt::FileSystem::fileName(externalGeometryFilename_);
+        s.serialize("externalGeometryFilename", relGeometryFilename);
+    }
+
+    if(fragmentModified_)
+        s.serialize("fragmentSource", fragmentSource_);
+    if (vertexModified_)
+        s.serialize("vertexSource", vertexSource_);
     if (geometryModified_)
         s.serialize("geometrySource", geometrySource_);
 }
 
 void ShaderSource::deserialize(XmlDeserializer& s) {
-    //current format:
+
+    // this is identical in the old and new formats:
     s.deserialize("fragmentModified", fragmentModified_);
-    s.deserialize("fragmentFilename", fragmentFilename_);
+
+    bool oldFormat = true;
+
+    try {
+        s.deserialize("fragmentFilename", externalFragmentFilename_);
+    }
+    catch (...) {
+        s.removeLastError();
+        oldFormat = false;
+    }
+
+    if(oldFormat) {
+        if(externalFragmentFilename_.empty())
+            fragmentIsExternal_ = true;
+
+        s.deserialize("vertexModified", vertexModified_);
+        s.deserialize("vertexFilename", externalVertexFilename_);
+        if(!externalVertexFilename_.empty())
+            vertexIsExternal_ = true;
+
+        s.deserialize("geometryModified", geometryModified_);
+        s.deserialize("geometryFilename", externalGeometryFilename_);
+
+        if(!externalGeometryFilename_.empty())
+            geometryIsExternal_ = true;
+
+    } else {
+        //current format:
+        s.deserialize("fragmentIsExternal", fragmentIsExternal_);
+        if (fragmentIsExternal_)
+            s.deserialize("externalFragmentFilename", externalFragmentFilename_);
+
+        s.deserialize("vertexModified", vertexModified_);
+        s.deserialize("vertexIsExternal", vertexIsExternal_);
+        if (vertexIsExternal_)
+            s.deserialize("externalVertexFilename", externalVertexFilename_);
+
+        s.deserialize("geometryModified", geometryModified_);
+        s.deserialize("geometryIsExternal", geometryIsExternal_);
+        if (geometryIsExternal_)
+            s.deserialize("externalGeometryFilename", externalGeometryFilename_);
+    }
+
+    if(fragmentIsExternal_)
+        externalFragmentFilename_ = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + externalFragmentFilename_);
+    if(vertexIsExternal_)
+        externalVertexFilename_ = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + externalVertexFilename_);
+    if(geometryIsExternal_)
+        externalGeometryFilename_ = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + externalGeometryFilename_);
+
     if (fragmentModified_)
         s.deserialize("fragmentSource", fragmentSource_);
-    //else
-        //resetfragmentShader();
-
-    s.deserialize("vertexModified", vertexModified_);
-    s.deserialize("vertexFilename", vertexFilename_);
     if (vertexModified_)
         s.deserialize("vertexSource", vertexSource_);
-    //else
-        //resetVertexShader();
-
-    s.deserialize("geometryModified", geometryModified_);
-    s.deserialize("geometryFilename", geometryFilename_);
     if (geometryModified_)
         s.deserialize("geometrySource", geometrySource_);
-    //else
-        //resetGeometryShader();
 }
 
 //---------------------------------------------------------------------------------------------------------------
 
+const std::string ShaderProperty::loggerCat_("voreen.ShaderProperty");
+
 ShaderProperty::ShaderProperty(const std::string& id, const std::string& guiText,
-        const std::string& fragmentFilename, const std::string& geometryFilename,const std::string& vertexFilename,
-        Processor::InvalidationLevel invalidationLevel)
+        const std::string& fragmentFilename,
+        const std::string& vertexFilename,
+        const std::string& geometryFilename,
+        int invalidationLevel)
                        : TemplateProperty<ShaderSource>(id, guiText, ShaderSource(geometryFilename, vertexFilename, fragmentFilename), invalidationLevel)
                        , header_("")
                        , originalGeometryFilename_(geometryFilename)
@@ -91,26 +153,37 @@ ShaderProperty::ShaderProperty(const std::string& id, const std::string& guiText
                        , vert_(0)
                        , frag_(0)
                        , shader_(0)
-{
-    value_.geometryFilename_ = originalGeometryFilename_;
-    value_.vertexFilename_ = originalVertexFilename_;
-    value_.fragmentFilename_ = originalFragmentFilename_;
-}
+{}
+
+ShaderProperty::ShaderProperty()
+    : geom_(0)
+    , vert_(0)
+    , frag_(0)
+    , shader_(0)
+{}
 
 ShaderProperty::~ShaderProperty() {
     if (shader_) {
-        LWARNINGC("voreen.ShaderProperty",
-            getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
+        LWARNING(getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
     }
 }
 
-void ShaderProperty::initialize() throw (VoreenException) {
-    TemplateProperty<ShaderSource>::initialize();
-    rebuild();
-    LGL_ERROR;
+Property* ShaderProperty::create() const {
+    return new ShaderProperty();
 }
 
-void ShaderProperty::deinitialize() throw (VoreenException) {
+void ShaderProperty::initialize() throw (tgt::Exception) {
+    TemplateProperty<ShaderSource>::initialize();
+
+    if(!value_.fragmentModified_)
+        value_.fragmentSource_ = getShaderAsString(value_.getCurrentFragmentName(), value_.fragmentIsExternal_);
+    if(!value_.vertexModified_)
+        value_.vertexSource_   = getShaderAsString(value_.getCurrentVertexName(), value_.vertexIsExternal_);
+    if(!value_.geometryModified_)
+        value_.geometrySource_ = getShaderAsString(value_.getCurrentGeometryName(), value_.geometryIsExternal_);
+}
+
+void ShaderProperty::deinitialize() throw (tgt::Exception) {
     delete shader_;
     shader_ = 0;
     LGL_ERROR;
@@ -125,48 +198,11 @@ void ShaderProperty::serialize(XmlSerializer& s) const {
 
 void ShaderProperty::deserialize(XmlDeserializer& s) {
     Property::deserialize(s);
-
-    bool oldFormat = true;
-    //TODO: put in converter
-    try {
-        bool test;
-        s.deserialize("sourceModified", test);
-    }
-    catch (...) {
-        s.removeLastError();
-        oldFormat = false;
-    }
-
-    if(oldFormat) {
-        ShaderSource n = get();
-        s.deserialize("sourceModified", n.fragmentModified_);
-        if (n.fragmentModified_)
-            s.deserialize("source", n.fragmentSource_);
-
-        n.fragmentFilename_ = originalFragmentFilename_;
-
-        n.vertexModified_ = false;
-        n.vertexSource_ = "";
-        n.vertexFilename_ = "";
-
-        n.geometryModified_ = false;
-        n.geometrySource_ = "";
-        n.geometryFilename_ = "";
-
-        set(n);
-    }
-    else {
-        ShaderSource n = get();
-        n.deserialize(s);
-        set(n);
-    }
-
+    ShaderSource n = get();
+    n.deserialize(s);
+    set(n);
     invalidate();
     updateWidgets();
-}
-
-PropertyWidget* ShaderProperty::createWidget(PropertyWidgetFactory* f) {
-    return f->createWidget(this);
 }
 
 void ShaderProperty::setHeader(std::string header) {
@@ -177,13 +213,29 @@ std::string ShaderProperty::getHeader() const {
     return header_;
 }
 
-std::string ShaderProperty::getShaderAsString(std::string filename) {
-    std::string completeFilename = ShdrMgr.completePath(filename);
+std::string ShaderProperty::getShaderAsString(std::string filename, bool external) {
+    if(filename.empty())
+        return "";
+
+    if (!tgt::Singleton<tgt::ShaderManager>::isInited() && !external) {
+        LWARNING("ShaderManager not instantiated");
+        return "";
+    }
+
+    if (!tgt::Singleton<tgt::FileSystem>::isInited()) {
+        LWARNING("FileSystem not instantiated");
+        return "";
+    }
+
+    std::string completeFilename = filename;
+    if(!external)
+        completeFilename = ShdrMgr.completePath(filename);
+
     tgt::File* file = FileSys.open(completeFilename);
 
     // check if file is open
     if (!file || !file->isOpen()) {
-        LERRORC("voreen.shaderproperty", "File not found: " << filename);
+        LERROR("File not found: " << filename);
         delete file;
         return "";
     }
@@ -196,8 +248,8 @@ std::string ShaderProperty::getShaderAsString(std::string filename) {
 }
 
 void ShaderProperty::resetFragmentShader() {
-    if(!value_.fragmentFilename_.empty()) {
-        value_.fragmentSource_ = getShaderAsString(value_.fragmentFilename_);
+    if(!value_.originalFragmentFilename_.empty() || !value_.externalFragmentFilename_.empty()) {
+        value_.fragmentSource_ = getShaderAsString(value_.getCurrentFragmentName(), value_.fragmentIsExternal_);
         value_.fragmentModified_ = false;
     }
     invalidate();
@@ -232,13 +284,14 @@ void ShaderProperty::setGeometrySource(const std::string& geometrySource) {
 }
 
 void ShaderProperty::resetFragmentFilename() {
-    value_.fragmentFilename_ = originalFragmentFilename_;
+    value_.fragmentIsExternal_ = false;
+    value_.externalFragmentFilename_= "";
     resetFragmentShader();
 }
 
 void ShaderProperty::resetVertexShader() {
-    if(!value_.vertexFilename_.empty()) {
-        value_.vertexSource_ = getShaderAsString(value_.vertexFilename_);
+    if(!value_.originalVertexFilename_.empty() || !value_.externalVertexFilename_.empty()) {
+        value_.vertexSource_ = getShaderAsString(value_.getCurrentVertexName(), value_.vertexIsExternal_);
         value_.vertexModified_ = false;
     }
     invalidate();
@@ -246,13 +299,14 @@ void ShaderProperty::resetVertexShader() {
 }
 
 void ShaderProperty::resetVertexFilename() {
-    value_.vertexFilename_ = originalVertexFilename_;
+    value_.vertexIsExternal_ = false;
+    value_.externalVertexFilename_ = "";
     resetVertexShader();
 }
 
 void ShaderProperty::resetGeometryShader() {
-    if(!value_.geometrySource_.empty()) {
-        value_.geometrySource_ = getShaderAsString(value_.geometryFilename_);
+    if(!value_.originalGeometryFilename_.empty() || !value_.externalGeometryFilename_.empty()) {
+        value_.geometrySource_ = getShaderAsString(value_.getCurrentGeometryName(), value_.geometryIsExternal_);
         value_.geometryModified_ = false;
     }
     invalidate();
@@ -260,119 +314,190 @@ void ShaderProperty::resetGeometryShader() {
 }
 
 void ShaderProperty::resetGeometryFilename() {
-    value_.geometryFilename_ = originalGeometryFilename_;
+    value_.geometryIsExternal_ = false;
+    value_.externalGeometryFilename_ = "";
     resetGeometryShader();
 }
 
 void ShaderProperty::setFragmentFilename(const std::string& fragmentFilename) {
-    if(fragmentFilename != get().fragmentFilename_) {
+    if(fragmentFilename != get().externalFragmentFilename_) {
         ShaderSource n = get();
-        n.fragmentFilename_ = fragmentFilename;
+        n.fragmentIsExternal_ = true;
+        n.externalFragmentFilename_ = fragmentFilename;
         set(n);
         resetFragmentShader();
     }
 }
 
 void ShaderProperty::setVertexFilename(const std::string& vertexFilename) {
-    if(vertexFilename != get().vertexFilename_) {
+    if(vertexFilename != get().externalVertexFilename_) {
         ShaderSource n = get();
-        n.vertexFilename_ = vertexFilename;
+        n.vertexIsExternal_ = true;
+        n.externalVertexFilename_ = vertexFilename;
         set(n);
         resetVertexShader();
     }
 }
 void ShaderProperty::setGeometryFilename(const std::string& geometryFilename) {
-    if(geometryFilename != get().geometryFilename_) {
+    if(geometryFilename != get().externalGeometryFilename_) {
         ShaderSource n = get();
-        n.geometryFilename_ = geometryFilename;
+        n.geometryIsExternal_ = true;
+        n.externalGeometryFilename_ = geometryFilename;
         set(n);
         resetGeometryShader();
     }
 }
 
-void ShaderProperty::rebuild() {
+bool ShaderProperty::rebuild() {
     delete shader_;
     shader_ = 0;
     vert_ = 0;
     frag_ = 0;
     geom_ = 0;
 
+    bool allSuccessful = true;
     shader_ = new tgt::Shader();
-    //bool failedCompile = false;
 
-    if (!value_.vertexFilename_.empty()) {
-        vert_ = new tgt::ShaderObject(value_.vertexFilename_, tgt::ShaderObject::VERTEX_SHADER);
-        vert_->setHeader(header_);
-        if (!value_.vertexModified_) {
-            vert_->loadSourceFromFile(ShdrMgr.completePath(value_.vertexFilename_));
-            value_.vertexSource_ = vert_->getSource();
+    if (!value_.originalVertexFilename_.empty()) {
+        std::string vertFilename;
+        bool validFilename = true;
+
+        if(!value_.vertexIsExternal_) {
+            vertFilename = ShdrMgr.completePath(value_.originalVertexFilename_);
+            if(vertFilename.empty()) {
+                LWARNING("Vertex shader file not found: " << FileSys.cleanupPath(value_.originalVertexFilename_));
+                validFilename = false;
+            }
+        } else {
+            // this should always be an absolute path after deserialization
+            vertFilename = value_.externalVertexFilename_;
+            if(!tgt::FileSystem::fileExists(vertFilename)) {
+                LWARNING("Vertex shader external file not found: " << FileSys.cleanupPath(vertFilename));
+                validFilename = false;
+            }
         }
-        else {
-            vert_->setSource(value_.vertexSource_);
-        }
-        vert_->compileShader();
-        if (vert_->isCompiled())
-            shader_->attachObject(vert_);
-        else {
-            //failedCompile = true;
-            LWARNINGC("voreen.shaderproperty", "Failed to compile vertex shader: " << vert_->getCompilerLog());
+
+        // should we allow the use of a modified source if the file does not exist in the file-system?
+        if(validFilename || value_.vertexModified_) {
+            vert_ = new tgt::ShaderObject(vertFilename, tgt::ShaderObject::VERTEX_SHADER);
+            vert_->setHeader(header_);
+            if (!value_.vertexModified_) {
+                vert_->loadSourceFromFile(vertFilename);
+                value_.vertexSource_ = vert_->getSource();
+            } else
+                vert_->setSource(value_.vertexSource_);
+
+            vert_->compileShader();
+            if (vert_->isCompiled())
+                shader_->attachObject(vert_);
+            else {
+                allSuccessful = false;
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile vertex shader: " << vert_->getCompilerLog());
+            }
         }
     }
 
-    if (!value_.fragmentFilename_.empty()) {
-        frag_ = new tgt::ShaderObject(value_.fragmentFilename_, tgt::ShaderObject::FRAGMENT_SHADER);
-        frag_->setHeader(header_);
-        if (!value_.fragmentModified_) {
-            frag_->loadSourceFromFile(ShdrMgr.completePath(value_.fragmentFilename_));
-            value_.fragmentSource_ = frag_->getSource();
+    if (!value_.originalFragmentFilename_.empty()) {
+        std::string fragFilename;
+        bool validFilename = true;
+
+        if(!value_.fragmentIsExternal_) {
+            fragFilename = ShdrMgr.completePath(value_.originalFragmentFilename_);
+            if(fragFilename.empty()) {
+                LWARNING("Fragment shader file not found: " << FileSys.cleanupPath(value_.originalFragmentFilename_));
+                validFilename = false;
+            }
+        } else {
+            // this should always be an absolute path after deserialization
+            fragFilename = value_.externalFragmentFilename_;
+            if(!tgt::FileSystem::fileExists(fragFilename)) {
+                LWARNING("Fragment shader external file not found: " << FileSys.cleanupPath(fragFilename));
+                validFilename = false;
+            }
         }
-        else {
-            frag_->setSource(value_.fragmentSource_);
-        }
-        frag_->compileShader();
-        if (frag_->isCompiled())
-            shader_->attachObject(frag_);
-        else {
-            //failedCompile = true;
-            LWARNINGC("voreen.shaderproperty", "Failed to compile fragment shader: " << frag_->getCompilerLog());
+
+        // should we allow the use of a modified source if the file does not exist in the file-system?
+        if(validFilename || value_.fragmentModified_) {
+            frag_ = new tgt::ShaderObject(fragFilename, tgt::ShaderObject::FRAGMENT_SHADER);
+            frag_->setHeader(header_);
+            if (!value_.fragmentModified_) {
+                frag_->loadSourceFromFile(fragFilename);
+                value_.fragmentSource_ = frag_->getSource();
+            } else
+                frag_->setSource(value_.fragmentSource_);
+
+            frag_->compileShader();
+            if (frag_->isCompiled())
+                shader_->attachObject(frag_);
+            else {
+                allSuccessful = false;
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile fragment shader: " << frag_->getCompilerLog());
+            }
         }
     }
 
-    if (!value_.geometryFilename_.empty()) {
-        geom_ = new tgt::ShaderObject(value_.geometryFilename_, tgt::ShaderObject::GEOMETRY_SHADER);
-        geom_->setHeader(header_);
-        if (!value_.geometryModified_) {
-            geom_->loadSourceFromFile(ShdrMgr.completePath(value_.geometryFilename_));
-            value_.geometrySource_ = geom_->getSource();
+    if (!value_.originalGeometryFilename_.empty()) {
+        std::string geomFilename;
+        bool validFilename = true;
+
+        if(!value_.geometryIsExternal_) {
+            geomFilename = ShdrMgr.completePath(value_.originalGeometryFilename_);
+            if(geomFilename.empty()) {
+                LWARNING("Geometry shader file not found: " << FileSys.cleanupPath(value_.originalGeometryFilename_));
+                validFilename = false;
+            }
+        } else {
+            // this should always be an absolute path after deserialization
+            geomFilename= value_.externalGeometryFilename_;
+            if(!tgt::FileSystem::fileExists(geomFilename)) {
+                LWARNING("Geometry shader external file not found: " << FileSys.cleanupPath(geomFilename));
+                validFilename = false;
+            }
         }
-        else {
-            geom_->setSource(value_.geometrySource_);
-        }
-        geom_->compileShader();
-        if (geom_->isCompiled())
-            shader_->attachObject(geom_);
-        else {
-            //failedCompile = true;
-            LWARNINGC("voreen.shaderproperty", "Failed to compile geometry shader: " << geom_->getCompilerLog());
+
+        // should we allow the use of a modified source if the file does not exist in the file-system?
+        if(validFilename || value_.geometryModified_) {
+            geom_ = new tgt::ShaderObject(geomFilename, tgt::ShaderObject::GEOMETRY_SHADER);
+            geom_->setHeader(header_);
+            if (!value_.geometryModified_) {
+                geom_->loadSourceFromFile(geomFilename);
+                value_.geometrySource_ = geom_->getSource();
+            } else
+                geom_->setSource(value_.geometrySource_);
+
+            geom_->compileShader();
+            if (geom_->isCompiled())
+                shader_->attachObject(geom_);
+            else {
+                allSuccessful = false;
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile geometry shader: " << geom_->getCompilerLog());
+            }
         }
     }
 
-    //if(!failedCompile) {
+    if(shader_->hasObjects()) {
         shader_->linkProgram();
         if(!shader_->isLinked()) {
-            LWARNINGC("voreen.shaderproperty", "Failed to link shader: " << shader_->getLinkerLog());
+            LWARNINGC("voreen.ShaderProperty", "Failed to link shader: " << shader_->getLinkerLog());
+            allSuccessful = false;
         }
-    //}
+    } else {
+        LWARNINGC("voreen.ShaderProperty", "No objects have been attached to shader.");
+        allSuccessful = false;
+    }
 
     updateWidgets();
+
+    return allSuccessful;
 }
 
 tgt::Shader* ShaderProperty::getShader() {
    return shader_;
 }
 
-std::string ShaderProperty::getTypeString() const {
-    return "Shader";
+bool ShaderProperty::hasValidShader() const {
+   return (shader_ && shader_->isLinked());
 }
+
 
 }   // namespace

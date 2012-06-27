@@ -1,0 +1,1 @@
+Windows Users: Put pre-built DCMTK library here (see voreen.uni-muenster.de)

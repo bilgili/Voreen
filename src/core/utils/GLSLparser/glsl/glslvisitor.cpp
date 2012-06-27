@@ -1,105 +1,96 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/utils/GLSLparser/glsl/glslvisitor.h"
 
 #include "voreen/core/utils/GLSLparser/annotations/annotationparser.h"
 #include "voreen/core/utils/GLSLparser/annotations/annotationvisitor.h"
 
+#include <algorithm>
+
 namespace voreen {
 
 namespace glslparser {
 
 GLSLVisitor::GLSLVisitor()
-    : ParseTreeVisitor()
+    : ParseTreeVisitor(),
+    globalSymbols_("globals"),
+    activeSymbols_(&globalSymbols_),
+    terminals_(),
+    numWarnings_(0)
 {
 }
 
 GLSLVisitor::~GLSLVisitor() {
 }
 
-void GLSLVisitor::printSymbolTable() const {
-    typedef std::map<std::string, GLSLSymbol*> SymbolMap;
-    const SymbolMap& symbols = symbols_.getSymbolsMap();
+void GLSLVisitor::printGlobalSymbolTable() {
+    unsigned int depth = 0;
 
-    for (SymbolMap::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
-        std::cout << "name = '" << it->first << "', type = '" << it->second->getInternalType() << "'";
-        std::cout << ", #elements = " << it->second->getNumInternalElements() << "\n";
+    std::list<GLSLSymbolMap*> children;
+    GLSLSymbolMap* child = &globalSymbols_;
+    while (child != 0)
+    {
+        const SymbolMap& symbols = child->getSymbolsMap();
+        printSymbolTable(child->getName(), symbols, depth);
+
+        const std::list<GLSLSymbolMap*>& c = child->getChildTables();
+        if (! c.empty())
+            children.insert(children.end(), c.begin(), c.end());
+
+        if (! children.empty())
+        {
+            child = children.front();
+            children.pop_front();
+        }
+        else
+            child = 0;
     }
+}
+
+void GLSLVisitor::printSymbolTable(const std::string& tableName, const std::map<std::string, GLSLSymbol*>& table,
+                                   const unsigned int depth) const
+{
+    std::string indent(depth, ' ');
+
+    std::cout << indent << "Table '" << tableName << "':\n------------------------\n";
+    for (SymbolMap::const_iterator it = table.begin(); it != table.end(); ++it) {
+        GLSLSymbol* const sym = it->second;
+
+        std::cout << indent << "  name = '" << it->first << "', type = '" << sym->getInternalType() << "'";
+        std::cout << ", #elements = " << sym->getNumInternalElements() << "\n";
+    }
+    std::cout << "\n";
 }
 
 std::vector<GLSLVariableSymbol*> GLSLVisitor::getUniforms(const bool keepInTable) {
-    typedef std::map<std::string, GLSLSymbol*> SymbolMap;
-    const SymbolMap& symbols = symbols_.getSymbolsMap();
-
-    std::vector<GLSLVariableSymbol*> uniforms;
-    for (SymbolMap::const_iterator it = symbols.begin(); it != symbols.end(); ) {
-        GLSLVariableSymbol* const varSymbol = dynamic_cast<GLSLVariableSymbol* const>(it->second);
-        if (varSymbol == 0)
-            continue;
-
-        if (varSymbol->getStorageQualifier() == GLSLVariableSymbol::SQ_UNIFORM) {
-            uniforms.push_back(varSymbol);
-            if (keepInTable)
-                ++it;
-            else
-                symbols_.removeSymbol((it++)->second);
-
-        } else
-            ++it;
-    }
-
-    return uniforms;
+    return getStorageQualifiedVars(keepInTable, GLSLVariableSymbol::SQ_UNIFORM);
 }
 
 std::vector<GLSLVariableSymbol*> GLSLVisitor::getOuts(const bool keepInTable) {
-    typedef std::map<std::string, GLSLSymbol*> SymbolMap;
-    const SymbolMap& symbols = symbols_.getSymbolsMap();
-
-    std::vector<GLSLVariableSymbol*> outs;
-    for (SymbolMap::const_iterator it = symbols.begin(); it != symbols.end(); ) {
-        GLSLVariableSymbol* const varSymbol = dynamic_cast<GLSLVariableSymbol* const>(it->second);
-        if (varSymbol == 0)
-            continue;
-
-        if (varSymbol->getStorageQualifier() == GLSLVariableSymbol::SQ_OUT) {
-            outs.push_back(varSymbol);
-            if (keepInTable)
-                ++it;
-            else
-                symbols_.removeSymbol((it++)->second);
-
-        } else
-            ++it;
-    }
-
-    return outs;
+    return getStorageQualifiedVars(keepInTable, GLSLVariableSymbol::SQ_OUT);
 }
 
 bool GLSLVisitor::visit(ParseTreeNode* const node) {
@@ -107,13 +98,15 @@ bool GLSLVisitor::visit(ParseTreeNode* const node) {
         return false;
 
     bool result = true;
-    switch (node->getNodeType()) {
-        case GLSLNodeTypes::NODE_DECLARATION:
-            visitNode(dynamic_cast<GLSLDeclaration* const>(node));
+    switch (node->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_TRANSLATION:
+            visitNode(static_cast<GLSLTranslation* const>(node));
             break;
 
-        case GLSLNodeTypes::NODE_DECLARATION_LIST:
-            visitNode(dynamic_cast<GLSLDeclarationList* const>(node));
+        default:
+            log_ << "GLSLVisitor::visit(): error! Initial parse tree node is not of type NODE_TRANSLATION!" << std::endl;
+            log_ << "  node type: " << node->getNodeType() << std::endl;
             break;
     }
 
@@ -123,12 +116,361 @@ bool GLSLVisitor::visit(ParseTreeNode* const node) {
 // protected methods
 //
 
+std::string GLSLVisitor::getPrefixLower(const std::string& input, const unsigned int len) const
+{
+    if (input.empty())
+        return "";
+
+    std::string sub = input.substr(0, len);
+    std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
+    return sub;
+}
+
+std::vector<GLSLVariableSymbol*> GLSLVisitor::getStorageQualifiedVars(const bool keepInTable,
+    const GLSLVariableSymbol::StorageQualifier storageQualifier)
+{
+    const SymbolMap& symbols = globalSymbols_.getSymbolsMap();
+
+    std::vector<GLSLVariableSymbol*> vars;
+    for (SymbolMap::const_iterator it = symbols.begin(); it != symbols.end(); )
+    {
+        GLSLVariableSymbol* const varSymbol = dynamic_cast<GLSLVariableSymbol* const>(it->second);
+        if (varSymbol == 0)
+            continue;
+
+        if (varSymbol->getStorageQualifier() == storageQualifier) {
+            vars.push_back(varSymbol);
+            if (keepInTable)
+                ++it;
+            else
+                globalSymbols_.removeSymbol((it++)->second);
+
+        } else
+            ++it;
+    }
+
+    return vars;
+}
+
+void GLSLVisitor::pushSymbolTable(const std::string& newName)
+{
+    GLSLSymbolMap* const active = new GLSLSymbolMap(newName, activeSymbols_);
+    activeSymbols_ = active;
+}
+
+void GLSLVisitor::popSymbolTable()
+{
+    GLSLSymbolMap* const parentTable = activeSymbols_->getParentTable();
+    if (parentTable)
+        activeSymbols_ = parentTable;
+}
+
+// private
+//
+
+// Expressions
+//
+
+GLSLValue* GLSLVisitor::visitNode(GLSLExpression* const expr)
+{
+    if (! expr)
+        return 0;
+
+    switch (expr->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_ASSIGNMENT_EXPRESSION:
+            return visitNode(static_cast<GLSLAssignmentExpression* const>(expr));
+
+        case GLSLNodeTypes::NODE_BINARY_EXPRESSION:
+            return visitNode(static_cast<GLSLBinaryExpression* const>(expr));
+
+        case GLSLNodeTypes::NODE_CONDITIONAL_EXPRESSION:
+            return visitNode(static_cast<GLSLConditionalExpression* const>(expr));
+
+        case GLSLNodeTypes::NODE_EXPRESSION_LIST:
+            return visitNode(static_cast<GLSLExpressionList* const>(expr));
+
+        case GLSLNodeTypes::NODE_FUNCTION_CALL:
+            return visitNode(static_cast<GLSLFunctionCall* const>(expr));
+
+        case GLSLNodeTypes::NODE_POSTFIX_EXPRESSION:
+            return visitNode(static_cast<GLSLPostfixExpression* const>(expr));
+
+        case GLSLNodeTypes::NODE_PRIMARY_EXPRESSION:
+            return visitNode(static_cast<GLSLPrimaryExpression* const>(expr));
+
+        case GLSLNodeTypes::NODE_UNARY_EXPRESSION:
+            return visitNode(static_cast<GLSLUnaryExpression* const>(expr));
+
+        default:
+            break;
+    }   // switch(expr->getNodeType()
+
+    return 0;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLExpressionList* const exprLst)
+{
+    if (! exprLst)
+        return 0;
+
+    GLSLValue* res = 0;
+    std::vector<GLSLExpression*> lst = exprLst->getExpressions();
+    for (size_t i = 0; i < lst.size(); ++i)
+        res = visitNode(lst[i]);
+    return res;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLAssignmentExpression* const assign)
+{
+    if (! assign)
+        return 0;
+
+    // Perform semantic action for assignment expressions:
+    // The action in this case is currently only to evaluate check the lefthand side value
+    // (a unary expression) and check if its token is an IDENTIFIER. If so, check if
+    // the the token's name starts with "gl_" and insert it into the symbol table.
+    // In other cases check if a corresponding symbol is containing within the symbol table
+    // and emit a warning that the variable has not been declared, if no symbol is yet present.
+    //
+    // NOTE: currently any undeclared variable will be inserted into the symbol table. In
+    // addition, a warning will be issued (not an error!), unless the variable name starts
+    // with "gl_" (in lower or upper case).
+    //
+    GLSLValue* rhs = visitNode(assign->getRValue());
+    GLSLValue* lhs = visitNode(assign->getLValue());
+    if ((! rhs) || (! lhs))
+        return 0;
+
+    if (lhs->getType() == GLSLValue::VALUE_ADDRESS)
+    {
+        GLSLValueAddress* const addr = static_cast<GLSLValueAddress* const>(lhs);
+        const std::string& varName = addr->symbolName_;
+
+        if (! activeSymbols_->findSymbol(varName))
+        {
+            GLSLVariableSymbol* const sym = new GLSLVariableSymbol(varName, GLSLSymbol::INTERNAL_VOID, 1, false);
+
+            if (getPrefixLower(varName, 3) != "gl_")
+            {
+                activeSymbols_->insertSymbol(sym);
+
+                ++numWarnings_;
+                log_ << "warning: Variable '" << sym->getID() << "' has been assigned without previous declaration!" << std::endl;
+            }
+            else
+                // add gl_*** symbols ALWAYS to global symbol table.
+                globalSymbols_.insertSymbol(sym);
+        }
+
+        if ((varName == "gl_FragData") && (addr->isArray()))
+            glFragDataElements_.insert(addr->arrayIndex_);
+    }
+    else
+    {
+        ++numWarnings_;
+
+        log_ << "warning: lhs operand must be an lvalue !" << std::endl;
+    }
+
+    return lhs;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLBinaryExpression* const /*bin*/)
+{
+    // TODO: implement
+    return 0;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLConditionalExpression* const /*cond*/)
+{
+    // TODO: implement
+    return 0;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLUnaryExpression* const unary)
+{
+    if (! unary)
+        return 0;
+
+    GLSLExpression* const operand = unary->getExpression();
+    if (! operand)
+        return 0;
+
+    GLSLValue* res = 0;
+    switch (operand->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_POSTFIX_EXPRESSION:
+            res = visitNode(static_cast<GLSLPostfixExpression* const>(operand));
+            break;
+
+        case GLSLNodeTypes::NODE_UNARY_EXPRESSION:
+            res = visitNode(static_cast<GLSLUnaryExpression*>(operand));
+            break;
+    }   // switch
+
+    // TODO: to "really" evaluate this expression, check opToken, value and
+    // apply that operator.
+    //Token* const opToken = unary->getToken();
+
+    return res;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLPostfixExpression* const postfix)
+{
+    if (! postfix)
+        return 0;
+
+    GLSLExpression* const operand = postfix->getOperand();
+    if (! operand)
+        return 0;
+
+    // 1. Evaluate "nested" postfix expression
+    //
+    GLSLValue* res = 0;
+    switch (operand->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_EXPRESSION:
+            res = visitNode(operand);
+            break;
+
+        case GLSLNodeTypes::NODE_PRIMARY_EXPRESSION:
+            res = visitNode(static_cast<GLSLPrimaryExpression* const>(operand));
+            break;
+
+        case GLSLNodeTypes::NODE_FUNCTION_CALL:
+            res = visitNode(static_cast<GLSLFunctionCall* const>(operand));
+            break;
+
+        case GLSLNodeTypes::NODE_POSTFIX_EXPRESSION:    // recursive call
+            res = visitNode(static_cast<GLSLPostfixExpression* const>(operand));
+            break;
+    }   // switch
+
+    if (! res)
+        return 0;
+
+    // 2. Investigate token
+    //
+    Token* const token = postfix->getToken();
+    if (token) {
+        switch (token->getTokenID())
+        {
+            case GLSLTerminals::ID_DEC_OP:
+            case GLSLTerminals::ID_INC_OP:
+                // TODO: handle sementics for cases
+                // ID  62:  [postfix-expression] ::= [postfix-expression] ++
+                // ID  63:  [postfix-expression] ::= [postfix-expression] --
+                break;
+
+            case GLSLTerminals::ID_DOT:
+                // TODO: handle sementics for case
+                //ID  61:   [postfix-expression] ::= [postfix-expression] . FIELD-SELECTION
+                break;
+
+            // Subscript operator
+            case GLSLTerminals::ID_LBRACKET:
+            {
+//std::cout << "visitNode(GLSLPostfixExpression): evaluating \"[]\" expression...\n";
+
+                // Evaluate integer expression
+                //
+                GLSLValue* const idx = visitNode(postfix->getIntExpression());
+                if ((idx != 0) && (idx->getType() != GLSLValue::VALUE_ADDRESS)
+                    && (res->getType() == GLSLValue::VALUE_ADDRESS))
+                {
+                    GLSLValueAddress* const addr = static_cast<GLSLValueAddress* const>(res);
+                    GLSLValueInt* const i = static_cast<GLSLValueInt* const>(idx);
+                    addr->arrayIndex_ = i->value_;
+                } else
+                    std::cout << "no address result returned from operand evaluation!\n";
+            }
+                break;
+
+            default:
+                break;
+        }   // switch
+    }   // if (token
+
+    return res;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLFunctionCall* const /*funCall*/)
+{
+    // TODO: add semantics. does currently do nothing.
+    return 0;
+}
+
+GLSLValue* GLSLVisitor::visitNode(GLSLPrimaryExpression* const primaryExpr)
+{
+    GLSLExpression* const nested = primaryExpr->getExpression();
+    if (nested)
+        return visitNode(nested);
+
+    Token* const token = primaryExpr->getToken();
+    if (! token)
+        return 0;
+
+    switch (token->getTokenID())
+    {
+        case GLSLTerminals::ID_FALSE:
+            return new GLSLValueBool(false);
+
+        case GLSLTerminals::ID_TRUE:
+            return new GLSLValueBool(true);
+
+        case GLSLTerminals::ID_IDENTIFIER:
+            if (IdentifierToken* const id = dynamic_cast<IdentifierToken* const>(token))
+                return new GLSLValueAddress(id->getValue());
+
+        case GLSLTerminals::ID_INTCONST:
+            if (ConstantToken* const ct = dynamic_cast<ConstantToken* const>(token))
+                return new GLSLValueInt(ct->convert<int>());
+            break;
+
+        case GLSLTerminals::ID_UINTCONST:
+            if (ConstantToken* const ct = dynamic_cast<ConstantToken* const>(token))
+                return new GLSLValueUint(ct->convert<unsigned int>());
+
+        case GLSLTerminals::ID_FLOATCONST:
+            if (ConstantToken* const ct = dynamic_cast<ConstantToken* const>(token))
+                return new GLSLValueFloat(ct->convert<float>());
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
 // Delcarations
 //
 
 void GLSLVisitor::visitNode(GLSLDeclaration* const decl) {
     if (decl == 0)
         return;
+
+    switch (decl->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_DECLARATION_LIST:
+            visitNode(static_cast<GLSLDeclarationList* const>(decl));
+            break;
+
+        case GLSLNodeTypes::NODE_STRUCT_DECLARATION:
+            //visitNode(static_cast<GLSLStructDeclaration* const>(decl));
+            break;
+
+        case GLSLNodeTypes::NODE_FIELD_DECLARATION:
+            //visitNode(static_cast<GLSLFieldDeclaration* const>(decl));
+            break;
+
+        case GLSLNodeTypes::NODE_FUNCTION_DECLARATION:
+            //visitNode(static_cast<GLSLFunctionDeclaration* const>(decl));
+            break;
+
+        default:
+            break;
+    }   // switch (decl->getNodeType()
 }
 
 void GLSLVisitor::visitNode(GLSLDeclarationList* const decls) {
@@ -157,7 +499,7 @@ void GLSLVisitor::visitNode(GLSLDeclarationList* const decls) {
             leading.insert(leading.end(), trailing.begin(), trailing.end());
             symbol->setAnnotations(leading);
 
-            symbols_.insertSymbol(symbol);
+            activeSymbols_->insertSymbol(symbol);
         }
     } catch (std::runtime_error& e) {
         log_ << "  Exeption: " << e.what() << "\n";
@@ -438,6 +780,337 @@ GLSLVariableSymbol GLSLVisitor::visitNode(GLSLTypeSpecifier* const typeSpec) {
 
     return metaSymbol;
 }
+
+// Statement nodes
+//
+
+void GLSLVisitor::visitNode(GLSLStatement* const statement)
+{
+    if (! statement)
+        return;
+
+    switch (statement->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_COMPOUND_STATEMENT:
+            visitNode(static_cast<GLSLCompoundStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_SIMPLE_STATEMENT:
+            visitNode(static_cast<GLSLSimpleStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_CASE_LABEL:
+            visitNode(static_cast<GLSLCaseLabel* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_DECLARATION_STATEMENT:
+            visitNode(static_cast<GLSLDeclarationStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_DO_WHILE_STATEMENT:
+            visitNode(static_cast<GLSLDoWhileStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_FOR_STATEMENT:
+            visitNode(static_cast<GLSLForStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_EXPRESSION_STATEMENT:
+            visitNode(static_cast<GLSLExpressionStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_JUMP_STATEMENT:
+            visitNode(static_cast<GLSLJumpStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_SELECTION_STATEMENT:
+            visitNode(static_cast<GLSLSelectionStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_SWITCH_STATEMENT:
+            visitNode(static_cast<GLSLSwitchStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_WHILE_STATEMENT:
+            visitNode(static_cast<GLSLWhileStatement* const>(statement));
+            break;
+
+        default:
+            break;
+    }   // switch
+}
+
+void GLSLVisitor::visitNode(GLSLCompoundStatement* const statements)
+{
+    if (! statements)
+        return;
+
+    // TODO: add handling for creation of new scopes
+    GLSLStatementList* const list = statements->getStatementList();
+    if (list)
+    {
+        const std::vector<GLSLStatement*>& stmts = list->getStatements();
+        for (size_t i = 0; i < stmts.size(); ++i)
+            visitNode(stmts[i]);
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLSimpleStatement* const statement)
+{
+    if (! statement)
+        return;
+
+    switch (statement->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_CASE_LABEL:
+            visitNode(static_cast<GLSLCaseLabel* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_DECLARATION_STATEMENT:
+            visitNode(static_cast<GLSLDeclarationStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_DO_WHILE_STATEMENT:
+            visitNode(static_cast<GLSLDoWhileStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_FOR_STATEMENT:
+            visitNode(static_cast<GLSLForStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_EXPRESSION_STATEMENT:
+            visitNode(static_cast<GLSLExpressionStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_JUMP_STATEMENT:
+            visitNode(static_cast<GLSLJumpStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_SELECTION_STATEMENT:
+            visitNode(static_cast<GLSLSelectionStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_SWITCH_STATEMENT:
+            visitNode(static_cast<GLSLSwitchStatement* const>(statement));
+            break;
+
+        case GLSLNodeTypes::NODE_WHILE_STATEMENT:
+            visitNode(static_cast<GLSLWhileStatement* const>(statement));
+            break;
+
+        default:
+            break;
+    }   // switch
+}
+
+void GLSLVisitor::visitNode(GLSLCaseLabel* const lbl)
+{
+    if (! lbl)
+        return;
+    // TODO: add semantics
+}
+
+void GLSLVisitor::visitNode(GLSLDeclarationStatement* const decl)
+{
+    if (decl)
+        visitNode(decl->getDeclaration());
+}
+
+void GLSLVisitor::visitNode(GLSLDoWhileStatement* const dwhl)
+{
+    if (dwhl)
+    {
+        visitNode(dwhl->getBody());
+        delete visitNode(dwhl->getCondition());
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLExpressionStatement* const expr)
+{
+    if (expr)
+        delete visitNode(expr->getExpression());
+}
+
+void GLSLVisitor::visitNode(GLSLForStatement* const fr)
+{
+    if (fr)
+    {
+        visitNode(fr->getInit());
+        delete visitNode(fr->getCondition());
+        delete visitNode(fr->getIterationExpr());
+        visitNode(fr->getBody());
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLJumpStatement* const jmp)
+{
+    if (jmp)
+        delete visitNode(jmp->getExpression());
+}
+
+void GLSLVisitor::visitNode(GLSLSelectionStatement* const sel)
+{
+    if (sel)
+    {
+        //GLSLExpression* const res =
+            delete visitNode(sel->getCondition());
+        // TODO: decide whether both case need to be evaluated / visited
+        // depending on the evaluation of the condition. This can enable
+        // short-circuit evaluation, which may be unwanted.
+        visitNode(sel->getTrueStatement());
+        visitNode(sel->getFalseStatement());
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLSwitchStatement* const swtch)
+{
+    if (swtch)
+    {
+        delete visitNode(swtch->getExpression());
+        GLSLStatementList* const lst = swtch->getStatements();
+        if (! lst)
+            return;
+        const std::vector<GLSLStatement*>& stmts = lst->getStatements();
+        for (size_t i = 0; i < stmts.size(); ++i)
+            visitNode(stmts[i]);
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLWhileStatement* const whl)
+{
+    if (whl)
+    {
+        delete visitNode(whl->getCondition());
+        visitNode(whl->getBody());
+    }
+}
+
+// Misc nodes
+//
+
+GLSLValue* GLSLVisitor::visitNode(GLSLCondition* const cond)
+{
+    if (! cond)
+        return 0;
+
+    GLSLTypeSpecifier* const spec = cond->getTypeSpecifier();
+    IdentifierToken* const id = cond->getIdentifier();
+    if ((spec) && (id))
+    {
+        try {
+            GLSLVariableSymbol symbol = visitNode(spec);
+            symbol.setID(id->getValue());
+            symbol.setIsArray(false);
+            symbol.setNumArrayElements(0);
+
+            activeSymbols_->insertSymbol(new GLSLVariableSymbol(symbol));
+        } catch (std::runtime_error& e) {
+            log_ << "  Exeption in GLSLVisitor::visitNode(GLSLCondition*): " << e.what() << "\n";
+        }
+    }
+
+    // If spec and id where both not NULL, the expression is the initializer
+    //
+    // NOTE: initializer is however only an assignemnt expression, not
+    // an arbitrary expression to be more precise.
+    return visitNode(cond->getExpression());
+}
+
+void GLSLVisitor::visitNode(GLSLExternalDeclaration* const extDecl)
+{
+    if (! extDecl)
+        return;
+
+    switch (extDecl->getNodeType())
+    {
+        case GLSLNodeTypes::NODE_DECLARATION:
+            visitNode(static_cast<GLSLDeclaration* const>(extDecl));
+            break;
+
+        case GLSLNodeTypes::NODE_DECLARATION_LIST:
+            visitNode(static_cast<GLSLDeclarationList* const>(extDecl));
+            break;
+
+        case GLSLNodeTypes::NODE_FUNCTION_DEFINITION:
+            visitNode(static_cast<GLSLFunctionDefinition* const>(extDecl));
+            break;
+
+        default:
+            std::cout << "GLSLVisitor::visitNode(): Error! Unknown external declaration type!\n";
+            std::cout << "  node type = " << extDecl->getNodeType() << std::endl;
+            break;
+    }   // switch
+}
+
+void GLSLVisitor::visitNode(GLSLFunctionDefinition* const funcDef)
+{
+    if (! funcDef)
+        return;
+
+    GLSLFunctionPrototype* const proto = funcDef->getFunctionPrototype();
+    if (proto)
+    {
+        visitNode(proto);
+
+        if (proto->getName())
+            pushSymbolTable(proto->getName()->getValue());
+        else
+            pushSymbolTable("anonymous-function");
+
+        const std::vector<GLSLParameter*>& params = proto->getParameters();
+        for (size_t i = 0; i < params.size(); ++i)
+            visitNode(params[i]);
+
+        GLSLCompoundStatement* const statements = funcDef->getStatements();
+        visitNode(statements);
+        popSymbolTable();
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLFunctionPrototype* const funcProto)
+{
+    if (! funcProto)
+        return;
+
+    // TODO: extract function name, return value, parameter count etc.
+    // and insert function symbol into symboltable.
+    //IdentifierToken* const funcName = funcProto->getName();
+}
+
+void GLSLVisitor::visitNode(GLSLParameter* const param)
+{
+    if (! param)
+        return;
+
+    GLSLTypeSpecifier* const spec = param->getSpecifier();
+    GLSLVariable* const var = param->getName();
+
+    if ((spec) && (var))
+    {
+        // TODO: handle qualifier and variable
+
+        GLSLVariableSymbol meta = visitNode(param->getSpecifier());
+        int arrCount = 0; // TODO: evaluate expression var->getNumArrayElements();
+        GLSLVariableSymbol* sym = new GLSLVariableSymbol(var->getName(),
+            meta.getInternalType(), arrCount , true);
+
+        sym->setIsArray(var->isArray());
+
+        activeSymbols_->insertSymbol(sym);
+    }
+}
+
+void GLSLVisitor::visitNode(GLSLTranslation* const trans)
+{
+    if (! trans)
+        return;
+
+    const std::vector<GLSLExternalDeclaration*>& ext = trans->getExternalDeclarations();
+    for (size_t i = 0; i < ext.size(); ++i)
+        visitNode(ext[i]);
+}
+
+// ----------------------------------------------------------------------------
 
 std::vector<GLSLAnnotation*> GLSLVisitor::processAnnotation(AnnotationToken* const annotation)
 {

@@ -1,36 +1,32 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "processorgraphicsitem.h"
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/modules/base/processors/utility/scale.h"
+#include "modules/base/processors/utility/scale.h"
 #include "voreen/core/properties/property.h"
 #include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/processors/processorwidget.h"
@@ -75,11 +71,10 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor, NetworkEditor
 
     initializePorts();
 
-    QPointF center(boundingRect().x() + boundingRect().width() / 2.0, boundingRect().y() + boundingRect().height() * 0.775);
-    qreal width = boundingRect().width() * 0.8;
-    qreal height = 8;
-
     if (processor_->usesExpensiveComputation()) {
+        QPointF center(boundingRect().x() + boundingRect().width() / 2.0, boundingRect().y() + boundingRect().height() * 0.775);
+        qreal width = boundingRect().width() * 0.8;
+        qreal height = 8;
         progressBar_ = new ProgressBarGraphicsItem(this, center, width, height);
         processor_->setProgressBar(progressBar_);
     }
@@ -219,7 +214,11 @@ void ProcessorGraphicsItem::processorWidgetDeleted(const Processor*) {
     widgetIndicatorButton_.setProcessorWidget(0);
 }
 
-void ProcessorGraphicsItem::portsAndPropertiesChanged(const Processor*) {
+void ProcessorGraphicsItem::propertiesChanged(const PropertyOwner*) {
+    RootGraphicsItem::propertiesChanged();
+}
+
+void ProcessorGraphicsItem::portsChanged(const Processor*) {
     std::vector<std::pair<std::string,PortGraphicsItem*> > connections;
     foreach (PortGraphicsItem* ownPort, portGraphicsItems_) {
         const QList<PortGraphicsItem*> connectedPorts = ownPort->getConnectedPorts();
@@ -232,42 +231,9 @@ void ProcessorGraphicsItem::portsAndPropertiesChanged(const Processor*) {
         }
     }
 
-#ifdef TZRT
-
-    const std::vector<Processor*> processors = networkEditor_->getProcessorNetwork()->getProcessors();
-    for (unsigned int i=0; i<processors.size(); i++) {
-        std::cout << "processor: " << processors[i]->getName() << " has " << processors[i]->getProperties().size() << " props" << std::endl;
-        const std::vector<Property*> properties = processors[i]->getProperties();
-        for (unsigned int j=0; j<properties.size(); j++) {
-            std::cout << "property: " << properties[j]->getID() << std::endl;
-            std::vector<PropertyLink*> curLinks = properties[j]->getLinks();
-            for (unsigned int k=0; k<curLinks.size(); k++) {
-                //std:: cout << "dstowner: " << curLinks[k]->getDestinationProperty()->getOwner()->getName() << std::endl;
-                //std:: cout << "srcowner: " << curLinks[k]->getSourceProperty()->getOwner()->getName() << std::endl;
-                /*
-                if (!curLinks[k]->getDestinationProperty()->getOwner() ||
-                    !curLinks[k]->getSourceProperty()->getOwner()) {
-                    */
-                std::cout << "removing link "+curLinks[k]->getSourceProperty()->getID() + "->" +curLinks[k]->getDestinationProperty()->getID() << std::endl;
-                //links.push_back(new PropertyLink(curLinks[k]->getSourceProperty(), curLinks[k]->getDestinationProperty(), curLinks[k]->getLinkEvaluator()));
-                       /*
-                       networkEditor_->removePropertyLink(curLinks[k]);
-
-networkEditor_->getProcessorNetwork()->notifyPropertyLinkRemoved(curLinks[k]);
-                       //delete curLinks[k];
-                       */
-
-                networkEditor_->getProcessorNetwork()->removePropertyLink(curLinks[k]);
-               //}
-           }
-       }
-   }
-
-#endif
-
     deleteChildItems();
     initializePorts();
-    RootGraphicsItem::portsAndPropertiesChanged();
+    RootGraphicsItem::portsChanged();
     for (unsigned int i=0; i<connections.size(); i++) {
         foreach (PortGraphicsItem* p, portGraphicsItems_) {
             if (p->getPort()->getName() == connections[i].first) {

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/datastructures/volume/volumegl.h"
 
@@ -35,14 +31,16 @@
 
 #include <algorithm>
 #include <typeinfo>
+#include <sstream>
 
 #ifdef VRN_MODULE_FLOWREEN
-#include "voreen/modules/flowreen/volumeflow3d.h"
+#include "modules/flowreen/datastructures/volumeflow3d.h"
 #endif
 
 using tgt::vec3;
 using tgt::bvec3;
 using tgt::ivec3;
+using tgt::svec3;
 using tgt::col4;
 using tgt::mat4;
 
@@ -80,157 +78,12 @@ namespace voreen {
 
 const std::string VolumeGL::loggerCat_("voreen.VolumeGL");
 
-VolumeGL::VolumeGL(Volume* volume,
-                   tgt::Texture::Filter filter) throw (std::bad_alloc)
-  : origVolume_(volume),
-    volume_(volume),
-    volumeType_( typeid(*volume) ),
-    filter_(filter)
+VolumeGL::VolumeGL(const VolumeRAM* volume) throw (VoreenException, std::bad_alloc)
+  : VolumeRepresentation(volume->getDimensions())
+  , texture_(0)
 {
-    /*
-        check volume type and set appropiate format_, internalFormat_ and dataType_ values
-    */
-
     tgtAssert(volume, "No volume");
-    tgtAssert(tgt::hand(tgt::greaterThan(volume->getDimensions(), ivec3(1))),
-        "Volume must have a size greater one in all dimensions");
-
-    // VolumeUIntX
-    if (volumeType_ == typeid(VolumeUInt8)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA8;
-        dataType_ = GL_UNSIGNED_BYTE;
-    }
-    else if (volumeType_ == typeid(VolumeUInt16)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA16;
-        dataType_ = GL_UNSIGNED_SHORT;
-    }
-    else if (volumeType_ == typeid(VolumeUInt32)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA;
-//         format_ = GL_ALPHA_INTEGER_EXT;
-//         internalFormat_ = GL_ALPHA32UI_EXT;
-        dataType_ = GL_UNSIGNED_INT;
-    }
-    // VolumeIntX
-    else if (volumeType_ == typeid(VolumeInt8)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA8;
-        dataType_ = GL_BYTE;
-    }
-    else if (volumeType_ == typeid(VolumeInt16)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA16;
-        dataType_ = GL_SHORT;
-    }
-    else if (volumeType_ == typeid(VolumeInt32)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA;
-        dataType_ = GL_INT;
-    }
-    // VolumeFloat and VolumeDouble
-    else if (volumeType_ == typeid(VolumeFloat)) {
-        format_ = GL_ALPHA;
-        internalFormat_ = GL_ALPHA;
-        dataType_ = GL_FLOAT;
-    }
-    else if (volumeType_ == typeid(VolumeDouble)) {
-        LERROR("OpenGL does not support double textures directly");
-    }
-    // Volume2x with int16 types
-    else if (volumeType_ == typeid(Volume2xUInt16)) {
-        format_ = GL_LUMINANCE_ALPHA;
-        internalFormat_ = GL_LUMINANCE16_ALPHA16;
-        dataType_ = GL_UNSIGNED_SHORT;
-    }
-    else if (volumeType_ == typeid(Volume2xInt16)) {
-        format_ = GL_LUMINANCE_ALPHA;
-        internalFormat_ = GL_LUMINANCE16_ALPHA16;
-        dataType_ = GL_SHORT;
-    }
-    // Volume3x with int8 types
-    else if (volumeType_ == typeid(Volume3xUInt8)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB8;
-        dataType_ = GL_UNSIGNED_BYTE;
-    }
-    else if (volumeType_ == typeid(Volume3xInt8)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB8;
-        dataType_ = GL_BYTE;
-    }
-    // Volume4x with int8 types
-    else if (volumeType_ == typeid(Volume4xUInt8)) {
-        format_ = GL_RGBA;
-        internalFormat_ = GL_RGBA8;
-        dataType_ = GL_UNSIGNED_BYTE;
-    }
-    else if (volumeType_ == typeid(Volume4xInt8)) {
-        format_ = GL_RGBA;
-        internalFormat_ = GL_RGBA8;
-        dataType_ = GL_BYTE;
-    }
-    // Volume3x with int16 types
-    else if (volumeType_ == typeid(Volume3xUInt16)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB16;
-        dataType_ = GL_UNSIGNED_SHORT;
-    }
-    else if (volumeType_ == typeid(Volume3xInt16)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB16;
-        dataType_ = GL_SHORT;
-    }
-    // Volume4x with int16 types
-    else if (volumeType_ == typeid(Volume4xUInt16)) {
-        format_ = GL_RGBA;
-        internalFormat_ = GL_RGBA16;
-        dataType_ = GL_UNSIGNED_SHORT;
-    }
-    else if (volumeType_ == typeid(Volume4xInt16)) {
-        format_ = GL_RGBA;
-        internalFormat_ = GL_RGBA16;
-        dataType_ = GL_SHORT;
-    }
-    // Volume3x with real types
-    else if (volumeType_ == typeid(Volume3xFloat)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB;
-        dataType_ = GL_FLOAT;
-    }
-#ifdef VRN_MODULE_FLOWREEN
-    else if (volumeType_ == typeid(VolumeFlow3D)) {
-        format_ = GL_RGB;
-        internalFormat_ = GL_RGB16;
-        dataType_ = GL_FLOAT;
-    }
-#endif
-    else if (volumeType_ == typeid(Volume3xDouble)) {
-        tgtAssert(false, "OpenGL does not support this kind of volume directly");
-    }
-    // Volume4x with real types
-    else if (volumeType_ == typeid(Volume4xFloat)) {
-        format_ = GL_RGBA;
-        internalFormat_ = GL_RGBA;
-        dataType_ = GL_FLOAT;
-    }
-    else if (volumeType_ == typeid(Volume4xDouble)) {
-        tgtAssert(false, "OpenGL does not support this kind of volume directly");
-    }
-    // -> not found
-    else {
-        tgtAssert(false, "unsupported volume format_");
-    }
-
-    try {
-        generateTextures();
-    }
-    catch (std::bad_alloc) {
-        // release all resources
-        destroy();
-        throw; // throw it to the caller
-    }
+    generateTexture(volume);
 }
 
 VolumeGL::~VolumeGL() {
@@ -238,114 +91,281 @@ VolumeGL::~VolumeGL() {
 }
 
 void VolumeGL::destroy() {
-    // delete created VolumeTexture objects
-    for (size_t i = 0; i < textures_.size(); ++i)
-        delete textures_[i];
-
-    // check whether a temporary scaled volume was created and delete it
-    if (volume_ != origVolume_)
-        delete volume_;
+    delete texture_;
 }
 
-/*
- * getters and setters
- */
-
-size_t VolumeGL::getNumTextures() const {
-    return textures_.size();
+const VolumeTexture* VolumeGL::getTexture() const {
+    return texture_;
 }
 
-const VolumeTexture* VolumeGL::getTexture(size_t i /*= 0*/) const {
-    tgtAssert(i<getNumTextures(), "Index out of bounds!");
-    return textures_[i];
+VolumeTexture* VolumeGL::getTexture() {
+    return texture_;
 }
 
-VolumeTexture* VolumeGL::getTexture(size_t i /*= 0*/) {
-    tgtAssert(i<getNumTextures(), "Index out of bounds!");
-    return textures_[i];
-}
-
-Volume* VolumeGL::getVolume() {
-    return volume_;
-}
-
-const Volume* VolumeGL::getVolume() const {
-    return volume_;
-}
-
-tgt::Texture::Filter VolumeGL::getFilter() const {
-    return filter_;
-}
-
-void VolumeGL::setFilter(tgt::Texture::Filter filter) {
-    filter_ = filter;
-}
-
-void VolumeGL::generateTextures() throw (std::bad_alloc) {
+void VolumeGL::generateTexture(const VolumeRAM* volume)
+        throw (VoreenException, std::bad_alloc)
+{
+    if (!tgt::hand(tgt::greaterThan(volume->getDimensions(), svec3(1)))) {
+        std::stringstream message;
+        message << "OpenGL volumes must have a size greater than one in all dimensions. Actual size: " << volume->getDimensions();
+        LERROR(message.str());
+        throw VoreenException(message.str());
+    }
 
     if (!GpuCaps.is3DTexturingSupported()) {
-        LERROR("No 3D texture support");
-        return;
+        std::string message = "3D textures apparently not supported by the OpenGL driver";
+        LERROR(message);
+        throw VoreenException(message);
     }
 
-    ivec3 volumeDims = volume_->getDimensions();
-    vec3 volumeSpacing = volume_->getSpacing();
-
-    // set pixel store with no alignment when reading from main memory
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-    /// check if non-power-of-two textures are not supported
-    if (!GpuCaps.isNpotSupported() && !isPowerOfTwo(volumeDims)) {
-
-        // this stores the new POT-dataset
-        Volume* potVolume = 0;
-
-        // -> no non-power-of-two-support
-        LINFO("No NPOT-support available, starting to bloat to POT...");
-
-        try {
-            VolumeOperatorCreateSubset voCreateSubset(ivec3(0, 0, 0), fitPowerOfTwo(volumeDims));
-            potVolume = voCreateSubset.apply<Volume*>(volume_);
-        }
-        catch (std::bad_alloc) {
-            throw; // throw it to the caller
-        }
-
-        ivec3 potVolumeDims = potVolume->getDimensions();
-
-        // store transformation for texCoords
-        vec3 scale = vec3(volumeDims)/vec3(potVolumeDims);
-
-        // create and upload texture
-        uploadTexture(potVolume, mat4::createScale(scale),
-            volume_->getLLF(), volume_->getURB());
-
-        // destroy the newly create potVolume
-        delete potVolume;
+    if (!GpuCaps.isNpotSupported() && !isPowerOfTwo(getDimensions())) {
+        std::string message = "Non-power-of-two textures apparently not supported by the OpenGL driver";
+        LERROR(message);
+        throw VoreenException(message);
     }
+
+    //
+    // Determine GL format
+    //
+    GLint format;         ///< The format of textures which will are created.
+    GLint internalFormat; ///< The internal format of the textures which are created.
+    GLenum dataType;      ///< The data type of the textures which are created.
+    // scalar
+    if (dynamic_cast<const VolumeAtomic<uint8_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA8;
+        dataType = GL_UNSIGNED_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<int8_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA8;
+        dataType = GL_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<uint16_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA16;
+        dataType = GL_UNSIGNED_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<int16_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA16;
+        dataType = GL_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<uint32_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA;
+        dataType = GL_UNSIGNED_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<int32_t>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA;
+        dataType = GL_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<uint64_t>*>(volume)) {
+        std::string message = "VolumeRAM_UInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<int64_t>*>(volume)) {
+        std::string message = "VolumeRAM_Int64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<float>*>(volume)) {
+        format = GL_ALPHA;
+        internalFormat = GL_ALPHA32F_ARB;
+        dataType = GL_FLOAT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<double>*>(volume)) {
+        std::string message = "VolumeRAM_Double not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    // vec2
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<uint8_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_UNSIGNED_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<int8_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<uint16_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_UNSIGNED_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<int16_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<uint32_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_UNSIGNED_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<int32_t> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<uint64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_2xUInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<int64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_2xInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<float> >*>(volume)) {
+        format = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_LUMINANCE_ALPHA;
+        dataType = GL_FLOAT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<double> >*>(volume)) {
+        std::string message = "VolumeRAM_2xDouble not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    // vec3
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<uint8_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB8;
+        dataType = GL_UNSIGNED_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<int8_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB8;
+        dataType = GL_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<uint16_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB16;
+        dataType = GL_UNSIGNED_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<int16_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB16;
+        dataType = GL_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<uint32_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB;
+        dataType = GL_UNSIGNED_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<int32_t> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB;
+        dataType = GL_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<uint64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_3xUInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<int64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_3xInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<float> >*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB;
+        dataType = GL_FLOAT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<double> >*>(volume)) {
+        std::string message = "VolumeRAM_3xDouble not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    // vec4
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<uint8_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA8;
+        dataType = GL_UNSIGNED_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<int8_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA8;
+        dataType = GL_BYTE;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<uint16_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA16;
+        dataType = GL_UNSIGNED_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<int16_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA16;
+        dataType = GL_SHORT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<uint32_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA;
+        dataType = GL_UNSIGNED_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<int32_t> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA;
+        dataType = GL_INT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<uint64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_4xUInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<int64_t> >*>(volume)) {
+        std::string message = "VolumeRAM_4xInt64 not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<float> >*>(volume)) {
+        format = GL_RGBA;
+        internalFormat = GL_RGBA;
+        dataType = GL_FLOAT;
+    }
+    else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<double> >*>(volume)) {
+        std::string message = "VolumeRAM_4xDouble not supported as OpenGL volume.";
+        LERROR(message);
+        throw VoreenException(message);
+    }
+    // special types (TODO: extract from here)
+#ifdef VRN_MODULE_FLOWREEN
+    else if (dynamic_cast<const VolumeFlow3D*>(volume)) {
+        format = GL_RGB;
+        internalFormat = GL_RGB16;
+        dataType = GL_FLOAT;
+    }
+#endif
     else {
-        // non-power-of-two-support available -> create and upload texture
-        uploadTexture(volume_, mat4::identity, volume_->getLLF(), volume_->getURB());
+        LERROR("unknown or unsupported volume type");
     }
 
-}
 
-void VolumeGL::uploadTexture(Volume* v, const mat4& matrix, const vec3& llf, const vec3& urb) {
+    //
+    // Create texture
+    //
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    VolumeTexture* vTex = 0;
 
     tgt::vec3* temp2 = 0;
 #ifdef VRN_MODULE_FLOWREEN
     // Textures containing flow data need to contain data
     // within range [0.0, 1.0], so the values have to be mapped
-    //
-    VolumeFlow3D* flowTex = dynamic_cast<VolumeFlow3D*>(v);
+    const VolumeFlow3D* flowTex = dynamic_cast<const VolumeFlow3D*>(volume);
     if (flowTex) {
         const float minValue = flowTex->getMinValue();
         const float maxValue = flowTex->getMaxValue();
         const float range = (maxValue - minValue);
 
         const tgt::vec3* const voxels = flowTex->voxel();
-        temp2 = new tgt::vec3[v->getNumVoxels()];
-        for (size_t i = 0; i < v->getNumVoxels(); ++i) {
+        temp2 = new tgt::vec3[volume->getNumVoxels()];
+        for (size_t i = 0; i < volume->getNumVoxels(); ++i) {
             if (voxels[i] != tgt::vec3::zero) {
                 temp2[i].x = (voxels[i].x - minValue) / range;
                 temp2[i].y = (voxels[i].y - minValue) / range;
@@ -355,26 +375,45 @@ void VolumeGL::uploadTexture(Volume* v, const mat4& matrix, const vec3& llf, con
     }
 #endif
 
-    // create texture
-    VolumeTexture* vTex = 0;
 
     // use temp data if this was created
     if (temp2) {
-        vTex = new VolumeTexture(reinterpret_cast<GLubyte*>(temp2),
-            matrix, llf, urb, v->getDimensions(),
-            format_, internalFormat_, dataType_, filter_);
+        vTex = new VolumeTexture(reinterpret_cast<GLubyte*>(temp2), volume->getDimensions(),
+        format, internalFormat, dataType, tgt::Texture::LINEAR);
     }
     else {
-        vTex = new VolumeTexture(static_cast<GLubyte*>(v->getData()),
-            matrix, llf, urb, v->getDimensions(),
-            format_, internalFormat_, dataType_, filter_);
+        vTex = new VolumeTexture(static_cast<const GLubyte*>(volume->getData()),
+            volume->getDimensions(),
+            format, internalFormat, dataType, tgt::Texture::LINEAR);
     }
 
     LGL_ERROR;
 
     vTex->bind();
-    if (v->getData())
+
+    // map signed integer types from [-1.0:1.0] to [0.0:1.0] in order to avoid clamping of negative values
+    if (volume->isInteger() && volume->isSigned()) {
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glPixelTransferf(GL_RED_SCALE,   0.5f);
+        glPixelTransferf(GL_GREEN_SCALE, 0.5f);
+        glPixelTransferf(GL_BLUE_SCALE,  0.5f);
+        glPixelTransferf(GL_ALPHA_SCALE, 0.5f);
+
+        glPixelTransferf(GL_RED_BIAS,    0.5f);
+        glPixelTransferf(GL_GREEN_BIAS,  0.5f);
+        glPixelTransferf(GL_BLUE_BIAS,   0.5f);
+        glPixelTransferf(GL_ALPHA_BIAS,  0.5f);
+
+        pixelTransferMapping_ = RealWorldMapping(0.5f, 0.5f, "");
+    }
+
+    if (volume->getData())
         vTex->uploadTexture();
+
+    // reset pixel transfer
+    if (volume->isInteger() && volume->isSigned()) {
+        glPopAttrib();
+    }
 
     // set texture wrap to clamp
     vTex->setWrapping(tgt::Texture::CLAMP);
@@ -388,9 +427,232 @@ void VolumeGL::uploadTexture(Volume* v, const mat4& matrix, const vec3& llf, con
     vTex->setPixelData(0);
 
     // append to internal data structure
-    textures_.push_back(vTex);
+    texture_ = vTex;
 
     LGL_ERROR;
+}
+
+int VolumeGL::getNumChannels() const {
+    switch(getTexture()->getFormat()) {
+        case GL_ALPHA: return 1;
+        case GL_LUMINANCE_ALPHA: return 2;
+        case GL_RGB: return 3;
+        case GL_RGBA: return 4;
+        default:
+            LERROR("Unsupported volume format!");
+            tgtAssert(false, "unsupported volume format");
+            return 0;
+    }
+}
+
+int VolumeGL::getBytesPerVoxel() const {
+    int bytesPerChannel = 0;
+    switch(getTexture()->getDataType()) {
+        case GL_UNSIGNED_BYTE:
+        case GL_BYTE:
+            bytesPerChannel = 1;
+            break;
+        case GL_SHORT:
+        case GL_UNSIGNED_SHORT:
+            bytesPerChannel = 2;
+            break;
+        case GL_UNSIGNED_INT:
+        case GL_INT:
+            bytesPerChannel = 4;
+            break;
+        case GL_FLOAT:
+            bytesPerChannel = 4;
+            break;
+        default:
+            LERROR("Unsupported data type!");
+    }
+    return bytesPerChannel * getNumChannels();
+}
+
+voreen::RealWorldMapping VolumeGL::getPixelTransferMapping() const {
+    return pixelTransferMapping_;
+}
+
+//--------------------------------------------------------
+
+bool RepresentationConverterUploadGL::canConvert(const VolumeRepresentation* source) const {
+    //We can only convert from RAM volumes:
+    if(dynamic_cast<const VolumeRAM*>(source))
+        return true;
+    else
+        return false;
+}
+
+VolumeRepresentation* RepresentationConverterUploadGL::convert(const VolumeRepresentation* source) const {
+    const VolumeRAM* v = dynamic_cast<const VolumeRAM*>(source);
+
+    if (!v) {
+        //should have checked before...
+        //LERROR("Failed to convert!");
+        return 0;
+    }
+
+    VolumeGL* vgl = 0;
+    try {
+        vgl = new VolumeGL(v);
+        LGL_ERROR;
+    }
+    catch (VoreenException& e) {
+        LERRORC("voreen.RepresentationConverterUploadGL", "Failed to create VolumeGL: " << e.what());
+    }
+    catch (std::bad_alloc& /*e*/) {
+        LERRORC("voreen.RepresentationConverterUploadGL", "Bad allocation during creation of VolumeGL");
+    }
+    return vgl;
+}
+
+//--------------------------------------------------------
+
+bool RepresentationConverterDownloadGL::canConvert(const VolumeRepresentation* source) const {
+    //We can only convert from GL volumes:
+    if(dynamic_cast<const VolumeGL*>(source))
+        return true;
+    else
+        return false;
+}
+
+VolumeRepresentation* RepresentationConverterDownloadGL::convert(const VolumeRepresentation* source) const {
+    const VolumeGL* vgl = dynamic_cast<const VolumeGL*>(source);
+
+    if(vgl) {
+        const VolumeTexture* tex = vgl->getTexture();
+        tgt::svec3 dims = tex->getDimensions();
+        VolumeRAM* v = 0;
+
+        switch(tex->getFormat()) {
+            case GL_ALPHA:
+                switch(tex->getDataType()) {
+                    // VolumeRAM_UIntX
+                    case GL_UNSIGNED_BYTE:
+                        v = new VolumeRAM_UInt8(dims);
+                        //internalFormat = GL_ALPHA8;
+                        break;
+                    case GL_UNSIGNED_SHORT:
+                        v = new VolumeRAM_UInt16(dims);
+                        //internalFormat = GL_ALPHA16;
+                        break;
+                    case GL_UNSIGNED_INT:
+                        v = new VolumeRAM_UInt32(dims);
+                        //internalFormat = GL_ALPHA;
+                        break;
+                        // VolumeRAM_IntX
+                    case GL_BYTE:
+                        v = new VolumeRAM_Int8(dims);
+                        //internalFormat = GL_ALPHA8;
+                        break;
+                    case GL_SHORT:
+                        v = new VolumeRAM_Int16(dims);
+                        //internalFormat = GL_ALPHA16;
+                        break;
+                    case GL_INT:
+                        v = new VolumeRAM_Int32(dims);
+                        //internalFormat = GL_ALPHA;
+                        break;
+                        // VolumeRAM_Float and VolumeRAM_Double
+                    case GL_FLOAT:
+                        v = new VolumeRAM_Float(dims);
+                        //internalFormat = GL_ALPHA;
+                        break;
+                    default:
+                        //v = new VolumeRAM_Double(dims);
+                        LERRORC("voreen.RepresentationConverterDownloadGL", "Unsupported texture format! (GL_ALPHA)");
+                }
+                break;
+            case GL_LUMINANCE_ALPHA:
+                switch(tex->getDataType()) {
+                    // VolumeRAM_2x with int16 types
+                    case GL_UNSIGNED_SHORT:
+                        v = new VolumeRAM_2xUInt16(dims);
+                        //internalFormat = GL_LUMINANCE16_ALPHA16;
+                        break;
+                    case GL_SHORT:
+                        v = new VolumeRAM_2xInt16(dims);
+                        //internalFormat = GL_LUMINANCE16_ALPHA16;
+                        break;
+                    default:
+                        LERRORC("voreen.RepresentationConverterDownloadGL", "Unsupported texture format! (GL_LUMINANCE_ALPHA)");
+                        //v = new VolumeRAM_Double(dims);
+                }
+                break;
+            case GL_RGB:
+                switch(tex->getDataType()) {
+                    // VolumeRAM_3x with int8 types
+                    case GL_UNSIGNED_BYTE:
+                        v = new VolumeRAM_3xUInt8(dims);
+                        //internalFormat = GL_RGB8;
+                        break;
+                    case GL_BYTE:
+                        v = new VolumeRAM_3xInt8(dims);
+                        //internalFormat = GL_RGB8;
+                        break;
+                        // VolumeRAM_3x with int16 types
+                    case GL_UNSIGNED_SHORT:
+                        v = new VolumeRAM_3xUInt16(dims);
+                        //internalFormat = GL_RGB16;
+                        break;
+                    case GL_SHORT:
+                        v = new VolumeRAM_3xInt16(dims);
+                        //internalFormat = GL_RGB16;
+                        break;
+                        // VolumeRAM_3x with real types
+                    case GL_FLOAT:
+                        v = new VolumeRAM_3xFloat(dims);
+                        //internalFormat = GL_RGB;
+                        break;
+                    default:
+                        LERRORC("voreen.RepresentationConverterDownloadGL", "Unsupported texture format! (GL_RGB)");
+                        //v = new VolumeRAM_3xDouble(dims);
+                }
+                break;
+            case GL_RGBA:
+                switch(tex->getDataType()) {
+                    // VolumeRAM_4x with int8 types
+                    case GL_UNSIGNED_BYTE:
+                        v = new VolumeRAM_4xUInt8(dims);
+                        //internalFormat = GL_RGBA8;
+                        break;
+                    case GL_BYTE:
+                        v = new VolumeRAM_4xInt8(dims);
+                        //internalFormat = GL_RGBA8;
+                        break;
+                        // VolumeRAM_4x with int16 types
+                    case GL_UNSIGNED_SHORT:
+                        v = new VolumeRAM_4xUInt16(dims);
+                        //internalFormat = GL_RGBA16;
+                        break;
+                    case GL_SHORT:
+                        v = new VolumeRAM_4xInt16(dims);
+                        //internalFormat = GL_RGBA16;
+                        break;
+                        // VolumeRAM_4x with real types
+                    case GL_FLOAT:
+                        v = new VolumeRAM_4xFloat(dims);
+                        //internalFormat = GL_RGBA;
+                        break;
+                    default:
+                        LERRORC("voreen.RepresentationConverterDownloadGL", "Unsupported texture format! (GL_RGBA)");
+                        //v = new VolumeRAM_4xDouble(dims);
+                }
+                break;
+            default:
+                tgtAssert(false, "unsupported volume format");
+        }
+
+        if(v) {
+            tex->downloadTextureToBuffer(static_cast<GLubyte*>(v->getData()), v->getNumBytes());
+        }
+        return v;
+    }
+    else {
+        //should have checked before...
+        //LERROR("Failed to convert!");
+        return 0;
+    }
 }
 
 } // namespace voreen

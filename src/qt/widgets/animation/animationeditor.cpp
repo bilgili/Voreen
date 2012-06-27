@@ -1,33 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
-
-#include "voreen/core/processors/canvasrenderer.h"
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/animation/animationexportwidget.h"
 #include "voreen/qt/widgets/animation/timelinewidget.h"
@@ -100,23 +94,23 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     QToolButton* newButton = new QToolButton(this);
     QToolButton* settingsButton = new QToolButton(this);
     QToolButton* videoExportButton = new QToolButton(this);
-    newButton->setIcon(QIcon(":/icons/clear.png"));
-    settingsButton->setIcon(QIcon(":/voreenve/icons/show-properties.png"));
-    videoExportButton->setIcon(QIcon(":/icons/video_export.png"));
+    newButton->setIcon(QIcon(":/qt/icons/clear.png"));
+    settingsButton->setIcon(QIcon(":/qt/icons/properties.png"));
+    videoExportButton->setIcon(QIcon(":/qt/icons/video_export.png"));
 
     QToolButton* undoButton = new QToolButton(this);
     QToolButton* redoButton = new QToolButton(this);
-    undoButton->setIcon(QIcon(":/icons/edit_undo.png"));
-    redoButton->setIcon(QIcon(":/icons/edit_redo.png"));
+    undoButton->setIcon(QIcon(":/qt/icons/edit_undo.png"));
+    redoButton->setIcon(QIcon(":/qt/icons/edit_redo.png"));
 
     QToolButton* startButton = new QToolButton(this);
 
     QActionGroup* playerControlGroup = new QActionGroup(this);
-    QAction* rewind = new QAction(QIcon(":/icons/player_rew.png"), tr("rewind"), this);
-    QAction* play = new QAction(QIcon(":/icons/player_play.png"), tr("play"), this);
-    QAction* pause = new QAction(QIcon(":/icons/player_pause.png"), tr("pause"), this);
-    QAction* stop = new QAction(QIcon(":/icons/player_stop.png"), tr("stop"), this);
-    QAction* forward = new QAction(QIcon(":/icons/player_fwd.png"), tr("forward"), this);
+    QAction* rewind = new QAction(QIcon(":/qt/icons/player_rew.png"), tr("rewind"), this);
+    QAction* play = new QAction(QIcon(":/qt/icons/player_play.png"), tr("play"), this);
+    QAction* pause = new QAction(QIcon(":/qt/icons/player_pause.png"), tr("pause"), this);
+    QAction* stop = new QAction(QIcon(":/qt/icons/player_stop.png"), tr("stop"), this);
+    QAction* forward = new QAction(QIcon(":/qt/icons/player_fwd.png"), tr("forward"), this);
     playerControlGroup->addAction(rewind);
     playerControlGroup->addAction(play);
     playerControlGroup->addAction(pause);
@@ -132,10 +126,10 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
 
     QToolButton* recordButton = new QToolButton(this);
 
-    startButton->setIcon(QIcon(":/icons/player_start.png"));
-    endButton->setIcon(QIcon(":/icons/player_end.png"));
+    startButton->setIcon(QIcon(":/qt/icons/player_start.png"));
+    endButton->setIcon(QIcon(":/qt/icons/player_end.png"));
 
-    recordButton->setIcon(QIcon(":/icons/player_record.png"));
+    recordButton->setIcon(QIcon(":/qt/icons/player_record.png"));
 
     toolbar->addWidget(newButton);
     toolbar->addWidget(settingsButton);

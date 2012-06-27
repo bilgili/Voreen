@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
 #include "voreen/core/datastructures/transfunc/transfuncprimitive.h"
@@ -35,7 +31,7 @@
 #include "tgt/gpucapabilities.h"
 #include "tgt/framebufferobject.h"
 
-#ifdef VRN_WITH_DEVIL
+#ifdef VRN_MODULE_DEVIL
     #include <IL/il.h>
 #endif
 
@@ -45,22 +41,22 @@ using tgt::Texture;
 
 namespace voreen {
 
-const std::string TransFuncIntensityGradient::loggerCat_("voreen.TransFuncIntensityGradient");
+const std::string TransFunc2DPrimitives::loggerCat_("voreen.TransFuncIntensityGradient");
 
-TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height)
+TransFunc2DPrimitives::TransFunc2DPrimitives(int width, int height)
     : TransFunc(width, height, 1, GL_RGBA, GL_FLOAT, Texture::LINEAR)
     , fbo_(0)
 {
     loadFileFormats_.push_back("tfig");
 
     saveFileFormats_.push_back("tfig");
-#ifdef VRN_WITH_DEVIL
+#ifdef VRN_MODULE_DEVIL
     saveFileFormats_.push_back("png");
 #endif
 
 }
 
-TransFuncIntensityGradient::~TransFuncIntensityGradient() {
+TransFunc2DPrimitives::~TransFunc2DPrimitives() {
     delete fbo_;
     fbo_ = 0;
     LGL_ERROR;
@@ -73,7 +69,7 @@ TransFuncIntensityGradient::~TransFuncIntensityGradient() {
     }
 }
 
-bool TransFuncIntensityGradient::operator==(const TransFuncIntensityGradient& tf) {
+bool TransFunc2DPrimitives::operator==(const TransFunc2DPrimitives& tf) {
 
     // check type information
     if (dimensions_ != tf.dimensions_ || format_ != tf.format_ || dataType_ != tf.dataType_)
@@ -87,16 +83,16 @@ bool TransFuncIntensityGradient::operator==(const TransFuncIntensityGradient& tf
     return (memcmp(tex_->getPixelData(), tf.tex_->getPixelData(), tgt::hmul(tex_->getDimensions())*tex_->getBpp()) == 0);
 }
 
-bool TransFuncIntensityGradient::operator!=(const TransFuncIntensityGradient& tf) {
+bool TransFunc2DPrimitives::operator!=(const TransFunc2DPrimitives& tf) {
     return !(*this == tf);
 }
 
-void TransFuncIntensityGradient::setScaleFactor(float /*factor*/) {
+void TransFunc2DPrimitives::setScaleFactor(float /*factor*/) {
     //for (size_t i = 0; i < primitives_.size(); ++i)
     //    primitives_[i]->setScaleFactor(factor);
 }
 
-bool TransFuncIntensityGradient::save(const std::string& filename) {
+bool TransFunc2DPrimitives::save(const std::string& filename) {
     //look for fileExtension
     std::string fileExtension;
     size_t dotPosition = filename.rfind(".");
@@ -111,7 +107,7 @@ bool TransFuncIntensityGradient::save(const std::string& filename) {
         return saveImage(filename);
 }
 
-bool TransFuncIntensityGradient::saveTfig(const std::string& filename) {
+bool TransFunc2DPrimitives::saveTfig(const std::string& filename) {
 
     // open file stream
     std::ofstream stream(filename.c_str(), std::ios_base::out);
@@ -124,7 +120,6 @@ bool TransFuncIntensityGradient::saveTfig(const std::string& filename) {
     bool success = true;
     try {
         XmlSerializer s(filename);
-        s.registerFactory(TransFuncFactory::getInstance());
         s.serialize("TransFuncIntensityGradient", this);
 
         s.write(stream);
@@ -150,13 +145,13 @@ bool TransFuncIntensityGradient::saveTfig(const std::string& filename) {
 
 }
 
-bool TransFuncIntensityGradient::saveImage(const std::string& filename) {
+bool TransFunc2DPrimitives::saveImage(const std::string& filename) {
+#ifdef VRN_MODULE_DEVIL
     //extract file extension
     std::string fileExtension;
     size_t dotPosition = filename.rfind(".");
     fileExtension = filename.substr(dotPosition+1);
 
-#ifdef VRN_WITH_DEVIL
     //IL does _NOT_ overwrite files by default
     ilEnable(IL_FILE_OVERWRITE);
     //download texture and save as png:
@@ -185,11 +180,11 @@ bool TransFuncIntensityGradient::saveImage(const std::string& filename) {
 #else
     LERROR("Saving of " << filename  << " failed: No DevIL support.");
     return false;
-#endif // VRN_WITH_DEVIL
+#endif // VRN_MODULE_DEVIL
 }
 
 
-bool TransFuncIntensityGradient::load(const std::string& filename) {
+bool TransFunc2DPrimitives::load(const std::string& filename) {
     // Extract the file extension
     std::string fileExtension;
     size_t dotPosition = filename.rfind(".");
@@ -205,7 +200,7 @@ bool TransFuncIntensityGradient::load(const std::string& filename) {
         return false;
 }
 
-bool TransFuncIntensityGradient::loadTfig(const std::string& filename) {
+bool TransFunc2DPrimitives::loadTfig(const std::string& filename) {
 
     // open file stream
     std::ifstream stream(filename.c_str(), std::ios_base::in);
@@ -218,7 +213,6 @@ bool TransFuncIntensityGradient::loadTfig(const std::string& filename) {
     bool success = true;
     try {
         XmlDeserializer d(filename);
-        d.registerFactory(TransFuncFactory::getInstance());
         d.read(stream);
         d.deserialize("TransFuncIntensityGradient", *this);
         stream.close();
@@ -238,11 +232,11 @@ bool TransFuncIntensityGradient::loadTfig(const std::string& filename) {
     return success;
 }
 
-void TransFuncIntensityGradient::addPrimitive(TransFuncPrimitive* p) {
+void TransFunc2DPrimitives::addPrimitive(TransFuncPrimitive* p) {
     primitives_.push_back(p);
 }
 
-void TransFuncIntensityGradient::removePrimitive(TransFuncPrimitive* p) {
+void TransFunc2DPrimitives::removePrimitive(TransFuncPrimitive* p) {
     std::vector<TransFuncPrimitive*>::iterator it;
     for (it = primitives_.begin(); it != primitives_.end(); ++it) {
         if (*it == p) {
@@ -253,7 +247,7 @@ void TransFuncIntensityGradient::removePrimitive(TransFuncPrimitive* p) {
     }
 }
 
-void TransFuncIntensityGradient::clear() {
+void TransFunc2DPrimitives::clear() {
     std::vector<TransFuncPrimitive*>::iterator it;
     while (!primitives_.empty()) {
         it = primitives_.begin();
@@ -264,7 +258,7 @@ void TransFuncIntensityGradient::clear() {
     textureInvalid_ = true;
 }
 
-void TransFuncIntensityGradient::updateTexture() {
+void TransFunc2DPrimitives::updateTexture() {
 
     // (re-)create tf texture and fbo, if necessary
     if (!fbo_ || !tex_ || (tex_->getDimensions() != dimensions_))
@@ -318,33 +312,33 @@ void TransFuncIntensityGradient::updateTexture() {
     textureInvalid_ = false;
 }
 
-void TransFuncIntensityGradient::paint() {
+void TransFunc2DPrimitives::paint() {
     for (size_t i = 0; i < primitives_.size(); ++i)
         primitives_[i]->paint();
 }
 
-void TransFuncIntensityGradient::paintForSelection() {
+void TransFunc2DPrimitives::paintForSelection() {
     for (size_t i = 0; i < primitives_.size(); ++i)
-        primitives_[i]->paintForSelection(i);
+        primitives_[i]->paintForSelection(static_cast<GLubyte>(i));
 }
 
-void TransFuncIntensityGradient::paintInEditor() {
+void TransFunc2DPrimitives::paintInEditor() {
     for (size_t i = 0; i < primitives_.size(); ++i)
         primitives_[i]->paintInEditor();
 }
 
-TransFuncPrimitive* TransFuncIntensityGradient::getPrimitive(int i) const {
+TransFuncPrimitive* TransFunc2DPrimitives::getPrimitive(int i) const {
     if ((i < 0) || (i >= static_cast<int>(primitives_.size())))
         return 0;
     else
         return primitives_[i];
 }
 
-TransFuncPrimitive* TransFuncIntensityGradient::getPrimitiveForClickedControlPoint(const tgt::vec2& pos) const {
+TransFuncPrimitive* TransFunc2DPrimitives::getPrimitiveForClickedControlPoint(const tgt::vec2& pos) const {
     if (primitives_.empty())
         return 0;
 
-    int min = 0;
+    size_t min = 0;
     // A distance of 2 can never happen because the canvas is normalized to [0,1]x[0,1],
     // so this value is huge enough.
     float mindist = 2.f;
@@ -362,19 +356,22 @@ TransFuncPrimitive* TransFuncIntensityGradient::getPrimitiveForClickedControlPoi
         return primitives_[min];
 }
 
-void TransFuncIntensityGradient::serialize(XmlSerializer& s) const {
+void TransFunc2DPrimitives::serialize(XmlSerializer& s) const {
     TransFunc::serialize(s);
     s.serialize("Primitives", primitives_, "Primitive");
 }
 
-void TransFuncIntensityGradient::deserialize(XmlDeserializer& s) {
+void TransFunc2DPrimitives::deserialize(XmlDeserializer& s) {
     TransFunc::deserialize(s);
     s.deserialize("Primitives", primitives_, "Primitive");
 }
 
+void TransFunc2DPrimitives::reset() {
+    clear();
+}
 
-TransFunc* TransFuncIntensityGradient::clone() const {
-    TransFuncIntensityGradient* func = new TransFuncIntensityGradient();
+TransFunc* TransFunc2DPrimitives::clone() const {
+    TransFunc2DPrimitives* func = new TransFunc2DPrimitives();
 
     func->dimensions_.x = dimensions_.x;
     func->dimensions_.y = dimensions_.y;
@@ -394,7 +391,7 @@ TransFunc* TransFuncIntensityGradient::clone() const {
     return func;
 }
 
-void TransFuncIntensityGradient::createTex() {
+void TransFunc2DPrimitives::createTex() {
 
     // create or clear FBO
     if (!fbo_) {

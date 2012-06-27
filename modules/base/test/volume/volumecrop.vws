@@ -1,0 +1,75 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-477" y="-391" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader&amp;preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeCrop" name="VolumeCrop" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-471" y="-295" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="82" />
+                        <Property name="bottomClippingPlane" value="21" />
+                        <Property name="button" />
+                        <Property name="clearCache" />
+                        <Property name="continuousCropping" value="true" />
+                        <Property name="croppedDimensions">
+                            <value x="74" y="70" z="79" />
+                        </Property>
+                        <Property name="croppedSize" value="0" />
+                        <Property name="frontClippingPlane" value="13" />
+                        <Property name="leftClippingPlane" value="100" />
+                        <Property name="rightClippingPlane" value="27" />
+                        <Property name="topClippingPlane" value="99" />
+                        <Property name="useCaching" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-471" y="-195" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/walnut-cropped.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeCrop" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeCrop" ref="ref1" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

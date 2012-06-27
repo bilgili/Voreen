@@ -1,40 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/propertylistwidget.h"
 
-#include "voreen/core/datastructures/volume/volumecontainer.h"
-#include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/processorpropertieswidget.h"
-#include "voreen/qt/widgets/property/volumehandlepropertywidget.h"
-#include "voreen/qt/widgets/property/volumecollectionpropertywidget.h"
+#include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
+#include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
 
 #include <QVBoxLayout>
 #include <QToolButton>
@@ -45,7 +39,6 @@ PropertyListWidget::PropertyListWidget(QWidget* parent, ProcessorNetwork* proces
                                        PropertyListWidget::WidgetMode mode, Property::LODSetting lod)
     : QScrollArea(parent)
     , processorNetwork_(processorNet)
-    , volumeContainer_(0)
     , widgetMode_(mode)
     , levelOfDetail_(lod)
     , hideLodControl_(0)
@@ -85,10 +78,6 @@ void PropertyListWidget::setProcessorNetwork(ProcessorNetwork* network) {
     networkChanged();
 }
 
-void PropertyListWidget::setVolumeContainer(VolumeContainer* volumeContainer) {
-    volumeContainer_ = volumeContainer;
-}
-
 void PropertyListWidget::networkChanged() {
     clear();
     createWidgets();
@@ -110,7 +99,6 @@ void PropertyListWidget::processorAdded(const Processor* processor) {
     containerLayout_->addWidget(headerWidget);
 
     // Assign volume container to headerWidgets for further propagation to volumehandleproperty- and volumecollectionwidgets
-    headerWidget->setVolumeContainer(volumeContainer_);
     headerWidget->instantiateWidgets();
     headerWidget->setLevelOfDetail(levelOfDetail_);
     headerWidget->setVisible(widgetMode_ == LIST);
@@ -222,7 +210,7 @@ void PropertyListWidget::createWidgets() {
         hideLodControl_ = new QToolButton(this);
         hideLodControl_->setCheckable(true);
         hideLodControl_->setChecked(true);
-        hideLodControl_->setIcon(QIcon(":/voreenve/icons/eye-questionmark.png"));
+        hideLodControl_->setIcon(QIcon(":/qt/icons/eye-questionmark.png"));
         hideLodControl_->setToolTip(tr("Hide Level Of Detail Controls"));
         hideLodControl_->setMaximumSize(15,15);
         hideLodControl_->setMinimumSize(15,15);
@@ -239,7 +227,7 @@ void PropertyListWidget::createWidgets() {
     // generate processor property widgets: each processor property contains a processor's properties
     // along with a expansion header
     setUpdatesEnabled(false);
-    for (int i=0; i<processorNetwork_->numProcessors(); ++i) {
+    for (size_t i=0; i<processorNetwork_->numProcessors(); ++i) {
         Processor* proc = processorNetwork_->getProcessors().at(i);
         ProcessorPropertiesWidget* headerWidget = new ProcessorPropertiesWidget(this, proc, false, true);
         connect(headerWidget, SIGNAL(modified()), this, SLOT(processorModified()));
@@ -247,9 +235,6 @@ void PropertyListWidget::createWidgets() {
         //connect(graphicsProcessorNet_->processorItems[i], SIGNAL(processorNameChanged()), headerWidget, SLOT(updateHeaderTitle()));
         containerLayout_->addWidget(headerWidget);
         processorWidgetMap_.insert(std::make_pair(proc, headerWidget));
-
-        // Assign volume container to headerWidget for further propagation to VolumeHandlePropertyWidget and VolumeCollectionPropertyWidget
-        headerWidget->setVolumeContainer(volumeContainer_);
     }
 
     setLevelOfDetail(levelOfDetail_);
@@ -259,11 +244,11 @@ void PropertyListWidget::createWidgets() {
 void PropertyListWidget::hideLodControls(bool hide) {
     lodControlVisibility_ = !hide;
     if(processorNetwork_ != 0) {
-        for (int i=0; i<processorNetwork_->numProcessors(); ++i) {
+        for (size_t i=0; i<processorNetwork_->numProcessors(); ++i) {
             Processor* proc = processorNetwork_->getProcessors().at(i);
             const std::vector<Property*>& props = proc->getProperties();
 
-            for(uint ii = 0; ii < props.size(); ++ii) {
+            for (size_t ii = 0; ii < props.size(); ++ii) {
                 const std::set<PropertyWidget*> widgets = props.at(ii)->getPropertyWidgets();
                 std::set<PropertyWidget*>::const_iterator it = widgets.begin();
                 while(it != widgets.end()) {

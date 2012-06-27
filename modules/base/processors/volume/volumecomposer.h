@@ -1,0 +1,80 @@
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
+
+#ifndef VRN_IMAGESTACKER_H
+#define VRN_IMAGESTACKER_H
+
+#include "voreen/core/processors/volumeprocessor.h"
+
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/datastructures/volume/volumecollection.h"
+
+namespace voreen {
+
+class ImageSequence;
+
+/**
+ * Constructs a volume from a sequence of 2D images.
+ */
+class VolumeComposer : public VolumeProcessor {
+public:
+    VolumeComposer();
+    virtual Processor* create() const;
+
+    virtual std::string getClassName() const  { return "VolumeComposer";    }
+    virtual std::string getCategory() const   { return "Volume Processing"; }
+    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING;  }
+
+    virtual bool usesExpensiveComputation() const { return true; }
+
+    virtual bool isReady() const;
+
+protected:
+    virtual void setDescriptions() {
+        setDescription("Constructs a volume by stacking either the input image sequence or the input volume collection in z-direction.");
+    }
+
+    virtual void process();
+    virtual void initialize() throw (tgt::Exception);
+    virtual void deinitialize() throw (tgt::Exception);
+
+    void stackImages();
+    void stackVolumes();
+
+    ImageSequencePort inportImages_;
+    VolumeCollectionPort inportVolumes_;
+    VolumePort outport_;
+
+    FloatVec3Property voxelSpacing_;
+
+    static const std::string loggerCat_; ///< category used in logging
+};
+
+}
+
+#endif //VRN_IMAGESTACKER_H

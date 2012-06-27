@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/texturereader.h"
 
@@ -39,55 +40,6 @@ GLsizei TextureReader::checkSize(GLsizei s) {
     while (k < s)
         k <<= 1;
     return k;
-}
-
-bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter) {
-    std::string name = (t->getName().empty() ? "" : " (" + t->getName() + ")");
-    
-    if ((t->dimensions_.x != checkSize(t->dimensions_.x)) ||
-        (t->dimensions_.y != checkSize(t->dimensions_.y)))
-    {
-        if (GpuCaps.isNpotSupported()) {
-            LDEBUG("Resizing using hardware support.");
-            return true;
-        } else {
-            LWARNING("Texture size not power of 2. Resizing - SLOW!!!" + name);
-            if (filter == Texture::MIPMAP || filter == Texture::ANISOTROPIC)
-                LWARNING("Filter not supported for resizing -> setting to LINEAR." + name);
-            filter = Texture::LINEAR;
-        }
-
-        glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        GLubyte* newPixels;
-        GLuint newWidth, newHeight;
-        
-        // simply scale up to the next power of two
-        newHeight = checkSize(t->dimensions_.y);
-        newWidth = checkSize(t->dimensions_.x);
-
-        size_t newArraySize = newWidth * newHeight *  t->bpp_;
-        newPixels = new GLubyte[newArraySize];
-
-        LWARNING("  Resizing " << t->dimensions_.x << "x" << t->dimensions_.y
-                 << " to " << newWidth << "x" << newHeight << name);
-        GLint scaleResult
-            = gluScaleImage(t->format_, t->dimensions_.x, t->dimensions_.y, t->dataType_, t->pixels_,
-                            newWidth, newHeight, t->dataType_, newPixels);
-
-        if (scaleResult != 0) {
-            LERROR("Error resizing texture to power of 2:" << gluErrorString(scaleResult) << name);
-            return false;
-        }
-        
-        t->dimensions_.y = newHeight;
-        t->dimensions_.x = newWidth;
-        delete[] t->pixels_;
-        t->pixels_ = newPixels;
-        t->arraySize_ = newArraySize;
-    }
-    return true;
 }
 
 bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
@@ -110,10 +62,6 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
     }
 
     if (createOGLTex) {
-        //FIXME: needed? joerg
-//         if (!rescaleTexture(t, filter))
-//             return false;
-
         glGenTextures(1, &t->id_);
         glBindTexture(GL_TEXTURE_1D, t->id_);
 
@@ -129,37 +77,94 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
 bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     t->type_ = GL_TEXTURE_2D;
 
-    switch (t->bpp_) {
-    case 3:
-        t->format_ = GL_RGB;
-        compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+    // derived internal format from format and bit depth
+    switch (t->format_) {
+    case GL_LUMINANCE:
+        if (t->bpp_ == 1)
+            t->internalformat_ = GL_LUMINANCE;
+        else if (t->bpp_ == 2)
+            t->internalformat_ = GL_LUMINANCE16;
+        else {
+            LERROR(t->bpp_ << " bytes per pixel not supported for texture format GL_LUMINANCE");
+            return false;
+        }
         break;
 
-    case 4:
-        t->format_ = GL_RGBA;
-        compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+    case GL_LUMINANCE_ALPHA:
+        if (t->bpp_ == 2)
+            t->internalformat_ = GL_LUMINANCE_ALPHA;
+        else if (t->bpp_ == 4)
+            t->internalformat_ = GL_LUMINANCE16_ALPHA16;
+        else {
+            LERROR(t->bpp_ << " bytes per pixel not supported for texture format GL_LUMINANCE_ALPHA");
+            return false;
+        }
         break;
 
-    case 8: // 16-bit-per-channel RGBA
-        t->format_ = GL_RGBA;
-        t->internalformat_ = GL_RGBA16;
+    case GL_RGB:
+        if (t->bpp_ == 3)
+            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+        else if (t->bpp_ == 6)
+            t->internalformat_ = GL_RGB16;
+        else {
+            LERROR(t->bpp_ << " bytes per pixel not supported for texture format GL_RGB");
+            return false;
+        }
         break;
 
-    case 12: //HDR-RGB, cut down to one byte per channel (until proper hdr-handling is implemented)
-        t->format_ = GL_RGB;
-        t->internalformat_ = GL_RGB;
-        t->bpp_ = 3;
+    case GL_RGBA:
+        if (t->bpp_ == 4)
+            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+        else if (t->bpp_ == 8)
+            t->internalformat_ = GL_RGBA16;
+        else {
+            LERROR(t->bpp_ << " bytes per pixel not supported for texture format GL_RGBA");
+            return false;
+        }
         break;
 
     default:
-        LERROR(static_cast<int>(t->bpp_)<< " bytes per pixel...error!");
-        return false;
+        // unspecified or unknown format, try to derive from bpp
+        LWARNING("Unspecified or unknown texture format, trying to derive format from bbp ...");
+        switch (t->bpp_) {
+        case 1:
+            t->format_ = GL_LUMINANCE;
+            t->internalformat_ = GL_LUMINANCE;
+            break;
+
+        case 2:
+            t->format_ = GL_LUMINANCE;
+            t->internalformat_ = GL_LUMINANCE16;
+            break;
+
+        case 3:
+            t->format_ = GL_RGB;
+            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+            break;
+
+        case 4:
+            t->format_ = GL_RGBA;
+            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+            break;
+
+        case 8: // 16-bit-per-channel RGBA
+            t->format_ = GL_RGBA;
+            t->internalformat_ = GL_RGBA16;
+            break;
+
+        case 12: //HDR-RGB, cut down to one byte per channel (until proper hdr-handling is implemented)
+            t->format_ = GL_RGB;
+            t->internalformat_ = GL_RGB;
+            t->bpp_ = 3;
+            break;
+
+        default:
+            LERROR(static_cast<int>(t->bpp_)<< " bytes per pixel not supported!");
+            return false;
+        }
     }
 
     if (createOGLTex) {
-        if (!rescaleTexture(t, filter))
-            return false;
-
         glGenTextures(1, &t->id_);
         glBindTexture(GL_TEXTURE_2D, t->id_);
 
@@ -190,13 +195,9 @@ bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, b
     }
 
     if (createOGLTex) {
-        //FIXME: needed? joerg
-        //  if (!rescaleTexture(t, filter))
-        //      return false;
-
         glGenTextures(1, &t->id_);
 #ifdef GL_TEXTURE_RECTANGLE_ARB
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, t->id_);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, t->id_);
 #endif
         if (!GpuCaps.isAnisotropicFilteringSupported() && filter == Texture::ANISOTROPIC)
             filter = Texture::MIPMAP;
@@ -229,10 +230,6 @@ bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool com
         LERROR(t->bpp_<< " bytes per pixel...error!");
         return false;
     }
-
-    //FIXME: needed? joerg
-//     if (!rescaleTexture(t, filter))
-//         return false;
 
     if (createOGLTex) {
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_RENDERPORT_H
 #define VRN_RENDERPORT_H
@@ -45,7 +41,7 @@ namespace voreen {
 
 class RenderTarget;
 
-class RenderPort : public Port {
+class VRN_CORE_API RenderPort : public Port {
 
     friend class RenderProcessor;
     friend class NetworkEvaluator;
@@ -95,6 +91,11 @@ public:
      * or if is an inport, and its (first) connected outport stores a valid rendering.
      */
     bool hasValidResult() const;
+
+    /**
+     * Returns the result of hasValidResult().
+     */
+    virtual bool hasData() const;
 
     /**
      * Returns the dimensions of the associated RenderTarget.
@@ -160,6 +161,14 @@ public:
     void resize(const tgt::ivec2& newsize);
 
     /**
+     * Resizes the associated RenderTarget to the passed dimensions.
+     *
+     * If this function is called on an inport, the call is propagated to
+     * all connected outports.
+     */
+    void resize(int x, int y);
+
+    /**
      * Re-create and initialize the outport's RenderTarget with the given format.
      * The RenderTarget's resolution is preserved.
      *
@@ -188,7 +197,7 @@ public:
     void invalidateResult();
 
     /**
-     * @brief Passes the assigned textures' TEXTURE_PARAMETERS struct to the passed shader.
+     * @brief Passes the assigned textures' TextureParameters struct to the passed shader.
      *  Needs to be called for each inport whose textures are to be accessed by the shader.
      *
      * @param uniform The name of the struct used in the shader.
@@ -280,14 +289,14 @@ protected:
      *
      * @see Port::initialize
      */
-    virtual void initialize() throw (VoreenException);
+    virtual void initialize() throw (tgt::Exception);
 
     /**
      * Deinitializes the RenderTarget, if the port is an outport.
      *
      * @see Port::deinitialize
      */
-    virtual void deinitialize() throw (VoreenException);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
      * Additionally propagates the connected port's size origin.
@@ -313,6 +322,8 @@ protected:
     void setRenderTargetSharing(bool sharing);
 
     bool getRenderTargetSharing() const;
+
+    virtual tgt::col3 getColorHint() const;
 
 private:
     RenderTarget* renderTarget_;
@@ -369,7 +380,7 @@ tgt::Vector4<T>* voreen::RenderPort::readColorBuffer() throw (VoreenException) {
 /**
  * @brief This class groups RenderPorts to allow easy rendering to multiple targets.
  */
-class PortGroup {
+class VRN_CORE_API PortGroup {
 public:
     /**
      * @param ignoreConnectivity If this is true all ports are attached to the FBO, otherwise only the connected ones.
@@ -438,6 +449,7 @@ public:
      * If ignoreConnectivity is true only connected ports are attached.
      */
     void reattachTargets();
+
 protected:
 
     std::vector<RenderPort*> ports_;

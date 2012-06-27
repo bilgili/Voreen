@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_WORKSPACE_H
 #define VRN_WORKSPACE_H
@@ -40,11 +36,9 @@ namespace tgt {
 namespace voreen {
 
 class ProcessorNetwork;
-class VolumeContainer;
 class Animation;
-class ScriptManagerLinking;
 
-class Workspace : public Serializable {
+class VRN_CORE_API Workspace : public Serializable {
 public:
 
     /**
@@ -73,37 +67,36 @@ public:
     /**
      * Updates the workspace from the specified file.
      *
-     * Non-fatal errors occuring during workspace load are saved
+     * Non-fatal errors occurring during workspace load are saved
      * and can be requested using @c getErrors().
+     *
+     * @param filename the workspace file to load
+     * @param workDir Absolute working directory of the workspace, used for relative-to-absolute path conversions.
+     *      Is passed as document path to the XMLDeserializer. If an empty string is passed, the location
+     *      of the workspace file is used as working directory.
      *
      * @throw SerializationException on serialization errors
      */
-    void load(const std::string& filename) throw (SerializationException);
+    void load(const std::string& filename, const std::string& workDir = "")
+        throw (SerializationException);
 
     /**
      * Saves the workspace to the specified file.
      *
+     * @param filename the file the workspace will be written to
+     * @param if true, an existing file will be overwritten, otherwise an exception is thrown when the file already exists
+     * @param workDir Absolute working directory of the workspace, used for absolute-to-relative path conversions.
+     *      Is passed as document path to the XMLSerializer. If an empty string is passed, the output location
+     *      of the workspace file is used as working directory.
+     *
      * @throw SerializationException on serialization errors
      */
-    void save(const std::string& filename, bool overwrite = true) throw (SerializationException);
+    void save(const std::string& filename, bool overwrite = true, const std::string& workDir = "") throw (SerializationException);
 
     /**
      * Returns the errors that have occurred during serialization.
      */
     std::vector<std::string> getErrors() const;
-
-    /**
-     * Exports the workspace and all associated resources, such as volumes,
-     * to a Zip archive. File paths are adjusted, such that the contained vws-file
-     * can be directly opened after manually extracting the exported archive.
-     *
-     * @param archive Full path to archive to be created
-     * @param overwrite determines, whether an existing archive should be overwritten
-     *
-     * @return True, if the export has been successful
-     */
-    bool exportToZipArchive(const std::string& archive, bool overwrite = true)
-        throw (SerializationException);
 
     /// Flag prompting the application to not overwrite the workspace file, not used by serialize()
     bool readOnly() const;
@@ -111,14 +104,15 @@ public:
     ProcessorNetwork* getProcessorNetwork() const;
     void setProcessorNetwork(ProcessorNetwork* network);
 
-    void setVolumeContainer(VolumeContainer* volumeContainer);
-    VolumeContainer* getVolumeContainer() const;
-
     void setFilename(const std::string& filename);
     std::string getFilename() const;
 
     Animation* getAnimation() const;
     void setAnimation(Animation* anim);
+
+    const std::string& getDescription() const;
+    bool hasDescription() const;
+    void setDescription(const std::string& description);
 
     /// @see Serializable::serialize
     virtual void serialize(XmlSerializer& s) const;
@@ -129,16 +123,14 @@ public:
 private:
     int version_;
     ProcessorNetwork* network_;
-    VolumeContainer* volumeContainer_;
     Animation* animation_;
     std::string filename_;
     bool readOnly_;
+    std::string description_;
 
     tgt::GLCanvas* sharedContext_;
 
     std::vector<std::string> errorList_;
-
-    ScriptManagerLinking* scriptManagerLinking_;
 
     static const std::string loggerCat_;
 };

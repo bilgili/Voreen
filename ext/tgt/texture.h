@@ -1,33 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_TEXTURE_H
 #define TGT_TEXTURE_H
 
 #include <string>
-#include "tgt/config.h"
 #include "tgt/tgt_gl.h"
+#include "tgt/types.h"
 #include "tgt/vector.h"
 
 namespace tgt {
@@ -35,7 +36,7 @@ namespace tgt {
 /**
  * OpenGL Texture
  */
-class Texture {
+class TGT_API Texture {
 public:
     friend class TextureManager;
     friend class TextureReader;
@@ -54,7 +55,7 @@ public:
         CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER,
         MIRRORED_REPEAT = GL_MIRRORED_REPEAT
     };
-    
+
     Texture()
         : priority_(-1.f), pixels_(0), id_(0)
     {}
@@ -67,32 +68,28 @@ public:
      * dimensions and a new chunk of data will be allocated on the heap.
      */
     Texture(const tgt::ivec3& dimensions, GLint format = GL_RGBA,
-            GLenum dataType = GL_UNSIGNED_BYTE, Filter filter = LINEAR,
-            bool textureRectangle = false);
+            GLenum dataType = GL_UNSIGNED_BYTE, Filter filter = LINEAR);
 
     /**
      * Without data and with internalformat argument, type_ is calculated by
      * dimensions and a new chunk of data will be allocated on the heap.
      */
     Texture(const tgt::ivec3& dimensions, GLint format, GLint internalformat,
-            GLenum dataType  = GL_UNSIGNED_BYTE, Filter filter = LINEAR,
-            bool textureRectangle = false);
+            GLenum dataType  = GL_UNSIGNED_BYTE, Filter filter = LINEAR);
 
     /**
      * With data and without internalformat argument, type_ is calculated by
      * dimensions and no new chunk of data will be allocated on the heap.
      */
     Texture(GLubyte* data, const tgt::ivec3& dimensions, GLint format = GL_RGBA,
-            GLenum dataType = GL_UNSIGNED_BYTE, Filter filter = LINEAR,
-            bool textureRectangle = false);
+            GLenum dataType = GL_UNSIGNED_BYTE, Filter filter = LINEAR);
 
     /**
      * With data and internalformat argument, type_ is calculated by
      * dimensions and no new chunk of data will be allocated on the heap.
      */
     Texture(GLubyte* data, const tgt::ivec3& dimensions, GLint format, GLint internalformat,
-            GLenum dataType  = GL_UNSIGNED_BYTE, Filter filter = LINEAR,
-            bool textureRectangle = false);
+            GLenum dataType = GL_UNSIGNED_BYTE, Filter filter = LINEAR);
 
     /**
     * The destructor deletes the Texture in OpenGL.
@@ -116,8 +113,8 @@ public:
     /// destroys the buffer for the texture and sets arraySize_ to zero
     void destroy() {
         arraySize_ = 0;
-		if(pixels_)
-			delete[] pixels_;
+        if(pixels_)
+            delete[] pixels_;
         pixels_ = 0;// so nothing really nasty can happen
     }
 
@@ -127,8 +124,11 @@ public:
     /// calculates the bytes per pixel from the internal format
     static int calcBpp(GLint internalformat);
 
-	///calculates size on the GPU (using internalformat)
-	int getSizeOnGPU() const;
+    /// calculates the number of channels from the passed texture format
+    static int calcNumChannels(GLint format);
+
+    ///calculates size on the GPU (using internalformat)
+    int getSizeOnGPU() const;
 
     /**
      * calculates the type_ (GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D or GL_TEXTURE_RECTANGLE_ARB) from
@@ -180,11 +180,11 @@ public:
     *   @return The generated ID
     */
     GLuint generateId() {
-        id_ = 0; 
+        id_ = 0;
         glGenTextures(1, &id_);
         return id_;
     }
-  
+
     std::string getName() const { return name_; }
     void setName(const std::string& name) { name_ = name; }
 
@@ -202,6 +202,7 @@ public:
     Filter getFilter() const { return filter_; }
     GLenum getDataType() const { return dataType_; }
     size_t getArraySize() const { return arraySize_; }
+    size_t getNumChannels() const { return calcNumChannels(format_); }
 
     void setDimensions(tgt::ivec3 dimensions) { dimensions_ = dimensions; }
     void setBpp(GLubyte bpp) { bpp_ = bpp; }
@@ -262,12 +263,12 @@ public:
 
     /// Applies the textur wrapping mode once againg. Binds the texture.
     void applyWrapping();
-    
+
     Wrapping getWrapping() const { return wrapping_; }
 
     /**
      * Upload Texture to graphics-card. Binds the texture.
-     * 
+     *
      * type_, format_, internalformat_, dimensions, dataType_ and the pixels_ pointer have to
      * be set before calling this method.
      */
@@ -289,6 +290,14 @@ public:
      * calling this method!
      */
     GLubyte* downloadTextureToBuffer() const;
+
+    /**
+     * Download texture from the GPU to a preallocated buffer. Binds the texture.
+     *
+     * type_, format_, dimensions, and dataType_ have to be set before
+     * calling this method!
+     */
+     void downloadTextureToBuffer(GLubyte* pixels, size_t numBytesAllocated) const;
 
     /**
      * Download texture from the GPU to a newly allocated buffer with
@@ -382,8 +391,8 @@ public:
     }
 
     ///Return texel as tgt::Color (slow!), downloadTexture() needs to be called first
-	tgt::Color texelAsFloat(size_t x, size_t y) const;
-	tgt::Color texelAsFloat(tgt::svec2 p) const { return texelAsFloat(p.x, p.y); }
+    tgt::Color texelAsFloat(size_t x, size_t y) const;
+    tgt::Color texelAsFloat(tgt::svec2 p) const { return texelAsFloat(p.x, p.y); }
 protected:
     tgt::ivec3 dimensions_;
     GLint format_;          ///< GL_RGB...
@@ -401,9 +410,9 @@ protected:
     GLubyte bpp_;           ///< bytes per pixel
 
     std::string name_;      ///< optional, e.g. for storing texture file name
-    
+
     // used internally in the constructors
-    void init(bool allocData, bool textureRectangle);
+    void init(bool allocData);
 };
 
 } // namespace tgt

@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_MANAGER_H
 #define TGT_MANAGER_H
@@ -31,7 +32,6 @@
 #include <list>
 #include <iostream>
 
-#include "tgt/config.h"
 #include "tgt/types.h"
 #include "tgt/assert.h"
 #include "tgt/filesystem.h"
@@ -44,13 +44,13 @@ class ResourceManager {
 public:
     /// Constructor
     ResourceManager(bool cacheResources = true);
-    
+
     /// Destroy all resources in memory
     virtual ~ResourceManager();
-    
+
     /// Check if resource is loaded
     bool isLoaded(const std::string& filename);
-    
+
     /// Mark resource as unused
     virtual void dispose(T* ptr);
 
@@ -58,7 +58,10 @@ public:
     void addPath(std::string path);
     void removePath(std::string path);
 
-    /// Searches in all paths for file and returns valid filename including complete path
+    /**
+     * Searches in all paths for file and returns valid filename including complete path.
+     * If file is not found in search path, an empty string is returned.
+     */
     std::string completePath(std::string filename);
 
     bool isCaching() const { return cacheResources_; }
@@ -85,13 +88,24 @@ protected:
     static const std::string loggerCat_;
 
     // getter - setter
-    T* get(const std::string& filename) { return resourcesByFilename_[filename]->data_; }
-    const T* get(const std::string& filename) const { return resourcesByFilename_[filename]->data_; }
+    T* get(const std::string& filename);
+    //const T* get(const std::string& filename) const;
 };
-
 
 template <class T>
 const std::string ResourceManager<T>::loggerCat_("tgt.Manager");
+
+//#ifdef TGT_BUILD_DLL
+
+template <class T>
+T* ResourceManager<T>::get(const std::string& filename) {
+    return resourcesByFilename_[filename]->data_;
+}
+
+//template <class T>
+//const T* ResourceManager<T>::get(const std::string& filename) const {
+//    return resourcesByFilename_[filename]->data_;
+//}
 
 template <class T>
 void ResourceManager<T>::reg(T* ptr, const std::string& filename) {
@@ -142,12 +156,12 @@ bool ResourceManager<T>::isLoaded(const std::string& filename) {
 
 template <class T>
 void ResourceManager<T>::dispose(T* ptr) {
-    if (ptr == 0 || resourcesByPtr_.find(ptr) == resourcesByPtr_.end()) 
+    if (ptr == 0 || resourcesByPtr_.find(ptr) == resourcesByPtr_.end())
         return;
 
     Resource* r = resourcesByPtr_[ptr];
     r->usedBy_--;
-    
+
     // check if resource is still in use
     if (r->usedBy_ == 0) {
         std::string filename = r->filename_;
@@ -165,10 +179,10 @@ void ResourceManager<T>::dispose(T* ptr) {
 template <class T>
 void ResourceManager<T>::addPath(std::string path) {
     pathList_.push_front(path);
-	// remove duplicates
+    // remove duplicates
     //TODO: better use std::set<> here
-	pathList_.sort();
-	pathList_.unique();
+    pathList_.sort();
+    pathList_.unique();
 }
 
 template <class T>
@@ -179,15 +193,15 @@ void ResourceManager<T>::removePath(std::string path) {
             pathList_.erase(it);
             break;
         }
-    }   
+    }
 }
 
 template <class T>
 std::string ResourceManager<T>::completePath(std::string filename) {
     std::string cplFileName = filename;
 
-	if(FileSys.exists(filename))
-		return filename;
+    if(FileSys.exists(filename))
+        return filename;
 
     bool foundFile = false;
     if (!cplFileName.empty()) {
@@ -201,7 +215,10 @@ std::string ResourceManager<T>::completePath(std::string filename) {
         }
     }
 
-    return cplFileName;
+    if (foundFile)
+        return cplFileName;
+    else
+        return "";
 }
 
 template <class T>
@@ -214,6 +231,8 @@ std::vector<std::string> ResourceManager<T>::getFilenames() {
     }
     return filenames;
 }
+
+//#endif
 
 } // namespace tgt
 

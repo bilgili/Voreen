@@ -65,7 +65,7 @@ typedef unsigned short wchar_t;
 #  else
 #   pragma comment (lib, "opengl32.lib")  /* link with Microsoft OpenGL lib */
 #   pragma comment (lib, "glu32.lib")     /* link with Microsoft OpenGL Utility lib */
-#   pragma comment (lib, "glut32.lib")    /* link with Win32 GLUT lib */
+//#   pragma comment (lib, "glut32.lib")    /* link with Win32 GLUT lib */
 #  endif
 # endif
 
@@ -143,8 +143,7 @@ extern "C" {
 
 #if defined(_WIN32)
 # ifndef GLUT_BUILDING_LIB
-//extern _CRTIMP void __cdecl exit(int);
-extern _CRTIMP __declspec(noreturn) void __cdecl exit(__in int _Code);
+extern _CRTIMP void __cdecl exit(int);
 # endif
 #else
 /* non-Win32 case. */

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_XMLSERIALIZER_H
 #define VRN_XMLSERIALIZER_H
@@ -50,12 +46,8 @@
 #include "voreen/core/io/serialization/xmlserializationconstants.h"
 #include "voreen/core/io/serialization/serializable.h"
 #include "voreen/core/io/serialization/serializablefactory.h"
-#include "voreen/core/plotting/plotcell.h"
 
 namespace voreen {
-
-// forward declaration
-struct PlotSelectionEntry;
 
 /**
  * @c XmlSerializer is responsible for serializing memory data to XML documents.
@@ -106,7 +98,7 @@ struct PlotSelectionEntry;
  * @see XmlSerializerBase
  * @see Serializable
  */
-class XmlSerializer : public XmlSerializerBase
+class VRN_CORE_API XmlSerializer : public XmlSerializerBase
 {
 public:
     /**
@@ -116,9 +108,10 @@ public:
      * Initialization of the XML document means creating XML declaration and root node
      * as well as adding them to the XML document.
      *
-     * @param documentPath Absolute path to the XML file the document will be written to. This information
-     *     is not used by the serializer itself and is therefore not required, but is intended
-     *     to be accessible by serializing objects for absolute-to-relative path conversions.
+     * @param documentPath Absolute working directory of the document, which is typically the path
+     *      to the XML file the document will be written to. This information is not used by the
+     *      serializer itself and is therefore not required, but is intended to be accessible
+     *      by serializing objects for absolute-to-relative path conversions.
      */
     XmlSerializer(std::string documentPath = "");
 
@@ -128,9 +121,33 @@ public:
     ~XmlSerializer();
 
     /**
-     * Returns the absolute path to the XML file the document will be written to.
+     * Returns the absolute working directory of the document, which is typically the path
+     * to the XML file the document will be written to.
      */
     std::string getDocumentPath() const;
+
+    /**
+     * Serialize the given @c key/data pair if data != defaultValue.
+     */
+    template<typename T>
+    void optionalSerialize(const std::string& key, const T& data, const T& defaultValue)
+        throw (SerializationException)
+    {
+        if(data != defaultValue)
+            serialize(key, data);
+    }
+
+    /**
+     * Serialize the given binary @c data as a base64 encoded string.
+     */
+    void serializeBinaryBlob(const std::string& key, const unsigned char* data, size_t length)
+        throw (SerializationException);
+
+    /**
+     * Serialize the given binary @c data vector as a base64 encoded string.
+     */
+    void serializeBinaryBlob(const std::string& key, const std::vector<unsigned char>& data)
+        throw (SerializationException);
 
     /**
      * Serializes the given @c key/data pair.
@@ -189,7 +206,7 @@ public:
      * @throws XmlSerializationAttributeNamingException
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
-    void serialize(const std::string& key, const signed short& data)
+    void serialize(const std::string& key, const uint16_t& data)
         throw (SerializationException);
 
     /**
@@ -201,7 +218,7 @@ public:
      * @throws XmlSerializationAttributeNamingException
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
-    void serialize(const std::string& key, const unsigned short& data)
+    void serialize(const std::string& key, const int16_t& data)
         throw (SerializationException);
 
     /**
@@ -213,7 +230,7 @@ public:
      * @throws XmlSerializationAttributeNamingException
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
-    void serialize(const std::string& key, const signed int& data)
+    void serialize(const std::string& key, const uint32_t& data)
         throw (SerializationException);
 
     /**
@@ -225,7 +242,34 @@ public:
      * @throws XmlSerializationAttributeNamingException
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
-    void serialize(const std::string& key, const unsigned int& data)
+    void serialize(const std::string& key, const int32_t& data)
+        throw (SerializationException);
+
+// There seems to be no uint*_t typedef for long unsigned ints on mac, so we need to provide an implementation for this type.
+#ifdef __APPLE__
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if primitive data is serialized as XML attributes and key is reserved or not unique
+     */
+    void serialize(const std::string& key, const long unsigned int& data)
+        throw (SerializationException);
+#endif
+
+    /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if primitive data is serialized as XML attributes and key is reserved or not unique
+     */
+    void serialize(const std::string& key, const uint64_t& data)
         throw (SerializationException);
 
     /**
@@ -237,19 +281,7 @@ public:
      * @throws XmlSerializationAttributeNamingException
      *     if primitive data is serialized as XML attributes and key is reserved or not unique
      */
-    void serialize(const std::string& key, const signed long& data)
-        throw (SerializationException);
-
-    /**
-     * Serializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data the data
-     *
-     * @throws XmlSerializationAttributeNamingException
-     *     if primitive data is serialized as XML attributes and key is reserved or not unique
-     */
-    void serialize(const std::string& key, const unsigned long& data)
+    void serialize(const std::string& key, const int64_t& data)
         throw (SerializationException);
 
     /**
@@ -451,24 +483,6 @@ public:
      * @param data the data
      */
     void serialize(const std::string& key, const tgt::Matrix4d& data)
-        throw (SerializationException);
-
-    /**
-     * Serializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data the data
-     */
-    void serialize(const std::string& key, const PlotCellValue& data)
-        throw (SerializationException);
-
-    /**
-     * Serializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data the data
-     */
-    void serialize(const std::string& key, const PlotSelectionEntry& data)
         throw (SerializationException);
 
     /**
@@ -815,6 +829,11 @@ private:
     typedef std::map<void*, TiXmlElement*> DataNodeMapType;
 
     /**
+     * Helper function for base64 encoding.
+     */
+    std::string base64Encode(const std::vector<unsigned char>& inputBuffer);
+
+    /**
      * Map for looking up XML nodes by pointer address.
      */
     DataNodeMapType dataNodeMap_;
@@ -1128,8 +1147,13 @@ template<>
 inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const std::string& data)
     throw (SerializationException)
 {
+    // check, if we have to serialize the string as CDATA
+    bool requireCDATA = false;
+    requireCDATA |= data.find("\n") != std::string::npos;
+    requireCDATA |= data.find("\r") != std::string::npos;
+
     // Serialize as XML attribute wanted and possible?
-    if (useAttributes_ && data.find("\n") == std::string::npos && data.find("\r") == std::string::npos) {
+    if (useAttributes_ && !requireCDATA) {
         checkAttributeKey(key);
         node_->ToElement()->SetAttribute(key, data);
         return;
@@ -1138,7 +1162,7 @@ inline void XmlSerializer::serializeSimpleTypes(const std::string& key, const st
     // Serialize as XML node...
     TiXmlElement* newNode = new TiXmlElement(key);
     node_->LinkEndChild(newNode);
-    if (data.find("\n") == std::string::npos && data.find("\r") == std::string::npos) {
+    if (!requireCDATA) {
         // ATTENTION: No special handling of the given string is needed that is why this block
         //            has to correspond with the not specialized serializeSimpleTypes method.
         newNode->SetAttribute(XmlSerializationConstants::VALUEATTRIBUTE, data);

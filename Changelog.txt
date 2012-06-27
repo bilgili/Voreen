@@ -1,6 +1,75 @@
 Voreen Changelog
 ----------------
 
+2012-06-22: Voreen 4.0
+----------------------
+
+   * Features:
+     o ITK 4 integration: wrapped approx. 140 filtering and segmentation algorithms by processors
+     o New volume API:
+       - Improved handling of spacing, units, transformations
+       - Shader modules handle real-world data units
+       - Persistent storage of derived volume data (histograms, ...) 
+       - New XML-based volume data format (.vvd)
+     o Transparent, persistent caching of intermediate data processing results (volumes, geometry)
+     o GLSL shaders of most rendering processors are now runtime-editable via shader properties.
+     o Runtime editing of OpenCL kernels (see OpenCLProperty)
+     o GDCM-based DICOM reader supporting JPEG 2000 compression and reading from PACS servers,
+       highly configurable via XML (see GDCM module)
+     o Geometry classes support affine transformations and clipping operations.
+     o Interactive registration (see 'tools' workspaces)
+     o Copying of sub-networks in the network editor
+     o 'VoreenTool' command-line application for executing workspaces/networks
+     o Improved command-line parser supporting multi-value and typed arguments
+     o Windows 64 bit and dynamic linking support
+
+   * Framework/API Changes:
+     o Switched to CMake build system
+     o Framework modules are now organized within the subdirectory 'modules', 
+       which contains both sources and headers.
+     o Custom modules can be stored anywhere in the file system (default: subdir 'custommodules').
+     o Processor and property widgets are organized in Qt modules.
+     o VoreenVE modules containing VoreenVE plugins (see Python module)
+     o Removed global volume container, volumes are now possessed by source processors.
+     o Binaries are written to 'bin' subdirectory.
+     o Separated read-only resources (subdir 'resource') from user-generated data (subdir 'data').
+     o New modules:
+       - Introduced mandatory 'core' module containing basic I/O processors and shader modules.
+       - Introduced 'itk' and 'itk_generated' modules. 
+       - Introduced 'staging' module containing code that is not yet ready for productive use.
+       - Introduced 'deprecated' module.
+       - ZIP, Image I/O, font rendering, and FFmpeg support is now provided by 
+         the modules 'zip', 'devil', 'fontrendering', and 'ffmpeg', respectively.
+       - Moved GLSL parser to new 'dynamicglsl' module.
+       - Moved volume labeling processors to separate module.
+     o Processor::initialize/deinitialize() throw tgt::Exception instead of
+       VoreenException, ShaderManager throws exceptions on loading failures
+       => Shader error handling in Processor::initialize no longer necessary.
+     o RenderProcessor::generateHeader() may be called during processor initialization.
+     
+   * Further Changes: 
+     o Added 'Eigen' as standard math library
+     o Using Boost library
+     o Updated GLEW library to 1.7.0
+     o Added 'MultiView' processor for combining an arbitrary number of input renderings.
+     o Image processors can be disabled (by-passed) via a bool property.
+     o Port conditions specifying allowed types of input data
+     o Light source position can now be attached to camera.
+     o Axis aligned clipping for slice based renderers.
+     o BoundingBoxRenderer supports geometry as well as volume data as input.
+     o Geometry can now be stored and loaded using the GeometrySave and GeometrySource processors.
+     o Tricubic filtering is supported by Volume class, VolumeOperatorResample,
+       and VolumeResample processor.
+     o All volume processors use progress bars.
+     o Removed deprecated LightProperty and ColorProperty (use instead FloatVec4Property with 
+       view Property::LIGHT_POSITION or Property::COLOR, respectively).
+     o XmlSerializer retrieves SerializableFactories from modules.
+     o Improved heuristic for volume preview slice selection.
+     o Renamed VolumeSubSet processor to VolumeCrop
+     o Merged Dilation and Erosion processors to ImageMorphology processor
+     o VolumeResample displays expected data size of output volume
+
+
 2010-11-04: Voreen 2.6.1 (r39, internal r12656)
 -----------------------------------------------
 

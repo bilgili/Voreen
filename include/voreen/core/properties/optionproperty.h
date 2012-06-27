@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_OPTIONPROPERTY_H
 #define VRN_OPTIONPROPERTY_H
@@ -45,10 +41,10 @@ namespace voreen {
  *
  * @see OptionProperty
  */
-class OptionPropertyBase : public TemplateProperty<std::string> {
+class VRN_CORE_API OptionPropertyBase : public TemplateProperty<std::string> {
 public:
     OptionPropertyBase(const std::string& id, const std::string& guiText,
-                       Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT)
+                       int invalidationLevel=Processor::INVALID_RESULT)
         : TemplateProperty<std::string>(id, guiText, "", invalidationLevel)
     {}
 
@@ -59,6 +55,9 @@ public:
 
     virtual std::vector<std::string> getKeys() const = 0;
     virtual std::vector<std::string> getDescriptions() const = 0;
+
+    virtual std::string getOptionDescription(const std::string& key) const = 0;
+    virtual void setOptionDescription(const std::string& key, const std::string& desc) = 0;
 
     /**
      * @see Property::deserialize
@@ -91,10 +90,14 @@ template<class T>
 class OptionProperty : public OptionPropertyBase {
 public:
     OptionProperty(const std::string& id, const std::string& guiText,
-        Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT);
+    OptionProperty();
     virtual ~OptionProperty() {}
 
-    virtual std::string getTypeString() const;
+    virtual Property* create() const;
+
+    virtual std::string getClassName() const       { return "OptionProperty"; }
+    virtual std::string getTypeDescription() const { return "OptionProperty"; }
 
     virtual void addOption(const std::string& key, const std::string& description, const T& value);
 
@@ -102,10 +105,14 @@ public:
     virtual void selectByKey(const std::string& key);
     virtual void selectByValue(const T& value);
     virtual bool isSelected(const std::string& key) const;
+    virtual void reset();
 
     virtual const std::string& getKey() const { return get(); }
     std::string getDescription() const;
     T getValue() const;
+
+    virtual std::string getOptionDescription(const std::string& key) const;
+    virtual void setOptionDescription(const std::string& key, const std::string& desc);
 
     const std::vector<Option<T> >& getOptions() const { return options_; }
     void setOptions(const std::vector<Option<T> >& options) { options_ = options; }
@@ -117,8 +124,8 @@ public:
     virtual void serialize(XmlSerializer& s) const;
 
 protected:
-    virtual PropertyWidget* createWidget(PropertyWidgetFactory* f);
     const Option<T>* getOption(const std::string& key) const;
+    Option<T>* getOption(const std::string& key);
 
     std::vector<Option<T> > options_;
 };
@@ -128,14 +135,35 @@ protected:
 
 template<class T>
 OptionProperty<T>::OptionProperty(const std::string& id, const std::string& guiText,
-                                  Processor::InvalidationLevel invalidationLevel)
+                                  int invalidationLevel)
     : OptionPropertyBase(id, guiText, invalidationLevel)
 {
     addValidation(OptionPropertyValidation(this)); // is at position 0 in the validations_ vector
 }
+
 template<class T>
-std::string voreen::OptionProperty<T>::getTypeString() const {
-    return "OptionProperty";
+voreen::OptionProperty<T>::OptionProperty()
+    : OptionPropertyBase("", "", Processor::INVALID_RESULT)
+{}
+
+template<class T>
+Property* voreen::OptionProperty<T>::create() const {
+    return new OptionProperty<T>();
+}
+
+template<class T>
+void voreen::OptionProperty<T>::reset() {
+    if(hasKey(defaultValue_)){
+        select(defaultValue_);
+    }
+    else
+        if(options_.size() == 0){
+            setDefaultValue("");
+            set("");
+        } else{
+            setDefaultValue(getKeys()[0]);
+            set(defaultValue_);
+        }
 }
 
 template<class T>
@@ -143,8 +171,10 @@ void OptionProperty<T>::addOption(const std::string& key, const std::string& des
     std::vector<std::string> keys = getKeys();
     if (std::find(keys.begin(), keys.end(), key) == keys.end()) {
         options_.push_back(Option<T>(key, description, value));
-        if (options_.size() == 1)
+        if (options_.size() == 1){
             set(key);
+            setDefaultValue(key);
+        }
     }
     else {
         LERRORC("OptionProperty", "Key '" << key << "' already inserted.");
@@ -197,6 +227,30 @@ T OptionProperty<T>::getValue() const {
 }
 
 template<class T>
+std::string OptionProperty<T>::getOptionDescription(const std::string& key) const {
+    if (options_.empty()) {
+        LWARNINGC("OptionProperty", "OptionProperty is empty (no options)");
+        throw (VoreenException("OptionProperty is empty (no options)"));
+    }
+    const Option<T>* curOption = getOption(key);
+    if (curOption)
+        return curOption->description_;
+    else
+        return "";
+}
+
+template<class T>
+void OptionProperty<T>::setOptionDescription(const std::string& key, const std::string& desc) {
+    if (options_.empty()) {
+        LWARNINGC("OptionProperty", "OptionProperty is empty (no options)");
+        throw (VoreenException("OptionProperty is empty (no options)"));
+    }
+    Option<T>* curOption = getOption(key);
+    if (curOption)
+        curOption->description_ = desc;
+}
+
+template<class T>
 std::string OptionProperty<T>::getDescription() const {
     if (options_.empty()) {
         LWARNINGC("OptionProperty", "OptionProperty is empty (no options)");
@@ -243,12 +297,15 @@ std::vector<std::string> OptionProperty<T>::getDescriptions() const {
 }
 
 template<class T>
-PropertyWidget* OptionProperty<T>::createWidget(PropertyWidgetFactory* f) {
-    return f->createWidget(this);
+const Option<T>* voreen::OptionProperty<T>::getOption(const std::string& key) const {
+    for (size_t i=0; i<options_.size(); ++i)
+        if (options_[i].key_ == key)
+            return &options_[i];
+    return 0;
 }
 
 template<class T>
-const Option<T>* voreen::OptionProperty<T>::getOption(const std::string& key) const {
+Option<T>* voreen::OptionProperty<T>::getOption(const std::string& key) {
     for (size_t i=0; i<options_.size(); ++i)
         if (options_[i].key_ == key)
             return &options_[i];
@@ -262,23 +319,82 @@ void OptionProperty<T>::serialize(XmlSerializer& s) const {
     s.serialize("value", getKey());
 }
 
-typedef OptionProperty<int> IntOptionProperty;
-typedef OptionProperty<float> FloatOptionProperty;
-typedef OptionProperty<GLenum> GLEnumOptionProperty;
+//
+// concrete types
+//
+
+class IntOptionProperty : public OptionProperty<int> {
+public:
+    IntOptionProperty(const std::string& id, const std::string& guiText,
+                      int invalidationLevel = Processor::INVALID_RESULT) :
+        OptionProperty<int>(id, guiText, invalidationLevel)
+    {}
+
+    IntOptionProperty() :
+        OptionProperty<int>("", "", Processor::INVALID_RESULT)
+    {}
+
+    virtual Property* create() const {
+        return new IntOptionProperty();
+    }
+
+    virtual std::string getClassName() const       { return "IntOptionProperty"; }
+    virtual std::string getTypeDescription() const { return "IntegerOption"; }
+};
+
+class FloatOptionProperty : public OptionProperty<float> {
+public:
+    FloatOptionProperty(const std::string& id, const std::string& guiText,
+                        int invalidationLevel = Processor::INVALID_RESULT) :
+        OptionProperty<float>(id, guiText, invalidationLevel)
+    {}
+
+    FloatOptionProperty() :
+        OptionProperty<float>("", "", Processor::INVALID_RESULT)
+    {}
+
+    virtual std::string getClassName() const       { return "FloatOptionProperty"; }
+    virtual std::string getTypeDescription() const { return "FloatOption"; }
+};
+
+class GLEnumOptionProperty : public OptionProperty<GLenum> {
+public:
+    GLEnumOptionProperty(const std::string& id, const std::string& guiText,
+                         int invalidationLevel = Processor::INVALID_RESULT) :
+        OptionProperty<GLenum>(id, guiText, invalidationLevel)
+    {}
+
+    GLEnumOptionProperty() :
+        OptionProperty<GLenum>("", "", Processor::INVALID_RESULT)
+    {}
+
+    virtual Property* create() const {
+        return new GLEnumOptionProperty();
+    }
+
+    virtual std::string getClassName() const       { return "GLEnumOptionProperty"; }
+    virtual std::string getTypeDescription() const { return "GLenumOption"; }
+};
 
 // since option ids are already strings, an additional value is not necessarily required for string option properties
 class StringOptionProperty : public OptionProperty<std::string> {
-
 public:
-
     StringOptionProperty(const std::string& id, const std::string& guiText,
-                         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT) :
+                         int invalidationLevel = Processor::INVALID_RESULT) :
         OptionProperty<std::string>(id, guiText, invalidationLevel)
     {}
 
-    virtual std::string getTypeString() const {
-        return "StringOptionProperty";
+    StringOptionProperty() :
+        OptionProperty<std::string>("", "", Processor::INVALID_RESULT)
+    {}
+
+
+    virtual Property* create() const {
+        return new StringOptionProperty();
     }
+
+    virtual std::string getClassName() const       { return "StringOptionProperty"; }
+    virtual std::string getTypeDescription() const { return "StringOption"; }
 
     virtual void addOption(const std::string& key, const std::string& description) {
         addOption(key, description, key);

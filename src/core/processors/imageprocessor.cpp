@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/processors/imageprocessor.h"
 
@@ -35,46 +31,59 @@ const std::string ImageProcessor::loggerCat_("voreen.ImageProcessor");
 
 ImageProcessor::ImageProcessor(const std::string& shaderFilename)
     : RenderProcessor()
+    , shaderProp_("shader.program", "Image shader", shaderFilename.empty() ? "" : shaderFilename + ".frag", shaderFilename.empty() ? "" : "passthrough.vert")
     , program_(0)
     , shaderFilename_(shaderFilename)
-{}
+{
+    addProperty(shaderProp_);
+}
 
 ImageProcessor::~ImageProcessor() {
 }
 
-void ImageProcessor::initialize() throw (VoreenException) {
+void ImageProcessor::initialize() throw (tgt::Exception) {
     RenderProcessor::initialize();
-
-    if (!shaderFilename_.empty()) {
-        program_ = ShdrMgr.loadSeparate("passthrough.vert", shaderFilename_ + ".frag", generateHeader(), false);
-        if (program_) {
-            invalidate(Processor::INVALID_PROGRAM);
-            if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
-                compile();
-        }
-        if (!program_) {
-            initialized_ = false;
-            throw VoreenException(getClassName() + ": Failed to load shaders!");
-        }
-        else {
-            program_->deactivate();
-        }
-    }
-    else
-        program_ = 0;
-}
-
-void ImageProcessor::deinitialize() throw (VoreenException) {
-    ShdrMgr.dispose(program_);
-    program_ = 0;
-    LGL_ERROR;
-
-    RenderProcessor::deinitialize();
+    compile();
 }
 
 void ImageProcessor::compile() {
-    if (program_)
-        program_->rebuild();
+    program_ = 0;
+    if(!shaderFilename_.empty()) {
+        shaderProp_.setHeader(generateHeader());
+        shaderProp_.rebuild();
+        if(shaderProp_.hasValidShader())
+            program_ = shaderProp_.getShader();
+    }
+}
+
+void ImageProcessor::beforeProcess() {
+    RenderProcessor::beforeProcess();
+
+    // compile program if needed
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
+    LGL_ERROR;
+}
+
+/**
+* Read back depth buffer and determine min and max depth value.
+*
+* @param port the port to analyze the depth buffer
+* @return tgt::vec2 with x = minDepth, y = maxDepth
+*/
+tgt::vec2 ImageProcessor::computeDepthRange(RenderPort* port) {
+    port->getDepthTexture()->downloadTexture();
+    float* pixels = (float*)port->getDepthTexture()->getPixelData();
+    float curDepth = *(pixels);
+    float minDepth = curDepth;
+    float maxDepth = curDepth;
+    int numPixels = tgt::hmul(port->getSize());
+    for (int i = 0; i < numPixels; i++) {
+        curDepth = *(pixels++);
+        minDepth = std::min(minDepth, curDepth);
+        maxDepth = std::max(maxDepth, curDepth);
+    }
+    return tgt::vec2(minDepth, maxDepth);
 }
 
 } // voreen namespace

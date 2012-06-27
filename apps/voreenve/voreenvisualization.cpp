@@ -1,50 +1,44 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreenvisualization.h"
 
 #include "tgt/gpucapabilities.h"
-#include "tgt/ziparchive.h"
 
 #include "voreen/core/network/workspace.h"
 #include "voreen/core/network/networkevaluator.h"
-#include "voreen/core/datastructures/volume/volumecontainer.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
 
-#include "voreen/qt/widgets/volumecontainerwidget.h"
-#include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
+#include "voreen/qt/widgets/volumeviewer.h"
 #include "voreen/qt/widgets/processorlistwidget.h"
 #include "voreen/qt/widgets/propertylistwidget.h"
-#include "networkeditor/networkeditor.h"
+#include "voreen/qt/widgets/rendertargetviewer.h"
 #include "voreen/qt/widgets/inputmappingdialog.h"
+#include "networkeditor/networkeditor.h"
 
 #include <QString>
 
@@ -54,27 +48,24 @@ const std::string VoreenVisualization::loggerCat_ = "voreenve.VoreenVisualizatio
 
 VoreenVisualization::VoreenVisualization(tgt::GLCanvas* sharedContext)
     : QObject()
-    , evaluator_(new NetworkEvaluator(sharedContext))
+    , evaluator_(new NetworkEvaluator(true, sharedContext))
     , workspace_(new Workspace(sharedContext))
     , sharedContext_(sharedContext)
     , networkEditorWidget_(0)
     , propertyListWidget_(0)
     , processorListWidget_(0)
+    , renderTargetViewer_(0)
+    , volumeViewer_(0)
     , inputMappingDialog_(0)
     , readOnlyWorkspace_(false)
     , modified_(false)
 {
-    // create Qt-specific factory for processor widgets (used by Processor::initialize)
-    VoreenApplication::app()->setProcessorWidgetFactory(
-        new QProcessorWidgetFactory(VoreenApplicationQt::qtApp()->getMainWindow(), evaluator_));
-
     // assign network evaluator to application
     VoreenApplication::app()->setNetworkEvaluator(evaluator_);
 }
 
 VoreenVisualization::~VoreenVisualization() {
 
-    propagateVolumeContainer(0);
     propagateNetwork(0);
     delete evaluator_;
 
@@ -88,12 +79,28 @@ void VoreenVisualization::createConnections() {
         if (processorListWidget_)  {
             connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
                     processorListWidget_, SLOT(processorsSelected(const QList<Processor*>&)));
+        }
+        else {
+            LWARNINGC("VoreenVisualization", "init(): ProcessorListWidget not assigned");
+        }
+
+        if (propertyListWidget_) {
             connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
                     propertyListWidget_, SLOT(processorsSelected(const QList<Processor*>&)));
             connect(propertyListWidget_, SIGNAL(modified()), this, SLOT(setModified()));
         }
-        else
+        else {
             LWARNINGC("VoreenVisualization", "init(): PropertyListWidget not assigned");
+        }
+
+        if (renderTargetViewer_) {
+            connect(networkEditorWidget_, SIGNAL(processorsSelected(const QList<Processor*>&)),
+                renderTargetViewer_, SLOT(processorsSelected(const QList<Processor*>&)));
+        }
+        else {
+            LWARNINGC("VoreenVisualization", "init(): RenderTargetViewer not assigned");
+        }
+
     }
     else {
         LWARNINGC("VoreenVisualization", "init(): Network editor not assigned");
@@ -104,12 +111,16 @@ void VoreenVisualization::setNetworkEditorWidget(NetworkEditor* networkEditorWid
     networkEditorWidget_ = networkEditorWidget;
 }
 
+void VoreenVisualization::setRenderTargetViewer(RenderTargetViewer* renderTargetViewer) {
+    renderTargetViewer_ = renderTargetViewer;
+}
+
 void VoreenVisualization::setPropertyListWidget(PropertyListWidget* propertyListWidget) {
     propertyListWidget_ = propertyListWidget;
 }
 
-void VoreenVisualization::setVolumeContainerWidget(VolumeContainerWidget* volumeContainerWidget) {
-    volumeContainerWidget_ = volumeContainerWidget;
+void VoreenVisualization::setVolumeViewer(VolumeViewer* volumeViewer) {
+    volumeViewer_ = volumeViewer;
 }
 
 void VoreenVisualization::setInputMappingDialog(InputMappingDialog* inputMappingDialog) {
@@ -124,7 +135,6 @@ void VoreenVisualization::importNetwork(const QString& filename)
     propagateNetwork(0);
     delete workspace_->getProcessorNetwork();
     workspace_->setProcessorNetwork(net);
-    propagateVolumeContainer(workspace_->getVolumeContainer());
     propagateNetwork(workspace_->getProcessorNetwork());
 }
 
@@ -139,103 +149,6 @@ void VoreenVisualization::exportNetwork(const QString& filename)
     }
 }
 
-void VoreenVisualization::exportWorkspaceToZipArchive(const QString& filename, bool overwrite)
-    throw (SerializationException)
-{
-    LINFO("Exporting workspace " << filename.toStdString() << " to archive " << filename.toStdString());
-    workspace_->exportToZipArchive(filename.toStdString(), overwrite);
-}
-
-#ifdef VRN_WITH_ZLIB
-QString VoreenVisualization::extractWorkspaceArchive(const QString& archiveName, const QString& path,
-                                                     bool overwrite)
-    throw (SerializationException)
-{
-
-    LINFO("Extracting workspace archive " << archiveName.toStdString() << " to " << path.toStdString());
-
-    // Open archive and detect contained files
-    tgt::ZipArchive zip(archiveName.toStdString());
-    if (!zip.archiveExists()) {
-        LERROR("Archive does not exist: " << archiveName.toStdString());
-        throw SerializationException("Archive does not exist:\n" + archiveName.toStdString());
-    }
-
-    std::vector<std::string> archiveFiles = zip.getContainedFileNames();
-    if (archiveFiles.empty()) {
-        LERROR("Archive does not contain any files: " << archiveName.toStdString());
-        throw SerializationException("Archive does not contain any files:\n" + archiveName.toStdString());
-    }
-
-    // Extract files from the archive
-    std::string currentDir = tgt::FileSystem::currentDirectory();
-    if (tgt::FileSystem::changeDirectory(path.toStdString()) == false) {
-        LERROR("Failed to locate target directory " << path.toStdString());
-        throw SerializationException("Failed to open target directory:\n" + path.toStdString());
-    }
-
-    // prepare progress dialog
-    ProgressBar* progressDialog = VoreenApplicationQt::app()->createProgressDialog();
-    tgtAssert(progressDialog, "no progress dialog created");
-    progressDialog->setTitle("Extract Archive '" + tgt::FileSystem::fileName(archiveName.toStdString()) + "'");
-    progressDialog->show();
-    qApp->setOverrideCursor(Qt::WaitCursor);
-    qApp->processEvents();
-
-    // extract files
-    size_t numFiles = 0;
-    for (std::vector<std::string>::const_iterator it = archiveFiles.begin(); it != archiveFiles.end(); ++it) {
-        progressDialog->setMessage("Extracting '" + *it + "' ...");
-        progressDialog->setProgress((float)numFiles / (archiveFiles.size() - 1));
-        qApp->processEvents();
-        tgt::File* xFile = zip.extractFile(*it, tgt::ZipArchive::TARGET_DISK, "", true, overwrite);
-        if (xFile) {
-            xFile->close();
-            delete xFile;
-            ++numFiles;
-        }
-    }
-
-    // clean up
-    progressDialog->hide();
-    delete progressDialog;
-    qApp->restoreOverrideCursor();
-    qApp->processEvents();
-    tgt::FileSystem::changeDirectory(currentDir);
-
-    if (numFiles != zip.getNumFilesInArchive()) {
-        LWARNING("Some files could not be extracted.");
-        //throw SerializationException("Some files could not be extracted from '" + archiveName + "' to " + path);
-    }
-
-    // detect workspace file in extracted archive files
-    size_t index;
-    for (index=0; index < archiveFiles.size(); ++index) {
-        std::string fileExt = tgt::FileSystem::fileExtension(archiveFiles[index]);
-        if (fileExt == "vws")
-            break;
-    }
-
-    // success: return workspace file path
-    if (index < archiveFiles.size()) {
-        return path + "/" + QString::fromStdString(archiveFiles[index]);
-    }
-    // workspace file not found: remove extracted files and throw exception
-    else {
-        LERROR("No workspace file (*.vws) found in archive: " << archiveName.toStdString() << ". Extracted files are removed.");
-        cleanupTempFiles(archiveFiles, path.toStdString());
-        throw SerializationException("No workspace file (*.vws) found in archive:\n" + archiveName.toStdString());
-    }
-}
-#else
-QString VoreenVisualization::extractWorkspaceArchive(const QString& /*archiveName*/, const QString& /*path*/,
-                                                bool /*overwrite*/)
-    throw (SerializationException)
-{
-    throw SerializationException("The application has been compiled without Zip support.");
-}
-#endif
-
 void VoreenVisualization::newWorkspace() {
     tgtAssert(evaluator_, "No network evaluator");
 
@@ -245,39 +158,37 @@ void VoreenVisualization::newWorkspace() {
 
     // clear workspace resources
     evaluator_->unlock();
-    propagateVolumeContainer(0);
     propagateNetwork(0);
     workspace_->clear();
 
     // generate new resources
     workspace_->setProcessorNetwork(new ProcessorNetwork());
-    workspace_->setVolumeContainer(new VolumeContainer());
 
     blockSignals(false);
 
     // propagate resources
-    propagateVolumeContainer(workspace_->getVolumeContainer());
     propagateNetwork(workspace_->getProcessorNetwork());
+    if (workspace_->hasDescription())
+    propagateWorkspaceDescription(workspace_->getDescription());
 }
 
-void VoreenVisualization::openWorkspace(const QString& filename) throw (SerializationException) {
+void VoreenVisualization::openWorkspace(const QString& filename, const QString& workDir) throw (SerializationException) {
 
     LINFO("Loading workspace " << tgt::FileSystem::absolutePath(filename.toStdString()));
-    if (!VoreenApplication::app()->getProcessorWidgetFactory())
-        LWARNING("No ProcessorWidgetFactory assigned to VoreenApplication: No ProcessorWidgets are generated!");
+    if (!workDir.isEmpty())
+        LINFO("Workspace working path: " << tgt::FileSystem::cleanupPath(workDir.toStdString()));
 
     blockSignals(true);
 
     // clear workspace resources
     evaluator_->unlock();
-    propagateVolumeContainer(0);
     propagateNetwork(0);
     workspace_->clear();
 
     blockSignals(false);
 
     try {
-        workspace_->load(filename.toStdString());
+        workspace_->load(filename.toStdString(), workDir.toStdString());
     }
     catch (SerializationException& e) {
         LERROR("Could not open workspace: " << e.what());
@@ -287,21 +198,20 @@ void VoreenVisualization::openWorkspace(const QString& filename) throw (Serializ
     workspaceErrors_ = workspace_->getErrors();
     readOnlyWorkspace_ = workspace_->readOnly();
 
-    propagateVolumeContainer(workspace_->getVolumeContainer());
     propagateNetwork(workspace_->getProcessorNetwork());
+    propagateWorkspaceDescription(workspace_->getDescription());
 }
 
-void VoreenVisualization::saveWorkspace(const QString& filename, bool overwrite) throw (SerializationException) {
+void VoreenVisualization::saveWorkspace(const QString& filename, bool overwrite, const QString& workDir) throw (SerializationException) {
+
+    if (workDir.isEmpty())
+        LINFO("Saving workspace to " << tgt::FileSystem::cleanupPath(filename.toStdString()));
+    else
+        LINFO("Saving workspace to " << tgt::FileSystem::cleanupPath(filename.toStdString()) << " with working path " << tgt::FileSystem::cleanupPath(workDir.toStdString()));
 
     try {
-        // zipped workspace?
-        if (filename.endsWith(".zip", Qt::CaseInsensitive))
-            exportWorkspaceToZipArchive(filename, overwrite);
-        else {
-            LINFO("Saving workspace to " << filename.toStdString());
-            readOnlyWorkspace_ = false;
-            workspace_->save(filename.toStdString(), overwrite);
-        }
+        readOnlyWorkspace_ = false;
+        workspace_->save(filename.toStdString(), overwrite, workDir.toStdString());
     }
     catch (SerializationException& e) {
         LERROR("Could not save workspace: " << e.what());
@@ -384,12 +294,9 @@ void VoreenVisualization::propagateNetwork(ProcessorNetwork* network) {
     emit(newNetwork(network));
 }
 
-void VoreenVisualization::propagateVolumeContainer(VolumeContainer* container) {
-    if (volumeContainerWidget_)
-        volumeContainerWidget_->setVolumeContainer(container);
-
-    if (propertyListWidget_)
-        propertyListWidget_->setVolumeContainer(container);
+void VoreenVisualization::propagateWorkspaceDescription(const std::string& description) {
+    if (!description.empty())
+        LINFO(description);
 }
 
 std::vector<std::string> VoreenVisualization::getNetworkErrors() {
@@ -405,7 +312,21 @@ bool VoreenVisualization::rebuildShaders() {
     else
         LWARNING("No shared context object");
 
-    if (ShdrMgr.rebuildAllShadersFromFile()) {
+    bool allSuccessful = true;
+
+    std::vector<Processor*> procs = workspace_->getProcessorNetwork()->getProcessors();
+    for(size_t i = 0; i < procs.size(); i++) {
+        std::vector<ShaderProperty*> props = procs.at(i)->getPropertiesByType<ShaderProperty>();
+        for(size_t j = 0; j < props.size(); j++) {
+            if(!props.at(j)->rebuild())
+                allSuccessful = false;
+        }
+    }
+
+    if (!ShdrMgr.rebuildAllShadersFromFile())
+        allSuccessful = false;
+
+    if (allSuccessful) {
         evaluator_->invalidateProcessors();
         return true;
     }
@@ -441,10 +362,6 @@ NetworkEvaluator* VoreenVisualization::getEvaluator() const {
 
 Workspace* VoreenVisualization::getWorkspace() const {
     return workspace_;
-}
-
-VolumeContainer* VoreenVisualization::getVolumeContainer() const {
-    return workspace_->getVolumeContainer();
 }
 
 bool VoreenVisualization::isModified() const {

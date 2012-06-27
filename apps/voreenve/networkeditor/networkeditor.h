@@ -1,37 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_NETWORKEDITOR_H
 #define VRN_NETWORKEDITOR_H
 
 #include "voreen/core/network/processornetwork.h"
-#include "voreen/qt/widgets/snapshotplugin.h"
+#include "voreen/qt/widgets/screenshotplugin.h"
+#include "connectionbundle.h"
 
 #include <QGraphicsView>
 #include <QMenu>
@@ -48,6 +45,7 @@ class AggregationMetaData;
 class HasToolTip;
 class LinkArrowGraphicsItem;
 class LinkEvaluatorBase;
+class NetworkEditor;
 class NetworkEvaluator;
 class PortArrowGraphicsItem;
 class PortGraphicsItem;
@@ -71,25 +69,19 @@ class NetworkEditor : public QGraphicsView, public ProcessorNetworkObserver {
 Q_OBJECT
 public:
     NetworkEditor(QWidget* parent = 0, ProcessorNetwork* workspace = 0, NetworkEvaluator* evaluator = 0);
-    ~NetworkEditor();
 
     ProcessorNetwork* getProcessorNetwork();
 
-    /**
-     * Adds a processor to the scene, using its current position.
-     */
-    //void addProcessor(ProcessorGraphicsItem* processor);
-
     ProcessorGraphicsItem* getProcessorGraphicsItem(Processor* processor);
 
-    virtual void processorAdded(const Processor* processor);
-    virtual void processorRemoved(const Processor* processor);
-    virtual void propertyLinkAdded(const PropertyLink* link);
-    virtual void propertyLinkRemoved(const PropertyLink* link);
-    virtual void portConnectionAdded(const Port* outport, const Port* inport);
-    virtual void portConnectionRemoved(const Port* outport, const Port* inport);
-    virtual void networkChanged();
-    virtual void processorRenamed(const Processor* processor, const std::string& prevName);
+    void processorAdded(const Processor* processor);
+    void processorRemoved(const Processor* processor);
+    void propertyLinkAdded(const PropertyLink* link);
+    void propertyLinkRemoved(const PropertyLink* link);
+    void portConnectionAdded(const Port* outport, const Port* inport);
+    void portConnectionRemoved(const Port* outport, const Port* inport);
+    void networkChanged();
+    void processorRenamed(const Processor* processor, const std::string& prevName);
 
     NetworkEditorLayer currentLayer() const;
 
@@ -111,6 +103,8 @@ public slots:
 
     void adjustLinkArrowGraphicsItems();
 
+    void updateCurrentBundles();
+
     void setLayerToDataflow();
     void setLayerToLinking();
 
@@ -122,6 +116,10 @@ private slots:
     void renameActionSlot();
     void aggregateActionSlot();
     void deaggregateActionSlot();
+    void bundleLinksSlot();
+    void unbundleLinksSlot();
+    void addHandleSlot();
+    void selectionChangeSlot();
 
     void editPropertyLinkSlot();
     void deletePropertyLinkSlot();
@@ -155,6 +153,9 @@ private slots:
     // clears the history of the selected PropertyLink
     void clearDependencyHistory();
 
+    // opens a file dialog and saves the image stored in <code>temporaryRenderPortImage_</code>
+    void saveRenderPortImage();
+
 signals:
     /**
      * Sent when a processor or a set of processors were selected or deselected.
@@ -178,11 +179,6 @@ protected:
 
     AggregationGraphicsItem* createAggregationGraphicsItem(AggregationMetaData* metaData);
 
-    /**
-     * Adds a processor to the scene and moves it to the given position.
-     */
-    //void addProcessor(ProcessorGraphicsItem* processor, const QPoint& pos);
-
     LinkArrowGraphicsItem* createLinkArrowForPropertyLink(const PropertyLink* link);
 
     AggregationGraphicsItem* aggregateItems(const QList<RootGraphicsItem*>& items);
@@ -193,6 +189,10 @@ protected:
 
     void removeArrowItem(PortArrowGraphicsItem* arrow);
     void removeArrowItem(LinkArrowGraphicsItem* arrow);
+    ConnectionBundle* bundleLinks(const QList<PortArrowGraphicsItem*>& items);
+    void removeConnectionFromBundles(const Port* outport, const Port* inport);
+    void updateBundleMetaData();
+    void readBundlesFromMetaData();
 
     void resetScene();
 
@@ -253,20 +253,23 @@ private:
     QAction* aggregateAction_;
     QAction* deaggregateAction_;
     QAction* clearDependencyHistoryAction_;
+    QAction* saveRenderPortImageAction_;
+    QAction* bundleAction_;
+    QAction* unbundleAction_;
+    QAction* addHandleAction_;
 
     QMap<LinkArrowGraphicsItem*, ArrowLinkInformation> linkMap_;
 
     PortArrowGraphicsItem* selectedPortArrow_;
     LinkArrowGraphicsItem* selectedLinkArrow_;
 
+    QImage* temporaryRenderPortImage_;
+
     // Maps from the processors of the current network to their graphic items.
     QMap<Processor*,ProcessorGraphicsItem*> processorItemMap_;
     QList<AggregationGraphicsItem*> aggregationItems_;
-    //QMap<Processor*,AggregationGraphicsItem*> aggregationItemMap_;
-
-    //QList<RootGraphicsItem*> clipboardProcessors_;
-    //QList<ArrowGraphicsItem*> clipboardArrows_;
-    //QList<LinkArrowGraphicsItem*> clipboardLinkArrows_;
+    QMap<PortArrowGraphicsItem*, ConnectionBundle* > bundleMap_;
+    QList<ConnectionBundle*> bundles_;
 
     // construed as translation vector
     QPointF sceneTranslate_;
@@ -300,19 +303,19 @@ private:
 };
 
 /**
- * Widget for taking snapshots of the network graph
+ * Widget for taking screenshots of the network graph
  */
-class NetworkSnapshotPlugin : public SnapshotPlugin {
+class NetworkScreenshotPlugin : public ScreenshotPlugin {
     Q_OBJECT
 public:
-    NetworkSnapshotPlugin(QWidget* parent, NetworkEditor* networkEditorWidget);
+    NetworkScreenshotPlugin(QWidget* parent, NetworkEditor* networkEditorWidget);
 
 public slots:
     void sizeComboChanged(int);
 
 protected:
-    void saveSnapshot(const QString& filename);
-    void saveSnapshot(const QString& filename, int width, int height);
+    void saveScreenshot(const QString& filename);
+    void saveScreenshot(const QString& filename, int width, int height);
 
     NetworkEditor* networkEditorWidget_;
 };

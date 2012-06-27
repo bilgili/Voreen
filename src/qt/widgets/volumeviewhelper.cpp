@@ -1,168 +1,128 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/volumeviewhelper.h"
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
-#include "voreen/core/datastructures/volume/bricking/brickedvolume.h"
+#include "voreen/core/datastructures/volume/volumepreview.h"
+
+#include "tgt/filesystem.h"
 
 #include <QDir>
 
 namespace voreen {
 
-std::string VolumeViewHelper::getVolumeType(Volume* volume) {
-    if (dynamic_cast<VolumeUInt8*>(volume)!=0) return "uint8";
-    if (dynamic_cast<VolumeUInt16*>(volume)!=0) return "uint16";
-    if (dynamic_cast<VolumeUInt32*>(volume)!=0) return "uint32";
-    if (dynamic_cast<VolumeInt8*>(volume)!=0) return "int8";
-    if (dynamic_cast<VolumeInt16*>(volume)!=0) return "int16";
-    if (dynamic_cast<VolumeInt32*>(volume)!=0) return "int32";
-    if (dynamic_cast<VolumeFloat*>(volume)!=0) return "float";
-    if (dynamic_cast<VolumeDouble*>(volume)!=0) return "double";
-    if (dynamic_cast<Volume4xUInt8*>(volume)!=0) return "4 x uint8";
-    if (dynamic_cast<Volume4xUInt16*>(volume)!=0) return "4 x uint16";
-    if (dynamic_cast<Volume4xInt8*>(volume)!=0) return "4 x int8";
-    if (dynamic_cast<Volume4xInt16*>(volume)!=0) return "4 x int16";
-    if (dynamic_cast<Volume3xUInt8*>(volume)!=0) return "3 x uint8";
-    if (dynamic_cast<Volume3xUInt16*>(volume)!=0) return "3 x uint16";
-    if (dynamic_cast<Volume3xInt8*>(volume)!=0) return "3 x int8";
-    if (dynamic_cast<Volume3xInt16*>(volume)!=0) return "3 x int16";
-    if (dynamic_cast<Volume3xFloat*>(volume)!=0) return "3 x float";
-    if (dynamic_cast<Volume3xDouble*>(volume)!=0) return "3 x double";
-    if (dynamic_cast<Volume4xFloat*>(volume)!=0) return "4 x float";
-    if (dynamic_cast<Volume4xDouble*>(volume)!=0) return "4 x double";
-    if (dynamic_cast<BrickedVolume*>(volume)!=0) {
-        std::stringstream out;
-        out << getVolumeType(dynamic_cast<BrickedVolume*>(volume)->getPackedVolume()) << " bricked";
-        return  out.str();
-    }
-    return "";
+std::string VolumeViewHelper::getVolumeType(const VolumeRAM* volume) {
+
+    if (dynamic_cast<const VolumeRAM_UInt8*>(volume))       return "UInt8";
+    if (dynamic_cast<const VolumeRAM_UInt16*>(volume))      return "UInt16";
+    if (dynamic_cast<const VolumeRAM_UInt32*>(volume))      return "UInt32";
+    if (dynamic_cast<const VolumeRAM_UInt64*>(volume))      return "UInt64";
+    if (dynamic_cast<const VolumeRAM_Int8*>(volume))        return "Int8";
+    if (dynamic_cast<const VolumeRAM_Int16*>(volume))       return "Int16";
+    if (dynamic_cast<const VolumeRAM_Int32*>(volume))       return "Int32";
+    if (dynamic_cast<const VolumeRAM_Int64*>(volume))       return "Int64";
+    if (dynamic_cast<const VolumeRAM_Float*>(volume))       return "Float";
+    if (dynamic_cast<const VolumeRAM_Double*>(volume))      return "Double";
+
+    if (dynamic_cast<const VolumeRAM_2xUInt8*>(volume))     return "2xUInt8";
+    if (dynamic_cast<const VolumeRAM_2xUInt16*>(volume))    return "2xUInt16";
+    if (dynamic_cast<const VolumeRAM_2xUInt32*>(volume))    return "2xUInt32";
+    if (dynamic_cast<const VolumeRAM_2xUInt64*>(volume))    return "2xUInt64";
+    if (dynamic_cast<const VolumeRAM_2xInt8*>(volume))      return "2xInt8";
+    if (dynamic_cast<const VolumeRAM_2xInt16*>(volume))     return "2xInt16";
+    if (dynamic_cast<const VolumeRAM_2xInt32*>(volume))     return "2xInt32";
+    if (dynamic_cast<const VolumeRAM_2xInt64*>(volume))     return "2xInt64";
+    if (dynamic_cast<const VolumeRAM_2xFloat*>(volume))     return "2xFloat";
+    if (dynamic_cast<const VolumeRAM_2xDouble*>(volume))    return "2xDouble";
+
+    if (dynamic_cast<const VolumeRAM_3xUInt8*>(volume))     return "3xUInt8";
+    if (dynamic_cast<const VolumeRAM_3xUInt16*>(volume))    return "3xUInt16";
+    if (dynamic_cast<const VolumeRAM_3xUInt32*>(volume))    return "3xUInt32";
+    if (dynamic_cast<const VolumeRAM_3xUInt64*>(volume))    return "3xUInt64";
+    if (dynamic_cast<const VolumeRAM_3xInt8*>(volume))      return "3xInt8";
+    if (dynamic_cast<const VolumeRAM_3xInt16*>(volume))     return "3xInt16";
+    if (dynamic_cast<const VolumeRAM_3xInt32*>(volume))     return "3xInt32";
+    if (dynamic_cast<const VolumeRAM_3xInt64*>(volume))     return "3xInt64";
+    if (dynamic_cast<const VolumeRAM_3xFloat*>(volume))     return "3xFloat";
+    if (dynamic_cast<const VolumeRAM_3xDouble*>(volume))    return "3xDouble";
+
+    if (dynamic_cast<const VolumeRAM_4xUInt8*>(volume))     return "4xUInt8";
+    if (dynamic_cast<const VolumeRAM_4xUInt16*>(volume))    return "4xUInt16";
+    if (dynamic_cast<const VolumeRAM_4xUInt32*>(volume))    return "4xUInt32";
+    if (dynamic_cast<const VolumeRAM_4xUInt64*>(volume))    return "4xUInt64";
+    if (dynamic_cast<const VolumeRAM_4xInt8*>(volume))      return "4xInt8";
+    if (dynamic_cast<const VolumeRAM_4xInt16*>(volume))     return "4xInt16";
+    if (dynamic_cast<const VolumeRAM_4xInt32*>(volume))     return "4xInt32";
+    if (dynamic_cast<const VolumeRAM_4xInt64*>(volume))     return "4xInt64";
+    if (dynamic_cast<const VolumeRAM_4xFloat*>(volume))     return "4xFloat";
+    if (dynamic_cast<const VolumeRAM_4xDouble*>(volume))    return "4xDouble";
+
+    return "<unknown>";
 }
 
-QPixmap VolumeViewHelper::generatePreview(Volume* volume, int height) {
+QPixmap VolumeViewHelper::generatePreview(const VolumeBase* volume, int height) {
     return generateBorderedPreview(volume, height, 0);
 }
 
-QPixmap VolumeViewHelper::generateBorderedPreview(Volume* volume, int height, int border) {
-    float xSpacing = volume->getSpacing()[0];
-    float ySpacing = volume->getSpacing()[1];
+QPixmap VolumeViewHelper::generateBorderedPreview(const VolumeBase* handle, int height, int border) {
 
-    float xDimension = volume->getDimensions()[0];
-    float yDimension = volume->getDimensions()[1];
-    int zDimension = volume->getDimensions()[2]/2;
-    float step = (float)xDimension / height;
-    float xStretch = 1.0f;
-    float yStretch = 1.0f;
-    float max = xDimension * xSpacing;
-    float yBorder = 0;
-    float xBorder = 0;
+    VolumePreview* prev = handle->getDerivedData<VolumePreview>();
+    int internHeight = prev->getHeight();
 
-    if(xDimension * xSpacing > yDimension * ySpacing) {
-        step = (float)xDimension * xSpacing / height;
-        max = xDimension * xSpacing;
-        yBorder = ((xDimension * xSpacing) - (yDimension * ySpacing)) / 2 * height / max;
-    }
-    else if(xDimension * xSpacing < yDimension * ySpacing) {
-        step = (float)yDimension * ySpacing / height;
-        max = yDimension * ySpacing;
-        yStretch = xSpacing / ySpacing;
-        xBorder = ((yDimension * ySpacing) - (xDimension * xSpacing)) / 2 * height / max;
-    }
-    if(xSpacing != 1 && xSpacing != ySpacing)
-        xStretch = 1 / xSpacing;
-    if(ySpacing != 1 && ySpacing != xSpacing)
-        yStretch = 1 / ySpacing;
-
-    QImage* preview = new QImage(height , height, QImage::Format_ARGB32);
-    QRgb pixelValue;
-    int greyInt;
-
-    for(float y = .0f; y < height; y++){
-            for(float x = .0f; x < height; x++){
-                tgt::vec3 position;
-                position.x = x * step * xStretch - xBorder * xStretch;
-                position.y = y * step * yStretch - yBorder * yStretch;
-                position.z = zDimension;
-                if(position.x >= 0 && position.y >= 0 && position.x < xDimension && position.y < yDimension) {
-                    greyInt = static_cast<int>(255.f * volume->getVoxelFloatLinear(position));
-                    pixelValue = qRgb(greyInt, greyInt, greyInt);
-                }
-                else {
-                    pixelValue = qRgb(0, 0, 0);
-                }
-                preview->setPixel(static_cast<int>(x), static_cast<int>(y), pixelValue);
-            }
-        }
-
-    QImage previewScaled = preview->scaled(64, 64);
-
-    //histogram equalization
-    uint minGrey = previewScaled.pixel(0, 0);
-    uint maxGrey = previewScaled.pixel(0, 0);
-    for(int y = 0; y < previewScaled.height(); y++){
-           for(int x = 0; x < previewScaled.width(); x++){
-                   if(previewScaled.pixel(x, y) < minGrey) minGrey = previewScaled.pixel(x, y);
-                   if(previewScaled.pixel(x, y) > maxGrey) maxGrey = previewScaled.pixel(x, y);
-           }
-    }
-    for(int y = 0; y < previewScaled.height(); y++){
-           for(int x = 0; x < previewScaled.width(); x++){
-               if (maxGrey == minGrey)
-                   greyInt = 0;
-               else
-                   greyInt = (previewScaled.pixel(x, y) - minGrey) * 255/(maxGrey - minGrey);
-                   pixelValue = qRgb(greyInt, greyInt, greyInt);
-                   previewScaled.setPixel(x, y, pixelValue);
-           }
-    }
-    //draw border
-    for(int y = 0; y < previewScaled.height(); y++){
-        for(int x = 0; x < border ; x++){
-               previewScaled.setPixel(previewScaled.width()-x-1, y, qRgb(255, 255, 255));
+    QImage origImg = QImage(internHeight, internHeight, QImage::Format_ARGB32);
+    for (int y=0; y<internHeight; y++) {
+        for (int x=0; x<internHeight; x++) {
+            int previewIndex = y * internHeight + x;
+            int greyVal = prev->getData()[previewIndex];
+            origImg.setPixel(x, y, qRgb(greyVal, greyVal, greyVal));
         }
     }
-    for(int x = 0; x < previewScaled.width(); x++){
-        for(int y = 0; y < border ; y++){
-               previewScaled.setPixel(x, previewScaled.height()-y-1, qRgb(255, 255, 255));
-        }
+    QImage* preview = new QImage(origImg.scaled(height, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+
+    // draw border
+    for (int y = 0; y < preview->height(); y++){
+        for (int x = 0; x < border; x++)
+            preview->setPixel(preview->width()-x-1, y, qRgb(255, 255, 255));
+    }
+    for (int x = 0; x < preview->width(); x++){
+        for (int y = 0; y < border; y++)
+               preview->setPixel(x, preview->height()-y-1, qRgb(255, 255, 255));
     }
 
+    QPixmap pixmap = QPixmap::fromImage(*preview);
     delete preview;
-    return QPixmap::fromImage(previewScaled);
 
+    return pixmap;
 }
 
-std::string VolumeViewHelper::volumeInfoString(VolumeHandle* handle) {
+std::string VolumeViewHelper::volumeInfoString(const VolumeBase* handle) {
     std::string outString;
-    if (handle && handle->getVolume()) {
+    if (handle && handle->getRepresentation<VolumeRAM>()) {
 
-        Volume* volume = handle->getVolume();
+        const VolumeRAM* volume = handle->getRepresentation<VolumeRAM>();
 
         std::string filename = getStrippedVolumeName(handle);
         if(filename.length() > 13) {
@@ -171,8 +131,8 @@ std::string VolumeViewHelper::volumeInfoString(VolumeHandle* handle) {
             filename+="...";
             filename+=ext.section('.',-1).toStdString();
         }
-        std::string spacing = getVolumeSpacing(volume);
-        std::string dimension = getVolumeDimension(volume);
+        std::string spacing = getVolumeSpacing(handle);
+        std::string dimension = getVolumeDimension(handle);
         std::string type = getVolumeType(volume);
         outString+="<style type='text/css'> table {margin-left:0px; margin-top:1px; font-size: 9px;}</style><table><tr><td>"+filename+"</td><td></td></tr><tr><td>type </td><td>" \
             +type+"</td></tr><tr><td>dimension </td><td>" \
@@ -187,10 +147,12 @@ std::string VolumeViewHelper::volumeInfoString(VolumeHandle* handle) {
     return outString;
 }
 
-std::string VolumeViewHelper::getVolumeName(VolumeHandle* handle){
+std::string VolumeViewHelper::getVolumeName(const VolumeBase* handle){
     std::string volumeName;
     if (handle) {
-        volumeName = handle->getOrigin().getPath();
+        const Volume* vh = dynamic_cast<const Volume*>(handle);
+        if(vh)
+            volumeName = vh->getOrigin().getPath();
     }
     else {
         volumeName = "no Volume";
@@ -198,7 +160,7 @@ std::string VolumeViewHelper::getVolumeName(VolumeHandle* handle){
     return volumeName;
 }
 
-std::string VolumeViewHelper::getStrippedVolumeName(VolumeHandle* handle) {
+std::string VolumeViewHelper::getStrippedVolumeName(const VolumeBase* handle) {
     if (!handle)
         return "no volume";
     else {
@@ -213,11 +175,14 @@ std::string VolumeViewHelper::getStrippedVolumeName(VolumeHandle* handle) {
     }
 }
 
-std::string VolumeViewHelper::getVolumePath(VolumeHandle* handle) {
+std::string VolumeViewHelper::getVolumePath(const VolumeBase* handle) {
     std::string volumeName;
     if (handle) {
-        QString fn = QString::fromStdString(handle->getOrigin().getPath());
-        volumeName = fn.section('/',0, -2).toStdString();
+        const Volume* vh = dynamic_cast<const Volume*>(handle);
+        if(vh) {
+            QString fn = QString::fromStdString(vh->getOrigin().getPath());
+            volumeName = fn.section('/',0, -2).toStdString();
+        }
     }
     else {
         volumeName = "no Volume";
@@ -226,37 +191,24 @@ std::string VolumeViewHelper::getVolumePath(VolumeHandle* handle) {
 
 }
 
-std::string VolumeViewHelper::getVolumeDimension(Volume* volume) {
+std::string VolumeViewHelper::getVolumeDimension(const VolumeBase* volume) {
     std::stringstream out;
 
-    BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
-    if (brick) {
-        out << getVolumeDimension(brick->getEepVolume()) << " (using "
-            << getVolumeDimension(brick->getPackedVolume()) << ")";
-    } else {
-        out << volume->getDimensions()[0] << " x " << volume->getDimensions()[1] << " x " << volume->getDimensions()[2];
-    }
+    out << volume->getDimensions()[0] << " x " << volume->getDimensions()[1] << " x " << volume->getDimensions()[2];
 
     return out.str();
 }
 
-std::string VolumeViewHelper::getVolumeSpacing(Volume* volume) {
+std::string VolumeViewHelper::getVolumeSpacing(const VolumeBase* volume) {
     std::stringstream out;
     out << volume->getSpacing()[0] << " x " << volume->getSpacing()[1] << " x " << volume->getSpacing()[2];
     return out.str();
 }
 
-std::string VolumeViewHelper::getVolumeMemorySize(Volume* volume) {
+std::string VolumeViewHelper::getVolumeMemorySize(const VolumeRAM* volume) {
     std::stringstream out;
 
-    BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
-    if (brick) {
-        out << getVolumeMemorySize(brick->getEepVolume()) << " (using "
-            << getVolumeMemorySize(brick->getPackedVolume()) << ")";
-        return out.str();
-    }
-
-    long bytes = volume->getNumBytes();
+    size_t bytes = volume->getNumBytes();
     float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
     float kb = tgt::round(bytes/102.4f) / 10.f;
     if (mb >= 0.5f) {
@@ -272,13 +224,8 @@ std::string VolumeViewHelper::getVolumeMemorySize(Volume* volume) {
 }
 
 
-long VolumeViewHelper::getVolumeMemorySizeByte(Volume* volume) {
-    long volumeBytes = 0;
-    BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
-    if (brick) {
-        volumeBytes = brick->getNumBytes();
-        return volumeBytes;
-    }
+size_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeRAM* volume) {
+    size_t volumeBytes = 0;
 
     volumeBytes = volume->getNumBytes();
     return volumeBytes;

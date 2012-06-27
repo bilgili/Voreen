@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/properties/action.h"
 #include "voreen/core/properties/condition.h"
@@ -115,6 +111,38 @@ const char* Condition::ValidationFailed::what() const throw() {
 template<typename T>
 const std::string NumericPropertyValidation<T>::loggerCat_("voreen.NumericPropertyValidation");
 
+template<>
+bool NumericPropertyValidation<float>::met() const throw() {
+    // if min and max make sense do a real validation
+    if (observed_->minValue_ <= observed_->maxValue_) {
+        return ((observed_->value_ >= observed_->minValue_)
+            && (observed_->value_ <= observed_->maxValue_));
+    }
+    else
+        return true;
+}
+
+template<>
+bool NumericPropertyValidation<int>::met() const throw() {
+    // if min and max make sense do a real validation
+    if (observed_->minValue_ <= observed_->maxValue_) {
+        return ((observed_->value_ >= observed_->minValue_)
+            && (observed_->value_ <= observed_->maxValue_));
+    }
+    else
+        return true;
+}
+
+template<>
+bool NumericPropertyValidation<double>::met() const throw() {
+    // if min and max make sense do a real validation
+    if (observed_->minValue_ <= observed_->maxValue_) {
+        return ((observed_->value_ >= observed_->minValue_)
+            && (observed_->value_ <= observed_->maxValue_));
+    }
+    else
+        return true;
+}
 template<typename T>
 bool NumericPropertyValidation<T>::met() const throw() {
     const T& min = observed_->minValue_;
@@ -135,39 +163,6 @@ bool NumericPropertyValidation<T>::met() const throw() {
             return false;
     }
     return true;
-}
-
-template<>
-bool NumericPropertyValidation<float>::met() const throw() {
-    // if min and max make sense do a real validation
-    if (observed_->minValue_ <= observed_->maxValue_) {
-        return ((observed_->value_ >= observed_->minValue_)
-                && (observed_->value_ <= observed_->maxValue_));
-    }
-    else
-        return true;
-}
-
-template<>
-bool NumericPropertyValidation<int>::met() const throw() {
-    // if min and max make sense do a real validation
-    if (observed_->minValue_ <= observed_->maxValue_) {
-        return ((observed_->value_ >= observed_->minValue_)
-                && (observed_->value_ <= observed_->maxValue_));
-    }
-    else
-        return true;
-}
-
-template<>
-bool NumericPropertyValidation<double>::met() const throw() {
-    // if min and max make sense do a real validation
-    if (observed_->minValue_ <= observed_->maxValue_) {
-        return ((observed_->value_ >= observed_->minValue_)
-            && (observed_->value_ <= observed_->maxValue_));
-    }
-    else
-        return true;
 }
 
 template<class T>

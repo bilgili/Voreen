@@ -1,0 +1,1339 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="" readonly="true">
+        <ProcessorNetwork version="12">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="CubeProxyGeometry" ref="ref7" />
+                    </values>
+                </MetaItem>
+            </MetaData>
+            <Processors>
+                <Processor type="Canvas" name="Canvas" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-247" y="234" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="47" y="109" width="481" height="454" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="481" y="454" />
+                        </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" noPathSet="true" value="" />
+                        <Property name="showCursor" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometryProcessor" name="Geometry Processor" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-271" y="42" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref12">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
+                            </MetaData>
+                            <position x="-3.16477919" y="1.88444376" z="2.34826493" />
+                            <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                            <upVector x="0.35507885" y="0.87702376" z="-0.32364875" />
+                        </Property>
+                        <Property name="renderGeometries" value="true" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" enabled="false" mouseAction="31" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Background" name="Background" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-247" y="138" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="angle" value="36" />
+                        <Property name="backgroundModeAsString" value="gradient" />
+                        <Property name="color1">
+                            <value x="0.83137298" y="0.83137298" z="0.83137298" w="1" />
+                        </Property>
+                        <Property name="color2">
+                            <value x="0.192157" y="0.192157" z="0.192157" w="1" />
+                        </Property>
+                        <Property name="repeat" value="1" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="texture" value="" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="BoundingBoxRenderer" name="Bounding Box" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-426" y="-38" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="boundingBoxStippleFactor" value="1" />
+                        <Property name="boundingBoxStipplePattern" value="65535" />
+                        <Property name="boundingBoxWidth" value="1" />
+                        <Property name="boundingboxColor">
+                            <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
+                        </Property>
+                        <Property name="boundingboxGridShow" value="false" />
+                        <Property name="boundingboxGridSize">
+                            <value x="10" y="10" z="10" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="LightWidgetRenderer" name="Light - Widget" id="ref9">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-425" y="121" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="lightPosition" id="ref11">
+                            <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
+                        </Property>
+                        <Property name="mouseEvent.moveSphere" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="set.showLightWidget" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="PlaneWidgetProcessor" name="PlaneWidgetProcessor" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="41" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClipPlane" value="40" id="ref16" />
+                        <Property name="bottomClipPlane" value="0" id="ref22" />
+                        <Property name="enableBackZ" value="true" />
+                        <Property name="enableBottomY" value="true" />
+                        <Property name="enableFrontZ" value="true" />
+                        <Property name="enableLeftX" value="true" />
+                        <Property name="enableRightX" value="true" />
+                        <Property name="enableTopY" value="true" />
+                        <Property name="frontClipPlane" value="0" id="ref18" />
+                        <Property name="innerColor">
+                            <value x="0" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="leftClipPlane" value="40" id="ref26" />
+                        <Property name="lightPosition">
+                            <value x="2.29999995" y="1.5" z="1.5" w="1" />
+                        </Property>
+                        <Property name="lineWidth" value="1" />
+                        <Property name="manipulatorScaling" value="1" />
+                        <Property name="mouseEvent.clipplaneMovement" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="mouseEvent.synchronizedMovement" enabled="false" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="rightClipPlane" value="19" id="ref24" />
+                        <Property name="showInnerBB" value="false" />
+                        <Property name="topClipPlane" value="40" id="ref20" />
+                        <Property name="useSphereManipulatorBackY" value="false" />
+                        <Property name="useSphereManipulatorBottomZ" value="false" />
+                        <Property name="useSphereManipulatorFrontY" value="false" />
+                        <Property name="useSphereManipulatorLeftX" value="false" />
+                        <Property name="useSphereManipulatorRightX" value="false" />
+                        <Property name="useSphereManipulatorTopZ" value="false" />
+                        <Property name="xColor">
+                            <value x="1" y="0" z="0" w="1" />
+                        </Property>
+                        <Property name="yColor">
+                            <value x="0" y="1" z="0" w="1" />
+                        </Property>
+                        <Property name="zColor">
+                            <value x="0" y="0" z="1" w="1" />
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-238" y="-56" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="applyLightAttenuation" value="false" />
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref13">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="46" y="122" />
+                            </MetaData>
+                            <position x="-3.16477919" y="1.88444376" z="2.34826493" />
+                            <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                            <upVector x="0.35507885" y="0.87702376" z="-0.32364875" />
+                        </Property>
+                        <Property name="classification" value="transfer-function" />
+                        <Property name="compositing" value="dvr" />
+                        <Property name="compositing1" value="dvr" />
+                        <Property name="compositing2" value="dvr" />
+                        <Property name="gammaValue" value="0" />
+                        <Property name="gammaValue1" value="0" />
+                        <Property name="gammaValue2" value="0" />
+                        <Property name="gradient" value="central-differences" />
+                        <Property name="interactionCoarseness" value="2" />
+                        <Property name="interactionQuality" value="1" />
+                        <Property name="interpolation.coarseness" value="false" />
+                        <Property name="isoValue" value="0.5" />
+                        <Property name="lightAmbient">
+                            <value x="0.40000001" y="0.40000001" z="0.40000001" w="1" />
+                        </Property>
+                        <Property name="lightAttenuation">
+                            <value x="1" y="0" z="0" />
+                        </Property>
+                        <Property name="lightDiffuse">
+                            <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
+                        </Property>
+                        <Property name="lightPosition" id="ref10">
+                            <MetaData>
+                                <MetaItem name="FollowCamera" type="BoolMetaData" value="false" />
+                                <MetaItem name="UseBackHemisphere" type="BoolMetaData" value="false" />
+                            </MetaData>
+                            <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
+                        </Property>
+                        <Property name="lightSpecular">
+                            <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
+                        </Property>
+                        <Property name="materialShininess" value="60" />
+                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
+                        <Property name="samplingRate" value="5" />
+                        <Property name="shading" value="phong" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode_" value="linear" />
+                        <Property name="transferFunction" AlwaysFitDomain="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="41" y="615" width="501" height="281" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0.16470601" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.194444" split="false">
+                                        <colorL r="66" g="204" b="48" a="1" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.36111099" split="false">
+                                        <colorL r="69" g="143" b="255" a="57" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.50308597" split="false">
+                                        <colorL r="255" g="250" b="89" a="97" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.65123498" split="false">
+                                        <colorL r="255" g="55" b="58" a="145" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.765432" split="false">
+                                        <colorL r="255" g="133" b="243" a="184" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-413" y="-320" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="../volumes/nucleon.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="CubeProxyGeometry" name="CubeProxyGeometry" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-204" y="-262" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="backClippingPlane" value="40" id="ref19" />
+                        <Property name="bottomClippingPlane" value="0" id="ref17" />
+                        <Property name="frontClippingPlane" value="0" id="ref21" />
+                        <Property name="leftClippingPlane" value="40" id="ref25" />
+                        <Property name="resetClipPlanes" />
+                        <Property name="rightClippingPlane" value="19" id="ref23" />
+                        <Property name="topClippingPlane" value="40" id="ref15" />
+                        <Property name="useClipping" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-205" y="-174" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref14">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-955" y="376" />
+                            </MetaData>
+                            <position x="-3.16477919" y="1.88444376" z="2.34826493" />
+                            <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                            <upVector x="0.35507885" y="0.87702376" z="-0.32364875" />
+                        </Property>
+                        <Property name="jitterEntryPoints" value="false" />
+                        <Property name="jitterStepLength" value="0.005" />
+                        <Property name="supportCameraInsideVolume" value="true" />
+                        <Property name="useCulling" value="true" />
+                        <Property name="useFloatRenderTargets" value="false" />
+                    </Properties>
+                    <InteractionHandlers>
+                        <Handler name="cameraHandler">
+                            <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="31" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Background" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="Background" ref="ref1" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.output">
+                        <Processor type="SingleVolumeRaycaster" ref="ref3" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="SingleVolumeRaycaster" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volume">
+                        <Processor type="BoundingBoxRenderer" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volume">
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref4" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="CubeProxyGeometry" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="CubeProxyGeometry" ref="ref7" />
+                    </Outport>
+                    <Inport name="proxgeometry.geometry">
+                        <Processor type="MeshEntryExitPoints" ref="ref8" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.entrypoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref8" />
+                    </Outport>
+                    <Inport name="image.entrypoints">
+                        <Processor type="SingleVolumeRaycaster" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="image.exitpoints">
+                        <Processor type="MeshEntryExitPoints" ref="ref8" />
+                    </Outport>
+                    <Inport name="image.exitpoints">
+                        <Processor type="SingleVolumeRaycaster" ref="ref3" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="BoundingBoxRenderer" ref="ref5" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="LightWidgetRenderer" ref="ref9" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+                <CoProcessorConnection>
+                    <Outport name="coprocessor.geometryrenderer">
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
+                    </Outport>
+                    <Inport name="coprocessor.geometryrenderers">
+                        <Processor type="GeometryProcessor" ref="ref0" />
+                    </Inport>
+                </CoProcessorConnection>
+            </CoProcessorConnections>
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="FloatVec4Property" ref="ref10" />
+                    <DestinationProperty type="FloatVec4Property" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatVec4Property" ref="ref11" />
+                    <DestinationProperty type="FloatVec4Property" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorVec4Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref12" />
+                    <DestinationProperty type="CameraProperty" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref13" />
+                    <DestinationProperty type="CameraProperty" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref13" />
+                    <DestinationProperty type="CameraProperty" ref="ref14" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref14" />
+                    <DestinationProperty type="CameraProperty" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref15" />
+                    <DestinationProperty type="FloatProperty" ref="ref16" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref16" />
+                    <DestinationProperty type="FloatProperty" ref="ref15" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref17" />
+                    <DestinationProperty type="FloatProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref18" />
+                    <DestinationProperty type="FloatProperty" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref19" />
+                    <DestinationProperty type="FloatProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref20" />
+                    <DestinationProperty type="FloatProperty" ref="ref19" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref21" />
+                    <DestinationProperty type="FloatProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref22" />
+                    <DestinationProperty type="FloatProperty" ref="ref21" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref23" />
+                    <DestinationProperty type="FloatProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref24" />
+                    <DestinationProperty type="FloatProperty" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref25" />
+                    <DestinationProperty type="FloatProperty" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref26" />
+                    <DestinationProperty type="FloatProperty" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+            </PropertyLinks>
+        </ProcessorNetwork>
+        <Animation undoSteps="100" fps="25" duration="20" currentTime="0" isRendering="false">
+            <processors>
+                <Processor>
+                    <processor type="Canvas" ref="ref2" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_ivec2" activeOnRendering="false" propertyId="canvasSize" duration="20" tlchanged="false">
+                            <propertyOwner type="Canvas" ref="ref2" />
+                            <timeline type="TemplatePropertyTimelineState_ivec2">
+                                <values>
+                                    <value key="0" type="KeyValue_ivec2" time="0" smooth="true">
+                                        <value x="481" y="454" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="GeometryProcessor" ref="ref0" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20">
+                            <propertyOwner type="GeometryProcessor" ref="ref0" />
+                            <timeline type="CameraPropertyTimelineState">
+                                <values>
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref27">
+                                            <properties />
+                                        </after>
+                                        <position x="-3.16516089" y="1.88449895" z="2.34805989" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
+                                    </value>
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref27" />
+                                        <after type="default linear: linear interpolation" id="ref28">
+                                            <properties />
+                                        </after>
+                                        <position x="-0.00917132" y="1.42812872" z="4.0436511" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
+                                    </value>
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref28" />
+                                        <after />
+                                        <position x="3.24528742" y="2.14890146" z="1.42042756" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="-0.50496364" y="0.84156919" z="-0.19176304" />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="Background" ref="ref1" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="backgroundModeAsString" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="gradient" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="color1" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.83137298" y="0.83137298" z="0.83137298" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="color2" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.192157" y="0.192157" z="0.192157" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="texture" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="angle" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_int">
+                                <values>
+                                    <value key="0" type="KeyValue_int" time="0" value="36" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="repeat" duration="20" tlchanged="false">
+                            <propertyOwner type="Background" ref="ref1" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="1" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="BoundingBoxRenderer" ref="ref5" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="boundingBoxWidth" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="1" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="boundingBoxStippleFactor" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_int">
+                                <values>
+                                    <value key="0" type="KeyValue_int" time="0" value="1" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="boundingBoxStipplePattern" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_int">
+                                <values>
+                                    <value key="0" type="KeyValue_int" time="0" value="65535" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="boundingboxColor" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="boundingboxGridShow" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_ivec3" activeOnRendering="true" propertyId="boundingboxGridSize" duration="20" tlchanged="false">
+                            <propertyOwner type="BoundingBoxRenderer" ref="ref5" />
+                            <timeline type="TemplatePropertyTimelineState_ivec3">
+                                <values>
+                                    <value key="0" type="KeyValue_ivec3" time="0" smooth="true">
+                                        <value x="10" y="10" z="10" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="LightWidgetRenderer" ref="ref9" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="set.showLightWidget" duration="20" tlchanged="false">
+                            <propertyOwner type="LightWidgetRenderer" ref="ref9" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightPosition" duration="20" tlchanged="true">
+                            <propertyOwner type="LightWidgetRenderer" ref="ref9" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref29">
+                                            <properties />
+                                        </after>
+                                    </value>
+                                    <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
+                                        <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
+                                        <before type="default linear: linear interpolation" ref="ref29" />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="PlaneWidgetProcessor" ref="ref6" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="lineWidth" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="1" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="xColor" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="1" y="0" z="0" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="yColor" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0" y="1" z="0" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="zColor" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0" y="0" z="1" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="showInnerBB" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="innerColor" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0" y="0" z="0" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightPosition" duration="20" tlchanged="false">
+                            <propertyOwner type="PlaneWidgetProcessor" ref="ref6" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="2.29999995" y="1.5" z="1.5" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="SingleVolumeRaycaster" ref="ref3" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="samplingRate" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="5" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="interpolation.coarseness" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_int" activeOnRendering="true" propertyId="interactionCoarseness" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_int">
+                                <values>
+                                    <value key="0" type="KeyValue_int" time="0" value="2" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="interactionQuality" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="1" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="isoValue" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="0.5" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_TransFunc" activeOnRendering="true" propertyId="transferFunction" duration="20" tlchanged="true">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TransFuncPropertyTimelineState">
+                                <values>
+                                    <value key="0" type="KeyValue_TransFunc" time="0" smooth="true">
+                                        <value type="TransFuncIntensity" lower="0.16470601" upper="1">
+                                            <Keys>
+                                                <key type="TransFuncMappingKey" intensity="0" split="false">
+                                                    <colorL r="0" g="0" b="0" a="0" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.194444" split="false">
+                                                    <colorL r="66" g="204" b="48" a="1" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.36111099" split="false">
+                                                    <colorL r="69" g="143" b="255" a="57" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.50308597" split="false">
+                                                    <colorL r="255" g="250" b="89" a="97" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.65123498" split="false">
+                                                    <colorL r="255" g="55" b="58" a="145" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.765432" split="false">
+                                                    <colorL r="255" g="133" b="243" a="184" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="1" split="false">
+                                                    <colorL r="255" g="255" b="255" a="255" />
+                                                </key>
+                                            </Keys>
+                                            <domain x="0" y="1" />
+                                        </value>
+                                        <before />
+                                        <after type="default linear (keywise if possible): linear interpolation" id="ref30">
+                                            <properties />
+                                        </after>
+                                    </value>
+                                    <value key="13.16660023" type="KeyValue_TransFunc" time="13.16660023" smooth="true">
+                                        <value type="TransFuncIntensity" lower="0" upper="1">
+                                            <Keys>
+                                                <key type="TransFuncMappingKey" intensity="0" split="false">
+                                                    <colorL r="0" g="0" b="0" a="0" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.22818792" split="false">
+                                                    <colorL r="0" g="255" b="55" a="0" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.30201343" split="false">
+                                                    <colorL r="11" g="255" b="76" a="151" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.38590604" split="false">
+                                                    <colorL r="42" g="255" b="0" a="0" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.69463086" split="false">
+                                                    <colorL r="255" g="0" b="0" a="0" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.76510066" split="false">
+                                                    <colorL r="255" g="30" b="30" a="113" />
+                                                </key>
+                                                <key type="TransFuncMappingKey" intensity="0.82214767" split="false">
+                                                    <colorL r="255" g="0" b="0" a="0" />
+                                                </key>
+                                            </Keys>
+                                            <domain x="0" y="1" />
+                                        </value>
+                                        <before type="default linear (keywise if possible): linear interpolation" ref="ref30" />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="CameraPropertyTimelineState">
+                                <values>
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref31">
+                                            <properties />
+                                        </after>
+                                        <position x="-3.16516089" y="1.88449895" z="2.34805989" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
+                                    </value>
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref31" />
+                                        <after type="default linear: linear interpolation" id="ref32">
+                                            <properties />
+                                        </after>
+                                        <position x="-0.00917132" y="1.42812872" z="4.0436511" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
+                                    </value>
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref32" />
+                                        <after />
+                                        <position x="3.24528742" y="2.14890146" z="1.42042756" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="-0.50496364" y="0.84156919" z="-0.19176304" />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="gradient" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="central-differences" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="classification" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="transfer-function" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="shading" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="phong" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="compositing" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="dvr" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="compositing1" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="dvr" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_string" activeOnRendering="true" propertyId="compositing2" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_string">
+                                <values>
+                                    <value key="0" type="KeyValue_string" time="0" value="dvr" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightPosition" duration="20" tlchanged="true">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref33">
+                                            <properties />
+                                        </after>
+                                    </value>
+                                    <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
+                                        <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
+                                        <before type="default linear: linear interpolation" ref="ref33" />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightAmbient" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.40000001" y="0.40000001" z="0.40000001" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightDiffuse" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec4" activeOnRendering="true" propertyId="lightSpecular" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_vec4">
+                                <values>
+                                    <value key="0" type="KeyValue_vec4" time="0" smooth="true">
+                                        <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="materialShininess" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="60" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="applyLightAttenuation" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_vec3" activeOnRendering="true" propertyId="lightAttenuation" duration="20" tlchanged="false">
+                            <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
+                            <timeline type="TemplatePropertyTimelineState_vec3">
+                                <values>
+                                    <value key="0" type="KeyValue_vec3" time="0" smooth="true">
+                                        <value x="1" y="0" z="0" />
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="VolumeSource" ref="ref4" />
+                    <properties />
+                </Processor>
+                <Processor>
+                    <processor type="CubeProxyGeometry" ref="ref7" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="useClipping" duration="20" tlchanged="false">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="rightClippingPlane" duration="20" tlchanged="true">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="19" smooth="true">
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref34">
+                                            <properties />
+                                        </after>
+                                    </value>
+                                    <value key="3.43330002" type="KeyValue_float" time="3.43330002" value="8" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref34" />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="leftClippingPlane" duration="20" tlchanged="true">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="40" smooth="true">
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref35">
+                                            <properties />
+                                        </after>
+                                    </value>
+                                    <value key="15.89999962" type="KeyValue_float" time="15.89999962" value="20" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref35" />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="frontClippingPlane" duration="20" tlchanged="false">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="0" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="backClippingPlane" duration="20" tlchanged="false">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="40" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="bottomClippingPlane" duration="20" tlchanged="false">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="0" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="topClippingPlane" duration="20" tlchanged="false">
+                            <propertyOwner type="CubeProxyGeometry" ref="ref7" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="40" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+                <Processor>
+                    <processor type="MeshEntryExitPoints" ref="ref8" />
+                    <properties>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="supportCameraInsideVolume" duration="20" tlchanged="false">
+                            <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="true" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="jitterEntryPoints" duration="20" tlchanged="false">
+                            <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_float" activeOnRendering="true" propertyId="jitterStepLength" duration="20" tlchanged="false">
+                            <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
+                            <timeline type="TemplatePropertyTimelineState_float">
+                                <values>
+                                    <value key="0" type="KeyValue_float" time="0" value="0.005" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_bool" activeOnRendering="true" propertyId="useFloatRenderTargets" duration="20" tlchanged="false">
+                            <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
+                            <timeline type="TemplatePropertyTimelineState_bool">
+                                <values>
+                                    <value key="0" type="KeyValue_bool" time="0" value="false" smooth="true">
+                                        <before />
+                                        <after />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20">
+                            <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
+                            <timeline type="CameraPropertyTimelineState">
+                                <values>
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                        <before />
+                                        <after type="default linear: linear interpolation" id="ref36">
+                                            <properties />
+                                        </after>
+                                        <position x="-3.16516089" y="1.88449895" z="2.34805989" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
+                                    </value>
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref36" />
+                                        <after type="default linear: linear interpolation" id="ref37">
+                                            <properties />
+                                        </after>
+                                        <position x="-0.00917132" y="1.42812872" z="4.0436511" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
+                                    </value>
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
+                                        <before type="default linear: linear interpolation" ref="ref37" />
+                                        <after />
+                                        <position x="3.24528742" y="2.14890146" z="1.42042756" />
+                                        <focus x="-0.14060999" y="-0.205892" z="0.00218" />
+                                        <upVector x="-0.50496364" y="0.84156919" z="-0.19176304" />
+                                    </value>
+                                </values>
+                            </timeline>
+                        </Property>
+                    </properties>
+                </Processor>
+            </processors>
+        </Animation>
+    </Workspace>
+</VoreenData>

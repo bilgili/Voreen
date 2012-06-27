@@ -1,35 +1,33 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
+
+#include "voreen/core/processors/volumerenderer.h"
+#include "voreen/core/utils/glsl.h"
 
 #include "tgt/gpucapabilities.h"
 #include "tgt/textureunit.h"
-#include "voreen/core/processors/volumerenderer.h"
 
 using tgt::vec3;
 using tgt::vec4;
@@ -62,17 +60,6 @@ VolumeRenderer::VolumeRenderer()
     materialDiffuse_.setViews(Property::COLOR);
 }
 
-std::string VolumeRenderer::generateHeader(VolumeHandle* /*volumehandle*/) {
-    std::string header = RenderProcessor::generateHeader();
-
-    if (isInitialized() && GpuCaps.isNpotSupported())
-        header += "#define VRN_TEXTURE_3D\n";
-    else
-        header += "#define VRN_TEXTURE_3D_SCALED\n";
-
-    return header;
-}
-
 void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera) {
     RenderProcessor::setGlobalShaderParameters(shader, camera);
 
@@ -90,135 +77,55 @@ void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::C
     shader->setIgnoreUniformLocationError(false);
 }
 
-void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct>& volumes,
+bool VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct>& volumes,
                                  const tgt::Camera* camera, const tgt::vec4& lightPosition) {
-    bool texCoordScaling = !GpuCaps.isNpotSupported();
     shader->setIgnoreUniformLocationError(true);
 
+    bool success = true;
     for (size_t i=0; i < volumes.size(); ++i) {
-        // some shortcuts
         const VolumeStruct& volumeStruct = volumes[i];
-        const VolumeGL* volumeGL = volumeStruct.volume_;
+        const VolumeGL* volumeGL = volumeStruct.volume_->getRepresentation<VolumeGL>();
         if (!volumeGL || !volumeGL->getTexture()) {
             LWARNING("No volume texture while binding volumes");
             continue;
         }
-        const Volume* volume = volumeGL->getVolume();
-        const VolumeTexture* volumeTex = volumeGL->getTexture();
 
-        // bind volume texture and pass sampler to the shader
-        GLint loc = shader->getUniformLocation(volumeStruct.samplerIdentifier_);
-
-        TextureUnit* texUnit = volumes[i].texUnit_;
+        const TextureUnit* texUnit = volumeStruct.texUnit_;
         if (!texUnit) {
             LERROR("No texture unit while binding volumes");
             continue;
         }
 
-        if (loc != -1) {
-            texUnit->activate();
-
-            volumeTex->bind();
-
-            // Returns the residence status of the target texture. If the value returned in params is
-            // GL_TRUE, the texture is resident in texture memory
-            GLint resident;
-            glGetTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_RESIDENT, &resident);
-
-            if (resident != GL_TRUE)
-                LWARNING("texture not resident: " /*<< volume->meta().getFileName()*/);
-
-            shader->setUniform(loc, texUnit->getUnitNumber());
-
-            LGL_ERROR;
-
-            // texture filtering
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, volumeStruct.filterMode_);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, volumeStruct.filterMode_);
-            LGL_ERROR;
-
-            // texture wrapping
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, volumeStruct.wrapMode_);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, volumeStruct.wrapMode_);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, volumeStruct.wrapMode_);
-            glTexParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, volumeStruct.borderColor_.elem);
-            LGL_ERROR;
-        }
+        success &= bindVolumeTexture(volumeStruct.volume_, texUnit, volumeStruct.filterMode_, volumeStruct.wrapMode_, volumeStruct.borderColor_);
 
         // set volume meta-data
-        std::string paramsIdent = volumeStruct.volumeParametersIdentifier_;
-        // volume size, i.e. dimensions of the proxy geometry in world coordinates
-        shader->setUniform(paramsIdent + ".datasetDimensions_", tgt::vec3(volume->getDimensions()));
-        shader->setUniform(paramsIdent + ".datasetDimensionsRCP_", vec3(1.f) / tgt::vec3(volume->getDimensions()));
-
-        // volume spacing, i.e. voxel size
-        shader->setUniform(paramsIdent + ".datasetSpacing_", volume->getSpacing());
-        shader->setUniform(paramsIdent + ".datasetSpacingRCP_", vec3(1.f) / volume->getSpacing());
-
-        // volume's size in its object coordinates
-        shader->setUniform(paramsIdent + ".volumeCubeSize_", volume->getCubeSize());
-        shader->setUniform(paramsIdent + ".volumeCubeSizeRCP_", vec3(1.f) / volume->getCubeSize());
-
-        // volume's transformation matrix
-        tgt::mat4 tm = volumeStruct.applyDatasetTrafoMatrix_ ? volume->getTransformation() : tgt::mat4::identity;
-        shader->setUniform(paramsIdent + ".volumeTransformation_", tm);
-
-        tgt::mat4 invTm;
-        if (!tm.invert(invTm))
-            LWARNING("Failed to invert volume transformation matrix!");
-        shader->setUniform(paramsIdent + ".volumeTransformationINV_", invTm);
-
-        // camera position in volume object coords
-        if (camera)
-            shader->setUniform(paramsIdent + ".cameraPositionOBJ_", invTm*camera->getPosition());
-
-        // light position in volume object coords
-        shader->setUniform(paramsIdent + ".lightPositionOBJ_", (invTm*lightPosition).xyz());
-
-        LGL_ERROR;
-
-        // scaling of texture coords, if a resize of a npot texture to pot dimensions was necessary
-        if (texCoordScaling) {
-            // we are only interested in the scaling part of the texture matrix
-            vec3 texScaleVector = volumeTex->getMatrix().getScalingPart();
-            shader->setUniform(paramsIdent + ".texCoordScaleFactor_", texScaleVector);
-            shader->setUniform(paramsIdent + ".texCoordScaleFactorRCP_", vec3(1.f) / texScaleVector);
-            LGL_ERROR;
-        }
-
-        // bit depth of the volume
-        loc = shader->setUniform(paramsIdent + ".bitDepth_", volume->getBitsStored());
-
-        // is the volume a 12 bit volume => fetched texel values have to be normalized in the shader
-        if (volume->getBitsStored() == 12)
-            shader->setUniform(paramsIdent + ".bitDepthScale_", 16.0f);
-        else
-            shader->setUniform(paramsIdent + ".bitDepthScale_", 1.0f);
+        setUniform(shader, volumeStruct.volumeIdentifier_, volumeStruct.volumeStructIdentifier_, volumeStruct.volume_, texUnit, camera, lightPosition);
 
         LGL_ERROR;
     }
 
     shader->setIgnoreUniformLocationError(false);
     LGL_ERROR;
+
+    return success;
 }
 
 VolumeRenderer::VolumeStruct::VolumeStruct()
     : volume_(0)
 {}
 
-VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeGL* volume, tgt::TextureUnit* texUnit,
-                                           const std::string& samplerIdentifier,
-                                           const std::string& volumeParametersIdentifier,
-                                           bool applyDatasetTrafoMatrix, GLenum wrapMode,
+VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeBase* volume, const tgt::TextureUnit* texUnit,
+                                           const std::string& volumeIdentifier,
+                                           const std::string& volumeStructIdentifier,
+                                           GLint wrapMode,
                                            tgt::vec4 borderColor, GLint filterMode)
-    : volume_(volume),
-      texUnit_(texUnit),
-      wrapMode_(wrapMode),
-      borderColor_(borderColor),
-      filterMode_(filterMode),
-      samplerIdentifier_(samplerIdentifier),
-      volumeParametersIdentifier_(volumeParametersIdentifier),
-      applyDatasetTrafoMatrix_(applyDatasetTrafoMatrix)
+                                           : volume_(volume),
+                                           texUnit_(texUnit),
+                                           wrapMode_(wrapMode),
+                                           borderColor_(borderColor),
+                                           filterMode_(filterMode),
+                                           volumeIdentifier_(volumeIdentifier),
+                                           volumeStructIdentifier_(volumeStructIdentifier)
 {}
 
 } // namespace voreen

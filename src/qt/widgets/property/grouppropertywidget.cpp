@@ -1,36 +1,31 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/property/grouppropertywidget.h"
 
 #include <QTabWidget>
-#include <QGroupBox>
 #include <QPushButton>
 
 namespace voreen {
@@ -52,7 +47,7 @@ namespace voreen {
         gridLayout_->setColumnStretch(1, 2);
         gridLayout_->setContentsMargins(5, 2, 2, 5);
         layout_->addWidget(gBox);
-        QIcon icon = QIcon(":/icons/expand-minus.png");
+        QIcon icon = QIcon(":/qt/icons/expand-minus.png");
         hideWidgetButton_ = new QPushButton(icon, "", this);
         hideWidgetButton_->setGeometry(QRect(10, 10, 10, 10));
         hideWidgetButton_->setFixedSize(10,10);
@@ -94,14 +89,15 @@ void GroupPropertyWidget::addWidget(QPropertyWidget* widget, QWidget* label, con
 void GroupPropertyWidget::hideGroup(bool toggled){
     std::vector<QPropertyWidget*>::iterator it = propertyWidgets_.begin();
     if(toggled) {
-        hideWidgetButton_ ->setIcon(QIcon(":/icons/expand-plus.png"));
+        hideWidgetButton_ ->setIcon(QIcon(":/qt/icons/expand-plus.png"));
+
         while(it != propertyWidgets_.end()) {
             (*it)->hide();
             ++it;
         }
     }
     else {
-        hideWidgetButton_ ->setIcon(QIcon(":/icons/expand-minus.png"));
+        hideWidgetButton_ ->setIcon(QIcon(":/qt/icons/expand-minus.png"));
 
         while(it != propertyWidgets_.end()) {
             (*it)->show();
@@ -117,5 +113,18 @@ void GroupPropertyWidget::updateFromProperty() {
         ++it;
     }
 }
+
+bool GroupPropertyWidget::isAnyPropertyVisible(Property::LODSetting lod) {
+    for(size_t i=0; i<propertyWidgets_.size(); i++) {
+        QPropertyWidget* propWidget = propertyWidgets_[i];
+        if(propWidget) {
+            Property* prop = propWidget->getProperty();
+            if(prop && prop->isVisible() && (prop->getLevelOfDetail() <= lod))
+                return true;
+        }
+    }
+    return false;
+}
+
 
 } // namespace

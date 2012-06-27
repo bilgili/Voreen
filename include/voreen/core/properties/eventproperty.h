@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_EVENTPROPERTY_H
 #define VRN_EVENTPROPERTY_H
@@ -42,7 +38,7 @@ namespace voreen {
  *
  * @see EventProperty
  */
-class EventPropertyBase : public Property {
+class VRN_CORE_API EventPropertyBase : public Property {
 
     friend class Processor;
 
@@ -72,8 +68,9 @@ public:
         tgt::Event::Modifier modifier,
         bool shareEvents, bool enabled);
 
-    virtual std::string getTypeString() const;
-
+    virtual std::string getClassName() const       { return "EventProperty"; }
+    virtual std::string getTypeDescription() const { return "EventProperty"; }
+    virtual void reset(){}
     /**
      * Returns true, if the event property accepts the event \p e.
      *
@@ -341,6 +338,14 @@ public:
         tgt::Event::Modifier modifier = tgt::Event::MODIFIER_NONE,
         bool shareEvents = false, bool enabled = true);
 
+
+    /**
+     * Default constructor. Needed for serialization. Do not use directly!
+     */
+    EventProperty();
+
+    virtual Property* create() const;
+
     /**
      * Registers a change listener function that is called
      * after the property state (keys/buttons) has changed.
@@ -380,7 +385,6 @@ private:
 
     void (T::*fptOnChange_)();                   ///< Called in case the property state (keys/buttons) changes
 };
-
 
 //-----------------------------------------------------------------------------------------------------------------------
 // template definitions
@@ -444,6 +448,24 @@ EventProperty<T>::EventProperty(const std::string& id, const std::string& guiNam
     , fptOnChange_(0)
 {
     tgtAssert(target_ && fptEvent_, "Passed target or function pointer invalid");
+}
+
+
+template<class T>
+voreen::EventProperty<T>::EventProperty()
+    : EventPropertyBase("", "", false, false,
+      tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::ACTION_NONE,
+      tgt::KeyEvent::K_UNKNOWN, tgt::Event::MODIFIER_NONE, false, false)
+    , target_(0)
+    , fptMouseEvent_(0)
+    , fptKeyEvent_(0)
+    , fptEvent_(0)
+    , fptOnChange_(0)
+{}
+
+template<class T>
+Property* voreen::EventProperty<T>::create() const {
+    return new EventProperty<T>();
 }
 
 template<class T>

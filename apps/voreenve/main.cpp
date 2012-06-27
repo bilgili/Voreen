@@ -1,142 +1,48 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
+#ifdef VRN_MODULE_PYTHON
+// Must come first!
+#include "modules/python/pythonmodule.h"
+#endif
+
+#include "voreenveapplication.h"
 #include "voreenmainwindow.h"
 
 #include "tgt/filesystem.h"
-#include "tgt/ziparchive.h"
-
+#include "tgt/logmanager.h"
 #include "voreen/core/version.h"
-#include "voreen/qt/voreenapplicationqt.h"
+#include "voreen/core/utils/exception.h"
+#include "voreen/core/utils/commandlineparser.h"
+#include "voreen/core/properties/boolproperty.h"
+
+#include <string>
 
 using namespace voreen;
 
-class VoreenVEApplication : public VoreenApplicationQt {
-public:
-    VoreenVEApplication(int argc, char** argv)
-#ifdef VRN_ADD_FILE_LOGGER
-        : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_ALL)
-#else
-        : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_DEFAULT)
-#endif
-    {
-        resetSettings_ = false;
-    }
-
-    virtual void prepareCommandParser() {
-        VoreenApplicationQt::prepareCommandParser();
-
-        CommandlineParser* p = getCommandLineParser();
-        p->addCommand(new Command_LoadDatasetSingle(&datasetFilename_));
-        p->addCommand(new SingleCommand<std::string>(&workspaceFilename_, "--workspace", "-w",
-                                                     "Loads a workspace", "<workspace file>"));
-        p->addCommand(new SingleCommandZeroArguments(&resetSettings_, "--resetSettings", "",
-            "Restores window settings and default paths"));
-
-#ifdef VRN_MODULE_PYTHON
-        p->addCommand(new SingleCommand<std::string>(&scriptFilename_, "--script", "-s",
-                                                     "Runs a python script", "<script file>"));
-#endif
-    }
-
-    std::string datasetFilename_;
-    std::string workspaceFilename_;
-    std::string scriptFilename_;
-    bool resetSettings_;
-};
-
-/// Reimplement QApplication to catch unhandled exceptions
-class CatchApp : public QApplication {
-public:
-    CatchApp(int & argc, char ** argv )
-        : QApplication(argc, argv)
-    {}
-
-    virtual bool notify(QObject* receiver, QEvent* event) {
-        bool result = false;
-        try {
-            result = QApplication::notify(receiver, event);
-        }
-        catch (const VoreenException& e) {
-            LERRORC("voreenve.main", "Caught unhandled VoreenException: " << e.what());
-#ifndef TGT_NON_INTERACTIVE_ASSERT
-            int choice = QMessageBox::critical(0, tr("VoreenVE"), tr("Caught unhandled VoreenException:\n\"")
-                                               + e.what() + +"\"\n" + tr("Continue?"),
-                                               QMessageBox::Ok | QMessageBox::Cancel);
-            if (choice == QMessageBox::Cancel) {
-  #ifdef VRN_DEBUG
-                TGT_THROW_BREAKPOINT;
-  #else
-                exit(1);
-  #endif
-            }
-#else
-            exit(1);
-#endif // TGT_NON_INTERACTIVE_ASSERT
-        }
-        catch (const std::exception& e) {
-            LERRORC("voreenve.main", "Caught unhandled std::exception: " << e.what());
-#ifndef TGT_NON_INTERACTIVE_ASSERT
-            int choice = QMessageBox::critical(0, tr("VoreenVE"), tr("Caught unhandled std::exception:\n\"")
-                                               + e.what() + "\"\n" + tr("Continue?"),
-                                               QMessageBox::Ok | QMessageBox::Cancel);
-            if (choice == QMessageBox::Cancel) {
-  #ifdef VRN_DEBUG
-                TGT_THROW_BREAKPOINT;
-  #else
-                exit(1);
-  #endif
-            }
-#else
-            exit(1);
-#endif // TGT_NON_INTERACTIVE_ASSERT
-        }
-        catch (...) {
-            LERRORC("voreenve.main", "Caught unhandled unknown exception!");
-#ifndef TGT_NON_INTERACTIVE_ASSERT
-            int choice = QMessageBox::critical(0, tr("VoreenVE"), tr("Caught unhandled unknown exception!\nContinue?"),
-                                               QMessageBox::Ok | QMessageBox::Cancel);
-            if (choice == QMessageBox::Cancel) {
-  #ifdef VRN_DEBUG
-                TGT_THROW_BREAKPOINT;
-  #else
-                exit(1);
-  #endif
-            }
-#else
-            exit(1);
-#endif // TGT_NON_INTERACTIVE_ASSERT
-            throw;
-        }
-        return result;
-    }
-};
+const std::string loggerCat_("voreenve.main");
 
 int main(int argc, char** argv) {
     //disable argb visuals (Qt bug) fixes/works around invisible TF (etc) windows
@@ -144,57 +50,108 @@ int main(int argc, char** argv) {
     setenv ("XLIB_SKIP_ARGB_VISUALS", "1", 1);
 #endif
 
-    CatchApp app(argc, argv);
-
-    app.setOverrideCursor(Qt::WaitCursor);
-
-#ifdef VRN_SPLASHSCREEN
-    VoreenSplashScreen splash;
-    splash.showMessage("Creating application...");
-    splash.show();
-    qApp->processEvents();
-#endif
-
+    // create application
     VoreenVEApplication vapp(argc, argv);
-    vapp.init();
+    vapp.setOverrideCursor(Qt::WaitCursor);
 
-#if (QT_VERSION >= 0x040400) && !defined(__APPLE__)  && !defined(VRN_NO_STYLESHEET)
-    // load and set style sheet (only on Qt 4.4 or newer)
-    QFile file(":/voreenve/widgetstyle/voreen.qss");
-    file.open(QFile::ReadOnly);
-    QString styleSheet = QLatin1String(file.readAll());
-    app.setStyleSheet(styleSheet);
+    // add command line options
+    tgtAssert(vapp.getCommandLineParser(), "no command line parser")
+    std::string workspaceFilename;
+    vapp.getCommandLineParser()->addOption("workspace,w", workspaceFilename, CommandLineParser::MainOption,
+        "Loads the specified workspace");
+
+#ifdef VRN_MODULE_PYTHON
+    std::string scriptFilename;
+    vapp.getCommandLineParser()->addOption("script", scriptFilename, CommandLineParser::MainOption,
+        "Runs a Python script right after the initial workspace has been loaded");
 #endif
 
-    // init resources for voreen_qt
-    Q_INIT_RESOURCE(vrn_qt);
-    // init common application resources
-    Q_INIT_RESOURCE(vrn_app);
+    bool resetSettings = false;
+    vapp.getCommandLineParser()->addFlagOption("resetSettings", resetSettings, CommandLineParser::MainOption,
+        "Restores window settings and default paths");
 
-#ifdef VRN_SPLASHSCREEN
-    splash.showMessage("Creating main window...");
-#endif
-    VoreenMainWindow mainWindow(vapp.workspaceFilename_, vapp.datasetFilename_, vapp.resetSettings_);
-    vapp.setMainWindow(&mainWindow);
-    mainWindow.show();
-#ifdef VRN_SPLASHSCREEN
-    mainWindow.init(&splash);  // also calls VoreenApplication::app()->initGL()
-#else
-    mainWindow.init();
-#endif
+    bool useStylesheet;
+    vapp.getCommandLineParser()->addOption("useStylesheet", useStylesheet, CommandLineParser::AdditionalOption,
+        "Use VoreenVE style sheet", true, "true");
 
-    app.restoreOverrideCursor();
-
-#ifdef VRN_SPLASHSCREEN
-    splash.showMessage("Initialization complete.");
-    splash.close();
-#endif
-
-    if (!vapp.scriptFilename_.empty()) {
-        // first make sure that all Qt events have been processed
-        qApp->processEvents();
-        mainWindow.runScript(vapp.scriptFilename_.c_str());
+    // initialize application (also loads modules and initializes them)
+    try {
+        vapp.initialize();
+    }
+    catch (VoreenException& e) {
+        if (tgt::LogManager::isInited())
+            LFATALC("voreenve.main", "Failed to initialize VoreenApplication: " << e.what());
+        std::cerr << "Failed to initialize VoreenApplication: " << e.what();
+        exit(EXIT_FAILURE);
     }
 
-    return app.exec();
+    // splash screen
+    bool showSplash = true;
+    if (!dynamic_cast<BoolProperty*>(vapp.getProperty("showSplashScreen")))
+        LWARNING("Property not found: showSplashScreen");
+    else
+        showSplash = static_cast<BoolProperty*>(vapp.getProperty("showSplashScreen"))->get();
+    VoreenSplashScreen splash;
+    if (showSplash) {
+        splash.showMessage("Creating application...");
+        splash.show();
+        qApp->processEvents();
+    }
+
+    // load and set style sheet
+#if !defined(__APPLE__)
+    if (useStylesheet) {
+        QFile file(":/voreenve/widgetstyle/voreen.qss");
+        file.open(QFile::ReadOnly);
+        QString styleSheet = QLatin1String(file.readAll());
+        vapp.setStyleSheet(styleSheet);
+    }
+#endif
+
+#ifndef VRN_SHARED_LIBS
+    // init Qt resources, if voreen_qt has been built as static lib
+    Q_INIT_RESOURCE(vrn_qt);
+    Q_INIT_RESOURCE(voreenve);
+#endif
+
+    // create and show mainwindow
+    if (showSplash)
+        splash.showMessage("Creating main window...");
+    VoreenMainWindow mainWindow(workspaceFilename, resetSettings);
+    vapp.setMainWindow(&mainWindow);
+    mainWindow.show();
+
+    // initialize mainwindow (also calls VoreenApplication::initializeGL())
+    if (showSplash)
+        mainWindow.initialize(&splash);
+    else
+        mainWindow.initialize();
+
+    vapp.restoreOverrideCursor();
+
+    // hide splash
+    if (showSplash)
+        splash.showMessage("Initialization complete.");
+
+    // run Python script
+#ifdef VRN_MODULE_PYTHON
+    if (!scriptFilename.empty()) {
+        // first make sure that all Qt events have been processed
+        qApp->processEvents();
+        if (PythonModule::getInstance()) {
+            try {
+                LINFO("Running Python script '" << scriptFilename << "' ...");
+                PythonModule::getInstance()->runScript(scriptFilename, false);
+                LINFO("Python script finished.");
+            }
+            catch (VoreenException& e) {
+                LERROR(e.what());
+            }
+        }
+        else
+            LERROR("Failed to run Python script: PythonModule not instantiated");
+    }
+#endif
+
+    return vapp.exec();
 }

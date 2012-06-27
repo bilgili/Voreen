@@ -1,36 +1,36 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/ports/port.h"
+
+#include "voreen/core/ports/conditions/portcondition.h"
 #include "voreen/core/processors/processor.h"
+#include "tgt/event/event.h"
 
 #include <sstream>
+#include <stdexcept>
 
 namespace voreen {
 
@@ -54,15 +54,27 @@ Port::Port(const std::string& name, PortDirection direction, bool allowMultipleC
 }
 
 Port::~Port() {
+    for (size_t i=0; i<conditions_.size(); i++)
+        delete conditions_.at(i);
+    conditions_.clear();
+
     if (isInitialized()) {
-        std::string id;
-        if (getProcessor())
-            id = getProcessor()->getName() + ".";
-        id += getName();
-        LWARNING("~Port() '" << id << "' has not been deinitialized");
+        LWARNING("~Port() '" << getQualifiedName() << "' has not been deinitialized");
     }
 
     disconnectAll();
+}
+
+void Port::addCondition(PortCondition* condition) {
+    tgtAssert(condition, "condition must not be null");
+    if (isOutport()) {
+        std::string message = "Adding port conditions to an outport is not allowed";
+        LERROR(message);
+        throw std::invalid_argument(message);
+    }
+
+    condition->setCheckedPort(this);
+    conditions_.push_back(condition);
 }
 
 void Port::setProcessor(Processor* p) {
@@ -106,7 +118,10 @@ void Port::disconnectAll() {
 }
 
 bool Port::isReady() const {
-    return isConnected();
+    if (isInport())
+        return isConnected() && checkConditions();
+    else
+        return isConnected();
 }
 
 bool Port::testConnectivity(const Port* inport) const {
@@ -200,8 +215,11 @@ int Port::getLoopIteration() const {
     }
 }
 
-const std::vector<Port*>& Port::getConnected() const {
-       return connectedPorts_;
+const std::vector<const Port*> Port::getConnected() const {
+    std::vector<const Port*> p;
+    for(size_t i=0; i<connectedPorts_.size(); i++)
+        p.push_back(connectedPorts_[i]);
+    return p;
 }
 
 bool Port::isConnected() const {
@@ -247,11 +265,23 @@ std::string Port::getName() const {
     return name_;
 }
 
+std::string Port::getQualifiedName() const {
+    std::string id;
+    if (getProcessor())
+        id = getProcessor()->getName() + ".";
+    id += getName();
+    return id;
+}
+
+bool Port::hasData() const {
+    return false;
+}
+
 bool Port::hasChanged() const {
-       if (isOutport()) {
+    if (isOutport()) {
         LWARNINGC("voreen.port", "Called hasChanged() on outport!");
-       }
-       return hasChanged_;
+    }
+    return hasChanged_;
 }
 
 void Port::setValid() {
@@ -260,6 +290,22 @@ void Port::setValid() {
     if (isOutport()) {
            LWARNINGC("voreen.port", "Called setValid() on outport!" << getName() );
     }
+}
+
+bool Port::supportsCaching() const {
+    return false;
+}
+
+std::string Port::getHash() const {
+    return "";
+}
+
+void Port::saveData(const std::string& /*path*/) const throw (VoreenException)  {
+    throw VoreenException("Port type does not support saving of its data.");
+}
+
+void Port::loadData(const std::string& /*path*/) throw (VoreenException) {
+    throw VoreenException("Port type does not support loading of its data.");
 }
 
 void Port::distributeEvent(tgt::Event* e) {
@@ -289,7 +335,7 @@ void Port::setLoopIteration(int iteration) {
         LWARNINGC("voreen.Port", "Current loop iteration greater than number of loop iterations");
 }
 
-void Port::initialize() throw (VoreenException) {
+void Port::initialize() throw (tgt::Exception) {
 
     if (isInitialized()) {
         std::string id;
@@ -303,22 +349,44 @@ void Port::initialize() throw (VoreenException) {
     initialized_ = true;
 }
 
-void Port::deinitialize() throw (VoreenException) {
+void Port::deinitialize() throw (tgt::Exception) {
 
     if (!isInitialized()) {
-        std::string id;
+        /*std::string id;
         if (getProcessor())
             id = getProcessor()->getName() + ".";
         id += getName();
-        LWARNING("deinitialize(): '" << id << "' not initialized");
+        LWARNING("deinitialize(): '" << id << "' not initialized"); */
         return;
     }
 
     initialized_ = false;
 }
 
+bool Port::checkConditions() const {
+    for (size_t i=0; i<conditions_.size(); i++) {
+        if (!conditions_.at(i)->acceptsPortData()) {
+            LWARNING("Port condition of '" << getQualifiedName() << "' not met: " << conditions_.at(i)->getDescription());
+            return false;
+        }
+    }
+    return true;
+}
+
 bool Port::isInitialized() const {
     return initialized_;
+}
+
+std::string Port::getDescription() const {
+    return description_;
+}
+
+void Port::setDescription(std::string desc) {
+    description_ = desc;
+}
+
+tgt::col3 Port::getColorHint() const {
+    return tgt::col3(0, 0, 0);
 }
 
 } // namespace voreen

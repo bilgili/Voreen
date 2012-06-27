@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/aboutbox.h"
 #include "voreen/core/version.h"
@@ -51,10 +47,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
 
 
     s = ui.labelRight->text();
-    if (!VoreenVersion::getRevision().empty())
-        s.replace("__SVNVERSION__", "SVN revision: " + QString(VoreenVersion::getRevision().c_str()));
-    else
-        s.replace("__SVNVERSION__", "");
+    s.replace("__REVISION__", "Revision: " + QString(VoreenVersion::getRevision().c_str()).left(8));
     ui.labelRight->setText(s);
 
     QStringList developers;
@@ -62,7 +55,9 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     developers << QString::fromLatin1("Benjamin Bolte");
     developers << QString::fromLatin1("Helge Böschen");
     developers << QString::fromLatin1("Raphael Bruns");
+    developers << QString::fromLatin1("Mathias Dehne");
     developers << QString::fromLatin1("Christian Döring");
+    developers << QString::fromLatin1("Maike Dudek");
     developers << QString::fromLatin1("Jan Esser");
     developers << QString::fromLatin1("André Exeler");
     developers << QString::fromLatin1("Dirk Feldmann");
@@ -76,6 +71,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     developers << QString::fromLatin1("Roland Leißa");
     developers << QString::fromLatin1("Markus Madeja");
     developers << QString::fromLatin1("Zoha Moztarzadeh");
+    developers << QString::fromLatin1("Reza Nawrozi");
     developers << QString::fromLatin1("Borislav Petkov");
     developers << QString::fromLatin1("Stephan Rademacher");
     developers << QString::fromLatin1("Rainer Reich");
@@ -91,6 +87,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     developers << QString::fromLatin1("Carolin Walter");
     developers << QString::fromLatin1("Michael Weinkath");
     developers << QString::fromLatin1("Frank Wisniewski");
+    developers << QString::fromLatin1("Marco Ziolkowski");
 //    developers.replaceInStrings(" ", "&nbsp;");
 
 
@@ -105,6 +102,7 @@ AboutBox::AboutBox(const QString& application, const QString& description, QWidg
     ui.labelDevelopers->setText(s);
 
     QStringList mainDevelopers;
+    mainDevelopers << QString::fromLatin1("Tobias Brix");
     mainDevelopers << QString::fromLatin1("Stefan Diepenbrock");
     mainDevelopers << QString::fromLatin1("Florian Lindemann");
     mainDevelopers << QString::fromLatin1("Jörg Mensmann");

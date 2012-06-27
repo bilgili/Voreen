@@ -1,36 +1,32 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvasramp.h"
 
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 
 #include <QMouseEvent>
 
@@ -38,10 +34,10 @@ namespace voreen {
 
 using tgt::vec2;
 
-TransFuncMappingCanvasRamp::TransFuncMappingCanvasRamp(QWidget* parent, TransFuncIntensity* tf, bool noColor,
-                                               bool clipThresholds, QString xAxisText,
+TransFuncMappingCanvasRamp::TransFuncMappingCanvasRamp(QWidget* parent, TransFunc1DKeys* tf, bool noColor,
+                                               QString xAxisText,
                                                QString yAxisText)
-    : TransFuncMappingCanvas(parent, tf, noColor, clipThresholds, xAxisText, yAxisText)
+    : TransFuncMappingCanvas(parent, tf, noColor, xAxisText, yAxisText)
     , rampCenter_(0.f)
     , rampWidth_(0.f)
 {
@@ -77,7 +73,7 @@ void TransFuncMappingCanvasRamp::mousePressEvent(QMouseEvent* event) {
     for (int i=0; i<tf_->getNumKeys(); ++i) {
         TransFuncMappingKey* key = tf_->getKey(i);
         tgt::vec2 sp = wtos(tgt::vec2(key->getIntensity(), key->getColorL().a / 255.f));
-        tgt::vec2 spr = wtos(tgt::vec2(key->getIntensity(), key->getColorR().a / 255.f));
+        //tgt::vec2 spr = wtos(tgt::vec2(key->getIntensity(), key->getColorR().a / 255.f));
         if (sHit.x > sp.x - pointSize_ && sHit.x < sp.x + pointSize_ &&
             sHit.y > sp.y - pointSize_ && sHit.y < sp.y + pointSize_)
         {

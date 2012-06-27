@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_XMLDESERIALIZER_H
 #define VRN_XMLDESERIALIZER_H
@@ -54,12 +50,8 @@
 #include "voreen/core/io/serialization/abstractserializable.h"
 #include "voreen/core/io/serialization/serializablefactory.h"
 #include "voreen/core/io/serialization/xmlprocessor.h"
-#include "voreen/core/plotting/plotcell.h"
 
 namespace voreen {
-
-// forward declaration
-struct PlotSelectionEntry;
 
 /**
  * @c XmlDeserializer is responsible for deserializing XML documents to memory data.
@@ -110,15 +102,16 @@ struct PlotSelectionEntry;
  * @see XmlSerializerBase
  * @see Serializable
  */
-class XmlDeserializer : public XmlSerializerBase
+class VRN_CORE_API XmlDeserializer : public XmlSerializerBase
 {
 public:
     /**
      * Constructor.
      *
-     * @param documentPath Absolute path to the XML file the document has been read from. This information
-     *     is not used by the deserializer itself and is therefore not required, but is intended
-     *     to be accessible by deserializing objects for relative-to-absolute path conversions.
+     * @param documentPath Absolute working directory of the document, which is typically the path
+     *      to the XML file the document has been read from. This information is not used by the
+     *      serializer itself and is therefore not required, but is intended to be accessible
+     *      by serializing objects for relative-to-absolute path conversions.
      */
     XmlDeserializer(std::string documentPath = "");
 
@@ -128,9 +121,39 @@ public:
     ~XmlDeserializer();
 
     /**
-     * Returns the absolute path to the XML file the document was read from.
+     * Returns the absolute working directory of the document, which is typically the path
+     * to the XML file the document has been read from.
      */
     std::string getDocumentPath() const;
+
+    /**
+     * Try to deserialize the given @c key/data pair.
+     * If there is no such data the defaultValue is returned.
+     */
+    template<typename T>
+    void optionalDeserialize(const std::string& key, T& data, const T& defaultValue)
+        throw (SerializationException)
+    {
+        try {
+            deserialize(key, data);
+        }
+        catch (XmlSerializationNoSuchDataException e) {
+            data = defaultValue;
+            removeLastError();
+        }
+    }
+
+    /**
+     * Deserialize binary @c data from a base64 encoded string.
+     */
+    void deserializeBinaryBlob(const std::string& key, unsigned char*& inputBuffer)
+        throw (SerializationException);
+
+    /**
+     * Deserialize binary @c data from a base64 encoded string.
+     */
+    void deserializeBinaryBlob(const std::string& key, std::vector<unsigned char>& buffer)
+        throw (SerializationException);
 
     /**
      * Deserializes the given @c key/data pair.
@@ -194,7 +217,7 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
-    void deserialize(const std::string& key, signed short& data)
+    void deserialize(const std::string& key, uint16_t& data)
         throw (SerializationException);
 
     /**
@@ -207,7 +230,7 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
-    void deserialize(const std::string& key, unsigned short& data)
+    void deserialize(const std::string& key, int16_t& data)
         throw (SerializationException);
 
     /**
@@ -220,7 +243,7 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
-    void deserialize(const std::string& key, signed int& data)
+    void deserialize(const std::string& key, uint32_t& data)
         throw (SerializationException);
 
     /**
@@ -233,7 +256,36 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
-    void deserialize(const std::string& key, unsigned int& data)
+    void deserialize(const std::string& key, int32_t& data)
+        throw (SerializationException);
+
+// There seems to be no uint*_t typedef for long unsigned ints on mac, so we need to provide an implementation for this type.
+#ifdef __APPLE__
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, long unsigned int& data)
+        throw (SerializationException);
+#endif
+
+    /**
+     * Deserializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data variable to store deserialized data
+     *
+     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
+     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
+     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
+     */
+    void deserialize(const std::string& key, uint64_t& data)
         throw (SerializationException);
 
     /**
@@ -246,20 +298,7 @@ public:
      * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
-    void deserialize(const std::string& key, signed long& data)
-        throw (SerializationException);
-
-    /**
-     * Deserializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data variable to store deserialized data
-     *
-     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
-     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
-     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
-     */
-    void deserialize(const std::string& key, unsigned long& data)
+    void deserialize(const std::string& key, int64_t& data)
         throw (SerializationException);
 
     /**
@@ -533,32 +572,6 @@ public:
      * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
      */
     void deserialize(const std::string& key, tgt::Matrix4d& data)
-        throw (SerializationException);
-
-    /**
-     * Deserializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data variable to store deserialized data
-     *
-     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
-     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
-     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
-     */
-
-    void deserialize(const std::string& key, PlotCellValue& data)
-        throw (SerializationException);
-    /**
-     * Deserializes the given @c key/data pair.
-     *
-     * @param key the XML node key
-     * @param data variable to store deserialized data
-     *
-     * @throws XmlSerializationNoSuchDataException if no data with the given key can be found.
-     * @throws XmlSerializationFormatException if a XML node is incorrect formatted.
-     * @throws XmlSerializationDuplicateIdException if multiple XML nodes share same id attribute
-     */
-    void deserialize(const std::string& key, PlotSelectionEntry& data)
         throw (SerializationException);
 
     /**
@@ -910,7 +923,7 @@ private:
      *         in case of trying to allocate memory for an @c AbstractSerializable
      */
     template<class T>
-    inline T* allocateMemory(signed short* data, const std::string* type = 0)
+    inline T* allocateMemory(short* data, const std::string* type = 0)
         throw (SerializationException);
 
     /**
@@ -927,7 +940,7 @@ private:
      *         in case of trying to allocate memory for an @c AbstractSerializable
      */
     template<class T>
-    inline T* allocateMemory(unsigned short* data, const std::string* type = 0)
+    inline T* allocateMemory(int* data, const std::string* type = 0)
         throw (SerializationException);
 
     /**
@@ -944,57 +957,7 @@ private:
      *         in case of trying to allocate memory for an @c AbstractSerializable
      */
     template<class T>
-    inline T* allocateMemory(signed int* data, const std::string* type = 0)
-        throw (SerializationException);
-
-    /**
-     * Allocates new memory of given type on the heap and returns a pointer to it.
-     *
-     * @tparam data type of memory to allocate
-     *
-     * @param data parameter is needed to determine how to allocate memory
-     *
-     * @return pointer to allocated memory
-     *
-     * @throws XmlSerializationMemoryAllocationException
-     *         in case of trying to allocate memory for an @c AbstractSerializable
-     */
-    template<class T>
-    inline T* allocateMemory(unsigned int* data, const std::string* type = 0)
-        throw (SerializationException);
-
-    /**
-     * Allocates new memory of given type on the heap and returns a pointer to it.
-     *
-     * @tparam data type of memory to allocate
-     *
-     * @param data parameter is needed to determine how to allocate memory
-     * @param type parameter is needed to allocate memory for an @c AbstractSerializable by factory
-     *
-     * @return pointer to allocated memory
-     *
-     * @throws XmlSerializationMemoryAllocationException
-     *         in case of trying to allocate memory for an @c AbstractSerializable
-     */
-    template<class T>
-    inline T* allocateMemory(signed long* data, const std::string* type = 0)
-        throw (SerializationException);
-
-    /**
-     * Allocates new memory of given type on the heap and returns a pointer to it.
-     *
-     * @tparam data type of memory to allocate
-     *
-     * @param data parameter is needed to determine how to allocate memory
-     * @param type parameter is needed to allocate memory for an @c AbstractSerializable by factory
-     *
-     * @return pointer to allocated memory
-     *
-     * @throws XmlSerializationMemoryAllocationException
-     *         in case of trying to allocate memory for an @c AbstractSerializable
-     */
-    template<class T>
-    inline T* allocateMemory(unsigned long* data, const std::string* type = 0)
+    inline T* allocateMemory(long* data, const std::string* type = 0)
         throw (SerializationException);
 
     /**
@@ -1421,6 +1384,11 @@ private:
         throw (SerializationException);
 
     /**
+     * Helper function for base64 decoding.
+     */
+    std::vector<unsigned char> base64Decode(const std::string& inputBuffer);
+
+    /**
      * Type definition for set of visited XML nodes.
      */
     typedef std::set<TiXmlNode*> VisitedNodesSetType;
@@ -1598,12 +1566,9 @@ template<class T> inline T* XmlDeserializer::allocateMemory(bool*, const std::st
 template<class T> inline T* XmlDeserializer::allocateMemory(char*, const std::string*)           throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(signed char*, const std::string*)    throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(unsigned char*, const std::string*)  throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed short*, const std::string*)   throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned short*, const std::string*) throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed int*, const std::string*)     throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned int*, const std::string*)   throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(signed long*, const std::string*)    throw (SerializationException) { return new T(); }
-template<class T> inline T* XmlDeserializer::allocateMemory(unsigned long*, const std::string*)  throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(short*, const std::string*)          throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(int*, const std::string*)            throw (SerializationException) { return new T(); }
+template<class T> inline T* XmlDeserializer::allocateMemory(long*, const std::string*)           throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(float*, const std::string*)          throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(double*, const std::string*)         throw (SerializationException) { return new T(); }
 template<class T> inline T* XmlDeserializer::allocateMemory(long double*, const std::string*)    throw (SerializationException) { return new T(); }
@@ -1840,7 +1805,7 @@ inline void XmlDeserializer::deserializeSimpleTypes(const std::string& key, std:
             element = getNextXmlElement(key);
 
         // Is there no text in the XML element?
-        if (!element->FirstChild() || element->FirstChild()->Type() != TiXmlElement::TEXT) {
+        if (!element->FirstChild() || element->FirstChild()->Type() != TiXmlElement::TINYXML_TEXT) {
             // Deserialize from XML attributes?
             if (useAttributes_)
                 raise(XmlSerializationNoSuchDataException("Neither a '" + key + "' attribute nor text content data exists."));

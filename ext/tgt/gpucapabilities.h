@@ -1,37 +1,43 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_GPUCAPABILITIES_H
 #define TGT_GPUCAPABILITIES_H
 
 #include <string>
 
-#include "tgt/config.h"
 #include "tgt/singleton.h"
 #include "tgt/tgt_gl.h"
+#include "tgt/types.h"
 
 namespace tgt {
+
+class GpuCapabilities;
+#ifdef DLL_TEMPLATE_INST
+template class TGT_API Singleton<GpuCapabilities>;
+#endif
 
 /**
  * This tgt-Singleton provides information about the graphics system.
@@ -42,12 +48,12 @@ namespace tgt {
  *  - GPU vendor
  *  - Texturing and shader capabilities
  *
- * All data except the operating system information is exclusively retrieved 
+ * All data except the operating system information is exclusively retrieved
  * through the OpenGL API and can thus be regarded as reliable.
  *
  * The global identifier of this class' singleton is <tt>GpuCaps</tt>.
  */
-class GpuCapabilities {
+class TGT_API GpuCapabilities : public Singleton<GpuCapabilities> {
 public:
 
     /**
@@ -57,52 +63,54 @@ public:
      *
      * TGT prefix is necessary due to name clashes with glew.
      */
-	class GlVersion {
-		public:
-		GlVersion(int major = 0, int minor = 0, int release = 0);
+    class TGT_API GlVersion {
+        public:
+        GlVersion(int major = 0, int minor = 0, int release = 0);
 
-		/**
-		 * Parse OpenGL version string as specified:
-		 *
-		 * The GL_VERSION and GL_SHADING_LANGUAGE_VERSION strings begin with a version number.
-		 * The version number uses one of these forms:
-		 *      major_number.minor_number
-		 *      major_number.minor_number.release_number
-		 *
-		 * Vendor-specific information may follow the version number.
-		 * Its format depends on the implementation, but a space always separates the version number and the vendor-specific information.
-		 */
-		bool parseVersionString(const std::string& st);
+        /**
+         * Parse OpenGL version string as specified:
+         *
+         * The GL_VERSION and GL_SHADING_LANGUAGE_VERSION strings begin with a version number.
+         * The version number uses one of these forms:
+         *      major_number.minor_number
+         *      major_number.minor_number.release_number
+         *
+         * Vendor-specific information may follow the version number.
+         * Its format depends on the implementation, but a space always separates the version number and the vendor-specific information.
+         */
+        bool parseVersionString(const std::string& st);
 
-		int major_;
-		int minor_;
-		int release_;
+        int major_;
+        int minor_;
+        int release_;
 
-		int major() const { return major_; }
-		int minor() const { return minor_; }
-		int release() const { return release_; }
+        int major() const { return major_; }
+        int minor() const { return minor_; }
+        int release() const { return release_; }
 
-		friend bool operator==(const GlVersion& x, const GlVersion& y);
-		friend bool operator!=(const GlVersion& x, const GlVersion& y);
-		friend bool operator<(const GlVersion& x, const GlVersion& y);
-		friend bool operator<=(const GlVersion& x, const GlVersion& y);
-		friend bool operator>(const GlVersion& x, const GlVersion& y);
-		friend bool operator>=(const GlVersion& x, const GlVersion& y);
-		friend std::ostream& operator<<(std::ostream& s, const GlVersion& v); 
+        TGT_API friend bool operator==(const GlVersion& x, const GlVersion& y);
+        TGT_API friend bool operator!=(const GlVersion& x, const GlVersion& y);
+        TGT_API friend bool operator<(const GlVersion& x, const GlVersion& y);
+        TGT_API friend bool operator<=(const GlVersion& x, const GlVersion& y);
+        TGT_API friend bool operator>(const GlVersion& x, const GlVersion& y);
+        TGT_API friend bool operator>=(const GlVersion& x, const GlVersion& y);
+        TGT_API friend std::ostream& operator<<(std::ostream& s, const GlVersion& v);
 
-		static const GlVersion TGT_GL_VERSION_1_0;
- 		static const GlVersion TGT_GL_VERSION_1_1;
- 		static const GlVersion TGT_GL_VERSION_1_2;
- 		static const GlVersion TGT_GL_VERSION_1_3;
- 		static const GlVersion TGT_GL_VERSION_1_4;
- 		static const GlVersion TGT_GL_VERSION_1_5;
- 		static const GlVersion TGT_GL_VERSION_2_0;
- 		static const GlVersion TGT_GL_VERSION_2_1;
- 		static const GlVersion TGT_GL_VERSION_3_0;
- 		static const GlVersion TGT_GL_VERSION_3_1;
- 		static const GlVersion TGT_GL_VERSION_3_2;
- 		static const GlVersion TGT_GL_VERSION_3_3;
- 		static const GlVersion TGT_GL_VERSION_4_0;
+        static const GlVersion TGT_GL_VERSION_1_0;
+        static const GlVersion TGT_GL_VERSION_1_1;
+        static const GlVersion TGT_GL_VERSION_1_2;
+        static const GlVersion TGT_GL_VERSION_1_3;
+        static const GlVersion TGT_GL_VERSION_1_4;
+        static const GlVersion TGT_GL_VERSION_1_5;
+        static const GlVersion TGT_GL_VERSION_2_0;
+        static const GlVersion TGT_GL_VERSION_2_1;
+        static const GlVersion TGT_GL_VERSION_3_0;
+        static const GlVersion TGT_GL_VERSION_3_1;
+        static const GlVersion TGT_GL_VERSION_3_2;
+        static const GlVersion TGT_GL_VERSION_3_3;
+        static const GlVersion TGT_GL_VERSION_4_0;
+        static const GlVersion TGT_GL_VERSION_4_1;
+        static const GlVersion TGT_GL_VERSION_4_2;
 
         static const GlVersion SHADER_VERSION_110; ///< GLSL version 1.10
         static const GlVersion SHADER_VERSION_120; ///< GLSL version 1.20
@@ -111,7 +119,9 @@ public:
         static const GlVersion SHADER_VERSION_150; ///< GLSL version 1.50
         static const GlVersion SHADER_VERSION_330; ///< GLSL version 3.30
         static const GlVersion SHADER_VERSION_400; ///< GLSL version 4.00
-	};
+        static const GlVersion SHADER_VERSION_410; ///< GLSL version 4.10
+        static const GlVersion SHADER_VERSION_420; ///< GLSL version 4.20
+    };
 
 
     /**
@@ -156,10 +166,10 @@ public:
 
     /**
      * Creates an object for the detection of graphics system properties. If detectCapabilities
-	 * is set to false, the capabilities of the graphics card aren't detected right away in the
-	 * constructor. This way you can use GpuCapabilitiesWindows to detect the amount of memory
-	 * on the graphics card before initGL() is called. Otherwise GpuCapabilities tries to
-	 * detect GL values while initGL() isn't called yet and produces a crash.
+     * is set to false, the capabilities of the graphics card aren't detected right away in the
+     * constructor. This way you can use GpuCapabilitiesWindows to detect the amount of memory
+     * on the graphics card before initGL() is called. Otherwise GpuCapabilities tries to
+     * detect GL values while initGL() isn't called yet and produces a crash.
      */
     GpuCapabilities(bool detectCaps = true);
 
@@ -194,11 +204,11 @@ public:
      * @see GpuVendor
      */
     std::string getVendorAsString();
-    
+
     /**
      * Returns wether a certain OpenGL extension
      * is supported by this implementation. The
-     * check is done by parsing the OpenGL 
+     * check is done by parsing the OpenGL
      * extensions-string provided by the graphics driver.
      *
      * @param extension the exact name string of the extension
@@ -260,7 +270,7 @@ public:
     * Returns the GLSL shading language version
     * supported by the GPU.
     *
-    * @see GlVersion 
+    * @see GlVersion
     */
     GlVersion getShaderVersion();
 
@@ -286,6 +296,14 @@ public:
      * @see getMax3DTextureSize
      */
     int getMaxTextureSize();
+
+    /**
+     * Queries the currently available texture memory in Kilobytes through the OpenGL API.
+     *
+     * @note Only supported for NVIDIA and ATI graphics boards.
+     *  On other platforms, -1 is returned.
+     */
+    int retrieveAvailableTextureMemory() const;
 
     /**
      * Returns wether 3D textures are supported.
@@ -344,14 +362,20 @@ public:
      */
     bool areFramebufferObjectsSupported();
 
-	///Returns the maximal number of color attachments for a FBO
-	int getMaxColorAttachments(); 
+    ///Returns the maximal number of color attachments for a FBO
+    int getMaxColorAttachments();
+
+    /**
+     * Returns the maximum vertices the geometry shader can output.
+     * If geometry shader is not supported, -1 is returned.
+     */
+    int getMaxGeometryShaderVertices();
 
     /**
      * Overrides the detected GLSL language version.
      *
      * @return false, if the passed version string could not be parsed.
-     *      In this case, the detected GLSL version is kept. 
+     *      In this case, the detected GLSL version is kept.
      */
     bool overrideGLSLVersion(const std::string& versionString);
 
@@ -371,7 +395,7 @@ public:
      * Get the OS version.
      */
     OSVersion getOSVersion();
-    
+
     /**
      * Get the OS version as string.
      */
@@ -384,7 +408,7 @@ protected:
      * are internally stored.
      */
     virtual void detectCapabilities();
-    
+
     /**
      * Is called by the constructor and performs the
      * operating system detection. The results
@@ -423,7 +447,8 @@ private:
     float maxTextureAnisotropy_;
     bool textureCompression_;
     bool framebufferObjects_;
-	int maxColorAttachments_;
+    int maxColorAttachments_;
+    int maxGeometryShaderVertices_;
 };
 
 } // namespace tgt

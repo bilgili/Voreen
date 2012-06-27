@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/gpucapabilities.h"
 
@@ -44,10 +45,10 @@ namespace tgt {
 const std::string GpuCapabilities::loggerCat_("tgt.GpuCapabilities");
 
 GpuCapabilities::GpuCapabilities(bool detectCaps) {
-	if (detectCaps) {
-		detectCapabilities();
-		detectOS();
-	}
+    if (detectCaps) {
+        detectCapabilities();
+        detectOS();
+    }
 }
 
 GpuCapabilities::GlVersion GpuCapabilities::getGlVersion() {
@@ -131,6 +132,27 @@ int GpuCapabilities::getMax3DTextureSize() {
     return max3DTexSize_;
 }
 
+int GpuCapabilities::retrieveAvailableTextureMemory() const {
+    int availableTexMem = -1;
+
+    if (vendor_ == GPU_VENDOR_NVIDIA) {
+#ifdef GL_NVX_gpu_memory_info
+        GLint retVal;
+        glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &retVal);
+        availableTexMem = static_cast<int>(retVal);
+#endif
+    }
+    else if (vendor_ == GPU_VENDOR_ATI) {
+#ifdef GL_ATI_meminfo
+        GLint retVal[4];
+        glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, retVal);
+        availableTexMem = static_cast<int>(retVal[0]);
+#endif
+    }
+
+    return availableTexMem;
+}
+
 int GpuCapabilities::getNumTextureUnits() {
     return numTextureUnits_;
 }
@@ -149,6 +171,10 @@ bool GpuCapabilities::isAnisotropicFilteringSupported() {
 
 float GpuCapabilities::getMaxTextureAnisotropy() {
     return maxTextureAnisotropy_;
+}
+
+int GpuCapabilities::getMaxGeometryShaderVertices() {
+    return maxGeometryShaderVertices_;
 }
 
 bool GpuCapabilities::isTextureCompressionSupported() {
@@ -197,28 +223,29 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
     if (isAnisotropicFilteringSupported())
         features << getMaxTextureAnisotropy() << "x anisotropic";
     else
-        features << "no anisotropic";    
-    
+        features << "no anisotropic";
+
     LINFO(features.str());
 
     features.clear();
     features.str("");
     features << "Framebuffer Objects: " << (areFramebufferObjectsSupported() ? "yes" : "no");
-	if(areFramebufferObjectsSupported())
-		features << ", max " << getMaxColorAttachments() << " color attachments";
+    if(areFramebufferObjectsSupported())
+        features << ", max " << getMaxColorAttachments() << " color attachments";
     LINFO(features.str());
 
     features.clear();
     features.str("");
     features << "Shaders:             " << (areShadersSupported() ? "yes (OpenGL 2.0)" : "no");
-
-    if (areShadersSupported()) {
+    if (!areShadersSupported()) {
+        LINFO(features);
+    }
+    else {
         features << ", GLSL Version " << shaderVersion_;
-
         features << ", Shader Model ";
         if (shaderModel_ == SHADER_MODEL_5)
             features << "5.0";
-        if (shaderModel_ == SHADER_MODEL_4)
+        else if (shaderModel_ == SHADER_MODEL_4)
             features << "4.0";
         else if (shaderModel_ == SHADER_MODEL_3)
             features << "3.0";
@@ -227,21 +254,25 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         else
             features << "unknown";
 
+        if(maxGeometryShaderVertices_ >= 0)
+            features << ", max GeometryShader Output Vertices: " << maxGeometryShaderVertices_;
+
+        LINFO(features.str());
+
         if (GLEW_NV_fragment_program2) {
-            LINFO(features.str());
             features.clear();
             features.str("");
             features << "Shader Capabilities: ";
-            
+
             GLint i = -1;
             glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
             features << "MAX_PROGRAM_LOOP_COUNT=" << i;
             glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_EXEC_INSTRUCTIONS_NV, &i);
             features << ", MAX_PROGRAM_EXEC_INSTRUCTIONS=" << i;
-        }        
+            LDEBUG(features.str());
+        }
     }
-    
-    LINFO(features.str());
+
 }
 
 GpuCapabilities::OSVersion GpuCapabilities::getOSVersion() {
@@ -263,7 +294,7 @@ void GpuCapabilities::detectCapabilities() {
     if (glslVS)
         glslVersionString_ = string(glslVS);
     else
-        glslVersionString_ = ""; 
+        glslVersionString_ = "";
 
     if (!glVersion_.parseVersionString(glVersionString_)) {
         LERROR("Malformed OpenGL version string: " << glVersionString_);
@@ -296,7 +327,7 @@ void GpuCapabilities::detectCapabilities() {
     // for information about shader models in OpenGL
     if (isExtensionSupported("GL_ARB_tessellation_shader"))
         shaderModel_ = SHADER_MODEL_5;
-    if (isExtensionSupported("GL_ARB_geometry_shader4") ||
+    else if (isExtensionSupported("GL_ARB_geometry_shader4") ||
         isExtensionSupported("GL_EXT_geometry_shader4"))
         shaderModel_ = SHADER_MODEL_4;
     else if (isExtensionSupported("GL_NV_vertex_program3")  ||
@@ -306,6 +337,12 @@ void GpuCapabilities::detectCapabilities() {
         shaderModel_ = SHADER_MODEL_2;
     else
         shaderModel_ = SHADER_MODEL_UNKNOWN;
+
+    //Geometry Shader is supported since ShaderModel 4.0
+    if(shaderModel_ >= SHADER_MODEL_4)
+        glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT,&maxGeometryShaderVertices_);
+    else
+        maxGeometryShaderVertices_ = -1;
 
     // Texturing
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &maxTexSize_);
@@ -361,11 +398,11 @@ void GpuCapabilities::detectCapabilities() {
 
     framebufferObjects_ = (isExtensionSupported("GL_EXT_framebuffer_object"));
 
-	if(framebufferObjects_) {
-		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &maxColorAttachments_);
-	}
-	else
-		maxColorAttachments_ = -1;
+    if(framebufferObjects_) {
+        glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &maxColorAttachments_);
+    }
+    else
+        maxColorAttachments_ = -1;
 
 }
 
@@ -417,7 +454,7 @@ void GpuCapabilities::detectOS() {
     }
     oss << " (build " <<  osvi.dwBuildNumber << ")";
     osVersionString_ = oss.str();
-    
+
 #else // WIN32 -> must be UNIX/POSIX
     osVersion_ = OS_POSIX;
 
@@ -461,6 +498,8 @@ const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_1(
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_2(3,2,0);
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_3_3(3,3,0);
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_4_0(4,0,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_4_1(4,1,0);
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::TGT_GL_VERSION_4_2(4,2,0);
 
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_110(1,10); ///< GLSL version 1.10
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_120(1,20); ///< GLSL version 1.20
@@ -469,6 +508,8 @@ const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_140(
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_150(1,50); ///< GLSL version 1.50
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_330(3,30); ///< GLSL version 3.30
 const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_400(4, 0); ///< GLSL version 4.00
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_410(4,10); ///< GLSL version 4.10
+const GpuCapabilities::GlVersion GpuCapabilities::GlVersion::SHADER_VERSION_420(4,20); ///< GLSL version 4.20
 
 GpuCapabilities::GlVersion::GlVersion(int major, int minor, int release)
   : major_(major), minor_(minor), release_(release)
@@ -487,7 +528,7 @@ bool GpuCapabilities::GlVersion::parseVersionString(const string& st) {
         str = st.substr(0, spacePos);
     else
         str = st;
-    
+
     //explode version string with delimiter ".":
     std::vector<string> exploded;
     size_t found;
@@ -515,7 +556,7 @@ bool GpuCapabilities::GlVersion::parseVersionString(const string& st) {
     vstr >> major_;
     if (vstr.fail()) {
         LERROR("Failed to parse major version! Version string: " << st);
-		major_ = -1;
+        major_ = -1;
         return false;
     }
 
@@ -526,8 +567,8 @@ bool GpuCapabilities::GlVersion::parseVersionString(const string& st) {
     vstr >> minor_;
     if (vstr.fail()) {
         LERROR("Failed to parse minor version! Version string: " << st);
-		major_ = -1;
-		minor_ = -1;
+        major_ = -1;
+        minor_ = -1;
         return false;
     }
 
@@ -549,78 +590,78 @@ bool GpuCapabilities::GlVersion::parseVersionString(const string& st) {
 
 
 bool operator==(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if ((x.major_ == y.major_) && (x.minor_ == y.minor_) && (x.release_ == y.release_))
-		return true;
-	else	
-		return false;
+    if ((x.major_ == y.major_) && (x.minor_ == y.minor_) && (x.release_ == y.release_))
+        return true;
+    else
+        return false;
 }
 
 bool operator!=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if ((x.major_ != y.major_) || (x.minor_ != y.minor_) || (x.release_ != y.release_))
-		return true;
-	else	
-		return false;
+    if ((x.major_ != y.major_) || (x.minor_ != y.minor_) || (x.release_ != y.release_))
+        return true;
+    else
+        return false;
 }
 
 bool operator<(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if (x.major_ < y.major_)
-		return true;
-	else if (x.major_ == y.major_) {
-		if (x.minor_ < y.minor_)
-			return true;
-		else if (x.minor_ == y.minor_) 
-			if (x.release_ < y.release_)
-				return true;
+    if (x.major_ < y.major_)
+        return true;
+    else if (x.major_ == y.major_) {
+        if (x.minor_ < y.minor_)
+            return true;
+        else if (x.minor_ == y.minor_)
+            if (x.release_ < y.release_)
+                return true;
     }
-	return false;
+    return false;
 }
 
 bool operator<=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if (x.major_ < y.major_)
-		return true;
-	else if (x.major_ == y.major_) {
-		if (x.minor_ < y.minor_)
-			return true;
-		else if (x.minor_ == y.minor_) 
-			if (x.release_ <= y.release_)
-				return true;
+    if (x.major_ < y.major_)
+        return true;
+    else if (x.major_ == y.major_) {
+        if (x.minor_ < y.minor_)
+            return true;
+        else if (x.minor_ == y.minor_)
+            if (x.release_ <= y.release_)
+                return true;
     }
-	return false;
+    return false;
 }
 
 bool operator>(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if (x.major_ > y.major_)
-		return true;
-	else if (x.major_ == y.major_) {
-		if (x.minor_ > y.minor_)
-			return true;
-		else if (x.minor_ == y.minor_) 
-			if (x.release_ > y.release_)
-				return true;
+    if (x.major_ > y.major_)
+        return true;
+    else if (x.major_ == y.major_) {
+        if (x.minor_ > y.minor_)
+            return true;
+        else if (x.minor_ == y.minor_)
+            if (x.release_ > y.release_)
+                return true;
     }
-	return false;
+    return false;
 }
 
 bool operator>=(const GpuCapabilities::GlVersion& x, const GpuCapabilities::GlVersion& y) {
-	if (x.major_ > y.major_)
-		return true;
-	else if (x.major_ == y.major_) {
-		if (x.minor_ > y.minor_)
-			return true;
-		else if (x.minor_ == y.minor_) 
-			if (x.release_ >= y.release_)
-				return true;
+    if (x.major_ > y.major_)
+        return true;
+    else if (x.major_ == y.major_) {
+        if (x.minor_ > y.minor_)
+            return true;
+        else if (x.minor_ == y.minor_)
+            if (x.release_ >= y.release_)
+                return true;
     }
-	return false;
+    return false;
 }
 
 std::ostream& operator<<(std::ostream& s, const GpuCapabilities::GlVersion& v) {
-	if (v.major_ == -1)
-		return (s << "unknown");
-	else if (v.release_ == 0)
-		return (s << v.major_ << "." << v.minor_);
-	else
-		return (s << v.major_ << "." << v.minor_ << "." << v.release_);
+    if (v.major_ == -1)
+        return (s << "unknown");
+    else if (v.release_ == 0)
+        return (s << v.major_ << "." << v.minor_);
+    else
+        return (s << v.major_ << "." << v.minor_ << "." << v.release_);
 }
 
 } // namespace tgt

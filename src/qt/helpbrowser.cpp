@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/helpbrowser.h"
 
@@ -43,7 +39,7 @@ HelpBrowser::HelpBrowser(const QUrl& startPage, const QString& title, QWidget* p
     browser_->createStandardContextMenu();
     setCentralWidget(browser_);
 
-    setWindowIcon(QIcon(":/voreenve/icons/help.png"));
+    setWindowIcon(QIcon(":/qt/icons/help.png"));
 
     setWindowTitle(title.isEmpty() ? tr("Voreen Help Browser") : title);
 
@@ -55,21 +51,21 @@ void HelpBrowser::createAndConnectToolbar() {
     QToolBar* toolBar = new QToolBar(tr("Navigation"), this);
 
     // home
-    QAction* homeAction = new QAction(QIcon(":/voreenve/icons/go-home.png"), tr("&Home"), this);
+    QAction* homeAction = new QAction(QIcon(":/qt/icons/go-home.png"), tr("&Home"), this);
     homeAction->setStatusTip(tr("Show index"));
     homeAction->setToolTip(tr("Show first page"));
     homeAction->setShortcut(tr("Ctrl+H"));
     toolBar->addAction(homeAction);
 
     // backward
-    QAction* backwardAction = new QAction(QIcon(":/voreenve/icons/go-previous.png"), tr("&Backward"), this);
+    QAction* backwardAction = new QAction(QIcon(":/qt/icons/go-previous.png"), tr("&Backward"), this);
     backwardAction->setStatusTip(tr("Show previous page"));
     backwardAction->setToolTip(tr("Show previous page"));
     backwardAction->setShortcut(tr("Ctrl+B"));
     toolBar->addAction(backwardAction);
 
     // forward
-    QAction* forwardAction = new QAction(QIcon(":/voreenve/icons/go-next.png"), tr("&Forward"), this);
+    QAction* forwardAction = new QAction(QIcon(":/qt/icons/go-next.png"), tr("&Forward"), this);
     forwardAction->setStatusTip(tr("Show next page"));
     forwardAction->setToolTip(tr("Show next page"));
     forwardAction->setShortcut(tr("Ctrl+F"));
@@ -79,7 +75,7 @@ void HelpBrowser::createAndConnectToolbar() {
     toolBar->addSeparator();
 
     // quit browser
-    QAction* quitBrowserAction = new QAction(QIcon(":/voreenve/icons/exit.png"), tr("&Quit"), this);
+    QAction* quitBrowserAction = new QAction(QIcon(":/qt/icons/exit.png"), tr("&Quit"), this);
     quitBrowserAction->setStatusTip(tr("Exit help"));
     quitBrowserAction->setToolTip(tr("Exit help"));
     quitBrowserAction->setShortcut(tr("Ctrl+W"));

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_GPUCAPABILITIESWINDOWS_H
 #define TGT_GPUCAPABILITIESWINDOWS_H
@@ -43,9 +39,14 @@
 
 namespace tgt {
 
+class GpuCapabilitiesWindows;
+#ifdef DLL_TEMPLATE_INST
+template class TGT_API Singleton<GpuCapabilitiesWindows>;
+#endif
+
 /**
  * A singleton that performs Windows specific hardware detection. It provides
- * information about: 
+ * information about:
  *  - Graphics driver version and date
  *  - Size of graphics memory
  *  - Driver settings
@@ -56,13 +57,16 @@ namespace tgt {
  *
  * @note WMI is only used if TGT_WITH_WMI is defined
  */
-class GpuCapabilitiesWindows : public tgt::GpuCapabilities {
+class TGT_API GpuCapabilitiesWindows : public tgt::GpuCapabilities, public Singleton<GpuCapabilitiesWindows> {
 public:
-    
+    using Singleton<GpuCapabilitiesWindows>::init;
+    using Singleton<GpuCapabilitiesWindows>::isInited;
+    using Singleton<GpuCapabilitiesWindows>::deinit;
+
     /**
      * Holds several representations of a Windows file version.
      *
-     * Windows file versions are usually represented as a string 
+     * Windows file versions are usually represented as a string
      * of the form d1.d2.d3.d4 where d1,d2,d3,d4 are 16-bit unsigned integers,
      * e.g. 6.14.10.6389.
      */
@@ -92,28 +96,28 @@ public:
     virtual ~GpuCapabilitiesWindows();
 
     /**
-     * Returns information about the graphics driver, 
+     * Returns information about the graphics driver,
      * retrieved from driver dlls (NVIDIA and ATI only).
      *
-     * The Windows Management Instrumentation (WMI) is used as 
+     * The Windows Management Instrumentation (WMI) is used as
      * fallback option only since it turned out to be less reliable than
      * querying the graphics driver directly.
      */
     GraphicsDriverInformation getGraphicsDriverInformation();
-    
+
     /**
      * @see getGraphicsDriverInformation
      */
     FileVersion getDriverVersion();
-    
+
     /**
      * @see getGraphicsDriverInformation
      */
     std::string getDriverDate();
-    
+
     /**
      * Returns the size of the graphics memory in MB. This
-     * information is obtained by querying the 
+     * information is obtained by querying the
      * Windows Management Instrumentation (WMI), hence it is
      * vendor independent.
      *
@@ -121,15 +125,15 @@ public:
      * the information is read from the registry. If both methods fail, -1 is returned.
      */
     int getVideoRamSize();
-    
+
     virtual void logCapabilities(bool extensionsString = false, bool osString = true);
 
 protected:
-    
+
     std::string loggerCat_;
 
 #ifdef TGT_WITH_WMI
-    
+
     /**
      * Has to be called before a \sa WMIquery() can be done.
      *
@@ -137,7 +141,7 @@ protected:
      *
      */
     bool WMIinit();
-    
+
     /**
      * Closes the WMI connection. Call this after finished wmi queries.
      *
@@ -146,7 +150,7 @@ protected:
      * @warning function is only defined if TGT_WITH_WMI is set!
      */
     bool WMIdeinit();
-    
+
     /**
      * Returns whether the WMI connection has been setup.
      */
@@ -158,7 +162,7 @@ protected:
      *
      * @see http://msdn2.microsoft.com/en-us/library/aa394582(VS.85).aspx
      *
-     * @return the query result as a pointer to a VARIANT type, 
+     * @return the query result as a pointer to a VARIANT type,
      *         or NULL if the query was unsuccessful. The return value has to be freed
      *         by the caller by \c VariantClear().
      *
@@ -188,20 +192,20 @@ protected:
     static std::string wstr2str(const std::wstring& s);
 
 #endif
-    
+
     /**
      * Detects the Windows file version of a file.
      *
-     * @param filename complete path to the file 
+     * @param filename complete path to the file
      *
      * @see FileVersion
      */
     FileVersion getFileVersion(std::string filename);
-    
+
     /**
      * Detects the date of a file.
      *
-     * @param filename complete path to the file 
+     * @param filename complete path to the file
      *
      * @return file date as string in the form YYYY-MM-DD, e.g. 2007-12-15
      */

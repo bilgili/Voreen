@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/network/networkserializer.h"
 #include "voreen/core/network/processornetwork.h"
@@ -34,7 +30,7 @@
 #include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 namespace voreen {
 
@@ -88,6 +84,7 @@ void NetworkSerializer::writeNetworkToFile(const ProcessorNetwork* network, cons
 
 void NetworkSerializer::process(TiXmlDocument& document) {
     TiXmlElement* processorNetworkNode = findProcessorNetworkNode(document.RootElement());
+    TiXmlElement* workspaceNode = findWorkspaceNode(document.RootElement());
     int version = findVersion(processorNetworkNode);
 
     switch (version) {
@@ -103,6 +100,19 @@ void NetworkSerializer::process(TiXmlDocument& document) {
         case 6:
             NetworkConverter6to7().convert(processorNetworkNode);
         case 7:
+            NetworkConverter7to8().convert(processorNetworkNode);
+        case 8:
+            NetworkConverter8to9().convert(processorNetworkNode);
+        case 9:
+            NetworkConverter9to10().convert(processorNetworkNode);
+        case 10:
+            NetworkConverter10to11().convert(processorNetworkNode);
+        case 11:
+            NetworkConverter11to12().convert(processorNetworkNode);
+            NetworkConverter11to12().convertVolumeContainer(workspaceNode);
+        case 12:
+            NetworkConverter12to13().convert(processorNetworkNode);
+        case 13:
             break;
 
         default:
@@ -123,7 +133,7 @@ int NetworkSerializer::readVersionFromFile(std::string filename)
 }
 
 int NetworkSerializer::findVersion(TiXmlNode* node) {
-    if (node->Type() != TiXmlNode::ELEMENT) {
+    if (node->Type() != TiXmlNode::TINYXML_ELEMENT) {
         TiXmlNode* pChild;
         for (pChild = node->FirstChild(); pChild != 0; pChild = pChild->NextSibling()) {
             int result=findVersion(pChild);
@@ -153,6 +163,20 @@ TiXmlElement* NetworkSerializer::findProcessorNetworkNode(TiXmlElement* node) {
     for (TiXmlElement* child = node->FirstChildElement(); child != 0; child = child->NextSiblingElement())
         if ((processorNetworkNode = findProcessorNetworkNode(child)) != 0)
             return processorNetworkNode;
+
+    return 0;
+}
+
+TiXmlElement* NetworkSerializer::findWorkspaceNode(TiXmlElement* node) {
+    const std::string WORKPACEWORKNODE = "Workspace";
+
+    if (node->ValueStr() == WORKPACEWORKNODE)
+        return node;
+
+    TiXmlElement* workspaceNode = 0;
+    for (TiXmlElement* child = node->FirstChildElement(); child != 0; child = child->NextSiblingElement())
+        if ((workspaceNode = findWorkspaceNode(child)) != 0)
+            return workspaceNode;
 
     return 0;
 }

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_VOREENVISUALIZATION_H
 #define VRN_VOREENVISUALIZATION_H
@@ -45,9 +41,9 @@ class PropertyListWidget;
 class NetworkEditor;
 class ProcessorNetwork;
 class ProcessorListWidget;
+class RenderTargetViewer;
 class InputMappingDialog;
-class VolumeContainer;
-class VolumeContainerWidget;
+class VolumeViewer;
 
 class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
     Q_OBJECT
@@ -57,24 +53,10 @@ public:
 
     void createConnections();
 
-    void exportWorkspaceToZipArchive(const QString& filename, bool overwrite = true)
-        throw (SerializationException);
-
-    /**
-     * Extracts the specified workspace archive to the passed destination path.
-     *
-     * @throws SerializationException if the archive could not be extracted,
-     *      or if it does not contain a vws-file.
-     *
-     * @return The full path to the contained workspace file (*.vws).
-     */
-    QString extractWorkspaceArchive(const QString& archiveName, const QString& destPath,
-        bool overwrite = true) throw (SerializationException);
-
     void newWorkspace();
-    void openWorkspace(const QString& filename)
+    void openWorkspace(const QString& filename, const QString& workDir = "")
         throw (SerializationException);
-    void saveWorkspace(const QString& filename, bool overwrite = true)
+    void saveWorkspace(const QString& filename, bool overwrite = true, const QString& workDir = "")
         throw (SerializationException);
 
     void importNetwork(const QString& filename) throw (SerializationException);
@@ -83,7 +65,6 @@ public:
 
     NetworkEvaluator* getEvaluator() const;
     Workspace* getWorkspace() const;
-    VolumeContainer* getVolumeContainer() const;
 
     std::vector<std::string> getNetworkErrors();
     std::vector<std::string> getWorkspaceErrors();
@@ -96,7 +77,8 @@ public:
     void setNetworkEditorWidget(NetworkEditor* networkEditorWidget);
     void setPropertyListWidget(PropertyListWidget* propertyListWidget);
     void setProcessorListWidget(ProcessorListWidget* processorListWidget);
-    void setVolumeContainerWidget(VolumeContainerWidget* volumeContainerWidget);
+    void setRenderTargetViewer(RenderTargetViewer* renderTargetViewer);
+    void setVolumeViewer(VolumeViewer* volumeViewer);
     void setInputMappingDialog(InputMappingDialog* inputMappingDialog);
 
     bool readOnlyWorkspace() const { return readOnlyWorkspace_; }
@@ -114,7 +96,7 @@ signals:
 
 private:
     void propagateNetwork(ProcessorNetwork* network);
-    void propagateVolumeContainer(VolumeContainer* container);
+    void propagateWorkspaceDescription(const std::string& description);
 
     /**
      * Deletes all tmpFiles located in tmpPath.
@@ -128,7 +110,8 @@ private:
     NetworkEditor* networkEditorWidget_;
     PropertyListWidget* propertyListWidget_;
     ProcessorListWidget* processorListWidget_;
-    VolumeContainerWidget* volumeContainerWidget_;
+    RenderTargetViewer* renderTargetViewer_;
+    VolumeViewer* volumeViewer_;
     InputMappingDialog* inputMappingDialog_;
 
     bool readOnlyWorkspace_;

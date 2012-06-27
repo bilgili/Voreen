@@ -1,35 +1,35 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef TGT_FRUSTUM_H
 #define TGT_FRUSTUM_H
 
-#include "tgt/config.h"
 #include "tgt/types.h"
 #include "tgt/vector.h"
 #include "tgt/bounds.h"
-#include "tgt/math.h"
+#include "tgt/tgt_math.h"
 
 namespace tgt {
 
@@ -40,8 +40,8 @@ class Camera;
  * This class is used by the Camera for culling in connection with axis aligned bounding boxes
  * or points.
  */
-class Frustum {
-    
+class TGT_API Frustum {
+
 private:
     /// the distances from the center of the near plane to the left, right, top and bottom borders
     float lnear_;
@@ -51,9 +51,9 @@ private:
     /// the distances from the position of the camera to the near- and far-plane
     float nearDist_;
     float farDist_;
-    
+
     enum normalsEnum { LEFTN, RIGHTN, TOPN, BOTTOMN, NEARN, FARN, NORMALS_NUM };
-    
+
     vec3 normals_[NORMALS_NUM];
 
     /// Points on the 6 planes; the position campos_ of the Camera lies on
@@ -86,113 +86,41 @@ public:
     /**
      * Returns the viewing angle in vertical direction in degrees.
      */
-    float getFovy() const {
-        return rad2deg(atanf(tnear_/nearDist_) - atanf(bnear_/nearDist_) );
-    }
-    
-    float getRatio() const {
-        return (rnear_ - lnear_)/(tnear_ - bnear_);
-    }
-    
-    float getNearDist() const  {
-        return nearDist_;
-    }
-    
-    float getFarDist() const {
-        return farDist_;
-    }
-
-    float getLeft() const {
-        return lnear_;
-    }
-    float getRight() const {
-        return rnear_;
-    }
-    float getTop() const {
-        return tnear_;
-    }
-    float getBottom() const {
-        return bnear_;
-    }
-
+    float getFovy() const;
+    float getRatio() const;
+    float getNearDist() const;
+    float getFarDist() const;
+    float getLeft() const;
+    float getRight() const;
+    float getTop() const;
+    float getBottom() const;
     /// set the viewing angle in vertical direction in degrees.
-    void setFovy(float fovy) {
-        float halfheight = tanf(0.5f * deg2rad(fovy)) * nearDist_;
-        tnear_ =  halfheight;
-        bnear_ = -halfheight;
-    }
+    void setFovy(float fovy);
     /// set width of frustum according to current height (or y viewing angle)
-    void setRatio(float ratio) {
-        float halfwidth = 0.5f * (tnear_-bnear_) * ratio;
-        lnear_ = -halfwidth;
-        rnear_ =  halfwidth;
-		bnear_ = -halfwidth / ratio;
-        tnear_ =  halfwidth / ratio;		
-    }
-    void setNearDist(float nearDist) {
-        nearDist_ = nearDist;
-    }
-    void setFarDist(float farDist) {
-        farDist_ = farDist;
-    }
-
-    void setLeft(float v) {
-        lnear_ = v;
-    }
-    void setRight(float v) {
-        rnear_ = v;
-    }
-    void setTop(float v) {
-        tnear_ = v;
-    }
-    void setBottom(float v) {
-        bnear_ = v;
-    }
-
-    const vec3& leftn() const {
-        return normals_[LEFTN];
-    }
-
-    const vec3& rightn() const {
-        return normals_[RIGHTN];
-    }
-
-    const vec3& bottomn() const {
-        return normals_[BOTTOMN];
-    }
-
-    const vec3& topn() const {
-        return normals_[TOPN];
-    }
-
-    const vec3& nearn() const {
-        return normals_[NEARN];
-    }
-
-    const vec3& farn() const {
-        return normals_[FARN];
-    }
-
-    const vec3& nearp() const {
-        return nearp_;
-    }
-
-    const vec3& farp() const {
-        return farp_;
-    }
-
-    const vec3& campos() const {
-        return campos_;
-    }
+    void setRatio(float ratio);
+    void setNearDist(float nearDist);
+    void setFarDist(float farDist);
+    void setLeft(float v);
+    void setRight(float v);
+    void setTop(float v);
+    void setBottom(float v);
+    const vec3& leftn() const;
+    const vec3& rightn() const;
+    const vec3& bottomn() const;
+    const vec3& topn() const;
+    const vec3& nearn() const;
+    const vec3& farn() const;
+    const vec3& nearp() const;
+    const vec3& farp() const;
+    const vec3& campos() const;
 
     /// Get the 1 of the 6 normals leftn, rightn, bottomn, topn, nearn, farn specified by the
     /// number num.
-    /// 
+    ///
     /// Can be used to handle normals within a for-loop e.g. when culling against frustum, see
     /// tgt::Camara::isCulled, tgt::Camera::isCulledXZ.
-    const vec3& getNormal(int num) const {
-        return normals_[num];
-    }
+    const vec3& getNormal(int num) const;
+    bool operator==(const Frustum& rhs) const;
 };
 
 }

@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_NETWORKEVALUATOR_H
 #define VRN_NETWORKEVALUATOR_H
@@ -45,12 +41,12 @@ namespace voreen {
 
 class ProcessorNetwork;
 
-class NetworkEvaluator : public ProcessorNetworkObserver {
+class VRN_CORE_API NetworkEvaluator : public ProcessorNetworkObserver {
 public:
     /**
      * Wrapper around the process() calls. Can be used e.g. for benchmarking.
      */
-    class ProcessWrapper  {
+    class VRN_CORE_API ProcessWrapper  {
         friend class NetworkEvaluator;
     public:
         virtual ~ProcessWrapper() {}
@@ -59,6 +55,11 @@ public:
         virtual void afterProcess(Processor* /*p*/) {}
         virtual void beforeNetworkProcess() {}
         virtual void afterNetworkProcess() {}
+
+        virtual void beforeNetworkInitialize() {}
+        virtual void afterNetworkInitialize() {}
+        virtual void beforeNetworkDeinitialize() {}
+        virtual void afterNetworkDeinitialize() {}
     };
 
 public:
@@ -66,14 +67,17 @@ public:
     /**
      * Constructor.
      *
+     * @param glMode if false, the network evaluator does not make any OpenGL calls.
+     *          Should be set to false in applications that do not use a valid OpenGL context.
      * @param sharedContext A canvas holding the OpenGL context that will be used
-     *        for initializing the processors. More precisely, if a canvas has been passed
-     *        <code>sharedContext->getGLFocus()</code> is called before <code>Processor::initialize()</code>
-     *        in order to make sure that OpenGL initializations are performed
-     *        within the correct OpenGL context.
-     *        This is usually not necessary on single-context systems.
+     *          for initializing the processors. More precisely, if a canvas has been passed
+     *          <code>sharedContext->getGLFocus()</code> is called before <code>Processor::initialize()</code>
+     *          in order to make sure that OpenGL initializations are performed
+     *          within the correct OpenGL context.
+     *          This is usually not necessary on single-context systems.
+     *          In non OpenGL mode the shared context is ignored.
      */
-    NetworkEvaluator(tgt::GLCanvas* sharedContext = 0);
+    NetworkEvaluator(bool glMode = true, tgt::GLCanvas* sharedContext = 0);
 
     ~NetworkEvaluator();
 
@@ -188,6 +192,16 @@ public:
     std::vector<RenderPort*> collectRenderPorts() const;
 
     /**
+     * Returns all performance records currently used by the network.
+     */
+    std::vector<const PerformanceRecord*> collectPerformanceRecords() const;
+
+    /**
+     * Clears all performance records of the processors in the network.
+     */
+    void clearPerformanceRecords();
+
+    /**
      * Marks the assigned network as modified, which causes
      * onNetworkChanged() to be called during next process() call.
      *
@@ -263,20 +277,20 @@ private:
      */
     const std::set<Processor*> getEndProcessors() const;
 
-    /** The network that is to be evaluated */
+    /// The network that is to be evaluated
     ProcessorNetwork* network_;
-
-    /** Vector containing all processors which can be rendererd. This vector is obtained
-     * by sorting netGraph_ topological. */
-    std::vector<Processor*> renderingOrder_;
-
-    /** Vector holding all processor wrappers which might have been added. */
-    std::vector<ProcessWrapper*> processWrappers_;
 
     /// Canvas holding the shared context that is to be used for processor initializations
     tgt::GLCanvas* sharedContext_;
 
-    static const std::string loggerCat_;
+    /**
+     * If set to false, the network evaluator does not make any OpenGL calls and does
+     * also not use the OpenGLStateProcessWrapper.
+     */
+    bool glMode_;
+
+    /// Vector holding all processor wrappers which might have been added.
+    std::vector<ProcessWrapper*> processWrappers_;
 
     /**
      * If this member is set to true, the method <code>assignRenderTargets()</code>
@@ -284,20 +298,33 @@ private:
      * in the current ProcessorNetwork. This permits better debugging, but is normally
      * a greate waste of resources. (currently not in use)
      */
-    static bool reuseRenderTargets_;
+    bool reuseRenderTargets_;
+
+    /// Vector containing all processors which can be rendered. This vector is obtained
+    /// by sorting netGraph_ topological.
+    std::vector<Processor*> renderingOrder_;
 
     /// Maps from processors to their loop inports.
     /// Is used for incrementing the current iteration counter.
     std::map<Processor*, std::vector<Port*> > loopPortMap_;
 
+    /// set to true, if the evaluated network has changed since last onNetworkChanged() call
     bool networkChanged_;
 
+    /// indicates that the evaluator is in lock mode, i.e., not performing any operations
     bool locked_;
 
+    /**
+     * Indicates that a network processing has been scheduled,
+     * which usually happens when process() is called on an locked evaluator
+     */
     bool processPending_;
 
     /// Used for performance profiling (experimental).
     PerformanceRecord performanceRecord_;
+
+    /// category used for logging
+    static const std::string loggerCat_;
 };
 
 }   // namespace

@@ -1,38 +1,33 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/animation/serializationfactories.h"
 
 #include "voreen/core/properties/transfuncproperty.h"
-#include "voreen/core/properties/volumecollectionproperty.h"
+#include "voreen/core/properties/volumeurllistproperty.h"
 #include "voreen/core/properties/shaderproperty.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
 
 #include "voreen/core/animation/templatepropertytimeline.h"
 #include "voreen/core/animation/propertykeyvalue.h"
@@ -53,8 +48,6 @@
 #include "voreen/core/animation/interpolation/transfuncinterpolationfunctions.h"
 #include "voreen/core/animation/interpolation/shadersourceinterpolationfunctions.h"
 #include "voreen/core/animation/interpolation/stringinterpolationfunctions.h"
-#include "voreen/core/animation/interpolation/volumecollectioninterpolationfunctions.h"
-#include "voreen/core/animation/interpolation/volumehandleinterpolationfunctions.h"
 
 namespace voreen {
 
@@ -100,10 +93,6 @@ const std::string PropertyTimelineFactory::getTypeString(const std::type_info& t
         return "TemplatePropertyTimeline_ShaderSource";
     else if (type == typeid(TemplatePropertyTimeline<TransFunc*>))
         return "TemplatePropertyTimeline_TransFunc";
-    else if (type == typeid(TemplatePropertyTimeline<VolumeCollection*>))
-        return "TemplatePropertyTimeline_VolumeCollection";
-    else if (type == typeid(TemplatePropertyTimeline<VolumeHandle*>))
-        return "TemplatePropertyTimeline_VolumeHandle";
     else
         return "";
 }
@@ -141,10 +130,6 @@ Serializable* PropertyTimelineFactory::createType(const std::string& typeString)
         return new TemplatePropertyTimeline<ShaderSource>();
     else if (typeString == "TemplatePropertyTimeline_TransFunc")
         return new TemplatePropertyTimeline<TransFunc*>();
-    else if (typeString == "TemplatePropertyTimeline_VolumeCollection")
-        return new TemplatePropertyTimeline<VolumeCollection*>();
-    else if (typeString == "TemplatePropertyTimeline_VolumeHandle")
-        return new TemplatePropertyTimeline<VolumeHandle*>();
     else
         return 0;
 }
@@ -191,10 +176,6 @@ const std::string KeyValueFactory::getTypeString(const std::type_info& type) con
         return "KeyValue_ShaderSource";
     else if (type == typeid(PropertyKeyValue<TransFunc*>))
         return "KeyValue_TransFunc";
-    else if (type == typeid(PropertyKeyValue<VolumeCollection*>))
-        return "KeyValue_VolumeCollection";
-    else if (type == typeid(PropertyKeyValue<VolumeHandle*>))
-        return "KeyValue_VolumeHandle";
     else
         return "";
 }
@@ -243,10 +224,6 @@ Serializable* KeyValueFactory::createType(const std::string& typeString) {
         return new PropertyKeyValue<ShaderSource>(ShaderSource(), 0);
     else if (typeString == "KeyValue_TransFunc")
         return new PropertyKeyValue<TransFunc*>(new TransFunc(), 0);
-    else if (typeString == "KeyValue_VolumeCollection")
-        return new PropertyKeyValue<VolumeCollection*>(new VolumeCollection(), 0);
-    else if (typeString == "KeyValue_VolumeHandle")
-        return new PropertyKeyValue<VolumeHandle*>(new VolumeHandle(), 0);
     else
         return 0;
 }
@@ -293,10 +270,6 @@ const std::string TemplatePropertyTimelineStateFactory::getTypeString(const std:
         return "TemplatePropertyTimelineState_ShaderSource";
     else if (type == typeid(TemplatePropertyTimelineState<TransFunc*>))
         return "TemplatePropertyTimelineState_TransFunc";
-    else if (type == typeid(TemplatePropertyTimelineState<VolumeCollection*>))
-        return "TemplatePropertyTimelineState_VolumeCollection";
-    else if (type == typeid(TemplatePropertyTimelineState<VolumeHandle*>))
-        return "TemplatePropertyTimelineState_VolumeHandle";
     else if (type == typeid(TransFuncPropertyTimelineState))
         return "TransFuncPropertyTimelineState";
     else if (type == typeid(CameraPropertyTimelineState))
@@ -338,10 +311,6 @@ Serializable* TemplatePropertyTimelineStateFactory::createType(const std::string
         return new TemplatePropertyTimelineState<ShaderSource>();
     else if (typeString == "TemplatePropertyTimelineState_TransFunc")
         return new TemplatePropertyTimelineState<TransFunc*>();
-    else if (typeString == "TemplatePropertyTimelineState_VolumeCollection")
-        return new TemplatePropertyTimelineState<VolumeCollection*>();
-    else if (typeString == "TemplatePropertyTimelineState_VolumeHandle")
-        return new TemplatePropertyTimelineState<VolumeHandle*>();
     else if (typeString == "TransFuncPropertyTimelineState")
         return new TransFuncPropertyTimelineState();
     else if (typeString == "CameraPropertyTimelineState")

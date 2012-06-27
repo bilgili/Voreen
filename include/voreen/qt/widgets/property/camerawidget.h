@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef CAMERAPLUGIN_H
 #define CAMERAPLUGIN_H
@@ -46,6 +42,7 @@
 #include <fstream>
 
 #include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 namespace voreen {
 
@@ -56,7 +53,7 @@ class FloatVec3PropertyWidget;
 class CameraWidget : public QWidget {
     Q_OBJECT
 public:
-    CameraWidget(CameraProperty* camera, float minDist = 0.01f, float maxDist = 50.f, QWidget* parent = 0);
+    CameraWidget(CameraProperty* camera, float minDist = 0.01f, float maxDist = 500.f, QWidget* parent = 0);
     ~CameraWidget();
 
     void updateFromCamera();
@@ -87,6 +84,17 @@ public slots:
     void enableX(bool b);
     void enableY(bool b);
     void enableZ(bool b);
+
+    void switchProjection(int m);
+    void frustumChangeLeft(double v);
+    void frustumChangeRight(double v);
+    void frustumChangeBottom(double v);
+    void frustumChangeTop(double v);
+    void frustumChangeNear(double v);
+    void frustumChangeFar(double v);
+    void fovChange(double v);
+    void ratioChange(double v);
+    void resetCameraProjection();
 
     virtual void createWidgets();
     virtual void createConnections();
@@ -159,6 +167,8 @@ private:
     QGroupBox* motionBox_;
     QGroupBox* trackballBox_;
     QComboBox* comboOrientation_;
+    QGroupBox* frustumBox_;
+    QGroupBox* perspectiveBox_;
     QSlider* slDistance_;
 
     QCheckBox* rotateAroundX_;
@@ -166,6 +176,18 @@ private:
     QCheckBox* rotateAroundZ_;
     QCheckBox* continueSpin_;
     QBasicTimer* timer_;
+
+    QComboBox* comboProjection_;
+
+    FloatProperty* leftProp_;
+    FloatProperty* rightProp_;
+    FloatProperty* bottomProp_;
+    FloatProperty* topProp_;
+    FloatProperty* nearProp_;
+    FloatProperty* farProp_;
+
+    FloatProperty* fovyProp_;
+    FloatProperty* ratioProp_;
 
     float dist_;
     bool rotateX_;

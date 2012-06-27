@@ -1,38 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_TRANSFUNCMAPPINGCANVAS_H
 #define VRN_TRANSFUNCMAPPINGCANVAS_H
 
 #include "tgt/vector.h"
 
-#include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 #include <QWidget>
 #include <QMenu>
@@ -45,12 +41,12 @@ class QMouseEvent;
 namespace voreen {
 
 // Forward Declarations
-class HistogramIntensity;
+class VolumeHistogramIntensity;
 class HistogramPainter;
 class TransFuncMappingKey;
-class TransFuncIntensity;
+class TransFunc1DKeys;
 class Volume;
-class VolumeHandle;
+class Volume;
 
 /**
  * Background thread for calculating a histogram.
@@ -58,19 +54,19 @@ class VolumeHandle;
 class HistogramThread : public QThread {
 Q_OBJECT
 public:
-    HistogramThread(Volume* volume, int count, QObject* parent = 0);
+    HistogramThread(const VolumeBase* volume, int count, QObject* parent = 0);
     void run();
 
 signals:
     /**
      * Emitted when histogram calculation is finished. Must always be connected and the
-     * receiving slot must take ownership of the HistogramIntensity object, as the
+     * receiving slot must take ownership of the VolumeHistogramIntensity object, as the
      * HistogramThread will never delete the object.
      */
-    void setHistogram(HistogramIntensity*);
+    void setHistogram(VolumeHistogramIntensity*);
 
 private:
-    Volume* volume_;
+    const VolumeBase* volume_;
     int count_;
 };
 
@@ -91,12 +87,11 @@ public:
      * @param parent the parent widget
      * @param tf the transfer function that is displayed in this widget
      * @param noColor when true the color of a key can not be changed
-     * @param clipThresholds should the visible range be restricted to thresholds?
      * @param xAxisText caption of the x axis
      * @param yAxisText caption of the y axis
      */
-    TransFuncMappingCanvas(QWidget* parent, TransFuncIntensity* tf, bool noColor = false,
-                           bool clipThresholds = false, QString xAxisText = tr("intensity"),
+    TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys* tf, bool noColor = false,
+                           QString xAxisText = tr("intensity"),
                            QString yAxisText = tr("opacity"));
 
     /**
@@ -165,19 +160,19 @@ public:
      *
      * @param volumeHandle volume that is associated with this transfer function
      */
-    void volumeChanged(VolumeHandle* volumeHandle);
+    void volumeChanged(const VolumeBase* volumeHandle);
 
     /**
      * Implementation of the VolumeHandleObserver interface.
      * Causes calculations to be performed on new handle.
      */
-    virtual void volumeChange(const VolumeHandle* source);
+    virtual void volumeChange(const VolumeBase* source);
 
     /**
      * Implementation of the VolumeHandleObserver interface.
      * Clears the currently assigned volume handle.
      */
-    virtual void volumeHandleDelete(const VolumeHandle* source);
+    virtual void volumeHandleDelete(const VolumeBase* source);
 
     /**
      * Sets the lower and upper threshold to the given values.
@@ -186,6 +181,11 @@ public:
      * @param u upper threshold
      */
     void setThreshold(float l, float u);
+
+    /**
+     * Signal a change in the TF domain.
+     */
+    void domainChanged();
 
     /**
      * Returns the minimum size of the widget.
@@ -213,7 +213,7 @@ public:
      *
      * @param tf transfer function
      */
-    void setTransFunc(TransFuncIntensity* tf);
+    void setTransFunc(TransFunc1DKeys* tf);
 
     /**
      * Sets the caption of the x axis.
@@ -297,13 +297,6 @@ public slots:
      * @param c new color of the selected key
      */
     void changeCurrentColor(const QColor& c);
-
-    /**
-     * Enables or disables the restriction of visible range to thresholds.
-     *
-     * @param enabled when true the visible range is restricted to upper and lower threshold
-     */
-    void toggleClipThresholds(bool enabled);
 
 protected:
     // enum for the status of a key
@@ -436,12 +429,11 @@ protected:
      */
     void updateHistogram();
 
-    TransFuncIntensity* tf_;             ///< pointer to the transfer function that is displayed
+    TransFunc1DKeys* tf_;             ///< pointer to the transfer function that is displayed
     HistogramPainter* histogramPainter_; ///< painter that draws the histogram onto this widget
-    int maximumIntensity_;               ///< maximum intensity of the associated volume
 
-    float thresholdL_; ///< lower threshold in the interval [0, 1] (relative to maximumIntensity_)
-    float thresholdU_; ///< upper threshold in the interval [0, 1] (relative to maximumIntensity_)
+    float thresholdL_; ///< lower threshold in the interval [0, 1]
+    float thresholdU_; ///< upper threshold in the interval [0, 1]
 
     // variables for interaction
     TransFuncMappingKey* selectedKey_; ///< key that was selected by the user
@@ -463,7 +455,6 @@ protected:
     tgt::vec2 xRange_;      ///< range in x direction
     tgt::vec2 yRange_;      ///< range in y direction
     tgt::vec2 gridSpacing_; ///< width and height of the underlying grid
-    bool clipThresholds_;   ///< is the visible range clipped to threshold area?
     bool noColor_;          ///< when true the color of a key can not be changed
 
     QString xAxisText_;     ///< caption of the x axis
@@ -482,7 +473,11 @@ protected:
     HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
     bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated
 
-    VolumeHandle* volumeHandle_; ///< the currently assigned volume handle
+    const VolumeBase* volumeHandle_; ///< the currently assigned volume handle
+
+protected slots:
+    void setHistogram(VolumeHistogramIntensity* histogram);
+
 };
 
 } // namespace voreen

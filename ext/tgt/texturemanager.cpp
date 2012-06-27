@@ -1,26 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * tgt - Tiny Graphics Toolbox                                        *
- *                                                                    *
- * Copyright (C) 2006-2008 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the tgt library. This library is free         *
- * software; you can redistribute it and/or modify it under the terms *
- * of the GNU Lesser General Public License version 2.1 as published  *
- * by the Free Software Foundation.                                   *
- *                                                                    *
- * This library is distributed in the hope that it will be useful,    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU Lesser General Public License for more details.                *
- *                                                                    *
- * You should have received a copy of the GNU Lesser General Public   *
- * License in the file "LICENSE.txt" along with this library.         *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "tgt/texturemanager.h"
 
@@ -61,24 +62,17 @@ TextureManager::~TextureManager() {
 }
 
 Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Texture::Filter filter, bool compress,
-                              bool keepPixels, bool createOGLTex, bool useCache, bool textureRectangle)
+                              bool keepPixels, bool createOGLTex, bool useCache)
 {
-    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported() ) {
-        LERROR("Texture Rectangles not supported!");
-        return 0;
-    }
-
     size_t found;
-    std::string path, filename;
+    std::string filename;
 
     found = completeFilename.find_last_of("/\\");
 
     if (found != std::string::npos){
-        path = completeFilename.substr(0,found);
         filename = completeFilename.substr(found+1);
     }
     else {
-        path = "";
         filename = completeFilename;
     }
 
@@ -101,10 +95,10 @@ Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Tex
         LDEBUG("Found matching reader: " << readers_[ending]->getName());
 
         t = readers_[ending]->loadTexture(completeFilename, filter, compress,
-                                            keepPixels, createOGLTex, textureRectangle);
+                                            keepPixels, createOGLTex);
         if (!t) {
             t = readers_[ending]->loadTexture(filename, filter, compress,
-                                    keepPixels, createOGLTex, textureRectangle);
+                                    keepPixels, createOGLTex);
         }
         if ((t) && (useCache)) {
             reg(t, filename);
@@ -115,14 +109,8 @@ Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Tex
 }
 
 Texture* TextureManager::load(const std::string& filename, Texture::Filter filter, bool compress,
-                              bool keepPixels, bool createOGLTex, bool useCache, bool textureRectangle)
+                              bool keepPixels, bool createOGLTex, bool useCache)
 {
-
-    if (textureRectangle && !GpuCaps.areTextureRectanglesSupported()) {
-        LERROR("Texture Rectangles not supported!");
-        return 0;
-    }
-
     if (compress && !GpuCaps.isTextureCompressionSupported())
         compress = false;
 
@@ -134,21 +122,21 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     Texture* t = 0;
     std::string ending = getEnding(filename);
     std::transform (ending.begin(), ending.end(), ending.begin(), lower_case);
-    
+
     if (readers_.size() == 0)
         LWARNING("No TextureReaders are registered while calling TextureManager::load()!");
-    
+
     if (readers_.find(ending) != readers_.end()) {
         LDEBUG("Found matching reader: " << readers_[ending]->getName());
 
         std::string completeFilename = completePath(filename);
         t = readers_[ending]->loadTexture(completeFilename, filter, compress,
-                                          keepPixels, createOGLTex, textureRectangle);
+                                          keepPixels, createOGLTex);
 
         // else try just the filename without path
         if (!t && completeFilename != filename) {
             t = readers_[ending]->loadTexture(filename, filter, compress,
-                                              keepPixels, createOGLTex, textureRectangle);
+                                              keepPixels, createOGLTex);
         }
 
         if (t && useCache)
@@ -160,7 +148,7 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     else {
         LERROR("No matching reader found for ending '" << ending << "' while loading " << filename);
     }
-    
+
     return t;
 }
 

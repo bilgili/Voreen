@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/qt/widgets/consoleplugin.h"
 
@@ -35,6 +31,8 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QScrollBar>
+#include <QMenu>
+#include <QSettings>
 
 namespace voreen {
 
@@ -108,34 +106,98 @@ protected:
     std::string errorStyle_;
 };
 
-ConsolePlugin::ConsolePlugin(QWidget* parent, bool autoScroll)
+ConsolePlugin::ConsolePlugin(QWidget* parent, tgt::LogLevel logLevel, bool autoScroll)
     : QWidget(parent)
     , autoScroll_(autoScroll)
 {
     setObjectName(tr("Console"));
 
+    QSettings settings;
+    settings.beginGroup("ConsolePlugin");
+    bool disabled = settings.value("disabled", false).toBool();
+    settings.endGroup();
+
     consoleText_ = new QTextEdit(this);
     consoleText_->setReadOnly(true);
     consoleText_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    consoleText_->setContextMenuPolicy(Qt::CustomContextMenu);
+    this->connect(consoleText_, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint &)));
+
+    clearText_ = new QAction("Erase All", consoleText_);
+    connect(clearText_, SIGNAL(triggered()), consoleText_, SLOT(clear()));
+    clearText_->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
+    ctrlButtonDown_ = false;
+
+    disableAction_ = new QAction("Disable", this);
+    disableAction_->setCheckable(true);
+    disableAction_->setChecked(disabled);
+    connect(disableAction_, SIGNAL(triggered()), this, SLOT(disableToggled()));
+
     QVBoxLayout* vboxLayout = new QVBoxLayout();
     vboxLayout->addWidget(consoleText_);
     setLayout(vboxLayout);
 
-    if (tgt::Singleton<tgt::LogManager>::isInited()) {
+    if (tgt::LogManager::isInited()) {
         log_ = new ConsoleLogQt(this, "", "", "color: brown; font-weight: bold", "color: red; font-weight: bold");
-        log_->addCat("", true, tgt::Info);
+        log_->addCat("", true, logLevel);
         LogMgr.addLog(log_);
     }
+
+    disableToggled();
 }
 
 ConsolePlugin::~ConsolePlugin() {
-    if (tgt::Singleton<tgt::LogManager>::isInited()) {
+
+    QSettings settings;
+    settings.beginGroup("ConsolePlugin");
+    settings.setValue("disabled", disableAction_->isChecked());
+    settings.endGroup();
+
+    if (tgt::LogManager::isInited()) {
         LogMgr.removeLog(log_);
         delete log_;
     }
 }
 
+void ConsolePlugin::keyPressEvent(QKeyEvent *e)
+{
+    switch(e->key()){
+        case Qt::Key_Control:
+            ctrlButtonDown_ = true;
+            break;
+        case Qt::Key_E:
+            if(ctrlButtonDown_)
+                consoleText_->clear();
+            break;
+    }
+}
+
+void ConsolePlugin::keyReleaseEvent(QKeyEvent *e)
+{
+    if(e->key() == Qt::Key_Control)
+        ctrlButtonDown_ = false;
+}
+
+void ConsolePlugin::showContextMenu(const QPoint &pt)
+{
+    QMenu *menu = consoleText_->createStandardContextMenu();
+    menu->addSeparator();
+    menu->addAction(clearText_);
+    menu->addSeparator();
+    menu->addAction(disableAction_);
+    menu->exec(consoleText_->mapToGlobal(pt));
+    delete menu;
+}
+
+void ConsolePlugin::disableToggled(){
+    // would also disable the context menu
+    //consoleText_->setEnabled(!disableAction_->isChecked());
+}
+
 void ConsolePlugin::log(const std::string& msg) {
+
+    if (disableAction_->isChecked())
+        return;
 
     // write log message to text box
     consoleText_->append(msg.c_str());

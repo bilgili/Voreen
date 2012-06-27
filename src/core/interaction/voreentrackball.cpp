@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/interaction/voreentrackball.h"
 #include "voreen/core/properties/cameraproperty.h"
@@ -50,7 +46,7 @@ using tgt::quat;
 
 VoreenTrackball::VoreenTrackball(CameraProperty* camera)
     : camera_(camera),
-      moveCenter_(true),
+      moveCenter_(false),
       size_(1.f)
 {
 
@@ -68,7 +64,6 @@ VoreenTrackball::~VoreenTrackball() {
 /*void VoreenTrackball::reset() {
     getCamera()->positionCamera(cameraPosition_, cameraFocus_, cameraUpVector_);
 } */
-
 
 /* Project an x,y pair onto a sphere of radius r OR a hyperbolic sheet
  if we are away from the center of the sphere. */
@@ -103,16 +98,20 @@ vec3 VoreenTrackball::coordTransform(const vec3& axis) const {
 
 void VoreenTrackball::rotate(Quaternion<float> quat) {
     vec3 position = camera_->get().getPosition();
-    position -= center_;
+    if(moveCenter_)
+        position -= center_;
     position = quat::rotate(position, quat);
-    position += center_;
+    if(moveCenter_)
+        position += center_;
 
     vec3 focus = camera_->get().getFocus();
-    focus -= center_;
-    // Usually focus - center == 0, so no need to rotate. But if we combine trackball
-    // with some other navigations, this might be useful.
+    if(moveCenter_)
+        focus -= center_;
+    //// Usually focus - center == 0, so no need to rotate. But if we combine trackball
+    //// with some other navigations, this might be useful.
     focus = quat::rotate(focus, quat);
-    focus += center_;
+    if(moveCenter_)
+        focus += center_;
 
     vec3 upVector = camera_->get().getUpVector();
     upVector = quat::rotate(upVector, quat);
@@ -188,9 +187,9 @@ void VoreenTrackball::move(float length, vec3 axis) {
     axis = coordTransform(axis);
 
     moveCamera(-axis);
-    if (moveCenter_) {
+    //if (moveCenter_) {
         center_ -= axis;
-    };
+    //};
 
 }
 
@@ -228,7 +227,8 @@ void VoreenTrackball::zoomAbsolute(float focallength) {
 }
 
 float VoreenTrackball::getCenterDistance() {
-    return dot( center_ - camera_->get().getPosition(), camera_->get().getLook() );
+    //return dot( center_ - camera_->get().getPosition(), camera_->get().getLook() );
+    return length(camera_->get().getPosition() - center_);
 }
 /*
 void VoreenTrackball::saveCameraParameters() {
@@ -243,7 +243,6 @@ void VoreenTrackball::saveCameraParameters() {
         cameraUpVector_ = vec3(0.f, 1.f, 0.f);
     }
 } */
-
 
 float VoreenTrackball::getRotationAngle(float acuteness) const {
     return 1.f / acuteness;

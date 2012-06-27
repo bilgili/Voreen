@@ -1,42 +1,43 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_TRANSFUNC_H
 #define VRN_TRANSFUNC_H
 
 #include "voreen/core/io/serialization/serialization.h"
 
+#include "voreen/core/voreencoreapi.h"
 #include "tgt/texture.h"
 #include "tgt/vector.h"
 
 #include <vector>
 #include <string>
+
+namespace tgt {
+    class Shader;
+}
 
 namespace voreen {
 
@@ -46,7 +47,7 @@ namespace voreen {
  * The lookup table can be defined by passing pixel data that is directly
  * assigned to the transfer function's texture.
  */
-class TransFunc : public Serializable {
+class VRN_CORE_API TransFunc : public Serializable {
 public:
 
     /**
@@ -83,6 +84,8 @@ public:
      * @return string representation of the sampler type used by the transfer function
      */
     virtual std::string getSamplerType() const;
+
+    virtual void setUniform(tgt::Shader* shader, const std::string& uniform, const std::string& uniformTex, const GLint texUnit);
 
     /**
      * Returns the dimensions of the transfer function's texture.
@@ -202,6 +205,69 @@ public:
      * Returns the format of the transfer function texture internally used.
      */
     GLint getFormat() const;
+
+    //TODO: make pure virtual:
+    virtual int getNumDimensions() const {
+        if(dimensions_.z == 1) {
+            if(dimensions_.y == 1)
+                return 1;
+            else
+                return 2;
+        }
+        else
+            return 3;
+    }
+
+    /**
+     * Resets the transfer function to its default value.
+     *
+     * The default implementation clears the transfer function texture,
+     * but the behavior of concrete sub-classes may differ.
+     */
+    virtual void reset();
+
+    /**
+     * Returns the transfer function's domain, i.e., the intensity range it covers,
+     * for the specified dimension.
+     *
+     * @note This function should be overridden by concrete subclasses.
+     *  The default implementation returns [0.0,1.0].
+     */
+    virtual tgt::vec2 getDomain(int dimension = 0) const;
+
+    /**
+     * Sets the transfer function's domain, i.e., the intensity range it covers,
+     * for the specified dimension.
+     *
+     * @note This function should be overridden by concrete subclasses.
+     *  The default implementation is empty.
+     */
+    virtual void setDomain(tgt::vec2 domain, int dimension = 0);
+
+    /// @overload
+    virtual void setDomain(float lower, float upper, int dimension);
+
+    /**
+     * Converts the passed real-world data value to a normalized value in the range [0.0,1.0],
+     * according to the currently set real-world mapping.
+     *
+     * @param rw the real-world data value to normalize
+     * @param dimension of the transfer function dimension to apply the mapping for
+     *
+     * @see setDomain
+     */
+    float realWorldToNormalized(float rw, int dimension = 0) const;
+
+    /**
+     * Converts the passed normalized data value (range: [0.0,1.0]) to the corresponding real-world value,
+     * according to the currently set real-world mapping.
+     *
+     * @param n the normalized data value to convert
+     * @param dimension of the transfer function dimension to apply the mapping for
+     *
+     * @see setDomain
+     */
+    float normalizedToRealWorld(float n, int dimension = 0) const;
 
 protected:
 

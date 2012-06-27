@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_AGGREGATIONGRAPHICSITEM_H
 #define VRN_AGGREGATIONGRAPHICSITEM_H
@@ -45,7 +41,7 @@ typedef std::pair<const PropertyLink*, const PropertyLink*> ArrowLinkInformation
  * An AggregationGraphicsItem is the representation for a collection of \sa ProcessorGraphicsItems
  * and other AggregationGraphicsItems. They function as a single unit in the \sa NetworkEditor
  * and are treated like ProcessorGraphicsItems in the form of the shared superclass
- * \sa RootGraphicsItem.</br>
+ * \sa RootGraphicsItem.
  * In addition to the \sa Processors, this item stores all internal arrows (i.e. arrows leading
  * from one processor in this collection to another processors also in this collection. This
  * holds true for both \sa PortArrowGraphicsItems and \sa LinkArrowGraphicsItems. These lists
@@ -59,7 +55,7 @@ public:
      * This construction will create a new AggregationGraphicsItem containing a number of other
      * \sa RootGraphicsItems in a given \sa NetworkEditor. The name of the Aggregation will be
      * set to <code>Aggregation</code> and the ports of the new Aggregation is the sum of all
-     * ports of all contained processors.</br>
+     * ports of all contained processors.
      * The initial position will be set to the arithmetic mean value of all RootGraphicsItems
      * in the given list.
      * \param items The list of RootGraphicsItems which will be combined in this aggregation
@@ -180,7 +176,8 @@ public:
      */
     void processorWidgetDeleted(const Processor* processor);
 
-    void portsAndPropertiesChanged(const Processor*);
+    void propertiesChanged(const PropertyOwner*);
+    void portsChanged(const Processor*);
 
     /**
      * This method returns QActions for every ProcessorWidget contained in this Aggregation

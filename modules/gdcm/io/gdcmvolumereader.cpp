@@ -1,0 +1,2835 @@
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
+
+#include "gdcmvolumereader.h"
+
+// include this before any GDCM header in order to make sure that C99 types are defined
+#include "tgt/types.h"
+
+#ifdef VRN_GDCM_VERSION_22
+#include <gdcm-2.2/gdcmGlobal.h>
+#include <gdcm-2.2/gdcmReader.h>
+#include <gdcm-2.2/gdcmImageReader.h>
+#include <gdcm-2.2/gdcmXMLDictReader.h>
+#include <gdcm-2.2/gdcmStringFilter.h>
+#include <gdcm-2.2/gdcmFile.h>
+#include <gdcm-2.2/gdcmDirectory.h>
+#include <gdcm-2.2/gdcmSystem.h>
+//#include <gdcm-2.2/gdcmIPPSorter.h> //currently not in use
+#else
+#include <gdcm-2.0/gdcmGlobal.h>
+#include <gdcm-2.0/gdcmReader.h>
+#include <gdcm-2.0/gdcmImageReader.h>
+#include <gdcm-2.0/gdcmXMLDictReader.h>
+#include <gdcm-2.0/gdcmStringFilter.h>
+#include <gdcm-2.0/gdcmFile.h>
+#include <gdcm-2.0/gdcmDirectory.h>
+#include <gdcm-2.0/gdcmSystem.h>
+//#include <gdcm-2.0/gdcmIPPSorter.h> //currently not in use
+#endif
+
+#include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/io/progressbar.h"
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/utils/stringutils.h"
+#include "voreen/core/datastructures/meta/primitivemetadata.h"
+
+#include <algorithm>
+
+#include "dicomdirparser.h"
+
+namespace voreen {
+
+using std::vector;
+using std::pair;
+using std::string;
+
+const std::string GdcmVolumeReader::loggerCat_ = "voreen.gdcm.GdcmVolumeReader";
+
+GdcmVolumeReader::GdcmVolumeReader(ProgressBar* progress)
+    : VolumeReader(progress)
+{
+    extensions_.push_back("dcm");
+    filenames_.push_back("DICOMDIR");
+    protocols_.push_back("dicom");
+
+#ifdef VRN_GDCM_VERSION_22
+    //DICOM network support
+    protocols_.push_back("dicom-scp");
+#endif
+
+    dict_ = 0;
+}
+
+GdcmVolumeReader::~GdcmVolumeReader() {
+    if (dict_) {
+        delete dict_;
+        dict_ = 0;
+    }
+}
+
+VolumeReader* GdcmVolumeReader::create(ProgressBar* progress) const {
+    return new GdcmVolumeReader(progress);
+}
+
+VolumeURL GdcmVolumeReader::convertOriginToRelativePath(const VolumeURL& origin, const std::string& basePath) const {
+
+    if (origin.getProtocol() == "dicom-scp")
+        return origin;
+    else
+        return VolumeReader::convertOriginToRelativePath(origin,basePath);
+
+}
+
+VolumeURL GdcmVolumeReader::convertOriginToAbsolutePath(const VolumeURL& origin, const std::string& basePath) const {
+
+    if (origin.getProtocol() == "dicom-scp")
+        return origin;
+    else
+        return VolumeReader::convertOriginToAbsolutePath(origin,basePath);
+}
+
+gdcm::Tag GdcmVolumeReader::getTagFromDictEntry(const DicomDictEntry &entry) {
+   return gdcm::Tag(entry.getGroupTagUint16(),entry.getElementTagUint16());
+}
+
+void GdcmVolumeReader::loadStandardDict() const throw (tgt::FileException) {
+
+    string fileName = VoreenApplication::app()->getModulePath("gdcm");
+    fileName += "/dicts/StandardDictionary.xml";
+
+    dict_ =  DicomDict::loadFromFile(fileName);
+}
+
+vector<string> GdcmVolumeReader::getFileNamesInDir(const string& dirName) const {
+    gdcm::Directory dir;
+    dir.Load(dirName);
+    return dir.GetFilenames();
+}
+
+vector<CustomDicomDict> GdcmVolumeReader::getCustomDicts() const {
+    vector<CustomDicomDict> specialDicts;
+
+    vector<string> files = getFileNamesInDir(VoreenApplication::app()->getModulePath("gdcm") + "/dicts/CustomDicts");
+
+    for (vector<string>::iterator it = files.begin(); it != files.end(); it++) {
+        if (tgt::FileSystem::fileExtension(*it) == "xml") {
+            CustomDicomDict s;
+            try {
+                s.loadFromFile(*it);
+                specialDicts.push_back(s);
+            }
+            catch (tgt::Exception e) {
+                LERROR("Couldn't load CustomDicomDict: " + (*it));
+            }
+        }
+    }
+
+    return specialDicts;
+}
+
+/*
+ * Sorts strings according to a double value interpreted as the distance of the Image Origin to the Volume Origin
+ */
+bool slices_cmp_dist(std::pair<string, double> a, std::pair<string, double> b) {
+   return a.second < b.second;
+}
+
+/*
+ * Removes slashes as well as backslaches within a std::string
+ */
+std::string removeSlashes(const std::string& s) {
+    return strReplaceAll(strReplaceAll(s,"/",""),"\\","");
+}
+
+std::string GdcmVolumeReader::constructLocalPathFromNetworkOrigin(const VolumeURL& o) const {
+    string path = VoreenApplication::app()->getTemporaryPath()+"/gdcm/";
+    if (!trim(removeSlashes(o.getSearchParameter("PatientID"))).empty())
+        path.append(trim(removeSlashes(o.getSearchParameter("PatientID")))+"/");
+    if (!trim(removeSlashes(o.getSearchParameter("StudyInstanceUID"))).empty())
+        path.append(trim(removeSlashes(o.getSearchParameter("StudyInstanceUID")))+"/");
+    if (!trim(removeSlashes(o.getSearchParameter("SeriesInstanceUID"))).empty())
+        path.append(trim(removeSlashes(o.getSearchParameter("SeriesInstanceUID")))+"/");
+    return path;
+}
+
+bool GdcmVolumeReader::isDicomFile(const string &url) const {
+    gdcm::Reader reader;
+    reader.SetFileName(url.c_str());
+    return reader.Read();
+}
+
+bool GdcmVolumeReader::isDicomDir(const string &url) const {
+    if (!isDicomFile(url)) return false;
+
+    gdcm::Reader reader;
+    reader.SetFileName(url.c_str());
+    reader.Read();
+
+    gdcm::MediaStorage ms;
+    ms.SetFromFile(reader.GetFile());
+
+    return (ms == gdcm::MediaStorage::MediaStorageDirectoryStorage);
+}
+
+MetaDataBase* GdcmVolumeReader::constructMetaData(const DicomDictEntry &entry, const std::string &valueString) {
+
+    string vr = entry.getValueRepresentation();
+    string vm = entry.getValueMultiplicity();
+    string value = valueString;
+    value = trim(value, " ");
+    vr = trim(vr, " ");
+    vm = trim(vm, " ");
+
+    //select by ValueRepresentation and ValueMultiplicity
+    if ((vr == "DA") && (vm == "1")) {
+        //check for right length of string
+        if (value.length() == 8) {
+            //return DateTimeMetaData
+            DateTime date = DateTime::createDate(stoi(value.substr(0,4)), stoi(value.substr(4,2)), stoi(value.substr(6,2)));
+            DateTimeMetaData* d = new DateTimeMetaData(date);
+            return d;
+        }
+        else if (value.length() == 10) {
+            //return DateTimeMetaData
+            DateTime date = DateTime::createDate(stoi(value.substr(0,4)), stoi(value.substr(5,2)), stoi(value.substr(8,2)));
+            DateTimeMetaData* d = new DateTimeMetaData(date);
+            return d;
+        }
+        else {
+            //return StringMetaData
+            LWARNING("Unknown Format in DICOM tag with ValueRepresentation DA: " + entry.getKeyword());
+            StringMetaData* s = new StringMetaData(value);
+            return s;
+        }
+    }
+    else if ((vr == "DT") && (vm == "1")) {
+        //check for right length of string
+        if (value.length() == 14) {
+            //return DateTimeMetaData
+            DateTime dt(stoi(value.substr(0,4)), stoi(value.substr(4,2)), stoi(value.substr(6,2)), stoi(value.substr(8,2)), stoi(value.substr(10,2)), stoi(value.substr(12,2)), 0);
+            DateTimeMetaData* d = new DateTimeMetaData(dt);
+            return d;
+        }
+        else {
+            //return StringMetaData
+            LWARNING("Unknown Format in DICOM tag with ValueRepresentation DT: " + entry.getKeyword());
+            StringMetaData* s = new StringMetaData(value);
+            return s;
+        }
+    }
+    else if ((vr == "TM") && (vm == "1")) {
+
+        if (value.find_first_of(':') != string::npos) {  //older format
+            //check for length of string
+            if (value.length() >= 8) {
+                //use DateTimeMetaData only with time
+                DateTime time(DateTime::TIME);
+
+                //check for fractional seconds
+                int ms = 0;
+                if (value.length() > 9) {
+                    string fracString = value.substr(9);
+                    if (fracString.length() > 3) {
+                        ms = stoi(fracString.substr(0, 3));
+                        if (stoi(fracString.substr(3,1)) >= 5)
+                            ms++;
+                    }
+                    else if (fracString.length() == 3)
+                        ms = stoi(fracString);
+                    else if (fracString.length() == 2)
+                        ms = stoi(fracString)*10;
+                    else if (fracString.length() == 1)
+                        ms = stoi(fracString)*100;
+                }
+                time.setTime(stoi(value.substr(0,2)), stoi(value.substr(3,2)), stoi(value.substr(6,2)), ms);
+                DateTimeMetaData* d = new DateTimeMetaData(time);
+                return d;
+            }
+            else if (value.length() == 5) {
+                //use DateTimeMetaData only with time
+                //only hours and minutes
+                DateTime time(DateTime::TIME);
+                time.setTime(stoi(value.substr(0,2)), stoi(value.substr(3,2)), 0, 0);
+                DateTimeMetaData* d = new DateTimeMetaData(time);
+                return d;
+            }
+            else {
+                //return StringMetaData
+                LWARNING("Unknown Format in DICOM tag with ValueRepresentation TM: " + entry.getKeyword());
+                StringMetaData* s = new StringMetaData(value);
+                return s;
+            }
+        }
+
+        //check for length of string
+        if (value.length() >= 6) {
+            //use DateTimeMetaData only with time
+            DateTime time(DateTime::TIME);
+
+            //check for fractional seconds
+            int ms = 0;
+            if (value.length() > 7) {
+                string fracString = value.substr(7);
+                if (fracString.length() > 3) {
+                    ms = stoi(fracString.substr(0, 3));
+                    if (stoi(fracString.substr(3,1)) >= 5)
+                        ms++;
+                }
+                else if (fracString.length() == 3)
+                    ms = stoi(fracString);
+                else if (fracString.length() == 2)
+                    ms = stoi(fracString)*10;
+                else if (fracString.length() == 1)
+                    ms = stoi(fracString)*100;
+            }
+
+            time.setTime(stoi(value.substr(0,2)), stoi(value.substr(2,2)), stoi(value.substr(4,2)), ms);
+            DateTimeMetaData* d = new DateTimeMetaData(time);
+            return d;
+        }
+        else if (value.length() == 4) {
+            //use DateTimeMetaData only with time
+            //just hours and minutes
+            DateTime time(DateTime::TIME);
+            time.setTime(stoi(value.substr(0,2)), stoi(value.substr(2,2)), 0, 0);
+            DateTimeMetaData* d = new DateTimeMetaData(time);
+            return d;
+        }
+        else if (value.length() == 2) {
+            //use DateTimeMetaData only with time
+            //just hours
+            DateTime time(DateTime::TIME);
+            time.setTime(stoi(value.substr(0,2)), 0, 0, 0);
+            DateTimeMetaData* d = new DateTimeMetaData(time);
+            return d;
+        }
+        else {
+            //return StringMetaData
+            LWARNING("Unknown Format in DICOM tag with ValueRepresentation TM: " + entry.getKeyword());
+            StringMetaData* s = new StringMetaData(value);
+            return s;
+        }
+    }
+    else if ((vr == "IS") && (vm == "1")) {
+        //string to int
+        IntMetaData* m = new IntMetaData();
+        int i = stoi(value);
+        m->setValue(i);
+        return m;
+    }
+    else if ((vr == "IS") && (vm == "2")) {
+        //string to tgt::ivec2
+        IVec2MetaData* m = new IVec2MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::ivec2 v;
+        v.x = stoi(values[0]);
+        v.y = stoi(values[1]);
+        m->setValue(v);
+        return m;
+    }
+    else if ((vr == "IS") && (vm == "3")) {
+        //string to tgt::ivec3
+        IVec3MetaData* m = new IVec3MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::ivec3 v;
+        v.x = stoi(values[0]);
+        v.y = stoi(values[1]);
+        v.z = stoi(values[2]);
+        m->setValue(v);
+        return m;
+    }
+    else if (((vr == "FL") || (vr == "DS") ||(vr == "OF")) && (vm == "1")) {
+        //string to float
+        FloatMetaData* m = new FloatMetaData();
+        float f = stof(value);
+        m->setValue(f);
+        return m;
+    }
+    else if (((vr == "FL") || (vr == "DS") ||(vr == "OF")) && (vm == "2")) {
+        //string to tgt::vec2
+        Vec2MetaData* m = new Vec2MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::vec2 v;
+        v.x = stof(values[0]);
+        v.y = stof(values[1]);
+        m->setValue(v);
+        return m;
+    }
+    else if (((vr == "FL") || (vr == "DS") ||(vr == "OF")) && (vm == "3")) {
+        //string to tgt::vec3
+        Vec3MetaData* m = new Vec3MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::vec3 v;
+        v.x = stof(values[0]);
+        v.y = stof(values[1]);
+        v.z = stof(values[2]);
+        m->setValue(v);
+        return m;
+    }
+    else if ((vr == "FD") && (vm == "1")) {
+        //string to double
+        DoubleMetaData* m = new DoubleMetaData();
+        value = trim(value, " ");
+        double d = stof(value);
+        m->setValue(d);
+        return m;
+    }
+    else if ((vr == "FD") && (vm == "2")) {
+        //string to tgt::dvec2
+        DVec2MetaData* m = new DVec2MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::dvec2 v;
+        v.x = stod(values[0]);
+        v.y = stod(values[1]);
+        m->setValue(v);
+        return m;
+    }
+    else if ((vr == "FD") && (vm == "3")) {
+        //string to tgt::dvec3
+        DVec3MetaData* m = new DVec3MetaData();
+        vector<string> values = strSplit(value, '\\');
+        tgt::dvec3 v;
+        v.x = stod(values[0]);
+        v.y = stod(values[1]);
+        v.z = stod(values[2]);
+        m->setValue(v);
+        return m;
+    }
+    else {
+        //other type: just use the string
+        StringMetaData* m = new StringMetaData();
+        m->setValue(value);
+        return m;
+    }
+
+}
+
+void GdcmVolumeReader::setMetaDataFromDict(MetaDataContainer* container, const DicomDict* dict, gdcm::StringFilter* sf) {
+    if ((!container) || (!dict) || (!sf))
+        return;
+
+    const vector<string> keys = dict->getKeywordVector();
+
+    vector<string>::const_iterator keywordIterator;
+
+    for (keywordIterator = keys.begin(); keywordIterator != keys.end(); ++keywordIterator) {
+        //get entry and check if it should be set as MetaData
+        DicomDictEntry entry = dict->getDictEntryByKeyword(*keywordIterator);
+        if (entry.isMetaData()) {
+            //get the value
+            string s = sf->ToString(getTagFromDictEntry(entry));
+            if (!s.empty()) {
+                //if value is not empty: construct MetaData and add to MetaDataContainer
+                MetaDataBase* m = constructMetaData(entry, s);
+
+                if (container->hasMetaData(*keywordIterator))
+                    container->removeMetaData(*keywordIterator);
+                container->addMetaData(*keywordIterator, m);
+            }
+        }
+    }
+}
+
+MetaDataBase* GdcmVolumeReader::constructVolumeDateTime(const DicomDict* dict, gdcm::StringFilter* sf) const {
+    if ((!dict) || (!sf))
+        return 0;
+
+    string acquisitionDateTime  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("AcquisitionDateTime"))));
+    string acquisitionDate  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("AcquisitionDate"))));
+    string acquisitionTime  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("AcquisitionTime"))));
+    string seriesDate  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("SeriesDate"))));
+    string seriesTime  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("SeriesTime"))));
+    string studyDate  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("StudyDate"))));
+    string studyTime  = trim(sf->ToString(getTagFromDictEntry(dict->getDictEntryByKeyword("StudyTime"))));
+
+    if (!acquisitionDateTime.empty()) {
+        //use AcquisitionDateTime
+        MetaDataBase* m = constructMetaData(dict_->getDictEntryByKeyword("AcquisitionDateTime"),acquisitionDateTime);
+        return m;
+
+    }
+    else if (!acquisitionDate.empty() && !acquisitionTime.empty()) {
+        //use AcquisitionDate and AcquisitionTime
+        string year, month, day, hour, minute, second, millisecond;
+
+        //check for right length of strings and get date
+        if (acquisitionDate.length() == 8) {
+            year = acquisitionDate.substr(0,4);
+            month = acquisitionDate.substr(4,2);
+            day = acquisitionDate.substr(6,2);
+        }
+        else if (acquisitionDate.length() == 10) {
+            year = acquisitionDate.substr(0,4);
+            month = acquisitionDate.substr(5,2);
+            day = acquisitionDate.substr(8,2);
+        }
+        else {
+            LWARNING("Could not create VolumeDateTime, because of unknown format in AcquisitionDate");
+            return 0;
+        }
+
+        //get time
+        if (acquisitionTime.find_first_of(':') != string::npos) {  //older format
+            //check for length of string
+            if (acquisitionTime.length() >= 8) {
+                hour = acquisitionTime.substr(0,2);
+                minute = acquisitionTime.substr(3,2);
+                second = acquisitionTime.substr(6,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (acquisitionTime.length() > 9) {
+                    string fracString = acquisitionTime.substr(9);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (acquisitionTime.length() == 5) {
+                //only hours and minutes
+                hour = acquisitionTime.substr(0,2);
+                minute = acquisitionTime.substr(3,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in AcquisitionTime");
+                return 0;
+            }
+        }
+        else {
+            //check for length of string
+            if (acquisitionTime.length() >= 6) {
+                hour = acquisitionTime.substr(0,2);
+                minute = acquisitionTime.substr(2,2);
+                second = acquisitionTime.substr(4,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (acquisitionTime.length() > 7) {
+                    string fracString = acquisitionTime.substr(7);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (acquisitionTime.length() == 4) {
+                //just hours and minutes
+                hour = acquisitionTime.substr(0,2);
+                minute = acquisitionTime.substr(2,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else if (acquisitionTime.length() == 2) {
+                //just hours
+                hour = acquisitionTime.substr(0,2);
+                minute = "0";
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in AcquisitionTime");
+                return 0;
+            }
+        }
+
+        DateTime dateTime(stoi(year), stoi(month), stoi(day), stoi(hour), stoi(minute), stoi(second), stoi(millisecond));
+        return new DateTimeMetaData(dateTime);
+
+    }
+    else if (!seriesDate.empty() && !seriesTime.empty()) {
+        //use SeriesDate and SeriesTime
+        string year, month, day, hour, minute, second, millisecond;
+
+        //check for right length of strings and get date
+        if (seriesDate.length() == 8) {
+            year = seriesDate.substr(0,4);
+            month = seriesDate.substr(4,2);
+            day = seriesDate.substr(6,2);
+        }
+        else if (seriesDate.length() == 10) {
+            year = seriesDate.substr(0,4);
+            month = seriesDate.substr(5,2);
+            day = seriesDate.substr(8,2);
+        }
+        else {
+            LWARNING("Could not create VolumeDateTime, because of unknown format in SeriesDate");
+            return 0;
+        }
+
+        //get time
+        if (seriesTime.find_first_of(':') != string::npos) {  //older format
+            //check for length of string
+            if (seriesTime.length() >= 8) {
+                hour = seriesTime.substr(0,2);
+                minute = seriesTime.substr(3,2);
+                second = seriesTime.substr(6,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (seriesTime.length() > 9) {
+                    string fracString = seriesTime.substr(9);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (seriesTime.length() == 5) {
+                //only hours and minutes
+                hour = seriesTime.substr(0,2);
+                minute = seriesTime.substr(3,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in SeriesTime");
+                return 0;
+            }
+        }
+        else {
+            //check for length of string
+            if (seriesTime.length() >= 6) {
+                hour = seriesTime.substr(0,2);
+                minute = seriesTime.substr(2,2);
+                second = seriesTime.substr(4,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (seriesTime.length() > 7) {
+                    string fracString = seriesTime.substr(7);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (seriesTime.length() == 4) {
+                //just hours and minutes
+                hour = seriesTime.substr(0,2);
+                minute = seriesTime.substr(2,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else if (seriesTime.length() == 2) {
+                //just hours
+                hour = seriesTime.substr(0,2);
+                minute = "0";
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in SeriesTime");
+                return 0;
+            }
+        }
+
+        DateTime dateTime(stoi(year), stoi(month), stoi(day), stoi(hour), stoi(minute), stoi(second), stoi(millisecond));
+        return new DateTimeMetaData(dateTime);
+
+    }
+    else if (!studyDate.empty() && !studyTime.empty()) {
+        //use StudyDate and StudyTime
+        string year, month, day, hour, minute, second, millisecond;
+
+        //check for right length of strings and get date
+        if (studyDate.length() == 8) {
+            year = studyDate.substr(0,4);
+            month = studyDate.substr(4,2);
+            day = studyDate.substr(6,2);
+        }
+        else if (studyDate.length() == 10) {
+            year = studyDate.substr(0,4);
+            month = studyDate.substr(5,2);
+            day = studyDate.substr(8,2);
+        }
+        else {
+            LWARNING("Could not create VolumeDateTime, because of unknown format in StudyDate");
+            return 0;
+        }
+
+        //get time
+        if (studyTime.find_first_of(':') != string::npos) {  //older format
+            //check for length of string
+            if (studyTime.length() >= 8) {
+                hour = studyTime.substr(0,2);
+                minute = studyTime.substr(3,2);
+                second = studyTime.substr(6,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (studyTime.length() > 9) {
+                    string fracString = studyTime.substr(9);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (studyTime.length() == 5) {
+                //only hours and minutes
+                hour = studyTime.substr(0,2);
+                minute = studyTime.substr(3,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in StudyTime");
+                return 0;
+            }
+        }
+        else {
+            //check for length of string
+            if (studyTime.length() >= 6) {
+                hour = studyTime.substr(0,2);
+                minute = studyTime.substr(2,2);
+                second = studyTime.substr(4,2);
+
+                millisecond = "0";
+
+                //check for fractional seconds
+                if (studyTime.length() > 7) {
+                    string fracString = studyTime.substr(7);
+                    if (fracString.length() > 3) {
+                        millisecond = fracString.substr(0,3);
+                    }
+                    else if (fracString.length() == 3)
+                        millisecond = fracString;
+                    else if (fracString.length() == 2)
+                        millisecond = fracString + "0";
+                    else if (fracString.length() == 1)
+                        millisecond = fracString + "00";
+                }
+            }
+            else if (studyTime.length() == 4) {
+                //just hours and minutes
+                hour = studyTime.substr(0,2);
+                minute = studyTime.substr(2,2);
+                second = "0";
+                millisecond = "0";
+            }
+            else if (studyTime.length() == 2) {
+                //just hours
+                hour = studyTime.substr(0,2);
+                minute = "0";
+                second = "0";
+                millisecond = "0";
+            }
+            else {
+                LWARNING("Could not create VolumeDateTime, because of unknown format in StudyTime");
+                return 0;
+            }
+        }
+
+        DateTime dateTime(stoi(year), stoi(month), stoi(day), stoi(hour), stoi(minute), stoi(second), stoi(millisecond));
+        return new DateTimeMetaData(dateTime);
+
+    }
+
+    LWARNING("Could not construct VolumeDateTime, because no information was found.");
+    return 0;
+}
+
+vector<string> GdcmVolumeReader::getFilesInSeries(vector<string> filenames, string seriesInstanceUID) const {
+    vector<string> result;
+
+    //show Progress Bar
+    if (getProgressBar() && !filenames.empty())
+        getProgressBar()->setTitle("Assigning files to SeriesInstanceUID: " + seriesInstanceUID);
+
+    int progress = 1;
+
+    //iterate over files
+    vector<string>::iterator fileIterator;
+    for (fileIterator = filenames.begin(); fileIterator != filenames.end(); fileIterator++) {
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Reading files...");
+            getProgressBar()->setProgress(static_cast<float>(progress) / static_cast<float>(filenames.size()));
+            progress++;
+        }
+
+        //check SeriesInstanceUID of the file
+        //if it fits: add this file to result
+        gdcm::Reader reader;
+        reader.SetFileName(fileIterator->c_str());
+        if (reader.Read()) {
+            if(reader.GetFile().GetHeader().IsValid()){
+                gdcm::StringFilter sf;
+                sf.SetFile(reader.GetFile());
+                string series = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+                series = trim(series, " ");
+                if (series == seriesInstanceUID)
+                    result.push_back(*fileIterator);
+            }
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    return result;
+}
+
+vector<vector<string> > GdcmVolumeReader::subdivideSeriesFilesByCustomDict(vector<string> fileNames, CustomDicomDict customDict) const {
+    vector<vector<string> > groups;
+
+    //iterate over all files and for each file over all subdivisionTags to get all value combinations in the series for the given files
+    vector<string> subdivisionKeywords = *(customDict.getSubdivisionKeywords());
+
+    //build set with different value combinations
+    std::set<string> valueCombinations;
+
+    std::vector<string>::const_iterator fileIterator;
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Finding Value Combinations of Subdivision Keywords...");
+
+    int itemused = 1;
+
+    for (fileIterator = fileNames.begin(); fileIterator != fileNames.end(); ++fileIterator) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Reading values of subdivision keywords from file \n" + (*fileIterator));
+            getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(fileNames.size()));
+            itemused++;
+        }
+        //get the present file
+        gdcm::ImageReader imageReader;
+        imageReader.SetFileName(fileIterator->c_str());
+        imageReader.Read();
+        gdcm::StringFilter sf;
+        sf.SetFile(imageReader.GetFile());
+
+        //iterate over keywords and concatenate one string out of the values of these keywords
+        string s = "";
+
+        std::vector<string>::iterator keywordIterator;
+        for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
+            //get the value from the file
+            string t = sf.ToString(getTagFromDictEntry(customDict.getDict()->getDictEntryByKeyword(*keywordIterator)));
+            t = trim(t, " ");
+
+            if (!t.empty())
+                s.append(t);
+        }
+
+        //if it is not empty: add this value combination
+        if (!s.empty()) {
+            if (valueCombinations.insert(s).second) {
+                //LERROR(s);
+            }
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Subdividing files into groups...");
+    itemused = 1;
+
+    //for each Value Combination of the SelectionTags: find files and put into groups
+    std::set<string>::iterator combinationIterator;
+
+    for (combinationIterator = valueCombinations.begin(); combinationIterator != valueCombinations.end(); ++combinationIterator){
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Finding files for Value Combinations...");
+            getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(valueCombinations.size()));
+            itemused++;
+        }
+
+        std::vector<string> combinationFilenames;
+
+        for (fileIterator = fileNames.begin(); fileIterator != fileNames.end(); ++fileIterator){
+            gdcm::ImageReader imageReader;
+            imageReader.SetFileName(fileIterator->c_str());
+            imageReader.Read();
+            gdcm::StringFilter sf;
+            sf.SetFile(imageReader.GetFile());
+
+            //get the value combination of the file and compare it
+            string s = "";
+            std::vector<string>::const_iterator keywordIterator;
+            for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
+                string t = sf.ToString(getTagFromDictEntry(customDict.getDict()->getDictEntryByKeyword(*keywordIterator)));
+                t = trim(t, " ");
+
+                if (!t.empty())
+                    s += t;
+            }
+
+            if (s == (*combinationIterator))
+                combinationFilenames.push_back(*fileIterator);
+
+        }
+
+        //add this group
+        groups.push_back(combinationFilenames);
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    return groups;
+}
+
+VolumeBase* GdcmVolumeReader::read(const VolumeURL& origin)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    VolumeCollection* collection = read(origin.getURL());
+    if (collection->size() > 1) {
+        throw tgt::FileException("Could not load Volume, found more than one Volume: "+ origin.getPath(), origin.getPath());
+    }
+    else return collection->first();
+}
+
+VolumeCollection* GdcmVolumeReader::read(const string& url)
+    throw (tgt::FileException, std::bad_alloc)
+{
+
+    //if Standard Dictionary is not yet loaded: try to load
+    if (!dict_) {
+        LINFO("Trying to load Standard Dictionary...");
+        loadStandardDict();
+        LINFO("Standard Dictionary successfully loaded.");
+    }
+
+    VolumeURL origin;
+
+#ifdef VRN_GDCM_VERSION_22
+    //check if this is a network path
+    if (url.substr(0,12) == "dicom-scp://") {
+        //get AE Title and Imcoming Port Number
+        string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
+        int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
+
+        //create DicomNetworkConnector
+        DicomNetworkConnector net(*dict_, aet, incomingPort);
+        net.setProgressBar(getProgressBar());
+        origin = VolumeURL(url);
+
+        //construct path
+        string path = constructLocalPathFromNetworkOrigin(origin);
+
+        //create origin from local directory
+        VolumeURL localOrigin("dicom",path,origin.getSearchString());
+
+        VolumeBase* vHandle = 0;
+
+        //check for files in tmp-directory and try to load from there
+        if (!getFileNamesInDir(path).empty()) {
+            LINFO("Found files in tmp-directory... trying to load from there.");
+            try {
+                vHandle = read(localOrigin);
+            }
+            catch (tgt::Exception t) {
+                throw tgt::FileException("Couldn't load files in tmp-Directory: " + string(t.what()) + "... Please remove "+ path +" and try again.",path);
+            }
+
+            if (vHandle) {
+                vHandle->setOrigin(origin);
+                VolumeCollection* collection = new VolumeCollection();
+                collection->add(vHandle);
+                return collection;
+            }
+        }
+
+        //else: create the directory and get the files by using C-MOVE
+        LINFO("No local temporary version of Volume found... trying to use C-MOVE to retrieve images.");
+        tgt::FileSystem::createDirectoryRecursive(path);
+
+        //move the files
+        try {
+            net.moveSeries(origin,path);
+        }
+        catch (VoreenException v) {
+            throw tgt::FileException(v.what(),"");
+        }
+
+        try {
+            //try to load from there
+            vHandle = read(localOrigin);
+        }
+        catch (tgt::Exception t) {
+            throw tgt::FileException("Couldn't load files after C-MOVE: " + string(t.what()),path);
+        }
+
+        if (vHandle) {
+            vHandle->setOrigin(origin);
+            VolumeCollection* collection = new VolumeCollection();
+            collection->add(vHandle);
+            return collection;
+        }
+    }
+#else
+    //check if this is a network path
+    if (url.substr(0,12) == "dicom-scp://") {
+        origin = VolumeURL(url);
+        throw tgt::FileException("Could not open DICOM network url: no GDCM network support!", origin.getPath());
+    }
+#endif
+
+    if (!(url.substr(0,8) == "dicom://")) {
+        origin = VolumeURL("dicom", url);
+    }
+    else {
+        origin = VolumeURL(url);
+    }
+
+    string fileName = origin.getPath();
+
+    //Volume* volume;
+    VolumeCollection* collection;
+
+    //check if url is a file or a directory
+    if (tgt::FileSystem::dirExists(fileName)) {
+        //url is a directory
+        collection = selectAndLoadDicomFiles(getFileNamesInDir(fileName), origin);
+    }
+    else if (tgt::FileSystem::fileExists(fileName)){
+        //url is a file -> check if it is a Dicom file
+        if (!isDicomFile(fileName)) {
+            throw tgt::FileAccessException("Selected file is not a DICOM file or it is broken!", fileName);
+        }
+        else if (isDicomDir(fileName)) {
+            //file is a DICOMDIR
+            collection = readDicomDir(origin);
+        }
+        else {
+            //file ist NOT a DICOMDIR -> read files in Directory
+            LINFO("Loading files in " << tgt::FileSystem::dirName(fileName));
+
+            //read SeriesInstanceUID from file if possible
+            gdcm::Reader reader;
+            reader.SetFileName(fileName.c_str());
+            if (!reader.Read())
+                throw tgt::FileAccessException("Could not read Dicom File", fileName);
+
+            gdcm::StringFilter sf = gdcm::StringFilter();
+            sf.SetFile(reader.GetFile());
+            string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            seriesInstanceUID = trim(seriesInstanceUID, " ");
+
+            //If there has not been a SeriesInstanceUID in the VolumeURL before: add it
+            if (origin.getSearchParameter("SeriesInstanceUID").empty())
+                origin.addSearchParameter("SeriesInstanceUID", seriesInstanceUID);
+
+            //If the SeriesInstanceUID of the file and the one in the VolumeURL do not correspond: throw Exception
+            if (!(seriesInstanceUID == origin.getSearchParameter("SeriesInstanceUID")))
+                throw tgt::FileException("SeriesInstanceUID in VolumeURL does not correspond to file: " + origin.getPath(), origin.getPath());
+
+            collection = selectAndLoadDicomFiles(getFileNamesInDir(tgt::FileSystem::dirName(fileName)), origin);
+        }
+    }
+    else {
+        //url is neither a file nor a directory -> error
+        throw tgt::FileNotFoundException("GdcmVolumeReader: Unable to find ", fileName);
+    }
+
+    if (collection->empty())
+        throw tgt::FileException("Found no volume to load! ("+origin.getPath()+")", origin.getPath());
+
+    return collection;
+}
+
+VolumeCollection* GdcmVolumeReader::selectAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &vorigin)
+                            throw (tgt::FileException, std::bad_alloc) {
+
+    VolumeURL origin(vorigin);
+
+    if (fileNames.empty())
+        throw tgt::FileNotFoundException("Directory is empty!", origin.getPath());
+
+    //filter the given files, so that only readable DICOM files with one SeriesInstanceUID remain
+    bool filter;
+    if (origin.getSearchParameter("SeriesInstanceUID").empty())
+        filter = false;
+    else
+        filter = true;
+
+    vector<string> useFiles; //selected files to be used
+
+    gdcm::ImageReader reader;
+
+    std::vector<std::string>::const_iterator i;
+    int itemused = 1;
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Preselecting files");
+
+    for (i = fileNames.begin(); i != fileNames.end(); i++) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Checking SeriesInstanceUID of files...");
+            getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(fileNames.size()));
+            itemused++;
+        }
+
+        if (!isDicomFile(*i)) {
+            LINFO("Skipping file: " + (*i));
+        }
+        else {
+            gdcm::Reader iReader;
+
+            if (!filter) {
+                //if there is no SeriesInstanceUID until now, get it from the first file
+                //Read file
+                iReader.SetFileName((*i).c_str());
+                iReader.Read();
+
+                //check if meta information is valid
+                if (!reader.GetFile().GetHeader().IsValid())
+                    throw tgt::FileAccessException("GdcmVolumeReader: File Header not valid! ", (*i));
+
+                //get SeriesInstanceUID
+                gdcm::StringFilter sf = gdcm::StringFilter();
+                sf.SetFile(iReader.GetFile());
+                string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+                if (seriesInstanceUID.empty())
+                    LERROR("File has no SeriesInstanceUID: " << (*i));
+                else {
+                    seriesInstanceUID = trim(seriesInstanceUID, " ");
+                    origin.addSearchParameter("SeriesInstanceUID", seriesInstanceUID);
+                    filter = true;
+                    useFiles.push_back(*i);
+                    LINFO("Using first SeriesInstanceUID found: " + seriesInstanceUID);
+                }
+            }
+            else {
+                //check if this file belongs to the given series
+                iReader.SetFileName((*i).c_str());
+                iReader.Read();
+                gdcm::StringFilter sf = gdcm::StringFilter();
+                sf.SetFile(iReader.GetFile());
+                string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+                seriesInstanceUID = trim(seriesInstanceUID, " ");
+
+                if (seriesInstanceUID == origin.getSearchParameter("SeriesInstanceUID"))
+                    useFiles.push_back(*i);
+                /*else
+                    LINFO("Skipping file because of different SeriesInstanceUID: " + *i);*/
+            }
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    //now all files in useFiles belong to the same SeriesInstanceUID
+    if (useFiles.empty())
+        throw tgt::FileNotFoundException("No file with corresponding SeriesInstanceUID could be found!", origin.getPath());
+
+    return subdivideAndLoadDicomFiles(useFiles, origin);
+}
+
+VolumeCollection* GdcmVolumeReader::readDicomDir(const VolumeURL &origin)
+                            throw (tgt::FileException, std::bad_alloc){
+
+        string filepath = origin.getPath();
+        string selectionSeriesInstanceUID = origin.getSearchParameter("SeriesInstanceUID", false);
+
+        DicomDirParser parser(filepath);
+        parser.open();
+
+        LINFO("Loading DICOMDIR...");
+
+        vector<string> filenames; //contains all image files
+        vector<DicomInfo> seriesCollection; //contains all combinations of Patient -> Study -> Series in the DICOMDIR
+
+        string patientId = ""; //current Patient ID
+        string studyId = "";   //current Study ID
+        string seriesId = "";  //current Series ID
+
+        std::vector<VolumeCollection*> volumeCollections; //contains the volumes to be returned
+
+        if (getProgressBar())
+            getProgressBar()->setTitle("Parsing DICOMDIR Structure");
+
+        for (parser.setIteratorToFirstDirectoryRecordSequence(); !(parser.iteratorIsAtEnd()); parser.setIteratorToNextDirectoryRecordSequence()) {
+
+            DirectoryRecordSequenceIterator sequenceIterator = parser.getPresentDirectoryRecordSequence();
+
+            unsigned int itemused = 0;
+
+            for (sequenceIterator.setIteratorToFirstElement(); !(sequenceIterator.iteratorIsAtEnd()); sequenceIterator.setIteratorToNextElement()) {
+
+                if (getProgressBar()) {
+                    getProgressBar()->setMessage("Reading DirectoryRecordSequence ...");
+                    getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(sequenceIterator.getNumberOfItems()));
+                    itemused++;
+                }
+
+                string itemName = sequenceIterator.getPresentItemName();
+                itemName = trim(itemName, " ");
+
+                if (itemName == "PATIENT") {
+                    if (sequenceIterator.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))))
+                        patientId = sequenceIterator.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID")));
+                    patientId = trim(patientId, " ");
+                }
+                else if (itemName == "STUDY") {
+                    if (sequenceIterator.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))))
+                        studyId = sequenceIterator.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID")));
+                    studyId = trim(studyId, " ");
+                }
+                else if (itemName == "SERIES") {
+                    if (sequenceIterator.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID"))))
+                        seriesId = sequenceIterator.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+
+                    seriesId = trim(seriesId, " ");
+                    //build new DicomInfo for this series
+                    DicomInfo d;
+                    d.setPatientId(patientId);
+                    d.setStudyInstanceUID(studyId);
+                    d.setSeriesInstanceUID(seriesId);
+
+                    //get SERIES MODALITY
+                    if (sequenceIterator.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("Modality"))))
+                        d.setModality(sequenceIterator.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("Modality"))));
+
+                    //only push back this Patient/Study/Series-Combination, if it fits to the given selectionSeriesInstanceUID:
+                    //if a SelectionSeriesInstanceUID is given (ie. when loading a workspace), only this Series should be loaded
+                    if (selectionSeriesInstanceUID.empty())
+                        seriesCollection.push_back(d);
+                    else if (selectionSeriesInstanceUID == d.getSeriesInstanceUID())
+                        seriesCollection.push_back(d);
+                }
+                //PRIVATE and PRESENTATION tags should be handled in a different way
+                //now they are simply ignored
+                else if (itemName=="PRIVATE"){
+                    //LINFO("Skipping Private Tag!");
+                    //LINFO("--------------------------- ");
+                }
+                else if (itemName=="PRESENTATION"){
+                    //LINFO("Skipping Presentation Tag!");
+                    //LINFO("--------------------------- ");
+                }
+                else if (itemName=="IMAGE"){
+
+                    //get PATH to the image
+                    string filename;
+                    if (sequenceIterator.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("ReferencedFileID"))))
+                        filename = sequenceIterator.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("ReferencedFileID")));
+
+                    filename = trim(filename, " ");
+
+#ifndef WIN32
+                size_t pos;
+                while ((pos = filename.find_first_of('\\')) != string::npos) {
+                    filename.replace(pos, 1, "/");
+                }
+#endif
+                    //Get Path and try to add the file
+                    string dir(string(filepath).substr(0, string(filepath).length() - string("DICOMDIR").length()));
+                    dir.append(filename);
+
+                    //remove space at the end of string
+                    dir = trim(dir, " ");
+                    //LINFO(dir);
+
+                    if (!tgt::FileSystem::fileExists(dir)){
+                        LERROR("File does not exist: " + dir);
+                    }
+                    else {
+                        //files.push_back(dir);
+                        filenames.push_back(dir);
+                    }
+                }
+            } //end if(DirectoryRecordSequence)
+        } //end iteration over DES
+
+        //for each series: build volume
+        std::vector<DicomInfo>::iterator seriesIterator;
+
+        for(seriesIterator = seriesCollection.begin(); seriesIterator != seriesCollection.end(); ++seriesIterator){
+
+            vector<string> seriesFilenames = getFilesInSeries(filenames, seriesIterator->getSeriesInstanceUID());
+
+            if (getProgressBar())
+                getProgressBar()->hide();
+
+            //build the actual volume
+            if (!seriesFilenames.empty()) {
+                VolumeCollection* vc;
+
+                try {
+                    VolumeURL o(origin);
+                    o.addSearchParameter("SeriesInstanceUID", seriesIterator->getSeriesInstanceUID());
+                    vc = subdivideAndLoadDicomFiles(seriesFilenames, o);
+                }
+                catch(tgt::FileException f) {
+                    string s(f.what());
+                    LERROR(s);
+                    vc = 0;
+                    if (getProgressBar())
+                        getProgressBar()->hide();
+                }
+
+                if (vc) {
+                    volumeCollections.push_back(vc);
+                }
+            }
+        }
+
+        //build VolumeCollection from all VolumeCollection-Objects
+        VolumeCollection* volumeCollection = new VolumeCollection();
+
+        vector<VolumeCollection*>::iterator iter = volumeCollections.begin();
+        while (iter != volumeCollections.end()) {
+              VolumeCollection* c = *iter;
+              if (c) {
+                  volumeCollection->add(c);
+              }
+              else {
+                  throw tgt::FileException("GdcmVolumeReader: Unable to load " + origin.getPath(), origin.getPath());
+              }
+              iter++;
+        }
+
+        LINFO("Finished loading DICOMDIR.");
+
+        if (getProgressBar()) {
+            getProgressBar()->hide();
+        }
+
+        return volumeCollection;
+}
+
+
+
+VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &origin)
+                          throw (tgt::FileException, std::bad_alloc) {
+
+    VolumeCollection* vc = new VolumeCollection(); //the VolumeCollection to be returned
+
+    //The given vector fileNames does now only contain the files of one SeriesInstanceUID, which is also a SearchParameter in the VolumeURL
+    //Now look for CustomDicomDict-Files that may be relevant for the given files
+    vector<CustomDicomDict> customDicts = getCustomDicts();
+
+    //first file is used as reference
+    string referenceFile = *fileNames.begin();
+    gdcm::Reader reader;
+    reader.SetFileName(referenceFile.c_str());
+    reader.Read();
+    gdcm::StringFilter sf;
+    sf.SetFile(reader.GetFile());
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Looking for CustomDicomDict-Files.");
+
+    vector<CustomDicomDict>::iterator dictIt;
+    int itemused = 1;
+
+    for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Checking CustomDicomDict-Files...");
+            getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float> (customDicts.size()));
+            itemused++;
+        }
+
+        //check if the current CustomDicomDict is right for the given files
+        const vector<pair<string, vector<string> > >* conditions = dictIt->getConditions();
+
+        bool fits = true; //change if conditions do not apply
+
+        //iterate over all conditions and check if they apply for the given files
+        vector<pair<string, vector<string> > >::const_iterator condIterator;
+        for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
+            string value = sf.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+            value = trim(value, " ");
+            //iterate over possible values for the given tag
+            fits = false;
+            vector<string>::const_iterator valueIt;
+            //LERROR(value);
+            for (valueIt = condIterator->second.begin(); valueIt != condIterator->second.end(); valueIt++) {
+                //LERROR(*valueIt);
+                if (*valueIt == value) {
+                    fits = true;
+                    break;
+                }
+            }
+            //if no values are given, the attribute must be present in the file (=> no empty string)
+            if (condIterator->second.empty() && !value.empty())
+                fits = true;
+
+
+            if (!fits)
+                break;
+        }
+
+        //if the CustomDicomDict fits for the given files: use it to subdivide the files into >= 1 volumes to be loaded separately
+        if (fits) {
+            if (getProgressBar())
+                getProgressBar()->hide();
+
+            //The Conditions of a specific CustomDicomDict match the given files -> use it for subdividing the series into several Volumes by using the subdivisionTags of the CustomDicomDict
+            LINFO("Found CustomDicomDict for the given files...using it to subdivide the files of this SeriesInstanceUID...");
+
+            vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
+            const DicomDict customDict = *(dictIt->getDict());
+
+            vector<vector<string> > divisionGroups = subdivideSeriesFilesByCustomDict(fileNames, *dictIt);
+
+            vector<vector<string> >::iterator groupIterator;
+
+            for (groupIterator = divisionGroups.begin(); groupIterator != divisionGroups.end(); ++groupIterator) {
+
+                if (!groupIterator->empty()) {
+
+                    bool ignore = false;
+                    gdcm::Reader im;
+                    im.SetFileName(groupIterator->begin()->c_str());
+                    im.Read();
+                    sf.SetFile(im.GetFile());
+
+                    std::vector<string>::iterator keywordIterator;
+                    for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
+                        //get the value from the first file of the group
+                        string t = sf.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keywordIterator)));
+                        t = trim(t, " ");
+
+                        //if this value does not fit to the one specified in the VolumeURL: do not use this group
+                        if (!(origin.getSearchParameter(*keywordIterator).empty() || (origin.getSearchParameter(*keywordIterator) == t))) {
+                            ignore = true; //do not use this group
+                            break;
+                        }
+
+                    }
+
+                    if (ignore)
+                        continue; //check out the next group
+
+                    Volume* vh;
+
+                    try {
+                        vh = readDicomFiles(*groupIterator, origin);
+                    }
+                    catch(tgt::FileException f) {
+                        string s(f.what());
+                        LERROR(s);
+                        vh = 0;
+                    }
+
+                    if (vh) {
+                        //use the first file as a reference file to add additional MetaInformation and
+                        //SearchParameters to the Volume and its VolumeURL as specified in the CustomDicomDict used
+                        VolumeURL o(vh->getOrigin());
+
+                        gdcm::Reader mReader;
+                        mReader.SetFileName(groupIterator->begin()->c_str());
+                        mReader.Read();
+                        sf.SetFile(mReader.GetFile());
+
+                        //add SearchParameter values to VolumeURL for subdivisionKeywords
+                        vector<string>::iterator keyIterator;
+                        for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
+                            string value = sf.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                            value = trim(value, " ");
+                            if (!value.empty())
+                                o.addSearchParameter(*keyIterator, value);
+                        }
+                        vh->setOrigin(o);
+
+                        LINFO("Additional Meta Information in CustomDicomDict:");
+                        //add all Tags that are found in the Dictionary of this CustomDicomDict to the MetaInformation of the Volume, if the attribute metaData is set to true and if the value is not empty
+                        setMetaDataFromDict(&(vh->getMetaDataContainer()), &customDict, &sf);
+
+                        //print out Meta Information:
+                        const vector<string> keys = customDict.getKeywordVector();
+                        for (unsigned int i = 0; i < keys.size(); i++) {
+                            MetaDataBase* m = vh->getMetaDataContainer().getMetaData(keys[i]);
+                            if (m) {
+                                LINFO(keys[i]+": "+ m->toString());
+                            }
+                        }
+
+                        vc->add(vh);
+                    }
+                }
+            }
+
+            if (getProgressBar())
+                getProgressBar()->hide();
+            return vc;
+        }
+    }
+
+    //if no CustomDicomDict is right: just load the files
+    Volume* vh = readDicomFiles(fileNames, origin);
+    if (vh) {
+        vh->setOrigin(origin);
+        vc->add(vh);
+    }
+
+    return vc;
+}
+
+Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const VolumeURL &origin)
+            throw (tgt::FileException, std::bad_alloc){
+
+    vector<pair<string, double> > slices; //filename, distance
+
+    //take first file as reference, since all files belong to the same SeriesInstanceUID
+    gdcm::ImageReader reader;
+    reader.SetFileName(fileNames.begin()->c_str());
+    reader.Read();
+    gdcm::StringFilter sf;
+    sf.SetFile(reader.GetFile());
+
+    //Get Meta Information
+    info_.setSeriesInstanceUID(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID"))));
+    info_.setStudyInstanceUID(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))));
+    info_.setSeriesDescription(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesDescription"))));
+    info_.setStudyDescription(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyDescription"))));
+    info_.setModality(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("Modality"))));
+    info_.setPatientName(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientName"))));
+    info_.setPatientId(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))));
+
+    info_.setIntercept(static_cast<float>(reader.GetImage().GetIntercept()));
+    info_.setSlope(static_cast<float>(reader.GetImage().GetSlope()));
+    info_.setRescaleType(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("RescaleType"))));
+
+    scalarType_ = reader.GetImage().GetPixelFormat().GetScalarType();
+
+    //get image related information
+    //get image dimensions
+    const unsigned int* dimensions = reader.GetImage().GetDimensions();
+
+    if (dimensions) {
+        info_.setDx(dimensions[0]);
+        info_.setDy(dimensions[1]);
+    }
+    else
+        throw tgt::FileException("No Dimensions found in Image File.", *fileNames.begin());
+
+    //get bits stored
+    info_.setBitsStored(reader.GetImage().GetPixelFormat().GetBitsStored());
+    //get samples per pixel
+    info_.setSamplesPerPixel(reader.GetImage().GetPixelFormat().GetSamplesPerPixel());
+
+    LINFO("    Size: " << info_.getDx() << "x" << info_.getDy() << ", " << info_.getBitsStored()* info_.getSamplesPerPixel() << " bits");
+
+    //get spacing for x and y
+    const double* spacing = reader.GetImage().GetSpacing();
+    info_.setXSpacing(spacing[0]);
+    info_.setYSpacing(spacing[1]);
+
+    //get ImageOrientation
+    tgt::dvec3 xOrientationPatient;
+    tgt::dvec3 yOrientationPatient;
+    const double* directions = reader.GetImage().GetDirectionCosines();
+    xOrientationPatient.x = directions[0];
+    xOrientationPatient.y = directions[1];
+    xOrientationPatient.z = directions[2];
+    yOrientationPatient.x = directions[3];
+    yOrientationPatient.y = directions[4];
+    yOrientationPatient.z = directions[5];
+
+    info_.setXOrientationPatient(xOrientationPatient);
+    info_.setYOrientationPatient(yOrientationPatient);
+
+    //calculate slice normal
+    tgt::dvec3 sliceNormal = tgt::cross(xOrientationPatient,yOrientationPatient);
+
+    info_.setSliceNormal(sliceNormal);
+
+    //Read ImagePositionPatient from all files and calculate distance along slice normal
+    vector<string>::const_iterator it_files = fileNames.begin();
+    int i = 0;
+    if (getProgressBar() && !fileNames.empty())
+        getProgressBar()->setTitle("Loading DICOM Data Set");
+
+    while (it_files != fileNames.end()) {
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
+            getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(fileNames.size()));
+        }
+        i++;
+
+        //Read file
+        gdcm::ImageReader reader;
+        reader.SetFileName((*it_files).c_str());
+
+        //check if file could be read -> should always be the case due to earlier checks
+        if (!reader.Read()){
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileAccessException("Could not read File which should not be readable!", (*it_files));
+        }
+
+        //check if meta information is valid -> should always be the case due to earlier checks
+        if (!reader.GetFile().GetHeader().IsValid()){
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileAccessException("GdcmVolumeReader: File Header not valid! ", (*it_files));
+        }
+
+        gdcm::StringFilter sf = gdcm::StringFilter();
+        sf.SetFile(reader.GetFile());
+
+        //get position of image
+        tgt::dvec3 imagePositionPatient;
+        const double* origin = reader.GetImage().GetOrigin();
+        imagePositionPatient.x = origin[0];
+        imagePositionPatient.y = origin[1];
+        imagePositionPatient.z = origin[2];
+
+        //calculate distance
+        double dist = tgt::dot(info_.getSliceNormal(),imagePositionPatient);
+
+        //add image
+        slices.push_back(make_pair(*it_files,dist));
+
+        it_files++;
+    }
+
+
+    if (slices.size() == 0) {
+        if (getProgressBar())
+            getProgressBar()->hide();
+        throw tgt::CorruptedFileException("Path does not contain any DICOM slices");
+    }
+
+    if (slices.size() == 1) {
+        //check, if this file is a multiframe image
+        if (reader.GetImage().GetNumberOfDimensions() == 3) {
+            //get number of frames in this image
+            string frames = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("NumberOfFrames")));
+            if (!frames.empty())
+                info_.setDz(stoi(frames));
+            else {
+                info_.setDz(1);
+            }
+
+            info_.setNumberOfFrames(info_.getDz());
+
+            //get Z Spacing
+            string sliceSpacing = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SpacingBetweenSlices")));
+            if (!sliceSpacing.empty())
+                info_.setZSpacing(stod(sliceSpacing));
+            else {
+                info_.setZSpacing(1.0);
+            }
+
+        }
+        else if (reader.GetImage().GetNumberOfDimensions() == 2){
+            //not a multiframe image
+            info_.setDz(1);
+            info_.setZSpacing(1.0);
+            info_.setNumberOfFrames(1);
+        }
+        else {
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileException("Unexpected Number of Dimensions in Image File (Not supported): " + reader.GetImage().GetNumberOfDimensions(), slices.begin()->first);
+        }
+
+        //check samples per pixel and warn, if != 1
+        if (info_.getSamplesPerPixel() != 1) {
+            LWARNING("Unsupported Pixel Format: " + itos(info_.getSamplesPerPixel()) + " Samples per Pixel instead of 1! Might lead to unexpected results.");
+        }
+
+
+    }
+    else
+        info_.setNumberOfFrames(1);
+
+    //Determine in which direction the slices are arranged and sort by position
+    //Furthermore the Z spacing is determined
+    if (slices.size() > 1) {
+        //sort slices by distance from origin
+        std::sort(slices.begin(), slices.end(), slices_cmp_dist);
+
+        //check, if all images files are of dimension 2
+        //also check if rescale intercept and slope are uniform and samples per pixel = 1 in all images
+        bool interceptDiffers = false;
+        bool slopeDiffers = false;
+        int samplesPerPixel = 1;
+        for (unsigned int i = 0; i < slices.size(); i++) {
+            gdcm::ImageReader imR;
+            imR.SetFileName(slices[i].first.c_str());
+            imR.Read();
+            if (imR.GetImage().GetNumberOfDimensions() != 2) {
+                if (getProgressBar())
+                    getProgressBar()->hide();
+                throw tgt::FileException("Image file has unexpected Dimensions (Multiple slices are required to have Dimension 2): " + imR.GetImage().GetNumberOfDimensions(), slices[i].first);
+            }
+
+            //check if PixelRepresentation is uniform
+            if (imR.GetImage().GetPixelFormat().GetScalarType() != scalarType_) {
+                if (getProgressBar())
+                    getProgressBar()->hide();
+                throw tgt::FileException("Image files do not have uniform scalar type!");
+            }
+
+            //check if rescale slope and intercept are the same for alle images, otherwise: warning
+            if (info_.getIntercept() != static_cast<float>(imR.GetImage().GetIntercept()))
+                interceptDiffers = true;
+            if (info_.getSlope() != static_cast<float>(imR.GetImage().GetSlope()))
+                slopeDiffers = true;
+
+            //check if samples per pixel are uniformly = 1
+            if ((imR.GetImage().GetPixelFormat().GetSamplesPerPixel() != samplesPerPixel) && (imR.GetImage().GetPixelFormat().GetSamplesPerPixel() != 1)) {
+                samplesPerPixel = imR.GetImage().GetPixelFormat().GetSamplesPerPixel();
+                LWARNING("Found image files with unsupported Pixel Format: " + itos(samplesPerPixel) + " Samples per Pixel instead of 1! Might lead to unexpected results.");
+                info_.setSamplesPerPixel(samplesPerPixel);
+            }
+        }
+
+        if (interceptDiffers)
+            LWARNING("Rescale Intercept differs within the image files!");
+
+        if (slopeDiffers)
+            LWARNING("Rescale Slope differs within the image files!");
+
+        //calculate Z-Spacing
+        info_.setZSpacing(slices[1].second - slices[0].second);
+        if (info_.getZSpacing() == 0){
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileException("Slice Spacing is 0: Found two or more Slices with the same Position! (Either not a Volume or Slices have to be subdivided by additional Attributes)");
+        }
+
+        //check, if slice spacing remains constant (with 10% tolerance)
+        for (unsigned int i = 0; i < slices.size()-1; i++) {
+            if (((slices[i+1].second - slices[i].second) < 0.9*info_.getZSpacing()) || ((slices[i+1].second - slices[i].second) > 1.1*info_.getZSpacing())) {
+                //LERROR("Spacing between slices is not steady (10% tolerance)!");
+                if ((slices[i+1].second - slices[i].second) == 0) {
+                    if (getProgressBar())
+                        getProgressBar()->hide();
+                    throw tgt::FileException("Slice Spacing is 0: Found two or more Slices with the same Position! (Either not a Volume or Slices have to be subdivided by additional Attributes)");
+                }
+                if (getProgressBar())
+                    getProgressBar()->hide();
+                throw tgt::FileException("Slice Spacing is not steady (differs > 10% Tolerance)!");
+            }
+        }
+
+        info_.setDz(static_cast<int>(slices.size()));
+    }
+
+    //get position of first image to calculate offset
+    gdcm::ImageReader yar;
+    yar.SetFileName(slices[0].first.c_str());
+    yar.Read();
+    sf.SetFile(yar.GetFile()); //set file to gdcm::StringFilter for later use
+
+    tgt::dvec3 offset;
+    const double* volumeOrigin = yar.GetImage().GetOrigin();
+    offset.x = volumeOrigin[0];
+    offset.y = volumeOrigin[1];
+    offset.z = volumeOrigin[2];
+
+    info_.setOffset(offset);
+
+    //get pixel representation
+    info_.setPixelRepresentation(yar.GetImage().GetPixelFormat().GetPixelRepresentation());
+
+    //determine bytes per voxel
+    switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+        case  8: info_.setBytesPerVoxel(1); break;
+        case  9: info_.setBytesPerVoxel(2); break;
+        case 10: info_.setBytesPerVoxel(2); break;
+        case 11: info_.setBytesPerVoxel(2); break;
+        case 12: info_.setBytesPerVoxel(2); break;
+        case 13: info_.setBytesPerVoxel(2); break;
+        case 14: info_.setBytesPerVoxel(2); break;
+        case 15: info_.setBytesPerVoxel(2); break;
+        case 16: info_.setBytesPerVoxel(2); break;
+        case 24: info_.setBytesPerVoxel(3); break;
+        case 32: info_.setBytesPerVoxel(4); break;
+        default:
+            if (getProgressBar())
+            getProgressBar()->hide();
+            throw tgt::CorruptedFileException("Unknown bit depth: " + itos(info_.getBitsStored()*info_.getSamplesPerPixel()), slices[0].first);
+    }
+
+    // casts needed to handle files > 4 GB
+    scalars_ = new char[(size_t) info_.getDx() * (size_t) info_.getDy() * (size_t) info_.getDz() * (size_t) info_.getBytesPerVoxel()];
+
+    LINFO("We have " << info_.getDz() << " slices. [" << info_.getDx() << "x" << info_.getDy() << "]");
+    LINFO("Spacing: (" << info_.getXSpacing() << "; " << info_.getYSpacing() << "; " << info_.getZSpacing() << ")");
+
+    // Now read the actual slices from the files
+    LINFO("Building volume...");
+    LINFO("Reading slice data from " << slices.size() << " files...");
+
+    size_t posScalar = 0;
+
+    std::vector<pair<string, double> >::iterator it_slices = slices.begin();
+
+    i = 0;
+    while (it_slices != slices.end()) {
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Loading slice '" + tgt::FileSystem::fileName((*it_slices).first) + "' ...");
+            getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
+        }
+        i++;
+
+        int slicesize = loadSlice((*it_slices).first, posScalar,info_.getNumberOfFrames());
+
+        if (slicesize == 0) {
+            //obviously an error in loadSlice method
+            delete[] scalars_;
+            scalars_ = 0;
+
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileException("Failed to read Pixel data.", (*it_slices).first);
+        }
+
+        posScalar += slicesize;
+        it_slices++;
+    }
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    //now build the actual volume
+    VolumeRAM* dataset = 0;
+
+    //select type of scalar data
+    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) || (info_.getSamplesPerPixel() != 1)) {
+        //Pixel Format is not well defined... trying to compute the correct pixel format
+        if (scalarType_ == gdcm::PixelFormat::UNKNOWN)
+            LWARNING("Pixel Format: Scalar Type in DICOM files is UNKNOWN... trying to compute the right format.");
+
+        if (info_.getPixelRepresentation()) { //signed
+
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                /*dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
+                dataset = new VolumeRAM_Int8(reinterpret_cast<int8_t*>(scalars_),
+                                         tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                /*dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
+                dataset = new VolumeRAM_Int16(reinterpret_cast<int16_t*>(scalars_), tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 24:
+                dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 32:
+                /*dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
+                dataset = new VolumeRAM_Int32(reinterpret_cast<int32_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            default:
+                LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
+                delete[] scalars_;
+                scalars_ = 0;
+                return 0;
+            }
+        }
+        else {  //unsigned
+
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 24:
+                dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            case 32:
+                dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
+                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                break;
+            default:
+                LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
+                delete[] scalars_;
+                scalars_ = 0;
+                return 0;
+            }
+        }
+    }
+    else {
+        //select scalar type
+        switch (scalarType_) {
+        case gdcm::PixelFormat::UINT8:
+            dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
+                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::INT8:
+            dataset = new VolumeRAM_Int8(reinterpret_cast<int8_t*>(scalars_),
+                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::UINT12:
+        case gdcm::PixelFormat::UINT16:
+            dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
+                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::INT12:
+        case gdcm::PixelFormat::INT16:
+            dataset = new VolumeRAM_Int16(reinterpret_cast<int16_t*>(scalars_), tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::UINT32:
+            dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
+                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::INT32:
+            dataset = new VolumeRAM_Int32(reinterpret_cast<int32_t*>(scalars_),
+                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::FLOAT16:
+            LWARNING("Scalar Type: FLOAT16 not supported... might lead to unexpected results.");
+        case gdcm::PixelFormat::FLOAT32:
+            dataset = new VolumeRAM_Float(reinterpret_cast<float*>(scalars_),
+                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        case gdcm::PixelFormat::FLOAT64:
+            dataset = new VolumeRAM_Double(reinterpret_cast<double*>(scalars_),
+                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+            break;
+        default:
+             LERROR("Unsupported scalar type: " << yar.GetImage().GetPixelFormat().GetScalarTypeAsString());
+             delete[] scalars_;
+             scalars_ = 0;
+             return 0;
+        }
+    }
+
+
+
+    LINFO("Building volume complete.");
+
+    //build: Volumen -> Volume
+    Volume* vh = new Volume(dataset, tgt::vec3(static_cast<float>(info_.getXSpacing()),static_cast<float>(info_.getYSpacing()),static_cast<float>(info_.getZSpacing())), tgt::vec3(0.f));
+
+    //get offset and set to Volume
+    tgt::vec3 os(static_cast<float>(info_.getOffset().x), static_cast<float>(info_.getOffset().y), static_cast<float>(info_.getOffset().z));
+    vh->setOffset(os);
+
+    //construct PhysicalToWorld-Matrix for correct orientation of Volume
+    tgt::Matrix4<double> ptw(tgt::dvec4(info_.getXOrientationPatient(), 0), tgt::dvec4(info_.getYOrientationPatient(), 0), tgt::dvec4(info_.getSliceNormal(), 0), tgt::dvec4(0,0,0,1));
+    vh->setPhysicalToWorldMatrix(ptw);
+
+    //set Modality and VolumeURL
+    vh->setModality(Modality(info_.getModality()));
+    vh->setOrigin(origin);
+
+    //setting RealWorldMapping for denormalization and rescaling
+    RealWorldMapping denormalize;
+
+    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) || (info_.getSamplesPerPixel() != 1)) {
+        if (info_.getPixelRepresentation()) { //signed
+
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                denormalize = RealWorldMapping::createDenormalizingMapping<int8_t>();
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                denormalize = RealWorldMapping::createDenormalizingMapping<int16_t>();
+                break;
+            case 24:
+                denormalize = RealWorldMapping::createDenormalizingMapping<tgt::col3>();
+                break;
+            case 32:
+                denormalize = RealWorldMapping::createDenormalizingMapping<int32_t>();
+                break;
+            }
+        }
+        else { //unsigned
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                denormalize = RealWorldMapping::createDenormalizingMapping<uint8_t>();
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                denormalize = RealWorldMapping::createDenormalizingMapping<uint16_t>();
+                break;
+            case 24:
+                denormalize = RealWorldMapping::createDenormalizingMapping<tgt::col3>();
+                break;
+            case 32:
+                denormalize = RealWorldMapping::createDenormalizingMapping<uint32_t>();
+                break;
+            }
+        }
+    }
+    else {
+        //select scalar type
+        switch (scalarType_) {
+        case gdcm::PixelFormat::UINT8:
+            denormalize = RealWorldMapping::createDenormalizingMapping<uint8_t>();
+            break;
+        case gdcm::PixelFormat::INT8:
+            denormalize = RealWorldMapping::createDenormalizingMapping<int8_t>();
+            break;
+        case gdcm::PixelFormat::UINT12:
+        case gdcm::PixelFormat::UINT16:
+            denormalize = RealWorldMapping::createDenormalizingMapping<uint16_t>();
+            break;
+        case gdcm::PixelFormat::INT12:
+        case gdcm::PixelFormat::INT16:
+            denormalize = RealWorldMapping::createDenormalizingMapping<int16_t>();
+            break;
+        case gdcm::PixelFormat::UINT32:
+            denormalize = RealWorldMapping::createDenormalizingMapping<uint32_t>();
+            break;
+        case gdcm::PixelFormat::INT32:
+            denormalize = RealWorldMapping::createDenormalizingMapping<int32_t>();
+            break;
+        case gdcm::PixelFormat::FLOAT16:
+        case gdcm::PixelFormat::FLOAT32:
+            denormalize = RealWorldMapping::createDenormalizingMapping<float>();
+            break;
+        case gdcm::PixelFormat::FLOAT64:
+            denormalize = RealWorldMapping::createDenormalizingMapping<double>();
+            break;
+        default:
+            break;
+        }
+    }
+
+    RealWorldMapping rwm(info_.getSlope(), info_.getIntercept(), info_.getRescaleType());
+
+    vh->setRealWorldMapping(RealWorldMapping::combine(denormalize, rwm));
+
+    /*set Meta Information to Volume
+      ------------------------------------*/
+
+    LINFO("Setting Meta Information:");
+    //add all Tags that are found in the Standard Dictionary to the MetaInformation of the Volume, if the attribute metaData is set to true and if the value is not empty
+    setMetaDataFromDict(&(vh->getMetaDataContainer()), dict_, &sf);
+
+    //Set VolumeDateTime, depending on the tags found in the file
+    MetaDataBase* volumeDateTime = constructVolumeDateTime(dict_, &sf);
+    if (volumeDateTime)
+        vh->getMetaDataContainer().addMetaData("VolumeDateTime", volumeDateTime);
+
+
+    //print out Meta Information:
+    const vector<string> keys = dict_->getKeywordVector();
+    for (unsigned int i = 0; i < keys.size(); i++) {
+        MetaDataBase* m = vh->getMetaDataContainer().getMetaData(keys[i]);
+        if (m) {
+            LINFO(keys[i]+": "+ m->toString());
+        }
+    }
+
+    return vh;
+}
+
+int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames){
+
+    gdcm::ImageReader reader;
+    reader.SetFileName(fileName.c_str());
+
+    if (!reader.Read()){
+        LERROR("Error loading file " << fileName);
+        return 0;
+    }
+
+    unsigned long dataLength = (static_cast<unsigned long>(info_.getDx()) * static_cast<unsigned long>(info_.getDy()) * static_cast<unsigned long>(info_.getBytesPerVoxel()) * static_cast<unsigned long>(numberOfFrames));
+
+    if (reader.GetImage().GetBufferLength() != dataLength){
+        LERROR("Failed to read Pixel data from file " << fileName << " because of unexpected Buffer Length!");
+        return 0;
+    }
+
+    //get pixel data
+    reader.GetImage().GetBuffer(&scalars_[posScalar * info_.getBytesPerVoxel()]);
+
+    // Return number of voxels rendered
+    return info_.getDx() * info_.getDy() * numberOfFrames;
+}
+
+
+std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) const
+    throw (tgt::FileException)
+{
+    VolumeURL urlOrigin(url);
+
+#ifdef VRN_GDCM_VERSION_22 // network support
+    //check if this is a network path
+    if (urlOrigin.getProtocol() == "dicom-scp") {
+
+        vector<VolumeURL> networkOrigins;
+
+        //first: check, if a local version is available
+        //construct path
+        string path = constructLocalPathFromNetworkOrigin(urlOrigin);
+
+        if (!tgt::FileSystem::dirExists(path) || getFileNamesInDir(path).empty()) {
+            //local version not available -> move Series
+            //get AE Title and Incoming Port Number
+            string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
+            int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
+
+            //create DicomNetworkConnector
+            DicomNetworkConnector net(*dict_, aet, incomingPort);
+            net.setProgressBar(getProgressBar());
+
+            tgt::FileSystem::createDirectoryRecursive(path);
+
+            //move the files
+            try {
+                net.moveSeries(urlOrigin,path);
+            }
+            catch (VoreenException v) {
+                throw tgt::FileException(v.what(),"");
+            }
+        }
+
+        //origin contains search parameters -> create origin from local directory
+        //LINFO("Found local data...trying to list Volumes or load single volume directly...");
+        VolumeURL localOrigin("dicom",path,urlOrigin.getSearchString());
+        std::vector<VolumeURL> localOrigins = listVolumesDirectory(localOrigin);
+        //iterate over local origins and change to network origins
+        for (std::vector<VolumeURL>::iterator localIt = localOrigins.begin(); localIt != localOrigins.end(); localIt++) {
+            VolumeURL nOrigin("dicom-scp",urlOrigin.getPath(),localIt->getSearchString());
+            nOrigin.addSearchParameter("port",urlOrigin.getSearchParameter("port"));
+            nOrigin.addSearchParameter("SCP-AET",urlOrigin.getSearchParameter("SCP-AET"));
+            networkOrigins.insert(networkOrigins.end(),nOrigin);
+        }
+
+        if (networkOrigins.empty())
+            throw tgt::FileException("Could not list Volumes in local directory. Remove local directory and try to load from server.", localOrigin.getPath());
+        else
+            return networkOrigins;
+
+        return networkOrigins;
+    }
+#endif
+
+    // if URL already contains a seriesID, return it directly
+    if (urlOrigin.getSearchParameter("SeriesInstanceUID", false) != "") {
+        vector<VolumeURL> result;
+        result.push_back(urlOrigin);
+        return result;
+    }
+
+    //if Standard Dictionary is not yet loaded: try to load
+    if (!dict_) {
+        LINFO("Trying to load Standard Dictionary...");
+        loadStandardDict();
+        LINFO("Standard Dictionary successfully loaded.");
+    }
+
+    if (gdcm::System::FileIsDirectory(urlOrigin.getPath().c_str())) {
+        //fetch all Volumes located in the directory
+        return listVolumesDirectory(urlOrigin);
+    }
+    else if (gdcm::System::FileExists(urlOrigin.getPath().c_str())) {
+        //select if it is a DICOMDIR or a single DICOM image
+        if (isDicomDir(urlOrigin.getPath()))
+            return listVolumesDicomDir(urlOrigin);
+        else if (isDicomFile(urlOrigin.getPath()))
+            return listVolumesSingleDicomImage(urlOrigin);
+        else
+            throw tgt::FileAccessException("Not a DICOM file!", urlOrigin.getPath());
+    }
+    else {
+        //file is neither a directory nor a file
+        throw tgt::FileException("File(s) could not be read: " + urlOrigin.getPath(), urlOrigin.getPath());
+    }
+}
+
+std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& origin) const
+    throw (tgt::FileException)
+{
+    vector<VolumeURL> result;
+
+    //get all SeriesInstanceUID values of the DICOM files in the Directory
+    vector<string> filenames = getFileNamesInDir(origin.getPath());
+
+    std::set<string> seriesInstanceUIDvalues;
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Reading SeriesInstanceUID from all files in Directory...");
+
+    unsigned int itemused = 1;
+
+    vector<string>::iterator fileIterator;
+    for (fileIterator = filenames.begin(); fileIterator != filenames.end(); fileIterator++) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Reading file " + (*fileIterator));
+            getProgressBar()->setProgress(static_cast<float>(itemused)/static_cast<float>(filenames.size()));
+            itemused++;
+        }
+        //try to read the file
+        gdcm::Reader reader;
+        reader.SetFileName(fileIterator->c_str());
+        if (!reader.Read())
+            continue;
+        else {
+            //check for valid File Header
+            if (!reader.GetFile().GetHeader().IsValid()) {
+                LERROR("File Header not valid: " << *fileIterator);
+                continue;
+            }
+
+            //get the SeriesInstanceUID of the file
+            gdcm::StringFilter sf;
+            sf.SetFile(reader.GetFile());
+
+            string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            seriesInstanceUID = trim(seriesInstanceUID, " ");
+
+            if (seriesInstanceUID.empty()) {
+                LERROR("File has empty SeriesInstanceUID: " << *fileIterator);
+                continue;
+            }
+            else {
+                //if the origin already contains a SeriesInstanceUID:
+                //just use this one
+                if (origin.getSearchParameter("SeriesInstanceUID").empty() || origin.getSearchParameter("SeriesInstanceUID") == seriesInstanceUID)
+                    seriesInstanceUIDvalues.insert(seriesInstanceUID).second;
+            }
+
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Checking possible Volumes...");
+
+    unsigned int count = 1;
+
+    //now for each SeriesInstanceUID: check if to subdivide by using CustomDicomDir
+    std::set<string>::iterator seriesIterator;
+
+    for (seriesIterator = seriesInstanceUIDvalues.begin(); seriesIterator != seriesInstanceUIDvalues.end(); ++seriesIterator) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Checking Volume ...");
+            getProgressBar()->setProgress(static_cast<float>(count-1) / static_cast<float>(seriesInstanceUIDvalues.size()));
+            count++;
+        }
+
+        //check, if there is at least one Image file with this SeriesInstanceUID
+
+        string imageFile = "";
+
+        vector<string>::iterator fileIterator;
+        for (fileIterator = filenames.begin(); fileIterator != filenames.end(); ++fileIterator) {
+            //if this file is not a DICOM file: next file
+            if (!isDicomFile(*fileIterator))
+                continue;
+
+            //get the SeriesInstanceUID of the DICOM file and compare it to the present one
+            //if it does not match: next file
+            gdcm::Reader reader;
+            reader.SetFileName(fileIterator->c_str());
+            reader.Read();
+            gdcm::StringFilter stringFilter;
+            stringFilter.SetFile(reader.GetFile());
+
+            string fileSeries = stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            fileSeries = trim(fileSeries, " ");
+
+            if (!((*seriesIterator) == fileSeries))
+                continue;
+            else {
+                //this image file can be used as a reference for the series now
+                imageFile = (*fileIterator);
+                break;
+            }
+        }
+
+        if (!imageFile.empty()) {
+            //there is at least one file in this Series that can be used as a reference
+            //check if a CustomDicomDict needs to be used
+            vector<CustomDicomDict> customDicts = getCustomDicts();
+
+            gdcm::Reader reader;
+            reader.SetFileName(imageFile.c_str());
+            reader.Read();
+            gdcm::StringFilter stringFilter;
+            stringFilter.SetFile(reader.GetFile());
+
+            vector<CustomDicomDict>::iterator dictIt;
+
+            for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
+
+                //check if the current CustomDicomDict is right for the given file
+                const vector<pair<string, vector<string> > >* conditions = dictIt->getConditions();
+
+                bool fits = true; //change if conditions do not apply
+
+                //iterate over all conditions and check if they apply for the given files
+                vector<pair<string, vector<string> > >::const_iterator condIterator;
+                for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
+                    string value = stringFilter.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+                    value = trim(value, " ");
+                    //iterate over possible values for the given tag
+                    fits = false;
+                    vector<string>::const_iterator valueIt;
+                    //LERROR(value);
+                    for (valueIt = condIterator->second.begin(); valueIt != condIterator->second.end(); valueIt++) {
+                        //LERROR(*valueIt);
+                        if (*valueIt == value) {
+                            fits = true;
+                            break;
+                        }
+                    }
+                    //if no values are given, the attribute must be present in the file (=> no empty string)
+                    if (condIterator->second.empty() && !value.empty())
+                        fits = true;
+
+
+                    if (!fits)
+                        break;
+                }
+
+                if (fits) {
+                    //subdivide the files with the help of the CustomDicomDict
+                    //and construct a VolumeOrgin for each group
+
+                    //first: sort out files in another Series
+                    vector<string> seriesFiles = getFilesInSeries(filenames, (*seriesIterator));
+                    vector<vector<string> > groups = subdivideSeriesFilesByCustomDict(seriesFiles, *dictIt);
+
+                    vector<vector<string> >::iterator groupIterator;
+
+                    for (groupIterator = groups.begin(); groupIterator != groups.end(); ++groupIterator) {
+                        if (!(groupIterator->empty())) {
+                            VolumeURL o("dicom", origin.getPath());
+                            o.addSearchParameter("SeriesInstanceUID", *seriesIterator);
+
+                            gdcm::Reader r;
+                            r.SetFileName(groupIterator->begin()->c_str());
+                            r.Read();
+                            gdcm::StringFilter filter;
+                            filter.SetFile(r.GetFile());
+
+                            o.addSearchParameter("PatientID", filter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))));
+                            o.addSearchParameter("StudyInstanceUID", filter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))));
+
+                            //add SearchParameter values to VolumeURL for subdivisionKeywords
+                            vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
+                            const DicomDict customDict = *(dictIt->getDict());
+
+                            vector<string>::iterator keyIterator;
+                            for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
+                                string value = filter.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                                value = trim(value, " ");
+
+                                o.addSearchParameter(*keyIterator, value);
+                            }
+
+                            //now add Meta Information of StandardDictionary
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, &filter);
+                            //now add Meta Information of CustomDicomDict
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, &filter);
+
+                            result.push_back(o);
+                        }
+                    }
+
+                    break; //do not check the remaining CustomDicomDicts
+                }
+
+            }
+
+            //if no CustomDicom could be found:
+            if (dictIt == customDicts.end()) {
+                //for now only the first file found is used
+                VolumeURL v("dicom", origin.getPath());
+                v.addSearchParameter("SeriesInstanceUID", *seriesIterator);
+                v.addSearchParameter("PatientID", stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))));
+                v.addSearchParameter("StudyInstanceUID", stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))));
+                //now add Meta Information of StandardDictionary
+                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, &stringFilter);
+                result.push_back(v);
+            }
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    return result;
+}
+
+std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& origin) const
+    throw (tgt::FileException)
+{
+    vector<VolumeURL> result;
+
+    DicomDirParser parser(origin.getPath());
+    parser.open();
+
+    //parse the DICOMDIR to find every SeriesInstanceUID and all Image files
+    vector<string> filenames; //contains all image files
+    vector<string> seriesInstanceUIDs; //contains all SeriesInstanceUID values
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Parsing DICOMDIR Structure to find Volumes...");
+
+    for (parser.setIteratorToFirstDirectoryRecordSequence(); !(parser.iteratorIsAtEnd()); parser.setIteratorToNextDirectoryRecordSequence()) {
+
+        DirectoryRecordSequenceIterator sequence = parser.getPresentDirectoryRecordSequence();
+        //iterate over the items
+        unsigned int itemused = 0;
+
+        for (sequence.setIteratorToFirstElement(); !(sequence.iteratorIsAtEnd()); sequence.setIteratorToNextElement()) {
+
+            if (getProgressBar()) {
+                getProgressBar()->setMessage("Reading DirectoryRecordSequence ...");
+                getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(sequence.getNumberOfItems()));
+                itemused++;
+            }
+
+            string itemName = sequence.getPresentItemName();
+            itemName = trim(itemName, " ");
+
+            if (itemName=="IMAGE"){
+                //get path to the image
+                string filename;
+
+                if (sequence.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("ReferencedFileID"))))
+                   filename = sequence.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("ReferencedFileID")));
+                filename = trim(filename, " ");
+
+#ifndef WIN32
+                size_t pos;
+                while ((pos = filename.find_first_of('\\')) != string::npos) {
+                    filename.replace(pos, 1, "/");
+                }
+#endif
+                //get path and try to add the file
+                string dir(string(origin.getPath()).substr(0, string(origin.getPath()).length() - string("DICOMDIR").length()));
+                dir.append(filename);
+                //remove space at the end of string
+                dir = trim(dir, " ");
+                //add file if it is found
+                if (tgt::FileSystem::fileExists(dir)){
+                    filenames.push_back(dir);
+                }
+            }
+            else if (itemName=="SERIES"){
+                //get SeriesInstanceUID
+                string seriesInstanceUID;
+                if (sequence.findTagInPresentItem(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID"))))
+                   seriesInstanceUID = sequence.getElementValue(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+                seriesInstanceUID = trim(seriesInstanceUID, " ");
+
+                seriesInstanceUIDs.push_back(seriesInstanceUID);
+            }
+        } //end (iteration over items)
+    } //end of iteration over DES
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    if (getProgressBar())
+        getProgressBar()->setTitle("Checking possible Volumes...");
+
+    unsigned int count = 1;
+
+    //now for each SeriesInstanceUID: a) check if there are Image files, b) eventually subdivide by using CustomDicomDir
+    vector<string>::iterator seriesIterator;
+
+    for (seriesIterator = seriesInstanceUIDs.begin(); seriesIterator != seriesInstanceUIDs.end(); ++seriesIterator) {
+
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Checking Volume ...");
+            getProgressBar()->setProgress(static_cast<float>(count-1) / static_cast<float>(seriesInstanceUIDs.size()));
+            count++;
+        }
+
+        //check, if there is at least one Image file with this SeriesInstanceUID
+
+        string imageFile = "";
+
+        vector<string>::iterator fileIterator;
+        for (fileIterator = filenames.begin(); fileIterator != filenames.end(); ++fileIterator) {
+            //if this file is not a DICOM file: next file
+            if (!isDicomFile(*fileIterator))
+                continue;
+
+            //get the SeriesInstanceUID of the DICOM file and compare it to the present one
+            //if it does not match: next file
+            gdcm::Reader reader;
+            reader.SetFileName(fileIterator->c_str());
+            reader.Read();
+            gdcm::StringFilter stringFilter;
+            stringFilter.SetFile(reader.GetFile());
+
+            string fileSeries = stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            fileSeries = trim(fileSeries, " ");
+
+            if (!((*seriesIterator) == fileSeries))
+                continue;
+            else {
+                //this image file can be used as a reference for the series now
+                imageFile = (*fileIterator);
+                break;
+            }
+        }
+
+        if (!imageFile.empty()) {
+            //there is at least one file in this Series that can be used as a reference
+            //check if a CustomDicomDict needs to be used
+            vector<CustomDicomDict> customDicts = getCustomDicts();
+
+            gdcm::Reader reader;
+            reader.SetFileName(imageFile.c_str());
+            reader.Read();
+            gdcm::StringFilter stringFilter;
+            stringFilter.SetFile(reader.GetFile());
+
+            if (getProgressBar())
+                getProgressBar()->setTitle("Looking for CustomDicomDict-Files.");
+
+            vector<CustomDicomDict>::iterator dictIt;
+            int itemused = 1;
+
+            for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
+
+                if (getProgressBar()) {
+                    getProgressBar()->setMessage("Checking CustomDicomDict-Files...");
+                    getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float> (customDicts.size()));
+                    itemused++;
+                }
+
+                //check if the current CustomDicomDict is right for the given file
+                const vector<pair<string, vector<string> > >* conditions = dictIt->getConditions();
+
+                bool fits = true; //change if conditions do not apply
+
+                //iterate over all conditions and check if they apply for the given files
+                vector<pair<string, vector<string> > >::const_iterator condIterator;
+                for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
+                    string value = stringFilter.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+                    value = trim(value, " ");
+                    //iterate over possible values for the given tag
+                    fits = false;
+                    vector<string>::const_iterator valueIt;
+                    //LERROR(value);
+                    for (valueIt = condIterator->second.begin(); valueIt != condIterator->second.end(); valueIt++) {
+                        //LERROR(*valueIt);
+                        if (*valueIt == value) {
+                            fits = true;
+                            break;
+                        }
+                    }
+                    //if no values are given, the attribute must be present in the file (=> no empty string)
+                    if (condIterator->second.empty() && !value.empty())
+                        fits = true;
+
+
+                    if (!fits)
+                        break;
+                }
+
+                if (fits) {
+                    //subdivide the files with the help of the CustomDicomDict
+                    //and construct a VolumeOrgin for each group
+
+                    //first: sort out files in another Series
+                    vector<string> seriesFiles = getFilesInSeries(filenames, (*seriesIterator));
+
+                    vector<vector<string> > groups = subdivideSeriesFilesByCustomDict(seriesFiles, *dictIt);
+
+                    vector<vector<string> >::iterator groupIterator;
+
+                    for (groupIterator = groups.begin(); groupIterator != groups.end(); ++groupIterator) {
+                        if (!(groupIterator->empty())) {
+                            VolumeURL o("dicom", origin.getPath());
+                            o.addSearchParameter("SeriesInstanceUID", *seriesIterator);
+
+                            gdcm::Reader r;
+                            r.SetFileName(groupIterator->begin()->c_str());
+                            r.Read();
+                            gdcm::StringFilter filter;
+                            filter.SetFile(r.GetFile());
+
+                            //add SearchParameter values to VolumeURL for subdivisionKeywords
+                            vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
+                            const DicomDict customDict = *(dictIt->getDict());
+
+                            vector<string>::iterator keyIterator;
+                            for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
+                                string value = filter.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                                value = trim(value, " ");
+
+                                o.addSearchParameter(*keyIterator, value);
+                            }
+
+                            //now add Meta Information of StandardDictionary
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, &filter);
+                            //now add Meta Information of CustomDicomDict
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, &filter);
+
+                            result.push_back(o);
+                        }
+                    }
+
+                    break; //do not check the remaining CustomDicomDicts
+                }
+            }
+
+            //if no CustomDicom could be found:
+            if (dictIt == customDicts.end()) {
+                //for now only the first file found is used
+                VolumeURL v("dicom", origin.getPath());
+                v.addSearchParameter("SeriesInstanceUID", *seriesIterator);
+                //now add Meta Information of StandardDictionary
+                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, &stringFilter);
+                result.push_back(v);
+            }
+        }
+    }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    return result;
+}
+
+std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const VolumeURL& origin) const
+    throw (tgt::FileException)
+{
+    //create new VolumeURL to be able to add protocol string and additional information
+    VolumeURL newOrigin("dicom",origin.getPath());
+
+    gdcm::Reader reader;
+    reader.SetFileName(newOrigin.getPath().c_str());
+    if (!reader.Read())
+        throw tgt::FileAccessException("Couldn't read DICOM file!", newOrigin.getPath());
+
+    gdcm::StringFilter sf;
+    sf.SetFile(reader.GetFile());
+
+    //get SeriesInstanceUID and add it to the VolumeURL
+    string s(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID"))));
+    s = trim(s, " ");
+    newOrigin.addSearchParameter("SeriesInstanceUID", s);
+
+    //now add Meta Information of StandardDictionary
+    setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), dict_, &sf);
+
+    //Check, if there are CustomDicomDicts suitable for the given file
+    vector<CustomDicomDict> customDicts = getCustomDicts();
+
+    vector<CustomDicomDict>::iterator dictIt;
+
+    for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
+
+        //check if the current CustomDicomDict is right for the given file
+        const vector<pair<string, vector<string> > >* conditions = dictIt->getConditions();
+
+        bool fits = true; //change if conditions do not apply
+
+        //iterate over all conditions and check if they apply for the given file
+        vector<pair<string, vector<string> > >::const_iterator condIterator;
+        for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
+            string value = sf.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+            value = trim(value, " ");
+            //iterate over possible values for the given tag
+            fits = false;
+            vector<string>::const_iterator valueIt;
+            //LERROR(value);
+            for (valueIt = condIterator->second.begin(); valueIt != condIterator->second.end(); valueIt++) {
+                //LERROR(*valueIt);
+                if (*valueIt == value) {
+                    fits = true;
+                    break;
+                }
+            }
+            //if no values are given, the attribute must be present in the file (=> no empty string)
+            if (condIterator->second.empty() && !value.empty())
+                fits = true;
+
+            if (!fits)
+                break;
+        }
+
+        if (fits) {
+
+            vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
+            const DicomDict *customDict = dictIt->getDict();
+
+            //add SearchParameter values to VolumeURL for subdivisionKeywords
+            vector<string>::iterator keyIterator;
+            for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
+                string value = sf.ToString(getTagFromDictEntry(customDict->getDictEntryByKeyword(*keyIterator)));
+                value = trim(value, " ");
+
+                newOrigin.addSearchParameter(*keyIterator, value);
+            }
+
+            //now add Meta Information of CustomDicomDict
+            setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), customDict, &sf);
+
+            break;
+        }
+    }
+
+    //return a vector with this one VolumeURL
+    vector<VolumeURL> v;
+    v.push_back(newOrigin);
+    return v;
+}
+
+#ifdef VRN_GDCM_VERSION_22 // network support
+
+std::vector<PatientInfo> GdcmVolumeReader::findNetworkPatients(const std::string& remote, const std::string& call, uint16_t portno) const throw (tgt::FileException) {
+    //if Standard Dictionary is not yet loaded: try to load
+    if (!dict_) {
+        LINFO("Trying to load Standard Dictionary...");
+        loadStandardDict();
+        LINFO("Standard Dictionary successfully loaded.");
+    }
+
+    //get AE Title and Incoming Port Number
+    string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
+    int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
+
+    //create DicomNetworkConnector
+    DicomNetworkConnector net(*dict_, aet, incomingPort);
+    net.setProgressBar(getProgressBar());
+
+    try {
+        return net.findNetworkPatients(remote,call,portno);
+    }
+    catch (VoreenException v) {
+        throw tgt::FileException(v.what(),remote);
+    }
+}
+
+std::vector<StudyInfo> GdcmVolumeReader::findNetworkStudies(const std::string& remote, const std::string& call, uint16_t portno, const std::string& patientID) const throw (tgt::FileException) {
+    //if Standard Dictionary is not yet loaded: try to load
+    if (!dict_) {
+        LINFO("Trying to load Standard Dictionary...");
+        loadStandardDict();
+        LINFO("Standard Dictionary successfully loaded.");
+    }
+
+    //get AE Title and Incoming Port Number
+    string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
+    int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
+
+    //create DicomNetworkConnector
+    DicomNetworkConnector net(*dict_, aet, incomingPort);
+    net.setProgressBar(getProgressBar());
+
+    try {
+        return net.findNetworkStudies(remote,call,portno,patientID);
+    }
+    catch (VoreenException v) {
+        throw tgt::FileException(v.what(),remote);
+    }
+}
+
+std::vector<SeriesInfo> GdcmVolumeReader::findNetworkSeries(const std::string& remote, const std::string& call, uint16_t portno, const std::string& patientID, const std::string& studyID) const throw (tgt::FileException) {
+    //if Standard Dictionary is not yet loaded: try to load
+    if (!dict_) {
+        LINFO("Trying to load Standard Dictionary...");
+        loadStandardDict();
+        LINFO("Standard Dictionary successfully loaded.");
+    }
+
+    //get AE Title and Incoming Port Number
+    string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
+    int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
+
+    //create DicomNetworkConnector
+    DicomNetworkConnector net(*dict_, aet, incomingPort);
+    net.setProgressBar(getProgressBar());
+
+    try {
+        return net.findNetworkSeries(remote,call,portno, patientID, studyID);
+    }
+    catch (VoreenException v) {
+        throw tgt::FileException(v.what(),remote);
+    }
+}
+
+#endif
+} //namespace voreen

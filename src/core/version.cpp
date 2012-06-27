@@ -1,37 +1,29 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/version.h"
-
-#ifdef VRN_WITH_SVNVERSION
-  #include "voreen/core/svnversion.h"
-#endif
 
 #include "tgt/logmanager.h"
 #include <sstream>
@@ -73,26 +65,21 @@ const std::string VoreenVersion::getCompilerVersion() {
 }
 
 const std::string VoreenVersion::getVersion() {
-    return "2.6.1";
+    return "4.0";
 }
 
 const std::string VoreenVersion::getRevision() {
-#if defined(VRN_WITH_SVNVERSION)
-    return VRN_SVN_REVISION;
-#else
-    return "snapshot-39";
-#endif
+#include "src/core/gen_revision.inc"
 }
 
 const std::string VoreenVersion::getCopyright() {
-    return "Copyright (C) 2005-2010 University of Münster, Germany.";
+    return "Copyright (C) 2005-2012 University of Münster, Germany. \nVisualization and Computer Graphics Group (VisCG).";
 }
 
 void VoreenVersion::logAll(const std::string& loggerCat) {
     LINFOC(loggerCat, "Version: " << getVersion());
-    if (!getRevision().empty())
-        LINFOC(loggerCat, "SVN revision: " << getRevision());
-
+    if (getRevision() != "")
+        LINFOC(loggerCat, "Revision: " << getRevision());
     LINFOC(loggerCat, "Compiler: " << getCompilerVersion());
 }
 

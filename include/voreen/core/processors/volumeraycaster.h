@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_VOLUMERAYCASTER_H
 #define VRN_VOLUMERAYCASTER_H
@@ -37,7 +33,7 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/datastructures/transfunc/transfunc.h"
-#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 #include "voreen/core/datastructures/volume/volumegl.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/intproperty.h"
@@ -54,7 +50,7 @@ namespace voreen {
  * Additionally, it provides several ray-casting-related properties
  * and handles bricked volumes.
  */
-class VolumeRaycaster : public VolumeRenderer {
+class VRN_CORE_API VolumeRaycaster : public VolumeRenderer {
 public:
     VolumeRaycaster();
 
@@ -79,7 +75,7 @@ protected:
      *
      * @see VolumeRenderer::generateHeader
      */
-    virtual std::string generateHeader(VolumeHandle* volumehandle = 0);
+    virtual std::string generateHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
 
     /**
      * Sets frustum parameters necessary for depth value calculation in shaders.
@@ -96,19 +92,8 @@ protected:
      *
      * @see VolumeRenderer::bindVolumes
      */
-    virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
+    virtual bool bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
         const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
-
-    void showBrickingProperties(bool b);
-
-    virtual void setBrickedVolumeUniforms(tgt::Shader* shader, VolumeHandle* volumeHandle);
-    virtual void addBrickedVolumeModalities(VolumeHandle* volumeHandle, std::vector<VolumeStruct>& volumeTextures,
-                                            tgt::TextureUnit* unit1 = 0, tgt::TextureUnit* unit2 = 0);
-
-    void updateBrickingParameters(VolumeHandle* volumeHandle);
-    void changeBrickResolutionCalculator(std::string);
-    void changeBrickingUpdateStrategy(std::string);
-    void changeBrickLodSelector(std::string);
 
     FloatProperty samplingRate_;  ///< Sampling rate of the raycasting, specified relative to the size of one voxel
     FloatProperty isoValue_;      ///< The used isovalue, when isosurface raycasting is enabled
@@ -124,19 +109,8 @@ protected:
     FloatProperty interactionQuality_;
     BoolProperty useInterpolationCoarseness_;
 
-    StringOptionProperty brickingInterpolationMode_;   ///< Which interpolation method to use when rendering bricked volumes.
-    StringOptionProperty brickingStrategyMode_;        ///< Which bricking strategy to use when rendering bricked volumes.
-    StringOptionProperty brickingUpdateStrategy_;      ///< When to update bricks when rendering bricked volumes.
-    StringOptionProperty brickLodSelector_;
-    BoolProperty useAdaptiveSampling_;
-
     tgt::ivec2 size_;                                  ///< The size expected by the processors connected to the outports. ()
     bool switchToInteractionMode_;                     ///< Needed to switch to/from interactionmode.
-
-    bool brickingParametersChanged_;
-    std::string brickResoluationModeStr_;
-    std::string brickUpdateStrategyStr_;
-    std::string brickLodSelectorStr_;
 
     static const std::string loggerCat_; ///< category used in logging
 

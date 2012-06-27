@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_VOLUMEATOMIC_H
 #define VRN_VOLUMEATOMIC_H
@@ -37,15 +33,17 @@
 #include "tgt/assert.h"
 #include "tgt/logmanager.h"
 
-#include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/datastructures/volume/volumeelement.h"
+
+#include "voreen/core/datastructures/tensor.h"
 
 #include <typeinfo>
 
 namespace voreen {
 
 template<class T>
-class VolumeAtomic : public Volume {
+class VolumeAtomic : public VolumeRAM {
 
 public:
     typedef T VoxelType;
@@ -55,43 +53,27 @@ public:
         BITS_PER_VOXEL  = BYTES_PER_VOXEL * 8
     };
 
-    /*
-     * constructors and destructor
-     */
-
     /**
      * While using this constructor the class will automatically allocate
      * an appropriate chunk of memory. This memory will be deleted by this class.
-     * If allocMem is false, no memory will be allocated. This can be used to create
-     * volumes without any data, in case you just want to store its dimensions, spacing etc.
-     * This is used for bricking for example, because the entry-exit point volume would
-     * otherwise allocate an enormous amount of memory, although only its dimensions are
-     * required.
+     * If allocMem is false, no memory will be allocated.
      */
-    VolumeAtomic(const tgt::ivec3& dimensions,
-                 const tgt::vec3& spacing = tgt::vec3(1.f),
-                 const tgt::mat4& transformation = tgt::mat4::identity,
-                 int bitsStored = BITS_PER_VOXEL, bool allocMem=true) throw (std::bad_alloc);
+    VolumeAtomic(const tgt::svec3& dimensions, bool allocMem=true) throw (std::bad_alloc);
 
     /**
      * While using this constructor the class will use an preallocated chunk
      * of memory given in \p data. This memory will be deleted by this class.
      */
-    VolumeAtomic(T* data,
-                 const tgt::ivec3& dimensions,
-                 const tgt::vec3& spacing = tgt::vec3(1.f),
-                 const tgt::mat4& transformation = tgt::mat4::identity,
-                 int bitsStored = BITS_PER_VOXEL);
+    VolumeAtomic(T* data, const tgt::svec3& dimensions);
 
     /// Deletes the \a data_ array
     virtual ~VolumeAtomic();
 
     virtual VolumeAtomic<T>* clone() const throw (std::bad_alloc);
     virtual VolumeAtomic<T>* clone(void* data) const throw (std::bad_alloc);
-
-    /*
-     * Static properties
-     */
+    virtual VolumeAtomic<T>* createNew(const tgt::svec3& dimensions, bool allocMem = false) const throw (std::bad_alloc);
+    virtual VolumeAtomic<T>* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc);
+    virtual void setSubVolume(const VolumeRAM* vol, tgt::svec3 offset = tgt::svec3(0,0,0));
 
     virtual int getBitsAllocated() const;
 
@@ -99,10 +81,9 @@ public:
 
     virtual int getBytesPerVoxel() const;
 
-    /**
-     * Returns whether the volume's data type is signed.
-     */
-    static bool isSigned();
+    virtual bool isSigned() const;
+
+    virtual bool isInteger() const;
 
     /**
      * Returns the minimal and maximal element data values that can be contained
@@ -113,19 +94,19 @@ public:
     virtual tgt::vec2 elementRange() const;
 
     /**
-     * Returns whether the volume's data type is bounded,
-     * which is true for integer types and false for
-     * floating point types.
-     */
-    static bool isBounded();
-
-    /**
      * Returns the minimum data value that is actually contained by the volume.
      *
      * @note Calculated min/max values are cached. Call invalidate() in order to
      *      enforce a recalculation.
      */
     T min() const;
+
+    /**
+     * Returns the minimum value contained by the specified channel converted to float.
+     * This function chooses either a fast scalar implementation (if possible) or the
+     * slower parent method otherwise.
+     */
+    virtual float minNormalizedValue(size_t channel = 0) const;
 
     /**
      * Returns the maximal data value that is actually contained by the volume.
@@ -135,14 +116,21 @@ public:
      */
     T max() const;
 
+    /**
+     * Returns the maximum value contained by the specified channel converted to float.
+     * This function chooses either a fast scalar implementation (if possible) or the
+     * slower parent method otherwise.
+     */
+    virtual float maxNormalizedValue(size_t channel = 0) const;
+
     virtual size_t getNumBytes() const;
 
     /*
      * Helpers for calculating the position in 3d
      */
-    inline static size_t calcPos(const tgt::ivec3& dimensions, size_t x, size_t y, size_t z);
+    inline static size_t calcPos(const tgt::svec3& dimensions, size_t x, size_t y, size_t z);
 
-    inline static size_t calcPos(const tgt::ivec3& dimensions, const tgt::ivec3& pos);
+    inline static size_t calcPos(const tgt::svec3& dimensions, const tgt::svec3& pos);
 
     /*
       Methods for accessing the voxels
@@ -161,10 +149,10 @@ public:
     inline const T& voxel(size_t x, size_t y, size_t z) const;
 
     /// get or set voxel
-    inline T& voxel(const tgt::ivec3& pos);
+    inline T& voxel(const tgt::svec3& pos);
 
     /// get voxel
-    inline const T& voxel(const tgt::ivec3& pos) const;
+    inline const T& voxel(const tgt::svec3& pos) const;
 
     /// get or set voxel
     inline T& voxel(size_t i);
@@ -174,16 +162,17 @@ public:
 
 
     /*
-     * getVoxelFloat and setVoxelFloat
+     * getVoxelNormalized and setVoxelNormalized
      */
-    virtual float getVoxelFloat(const tgt::ivec3& pos, size_t channel = 0) const;
-    virtual float getVoxelFloat(size_t x, size_t y, size_t z, size_t channel = 0) const;
-    virtual float getVoxelFloat(size_t index, size_t channel = 0) const;
-    virtual void setVoxelFloat(float value, const tgt::ivec3& pos, size_t channel = 0);
-    virtual void setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel = 0);
-    virtual void setVoxelFloat(float value, size_t index, size_t channel = 0);
+    virtual float getVoxelNormalized(const tgt::svec3& pos, size_t channel = 0) const;
+    virtual float getVoxelNormalized(size_t x, size_t y, size_t z, size_t channel = 0) const;
+    virtual float getVoxelNormalized(size_t index, size_t channel = 0) const;
+    virtual void setVoxelNormalized(float value, const tgt::svec3& pos, size_t channel = 0);
+    virtual void setVoxelNormalized(float value, size_t x, size_t y, size_t z, size_t channel = 0);
+    virtual void setVoxelNormalized(float value, size_t index, size_t channel = 0);
 
     virtual void clear();
+    virtual const void* getData() const;
     virtual void* getData();
 
     /**
@@ -195,6 +184,21 @@ public:
 protected:
     // protected default constructor
     VolumeAtomic() {}
+
+    // small utility
+    template<bool> struct IsScalar{};
+
+    // Helper method for scalar minimum float value
+    float minNormalizedImpl(size_t channel, IsScalar<true>) const;
+
+    // Helper method for non-scalar minimum float value
+    float minNormalizedImpl(size_t channel, IsScalar<false>) const;
+
+    // Helper method for scalar maximum float value
+    float maxNormalizedImpl(size_t channel, IsScalar<true>) const;
+
+    // Helper method for non-scalar maximum float value
+    float maxNormalizedImpl(size_t channel, IsScalar<false>) const;
 
     T* data_;
 
@@ -209,37 +213,55 @@ protected:
  * typedefs for easy usage
  */
 
-typedef VolumeAtomic<uint8_t>   VolumeUInt8;
-typedef VolumeAtomic<uint16_t>  VolumeUInt16;
-typedef VolumeAtomic<uint32_t>  VolumeUInt32;
+typedef VolumeAtomic<uint8_t>   VolumeRAM_UInt8;
+typedef VolumeAtomic<uint16_t>  VolumeRAM_UInt16;
+typedef VolumeAtomic<uint32_t>  VolumeRAM_UInt32;
+typedef VolumeAtomic<uint64_t>  VolumeRAM_UInt64;
 
-typedef VolumeAtomic<int8_t>    VolumeInt8;
-typedef VolumeAtomic<int16_t>   VolumeInt16;
-typedef VolumeAtomic<int32_t>   VolumeInt32;
+typedef VolumeAtomic<int8_t>    VolumeRAM_Int8;
+typedef VolumeAtomic<int16_t>   VolumeRAM_Int16;
+typedef VolumeAtomic<int32_t>   VolumeRAM_Int32;
+typedef VolumeAtomic<int64_t>   VolumeRAM_Int64;
 
-typedef VolumeAtomic<float>     VolumeFloat;
-typedef VolumeAtomic<double>    VolumeDouble;
+typedef VolumeAtomic<float>     VolumeRAM_Float;
+typedef VolumeAtomic<double>    VolumeRAM_Double;
 
-typedef VolumeAtomic<tgt::col4>                 Volume4xUInt8;
-typedef VolumeAtomic<tgt::Vector4<int8_t> >     Volume4xInt8;
-typedef VolumeAtomic<tgt::Vector4<uint16_t> >   Volume4xUInt16;
-typedef VolumeAtomic<tgt::Vector4<int16_t> >    Volume4xInt16;
+typedef VolumeAtomic<tgt::Vector2<uint8_t> >    VolumeRAM_2xUInt8;
+typedef VolumeAtomic<tgt::Vector2< int8_t> >    VolumeRAM_2xInt8;
+typedef VolumeAtomic<tgt::Vector2<uint16_t> >   VolumeRAM_2xUInt16;
+typedef VolumeAtomic<tgt::Vector2< int16_t> >   VolumeRAM_2xInt16;
+typedef VolumeAtomic<tgt::Vector2<uint32_t> >   VolumeRAM_2xUInt32;
+typedef VolumeAtomic<tgt::Vector2< int32_t> >   VolumeRAM_2xInt32;
+typedef VolumeAtomic<tgt::Vector2<uint64_t> >   VolumeRAM_2xUInt64;
+typedef VolumeAtomic<tgt::Vector2< int64_t> >   VolumeRAM_2xInt64;
+typedef VolumeAtomic<tgt::vec2>                 VolumeRAM_2xFloat;
+typedef VolumeAtomic<tgt::dvec2>                VolumeRAM_2xDouble;
 
-typedef VolumeAtomic<tgt::col3>                 Volume3xUInt8;
-typedef VolumeAtomic<tgt::Vector3<int8_t> >     Volume3xInt8;
-typedef VolumeAtomic<tgt::Vector3<uint16_t> >   Volume3xUInt16;
-typedef VolumeAtomic<tgt::Vector3<int16_t> >    Volume3xInt16;
+typedef VolumeAtomic<tgt::Vector3<uint8_t> >    VolumeRAM_3xUInt8;
+typedef VolumeAtomic<tgt::Vector3<int8_t> >     VolumeRAM_3xInt8;
+typedef VolumeAtomic<tgt::Vector3<uint16_t> >   VolumeRAM_3xUInt16;
+typedef VolumeAtomic<tgt::Vector3<int16_t> >    VolumeRAM_3xInt16;
+typedef VolumeAtomic<tgt::Vector3<uint32_t> >   VolumeRAM_3xUInt32;
+typedef VolumeAtomic<tgt::Vector3<int32_t> >    VolumeRAM_3xInt32;
+typedef VolumeAtomic<tgt::Vector3<uint64_t> >   VolumeRAM_3xUInt64;
+typedef VolumeAtomic<tgt::Vector3<int64_t> >    VolumeRAM_3xInt64;
+typedef VolumeAtomic<tgt::vec3>                 VolumeRAM_3xFloat;
+typedef VolumeAtomic<tgt::dvec3>                VolumeRAM_3xDouble;
 
-typedef VolumeAtomic<tgt::Vector2<uint8_t> >    Volume2xUInt8;
-typedef VolumeAtomic<tgt::Vector2< int8_t> >    Volume2xInt8;
-typedef VolumeAtomic<tgt::Vector2<uint16_t> >   Volume2xUInt16;
-typedef VolumeAtomic<tgt::Vector2< int16_t> >   Volume2xInt16;
+typedef VolumeAtomic<tgt::Vector4<uint8_t> >    VolumeRAM_4xUInt8;
+typedef VolumeAtomic<tgt::Vector4<int8_t> >     VolumeRAM_4xInt8;
+typedef VolumeAtomic<tgt::Vector4<uint16_t> >   VolumeRAM_4xUInt16;
+typedef VolumeAtomic<tgt::Vector4<int16_t> >    VolumeRAM_4xInt16;
+typedef VolumeAtomic<tgt::Vector4<uint32_t> >   VolumeRAM_4xUInt32;
+typedef VolumeAtomic<tgt::Vector4<int32_t> >    VolumeRAM_4xInt32;
+typedef VolumeAtomic<tgt::Vector4<uint64_t> >   VolumeRAM_4xUInt64;
+typedef VolumeAtomic<tgt::Vector4<int64_t> >    VolumeRAM_4xInt64;
+typedef VolumeAtomic<tgt::vec4>                 VolumeRAM_4xFloat;
+typedef VolumeAtomic<tgt::dvec4>                VolumeRAM_4xDouble;
 
-typedef VolumeAtomic<tgt::vec3>  Volume3xFloat;
-typedef VolumeAtomic<tgt::dvec3> Volume3xDouble;
+typedef VolumeAtomic<tgt::mat3>  VolumeRAM_Mat3Float;
 
-typedef VolumeAtomic<tgt::vec4>  Volume4xFloat;
-typedef VolumeAtomic<tgt::dvec4> Volume4xDouble;
+typedef VolumeAtomic<Tensor2<float> >  VolumeRAM_Tensor2Float;
 
 //------------------------------------------------------------------------------
 //  implementation
@@ -250,21 +272,14 @@ typedef VolumeAtomic<tgt::dvec4> Volume4xDouble;
  */
 
 template<class T>
-VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spacing,
-                              const tgt::mat4& transformation,
-                              int bitsStored, bool allocMem)
+VolumeAtomic<T>::VolumeAtomic(const tgt::svec3& dimensions, bool allocMem)
     throw (std::bad_alloc)
-    : Volume(dimensions, bitsStored, spacing, transformation)
+    : VolumeRAM(dimensions)
     , data_(0)
     , elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
         static_cast<float>(VolumeElement<T>::rangeMaxElement()))
     , minMaxValid_(false)
 {
-
-    // special treatment for 12 bit volumes stored in 16 bit
-    if (typeid(T) == typeid(uint16_t) && bitsStored == 12)
-        elementRange_.y = static_cast<float>((1 << 12) - 1);
-
     if (allocMem) {
         try {
             data_ = new T[numVoxels_];
@@ -278,19 +293,13 @@ VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spa
 
 template<class T>
 VolumeAtomic<T>::VolumeAtomic(T* data,
-                              const tgt::ivec3& dimensions,
-                              const tgt::vec3& spacing,
-                              const tgt::mat4& transformation,
-                              int bitsStored)
-    : Volume(dimensions, bitsStored, spacing, transformation)
+                              const tgt::svec3& dimensions)
+    : VolumeRAM(dimensions)
     , data_(data)
     , elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
          static_cast<float>(VolumeElement<T>::rangeMaxElement()))
     , minMaxValid_(false)
 {
-    // special treatment for 12 bit volumes stored in 16 bit
-    if (typeid(T) == typeid(uint16_t) && bitsStored == 12)
-        elementRange_.y = static_cast<float>((1 << 12) - 1);
 }
 
 template<class T>
@@ -300,7 +309,7 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone() const
     // create clone
     VolumeAtomic<T>* newVolume = 0;
     try {
-        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, transformationMatrix_, bitsStored_); // allocate a chunk of data
+        newVolume = new VolumeAtomic<T>(dimensions_); // allocate a chunk of data
     }
     catch (const std::bad_alloc&) {
         LERROR("Failed to clone volume: bad allocation");
@@ -309,12 +318,6 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone() const
 
     // copy over the voxel data
     memcpy(newVolume->data_, data_, getNumBytes());
-
-    // copy over transformation matrix
-    newVolume->setTransformation(getTransformation());
-
-    // copy over meta data
-    newVolume->meta() = meta();
 
     return newVolume;
 }
@@ -327,20 +330,80 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone(void* data) const
     VolumeAtomic<T>* newVolume = 0;
     if (data) {
         // use preallocated data
-        newVolume = new VolumeAtomic<T>((T*) data, dimensions_, spacing_, transformationMatrix_, bitsStored_);
+        newVolume = new VolumeAtomic<T>((T*) data, dimensions_);
     }
     else {
         // create volume without allocating memory
-        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, transformationMatrix_, bitsStored_, false);
+        newVolume = new VolumeAtomic<T>(dimensions_, false);
     }
 
-    // copy over transformation matrix
-    newVolume->setTransformation(getTransformation());
+    return newVolume;
+}
 
-    // copy over meta data
-    newVolume->meta() = meta();
+template<class T>
+VolumeAtomic<T>* VolumeAtomic<T>::createNew(const tgt::svec3& dimensions, bool allocMem) const
+throw (std::bad_alloc)
+{
+    // create new volume
+    VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(dimensions, allocMem);
 
     return newVolume;
+}
+
+template<class T>
+VolumeAtomic<T>* VolumeAtomic<T>::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const
+throw (std::bad_alloc)
+{
+    // create new volume
+    VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(dimensions, true);
+    T* data = reinterpret_cast<T*>(newVolume->getData());
+
+    // determine parameters
+    size_t voxelSize = static_cast<size_t>(getBytesPerVoxel());
+    tgt::svec3 dataDims = getDimensions();
+    size_t initialStartPos = (offset.z * (dataDims.x*dataDims.y)*voxelSize)+(offset.y * dataDims.x*voxelSize) + (offset.x*voxelSize);
+
+    // per row
+    size_t dataSize = dimensions.x*voxelSize;
+
+    // memcpy each row for every slice to form sub volume
+    size_t volumePos;
+    size_t subVolumePos;
+    for (size_t i=0; i < dimensions.z; i++) {
+        for (size_t j=0; j < dimensions.y; j++) {
+            volumePos = (j*dataDims.x*voxelSize) + (i*dataDims.x*dataDims.y*voxelSize);
+            subVolumePos = (j*dimensions.x*voxelSize) + (i*dimensions.x*dimensions.y*voxelSize);
+            memcpy(data + subVolumePos, (data_ + volumePos + initialStartPos), dataSize);
+        }
+    }
+
+    return newVolume;
+}
+
+template<class T>
+void VolumeAtomic<T>::setSubVolume(const VolumeRAM* vol, tgt::svec3 offset)
+{
+    const T* data = reinterpret_cast<const T*>(vol->getData());
+
+    // determine parameters
+    size_t voxelSize = static_cast<size_t>(getBytesPerVoxel());
+    tgt::svec3 dataDims = getDimensions();
+    size_t initialStartPos = (offset.z * (dataDims.x*dataDims.y)*voxelSize)+(offset.y * dataDims.x*voxelSize) + (offset.x*voxelSize);
+
+    // per row
+    tgt::svec3 dimensions = vol->getDimensions();
+    size_t dataSize = dimensions.x*voxelSize;
+
+    // memcpy each row for every slice in sub volume to form this volume
+    size_t volumePos;
+    size_t subVolumePos;
+    for (size_t i=0; i < dimensions.z; i++) {
+        for (size_t j=0; j < dimensions.y; j++) {
+            volumePos =  (j*dataDims.x*voxelSize) + (i*dataDims.x*dataDims.y*voxelSize);
+            subVolumePos = (j*dimensions.x*voxelSize) + (i*dimensions.x*dimensions.y*voxelSize);
+            memcpy((data_ + volumePos + initialStartPos), (data + subVolumePos), dataSize);
+        }
+    }
 }
 
 template<class T>
@@ -348,72 +411,10 @@ VolumeAtomic<T>::~VolumeAtomic() {
     delete[] data_;
 }
 
-
 template<class T>
 int VolumeAtomic<T>::getNumChannels() const {
     return VolumeElement<T>::getNumChannels();
 }
-
-template<class T>
-bool VolumeAtomic<T>::isSigned() {
-    return VolumeElement<T>::isSigned();
-}
-
-template<class T>
-bool voreen::VolumeAtomic<T>::isBounded() {
-    return VolumeElement<T>::isBounded();
-}
-
-/*
- * getVoxelFloat and setVoxelFloat
- */
-
-template<class T>
-float VolumeAtomic<T>::getVoxelFloat(const tgt::ivec3& pos, size_t channel) const {
-    return getVoxelFloat(calcPos(dimensions_, pos), channel);
-}
-
-template<class T>
-float VolumeAtomic<T>::getVoxelFloat(size_t x, size_t y, size_t z, size_t channel) const {
-    return getVoxelFloat(tgt::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel);
-}
-
-template<class T>
-float voreen::VolumeAtomic<T>::getVoxelFloat(size_t index, size_t channel) const {
-
-    typedef typename VolumeElement<T>::BaseType Base;
-    tgt::vec2 elemRange = elementRange();
-
-    Base value = VolumeElement<T>::getChannel(voxel(index), channel);
-    return (static_cast<float>(value) - elemRange.x) / (elemRange.y - elemRange.x);
-}
-
-template<class T>
-void VolumeAtomic<T>::setVoxelFloat(float value, const tgt::ivec3& pos, size_t channel) {
-
-    setVoxelFloat(value, calcPos(dimensions_, pos), channel);
-}
-
-template<class T>
-void VolumeAtomic<T>::setVoxelFloat(float value, size_t x, size_t y, size_t z, size_t channel) {
-    setVoxelFloat(value, tgt::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)), channel);
-}
-
-template<class T>
-void voreen::VolumeAtomic<T>::setVoxelFloat(float value, size_t index, size_t channel) {
-
-    typedef typename VolumeElement<T>::BaseType Base;
-    tgt::vec2 elemRange = elementRange();
-
-    VolumeElement<T>::setChannel(
-        static_cast<Base>(elemRange.x + value*(elemRange.y-elemRange.x)),
-        voxel(index), channel);
-}
-
-
-/*
- * getters and setters
- */
 
 template<class T>
 int VolumeAtomic<T>::getBitsAllocated() const {
@@ -430,20 +431,70 @@ size_t VolumeAtomic<T>::getNumBytes() const {
     return sizeof(T) * numVoxels_;
 }
 
+template<class T>
+bool VolumeAtomic<T>::isSigned() const {
+    return VolumeElement<T>::isSigned();
+}
+
+template<class T>
+bool VolumeAtomic<T>::isInteger() const {
+    return VolumeElement<T>::isInteger();
+}
+
+/*
+ * getVoxelNormalized and setVoxelNormalized
+ */
+
+template<class T>
+float VolumeAtomic<T>::getVoxelNormalized(const tgt::svec3& pos, size_t channel) const {
+    return getVoxelNormalized(calcPos(dimensions_, pos), channel);
+}
+
+template<class T>
+float VolumeAtomic<T>::getVoxelNormalized(size_t x, size_t y, size_t z, size_t channel) const {
+    return getVoxelNormalized(tgt::svec3(x, y, z), channel);
+}
+
+template<class T>
+float voreen::VolumeAtomic<T>::getVoxelNormalized(size_t index, size_t channel) const {
+    typedef typename VolumeElement<T>::BaseType Base;
+
+    Base value = VolumeElement<T>::getChannel(voxel(index), channel);
+    return getTypeAsFloat(value);
+}
+
+template<class T>
+void VolumeAtomic<T>::setVoxelNormalized(float value, const tgt::svec3& pos, size_t channel) {
+    setVoxelNormalized(value, calcPos(dimensions_, pos), channel);
+}
+
+template<class T>
+void VolumeAtomic<T>::setVoxelNormalized(float value, size_t x, size_t y, size_t z, size_t channel) {
+    setVoxelNormalized(value, tgt::svec3(x, y, z), channel);
+}
+
+template<class T>
+void voreen::VolumeAtomic<T>::setVoxelNormalized(float value, size_t index, size_t channel) {
+    typedef typename VolumeElement<T>::BaseType Base;
+
+    VolumeElement<T>::setChannel(getFloatAsType<Base>(value), voxel(index), channel);
+}
+
+
 /*
  * Helpers for calculating the position in 3d
  */
 
 template<class T>
-inline size_t VolumeAtomic<T>::calcPos(const tgt::ivec3& dimensions, size_t x, size_t y, size_t z) {
+inline size_t VolumeAtomic<T>::calcPos(const tgt::svec3& dimensions, size_t x, size_t y, size_t z) {
     //we need to work with size_t to avoid problems when working with very large datasets
-    return z*(size_t)dimensions.x*(size_t)dimensions.y + y*(size_t)dimensions.x + x;
+    return z*dimensions.x*dimensions.y + y*dimensions.x + x;
 }
 
 template<class T>
-inline size_t VolumeAtomic<T>::calcPos(const tgt::ivec3& dimensions, const tgt::ivec3& pos) {
+inline size_t VolumeAtomic<T>::calcPos(const tgt::svec3& dimensions, const tgt::svec3& pos) {
     //we need to work with size_t to avoid problems when working with very large datasets
-    return (size_t)pos.z*(size_t)dimensions.x*(size_t)dimensions.y + (size_t)pos.y*(size_t)dimensions.x + (size_t)pos.x;
+    return pos.z*dimensions.x*dimensions.y + pos.y*dimensions.x + pos.x;
 }
 
 /*
@@ -478,6 +529,41 @@ T VolumeAtomic<T>::max() const {
     return maxValue_;
 }
 
+// scalar (fast)
+template<typename T>
+float VolumeAtomic<T>::minNormalizedImpl(size_t /*channel*/, IsScalar<true>) const {
+    return getTypeAsFloat(min());
+}
+
+// non-scalar (we have to use the slow way via getVoxelNormalized())
+template<typename T>
+float VolumeAtomic<T>::minNormalizedImpl(size_t channel, IsScalar<false>) const {
+    return VolumeRAM::minNormalizedValue(channel);
+}
+
+template<class T>
+float VolumeAtomic<T>::minNormalizedValue(size_t channel) const {
+    tgtAssert(channel < (size_t)getNumChannels(), "channel number too large");
+    return minNormalizedImpl(channel, IsScalar<std::numeric_limits<T>::is_specialized>());
+}
+
+// scalar (fast)
+template<typename T>
+float VolumeAtomic<T>::maxNormalizedImpl(size_t /*channel*/, IsScalar<true>) const {
+    return getTypeAsFloat(max());
+}
+
+// non-scalar (we have to use the slow way via getVoxelNormalized())
+template<typename T>
+float VolumeAtomic<T>::maxNormalizedImpl(size_t channel, IsScalar<false>) const {
+    return VolumeRAM::maxNormalizedValue(channel);
+}
+
+template<class T>
+float VolumeAtomic<T>::maxNormalizedValue(size_t channel) const {
+    return maxNormalizedImpl(channel, IsScalar<std::numeric_limits<T>::is_specialized>());
+}
+
 template<class T>
 void VolumeAtomic<T>::clear() {
     memset(data_, 0, getNumBytes());
@@ -487,6 +573,11 @@ void VolumeAtomic<T>::clear() {
 template<class T>
 void VolumeAtomic<T>::invalidate() const {
     minMaxValid_ = false;
+}
+
+template<class T>
+const void* VolumeAtomic<T>::getData() const {
+    return reinterpret_cast<const void*>(data_);
 }
 
 template<class T>
@@ -532,26 +623,20 @@ inline const T& VolumeAtomic<T>::voxel(size_t x, size_t y, size_t z) const {
 
 /// get or set voxel
 template<class T>
-inline T& VolumeAtomic<T>::voxel(const tgt::ivec3& pos) {
+inline T& VolumeAtomic<T>::voxel(const tgt::svec3& pos) {
     tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
     tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
     tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
-    tgtAssert(pos.x >= 0, "x index out of bounds");
-    tgtAssert(pos.y >= 0, "y index out of bounds");
-    tgtAssert(pos.z >= 0, "z index out of bounds");
 
     return data_[calcPos(dimensions_, pos)];
 }
 
 /// get voxel
 template<class T>
-inline const T& VolumeAtomic<T>::voxel(const tgt::ivec3& pos) const {
+inline const T& VolumeAtomic<T>::voxel(const tgt::svec3& pos) const {
     tgtAssert(pos.x < dimensions_.x, "x index out of bounds");
     tgtAssert(pos.y < dimensions_.y, "y index out of bounds");
     tgtAssert(pos.z < dimensions_.z, "z index out of bounds");
-    tgtAssert(pos.x >= 0, "x index out of bounds");
-    tgtAssert(pos.y >= 0, "y index out of bounds");
-    tgtAssert(pos.z >= 0, "z index out of bounds");
 
     return data_[calcPos(dimensions_, pos)];
 }

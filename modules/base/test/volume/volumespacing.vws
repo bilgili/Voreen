@@ -1,0 +1,170 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-103" y="-490" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="input/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSpacing" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-250" y="-338" />
+                    </MetaData>
+                    <name>
+                        <![CDATA[VolumeSpacing
+disabled]]>
+                    </name>
+                    <Properties>
+                        <Property name="enabled" value="false" />
+                        <Property name="mode" value="replace" />
+                        <Property name="spacingDisplay">
+                            <value x="0.03389831" y="0.03409091" z="0.03360849" />
+                        </Property>
+                        <Property name="spacingX" value="1" />
+                        <Property name="spacingY" value="1" />
+                        <Property name="spacingZ" value="1" />
+                        <Property name="uniformSpacing" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-242" y="-230" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/disabled.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSpacing" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-107" y="-338" />
+                    </MetaData>
+                    <name>
+                        <![CDATA[VolumeSpacing
+replace]]>
+                    </name>
+                    <Properties>
+                        <Property name="enabled" value="true" />
+                        <Property name="mode" value="replace" />
+                        <Property name="spacingDisplay">
+                            <value x="1" y="1" z="1" />
+                        </Property>
+                        <Property name="spacingX" value="1" />
+                        <Property name="spacingY" value="1" />
+                        <Property name="spacingZ" value="1" />
+                        <Property name="uniformSpacing" value="false" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 2" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-103" y="-230" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/replace.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSpacing" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="42" y="-338" />
+                    </MetaData>
+                    <name>
+                        <![CDATA[VolumeSpacing
+scale]]>
+                    </name>
+                    <Properties>
+                        <Property name="enabled" value="true" />
+                        <Property name="mode" value="scale" />
+                        <Property name="spacingDisplay">
+                            <value x="0.08474577" y="0.08522727" z="0.08402123" />
+                        </Property>
+                        <Property name="spacingX" value="2.5" />
+                        <Property name="spacingY" value="2.5" />
+                        <Property name="spacingZ" value="2.5" />
+                        <Property name="uniformSpacing" value="true" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 3" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="46" y="-230" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputFilename" value="output/scale.vvd" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSpacing" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSpacing" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSpacing" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeSpacing" ref="ref1" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeSpacing" ref="ref2" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeSpacing" ref="ref3" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref6" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

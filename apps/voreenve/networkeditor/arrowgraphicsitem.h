@@ -1,31 +1,27 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #ifndef VRN_ARROWGRAPHICSITEM_H
 #define VRN_ARROWGRAPHICSITEM_H
@@ -42,10 +38,10 @@ class ArrowHeadSelectionGraphicsItem;
 /**
  * This is an abstract base class designed to be used for all arrow-like QGraphicsItems. These
  * arrows must start at a specific other QGraphicsItem and can end either in a QPointF or another
- * QGraphicsItem. </br>
+ * QGraphicsItem.
  * The arrow can have a specific normal color (\sa setNormalColor(const QColor&)), a selectedColor (
  * \sa setSelectedColor(const QColor&) ), a general tooltip (\sa setTooltipText(const QString&)) or
- * a custom designed tooltip (derive and overwrite \sa tooltip()).</br>
+ * a custom designed tooltip (derive and overwrite \sa tooltip()).
  * Both ends of the arrow can have a head which can be modified by derived classes. The variables
  * are \sa sourceHeadDirection_ and \sa destinationHeadDirection_.
  */
@@ -142,7 +138,7 @@ public:
 
 protected:
     /**
-     * This enum is used for determining from where to where a arrow head is drawn.</br>
+     * This enum is used for determining from where to where a arrow head is drawn.
      * E.g. ArrowHeadDirectionNS means a downward facing arrow head with the broad side on the
      * top and the arrow head - head at the buttom.
      */
@@ -184,6 +180,8 @@ protected:
      * \param direction The direction in which the arrow head will point
      * \param basePoint The base point from which the arrow head will be drawn. Should always be
      * the last point of the arrow (i.e. the arrowhead-head)
+     * \param arrowHeadItem The item which makes the arrow head selectable by passing the different
+     * mouse events to the arrow
      */
     QPolygonF createArrowHead(ArrowHeadDirection direction, const QPointF& basePoint, ArrowHeadSelectionGraphicsItem* arrowHeadItem) const;
 

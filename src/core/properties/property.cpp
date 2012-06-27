@@ -1,39 +1,34 @@
-/**********************************************************************
- *                                                                    *
- * Voreen - The Volume Rendering Engine                               *
- *                                                                    *
- * Copyright (C) 2005-2010 Visualization and Computer Graphics Group, *
- * Department of Computer Science, University of Muenster, Germany.   *
- * <http://viscg.uni-muenster.de>                                     *
- *                                                                    *
- * This file is part of the Voreen software package. Voreen is free   *
- * software: you can redistribute it and/or modify it under the terms *
- * of the GNU General Public License version 2 as published by the    *
- * Free Software Foundation.                                          *
- *                                                                    *
- * Voreen is distributed in the hope that it will be useful,          *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
- * GNU General Public License for more details.                       *
- *                                                                    *
- * You should have received a copy of the GNU General Public License  *
- * in the file "LICENSE.txt" along with this program.                 *
- * If not, see <http://www.gnu.org/licenses/>.                        *
- *                                                                    *
- * The authors reserve all rights not expressly granted herein. For   *
- * non-commercial academic use see the license exception specified in *
- * the file "LICENSE-academic.txt". To get information about          *
- * commercial licensing please contact the authors.                   *
- *                                                                    *
- **********************************************************************/
+/***********************************************************************************
+ *                                                                                 *
+ * Voreen - The Volume Rendering Engine                                            *
+ *                                                                                 *
+ * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
+ * For a list of authors please refer to the file "CREDITS.txt".                   *
+ *                                                                                 *
+ * This file is part of the Voreen software package. Voreen is free software:      *
+ * you can redistribute it and/or modify it under the terms of the GNU General     *
+ * Public License version 2 as published by the Free Software Foundation.          *
+ *                                                                                 *
+ * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
+ *                                                                                 *
+ * You should have received a copy of the GNU General Public License in the file   *
+ * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                                 *
+ * For non-commercial academic use see the license exception specified in the file *
+ * "LICENSE-academic.txt". To get information about commercial licensing please    *
+ * contact the authors.                                                            *
+ *                                                                                 *
+ ***********************************************************************************/
 
 #include "voreen/core/properties/property.h"
-#include "voreen/core/properties/propertywidgetfactory.h"
 #include "voreen/core/properties/propertywidget.h"
 
 namespace voreen {
 
-Property::Property(const std::string& id, const std::string& guiText, Processor::InvalidationLevel invalidationLevel)
+Property::Property(const std::string& id, const std::string& guiText, int invalidationLevel)
     : id_(id)
     , guiName_(guiText)
     , owner_(0)
@@ -41,15 +36,33 @@ Property::Property(const std::string& id, const std::string& guiText, Processor:
     , widgetsEnabled_(true)
     , visible_(true)
     , lod_(USER)
-    , views_(1)
+    , views_(DEFAULT)
     , groupId_("")
+    , groupName_("")
     , interactionModeVisited_(false)
     , serializeValue_(false)
     , linkCheckVisited_(false)
     , initialGuiName_(guiText)
 {
-    tgtAssert(!id.empty(), "Property's id must not be empty");
+//    tgtAssert(!id.empty(), "Property's id must not be empty");
 }
+
+Property::Property()
+    : id_("")
+    , guiName_("")
+    , owner_(0)
+    , invalidationLevel_(Processor::INVALID_RESULT)
+    , widgetsEnabled_(true)
+    , visible_(true)
+    , lod_(USER)
+    , views_(DEFAULT)
+    , groupId_("")
+    , groupName_("")
+    , interactionModeVisited_(false)
+    , serializeValue_(false)
+    , linkCheckVisited_(false)
+    , initialGuiName_("")
+{}
 
 Property::~Property() {
     disconnectWidgets();
@@ -58,8 +71,12 @@ Property::~Property() {
         delete (*it);
 }
 
-Processor::InvalidationLevel Property::getInvalidationLevel() {
+int Property::getInvalidationLevel() const {
     return invalidationLevel_;
+}
+
+void Property::setInvalidationLevel(int invalidationLevel) {
+    invalidationLevel_ = invalidationLevel;
 }
 
 void Property::setWidgetsEnabled(bool enabled) {
@@ -72,11 +89,11 @@ bool Property::getWidgetsEnabled() const {
     return widgetsEnabled_;
 }
 
-void Property::initialize() throw (VoreenException) {
+void Property::initialize() throw (tgt::Exception) {
     // currently nothing to do
 }
 
-void Property::deinitialize() throw (VoreenException) {
+void Property::deinitialize() throw (tgt::Exception) {
     // currently nothing to do
 }
 
@@ -97,7 +114,7 @@ void Property::setViews(View views) {
 }
 
 Property::View Property::getViews() const {
-    return View(views_);
+    return views_;
 }
 
 void Property::setGroupID(const std::string& gid) {
@@ -106,6 +123,14 @@ void Property::setGroupID(const std::string& gid) {
 
 std::string Property::getGroupID() const {
     return groupId_;
+}
+
+void Property::setGroupName(const std::string& name) {
+    groupName_ = name;
+}
+
+std::string Property::getGroupName() const {
+    return groupName_;
 }
 
 void Property::setOwner(PropertyOwner* processor) {
@@ -117,8 +142,14 @@ PropertyOwner* Property::getOwner() const {
 }
 
 void Property::addWidget(PropertyWidget* widget) {
-    if (widget)
+    if (widget) {
+        if (!visible_)
+            widget->setVisible(visible_);
+        if (!widgetsEnabled_)
+            widget->setEnabled(false);
+
         widgets_.insert(widget);
+    }
 }
 
 void Property::removeWidget(PropertyWidget* widget) {
@@ -164,10 +195,6 @@ std::string Property::getFullyQualifiedGuiName() const {
         return getGuiName();
 }
 
-PropertyWidget* Property::createWidget(PropertyWidgetFactory*) {
-    return 0;
-}
-
 void Property::serialize(XmlSerializer& s) const {
     if(serializeValue_)
         return;
@@ -180,6 +207,7 @@ void Property::serialize(XmlSerializer& s) const {
 
     for (std::set<PropertyWidget*>::const_iterator it = widgets_.begin(); it != widgets_.end(); ++it) {
         (*it)->updateMetaData();
+        // FIXME What exactly is this supposed to do? The return value is not used... FL
         (*it)->getWidgetMetaData();
     }
 
@@ -187,7 +215,7 @@ void Property::serialize(XmlSerializer& s) const {
 }
 
 void Property::deserialize(XmlDeserializer& s) {
-    if(serializeValue_)
+    if (serializeValue_)
         return;
 
     // deserialize level-of-detail, if available
@@ -230,18 +258,6 @@ MetaDataContainer& Property::getMetaDataContainer() const {
     return metaDataContainer_;
 }
 
-PropertyWidget* Property::createAndAddWidget(PropertyWidgetFactory* f) {
-    PropertyWidget* widget = createWidget(f);
-    if (widget) {
-        if (!visible_)
-            widget->setVisible(visible_);
-        if (!widgetsEnabled_)
-            widget->setEnabled(false);
-        addWidget(widget);
-    }
-    return widget;
-}
-
 void Property::registerLink(PropertyLink* link) {
     links_.push_back(link);
 }
@@ -271,7 +287,7 @@ void Property::invalidateOwner() {
     invalidateOwner(invalidationLevel_);
 }
 
-void Property::invalidateOwner(Processor::InvalidationLevel invalidationLevel) {
+void Property::invalidateOwner(int invalidationLevel) {
     if (getOwner())
         getOwner()->invalidate(invalidationLevel);
 }
@@ -342,8 +358,16 @@ bool Property::isLinkedWith(const Property* dest, bool transitive) const {
     return false;
 }
 
-std::string Property::getTypeString() const {
+std::string Property::getTypeDescription() const {
     return "<unknown>";
+}
+
+std::string Property::getDescription() const {
+    return description_;
+}
+
+void Property::setDescription(std::string desc) {
+    description_ = desc;
 }
 
 } // namespace voreen

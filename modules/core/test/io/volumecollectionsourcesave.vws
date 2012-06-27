@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="11">
+            <Processors>
+                <Processor type="VolumeCollectionSource" name="VolumeCollectionSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-705" y="-402" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURLList">
+                            <VolumeURLs>
+                                <url value="input/walnut_uint16.vvd?preferredReader=VvdVolumeReader" />
+                                <url value="input/cow.vvd?preferredReader=VvdVolumeReader" />
+                                <url value="input/nucleon.vvd?preferredReader=VvdVolumeReader" />
+                            </VolumeURLs>
+                            <Selection>
+                                <entry url="input/cow.vvd?preferredReader=VvdVolumeReader" value="true" />
+                                <entry url="input/nucleon.vvd?preferredReader=VvdVolumeReader" value="true" />
+                                <entry url="input/walnut_uint16.vvd?preferredReader=VvdVolumeReader" value="true" />
+                            </Selection>
+                        </Property>
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeCollectionSave" name="CollectionSave Basename" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-806" y="-244" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="basename" value="series" />
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputDirectory" value="output" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeCollectionSave" name="CollectionSave Filename" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-610" y="-244" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="basename" value="" />
+                        <Property name="continousSave" value="false" />
+                        <Property name="outputDirectory" value="output" />
+                        <Property name="save" />
+                    </Properties>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumecollection">
+                        <Processor type="VolumeCollectionSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeCollectionSave" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumecollection">
+                        <Processor type="VolumeCollectionSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeCollectionSave" ref="ref2" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks />
+            <PropertyStateCollections />
+            <PropertyStateFileReferences />
+            <PropertyStateDirectoryReferences />
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>
