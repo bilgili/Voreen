@@ -299,7 +299,7 @@ public:
 
         QuadNode* tmpnode;
         tmpnode = rootNode_;
-        while(!(tmpnode->children_[0]->isLeaf_))
+        while (!(tmpnode->children_[0]->isLeaf_))
             tmpnode = (QuadNode*)(tmpnode->children_[0]);
 
         return leaf_iterator((QuadLeaf*)(tmpnode->children_[0]));
@@ -366,7 +366,7 @@ template<class T>
 Bounds* Quadtree<T>::QuadNode::insert(T* obj, float weight) {
     tgtAssert(obj->getBounds().isDefined() || obj->getBounds().onlyPoint(), "Bounding Box of inserted object not defined");
 
-    for(size_t i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < 4; ++i) {
         // Must be inserted here?
         if ( children_[i]->bounds_.insideXZ(obj->getBounds().center()) ) {
             // Is the child a leaf?
@@ -443,18 +443,18 @@ T* Quadtree<T>::find(float x, float y) {
 	QuadNode* currentNode = rootNode_;
 	bool done=false;
 	int i=0;
-	while(!done) {
-		for(i=0;i<4;i++) {
-			if(currentNode->children_[i]->bounds_.insideXZ(objectCoordinates)) {
-				if(!currentNode->children_[i]->isLeaf_) {
+	while (!done) {
+		for (i=0;i<4;i++) {
+			if (currentNode->children_[i]->bounds_.insideXZ(objectCoordinates)) {
+				if (!currentNode->children_[i]->isLeaf_) {
 					currentNode =dynamic_cast<QuadNode*>(currentNode->children_[i]);
 					i=4;
 				} else {
 					QuadLeaf* currentLeaf = (QuadLeaf*) currentNode->children_[i];
 					std::vector<T*> items = currentLeaf->objs_;
-					for(size_t k = 0; k < items.size(); k++) {
+					for (size_t k = 0; k < items.size(); k++) {
                         // wtf ist getWorldBoundingBox()? where does this come from?
-						if((items[k])->getWorldBoundingBox().insideXZ(objectCoordinates)) {
+						if ((items[k])->getWorldBoundingBox().insideXZ(objectCoordinates)) {
 							done=true;
 							return(items[k]);
 						}
@@ -463,7 +463,7 @@ T* Quadtree<T>::find(float x, float y) {
 				}
 			}
 		}
-		if(i==4) done=true;
+		if (i==4) done=true;
 	}
 	return(0);
 }
@@ -506,14 +506,14 @@ typename Quadtree<T>::QuadLeaf* Quadtree<T>::leaf_iterator::iterate(QuadNodeBase
 template<class T>
 typename Quadtree<T>::QuadNodeBase* Quadtree<T>::iterator::iterate(QuadNodeBase* child) {
 
-    if(child->isLeaf_ || child->finishedChildren_ == 4) { // we are finished with this node
+    if (child->isLeaf_ || child->finishedChildren_ == 4) { // we are finished with this node
 
-        if(child->isLeaf_)
+        if (child->isLeaf_)
             child = child->parent_;
 
-        while(child->finishedChildren_ == 4) { // find the first unfinished parent-node
+        while (child->finishedChildren_ == 4) { // find the first unfinished parent-node
             child->finishedChildren_ = 0;
-            if(child == root_)
+            if (child == root_)
                 return NULL; // we are done
             child = child->parent_;
         }
@@ -527,7 +527,7 @@ void Quadtree<T>::iterator::skip() {
 
     node_->finishedChildren_ = 0;
 
-    if(node_->parent_)
+    if (node_->parent_)
         node_ = iterate(node_->parent_);
 
     else

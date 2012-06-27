@@ -27,29 +27,29 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VRN_POLYGON3D_H
 #include "voreen/core/vis/slicing/polygon3d.h"
 
 #include <queue>
+
 using std::queue;
 using std::list;
 using std::set;
 
-namespace voreen
-{
+namespace voreen {
 
 // public methods
 //
 
-PolygonFace3D::PolygonFace3D(const DWORD id, const tgt::vec3& normal) 
-: id_(id), normal_(normal), rebuildVertexList_(true) {
-}
+PolygonFace3D::PolygonFace3D(const unsigned long id, const tgt::vec3& normal) 
+: id_(id), normal_(normal), rebuildVertexList_(true)
+{}
 
 PolygonFace3D::PolygonFace3D(const PolygonFace3D& face) {
     clone(face);
 }
 
 PolygonFace3D::~PolygonFace3D() {
+//std::cout << "~PolygonFace3D on polygon #" << id_ << "...\n";
     clear();
 }
 
@@ -83,7 +83,7 @@ bool PolygonFace3D::operator>=(const PolygonFace3D& f) const {
     return (id_ >= f.getID());
 }
 
-DWORD PolygonFace3D::getID() const {
+unsigned long PolygonFace3D::getID() const {
     return id_;
 }
 
@@ -95,12 +95,12 @@ const list<Edge3D*> PolygonFace3D::getEdges() const {
     return edges_;
 }
 
-DWORD PolygonFace3D::getNumEdges() const {
+unsigned long PolygonFace3D::getNumEdges() const {
     return edges_.size();
 }
 
 bool PolygonFace3D::insertEdge(Edge3D* const e) {
-    if ( edges_.empty() == true ) {
+    if (edges_.empty()) {
         edges_.push_back(e);
         e->addFace(this);
         rebuildVertexList_ = true;
@@ -115,7 +115,7 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
     list<Edge3D*>::iterator itNext = edges_.begin();
     itNext++;
 
-    for ( ; itCur != edges_.end(); itCur++, itNext++ ) {
+    for (; itCur != edges_.end(); ++itCur, ++itNext) {
         Edge3D* cur = *itCur;
         Edge3D* next = (itNext != edges_.end()) ? *itNext : 0;
 
@@ -128,17 +128,17 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
 
         // check if the first vertex is part of the current regarded edge
         // 
-        if ( (cur->isPartOf(v1) == true) ) {
+        if (cur->isPartOf(v1)) {
             // if second is also part, the edges are equal and no insertion has to be made
             //
-            if ( (cur->isPartOf(v2) == true) ) {
+            if (cur->isPartOf(v2)) {
                 equal = true;
                 break;
             }
 
             // check if the second vertex is part of the next edge
             //
-            if ( (next != 0) && (next->isPartOf(v2) == true) ) {
+            if ( (next != 0) && next->isPartOf(v2) ) {
                 // if v1 is part of current edge and v2 is part of the
                 // next one, insert edge e between current and next
                 //
@@ -147,19 +147,19 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
                 inserted = true;
                 break;
             }
-        } // if
+        } // if (cur->isPartOf(v1))
 
-        if ( (cur->isPartOf(v2) == true) && (inserted == false) ) {
+        if ( cur->isPartOf(v2) && (inserted == false) ) {
             // if first is also part, the edges are equal and no insertion has to be made
             //
-            if ( (cur->isPartOf(v1) == true) ) {
+            if (cur->isPartOf(v1)) {
                 equal = true;
                 break;
             }
 
             // check if the first vertex is part of the next edge
             //
-            if ( (next != 0) && (next->isPartOf(v1) == true) ) {
+            if ( (next != 0) && next->isPartOf(v1) ) {
                 // if v2 is part of current edge and v1 is part of the
                 // next one, insert edge e between current and next
                 //
@@ -168,11 +168,11 @@ bool PolygonFace3D::insertEdge(Edge3D* const e) {
                 inserted = true;
                 break;
             }
-        } // if
+        } // if ( cur->isPartOf(v2) && (inserted == false) )
 
-        if ( next == 0 )
+        if (next == 0)
             break;
-    }   // for
+    }   // for (; itCur != edges_.end(); ++itCur, ++itNext)
 
     // if the edge has not been inserted, is not equal to any other edge, 
     // insert it at the back of the list
@@ -198,7 +198,7 @@ bool PolygonFace3D::addEdge(Edge3D* const e) {
 }
 
 void PolygonFace3D::sortEdges() {
-    if ( edges_.size() <= 2 )
+    if (edges_.size() <= 2)
         return;
 
     Edge3D* e = edges_.front();
@@ -209,9 +209,9 @@ void PolygonFace3D::sortEdges() {
     newList.push_back(e);
 
     list<Edge3D*>::iterator it = edges_.begin();
-    while( (edges_.empty() == false) && (it != edges_.end()) ) {
+    while ( (edges_.empty() == false) && (it != edges_.end()) ) {
         e = *it;
-        if ( e->isPartOf(v) == true ) {
+        if (e->isPartOf(v)) {
             if ( (*(e->getFirst()) == *v) )
                 v = e->getSecond();
             else
@@ -220,9 +220,9 @@ void PolygonFace3D::sortEdges() {
             newList.push_back(e);
             edges_.erase(it);
             it = edges_.begin();
-        } else {
-            it++;
         }
+        else
+            ++it;
     }
 
     edges_ = newList;
@@ -231,7 +231,7 @@ void PolygonFace3D::sortEdges() {
 
 Edge3D* PolygonFace3D::findEdge(Edge3D* const e) {
     list<Edge3D*>::iterator it = edges_.begin();
-    for ( ; it != edges_.end(); it++ ) {
+    for (; it != edges_.end(); ++it ) {
         if ( (e == *it) || (*(*it) == *e) )
             return *it;
     }
@@ -240,14 +240,13 @@ Edge3D* PolygonFace3D::findEdge(Edge3D* const e) {
 
 bool PolygonFace3D::removeEdge(Edge3D* const e) {
     bool blret = false;
-    list<Edge3D*>::iterator it = edges_.begin();
-    for ( ; it != edges_.end(); ) {
-        if ( (*it == e) || (*(*it) == *e) ) {
+    for ( list<Edge3D*>::iterator it = edges_.begin(); it != edges_.end(); ) {
+        if ( (*it == e) ) {
             it = edges_.erase(it);
             blret = true;
-        } else {
-            it++;
         }
+        else
+            ++it;
     }
     rebuildVertexList_ = blret;
     return blret;
@@ -256,7 +255,7 @@ bool PolygonFace3D::removeEdge(Edge3D* const e) {
 const std::list<tgt::vec3>& PolygonFace3D::getVertices() {
     // if the vertex list is not up to date, rebuild it
     //
-    if ( rebuildVertexList_ == true )
+    if (rebuildVertexList_)
         buildVertexList();
 
     return vertices_;
@@ -266,7 +265,7 @@ const std::list<tgt::vec3>& PolygonFace3D::getVertices() {
 //
 
 void PolygonFace3D::clone(const PolygonFace3D& face) {
-    if ( this == &face )
+    if (this == &face)
         return;
 
     id_ = face.getID();
@@ -279,11 +278,9 @@ void PolygonFace3D::clear() {
     // the corresponding list entries within the edge. Do not delete the
     // edge itself as it might be part of another face and still used!
     //
-    list<Edge3D*>::iterator it = edges_.begin();
-    for ( ; it != edges_.end(); it++ ) {
-        Edge3D* e = *it;
-        if ( e != 0 )
-            e->removeFace(this);
+    for ( list<Edge3D*>::iterator it = edges_.begin(); it != edges_.end(); ++it ) {
+        if (*it != 0)
+            (*it)->removeFace(this);
     }
     edges_.clear();
 }
@@ -292,7 +289,7 @@ void PolygonFace3D::buildVertexList() {
     vertices_.clear();
     rebuildVertexList_ = false;
 
-    if ( edges_.size() == 0 )
+    if (edges_.size() == 0)
         return;
 
     // push the first vertices of the first edge to the output.
@@ -302,7 +299,7 @@ void PolygonFace3D::buildVertexList() {
     vertices_.push_back( e->getFirst()->getVertex() );
     vertices_.push_back( e->getSecond()->getVertex() );
     tgt::vec3 last = vertices_.back();
-    it++;
+    ++it;
 
     // check if the last point in the output list is one of the next
     // edges one, in order to avoid broken polygons. the last point
@@ -317,7 +314,7 @@ void PolygonFace3D::buildVertexList() {
         last = vertices_.back();
     }
 
-    for ( ; it != edges_.end(); it++ ) {
+    for (; it != edges_.end(); ++it ) {
         e = *it;
         tgt::vec3 v1 = e->getFirst()->getVertex();
         tgt::vec3 v2 = e->getSecond()->getVertex();
@@ -340,7 +337,7 @@ void PolygonFace3D::buildVertexList() {
     // check the windinng of this face: if it is not counter clockwise, reverse the
     // vertex list.
     //
-    if ( vertices_.size() >= 3 ) {
+    if (vertices_.size() >= 3) {
         std::list<tgt::vec3>::iterator it = vertices_.begin();
         tgt::vec3& v0 = *(it);
         tgt::vec3& v1 = *(++it);
@@ -349,11 +346,9 @@ void PolygonFace3D::buildVertexList() {
         tgt::vec3 dir2(v2 - v0);
         tgt::vec3 orientation = tgt::cross(dir1, dir2);
         float f = tgt::dot(orientation, normal_);
-        if ( f <= 0.0f )
+        if (f <= 0.0f)
             vertices_.reverse();
     }
 }
 
 }   // namespace
-
-#endif

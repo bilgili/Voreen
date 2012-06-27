@@ -14,8 +14,6 @@ include(../../commonconf.txt)
 # Include generic app configuration
 include(../voreenapp.txt)
 
-FORMS = ui/aboutbox.ui
-
 HEADERS += \
     rptprocessoritem.h \
     rptpropertysetitem.h \
@@ -31,8 +29,7 @@ HEADERS += \
     rptpainterwidget.h \
     rptnetworkserializergui.h \
     rptaggregationitem.h \
-    rptguiitem.h \
-    iosystem.h
+    rptguiitem.h
 
 contains(DEFINES, VRN_WITH_DCMTK) {
   HEADERS += voreen/qt/dicomdialog.h
@@ -55,8 +52,8 @@ SOURCES += \
     rptpainterwidget.cpp \
     rptaggregationitem.cpp \
     rptguiitem.cpp \
-    main.cpp \
-    iosystem.cpp
+    main.cpp
+
 contains(DEFINES, VRN_WITH_DCMTK) {
   SOURCES +=  ../../src/qt/dicomdialog.cpp
 }

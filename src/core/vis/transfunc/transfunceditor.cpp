@@ -29,11 +29,9 @@
 
 #include "voreen/core/vis/transfunc/transfunceditor.h"
 
-
 #include "voreen/core/vis/message.h"
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
-
 
 namespace voreen {
 
@@ -86,4 +84,4 @@ void TransFuncEditor::selected() {
 void TransFuncEditor::deselected() {
 }
 
-}
+}  // namespace

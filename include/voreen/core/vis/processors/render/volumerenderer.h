@@ -37,7 +37,7 @@ namespace voreen {
 
 /**
  * All classes which render volumes should inherit from this class.
- * This class knows of the current dataset.
+ * This class knows of the current volumehandle.
  */
 class VolumeRenderer : public Processor {
 public:
@@ -45,12 +45,10 @@ public:
 
     /**
      * Handles:
-     * - Identifier::setCurrentDataset
-     * - Identifier::setVolumeContainer
      */
     virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
-    VolumeHandle* getVolumeHandle();
+    virtual VolumeHandle* getVolumeHandle();
     const VolumeHandle* getVolumeHandle() const;
 
     /** Sets the given VolumeHandle* as the currently active VolumeHandle.
@@ -82,8 +80,8 @@ public:
      */
     virtual TransFunc* getTransFunc(int i);
 
-    float getLowerThreshold() const;
-    float getUpperThreshold() const;
+    virtual float getLowerThreshold() const;
+    virtual float getUpperThreshold() const;
   
     // identifiers commonly used in volumeprocessors
     static const Identifier setLowerThreshold_;

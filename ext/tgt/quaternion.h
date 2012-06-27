@@ -88,7 +88,7 @@ struct Quaternion {
     void normalize() {
         T ab = abs();
 
-        if(ab != 0) {
+        if (ab != 0) {
             x /= ab;
             y /= ab;
             z /= ab;
@@ -106,7 +106,7 @@ struct Quaternion {
     /// inverts this Quaternion
     void invert() {
         T absq = x*x + y*y + z*z + w*w;
-        if(absq != 0) {
+        if (absq != 0) {
             conjugate();
             *this = *this / absq;
         }
@@ -127,8 +127,9 @@ struct Quaternion {
 
     /// Calculates the Quaternion dot-product of this Quaternion
     /// with another Quaternion.  The *-operator is overloaded for this purpose.
-    Quaternion operator *= (const Quaternion& q) const {
+    Quaternion operator *= (const Quaternion& q) {
         *this = *this * q;
+        return *this;
     }
 
     /// Quaternion addition
@@ -302,7 +303,7 @@ Quaternion<T> expQuat(const Quaternion<T>& q) {
 
     ret.w = cosf(a);
 
-    if(a > 0) {
+    if (a > 0) {
         ret.x = sina * q.x / a;
         ret.y = sina * q.y / a;
         ret.z = sina * q.z / a;
@@ -347,7 +348,7 @@ inline Quaternion<T> normalize(const Quaternion<T>& q) {
     T ab = q.abs();
     Quaternion<T> res = q;
 
-    if(ab != 0) {
+    if (ab != 0) {
         res.x /= ab;
         res.y /= ab;
         res.z /= ab;
@@ -530,7 +531,7 @@ Quaternion<T> generateQuatFromMatrix(const Matrix4<T>& mat) {
     Quaternion<T> q;
     T t = mat[0][0] + mat[1][1] + mat[2][2] + T(1);
 
-//     if(t > 0) {
+//     if (t > 0) {
 //         double s = 0.5 / std::sqrt(t);
 //         q.w = 0.25 / s;
 //         q.x = ( mat[2][1] - mat[1][2] ) * s;
@@ -555,7 +556,7 @@ Quaternion<T> generateQuatFromMatrix(const Matrix4<T>& mat) {
 //         q.z = 0.25 / s;
 //         q.w = (mat[0][1] - mat[1][0] ) / s;
 //     }
-    if(t > T(0)) {
+    if (t > T(0)) {
         T s = T(0.5) / std::sqrt(t);
         q.w = T(0.25) / s;
         q.x = ( mat[1][2] - mat[2][1] ) * s;

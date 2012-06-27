@@ -120,8 +120,9 @@ namespace voreen {
 
 const std::string DicomVolumeReader::loggerCat_ = "voreen.DicomVolumeReader";
 
-DicomVolumeReader::DicomVolumeReader()
-    : scalars_(0)
+DicomVolumeReader::DicomVolumeReader(IOProgress* progress)
+    : VolumeReader(progress),
+      scalars_(0)
 {
     if (!dcmDataDict.isDictionaryLoaded()) {
         // The data dictionary is needed for loading Dicom files.
@@ -148,19 +149,29 @@ int DicomVolumeReader::loadSlice(const std::string& fileName, int posScalar) {
     }
 
     dataset = fileformat.getDataset();
+   
     DicomImage image(&fileformat, dataset->getOriginalXfer());
     image.hideAllOverlays(); // do not show overlays by default (would write 0xFFFF into the data)
 
+    // For CT modality we need to apply the rescale slope and intercept, as some datasets have
+    // varying rescale values between slices. We apply these by setting a default window. This
+    // should be sufficient for all CT data, as the should all contain Hounsfield units.
+    OFString modality;
+    if (dataset->findAndGetOFString(DCM_Modality, modality).good()) {
+        if (modality == "CT")
+            image.setWindow(1024, 4096);
+    }
+    
     if (image.getStatus() != EIS_Normal) {
-        LERROR("Error creating DicomImage from file " << fileName << ": " <<
-                        image.getString(image.getStatus()));
+        LERROR("Error creating DicomImage from file " << fileName << ": "
+               << image.getString(image.getStatus()));
         return 0;
     }
 
     // Render pixel data into scalar array
     if (!image.getOutputData(&scalars_[posScalar * bytesPerVoxel_], dx_ * dy_ * bytesPerVoxel_, bits_)) {
         LERROR("Failed to render pixel data "
-                        << image.getOutputDataSize(bits_) << " vs. " << dx_ * dy_ * bytesPerVoxel_);
+               << image.getOutputDataSize(bits_) << " vs. " << dx_ * dy_ * bytesPerVoxel_);
 
         return 0;
     }
@@ -182,7 +193,7 @@ string getItemString(DcmItem* item, const DcmTagKey &tagKey) {
         return string(s.c_str());
     } else {
         DcmTag tag(tagKey);
-        cerr << "!!! can't retrieve tag " << tag.getTagName() << "!!!" << endl;
+        LWARNINGC("voreen.DicomVolumeReader", "!!! can't retrieve tag " << tag.getTagName() << "!!!");
         return "";
     }
 }
@@ -217,8 +228,10 @@ char mytolower(char c) {
 
 
 Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
-                                          const string &filterSeriesInstanceUID) {
-
+                                          const string &filterSeriesInstanceUID,
+                                          bool skipBroken)
+    throw (tgt::FileException, std::bad_alloc)
+{   
     // register JPEG codec
     DJDecoderRegistration::registerCodecs(EDC_photometricInterpretation, EUC_default, EPC_default, OFFalse);
 
@@ -227,7 +240,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     float x_spacing = 1, y_spacing = 1, z_spacing = 1; // For the resulting Volume
     float rowspacing = 1, colspacing = 1; // As read from PixelSpacing attribute
 
-    LINFO("Reading metadata from files...");
+    LINFO("Reading metadata from " << fileNames.size() << "files...");
 
     string filter(filterSeriesInstanceUID);
     if (!filter.empty())
@@ -239,15 +252,30 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     // same time.
     bool found_first = false;
     vector<string>::const_iterator it_files = fileNames.begin();
+    if (getProgress())
+        getProgress()->setNumSteps(fileNames.size());
+    int i = 0;
     while (it_files != fileNames.end()) {
+        if (getProgress())
+            getProgress()->set(i);
+        i++;
+
         DcmFileFormat fileformat;
 
-        LINFO("  Reading file " << (*it_files));
+//        LINFO("Reading metadata for " << (*it_files));
 
         OFCondition status = fileformat.loadFile((*it_files).c_str());
         if (status.bad()) {
-            LERROR("Error loading file " << (*it_files) << ": " << status.text());
-            return 0;
+            if (skipBroken) {
+                // File might be a broken DICOM but probably it is just some other non-DICOM file
+                // lying around in the directory, so just skip it.
+                LINFO("Skipping file " << (*it_files) << ": " << status.text());
+                it_files++;
+                continue;
+            } else {
+                LERROR("Error loading file " << (*it_files) << ": " << status.text());
+                return 0;
+            }            
         }
 
         DcmDataset *dataset = fileformat.getDataset();
@@ -259,7 +287,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         if (dataset->findAndGetOFString(DCM_SeriesInstanceUID, tmpString).bad())
             LERROR("no SeriesInstanceUID in file " << (*it_files));
         string seriesInstanceUID(tmpString.c_str());
-
+        
         // First file with matching series UID
         if (!found_first) {
 
@@ -271,7 +299,6 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
 
             if (seriesInstanceUID == filter) {
                 found_first = true;
-                LINFO("    Patient Name : " << getItemString(dataset, DCM_PatientsName));
                 LINFO("    Study Description : " << getItemString(dataset, DCM_StudyDescription));
                 LINFO("    Series Description : " << getItemString(dataset, DCM_SeriesDescription));
                 std::string mod = getItemString(dataset, DCM_Modality);
@@ -280,17 +307,17 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
                 modality_ = Modality(mod);
 
                 if (dataset->findAndGetOFStringArray(DCM_Rows, tmpString).good()) {
-                    dx_ = atoi(tmpString.c_str());
+                    dy_ = atoi(tmpString.c_str());
                 } else {
                     LERROR("Can't retrieve DCM_Rows from file " << (*it_files));
-                    dx_ = 0;
+                    dy_ = 0;
                     found_first = false;
                 }
                 if (dataset->findAndGetOFStringArray(DCM_Columns, tmpString).good()) {
-                    dy_ = atoi(tmpString.c_str());
+                    dx_ = atoi(tmpString.c_str());
                 } else {
                     LERROR("Can't retrieve DCM_Columns from file " << (*it_files));
-                    dy_ = 0;
+                    dx_ = 0;
                     found_first = false;
                 }
                 if (dataset->findAndGetOFStringArray(DCM_BitsStored, tmpString).good()) {
@@ -357,6 +384,10 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         it_files++;
     }
 
+    if (slices.size() == 0) {
+        throw tgt::CorruptedFileException("Found no DICOM slices");
+    }
+    
     // Determine in which direction the slices are arranged and sort by position.
     // Furthermore the slice spacing is determined.
     //     the first slice must be included
@@ -365,7 +396,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     float slicespacing = 1;
     tgt::vec3 imagePositionPatient0;
     tgt::vec3 imagePositionPatient1;
-    float imagePositionZ; 
+    float imagePositionZ = -1.f; 
     if (slices.size() > 1) {
         imagePositionPatient0 = slices[0].second;
         imagePositionPatient1 = slices[1].second;
@@ -392,7 +423,7 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
     dz_ = slices.size();
 
     switch (bits_) {
-    case 8: bytesPerVoxel_ = 1; break;
+    case  8: bytesPerVoxel_ = 1; break;
     case 12: bytesPerVoxel_ = 2; break;
     case 16: bytesPerVoxel_ = 2; break;
     case 32: bytesPerVoxel_ = 4; break;
@@ -409,17 +440,21 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
 
     // Now read the actual slices from the files
     LINFO("Building volume...");
-    LINFO("Reading slice data...");
-    cout.precision(15);
+    LINFO("Reading slice data from " << slices.size() << " files...");
 
     int posScalar = 0;
     vector<pair<string, tgt::vec3> >::iterator it_slices = slices.begin();
+    if (getProgress())
+        getProgress()->setNumSteps(slices.size());
+    i = 0;
     while (it_slices != slices.end()) {
-        cout << "  " << (*it_slices).first << " (position: " << (*it_slices).second << ")...";
+        if (getProgress())
+            getProgress()->set(i);
+        i++;
+        
+//        LINFO((*it_slices).first << " (position: " << (*it_slices).second << ")");
         int slicesize = loadSlice((*it_slices).first, posScalar);
         posScalar += slicesize;
-        cout << "ok" << endl;
-
         it_slices++;
     }
 
@@ -439,10 +474,10 @@ Volume* DicomVolumeReader::readDicomFiles(const vector<string> &fileNames,
         break;
     case 12:
     case 16:
-        dataset = new VolumeUInt16((uint16_t*)scalars_,
-                                    tgt::ivec3(dx_, dy_, dz_),
-                                    tgt::vec3(x_spacing, y_spacing, z_spacing),
-                                    bits_);
+        dataset = new VolumeUInt16(reinterpret_cast<uint16_t*>(scalars_),
+                                   tgt::ivec3(dx_, dy_, dz_),
+                                   tgt::vec3(x_spacing, y_spacing, z_spacing),
+                                   bits_);
         dataset->meta().setFileName(slices[0].first);
         dataset->meta().setImagePositionZ(imagePositionZ);
         break;
@@ -466,7 +501,6 @@ vector<string> DicomVolumeReader::getFileNamesInDir(const string& dirName) {
     bool            finished = false;
     HANDLE          hList;
     TCHAR           szDir[MAX_PATH+1];
-    //TCHAR           szSubDir[MAX_PATH+1];
     WIN32_FIND_DATA FileData;
 
     // Setup file spec (contains wildcard)
@@ -477,7 +511,6 @@ vector<string> DicomVolumeReader::getFileNamesInDir(const string& dirName) {
         while (!finished) {
             if (!(FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 files.push_back(dirName + FileData.cFileName);
-                LINFO("file: " << dirName << FileData.cFileName);
             }
 
             if (!FindNextFile(hList, &FileData))
@@ -501,7 +534,6 @@ vector<string> DicomVolumeReader::getFileNamesInDir(const string& dirName) {
         name = ent->d_name;
         if ((ent->d_type != DT_DIR) && (name != ".") && (name != "..")) {
             files.push_back(dirName + ent->d_name);
-            LINFO("Adding " << (dirName + ent->d_name));
         }
     }
     closedir(dir);
@@ -553,7 +585,7 @@ Volume* DicomVolumeReader::readDicomDir(const string &fileName,
                     if (FileRecord->findAndGetOFStringArray(DCM_ReferencedFileID, tmpString).good()) {
                         referencedFileID = const_cast<char*>(tmpString.c_str());
                     } else {
-                        cerr << "Can't retrieve DCM_ReferencedFileID from DICOMDIR file!\n";
+                        LWARNING("Can't retrieve DCM_ReferencedFileID from DICOMDIR file!");
                     }
 
                     string filename(referencedFileID);
@@ -730,11 +762,11 @@ bool pathIsDir(const string &path) {
 
 
 VolumeSet* DicomVolumeReader::read(const string &fileName)
-throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
+    throw (tgt::FileException, std::bad_alloc)
 {
 
     dx_ = dy_ = dz_ = 0;
-    Volume* dataset;
+    Volume* volume;
 
     if (fileName.find("dicom://") == 0) {
         // Handle Dicom network connection to PACS
@@ -751,7 +783,7 @@ throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
         if (DicomMoveSCU::moveSeries(seriesInstanceUID, peertitle, &files) != 0)
             return 0;
 
-        dataset = readDicomFiles(files);
+        volume = readDicomFiles(files);
     }
     else if (pathIsDicomDir(fileName)) {
         // Handle DICOMDIR: "../DICOMDIR?<filter>"
@@ -759,24 +791,27 @@ throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
         string file = fileName.substr(0, pos);
         string filter = (pos != string::npos ? fileName.substr(pos + 1) : "");
         LINFO(file << " : " << filter);
-        dataset = readDicomDir(file, filter);
+        volume = readDicomDir(file, filter);
     }
     else if (pathIsDir(fileName)) {
         // Handle reading of entire directories
-        dataset = readDicomFiles(getFileNamesInDir(fileName), "");
+        volume = readDicomFiles(getFileNamesInDir(fileName), "", true);
     } else {
         // Handle single dicom file
-        dataset = readDicomFile(fileName);
+        volume = readDicomFile(fileName);
 	}
 
-    VolumeSet* volumeSet = new VolumeSet(0, fileName);
-    VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", modality_);
-    volumeSet->addSeries(volumeSeries);
-    VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, dataset, 0.0f);
-    volumeHandle->setOrigin(fileName, "unknown", 0.0f);
-    volumeSeries->addVolumeHandle(volumeHandle);
-   
-    return volumeSet;
+    if (volume) {
+        VolumeSet* volumeSet = new VolumeSet(0, fileName);
+        VolumeSeries* volumeSeries = new VolumeSeries(volumeSet, "unknown", modality_);
+        volumeSet->addSeries(volumeSeries);
+        VolumeHandle* volumeHandle = new VolumeHandle(volumeSeries, volume, 0.0f);
+        volumeHandle->setOrigin(fileName, "unknown", 0.0f);
+        volumeSeries->addVolumeHandle(volumeHandle);
+        return volumeSet;
+    } else {
+        throw tgt::FileException("Got NULL volume");
+    }
 }
 
 Volume* DicomVolumeReader::read(const std::vector<std::string> &fileNames) {

@@ -1,6 +1,62 @@
 Voreen Changelog
 ----------------
 
+2009-02-13: Snapshot r13 (voreen-5688)
+--------------------------------------
+  
+    * Redesigned GUI for VoreenVE, using multiple tool windows instead of dock
+      widgets, work in progress
+ 
+    * Added network for labeling processor, use with NCAT example data set from
+	  the voreen.org website (requires FreeType activated in config.txt):
+      o load network 'labeling.vnw'
+      o load data sets 'ncat_phantom_medium.dat' and 'ncat_phantom_segmentation.dat'
+      o attach 'ncat_phantom_medium.dat' to left VolumeSetSource processor
+      o attach 'ncat_phantom_segmentation.dat' to right VolumeSetSource processor
+      o press 'play' button
+
+    * Added tool for creating spline-based camera animations
+
+    * Improve global light settings, light position can be move with the
+      mouse pointer, reactivated LightMaterialPlugin in VoreenDev,
+
+    * Rendering results are cached by default
+
+    * Support for .dat volume files from TU Vienna
+     (compare http://www.cg.tuwien.ac.at/research/vis/datasets/)
+
+    * Improved support for Mac OS X
+      o disable Render-to-Texture
+      o remove lots of Mac-specific warnings
+      o several GUI improvements
+      o fix problem where OpenGL canvas would show garbage on startup
+
+    * Improved DICOM support
+      o direct loading of all DICOM slice in a directory (without a DICOMDIR)
+      o correct behaviour for non power-of-two slices
+
+    * Python scripts
+      o benchmarking script fps.py can be started with parameter "--benchmark"
+        in VoreenDev
+      o new script for camera animation 
+ 
+    * Various bugfixes and cleanups:
+      o allow spaces in path names for project directory
+      o VoreenDev now uses the SingleVolumeRaycaster by default
+      o verify correct working directory when starting
+      o better exception handling for file IO
+      o fix rendering artifacts in EEP with GeForce 8 or newer
+      o improve logging of GLSL compiler and linker messages
+      o move all handling of interaction mode into CoarsenessRenderer
+      o rework caching of processor outputs
+      o update file loading progress less often
+      o check for require Qt version in qmake script
+      o reworked command line parser
+      o fix processor names in GUI
+      o handle errors during processor initialization more gracefully
+      o remove black border in interaction mode
+
+
 2008-11-14: Snapshot r3 (voreen-5112)
 -------------------------------------
     * New SingleVolumeRaycaster, a modular default renderer:

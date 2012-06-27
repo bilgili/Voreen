@@ -29,7 +29,6 @@
 
 #include "voreen/core/vis/transfunc/transfunc.h"
 
-
 #include <cmath>
 #include <tinyxml/tinyxml.h>
 
@@ -37,13 +36,14 @@
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 
+#include "tgt/texturemanager.h"
+
 using tgt::vec2;
 using tgt::ivec2;
 using tgt::ivec3;
 using tgt::ivec4;
 using tgt::col4;
 using tgt::dvec4;
-
 
 namespace voreen {
 
@@ -85,7 +85,7 @@ void TransFunc::loadXml(TiXmlElement* root, col4& c) {
 
 //---------------------------------------------------------------------------
 
-const std::string TransFunc::loggerCat_("voreen.voreen.TransFunc");
+const std::string TransFunc::loggerCat_("voreen.TransFunc");
 
 TransFunc::TransFunc(): tex_(0) {
 }
@@ -95,14 +95,11 @@ TransFunc::~TransFunc() {
         delete tex_;
 }
 
-bool TransFunc::load(const std::string filename){
+bool TransFunc::load(const std::string filename) {
     tex_ = TexMgr.load(filename, tgt::Texture::NEAREST, false, true, true);
     tex_->uploadTexture();
 
-    if (tex_)
-        return true;
-    else
-        return false;
+    return tex_;
 }
 
 void TransFunc::bind() {
@@ -149,7 +146,7 @@ TransFunc2D* TransFunc2D::createPreIntegration(TransFunc* source) {
 
     // calculate integral stuff
     table[0] = dvec4(0.0);
-    for (int i = 1 ; i < size ; ++i) {
+    for (int i = 1; i < size; ++i) {
         col4 col1 = source->getTexture()->texel<col4>(i-1);
         col4 col2 = source->getTexture()->texel<col4>(i);
         double tauc = (col1.a + col2.a) / 2.0;
@@ -163,13 +160,13 @@ TransFunc2D* TransFunc2D::createPreIntegration(TransFunc* source) {
     ivec4 iv4(0);
 
     // calculate the look-up table
-    for (int sb = 0 ; sb < size ; ++sb) {
+    for (int sb = 0; sb < size; ++sb) {
         for (int sf = 0 ; sf < size ; ++sf) {
             int smin = std::min(sb, sf);
             int smax = std::max(sb, sf);
 
             if (smin != smax) {
-                double factor = 1.0 / double(smax - smin);
+                double factor = 1.0 / static_cast<double>(smax - smin);
                 iv4.r = static_cast<int>((table[smax].r - table[smin].r) * factor + 0.5);
                 iv4.g = static_cast<int>((table[smax].g - table[smin].g) * factor + 0.5);
                 iv4.b = static_cast<int>((table[smax].b - table[smin].b) * factor + 0.5);

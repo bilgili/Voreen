@@ -38,18 +38,11 @@
 #include "tgt/singleton.h"
 
 #include "voreen/core/vis/messagedistributor.h"
-
-#ifndef VRN_SNAPSHOT
-#include "voreen/core/vis/pyvoreen.h"
+#include "voreen/qt/versionqt.h"
 
 #ifdef VRN_WITH_PYTHON
 #include "voreen/core/vis/pyvoreen.h"
 #include "voreen/qt/pyvoreenqt.h"
-#endif
-#endif
-
-#ifdef VRN_WITH_SVNVERSION
-#include "voreen/svnversion.h"
 #endif
 
 #ifdef WIN32
@@ -67,6 +60,49 @@
 #include "mainframe.h"
 
 using namespace voreen;
+
+// Check whether working directory is set correctly and try to fix it for some common
+// situations.
+bool checkVoreenPath(const QString& appname = "") {
+    const QString shaderPath = "../../src/core/vis/glsl";
+    QDir dir;
+    if (!dir.exists(shaderPath)) {
+        QDir dir;
+        LWARNINGC("voreenve.main", "shader path " << shaderPath.toStdString()
+                  << " not found from current directory "
+                  << dir.canonicalPath().toStdString());
+
+        if (dir.cdUp() && dir.exists(shaderPath)) {
+            // found from parent directory
+            LWARNINGC("voreenve.main", "changing working directory to "
+                      << dir.absolutePath().toStdString());
+
+            QDir::setCurrent(dir.path());
+            return true;
+        }
+        else if (!appname.isEmpty()) {
+            // try directory named like the application
+            QDir dir;
+            if (dir.cd(appname) && dir.exists(shaderPath)) {
+                // found from appname directory
+                LWARNINGC("voreenve.main", "changing working directory to "
+                          << dir.absolutePath().toStdString());
+                QDir::setCurrent(dir.path());
+                return true;
+            }            
+        }
+    } else {
+        return true;
+    }
+
+    LERRORC("voreenve.main", "shader path not found, check your working directory");
+    QMessageBox::critical(0, QObject::tr("Error"),
+                          QObject::tr("Could not find the shader path %1.\n"
+                                      "Check your working directory!\n"
+                                      "(currently set to: %2)\n")
+                          .arg(shaderPath).arg(dir.canonicalPath()));
+    return false;
+}
 
 void initGL() {
     tgt::initGL();
@@ -118,6 +154,9 @@ int start(int argc, char** argv) {
 
     QApplication a(argc, argv);
 
+    if (!checkVoreenPath("voreendev"))
+        return 0;
+    
 #ifdef VRN_USE_TRANSLATIONS
     // load and install qt translations
     QTranslator qtTranslator;
@@ -165,10 +204,8 @@ int start(int argc, char** argv) {
     LogMgr.addLog(log);
 #endif
 
-#ifdef VRN_SVN_REVISON
-    LINFOC("voreendev.main", "voreendev svn version " << VRN_SVN_REVISON << " starting..."); 
-#endif
-    
+    VoreenVersionQt::logAll("voreen.VoreenDev");
+
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 #if defined(VRN_SPLASHSCREEN) && defined(WIN32)
     mainFrame.showMinimized();

@@ -40,7 +40,8 @@ const Identifier TrackballNavigation::toggleTrackball_("toggle.trackball");
 
 const std::string TrackballNavigation::loggerCat_ = "voreen.vis.Trackballnavigation";
 
-TrackballNavigation::TrackballNavigation(tgt::Trackball* track, bool defaultBehavior, float minDist, float maxDist)
+TrackballNavigation::TrackballNavigation(tgt::Trackball* track, bool defaultBehavior,
+                                         float minDist, float maxDist)
     : trackball_(track)
     , minDistance_(minDist)
     , maxDistance_(maxDist)
@@ -49,13 +50,15 @@ TrackballNavigation::TrackballNavigation(tgt::Trackball* track, bool defaultBeha
         if (defaultBehavior) {
             trackball_->setMouseRotate(tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::Event::NONE);
             trackball_->setMouseMove(tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::Event::SHIFT);
-            trackball_->setMouseZoom(tgt::MouseEvent::MOUSE_BUTTON_RIGHT, tgt::vec2(0.f, 0.5f), tgt::Event::NONE);
+            trackball_->setMouseZoom(tgt::MouseEvent::MOUSE_BUTTON_RIGHT, tgt::vec2(0.f, 0.5f),
+                                     tgt::Event::NONE);
             trackball_->setMouseWheelZoom(10.f, false, tgt::Event::NONE);
             trackball_->setMouseWheelRoll(10.f, true, tgt::Event::SHIFT);
             trackball_->setSize(0.7f); // sets trackball sensitivity
             resetButton_ = tgt::MouseEvent::MOUSE_BUTTON_RIGHT;
         }
-        //else: the above is voreen standard behaviour.  If something else is desired, change behaviour with trackNavi->getTrackball()->setMouseRotate(...)
+        //else: the above is voreen standard behaviour. If something else is desired, change
+        //behaviour with trackNavi->getTrackball()->setMouseRotate(...)
         trackball_->setMoveCenter(false);
         trackball_->setContinuousSpin(false);
     }
@@ -70,7 +73,6 @@ TrackballNavigation::TrackballNavigation(tgt::Trackball* track, bool defaultBeha
 }
 
 void TrackballNavigation::resetTrackball() {
-
     wheelCounter_   = -1;
     spinCounter_    = -1;
     moveCounter_    = -1;
@@ -85,7 +87,6 @@ void TrackballNavigation::resetTrackball() {
 }
 
 void TrackballNavigation::mousePressEvent(tgt::MouseEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
@@ -102,14 +103,11 @@ void TrackballNavigation::mousePressEvent(tgt::MouseEvent* e) {
 }
 
 void TrackballNavigation::mouseReleaseEvent(tgt::MouseEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
     if (trackballEnabled_) {
-
             trackball_->mouseReleaseEvent(e);
-
             if (!trackball_->getContinuousSpin() || !spinit_)
                 postMessage( new BoolMsg(VoreenPainter::switchCoarseness_, false) );
 
@@ -119,12 +117,10 @@ void TrackballNavigation::mouseReleaseEvent(tgt::MouseEvent* e) {
 }
 
 void TrackballNavigation::mouseMoveEvent(tgt::MouseEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
     if (trackballEnabled_) {
-
         trackball_->mouseMoveEvent(e);
 
         // restrict distance within specified range
@@ -136,26 +132,21 @@ void TrackballNavigation::mouseMoveEvent(tgt::MouseEvent* e) {
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, trackball_->getCamera()) );
         trackball_->getCanvas()->update();
 
-         if (trackball_->getContinuousSpin()) {
+         if (trackball_->getContinuousSpin())
              moveCounter_ = 0;
-         }
     }
 }
 
 
 void TrackballNavigation::mouseDoubleClickEvent(tgt::MouseEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
-    if (trackballEnabled_ && (tgt::MouseEvent::MouseButtons)e->button() == resetButton_) {
-        resetTrackball();
-    }
-
+	if (trackballEnabled_ && (tgt::MouseEvent::MouseButtons)e->button() == resetButton_)
+		resetTrackball();
 }
 
 void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
@@ -177,7 +168,6 @@ void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
 }
 
 void TrackballNavigation::timerEvent(tgt::TimeEvent* e) {
-
     if (!trackball_ || !trackball_->getCanvas() || !trackball_->getCanvas()->getPainter())
         return;
 
@@ -196,7 +186,9 @@ void TrackballNavigation::timerEvent(tgt::TimeEvent* e) {
         moveCounter_ = -1;
     }
 
-    if (trackball_->getContinuousSpin() && spinit_ && e->getTimer() == trackball_->getContinuousSpinTimer()) {
+    if (trackball_->getContinuousSpin() && spinit_ &&
+        e->getTimer() == trackball_->getContinuousSpinTimer())
+    {
         trackball_->timerEvent(e);
         postMessage( new CameraPtrMsg(VoreenPainter::cameraChanged_, trackball_->getCamera()));
         postMessage( new Message(VoreenPainter::repaint_));
@@ -206,29 +198,30 @@ void TrackballNavigation::timerEvent(tgt::TimeEvent* e) {
 void TrackballNavigation::processMessage(Message* msg, const Identifier& dest) {
     MessageReceiver::processMessage(msg, dest);
 
-    if (msg->id_ == "switch.trackballContinuousSpin") {
+    if (msg->id_ == "switch.trackballContinuousSpin")
         trackball_->setContinuousSpin(msg->getValue<bool>());
-    }
-    else if (msg->id_ == resetTrackball_) {
+    else if (msg->id_ == resetTrackball_)
         resetTrackball();
-    }
     else if (msg->id_ == toggleTrackball_) {
         msg->discard();
         trackballEnabled_ = msg->getValue<bool>();   
     }
     else {
         // forward message to painter
-        if ( trackball_ && trackball_->getCanvas() && trackball_->getCanvas()->getPainter()) {
-            VoreenPainter* painter  = (VoreenPainter*)(trackball_->getCanvas()->getPainter());
+        if (trackball_ && trackball_->getCanvas() && trackball_->getCanvas()->getPainter()) {
+            VoreenPainter* painter
+                = reinterpret_cast<VoreenPainter*>(trackball_->getCanvas()->getPainter());
             painter->processMessage(msg, dest);
-        }
-        else {
+        } else {
             LDEBUG("Unable to forward message to renderer: No renderer");
         }
 	
         // forward message to additional receivers
         std::vector<MessageReceiver*>::iterator iter;
-        for (iter = additionalReceivers_.begin(); iter != additionalReceivers_.end(); iter++) {
+        for (std::vector<MessageReceiver*>::iterator iter = additionalReceivers_.begin();
+            iter != additionalReceivers_.end();
+            ++iter)
+        {
             (*iter)->processMessage(msg);
         }
     }
@@ -240,7 +233,6 @@ tgt::Trackball* TrackballNavigation::getTrackball() {
 }
 
 void TrackballNavigation::addReceiver(MessageReceiver* receiver) {
-
     tgtAssert(receiver, "Null-Pointer passed as MessageReceiver");
 
     additionalReceivers_.push_back(receiver);

@@ -43,4 +43,8 @@ void TimeEvent::setTimer( Timer* timer ) {
     timer_ = timer;
 }
 
+int TimeEvent::getEventType(){
+    return TIMEREVENT;
+}
+
 } // namespace tgt

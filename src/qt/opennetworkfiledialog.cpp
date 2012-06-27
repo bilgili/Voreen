@@ -33,17 +33,23 @@
 namespace voreen {
 
 OpenNetworkFileDialog::OpenNetworkFileDialog(QWidget* parent, Qt::WindowFlags flags)
-        : QFileDialog(parent, flags) {
+        : QFileDialog(parent, flags)
+{
     initialize();
 }
 
 OpenNetworkFileDialog::OpenNetworkFileDialog(QWidget* parent, const QString& caption, const QString& directory, const QString& filter)
-        : QFileDialog(parent, caption, directory, filter) {
+        : QFileDialog(parent, caption, directory, filter)
+{
     initialize();
 }
 
 OpenNetworkFileDialog::~OpenNetworkFileDialog() {
     //delete loadVolumeSetContainer_; will be deleted by parent
+}
+
+void OpenNetworkFileDialog::setLoadVolumeSetContainer(bool b) {
+    loadVolumeSetContainer_->setChecked(b);
 }
 
 bool OpenNetworkFileDialog::loadVolumeSetContainer() {
@@ -52,7 +58,7 @@ bool OpenNetworkFileDialog::loadVolumeSetContainer() {
 
 void OpenNetworkFileDialog::initialize() {
     // Add checkbox for loading with or without volumesetcontainer
-    loadVolumeSetContainer_ = new QCheckBox("&Load included datasets", this);
+    loadVolumeSetContainer_ = new QCheckBox("&Load datasets with network", this);
     QGridLayout *layout = (QGridLayout*)this->layout();
     layout->addWidget(loadVolumeSetContainer_, layout->rowCount(), 0);
     loadVolumeSetContainer_->show();

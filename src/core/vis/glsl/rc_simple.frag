@@ -52,28 +52,19 @@ vec4 directRendering(in vec3 first, in vec3 last) {
     float tend;
     float t = 0.0;
     vec3 direction = last.rgb - first.rgb;
-    // if direction is a nullvector the entry- and exitparams are the same
-    // so special handling for tend is needed, otherwise we divide by zero
-    // furthermore both for-loops will cause only 1 pass overall.
-    // The test whether last and first are nullvectors is already done in main-function
-    // but however the framerates are higher with this test. (??? joerg)
-    if (direction == vec3(0.0) && last.rgb != vec3(0.0) && first.rgb != vec3(0.0)) {
-        tend = stepIncr/2.0;
-    }
-    else {
-        tend = length(direction);
-        direction = normalize(direction);
-    }
 
-    // 2 nested loops allow for more than 255 iterations
-    // should not be slower than while (t < tend)
+    tend = length(direction);
+    direction = normalize(direction);
+
+    // 2 nested loops allow for more than 255 iterations,
+    // but is slower than while (t < tend)
     for (int loop0=0; !finished && loop0<255; loop0++) {
         for (int loop1=0; !finished && loop1<255; loop1++) {
 
             vec3 sample = first.rgb + t * direction;
             vec4 voxel = textureLookup3D(volume_, volumeParameters_, sample);
-            voxel.xyz -= 0.5;
-			float intensity = voxel.a;
+
+            float intensity = voxel.a;
 			#if defined(USE_SEGMENTATION)
 				intensity *= applySegmentation(sample);
 			#endif
@@ -110,7 +101,8 @@ vec4 directRendering(in vec3 first, in vec3 last) {
     // calculate depth value from ray parameter
 	gl_FragDepth = 1.0;
     if (depthT >= 0.0)
-        gl_FragDepth = calculateDepthValue(depthT / tend, entryPointsDepth_, exitPointsDepth_);
+		gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z,
+												        textureLookup2D(exitPointsDepth_, gl_FragCoord.xy).z);
 
 
     return result;
@@ -125,7 +117,7 @@ void main() {
 	vec3 backPos = textureLookup2D(exitPoints_, gl_FragCoord.xy).rgb;
 
     //determine whether the ray has to be casted
-    if ((frontPos == vec3(0.0)) && (backPos == vec3(0.0))) {
+    if (frontPos == backPos) {
         //background need no raycasting
         discard;
     } else {

@@ -24,25 +24,25 @@
 
 #include "tgt/camera.h"
 
-#include <cmath>
-
 #include "tgt/assert.h"
 #include "tgt/glmath.h"
 #include "tgt/quaternion.h"
 #include "tgt/spline.h"
 #include "tgt/tgt_gl.h"
 
+#include <cmath>
 #include <iostream>
+
 namespace tgt {
 
 // Constructor
 Camera::Camera(const vec3& position, const vec3& focus, const vec3& up,
-                    float fovy, float ratio, float distn, float distf)
-    : position_      (position)
-    , focus_         (focus)
-    , upVector_      (normalize(up))
-    , frust_         (Frustum(fovy, ratio, distn, distf))
-    , eyesep_        (0.01f)
+               float fovy, float ratio, float distn, float distf)
+    : position_(position),
+      focus_(focus),
+      upVector_(normalize(up)),
+      frust_(Frustum(fovy, ratio, distn, distf)),
+      eyesep_(0.01f)
 {
     viewMatrix_ = mat4::createLookAt(position, focus, up);
 }
@@ -56,12 +56,12 @@ void Camera::look(Eye eye) {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         updateFrustum();
-        loadMatrix(getProjectionMatrix());
+        loadMatrix(getFrustumMatrix());
+//getProjectionMatrix();
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         updateVM();
         loadMatrix(viewMatrix_);
-
     } else {
         // Stereo
 // FIXME: call to update routines "updateViewMatrix", "updateFrustum"
@@ -73,8 +73,8 @@ void Camera::look(Eye eye) {
 
         Frustum frustum = getFrustum();
 
-        float focallength = length(vf-vp);
-//         float ratio       = frustum.ratio_;
+        float focallength = getFocalLength();
+		//float focallength = eyesep_ * 30.f; // poposed by http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/stereorender/index.html
         float ndfl        = frustum.getNearDist() / focallength;
         double cnear      = frustum.getNearDist();
 
@@ -138,7 +138,7 @@ mat4 Camera::getViewMatrix() const {
 //     }
 }
 
-void Camera::setViewMatrix(mat4 mvMat) {
+void Camera::setViewMatrix(const mat4& mvMat) {
     mat4 inv;
     if (mvMat.invert(inv)) {
         
@@ -171,11 +171,11 @@ mat4 Camera::getViewMatrixInverse() const {
         return mat4::identity;
 }
 
-/*  near and far are defined by windef.h ==> renamed parameters: near -> pnear, far -> pfar      */
-
-mat4 Camera::getStereoPerspectiveMatrix(Eye eye, float fov, float aspect, float pnear, float pfar) const {
-
-    // This is taken from the OpenGL-Faq of the OpenGL-homepage
+//  near and far are defined by windef.h ==> renamed parameters: near -> pnear, far -> pfar
+mat4 Camera::getStereoPerspectiveMatrix(Eye eye, float fov, float aspect,
+                                        float pnear, float pfar) const
+{
+    // This is taken from the OpenGL-FAQ of the OpenGL-homepage
     float top    = tanf(fov * tgt::PIf / 360.0f) * pnear;
     float bottom = -top;
 
@@ -201,23 +201,23 @@ mat4 Camera::getStereoPerspectiveMatrix(Eye eye, float fov, float aspect, float 
 
 mat4 Camera::getFrustumMatrix() const {
 	return mat4::createFrustum(frust_.getLeft(), frust_.getRight(),
-							   frust_.getTop(), frust_.getBottom(),
+							   frust_.getBottom(), frust_.getTop(),
 							   frust_.getNearDist(), frust_.getFarDist());
 }
 
 mat4 Camera::getProjectionMatrix() const {
-    return mat4::createPerspective( deg2rad(frust_.getFovy()), frust_.getRatio(), frust_.getNearDist(), frust_.getFarDist());
+    return mat4::createPerspective(deg2rad(frust_.getFovy()), frust_.getRatio(),
+                                   frust_.getNearDist(), frust_.getFarDist());
 }
 
 //------------------------------------------------------------------------------
 
-OrthographicCamera::OrthographicCamera(const tgt::vec3 &position,
-                                       const tgt::vec3 &focus,
-                                       const tgt::vec3 &up,
+OrthographicCamera::OrthographicCamera(const vec3 &position,
+                                       const vec3 &focus,
+                                       const vec3 &up,
                                        float left, float right, 
                                        float bottom, float top,
                                        float distn, float distf)
-
 {
     focus_ = focus;
     position_ = position;
@@ -232,6 +232,10 @@ mat4 OrthographicCamera::getProjectionMatrix() const {
     return mat4::createOrtho(frust_.getLeft(),     frust_.getRight(),
 							 frust_.getTop(),      frust_.getBottom(),
 							 frust_.getNearDist(), frust_.getFarDist());
+}
+
+mat4 OrthographicCamera::getFrustumMatrix() const {    
+    return getProjectionMatrix();
 }
 
 } // namespace tgt

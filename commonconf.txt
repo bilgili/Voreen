@@ -7,12 +7,6 @@ CONFIG += stl thread
 # we don't use tgt's build system
 DEFINES += TGT_WITHOUT_DEFINES
 
-contains(DEFINES, VRN_SNAPSHOT) {
-  # update version for each snapshot release
-  # TODO: not sure if this works with MSVC
-  DEFINES += VRN_SVN_REVISON=\\\"snapshot-3\\\"
-}
-
 # This just changes the default params for tgt::init() to include
 # NO_SHADER_CACHING and to remove LOG_TO_CONSOLE. Should be done
 # differently.
@@ -20,6 +14,10 @@ DEFINES += TGT_COMPILED_FOR_VOREEN
 
 contains( DEFINES, VRN_WITH_DEVIL ) {
   DEFINES += TGT_HAS_DEVIL
+}
+
+contains( DEFINES, VRN_WITH_FREETYPE ) {
+  DEFINES += TGT_HAS_FREETYPE
 }
 
 contains( DEFINES, VRN_WITH_ZIP) {
@@ -55,14 +53,14 @@ else {
 }
 
 INCLUDEPATH += \
-  $${VRN_HOME}/include \
-  $${VRN_HOME}/ext
+  "$${VRN_HOME}/include" \
+  "$${VRN_HOME}/ext"
 
 # This variable contains the list of all directories to look in to resolve
 # dependencies. This will be used when crawling through included files.
 DEPENDPATH += \
-  $${VRN_HOME}/include \
-  $${VRN_HOME}/ext
+  "$${VRN_HOME}/include" \
+  "$${VRN_HOME}/ext"
 
 DEFINES += TIXML_USE_STL
 
@@ -103,52 +101,52 @@ win32 {
   DEFINES += GLEW_STATIC
 
   INCLUDEPATH += \
-    $${VRN_HOME}/ext/glew/include
+    "$${VRN_HOME}/ext/glew/include"
 
   contains(DEFINES, VRN_WITH_DEVIL) {
-    INCLUDEPATH += $${DEVIL_DIR}/include
+    INCLUDEPATH += "$${DEVIL_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_MATLAB) {
-    INCLUDEPATH += $${MATLAB_DIR}/extern/include
+    INCLUDEPATH += "$${MATLAB_DIR}/extern/include"
   }
 
   contains(DEFINES, VRN_WITH_TIFF) {
-    INCLUDEPATH += $${TIFF_DIR}/include
+    INCLUDEPATH += "$${TIFF_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_FREETYPE) {
-    INCLUDEPATH += $${FREETYPE_DIR}/include/freetype2
-    INCLUDEPATH += $${FREETYPE_DIR}/include
+    INCLUDEPATH += "$${FREETYPE_DIR}/include/freetype2"
+    INCLUDEPATH += "$${FREETYPE_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_FTGL) {
-    INCLUDEPATH += $${FTGL_DIR}/include
+    INCLUDEPATH += "$${FTGL_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_ZIP) {
-    INCLUDEPATH += $${VRN_HOME}/ext/ziparchive/include
+    INCLUDEPATH += "$${VRN_HOME}/ext/ziparchive/include"
   }
   contains(DEFINES, VRN_WITH_DCMTK) {
-    INCLUDEPATH += $${DCMTK_DIR}/include \
-                   $${VRN_HOME}/ext/openssl/include
+    INCLUDEPATH += "$${DCMTK_DIR}/include" \
+                   "$${VRN_HOME}/ext/openssl/include"
   }
   contains(DEFINES, VRN_WITH_PYTHON) {
-    INCLUDEPATH += $${PYTHON_DIR}/include
+    INCLUDEPATH += "$${PYTHON_DIR}/include"
   }
 
   contains(DEFINES, VRN_WITH_BUGTRAP) {
-    INCLUDEPATH += $${BUGTRAP_DIR}/Win32/BugTrap
+    INCLUDEPATH += "$${BUGTRAP_DIR}/Win32/BugTrap"
   }
 
   contains(DEFINES, VRN_WITH_BOOST) {
-    INCLUDEPATH += $${VRN_HOME}/ext/boost/include
+    INCLUDEPATH += "$${VRN_HOME}/ext/boost/include"
     # link boost libs dynamically
     DEFINES += BOOST_ALL_DYN_LINK
   }
 
   contains(DEFINES, VRN_WITH_BOX2D) {
-    INCLUDEPATH += $${BOX2D_DIR}/Include
+    INCLUDEPATH += "$${BOX2D_DIR}/Include"
     LIBS += box2d.lib
   }
 
@@ -226,21 +224,35 @@ unix {
     INCLUDEPATH += $${PYTHON_DIR}
     LIBS += $${PYTHON_LIBS}
   }
+
+  # workaround for inconsistent symbol visibility flags
+  # set by Xcode for executables and libraries
+  macx {
+    QMAKE_CXXFLAGS += -fvisibility=hidden
+    QMAKE_CXXFLAGS += -fvisibility-inlines-hidden
+  }
+  
+  macx {
+    contains (DEFINES, VRN_WITH_RENDER_TO_TEXTURE) {
+      DEFINES -= VRN_WITH_RENDER_TO_TEXTURE
+      warning("Render-to-Texture not supported on MacOSX")
+    }	
+  }
 }
 
 contains(DEFINES, VRN_WITH_SVNVERSION) {
   unix {
     QMAKE_EXTRA_TARGETS += revtarget
-    revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
+    revtarget.target     = $${VRN_HOME}/include/voreen/core/svnversion.h
     revtarget.commands   = $${VRN_HOME}/tools/svnversion.sh $${VRN_HOME} $${revtarget.target}
     PRE_TARGETDEPS      += $${revtarget.target}
   }
 
   win32 {
-    revtarget.target     = $${VRN_HOME}/include/voreen/svnversion.h
+    revtarget.target     = $${VRN_HOME}/include/voreen/core/svnversion.h
     revtarget.commands   = $${VRN_HOME}/tools/svnversion.bat $${VRN_HOME} $${revtarget.target}
     revtarget.CONFIG += recursive
-    revtarget.OUTPUT =  $${VRN_HOME}/include/voreen/svnversion.h
+    revtarget.OUTPUT =  $${VRN_HOME}/include/voreen/core/svnversion.h
     PRE_TARGETDEPS      += $${revtarget.target}
     QMAKE_EXTRA_TARGETS += revtarget
   }

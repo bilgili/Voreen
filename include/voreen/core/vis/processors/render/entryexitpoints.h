@@ -38,40 +38,32 @@
 
 namespace voreen {
 
+//TODO: merge EntryExitPoints and CubeEntryExitPoints
+//TODO: possibly move jittering into extra class
+//TODO: move scaling/translation into ProxyGeometry
+
 /**
- * Calculates the entry and exit parameter for gpu raycasting.
- * The parameters are stored in (float) textures. The textures are provided
- * by the class TextureContainer.
- * The ctor initializes a shader program in shaderProgram_. It handles the
- * vertex information in the vertex stage and pass it to the fragment stage.
- * The fragment program put it into the OpenGL color variable . The program
- * can (and should) be used by derived classes.
+ * Calculates the entry and exit points for GPU raycasting. The parameters are stored in
+ * (float) textures. The textures are provided by the class TextureContainer.
  */
 class EntryExitPoints : public VolumeRenderer {
 public:
     /**
-    *   Constructor
-    */
+     *   Constructor
+     */
     EntryExitPoints();
     virtual ~EntryExitPoints();
+
     /**
-    * Initialize the shader program.
-    */
+     * Initialize the shader program.
+     */
     virtual int initializeGL();
     /**
-    * Process voreen message, accepted identifiers:
-    * - set.jitterEntryParams bool
-    * - set.jitterStepLength float
-    */
+     * Process voreen message, accepted identifiers:
+     * - set.jitterEntryPoints bool
+     * - set.jitterStepLength float
+     */
     virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
-    ///Set the size of the generated textures.
-    virtual void setSize(const tgt::ivec2& size);
-    ///Change the proxy geometry
-    virtual void setProxyGeometry(ProxyGeometry* pg);
-    ProxyGeometry* getProxyGeometry();
-
-    ///Get all renderers using this EntryExitPoints
-    virtual std::vector<Processor*> getAttachedProcessor();
 
     ///Set a Transformationmatrix that will be multiplied with current modelView-Matrix
     ///before rendering of Proxygeometry
@@ -114,13 +106,12 @@ protected:
     /// (Re-)generates jitter texture
     void generateJitterTexture();
 
-    ProxyGeometry* pg_;
     tgt::Shader* shaderProgram_;
     tgt::Shader* shaderProgramJitter_;
     tgt::Shader* shaderProgramClipping_;
-    static const Identifier entryParamsTexUnit_;
-    static const Identifier entryParamsDepthTexUnit_;
-    static const Identifier exitParamsTexUnit_;
+    static const Identifier entryPointsTexUnit_;
+    static const Identifier entryPointsDepthTexUnit_;
+    static const Identifier exitPointsTexUnit_;
     static const Identifier jitterTexUnit_;
 
     //properties for gui generation:
@@ -133,7 +124,7 @@ protected:
     FloatProp translationX_;
     FloatProp translationY_;
     FloatProp translationZ_;
-    BoolProp jitterEntryParams_;
+    BoolProp jitterEntryPoints_;
     BoolProp filterJitterTexture_;
     FloatProp jitterStepLength_;
     tgt::Texture* jitterTexture_;
@@ -149,28 +140,20 @@ protected:
 //---------------------------------------------------------------------------
 
 /**
- * Calculates entry/exit params for the SimpleRayCasting
+ * Calculates cuboid entry/exit points for the SimpleRayCasting
  */
 class CubeEntryExitPoints : public EntryExitPoints {
 public:
 	CubeEntryExitPoints();
     virtual ~CubeEntryExitPoints();
 
-	virtual const Identifier getClassName() const {return "EntryExitPoints.CubeEntryExitPoints";}
+	virtual const Identifier getClassName() const { return "EntryExitPoints.CubeEntryExitPoints"; }
 	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new CubeEntryExitPoints();}
+    virtual Processor* create() { return new CubeEntryExitPoints(); }
 
     virtual std::string generateHeader();
-
-    /**
-    * Process voreen message, accepted identifiers:
-    * - switch.virtualClipplane
-    */
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 	virtual void process(LocalPortMapping* portMapping);
     
-    virtual bool isMultipassCompatible() { return true; }
-
     void setNeedToReRender(bool needed);
 protected:
     bool needToReRender_;
@@ -185,7 +168,7 @@ public:
     ~OutputProcessor();
     virtual void process(LocalPortMapping* portMapping);
 
-	virtual const Identifier getClassName() const {return "Miscellaneous.OutputProcessor";}
+	virtual const Identifier getClassName() const { return "Miscellaneous.OutputProcessor"; }
     virtual Processor* create() { return new OutputProcessor(); }
 
     int getOutputTarget() const { return outputTarget_; }

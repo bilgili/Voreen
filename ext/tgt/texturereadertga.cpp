@@ -56,7 +56,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
 
     GLubyte TGAheader[12];
     GLubyte header[6];
-    GLuint  bytesPerPixel;
+//    GLuint  bytesPerPixel;//FIXME: this is never initialized!
     
     File* file = FileSys.open(filename);
 
@@ -150,6 +150,11 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
             return 0;
         }
     } else {
+        LERROR("Reading compressed TGA file is currently unsupported.");
+        delete file;
+        delete t;
+        return 0;
+#if 0        
         // file is compressed
         LDEBUG("Reading compressed TGA file " << filename << " ...");
         
@@ -175,6 +180,7 @@ Texture* TextureReaderTga::loadTexture(const std::string& filename, Texture::Fil
                 at += packetHead * bytesPerPixel;
             }
         }
+#endif // 0
     }
 
     file->close();

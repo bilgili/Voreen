@@ -44,6 +44,8 @@ public:
     
     /// Sets the tgt::Timer that is used to determine who sent this event.
     void setTimer( Timer* timer );
+
+	virtual int getEventType();
     
 protected:
     Timer* timer_;

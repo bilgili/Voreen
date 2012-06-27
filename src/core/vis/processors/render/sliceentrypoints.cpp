@@ -70,8 +70,11 @@ void SliceEntryPoints::process(LocalPortMapping*  portMapping) {
     if (needToReRender_) {
         LGL_ERROR;
         VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-        if ( volumeHandle != currentVolumeHandle_ )
-            setVolumeHandle(volumeHandle);
+        if (volumeHandle != 0) {
+            if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
+                setVolumeHandle(volumeHandle);
+        } else
+            setVolumeHandle(0);
     
         if (currentVolumeHandle_ == 0)
             return;
@@ -90,8 +93,6 @@ void SliceEntryPoints::process(LocalPortMapping*  portMapping) {
             
         tc_->setActiveTarget(entrySource, "entry");
         
-        glViewport(0, 0, getSize().x, getSize().y);
-
         // set modelview and projection matrices
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();

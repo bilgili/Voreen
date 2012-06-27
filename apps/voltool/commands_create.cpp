@@ -62,8 +62,8 @@ bool CommandGenerateMask::execute(const std::vector<std::string>& parameters) {
     for (int voxel_z=0; voxel_z<dimensions.z; voxel_z++) {
         for (int voxel_y=0; voxel_y<dimensions.y; voxel_y++) {
             for (int voxel_x=0; voxel_x<dimensions.x; voxel_x++) {
-                tgt::vec3 diff = center - tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z);
-                if(length(diff) <= (float)radius)
+                tgt::vec3 diff = center - static_cast<tgt::vec3>(tgt::ivec3(voxel_x, voxel_y, voxel_z));
+                if (length(diff) <= radius)
                     target->voxel(voxel_x, voxel_y, voxel_z) = (uint8_t)255;
                 else
                     target->voxel(voxel_x, voxel_y, voxel_z)= (uint8_t)0;
@@ -71,7 +71,7 @@ bool CommandGenerateMask::execute(const std::vector<std::string>& parameters) {
         }
     }
     
-    if(target) {
+    if (target) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target);
@@ -171,13 +171,18 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         fillBox(target, tgt::ivec3(border,thickness+border,thickness+border), tgt::ivec3(border+thickness,s-thickness-border,s-border), red);
 
         //box0: oriented box, left, back
-        fillOrientedBox(target, tgt::vec3(border+thickness+(int)(is*0.3f), 0.0f, border+thickness+(int)(is*0.3f)), tgt::vec3(1.0f, 0.0f, 2.0f), (int)(is*0.15), (int)(is*0.2), border+thickness, border+thickness+(int)is*0.6f, box0);
+        fillOrientedBox(target, tgt::vec3(static_cast<float>(border+thickness+(is*0.3f)), 0.0f, static_cast<float>(border+thickness+(is*0.3f))), 
+            tgt::vec3(1.0f, 0.0f, 2.0f), static_cast<float>(is*0.15), static_cast<float>(is*0.2), static_cast<float>(border+thickness),
+            static_cast<float>(border+thickness+(is*0.6f)), box0);
 
         //box1: oriented box, right, front
-        fillOrientedBox(target, tgt::vec3(border+thickness+(int)(is*0.7f), 0.0f, border+thickness+(int)(is*0.8f)), tgt::vec3(2.0f, 0.0f, 1.0f), (int)(is*0.15), (int)(is*0.15), border+thickness, border+thickness+(int)is*0.3f, box1);
+        fillOrientedBox(target, tgt::vec3(static_cast<float>(border+thickness+(is*0.7f)), 0.0f, static_cast<float>(border+thickness+(is*0.8f))),
+            tgt::vec3(2.0f, 0.0f, 1.0f), static_cast<float>(is*0.15), static_cast<float>(is*0.15), static_cast<float>(border+thickness),
+            static_cast<float>(border+thickness+(is*0.3f)), box1);
 
         //sphere, left, front
-        fillSphere(target, tgt::vec3(border+thickness+(int)(is*0.3f), border+thickness+is/6, border+thickness+(int)(is*0.8f)), is/6, sphere);
+        fillSphere(target, tgt::vec3(static_cast<float>(border+thickness+(is*0.3f)), static_cast<float>(border+thickness+is/6),
+            static_cast<float>(border+thickness+(is*0.8f))), static_cast<float>(is/6), sphere);
 //         fillBox(targetDataset_, tgt::ivec3(), tgt::ivec3(), );
 
 //         void fillSphere(VolumeDataset* vds, tgt::vec3 center, float radius, uint8_t value);
@@ -254,7 +259,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         tgt::vec3 center;
         center = dimensions / 2;
 
-        float radius = (float)dimensions.x / 4.0f;
+        float radius = dimensions.x / 4.0f;
 
         LINFO("Generating synth dataset with dimensions: " << dimensions);
 
@@ -274,7 +279,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         for (int voxel_x=5; voxel_x<dimensions.x-5; voxel_x++) {
             for (int voxel_y=5; voxel_y<dimensions.y-5; voxel_y++) {
                 for (int voxel_z=5; voxel_z<(5+(dimensions.z/10)); voxel_z++) {
-                   target->voxel(voxel_x, voxel_y, voxel_z) = (uint8_t)128;
+                   target->voxel(voxel_x, voxel_y, voxel_z) = 128;
                 }
             }
         }
@@ -289,34 +294,34 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
         fillBox(target, tgt::ivec3(0,0,0), dimensions, 0);
 
         // generate cloud pattern
-        fillEllipsoid(target, tgt::vec3(dimensions.x*0.5, dimensions.y*0.5, dimensions.z*0.5), tgt::vec3(dimensions.x*0.3, dimensions.y*0.35, dimensions.z*0.3), 128);
-        fillEllipsoid(target, tgt::vec3(dimensions.x*0.2, dimensions.y*0.3, dimensions.z*0.45), tgt::vec3(dimensions.x*0.2, dimensions.y*0.2, dimensions.z*0.15), 128);
-        fillEllipsoid(target, tgt::vec3(dimensions.x*0.8, dimensions.y*0.4, dimensions.z*0.6), tgt::vec3(dimensions.x*0.15, dimensions.y*0.15, dimensions.z*0.15), 128);
-        fillEllipsoid(target, tgt::vec3(dimensions.x*0.6, dimensions.y*0.3, dimensions.z*0.8), tgt::vec3(dimensions.x*0.1, dimensions.y*0.15, dimensions.z*0.12), 128);
-        fillEllipsoid(target, tgt::vec3(dimensions.x*0.3, dimensions.y*0.6, dimensions.z*0.55), tgt::vec3(dimensions.x*0.15, dimensions.y*0.15, dimensions.z*0.2), 128);
+        fillEllipsoid(target, tgt::dvec3(dimensions.x*0.5, dimensions.y*0.5, dimensions.z*0.5), tgt::dvec3(dimensions.x*0.3, dimensions.y*0.35, dimensions.z*0.3), 128);
+        fillEllipsoid(target, tgt::dvec3(dimensions.x*0.2, dimensions.y*0.3, dimensions.z*0.45), tgt::dvec3(dimensions.x*0.2, dimensions.y*0.2, dimensions.z*0.15), 128);
+        fillEllipsoid(target, tgt::dvec3(dimensions.x*0.8, dimensions.y*0.4, dimensions.z*0.6), tgt::dvec3(dimensions.x*0.15, dimensions.y*0.15, dimensions.z*0.15), 128);
+        fillEllipsoid(target, tgt::dvec3(dimensions.x*0.6, dimensions.y*0.3, dimensions.z*0.8), tgt::dvec3(dimensions.x*0.1, dimensions.y*0.15, dimensions.z*0.12), 128);
+        fillEllipsoid(target, tgt::dvec3(dimensions.x*0.3, dimensions.y*0.6, dimensions.z*0.55), tgt::dvec3(dimensions.x*0.15, dimensions.y*0.15, dimensions.z*0.2), 128);
 
         // perform noise perturbation
         tgt::vec3 lowFrequency = tgt::vec3(10, 10, 10);
-        tgt::vec3 highAmplitude = tgt::vec3((float)dimensions.x/10.0, (float)dimensions.y/10.0, (float)dimensions.z/10.0);
+        tgt::vec3 highAmplitude = tgt::vec3(static_cast<float>(dimensions.x)/10.0f, static_cast<float>(dimensions.y)/10.0f, static_cast<float>(dimensions.z)/10.0f);
         LINFO("applying low frequency high amplitude perturbation...");
         applyPerturbation(target, dimensions, lowFrequency, highAmplitude);
 
         tgt::vec3 highFrequency = tgt::vec3(1, 1, 1);
-        tgt::vec3 lowAmplitude = tgt::vec3((float)dimensions.x/20.0, (float)dimensions.y/20.0, (float)dimensions.z/20.0);
+        tgt::vec3 lowAmplitude = tgt::vec3(static_cast<float>(dimensions.x)/20.0f, static_cast<float>(dimensions.y)/20.0f, static_cast<float>(dimensions.z)/20.0f);
         LINFO("applying high frequency low amplitude perturbation...");
         applyPerturbation(target, dimensions, highFrequency, lowAmplitude);
     }
-    else if (operation == "aotestbox"){
+    else if (operation == "aotestbox") {
         LINFO("Generating aotest");
         
         fillBox(target, tgt::ivec3(0,0,0), dimensions, 0);
 
-        for (int i=0 ; i<dimensions.z; ++i){
+        for (int i=0 ; i<dimensions.z; ++i) {
             LINFO("Generating aotest slice: "<< i);
             fillBox(target, tgt::ivec3(0,0,i), tgt::ivec3(dimensions.x,dimensions.y,i+1), i);
         }
     }
-    else if (operation == "shadowtestvol"){
+    else if (operation == "shadowtestvol") {
         LINFO("Generating shadowTestVolume");
         delete target;
         target = new VolumeUInt8(tgt::ivec3(64,64,64));
@@ -332,7 +337,7 @@ bool CommandCreate::execute(const std::vector<std::string>& parameters) {
     else
         throw SyntaxException("Unknown type!");
     
-    if(target) {
+    if (target) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters.back(), target);
@@ -346,8 +351,8 @@ void CommandCreate::fillSphere(VolumeUInt8* vds, tgt::vec3 center, float radius,
     for (int voxel_z=0; voxel_z<vds->getDimensions().z; voxel_z++) {
         for (int voxel_y=0; voxel_y<vds->getDimensions().y; voxel_y++) {
             for (int voxel_x=0; voxel_x<vds->getDimensions().x; voxel_x++) {
-            tgt::vec3 diff = center - tgt::vec3((float)voxel_x, (float)voxel_y, (float)voxel_z);
-            if(length(diff) <= (float)radius)
+                tgt::vec3 diff = center - static_cast<tgt::vec3>(tgt::ivec3(voxel_x, voxel_y, voxel_z));
+            if (length(diff) <= radius)
                 vds->voxel(voxel_x, voxel_y, voxel_z) = value;
             }
         }
@@ -361,7 +366,8 @@ void CommandCreate::fillEllipsoid(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 
             for (int voxel_x=0; voxel_x<vds->getDimensions().x; voxel_x++) {
                 if ((((voxel_x-center.x)*(voxel_x-center.x))/((radius.x*radius.x))) +
                     (((voxel_y-center.y)*(voxel_y-center.y))/((radius.y*radius.y))) +
-                    (((voxel_z-center.z)*(voxel_z-center.z))/((radius.z*radius.z))) <= 1) {
+                    (((voxel_z-center.z)*(voxel_z-center.z))/((radius.z*radius.z))) <= 1)
+                {
                     vds->voxel(voxel_x, voxel_y, voxel_z) = value;
                 }
             }
@@ -371,9 +377,9 @@ void CommandCreate::fillEllipsoid(VolumeUInt8* vds, tgt::vec3 center, tgt::vec3 
 
 void CommandCreate::fillBox(VolumeUInt8* vds, tgt::ivec3 start, tgt::ivec3 end, uint8_t value) {
     tgt::ivec3 i;
-    for(i.x = start.x; i.x < end.x; i.x++) {
-        for(i.y = start.y; i.y < end.y; i.y++) {
-            for(i.z = start.z; i.z < end.z; i.z++) {
+    for (i.x = start.x; i.x < end.x; i.x++) {
+        for (i.y = start.y; i.y < end.y; i.y++) {
+            for (i.z = start.z; i.z < end.z; i.z++) {
                 vds->voxel(i.x, i.y, i.z) = value;
             }
         }
@@ -388,18 +394,16 @@ void CommandCreate::fillOrientedBox(VolumeUInt8* vds, tgt::vec3 center, tgt::vec
     tgt::vec3 dir2 = cross(dir, tgt::vec3(0.0f, 1.0f, 0.0f));
     for (int voxel_z=0; voxel_z<vds->getDimensions().z; voxel_z++) {
        for (int voxel_x=0; voxel_x<vds->getDimensions().x; voxel_x++) {
-            tgt::vec3 diff = tgt::vec3((float)voxel_x, 0.0f, (float)voxel_z) - center;
-            float l = dot(dir, diff);
-            float l2 = dot(dir2, diff);
-            if ((fabsf(l) < lengthA) && (fabsf(l2) < lengthB))
-                for (int voxel_y = static_cast<int>(yStart); static_cast<float>(voxel_y) < yEnd; voxel_y++) {
-                    vds->voxel(voxel_x, voxel_y, voxel_z) = value;
-                }
-        }
+           tgt::vec3 diff = static_cast<tgt::vec3>(tgt::ivec3(voxel_x, 0, voxel_z)) - center;
+           float l = dot(dir, diff);
+           float l2 = dot(dir2, diff);
+           if ((fabsf(l) < lengthA) && (fabsf(l2) < lengthB))
+               for (int voxel_y = static_cast<int>(yStart); static_cast<float>(voxel_y) < yEnd; voxel_y++) {
+                   vds->voxel(voxel_x, voxel_y, voxel_z) = value;
+               }
+       }
     }
 }
-
-
 
 void CommandCreate::applyPerturbation(Volume* /*vds*/, tgt::ivec3 /*dimensions*/, tgt::vec3 /*frequency*/, tgt::vec3 /*amplitude*/) {
 //     srand( static_cast<unsigned int>(42) );

@@ -35,7 +35,7 @@
 namespace voreen {
 
 const QString CmdLineParser::usage_(QObject::tr(
-        "Usage: voreenapp [--fancy|--simple|--slice] [-x|--maximized] [--dbg level=(d(ebug)?|"
+        "Usage: voreenapp [--singlevolume|--simple|--slice] [-x|--maximized] [--dbg level=(d(ebug)?|"
         "w(arning)?|e(rror)?|f(atal)?] [--dbg-cat category] [filename]"
     ));
 
@@ -94,7 +94,7 @@ CmdLineParser::CmdLineParser(QStringList args)
                 cat_ = args[++i];
             }
         }
-        else if (args[i] == "--fancy")
+        else if (args[i] == "--singlevolume")
             RendererTypeFound(rendererTypeFound, networkName_, "standard.vnw");
         else if (args[i] == "--simple")
             RendererTypeFound(rendererTypeFound, networkName_, "simple.vnw");

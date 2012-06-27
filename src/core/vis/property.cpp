@@ -29,19 +29,17 @@
 
 #include "voreen/core/vis/property.h"
 
-
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 #include "voreen/core/vis/transfunc/transfuncmappingkey.h"
-
 
 namespace voreen {
 
 const Identifier Property::noneIdentifier("no_Ident");
 
-
-
-Property::Property() : Serializable(), owner_(0) {
+Property::Property()
+: Serializable(), owner_(0)
+{
 	type_ = Property::NONE_PROP;
 	msgIdent_ = noneIdentifier;
 	guiText_ = "empty";
@@ -55,7 +53,8 @@ Property::Property() : Serializable(), owner_(0) {
     grouped_ = false;
 }
 
-Property::~Property() {};
+Property::~Property()
+{}
 
 void Property::setMsgDestination(Identifier dest) {
     destination_ = dest;
@@ -82,9 +81,9 @@ bool Property::getAutoChange() const {
 
 void Property::setConditioned(Identifier condController, std::vector<int> condValues) {
     condValues_.clear();
-    for (unsigned int i=0; i< condValues.size(); ++i) {
+    for (size_t i=0; i< condValues.size(); ++i)
         condValues_.push_back(condValues.at(i));
-    }
+    
     conditioned_ = true;
     condControllerIdent_ = condController;
 }
@@ -192,13 +191,11 @@ void Property::updateFromXml(TiXmlElement* propElem) {
 
 }
 
-void Property::setOwner(Processor* owner)
-{
+void Property::setOwner(Processor* owner) {
     owner_ = owner;
 }
 
-Processor* Property::getOwner() const
-{
+Processor* Property::getOwner() const {
     return owner_;
 }
 
@@ -217,22 +214,23 @@ ConditionProp::ConditionProp(Identifier ident, Property* condi) {
     setSerializable(false);
 }
 
+// TODO: replace return-value by boolean? (ab)
 int ConditionProp::translateCondition(Property* prop) {
 	switch (prop->getType()) {
-		case Property::FLOAT_PROP :
-			return static_cast<int>((dynamic_cast<FloatProp*>(prop))->get());
-		case Property::INT_PROP :
-			return (dynamic_cast<IntProp*>(prop))->get();
-		case Property::BOOL_PROP :
-			if ((dynamic_cast<BoolProp*>(prop))->get())
-                return 1;
-			else
-                return 0;
-		case Property::ENUM_PROP :
-			return (dynamic_cast<EnumProp*>(prop))->get();
-		default:
-			return 0;
-	}
+    case Property::FLOAT_PROP :
+        return static_cast<int>((dynamic_cast<FloatProp*>(prop))->get());
+    case Property::INT_PROP :
+        return (dynamic_cast<IntProp*>(prop))->get();
+    case Property::BOOL_PROP :
+        if ((dynamic_cast<BoolProp*>(prop))->get())
+            return 1;
+        else
+            return 0;
+    case Property::ENUM_PROP :
+        return (dynamic_cast<EnumProp*>(prop))->get();
+    default:
+        return 0;
+    }
 }
 
 Property* ConditionProp::getCondControllerProp() {
@@ -241,50 +239,50 @@ Property* ConditionProp::getCondControllerProp() {
 
 void ConditionProp::setVisState(Property* prop, bool state) {
 	switch(prop->getType()) {
-        case Property::FLOAT_PROP:
-            (dynamic_cast<FloatProp*>(prop))->setVisible(state);
-            break;
-        case Property::BOOL_PROP:
-            (dynamic_cast<BoolProp*>(prop))->setVisible(state);
-            break;
-        case Property::BUTTON_PROP:
-            (dynamic_cast<ButtonProp*>(prop))->setVisible(state);
-            break;
-        case Property::COLOR_PROP:
-            (dynamic_cast<ColorProp*>(prop))->setVisible(state);
-            break;
-        case Property::ENUM_PROP:
-            (dynamic_cast<EnumProp*>(prop))->setVisible(state);
-            break;
-        case Property::FILEDIALOG_PROP:
-            (dynamic_cast<FileDialogProp*>(prop))->setVisible(state);
-            break;
-        case Property::INT_PROP:
-            (dynamic_cast<IntProp*>(prop))->setVisible(state);
-            break;
-        case Property::CONDITION_PROP:
-            (dynamic_cast<ConditionProp*>(prop))->setVisible(state);
-            break;
-        case Property::FLOAT_VEC2_PROP:
-            (dynamic_cast<FloatVec2Prop*>(prop))->setVisible(state);
-            break;
-        case Property::FLOAT_VEC3_PROP:
-            (dynamic_cast<FloatVec3Prop*>(prop))->setVisible(state);
-            break;
-        case Property::FLOAT_VEC4_PROP:
-            (dynamic_cast<FloatVec4Prop*>(prop))->setVisible(state);
-            break;
-        case Property::INTEGER_VEC2_PROP:
-            (dynamic_cast<IntVec2Prop*>(prop))->setVisible(state);
-            break;
-        case Property::INTEGER_VEC3_PROP:
-            (dynamic_cast<IntVec3Prop*>(prop))->setVisible(state);
-            break;
-        case Property::INTEGER_VEC4_PROP:
-            (dynamic_cast<IntVec4Prop*>(prop))->setVisible(state);
-            break;
-        default:
-            break;
+    case Property::FLOAT_PROP:
+        (dynamic_cast<FloatProp*>(prop))->setVisible(state);
+        break;
+    case Property::BOOL_PROP:
+        (dynamic_cast<BoolProp*>(prop))->setVisible(state);
+        break;
+    case Property::BUTTON_PROP:
+        (dynamic_cast<ButtonProp*>(prop))->setVisible(state);
+        break;
+    case Property::COLOR_PROP:
+        (dynamic_cast<ColorProp*>(prop))->setVisible(state);
+        break;
+    case Property::ENUM_PROP:
+        (dynamic_cast<EnumProp*>(prop))->setVisible(state);
+        break;
+    case Property::FILEDIALOG_PROP:
+        (dynamic_cast<FileDialogProp*>(prop))->setVisible(state);
+        break;
+    case Property::INT_PROP:
+        (dynamic_cast<IntProp*>(prop))->setVisible(state);
+        break;
+    case Property::CONDITION_PROP:
+        (dynamic_cast<ConditionProp*>(prop))->setVisible(state);
+        break;
+    case Property::FLOAT_VEC2_PROP:
+        (dynamic_cast<FloatVec2Prop*>(prop))->setVisible(state);
+        break;
+    case Property::FLOAT_VEC3_PROP:
+        (dynamic_cast<FloatVec3Prop*>(prop))->setVisible(state);
+        break;
+    case Property::FLOAT_VEC4_PROP:
+        (dynamic_cast<FloatVec4Prop*>(prop))->setVisible(state);
+        break;
+    case Property::INTEGER_VEC2_PROP:
+        (dynamic_cast<IntVec2Prop*>(prop))->setVisible(state);
+        break;
+    case Property::INTEGER_VEC3_PROP:
+        (dynamic_cast<IntVec3Prop*>(prop))->setVisible(state);
+        break;
+    case Property::INTEGER_VEC4_PROP:
+        (dynamic_cast<IntVec4Prop*>(prop))->setVisible(state);
+        break;
+    default:
+        break;
 	}
 }
 
@@ -355,9 +353,8 @@ template<class T>
 void TemplateProperty<T>::distributeChanges() {
     // FIXME: Cannot use MsgDistr as Processors are not registered - also look at EnumProp::distrChanges()
     //tgt::Singleton<MessageDistributor>::getRef().postMessage(new TemplateMessage<T>(getIdent(), get()), getMsgDestination());
-    if (owner_) {
+    if (owner_)
         owner_->postMessage(new TemplateMessage<T>(getIdent(), get()));
-    }
 }
 
 /* -------------------------------------------------------------------------------------------- */
@@ -457,8 +454,7 @@ int IntProp::getMinValue() const {
     return minValue_;
 }
 
-void IntProp::setMinValue(const int minValue)
-{
+void IntProp::setMinValue(const int minValue) {
     minValue_ = minValue;
 }
 
@@ -466,8 +462,7 @@ int IntProp::getMaxValue() const {
     return maxValue_;
 }
 
-void IntProp::setMaxValue(const int maxValue)
-{
+void IntProp::setMaxValue(const int maxValue) {
     maxValue_ = maxValue;
 }
 
@@ -589,6 +584,7 @@ void ColorProp::updateFromXml(TiXmlElement* propElem) {
         propElem->QueryFloatAttribute("g", &g) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("b", &b) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("a", &a) == TIXML_SUCCESS)
+
         set(tgt::Color(r,g,b,a));
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
@@ -603,6 +599,7 @@ TiXmlElement* ColorProp::serializeToXml() const {
     propElem->SetDoubleAttribute("g", get().g);
     propElem->SetDoubleAttribute("b", get().b);
     propElem->SetDoubleAttribute("a", get().a);
+
     return propElem;
 }
 
@@ -616,7 +613,9 @@ EnumProp::EnumProp(Identifier ident, std::string guiText, std::vector<std::strin
     sendStringMsg_ = sendStringMsg;
 }
 
-EnumProp::EnumProp(Identifier ident, std::string guiText, std::vector<std::string>& value, bool *needRecompileShader, int startindex, bool sendStringMsg) : TemplateProperty<int>(startindex, needRecompileShader) {
+EnumProp::EnumProp(Identifier ident, std::string guiText, std::vector<std::string>& value, bool *needRecompileShader, int startindex, bool sendStringMsg)
+: TemplateProperty<int>(startindex, needRecompileShader)
+{
     msgIdent_ = ident;
     guiText_ = guiText;
     strings_ = value;
@@ -648,15 +647,15 @@ void EnumProp::distributeChanges() {
             );
         }
     }
-    else { // call superclass method
+    else
+        // call superclass method
         TemplateProperty<int>::distributeChanges();
-    }
 }
 
 void EnumProp::updateFromXml(TiXmlElement* propElem) {
     Property::updateFromXml(propElem);
     if (propElem->Attribute("value")) {
-        for (size_t j = 0; j < strings_.size(); j++) {
+        for (size_t j = 0; j < strings_.size(); ++j) {
             if (strings_.at(j).compare(propElem->Attribute("value")) == 0) {
                 set(j); // The compiler might complain about size_t to int conversion...
                 break;
@@ -665,6 +664,7 @@ void EnumProp::updateFromXml(TiXmlElement* propElem) {
     }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+    
     distributeChanges();
 }
 
@@ -708,11 +708,12 @@ TiXmlElement* ButtonProp::serializeToXml() const {
 
 FileDialogProp::FileDialogProp(voreen::Identifier ident, std::string guiText,
                                std::string /*dialogCaption*/, std::string /*directory*/,
-                               std::string /*fileFilter*/)
-    : TemplateProperty<std::string>()
+                               std::string /*fileFilter*/,
+                               bool *needRecompileShader)
+    : TemplateProperty<std::string>("", needRecompileShader)
 {
     msgIdent_ = ident;
-	guiText_ = guiText;
+    guiText_ = guiText;
     type_ = Property::FILEDIALOG_PROP;
 }
 
@@ -739,6 +740,29 @@ TiXmlElement* FileDialogProp::serializeToXml() const {
     return propElem;
 }
 
+void FileDialogProp::updateFromXml(TiXmlElement* propElem) {
+
+    Property::updateFromXml(propElem);
+    if (propElem->Attribute("value"))
+        set(propElem->Attribute("value"));
+    else
+        errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
+
+    if (propElem->Attribute("caption"))
+        dialogCaption_ = propElem->Attribute("caption");
+    else
+        errors_.store(XmlAttributeException("Attribute 'caption' missing in Property element!"));
+    if (propElem->Attribute("directory"))
+        directory_ = propElem->Attribute("directory");
+    else
+        errors_.store(XmlAttributeException("Attribute 'directory' missing in Property element!"));
+    if (propElem->Attribute("filefilter"))
+        fileFilter_ = propElem->Attribute("filefilter");
+    else
+        errors_.store(XmlAttributeException("Attribute 'filefilter' missing in Property element!"));
+
+}
+
 /* -------------------------------------------------------------------------------------------- */
 
 TransFuncAlphaProp::TransFuncAlphaProp(voreen::Identifier ident, std::string guiText, TransFunc* tf, const std::string& yAxisText)
@@ -761,14 +785,18 @@ TransFuncAlphaProp::TransFuncAlphaProp(voreen::Identifier ident, std::string gui
 
 /* -------------------------------------------------------------------------------------------- */
 
-TransFuncProp::TransFuncProp(voreen::Identifier ident, std::string guiText, TransFunc* tf, bool showThreshold) : TemplateProperty<TransFunc*>(tf) {
+TransFuncProp::TransFuncProp(voreen::Identifier ident, std::string guiText, TransFunc* tf, bool showThreshold)
+: TemplateProperty<TransFunc*>(tf)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     showThreshold_ = showThreshold;
     type_ = Property::TRANSFUNC_PROP;
 }
 
-TransFuncProp::TransFuncProp(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, TransFunc* tf, bool showThreshold) : TemplateProperty<TransFunc*>(tf, needRecompileShader) {
+TransFuncProp::TransFuncProp(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, TransFunc* tf, bool showThreshold)
+: TemplateProperty<TransFunc*>(tf, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     showThreshold_ = showThreshold;
@@ -780,9 +808,19 @@ bool TransFuncProp::getShowThreshold() {
 }
 
 void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
+        /**/
     Property::updateFromXml(propElem);
 
-    TransFuncIntensity* tf = new TransFuncIntensity();
+    int resolution;
+    TransFuncIntensity* tf;
+    // read resolution
+    if (propElem->QueryIntAttribute("x", &resolution) == TIXML_SUCCESS) {
+        tf = new TransFuncIntensity(resolution);
+    }
+    else {
+        tf = new TransFuncIntensity(); // default resolution
+    }
+
     tf->clearKeys();
 
     //iterate through all markers
@@ -821,9 +859,9 @@ void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
                 color.a = (uint8_t) tmp.a;
                 myKey->setColorR(color);
                 myKey->setAlphaR(dest);
-            } else {
+            } else
                 myKey->setSplit(false);
-            }
+            
             tf->addKey(myKey);
         }
         else
@@ -834,14 +872,16 @@ void TransFuncProp::updateFromXml(TiXmlElement* propElem) {
     // processor->postMessage(new TransFuncPtrMsg(VolumeRenderer::setTransFunc_, tf) );
     // Hope this does the same... 
     distributeChanges();
+        /**/
 }
 
 TiXmlElement* TransFuncProp::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* propElem = Property::serializeToXml();
-
     TransFuncIntensity* tf = dynamic_cast<TransFuncIntensity*>(get());
     if (tf) {
+        // serialize width
+        propElem->SetAttribute("resolution", tf->getTexture()->getWidth());
         // iterate through all markers
         for (int m = 0; m < tf->getNumKeys(); ++m) {
             // prepare xml
@@ -869,7 +909,9 @@ TiXmlElement* TransFuncProp::serializeToXml() const {
 
 /* -------------------------------------------------------------------------------------------- */
 
-FloatVec2Prop::FloatVec2Prop(voreen::Identifier ident, std::string guiText, tgt::vec2 value, tgt::vec2 minimum, tgt::vec2 maximum) : TemplateProperty<tgt::vec2>(value) {
+FloatVec2Prop::FloatVec2Prop(voreen::Identifier ident, std::string guiText, tgt::vec2 value, tgt::vec2 minimum, tgt::vec2 maximum)
+: TemplateProperty<tgt::vec2>(value)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
 	minimum_ = minimum;
@@ -877,7 +919,9 @@ FloatVec2Prop::FloatVec2Prop(voreen::Identifier ident, std::string guiText, tgt:
     type_ = Property::FLOAT_VEC2_PROP;
 }
 
-FloatVec2Prop::FloatVec2Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec2 value, tgt::vec2 minimum, tgt::vec2 maximum) : TemplateProperty<tgt::vec2>(value, needRecompileShader) {
+FloatVec2Prop::FloatVec2Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec2 value, tgt::vec2 minimum, tgt::vec2 maximum)
+: TemplateProperty<tgt::vec2>(value, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     minimum_ = minimum;
@@ -898,9 +942,9 @@ void FloatVec2Prop::updateFromXml(TiXmlElement* propElem) {
 
     tgt::vec2 vector;
     if (propElem->QueryFloatAttribute("x", &vector.x) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("y", &vector.y) == TIXML_SUCCESS) {
+        propElem->QueryFloatAttribute("y", &vector.y) == TIXML_SUCCESS)
+
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -916,7 +960,9 @@ TiXmlElement* FloatVec2Prop::serializeToXml() const {
 }
 /* -------------------------------------------------------------------------------------------- */
 
-FloatVec3Prop::FloatVec3Prop(voreen::Identifier ident, std::string guiText, tgt::vec3 value, tgt::vec3 minimum, tgt::vec3 maximum) : TemplateProperty<tgt::vec3>(value) {
+FloatVec3Prop::FloatVec3Prop(voreen::Identifier ident, std::string guiText, tgt::vec3 value, tgt::vec3 minimum, tgt::vec3 maximum)
+: TemplateProperty<tgt::vec3>(value)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
 	minimum_ = minimum;
@@ -924,7 +970,9 @@ FloatVec3Prop::FloatVec3Prop(voreen::Identifier ident, std::string guiText, tgt:
     type_ = Property::FLOAT_VEC3_PROP;
 }
 
-FloatVec3Prop::FloatVec3Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec3 value, tgt::vec3 minimum, tgt::vec3 maximum) : TemplateProperty<tgt::vec3>(value, needRecompileShader) {
+FloatVec3Prop::FloatVec3Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec3 value, tgt::vec3 minimum, tgt::vec3 maximum)
+: TemplateProperty<tgt::vec3>(value, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     minimum_ = minimum;
@@ -946,9 +994,9 @@ void FloatVec3Prop::updateFromXml(TiXmlElement* propElem) {
     tgt::vec3 vector;
     if (propElem->QueryFloatAttribute("x", &vector.x) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("y", &vector.y) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("z", &vector.z) == TIXML_SUCCESS) {
+        propElem->QueryFloatAttribute("z", &vector.z) == TIXML_SUCCESS)
+        
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -965,7 +1013,9 @@ TiXmlElement* FloatVec3Prop::serializeToXml() const {
 }
 /* -------------------------------------------------------------------------------------------- */
 
-FloatVec4Prop::FloatVec4Prop(voreen::Identifier ident, std::string guiText, tgt::vec4 value, tgt::vec4 minimum, tgt::vec4 maximum) : TemplateProperty<tgt::vec4>(value) {
+FloatVec4Prop::FloatVec4Prop(voreen::Identifier ident, std::string guiText, tgt::vec4 value, tgt::vec4 minimum, tgt::vec4 maximum)
+: TemplateProperty<tgt::vec4>(value)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
 	minimum_ = minimum;
@@ -973,7 +1023,9 @@ FloatVec4Prop::FloatVec4Prop(voreen::Identifier ident, std::string guiText, tgt:
     type_ = Property::FLOAT_VEC4_PROP;
 }
 
-FloatVec4Prop::FloatVec4Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec4 value, tgt::vec4 minimum, tgt::vec4 maximum) : TemplateProperty<tgt::vec4>(value, needRecompileShader) {
+FloatVec4Prop::FloatVec4Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::vec4 value, tgt::vec4 minimum, tgt::vec4 maximum)
+: TemplateProperty<tgt::vec4>(value, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     minimum_ = minimum;
@@ -996,9 +1048,9 @@ void FloatVec4Prop::updateFromXml(TiXmlElement* propElem) {
     if (propElem->QueryFloatAttribute("x", &vector.x) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("y", &vector.y) == TIXML_SUCCESS &&
         propElem->QueryFloatAttribute("z", &vector.z) == TIXML_SUCCESS &&
-        propElem->QueryFloatAttribute("z", &vector.w) == TIXML_SUCCESS) {
+        propElem->QueryFloatAttribute("z", &vector.w) == TIXML_SUCCESS)
+     
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -1046,9 +1098,9 @@ void IntVec2Prop::updateFromXml(TiXmlElement* propElem) {
 
     tgt::ivec2 vector;
     if (propElem->QueryIntAttribute("x", &vector.x) == TIXML_SUCCESS &&
-        propElem->QueryIntAttribute("y", &vector.y) == TIXML_SUCCESS) {
+        propElem->QueryIntAttribute("y", &vector.y) == TIXML_SUCCESS)
+
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -1065,7 +1117,9 @@ TiXmlElement* IntVec2Prop::serializeToXml() const {
 
 /* -------------------------------------------------------------------------------------------- */
 
-IntVec3Prop::IntVec3Prop(voreen::Identifier ident, std::string guiText, tgt::ivec3 value, tgt::ivec3 minimum, tgt::ivec3 maximum) : TemplateProperty<tgt::ivec3>(value) {
+IntVec3Prop::IntVec3Prop(voreen::Identifier ident, std::string guiText, tgt::ivec3 value, tgt::ivec3 minimum, tgt::ivec3 maximum)
+: TemplateProperty<tgt::ivec3>(value)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
 	minimum_ = minimum;
@@ -1073,7 +1127,9 @@ IntVec3Prop::IntVec3Prop(voreen::Identifier ident, std::string guiText, tgt::ive
     type_ = Property::INTEGER_VEC3_PROP;
 }
 
-IntVec3Prop::IntVec3Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::ivec3 value, tgt::ivec3 minimum, tgt::ivec3 maximum) : TemplateProperty<tgt::ivec3>(value, needRecompileShader) {
+IntVec3Prop::IntVec3Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::ivec3 value, tgt::ivec3 minimum, tgt::ivec3 maximum)
+: TemplateProperty<tgt::ivec3>(value, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     minimum_ = minimum;
@@ -1095,9 +1151,9 @@ void IntVec3Prop::updateFromXml(TiXmlElement* propElem) {
     tgt::ivec3 vector;
     if (propElem->QueryIntAttribute("x", &vector.x) == TIXML_SUCCESS &&
         propElem->QueryIntAttribute("y", &vector.y) == TIXML_SUCCESS &&
-        propElem->QueryIntAttribute("z", &vector.z) == TIXML_SUCCESS) {
+        propElem->QueryIntAttribute("z", &vector.z) == TIXML_SUCCESS)
+     
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -1115,7 +1171,9 @@ TiXmlElement* IntVec3Prop::serializeToXml() const {
 
 /* -------------------------------------------------------------------------------------------- */
 
-IntVec4Prop::IntVec4Prop(voreen::Identifier ident, std::string guiText, tgt::ivec4 value, tgt::ivec4 minimum, tgt::ivec4 maximum) : TemplateProperty<tgt::ivec4>(value) {
+IntVec4Prop::IntVec4Prop(voreen::Identifier ident, std::string guiText, tgt::ivec4 value, tgt::ivec4 minimum, tgt::ivec4 maximum)
+: TemplateProperty<tgt::ivec4>(value)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
 	minimum_ = minimum;
@@ -1123,7 +1181,9 @@ IntVec4Prop::IntVec4Prop(voreen::Identifier ident, std::string guiText, tgt::ive
     type_ = Property::INTEGER_VEC4_PROP;
 }
 
-IntVec4Prop::IntVec4Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::ivec4 value, tgt::ivec4 minimum, tgt::ivec4 maximum) : TemplateProperty<tgt::ivec4>(value, needRecompileShader) {
+IntVec4Prop::IntVec4Prop(voreen::Identifier ident, std::string guiText, bool *needRecompileShader, tgt::ivec4 value, tgt::ivec4 minimum, tgt::ivec4 maximum)
+: TemplateProperty<tgt::ivec4>(value, needRecompileShader)
+{
     msgIdent_ = ident;
 	guiText_ = guiText;
     minimum_ = minimum;
@@ -1146,9 +1206,9 @@ void IntVec4Prop::updateFromXml(TiXmlElement* propElem) {
     if (propElem->QueryIntAttribute("x", &vector.x) == TIXML_SUCCESS &&
         propElem->QueryIntAttribute("y", &vector.y) == TIXML_SUCCESS &&
         propElem->QueryIntAttribute("z", &vector.z) == TIXML_SUCCESS &&
-        propElem->QueryIntAttribute("z", &vector.w) == TIXML_SUCCESS) {
+        propElem->QueryIntAttribute("z", &vector.w) == TIXML_SUCCESS)
+     
         set(vector);
-    }
     else
         errors_.store(XmlAttributeException("Attribute 'value' missing in Property element!"));
     distributeChanges();
@@ -1166,4 +1226,3 @@ TiXmlElement* IntVec4Prop::serializeToXml() const {
 }
 
 } //namespace Voreen
-

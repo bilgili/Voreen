@@ -48,47 +48,54 @@ const Identifier VolumeRaycaster::setSegment_              = "set.Segment";
 const Identifier VolumeRaycaster::switchSegmentation_      = "switch.Segmentation";
 const Identifier VolumeRaycaster::switchGradientsOnTheFly_ = "switch.GradientsOnTheFly";
 
-const Identifier VolumeRaycaster::entryParamsTexUnit_      = "entryParamsTexUnit";
-const Identifier VolumeRaycaster::entryParamsDepthTexUnit_ = "entryParamsDepthTexUnit";
-const Identifier VolumeRaycaster::exitParamsTexUnit_       = "exitParamsTexUnit";
-const Identifier VolumeRaycaster::exitParamsDepthTexUnit_  = "exitParamsDepthTexUnit";
-const Identifier VolumeRaycaster::volTexUnit_              = "volTexUnit";
-const Identifier VolumeRaycaster::volTexUnit2_             = "volTexUnit2";
-const Identifier VolumeRaycaster::volTexUnit3_             = "volTexUnit3";
-const Identifier VolumeRaycaster::transferTexUnit_         = "transferTexUnit";
-const Identifier VolumeRaycaster::transferTexUnit2_        = "transferTexUnit2";
-const Identifier VolumeRaycaster::transferTexUnit3_        = "transferTexUnit3";
-const Identifier VolumeRaycaster::segmentationTexUnit_     = "segmentationTexUnit";
-const Identifier VolumeRaycaster::ambTexUnit_              = "ambTexUnit";
-const Identifier VolumeRaycaster::ambLookupTexUnit_        = "ambLookupTexUnit";
-const Identifier VolumeRaycaster::normalsTexUnit_          = "normalsTexUnit";
+const Identifier VolumeRaycaster::entryParamsTexUnit_        = "entryParamsTexUnit";
+const Identifier VolumeRaycaster::entryParamsDepthTexUnit_   = "entryParamsDepthTexUnit";
+const Identifier VolumeRaycaster::exitParamsTexUnit_         = "exitParamsTexUnit";
+const Identifier VolumeRaycaster::exitParamsDepthTexUnit_    = "exitParamsDepthTexUnit";
+const Identifier VolumeRaycaster::entryParamsTexUnit2_       = "entryParamsTexUnit2";
+const Identifier VolumeRaycaster::entryParamsDepthTexUnit2_  = "entryParamsDepthTexUnit2";
+const Identifier VolumeRaycaster::exitParamsTexUnit2_        = "exitParamsTexUnit2";
+const Identifier VolumeRaycaster::exitParamsDepthTexUnit2_   = "exitParamsDepthTexUnit2";
+const Identifier VolumeRaycaster::volTexUnit_                = "volTexUnit";
+const Identifier VolumeRaycaster::volTexUnit2_               = "volTexUnit2";
+const Identifier VolumeRaycaster::volTexUnit3_               = "volTexUnit3";
+const Identifier VolumeRaycaster::transferTexUnit_           = "transferTexUnit";
+const Identifier VolumeRaycaster::transferTexUnit2_          = "transferTexUnit2";
+const Identifier VolumeRaycaster::transferTexUnit3_          = "transferTexUnit3";
+const Identifier VolumeRaycaster::segmentationTexUnit_       = "segmentationTexUnit";
+const Identifier VolumeRaycaster::ambTexUnit_                = "ambTexUnit";
+const Identifier VolumeRaycaster::ambLookupTexUnit_          = "ambLookupTexUnit";
+const Identifier VolumeRaycaster::normalsTexUnit_            = "normalsTexUnit";
 const Identifier VolumeRaycaster::gradientMagnitudesTexUnit_ = "gradientMagnitudesTexUnit";
 
 /*
     constructor and destructor
 */
 
-VolumeRaycaster::VolumeRaycaster(std::string fragmentShaderFilename)
+VolumeRaycaster::VolumeRaycaster()
     : VolumeRenderer()
     , needRecompileShader_(true)
     , raycastPrg_(0)
-    , fragmentShaderFilename_(fragmentShaderFilename)
     , splitMode_("set.splitMode", "Set Splitmode", &needRecompileShader_, 0, 0, 10)
-    , pg_(0)
     , raycastingQualityFactor_(setRaycastingQualityFactor_, "Raycasting Quality", &needRecompileShader_, 1.0f)
     , segment_(setSegment_, "Set Segment", 0)
     , useSegmentation_(switchSegmentation_, "Use Segmentation", &needRecompileShader_, false)
 {
     // set texture unit identifiers and register
     std::vector<Identifier> units;
-    units.push_back(entryParamsTexUnit_);
-    units.push_back(entryParamsDepthTexUnit_);
-    units.push_back(exitParamsTexUnit_);
-    units.push_back(exitParamsDepthTexUnit_);
+	units.push_back(entryParamsTexUnit_);
+	units.push_back(entryParamsDepthTexUnit_);
+	units.push_back(exitParamsTexUnit_);
+	units.push_back(exitParamsDepthTexUnit_);
+	units.push_back(entryParamsTexUnit2_);
+	units.push_back(entryParamsDepthTexUnit2_);
+	units.push_back(exitParamsTexUnit2_);
+	units.push_back(exitParamsDepthTexUnit2_);
     units.push_back(volTexUnit_);
     units.push_back(volTexUnit2_);
     units.push_back(volTexUnit3_);
-    units.push_back(transferTexUnit_);
+	units.push_back(transferTexUnit_);
+	units.push_back(transferTexUnit2_);
     units.push_back(segmentationTexUnit_);
     tm_.registerUnits(units);
 
@@ -109,7 +116,7 @@ void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle) {
         return;
     
     VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
-    if ( (volumeGL != 0) && (volumeGL->getNumTextures() > 1) ) {
+    if ((volumeGL != 0) && (volumeGL->getNumTextures() > 1)) {
         // free tex units
         for (size_t i = 0; i < splitNames_.size(); ++i)
             tm_.removeTexUnit(splitNames_[i]);
@@ -145,29 +152,13 @@ void VolumeRaycaster::setVolumeHandle(VolumeHandle* const handle) {
 std::string VolumeRaycaster::generateHeader() {
     std::string headerSource = VolumeRenderer::generateHeader();
 
-	// enable support for multiple render targets
-	//headerSource += "#extension GL_ARB_draw_buffers : enable\n";
-
 	if (getTransFunc())
         headerSource += getTransFunc()->getShaderDefines();
     else
         headerSource += "#define TF_INTENSITY\n";
 
-    
     if (maskingMode_->get() == 3 || maskingMode_->get() == 4) // FIXME: HACK needed until USE_SGEMENTATION is obsolete
 		headerSource += "#define USE_SEGMENTATION\n";
-/*
-	// include required shader modules
-	headerSource += "#include \"modules/mod_sampler2d.frag\"\n";
-	headerSource += "#include \"modules/mod_sampler3d.frag\"\n";
-	headerSource += "#include \"modules/mod_raysetup.frag\"\n";
-	headerSource += "#include \"modules/mod_masking.frag\"\n";
-	headerSource += "#include \"modules/mod_gradients.frag\"\n";
-	headerSource += "#include \"modules/mod_transfunc.frag\"\n";
-	headerSource += "#include \"modules/mod_shading.frag\"\n";
-	headerSource += "#include \"modules/mod_compositing.frag\"\n";
-	headerSource += "#include \"modules/mod_depth.frag\"\n";
-*/
 
 	// configure masking
 	headerSource += "#define RC_NOT_MASKED(samplePos, intensity) ";
@@ -199,6 +190,9 @@ std::string VolumeRaycaster::generateHeader() {
             headerSource += "calcGradientA(volume, volumeParameters, samplePos, t, rayDirection, entryPoints);\n";
 			break;
 		case 3:
+            headerSource += "calcGradientATF(volume, volumeParameters, samplePos, t, rayDirection, entryPoints);\n";
+			break;
+		case 4:
             headerSource += "calcGradientFiltered(volume, volumeParameters, samplePos, entryPoints);\n";
 			break;
 	}
@@ -224,12 +218,13 @@ std::string VolumeRaycaster::generateHeader() {
             headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
 			break;
 		case 2:
-            headerSource += "phongShadingS(gradient, samplePos, volumeParameters, kd);\n";
+            headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
 			break;
-		case 3: headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, ka, kd);\n";
+		case 3:
+			headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
 			break;
 		case 4:
-            headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, ka, kd);\n";
+            headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
 			break;
 		case 5:
             headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
@@ -284,6 +279,7 @@ void VolumeRaycaster::initProperties() {
 	gradientModes_.push_back("none");
 	gradientModes_.push_back("Forward Differences");
 	gradientModes_.push_back("Central Differences");
+	gradientModes_.push_back("Central Differences (TF)");
 	gradientModes_.push_back("Filtered");
 	gradientMode_ = new EnumProp("set.gradient", "Gradient Calculation", gradientModes_, &needRecompileShader_, 1);
 
@@ -366,6 +362,46 @@ void VolumeRaycaster::processMessage(Message* msg, const Identifier& dest/*=Mess
             raycastingQualityFactor_.set(10.f);
         invalidate();
     }
+    else if (msg->id_ == "set.masking") {
+        std::string s = msg->getValue<std::string>();
+        for (int i = 0; i < 4; ++i) {
+            if (s == maskingModes_[i])
+                maskingMode_->set(i);
+        }
+        invalidate();
+    }
+    else if (msg->id_ == "set.gradient") {
+        std::string s = msg->getValue<std::string>();
+        for (int i = 0; i < 4; ++i) {
+            if (s == gradientModes_[i])
+                gradientMode_->set(i);
+        }
+        invalidate();
+    }
+    else if (msg->id_ == "set.classification") {
+        std::string s = msg->getValue<std::string>();
+        for (int i = 0; i < 2; ++i) {
+            if (s == classificationModes_[i])
+                classificationMode_->set(i);
+        }
+        invalidate();
+    }
+    else if (msg->id_ == "set.shading") {
+        std::string s = msg->getValue<std::string>();
+        for (int i = 0; i < 7; ++i) {
+            if (s == shadeModes_[i])
+                shadeMode_->set(i);
+        }
+        invalidate();
+    }
+    else if (msg->id_ == "set.compositing") {
+        std::string s = msg->getValue<std::string>();
+        for (int i = 0; i < 5; ++i) {
+            if (s == compositingModes_[i])
+                compositingMode_->set(i);
+        }
+        invalidate();
+    }
 }
 
 void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader) {
@@ -379,6 +415,23 @@ void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader) {
     loc = shader->getUniformLocation("raycastingQualityFactorRCP_", true);
     if (loc != -1)
         shader->setUniform(loc, 1.f / raycastingQualityFactor_.get());
+
+
+	// provide values needed for correct depth value calculation
+	float n = camera_->getNearDist();
+	float f = camera_->getFarDist();
+    loc = shader->getUniformLocation("const_to_z_e_1", true);
+    if (loc != -1)
+		shader->setUniform(loc, 0.5f + 0.5f*((f+n)/(f-n)));
+    loc = shader->getUniformLocation("const_to_z_e_2", true);
+    if (loc != -1)
+		shader->setUniform(loc, ((f-n)/(f*n)));
+    loc = shader->getUniformLocation("const_to_z_w_1", true);
+    if (loc != -1)
+		shader->setUniform(loc, ((f*n)/(f-n)));
+    loc = shader->getUniformLocation("const_to_z_w_2", true);
+    if (loc != -1)
+		shader->setUniform(loc, 0.5f*((f+n)/(f-n))+0.5f);
 }
 
 } // namespace voreen

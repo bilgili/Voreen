@@ -32,6 +32,8 @@
 
 #include "voreen/core/vis/message.h"
 
+#include "tgt/texturemanager.h"
+
 class string;
 class TiXmlElement;
 

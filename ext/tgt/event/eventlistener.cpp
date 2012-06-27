@@ -28,6 +28,10 @@
 
 namespace tgt {
 
+	EventListener::EventListener(){
+	    eventTypes_ = Event::ALLEVENTTYPES;
+	}
+
 void EventListener::onEvent(Event* e) {
     /*
         since we already checked which type we have we can safely use
@@ -52,6 +56,14 @@ void EventListener::onEvent(Event* e) {
     else if (typeid(*e) == typeid(TimeEvent)) {
         timerEvent(static_cast<TimeEvent*>(e));
     }
+}
+
+void EventListener::setEventTypes(int eventTypes){
+    eventTypes_=eventTypes;
+}
+
+int EventListener::getEventTypes(){
+	return eventTypes_;
 }
 
 } // namespace tgt

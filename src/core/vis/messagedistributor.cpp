@@ -59,7 +59,7 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
 
     MessageReceiver::processMessage(msg, dest);
 
-    if ( msg->isDiscarded() )
+    if (msg->isDiscarded())
         return;
 
     // if the destination "all" was specified all message receivers should receive the message
@@ -67,7 +67,7 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
         for (iterator iter = begin(); iter != end(); ++iter) {
             MessageReceiver* mr = iter->second;
             mr->processMessage(msg, dest);
-            if ( msg->isDiscarded() )
+            if (msg->isDiscarded())
                 return;
         }
     }
@@ -81,7 +81,7 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
 
         for (iterator iter = range.first; iter != range.second; ++iter) {
             iter->second->processMessage(msg, currViewId_);
-            if ( msg->isDiscarded() )
+            if (msg->isDiscarded())
                 return;
         }
     }
@@ -91,23 +91,22 @@ void MessageDistributor::processMessage(Message* msg, const Identifier& dest/*=M
 
         for (iterator iter = range.first; iter != range.second; ++iter) {
             iter->second->processMessage(msg, dest);
-            if ( msg->isDiscarded() )
+            if (msg->isDiscarded())
                 return;
         }
     }
 }
 
 MessageDistributor::iterator MessageDistributor::insert(MessageReceiver* mr) {
+    tgtAssert(!contains(mr), "Message receiver already inserted");
 
-    tgtAssert( !contains(mr), "Message receiver already inserted");
-
-    return ReceiverMap::insert( std::make_pair(mr->getTag(), mr) );
+    return ReceiverMap::insert(std::make_pair(mr->getTag(), mr));
 }
 
 void MessageDistributor::remove(MessageReceiver* mr) {
     // TODO use equal_range here for performance
     iterator iter = begin();
-    while ( (iter != end()) && (iter->second != mr)  )
+    while ((iter != end()) && (iter->second != mr) )
         ++iter;
 
     if (iter != end())
@@ -117,9 +116,9 @@ void MessageDistributor::remove(MessageReceiver* mr) {
 }
 
 bool MessageDistributor::contains(MessageReceiver* mr) {
-
+    // TODO use equal_range here for performance
     iterator iter = begin();
-    while ( (iter != end()) && (iter->second != mr) )
+    while ((iter != end()) && (iter->second != mr))
         ++iter;
 
     return (iter != end());
@@ -129,7 +128,7 @@ Identifier MessageDistributor::getFreeTag() {
     ++freeTagCounter_;
 
     std::ostringstream oss;
-    // do not use "_@!" for your own group tags
+    // FIXME: do not use "_@!" for your own group tags
     oss << "_@!" << freeTagCounter_;
     return oss.str();
 }

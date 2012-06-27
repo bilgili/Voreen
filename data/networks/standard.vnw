@@ -6,8 +6,9 @@
     <Settings reuseTCTargets="false" />
     <Processor type="EntryExitPoints.CubeEntryExitPoints" name="EntryExitPoints" id="0">
         <MetaData>
-            <RptProcessorItem x="-349" y="-27" />
+            <RptProcessorItem x="-349" y="-114" />
         </MetaData>
+        <Property id="set.supportCameraInsideVolume" type="BoolProp" value="true" />
         <Property id="set.jitterEntryParams" type="BoolProp" value="false" />
         <Property id="set.scaleX" type="FloatProp" value="1.000000" />
         <Property id="set.scaleY" type="FloatProp" value="1.000000" />
@@ -16,15 +17,15 @@
         <Property id="set.translationY" type="FloatProp" value="0.000000" />
         <Property id="set.translationZ" type="FloatProp" value="0.000000" />
         <Outport type="image.entrypoints">
-            <Processor id="6" port="image.entrypoints" />
+            <Processor id="5" port="image.entrypoints" />
         </Outport>
         <Outport type="image.exitpoints">
-            <Processor id="6" port="image.exitpoints" />
+            <Processor id="5" port="image.exitpoints" />
         </Outport>
     </Processor>
     <Processor type="ProxyGeometry.CubeProxyGeometry" name="Cube-ProxyGeometry" id="1">
         <MetaData>
-            <RptProcessorItem x="-578" y="-26" />
+            <RptProcessorItem x="-584" y="-114" />
         </MetaData>
         <Property id="set.UseClipping" type="BoolProp" value="true" />
         <Property id="switch.virtualClipplane" type="BoolProp" value="false" />
@@ -41,7 +42,7 @@
     </Processor>
     <Processor type="PostProcessor.Background" name="Background" id="2">
         <MetaData>
-            <RptProcessorItem x="-404" y="199" />
+            <RptProcessorItem x="-426" y="213" />
         </MetaData>
         <Property id="set.backgroundModeAsString" type="EnumProp" value="Monochrome" />
         <Property id="set.backgroundFirstColor" type="ColorProp" r="1.000000" g="1.000000" b="1.000000" a="1.000000" />
@@ -50,54 +51,61 @@
         <Property id="set.backgroundfilenameAsString" type="FileDialogProp" value="" caption="" directory="" filefilter="" />
         <Property id="set.backgroundtile" type="FloatProp" value="1.000000" />
         <Outport type="image.output">
-            <Processor id="3" port="image.input" />
+            <Processor id="6" port="image.input" />
         </Outport>
     </Processor>
-    <Processor type="Miscellaneous.Canvas" name="CopyToScreenRenderer" id="3">
+    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="3">
         <MetaData>
-            <RptProcessorItem x="-404" y="283" />
-        </MetaData>
-        <Property id="set.Coarseness" type="IntProp" autochange="true" value="4" />
-        <Property id="switch.coarseness" type="BoolProp" value="false" />
-    </Processor>
-    <Processor type="VolumeSetSource.VolumeSetSource" name="VolumeSetSource" id="4">
-        <MetaData>
-            <RptProcessorItem x="-453" y="-246" />
+            <RptProcessorItem x="-454" y="-307" />
         </MetaData>
         <Outport type="volumeset.volumeset">
-            <Processor id="5" port="volumeset.volumeset" />
+            <Processor id="4" port="volumeset.volumeset" />
         </Outport>
     </Processor>
-    <Processor type="VolumeSetSource.VolumeSelector" name="VolumeSelector" id="5">
+    <Processor type="VolumeSetSource.VolumeSelector" name="VolumeSelector" id="4">
         <MetaData>
-            <RptProcessorItem x="-448" y="-105" />
+            <RptProcessorItem x="-450" y="-214" />
         </MetaData>
         <Property id="set.currentTimestep" type="IntProp" value="0" />
         <Outport type="volumehandle.volumehandle">
             <Processor id="0" port="volumehandle.volumehandle" />
             <Processor id="1" port="volumehandle.volumehandle" />
-            <Processor id="6" port="volumehandle.volumehandle" />
+            <Processor id="5" port="volumehandle.volumehandle" />
         </Outport>
     </Processor>
-    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="6">
+    <Processor type="Raycaster.SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="5">
         <MetaData>
-            <RptProcessorItem x="-430" y="117" />
+            <RptProcessorItem x="-448" y="17" />
         </MetaData>
         <Property id="set.RaycastingQualityFactor" type="EnumProp" value="normal" />
-        <Property id="" type="EnumProp" value="Thresholding" />
-        <Property id="" type="EnumProp" value="Forward Differences" />
-        <Property id="" type="EnumProp" value="Transfer Function" />
-        <Property id="" type="EnumProp" value="Phong (Full)" />
-        <Property id="" type="EnumProp" value="DVR" />
         <Property id="set.TransferFunction" type="TransFuncProp">
             <Marker source="0.000000" dest="0.000000" r="0" g="0" b="0" a="0" />
             <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
         </Property>
-        <Property id="set.TransferFunction" type="TransFuncProp">
-            <Marker source="0.000000" dest="0.000000" r="0" g="0" b="0" a="0" />
-            <Marker source="1.000000" dest="1.000000" r="255" g="255" b="255" a="255" />
-        </Property>
+        <Property id="set.masking" type="EnumProp" value="Thresholding" />
+        <Property id="set.gradient" type="EnumProp" value="Central Differences" />
+        <Property id="set.classification" type="EnumProp" value="Transfer Function" />
+        <Property id="set.shading" type="EnumProp" value="Phong (Full)" />
+        <Property id="set.compositing" type="EnumProp" value="DVR" />
+        <Property id="set.compositing1" type="EnumProp" value="DVR" />
+        <Property id="set.compositing2" type="EnumProp" value="DVR" />
         <Outport type="image.output">
+            <Processor id="7" port="image.inport" />
+        </Outport>
+        <Outport type="image.output1" />
+        <Outport type="image.output2" />
+    </Processor>
+    <Processor type="Miscellaneous.Canvas" name="Canvas" id="6">
+        <MetaData>
+            <RptProcessorItem x="-427" y="307" />
+        </MetaData>
+    </Processor>
+    <Processor type="Miscellaneous.CoarsenessRenderer" name="CoarsenessRenderer" id="7">
+        <MetaData>
+            <RptProcessorItem x="-449" y="120" />
+        </MetaData>
+        <Property id="set.Coarseness" type="IntProp" autochange="true" value="4" />
+        <Outport type="image.outport">
             <Processor id="2" port="image.input" />
         </Outport>
     </Processor>

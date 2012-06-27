@@ -243,6 +243,6 @@ private:
     TiXmlElement* metadata_;
 };
 
-} //namespace
+} // namespace
 
 #endif // VRN_SERIALIZABLE_H

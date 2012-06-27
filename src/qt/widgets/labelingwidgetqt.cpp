@@ -44,8 +44,7 @@ LabelingWidgetQt::LabelingWidgetQt(QWidget *parent, MessageReceiver* msgReceiver
     createWidgets();
 }
 
-void LabelingWidgetQt::createWidgets(){
-
+void LabelingWidgetQt::createWidgets() {
     // resize(300,300);
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
@@ -106,35 +105,33 @@ void LabelingWidgetQt::createWidgets(){
     mainLayout->addItem(hboxLayout2);
 
     setLayout(mainLayout);
-
 }
 
-void LabelingWidgetQt::createConnections(){
-    for (size_t i=0; i<listWidgets_.size(); i++){
+void LabelingWidgetQt::createConnections() {
+    for (size_t i=0; i<listWidgets_.size(); ++i){
         //connect( listWidgets_[i], SIGNAL(itemSelectionChanged()), this, SLOT(selectionChanged()) );
         connect( listWidgets_[i], SIGNAL(itemPressed(QListWidgetItem*)), this, SLOT(selectionChanged(QListWidgetItem*)) );
     }
 }
 
-void LabelingWidgetQt::selectionChanged(QListWidgetItem* item){
+void LabelingWidgetQt::selectionChanged(QListWidgetItem* item) {
     //std::cout << "selection changed" << std::endl;
-    if (item->listWidget()->selectedItems().contains(item)) {
+    if (item->listWidget()->selectedItems().contains(item))
         postMessage(new StringMsg("add.unsegmentedLabel", item->text().toStdString() ) );
-    } else {
+    else
         postMessage(new StringMsg("remove.unsegmentedLabel", item->text().toStdString() ) );
-    }
+    
     MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
 std::string LabelingWidgetQt::showInputDialog(const std::string &title,
                                                    const std::string &label,
-                                                   const std::string &text){
-
+                                                   const std::string &text)
+{
     return QInputDialog::getText(NULL, QString::fromStdString(title),
                 QString::fromStdString(label),
                 QLineEdit::Normal,
                 QString::fromStdString(text) ).toStdString();
 }
 
-}
-
+}  // namespace

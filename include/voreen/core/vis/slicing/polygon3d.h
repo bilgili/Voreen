@@ -30,19 +30,13 @@
 #ifndef VRN_POLYGON3D_H
 #define VRN_POLYGON3D_H
 
-#ifndef TGT_VECTOR_H
 #include "tgt/vector.h"
-#endif
 
 #include <set>
 #include <list>
-
 #include <iostream>
 
-typedef unsigned long DWORD;
-
-namespace voreen
-{
+namespace voreen {
 
 class EdgeVertex3D;
 class Edge3D;
@@ -56,16 +50,14 @@ class Polygon3D;
  *
  * @author  Dirk Feldmann 
  */
-class PolygonFace3D
-{
+class PolygonFace3D {
 public:
     /**
      * Structure with method for comparing PolygonFace3D-pointers within a set. This ensures, that
      * the pointers are dereferenced and compared. Otherwise the pointers (addresses)
      * would be compared.
      */
-    struct FaceComparator
-    {
+    struct FaceComparator {
         bool operator()(const PolygonFace3D* const f1, const PolygonFace3D* const f2) const {
             if ( (f1 == 0) || (f2 == 0 ) )
                 return false;
@@ -80,11 +72,10 @@ public:
      */
     typedef std::set<PolygonFace3D*, FaceComparator> FaceSet;
 
-public:
     /**
      * Constructor for a face with the give ID and the given normal
      */
-    PolygonFace3D(const DWORD ID, const tgt::vec3& normal);
+    PolygonFace3D(const unsigned long ID, const tgt::vec3& normal);
     
     PolygonFace3D(const PolygonFace3D& face);
 
@@ -156,7 +147,7 @@ public:
     /**
      * Returns the ID of the the face.
      */
-    DWORD getID() const;
+    unsigned long getID() const;
 
     /**
      * Returns the normal of the face.
@@ -173,7 +164,7 @@ public:
     /**
      * Returns the number of edges in the edge list.
      */
-    DWORD getNumEdges() const;
+    unsigned long getNumEdges() const;
 
     /**
      * Returns the vertices of the edges. Each vertex is returned only once.
@@ -194,7 +185,7 @@ protected:
     /**
      * The face's ID
      */
-    DWORD id_;
+    unsigned long id_;
 
     /**
      * The face's normal. Used for visibility and lighting calculations if desired.
@@ -248,11 +239,9 @@ private:
  *
  * @author  Dirk Feldmann
  */
-class Edge3D
-{
+class Edge3D {
 public:
-    class EdgeSet : public std::list<Edge3D*>
-    {
+    class EdgeSet : public std::list<Edge3D*> {
         public:
             EdgeSet::iterator find(Edge3D* const e) {
                 if ( e == 0 )
@@ -291,7 +280,7 @@ public:
 
                 size_t count = 0;
                 EdgeSet::iterator it = begin();
-                while( it != end() ) {
+                while ( it != end() ) {
                     if ( (*it != 0) && (*(*it) == *e) ) {
                         it = std::list<Edge3D*>::erase(it);
                         count++;
@@ -615,8 +604,7 @@ private:
  *
  * @author  Dirk Feldmann
  */
-class Polygon3D
-{
+class Polygon3D {
 public:
     Polygon3D();
     Polygon3D(const Polygon3D& poly);
@@ -670,26 +658,26 @@ public:
      * @param   normal      The normal for the face. This parameter should always be given and valid,
      *                      as visibility-checks could not performed without a valid face-normal.
      */
-    bool addFace(const tgt::vec3* vertices, const DWORD numVertices, const DWORD* indices, const DWORD numIndices,
-        const DWORD id, const tgt::vec3& faceNormal);
+    bool addFace(const tgt::vec3* vertices, const unsigned long numVertices, const unsigned long* indices, const unsigned long numIndices,
+        const unsigned long id, const tgt::vec3& faceNormal);
 
     /**
      * Returns true if a face within the polygons face-set with the given ID exists
      * or false otherwise. This method internally calls <code>findFace()</code>.
      */
-    bool containsFace(const DWORD id);
+    bool containsFace(const unsigned long id);
 
     /**
      * Returns the pointer to the face with the given ID if one exists within the
      * polygons face-set.
      */
-    PolygonFace3D* findFace(const DWORD id);
+    PolygonFace3D* findFace(const unsigned long id);
 
     /**
      * Returns the normal of the face with the given ID or a NULL-vector if no
      * such face exisits within the polygons face-set.
      */
-    tgt::vec3 getFaceNormal(const DWORD id) const;
+    tgt::vec3 getFaceNormal(const unsigned long id) const;
 
     /**
      * Returns the polygons face-set. Call this method for rendering. From the
@@ -701,13 +689,13 @@ public:
      * Returns a list of all vertices contained by the face with the given ID
      * if such a face exists. Otherwise the list will be empty.
      */
-    std::list<tgt::vec3> getFaceVertices(const DWORD ID);
+    std::list<tgt::vec3> getFaceVertices(const unsigned long ID);
 
     /**
      * Returns the greatest currently used face-ID. Call this method and add 1 to
      * to its result to obtain an ID for a new face.
      */
-    DWORD getMaxFace() const;
+    unsigned long getMaxFace() const;
 
     /**
      * Returns the number of faces within this polygons face-set.
@@ -715,7 +703,7 @@ public:
      * <b>NOTE:</b>
      * maxFace_ is probably greater than the number of faces.
      */
-    DWORD getNumFaces() const;        
+    unsigned long getNumFaces() const;        
 
     /**
      * Connects all vertices on the edges which share the given vertex.
@@ -791,13 +779,13 @@ protected:
     /**
      * The greatest currently used face-ID.
      */
-    DWORD maxFace_;
+    unsigned long maxFace_;
 
 private:
     /**
      * Performs face-reduction after intersecting with a plane.
      */
-    void reduceFaces(const DWORD firstID, const DWORD lastID, PolygonFace3D* clippedFace);
+    void reduceFaces(PolygonFace3D::FaceSet& newFaces, const unsigned long firstID, PolygonFace3D* clippedFace);
 
     /**
      * Rounds the given float to six digits righthandside of the decimal point.

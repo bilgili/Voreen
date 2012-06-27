@@ -179,8 +179,8 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
         uint32 width, height;
         uint16 depth_, bps_;
 
-        if (progress_)
-            progress_->setNumSteps(dimensions.z*band);
+        if (getProgress())
+            getProgress()->setNumSteps(dimensions.z*band);
 
         for (int i=0; i < dimensions.z*band; i++) {
             TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
@@ -244,8 +244,8 @@ VolumeSet* TiffVolumeReader::read(const std::string &fileName)
             }
             TIFFReadDirectory(tif);
 
-            if (progress_)
-                progress_->set(i);
+            if (getProgress())
+                getProgress()->set(i);
         }
 
         TIFFClose(tif);

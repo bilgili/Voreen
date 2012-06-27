@@ -99,9 +99,9 @@
             <Processor id="3" port="coprocessor.geometryrenderers" order="1" />
         </Outport>
     </Processor>
-    <Processor type="GeometryRenderer.ClippingWidget" id="7">
+    <Processor type="GeometryRenderer.ClippingPlaneWidget" id="7">
         <MetaData>
-            <RptProcessorItem x="-394" y="133" name="ClippingWidget" />
+            <RptProcessorItem x="-394" y="133" name="ClippingPlaneWidget" />
         </MetaData>
         <Property id="set.ClipSliceColor" type="ColorProp" r="0.180000" g="0.680000" b="1.000000" a="0.300000" />
         <Property id="switch.ClipXLock" type="BoolProp" value="false" />

@@ -149,6 +149,18 @@ public:
     bool operator==(const VolumeHandle& handle) const;
 
     /**
+     * Compares the internal ID with the one of the given VolumeHandle.
+     * The internal IDs are used to distinguish different objects: each
+     * time you call the ctor you will get a different ID. This is done for
+     * performance improvements and memory management.
+     *
+     * @return  "true" if both IDs and there both objects are identical, "false"
+     *          otherwise.
+     */
+    bool isIdentical(const VolumeHandle& handle) const;
+    bool isIdentical(VolumeHandle* const handle) const;
+
+    /**
      * Operator for convenience: a handle can be casted into
      * its timestep held.
      */
@@ -236,10 +248,10 @@ public:
      */
     Volume* getRelatedVolume(const Modality& modality) const;
 
-    //
-    const std::string& getFileName() const;
-    
-    void setFileName(const std::string& filename);
+    /**
+     * Returns the objects ID. Whenever the ctor is called, a new ID is created.
+     */
+    unsigned int getObjectID() const;
     
     void setOrigin(const std::string& filename, const std::string& seriesname, const float& timestep);
     void setOrigin(const Origin& origin);
@@ -299,8 +311,8 @@ protected:
     Volume* volume_;
     float time_;
     int hardwareVolumeMask_;
-    VolumeSeries* parentSeries_;    ///< VolumeSeries containing this object
-    std::string file_;
+    VolumeSeries* parentSeries_;    /** VolumeSeries containing this object */
+    unsigned int objectID_;   /** unique ID for each INSTANCE of this class */
 
 #ifndef VRN_NO_OPENGL
     VolumeGL* volumeGL_;
@@ -311,7 +323,8 @@ protected:
 #endif
 
     Origin origin_;
-    static const std::string loggerCat_;    
+    static const std::string loggerCat_;
+    static unsigned int nextObjectID_;
 };
 
 } // namespace 

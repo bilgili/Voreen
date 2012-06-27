@@ -72,7 +72,6 @@ RptPropertySetItem::RptPropertySetItem(PropertySet* propertySet, const std::map<
     : RptGuiItem("PropertySet", parent)
 {
     propertySet_ = propertySet;
-    //setName(propertySet->getName());
     port_ = new RptPropertyPort(this);
     port_->moveBy(boundingRect().width()/2 -20, boundingRect().height() - 15);
     if (scene)
@@ -98,17 +97,13 @@ RptPropertySetItem::~RptPropertySetItem() {
     port_ = 0;
     delete propertySet_;
     propertySet_ = 0;
-    QVector<int> dummy;
-    emit sendProcessor(0, dummy);
 }
 
 void RptPropertySetItem::setName(std::string name) {
-    //propertySet_->setName(name);
     RptGuiItem::setName(name);
 }
 
 RptPropertySetItem& RptPropertySetItem::saveMeta() {
-    //propertySet_->clearMeta();
     TiXmlElement* meta = new TiXmlElement("RptPropertySetItem");
     meta->SetAttribute("x", static_cast<int>(x()));
     meta->SetAttribute("y", static_cast<int>(y()));
@@ -148,7 +143,8 @@ void RptPropertySetItem::equalizeSlot() {
 void RptPropertySetItem::updateToolTip() {
     std::string s;
     for (size_t i=0; i<propertySet_->getProcessors().size(); i++) {
-        if (i!=0) s.append("\n");
+        if (i != 0)
+            s.append("\n");
         s.append(propertySet_->getProcessors()[i]->getClassName().getName());
     }
     setToolTip(QString(s.c_str()));
@@ -162,7 +158,6 @@ bool RptPropertySetItem::connectGuiItem(RptGuiItem* item) {
         item->addPropertySet(this);
         if (scene())
             scene()->addItem(arrows_.back());
-        //arrows_.back()->adjust();
         adjustArrows();
 
         updateToolTip();
@@ -178,7 +173,6 @@ bool RptPropertySetItem::connectGuiItem(RptGuiItem* item) {
         item->addPropertySet(this);
         if (scene())
             scene()->addItem(arrows_.back());
-        //arrows_.back()->adjust();
         adjustArrows();
 
         updateToolTip();
@@ -205,10 +199,8 @@ void RptPropertySetItem::aggregate(RptAggregationItem* aggregation) {
     }
 
     guiItems_.push_back(aggregation);
-    //aggregation_->addPropertySet(this);
     arrows_.push_back(new RptArrow(this, aggregation));
     scene()->addItem(arrows_.back());
-    //arrows_.back()->adjust();
     adjustArrows();
 }
 
@@ -229,10 +221,8 @@ void RptPropertySetItem::deaggregate(RptAggregationItem* aggregation) {
             if (items[i]->getProcessor() == propertySet_->getProcessors()[j]) {
                 guiItems_.push_back(items[i]);
                 items[i]->addPropertySet(this);
-                //aggregation->removePropertySet(this);
                 arrows_.push_back(new RptArrow(this, items[i]));
                 scene()->addItem(arrows_.back());
-                //arrows_.back()->adjust();
             }
         }
     }
@@ -344,23 +334,6 @@ void RptPropertySetItem::adjustArrows() {
     }
 }
 
-QVector<int> RptPropertySetItem::getUnequalEntries(RptProcessorItem* item) {
-    QVector<int> unequalEntries;
-
-    for (size_t i=0; i<propertySet_->getProperties().size(); i++) {
-        for (size_t j=0; j<item->getProcessor()->getProperties().size(); j++) {
-            if (propertySet_->getProperties()[i]->getIdent() == item->getProcessor()->getProperties()[j]->getIdent()) {
-                // TODO: compare properties WITHOUT huge and ugly switch-case block
-                /* if (*(propertySet_->getProperties()[i]) != *(item->getProcessor()->getProperties()[j]) ) {
-                    unequalEntries.push_back(j);
-                }*/
-            }
-        }
-    }
-
-    return unequalEntries;
-}
-
 QVariant RptPropertySetItem::itemChange(GraphicsItemChange change, const QVariant &value) {
     if (change == ItemPositionChange) {
         adjustArrows();
@@ -420,11 +393,6 @@ void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 	painter->drawPath(propertySetItemPath(boundingRect()));
 
-    /*if (option->state & QStyle::State_Sunken) {
-    newCursor.setShape(Qt::CursorShape::ClosedHandCursor);
-    setCursor(newCursor);
-    }*/
-
     if (option->state & QStyle::State_MouseOver)
         painter->setBrush(QColor(255, 255, 255, 70));
     if (option->state & QStyle::State_Selected) {
@@ -432,10 +400,6 @@ void RptPropertySetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     }
 
     painter->drawPath(propertySetItemPath(boundingRect()));
-    //DEBUG
-    /*painter->setPen(QPen(Qt::black, 1));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(boundingRect());*/
 }
 
 //---------------------------------------------------------------------------

@@ -76,5 +76,5 @@ void SegmentationPlugin::setSegmentation(int segment) {
 	postMessage(new IntMsg(VolumeRaycaster::setSegment_, segment));
     repaintCanvases();
 }
-} // namespace voreen
 
+} // namespace voreen

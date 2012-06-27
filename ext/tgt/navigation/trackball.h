@@ -50,16 +50,15 @@ class Trackball : public Navigation {
 
         /// Constructor
         ///
-        /// Center of Trackball is set to camera focus fo the given canvas.
-// FIXME: params do not appear in doxygen.
-        /// @param canvas The canvas the Trackball is associated with
-        /// @param defaultEventHandling You can specify the mouse buttons and keys used to
+        /// Center of Trackball is set to camera focus of the given canvas.
+        /// \param canvas The canvas the Trackball is associated with
+        /// \param defaultEventHandling You can specify the mouse buttons and keys used to
         ///                             interact with trackball. If you want default behavior,
         ///                             set this to true and trackball should easyly work. If you
         ///                             want to specify different behavior than default, give false
         ///                             here. You will then have to call some setMouseFoo and
         ///                             setKeyBar methods to make the trackball work.
-        /// @param continousSpinTimer To offer continous spin feature, trackball needs a 
+        /// \param continousSpinTimer To offer continous spin feature, trackball needs a 
         ///                           tgt::Timer-object. As we need a toolkit-specific timer,
         ///                           trackball cannot create it itself, the user has to provide
         ///                           it to the constructor.
@@ -76,7 +75,7 @@ class Trackball : public Navigation {
         void rotate(Quaternion<float> quat);
         /// Rotate the trackball by angle phi around axis axis.
         /// @param axis axis in camera coordinates.
-        void rotate(vec3 axis, float phi);
+        virtual void rotate(vec3 axis, float phi);
         /// Rotate the trackball according to new mouse position.
         /// @param mouse coodinates of mouse, scaled to [-1, 1]x[-1, 1]
         void rotate(vec2 mouse);
@@ -85,13 +84,13 @@ class Trackball : public Navigation {
         /// @param length Distance relative to frustum dimensions at trackball center.
         ///               Trackball center will get out of sight when >> 1.
         /// @param axis Axis in camera coordinates along which to move.
-        void move(float length, vec3 axis);
+        virtual void move(float length, vec3 axis);
         /// Move the trackball according to new mouse position.
         /// @param mouse coodinates of mouse, scaled to [-1, 1]x[-1, 1]
         void move(vec2 mouse);
 
         /// Zoom in by factor factor.
-        void zoom(float factor);
+        virtual void zoom(float factor);
         /// Zoom in according to new mouse position.
         /// @param mouse coodinates of mouse, scaled to [-1, 1]x[-1, 1]
         void zoom(vec2 mouse);

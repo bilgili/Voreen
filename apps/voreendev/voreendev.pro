@@ -25,16 +25,12 @@ debug {
 
 PRECOMPILED_HEADER = pch.h
 
-FORMS = ui/aboutbox.ui
-
 SOURCES +=  main.cpp \
             cmdlineparser.cpp \
-            iosystem.cpp \
             mainframe.cpp
 
 HEADERS +=  mainframe.h \
-            cmdlineparser.h \
-            iosystem.h
+            cmdlineparser.h
 
 contains(DEFINES, VRN_WITH_DCMTK) {
    SOURCES +=  \

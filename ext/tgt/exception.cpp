@@ -36,52 +36,50 @@ const char* Exception::what() const throw() {
 
 //------------------------------------------------------------------------------
 
-std::string FileException::getErrorMessage(const string& exception, const string& /*what*/,
-                                           const string& filename) const throw()
+std::string FileException::getErrorMessage(const string& exception, const string& what,
+                                           const string& filename) const
+    throw()
 {
     string s = exception;
 
-    if (!what_.empty())
-        s += ": " + what_;
+    if (!what.empty())
+        s += ": " + what;
 
-    if (!filename_.empty())
+    if (!filename.empty())
         s += " (" + filename + ")";
 
     return s;
 }
 
-const char* FileException::what() const throw() {
-    return getErrorMessage("FileException", what_, filename_).c_str();
-};
+//------------------------------------------------------------------------------
+
+FileNotFoundException::FileNotFoundException(const std::string& what, const std::string& filename) 
+    : FileException(getErrorMessage("FileNotFoundException", what, filename), filename) 
+{}
 
 //------------------------------------------------------------------------------
 
-const char* FileNotFoundException::what() const throw() {
-    return getErrorMessage("FileNotFoundException", what_, filename_).c_str();
-};
+FileAccessException::FileAccessException(const std::string& what, const std::string& filename)
+    : FileException(getErrorMessage("FileAccessException", what, filename), filename) 
+{}
 
 //------------------------------------------------------------------------------
 
-const char* FileAccessException::what() const throw() {
-    return getErrorMessage("FileAccessException", what_, filename_).c_str();
-};
+CorruptedFileException::CorruptedFileException(const std::string& what, const std::string& filename)
+    : FileException(getErrorMessage("CorruptedFileException", what, filename), filename) 
+{}
 
 //------------------------------------------------------------------------------
 
-const char* CorruptedFileException::what() const throw() {
-    return getErrorMessage("CorruptedFileException", what_, filename_).c_str();
-};
+UnsupportedFormatException::UnsupportedFormatException(const std::string& extension, const std::string& filename)
+    : FileException(getErrorMessage("UnsupportedFormatException", "unsupported extension: " + extension, filename),
+                    filename)
+{}
 
 //------------------------------------------------------------------------------
 
-const char* UnsupportedFormatException::what() const throw() {
-    return getErrorMessage("UnsupportedFormatException", what_, filename_).c_str();
-};
-
-//------------------------------------------------------------------------------
-
-const char* IOException::what() const throw() {
-    return getErrorMessage("IOException", what_, filename_).c_str();
-};
+IOException::IOException(const std::string& what, const std::string& filename)
+    : FileException(getErrorMessage("IOException", what, filename), filename)
+{}
 
 } // namespace tgt

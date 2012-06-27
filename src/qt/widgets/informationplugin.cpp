@@ -33,7 +33,9 @@
 
 namespace voreen {
 
-InformationPlugin::InformationPlugin(QWidget* parent, MessageReceiver* msgReceiver) : WidgetPlugin(parent, msgReceiver) {
+InformationPlugin::InformationPlugin(QWidget* parent, MessageReceiver* msgReceiver) :
+    WidgetPlugin(parent, msgReceiver)
+{
     setObjectName(tr("Information"));
     icon_ = QIcon(":/icons/information.png");
     infoText_ = 0;
@@ -56,5 +58,5 @@ void InformationPlugin::createConnections() {
 void InformationPlugin::setPlainText(QString text) {
     infoText_->setPlainText(text);
 }
-} // namespace voreen
 
+} // namespace voreen

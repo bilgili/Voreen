@@ -25,11 +25,12 @@
 #ifndef TGT_FILESYSTEM_H
 #define TGT_FILESYSTEM_H
 
-#include <map>
-#include <string>
-
 #include "tgt/config.h"
 #include "tgt/logmanager.h"
+
+#include <map>
+#include <string>
+#include <fstream>
 
 namespace tgt {
 
@@ -74,15 +75,16 @@ public:
     /// Seeks to offset (relative to seekDir)
     virtual void seek(size_t offset, SeekDir seekDir) = 0;
     /// Returns the current reading position
-    virtual size_t tell() const = 0;
+    virtual size_t tell() = 0;
     /// Returns true if the End Of File is reached
-    virtual bool eof() const = 0;
+    virtual bool eof() = 0;
     /// Closes the file.
     virtual void close() = 0;
     /// Returns true if the file is open.
-    virtual bool open() const = 0;
+    //FIXME: the name implies that this actually opens a file. joerg
+    virtual bool open() = 0;
     /// Check if the state of the file is good for i/o operations.
-    virtual bool good() const = 0;
+    virtual bool good() = 0;
 
 protected:
     std::string name_;
@@ -103,14 +105,15 @@ public:
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
-    virtual size_t tell() const;
-    virtual bool eof() const;
+    virtual size_t tell();
+    virtual bool eof();
     virtual void close();
-    virtual bool open() const;
-    virtual bool good() const;
+    virtual bool open();
+    virtual bool good();
 
 protected:
-    std::ifstream* file_;
+    std::ifstream file_;
+	static const std::string loggerCat_;
 };
 
 /**
@@ -127,11 +130,11 @@ public:
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
-    virtual size_t tell() const;
-    virtual bool eof() const;
+    virtual size_t tell();
+    virtual bool eof();
     virtual void close();
-    virtual bool open() const;
-    virtual bool good() const;
+    virtual bool open();
+    virtual bool good();
 
 protected:
     char* data_;
@@ -152,11 +155,11 @@ public:
     virtual void skip(long count);
     virtual void seek(size_t pos);
     virtual void seek(size_t offset, File::SeekDir seekDir);
-    virtual size_t tell() const;
-    virtual bool eof() const;
+    virtual size_t tell();
+    virtual bool eof();
     virtual void close();
-    virtual bool open() const;
-    virtual bool good() const;
+    virtual bool open();
+    virtual bool good();
 
 protected:
     File* file_;

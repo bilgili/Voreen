@@ -211,8 +211,8 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName)
         zip.ExtractFile(descIndex, ".");
         parseDescFile("description.txt");
         remove("description.txt");
-        if (progress_)
-            progress_->setNumSteps(volInfos_.size());
+        if (getProgress())
+            getProgress()->setNumSteps(volInfos_.size());
         for(unsigned int i=0; i<volInfos_.size(); ++i) {
             VolInfo *volInfo = volInfos_.at(i);
             int indexInZip = zip.FindFile(volInfo->filename_.c_str());
@@ -296,8 +296,8 @@ VolumeSet* ZipVolumeReader::read(const std::string &fileName)
                     delete curVolumeSet;
                     curVolumeSet = 0;
                 }
-                if (progress_)
-                    progress_->set(i);
+                if (getProgress())
+                    getProgress()->set(i);
             }   // else
         }   // for
         zip.Close();

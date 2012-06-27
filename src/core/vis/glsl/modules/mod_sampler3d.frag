@@ -57,7 +57,7 @@ vec4 textureLookup3D(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 
     #if defined(VRN_TEXTURE_3D)
         result = texture3D(volume, texCoords);
     #elif defined(VRN_TEXTURE_3D_SCALED)
-        result = texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_).a;
+        result = texture3D(volume, texCoords*volumeParameters.texCoordScaleFactor_);
     #endif
 	result *= volumeParameters.bitDepthScale_;
 	return result;

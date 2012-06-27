@@ -96,7 +96,11 @@ public:
     }
 
     void static setProgramName(const std::string& prgName) {
+#ifdef WIN32        
+        char* str = _strdup(prgName.c_str());
+#else
         char* str = strdup(prgName.c_str());
+#endif
         Py_SetProgramName(str);
         free(str);
     }

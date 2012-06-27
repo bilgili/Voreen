@@ -29,7 +29,6 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncintensitygradientplugin.h"
 
-
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
@@ -43,7 +42,6 @@
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/transfunc/transfuncpainter.h"
 #include "voreen/core/vis/transfunc/transfuncintensitygradient.h"
-
 
 namespace voreen {
 
@@ -77,7 +75,6 @@ void TransFuncIntensityGradientPlugin::createWidgets() {
     gridLayout->setMargin(0);
     gridLayout->setSpacing(1);
 
-    tgt::EventHandler* eh = new tgt::EventHandler();
     transCanvas_->setMinimumHeight(100);
     painter_ = new TransFuncPainter(transCanvas_, this);
     transCanvas_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -85,15 +82,13 @@ void TransFuncIntensityGradientPlugin::createWidgets() {
     painter_->initialize();
     if (!painter_->initOk()) {
         delete painter_;
-        delete eh;
         delete transCanvas_;
         painter_ = 0;
         gridLayout->addWidget(new QLabel("No FBO support!", this));
         return;
     }
 
-    eh->addListenerToBack(new TransFuncEditorListener(painter_));
-    transCanvas_->setEventHandler(eh);
+    transCanvas_->getEventHandler()->addListenerToBack(new TransFuncEditorListener(painter_));
 
     gridLayout->addWidget(transCanvas_);
 
@@ -331,18 +326,18 @@ void TransFuncIntensityGradientPlugin::dataSourceChanged(Volume* newDataset) {
 
     int bits = newDataset->getBitsStored();
     switch (bits) {
-        case 8:
-            scaleFactor_ = 1.0f/255.0f;
-            break;
-        case 12:
-            scaleFactor_ = 1.0f/4095.0f;
-            break;
-        case 16:
-            scaleFactor_ = 1.0f/65535.0f;
-            break;
-        case 32:
-            scaleFactor_ = 1.0f/255.0f;
-            break;
+    case 8:
+        scaleFactor_ = 1.0f/255.0f;
+        break;
+    case 12:
+        scaleFactor_ = 1.0f/4095.0f;
+        break;
+    case 16:
+        scaleFactor_ = 1.0f/65535.0f;
+        break;
+    case 32:
+        scaleFactor_ = 1.0f/255.0f;
+        break;
     }
 }
 
@@ -442,4 +437,4 @@ void TransFuncIntensityGradientPlugin::sliderReleased() {
     setInteractionCoarseness(false);
 }
 
-}
+}  // namespace

@@ -36,7 +36,9 @@
 
 namespace voreen {
 
-SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent ) : QWidget(parent) {
+SliderSpinBoxWidget::SliderSpinBoxWidget(QWidget* parent ) :
+    QWidget(parent)
+{
 	setObjectName(QString::fromUtf8("SliderSpinBoxWidget"));
     resize(QSize(156, 86).expandedTo(minimumSizeHint()));
     QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
@@ -86,7 +88,7 @@ QSize SliderSpinBoxWidget::sizeHint () const {
 }
 
 void SliderSpinBoxWidget::setValue(int value) {
-	if(value != value_) {
+	if (value != value_) {
 		value_ = value;
 		sliderSLD->setValue(value_);
 		spinBoxSPB->setValue(value_);
@@ -141,11 +143,12 @@ void SliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
     spinBoxSPB->setFocusPolicy(policy);
 }
 
-
 // ---------------------------------------------------------------------------
 
 
-DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) : QWidget(parent) {
+DoubleSliderSpinBoxWidget::DoubleSliderSpinBoxWidget(QWidget* parent ) :
+    QWidget(parent)
+{
 	setObjectName(QString::fromUtf8("DoubleSliderSpinBoxWidget"));
     resize(QSize(156, 86).expandedTo(minimumSizeHint()));
     QSizePolicy sizePolicy(static_cast<QSizePolicy::Policy>(7), static_cast<QSizePolicy::Policy>(0));
@@ -197,7 +200,7 @@ QSize DoubleSliderSpinBoxWidget::sizeHint () const {
 }
 
 void DoubleSliderSpinBoxWidget::setValue(double value) {
-	if(value != value_) {
+	if (value != value_) {
 		value_ = value;
 		spinBoxSPB->setValue(value_);
         sliderSLD->blockSignals(true);
@@ -213,7 +216,6 @@ void DoubleSliderSpinBoxWidget::setMaxValue( double value ) {
     spinBoxSPB->updateGeometry();
     adjustSliderScale();
 }
-
 
 void DoubleSliderSpinBoxWidget::setMinValue( double value ) {
     spinBoxSPB->setMinimum(value);
@@ -274,7 +276,6 @@ void DoubleSliderSpinBoxWidget::setFocusPolicy(Qt::FocusPolicy policy) {
 }
 
 void DoubleSliderSpinBoxWidget::adjustSliderScale() {
-
     double sliderScale = ( spinBoxSPB->maximum() - spinBoxSPB->minimum() ) / spinBoxSPB->singleStep();
     sliderSLD->setMinimum(0);
     sliderSLD->setMaximum(tgt::iround(sliderScale));
@@ -285,11 +286,8 @@ void DoubleSliderSpinBoxWidget::adjustSliderScale() {
     sliderSLD->blockSignals(false);
 }
 
-void DoubleSliderSpinBoxWidget::sliderValueChanged( int value ) {
-    
+void DoubleSliderSpinBoxWidget::sliderValueChanged(int value) {
     setValue( spinBoxSPB->minimum() + ((double)value / sliderSLD->maximum()) * (spinBoxSPB->maximum() - spinBoxSPB->minimum()) );
 }
-
-
 
 } // namespace voreen

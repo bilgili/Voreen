@@ -61,8 +61,6 @@ public:
         : Exception(what), filename_(filename) {}
     virtual ~FileException() throw() {}
 
-    virtual const char* what() const throw();
-
     /// Returns the name of the affected file.
     const std::string& getFileName() const throw() { return filename_; }
     
@@ -81,10 +79,8 @@ protected:
 class FileNotFoundException : public FileException {
 public:
     /// @param filename The name of the file which was not found.
-    FileNotFoundException(const std::string& filename = "") : FileException("", filename) {}
+    FileNotFoundException(const std::string& what = "", const std::string& filename = "");
     virtual ~FileNotFoundException() throw() {}
-
-    virtual const char* what() const throw();
 };
 
 //------------------------------------------------------------------------------
@@ -96,11 +92,8 @@ public:
 class FileAccessException : public FileException {
 public:
     /// @param filename The name of the file which couldn't be opened.
-    FileAccessException(const std::string& what = "", const std::string& filename = "")
-        : FileException(what, filename) {}
+    FileAccessException(const std::string& what = "", const std::string& filename = "");
     virtual ~FileAccessException() throw() {}
-
-    virtual const char* what() const throw();
 };
 
 //------------------------------------------------------------------------------
@@ -111,11 +104,8 @@ public:
  */
 class CorruptedFileException : public FileException {
 public:
-    CorruptedFileException(const std::string& what = "", const std::string& filename = "")
-        : FileException(what, filename) {}
+    CorruptedFileException(const std::string& what = "", const std::string& filename = "");
     virtual ~CorruptedFileException() throw() {}
-
-    virtual const char* what() const throw();
 };
 
 //------------------------------------------------------------------------------
@@ -126,17 +116,8 @@ public:
 class UnsupportedFormatException : public FileException {
 public:
     /// @param extension The extension which is not supported.
-    UnsupportedFormatException(const std::string& extension, const std::string& filename = "")
-        : FileException("", filename), extension_(extension) {}
+    UnsupportedFormatException(const std::string& extension, const std::string& filename = "");
     virtual ~UnsupportedFormatException() throw() {}
-
-    /// Returns the extension which is not supported.
-    const std::string& getExtension() const throw() { return extension_; }
-
-    virtual const char* what() const throw();
-
-protected:
-    std::string extension_; ///< The extension which is not supported.
 };
 
 //------------------------------------------------------------------------------
@@ -149,14 +130,8 @@ protected:
  */
 class IOException : public FileException {
 public:
-    IOException(const std::string& what = "", const std::string& filename = "")
-        : FileException(what, filename) {}
+    IOException(const std::string& what = "", const std::string& filename = "");
     virtual ~IOException() throw() {}
-
-    /// Returns the exact error that caused the exception. May be "unknown".
-    const std::string& getError() const throw();
-
-    virtual const char* what() const throw();
 };
 
 //------------------------------------------------------------------------------

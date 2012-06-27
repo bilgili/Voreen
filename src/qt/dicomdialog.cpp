@@ -124,21 +124,21 @@ ServerConfigDialog::ServerConfigDialog() {
 void ServerConfigDialog::selectClientKey() {
     QString s = QFileDialog::getOpenFileName(this, "Choose a key file", "",
                                              "Keys/Certificates (*.pem *.crt)");
-    if(s != "")
+    if (s != "")
         clientKey_->setText(s);
 }
 
 void ServerConfigDialog::selectClientCert() {
     QString s = QFileDialog::getOpenFileName(this, "Choose a certificate file", "",
                                              "Keys/Certificates (*.pem *.crt)");
-    if(s != "")
+    if (s != "")
         clientCert_->setText(s);
 }
 
 void ServerConfigDialog::selectServerCert() {
     QString s = QFileDialog::getOpenFileName(this, "Choose a certificate file", "",
                                              "Keys/Certificates (*.pem *.crt)");
-    if(s != "")
+    if (s != "")
         serverCert_->setText(s);
 }
 
@@ -192,8 +192,7 @@ void ServerConfigDialog::cancel() {
 // Server
 //
 
-ServerDialog::ServerDialog()
-{
+ServerDialog::ServerDialog() {
     setWindowTitle("Dicom Downloader");
     
 
@@ -250,7 +249,7 @@ ServerDialog::ServerDialog()
     listWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     setLayout(layout);
-//     if(servers_.size() > 0)
+//     if (servers_.size() > 0)
 //         displayConfig(servers_[0]);
 
     dt_ = 0;
@@ -279,7 +278,7 @@ void ServerDialog::loadServers() {
     outputDirectory_->setText(targetPath);
     ServerConfig conf;
     
-    for(int i=0; i<numservers; ++i) {
+    for (int i=0; i<numservers; ++i) {
         QString keyname = "server";
         keyname += (i+1);
         conf.name_ = settings.value(keyname+"/name", "").toString ();
@@ -301,7 +300,7 @@ void ServerDialog::loadServers() {
 void ServerDialog::saveServers() {
     QSettings settings;//("servers.ini", QSettings::IniFormat);
     settings.setValue("numServers", (int)servers_.size());
-    for(size_t i=0; i<servers_.size(); ++i) {
+    for (size_t i=0; i<servers_.size(); ++i) {
         QString keyname = "server";
         keyname += (i+1);
         settings.setValue(keyname+"/name", servers_[i].name_);
@@ -320,9 +319,8 @@ void ServerDialog::saveServers() {
 
 void ServerDialog::fillCombo() {
     serverCombo_->clear();
-    for(size_t i=0; i<servers_.size(); ++i) {
+    for (size_t i=0; i<servers_.size(); ++i)
         serverCombo_->addItem(servers_[i].name_, QVariant((int)i));
-    }
 }
 
 void ServerDialog::displayConfig(int i) {
@@ -336,8 +334,7 @@ void ServerDialog::editConfig() {
     saveServers();
 }
 
-void ServerDialog::addServer()
-{
+void ServerDialog::addServer() {
     bool ok;
     QString name = QInputDialog::getText(this, tr("Add server config"), tr("Config name:"),
                                          QLineEdit::Normal, "", &ok);
@@ -350,15 +347,14 @@ void ServerDialog::addServer()
     editConfig();
 }
 
-void ServerDialog::deleteServer()
-{
+void ServerDialog::deleteServer() {
     int cc = currentConf_;
     displayConfig(0);
     serverCombo_->removeItem(cc);
     servers_.erase(servers_.begin()+cc);
     saveServers();
 }
-// 
+
 void ServerDialog::updateList()
 {
     QString url = QString("%1:%2/%3").arg(servers_[currentConf_].hostname_)
@@ -373,7 +369,8 @@ void ServerDialog::updateList()
         security_ = voreen::DicomSecurityOptions();
     }
     volumeReader.setSecurityOptions(security_);
-    std::vector<voreen::DicomSeriesInfo> series = volumeReader.listSeries("dicom://FINDSCU@" + url.toStdString());
+    std::vector<voreen::DicomSeriesInfo> series
+        = volumeReader.listSeries("dicom://FINDSCU@" + url.toStdString());
 
     if (series.size() > 0) {
         url = QString("dicom://%1:%2@") .arg(servers_[currentConf_].destAE_).
@@ -388,10 +385,13 @@ void ServerDialog::updateList()
 namespace {
 
 // Helper for analyzing a Dicom URL for C-MOVE
-bool analyze_URL_path(const std::string &path, std::string &peerTitle, std::string &seriesInstanceUID) {
+bool analyze_URL_path(const std::string &path, std::string &peerTitle,
+                      std::string &seriesInstanceUID)
+{
     // ^/([A-Za-z0-9.\-_]+)\?seriesInstanceUID=[0-9\.]$
     const std::string number_point = "0123456789.";
-    const std::string peer_name = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-" + number_point;
+    const std::string peer_name = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+        + number_point;
     std::string s(path);
 
     // ^/
@@ -436,7 +436,8 @@ void ServerDialog::open() {
     repaint();
     
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    std::string configFile = (QApplication::applicationDirPath() + "/dicomloader-storescp.cfg").toStdString();
+    std::string configFile = (QApplication::applicationDirPath()
+                              + "/dicomloader-storescp.cfg").toStdString();
 
     if (!voreen::DicomMoveSCU::init(servers_[currentConf_].destAE_.toStdString(),
                                     servers_[currentConf_].inPort_,
@@ -453,9 +454,10 @@ void ServerDialog::open() {
         pd_->setValue(numImages);
         return;
     }
-    if(dt_)
-        delete dt_;
-    dt_ = new DownloadThread(targetPath.toStdString(), servers_[currentConf_].callAE_.toStdString(), listWidget_->getSelectedSeriesInstanceUID());
+    delete dt_;
+    dt_ = new DownloadThread(targetPath.toStdString(),
+                             servers_[currentConf_].callAE_.toStdString(),
+                             listWidget_->getSelectedSeriesInstanceUID());
     connect(dt_, SIGNAL(finished()), this, SLOT(downloadFinished()));
     dt_->start();
 #else
@@ -470,7 +472,6 @@ void ServerDialog::cancelDownload() {
 
 void ServerDialog::updateProgressbar() {
     pd_->setValue(voreen::DicomMoveSCU::getNumDownloaded());
-//     std::cout << "timer: " << voreen::DicomMoveSCU::getNumDownloaded() << std::endl;
 }
 
 
@@ -478,11 +479,11 @@ void ServerDialog::downloadFinished() {
     t_->stop();
 
     QApplication::restoreOverrideCursor();
-    if(pd_->wasCanceled())
+    if (pd_->wasCanceled())
         QMessageBox::information(0, QString("Series move"),
                               QString("Download canceled."),
                               QMessageBox::Ok, QMessageBox::NoButton);
-    else if(dt_->successful())
+    else if (dt_->successful())
         QMessageBox::information(0, QString("Series move"),
                               QString("Download finished."),
                               QMessageBox::Ok, QMessageBox::NoButton);
@@ -498,15 +499,19 @@ std::string ServerDialog::getURL() {
     if (listWidget_->getSelectedSeriesInstanceUID().empty())
         return "";
     else
-        return "dicom://" + servers_[currentConf_].callAE_.toStdString() + ":" + (QString::number(servers_[currentConf_].inPort_)).toStdString() + "@" + servers_[currentConf_].destAE_.toStdString() + ":" + (QString::number(servers_[currentConf_].serverPort_)).toStdString()+"/"+servers_[currentConf_].hostname_.toStdString()+"?seriesInstanceUID="+listWidget_->getSelectedSeriesInstanceUID();
+        return "dicom://" + servers_[currentConf_].callAE_.toStdString() + ":"
+            + (QString::number(servers_[currentConf_].inPort_)).toStdString() + "@"
+            + servers_[currentConf_].destAE_.toStdString() + ":"
+            + (QString::number(servers_[currentConf_].serverPort_)).toStdString()+ "/"
+            + servers_[currentConf_].hostname_.toStdString() + "?seriesInstanceUID="
+            + listWidget_->getSelectedSeriesInstanceUID();
 }
 
 //
 // Series
 //
 
-SeriesListWidget::SeriesListWidget()
-{
+SeriesListWidget::SeriesListWidget() {
     QString str = "id,NumImages,Patient Name,Patient ID,Date,Time,Modality,Description";
     QStringList headers = str.split(",");
     table = new QTableWidget(20, headers.size());
@@ -516,7 +521,8 @@ SeriesListWidget::SeriesListWidget()
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     
     filter_ = new QLineEdit();
-    connect(filter_, SIGNAL(textChanged(const QString&)), this, SLOT(updateFilter(const QString&)));
+    connect(filter_, SIGNAL(textChanged(const QString&)),
+            this, SLOT(updateFilter(const QString&)));
     filterCombo_ = new QComboBox();
     filterCombo_->addItem("UID");
     filterCombo_->addItem("Images");
@@ -528,33 +534,26 @@ SeriesListWidget::SeriesListWidget()
     
     connect(table, SIGNAL(itemSelectionChanged ()), this, SIGNAL(seriesSelected()));
     
-//     QVBoxLayout *layout = new QVBoxLayout;
     QGridLayout *layout = new QGridLayout;
-//     layout->addSpacing(10);
     layout->addWidget(new QLabel("Search:"),0,0);
     layout->addWidget(filter_,0,1);
     layout->addWidget(new QLabel("Attribute:"),1,0);
     layout->addWidget(filterCombo_,1,1,1,1);
-    layout->addWidget(table,2,0,1,2);
-//     layout->addStretch(1);
+    layout->addWidget(table, 2, 0, 1, 2);
     setLayout(layout);
-
+    
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 namespace {
     class QTableWidgetItemDate : public QTableWidgetItem {
     public:
-        QTableWidgetItemDate(QDate date) : QTableWidgetItem(date.toString("dd.MM.yyyy")) {
-
-        }
+        QTableWidgetItemDate(QDate date)
+            : QTableWidgetItem(date.toString("dd.MM.yyyy")) {}
         
         bool operator< ( const QTableWidgetItem & other ) const {
             QDate date = QDate::fromString(other.text(), "dd.MM.yyyy");
-            if(QDate::fromString(text(), "dd.MM.yyyy") < date)
-                return true;
-            else
-                return false;
+            return (QDate::fromString(text(), "dd.MM.yyyy") < date);
         }
     };
 }
@@ -567,7 +566,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
     table->setRowCount(list.size());
     QDate date;
     std::string temp;
-    for( theIterator = list.begin(); theIterator != list.end(); theIterator++ ) {
+    for (theIterator = list.begin(); theIterator != list.end(); theIterator++) {
         QTableWidgetItem* it = new QTableWidgetItem(QString::fromStdString((*theIterator).uid_));
         it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         table->setItem(c, 0, it);
@@ -585,7 +584,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
         table->setItem(c, 3, it);
         
         temp = (*theIterator).studyDate_;
-        if(temp.length() == 8) {
+        if (temp.length() == 8) {
             int y = (temp[0]-'0')*1000+(temp[1]-'0')*100+(temp[2]-'0')*10+(temp[3]-'0');
             int m = (temp[4]-'0')*10+(temp[5]-'0');
             int d = (temp[6]-'0')*10+(temp[7]-'0');
@@ -598,7 +597,7 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
         table->setItem(c, 4, it);
         
         temp = (*theIterator).studyTime_;
-        if(temp.length() >= 6) {
+        if (temp.length() >= 6) {
             temp.insert(4,":");
             temp.insert(2,":");
         }
@@ -620,8 +619,6 @@ void SeriesListWidget::setSeries(std::vector<voreen::DicomSeriesInfo>& list) {
     table->setSortingEnabled(true);  // re-enable sorting   
 }
 
-
-
 std::string SeriesListWidget::getSelectedSeriesInstanceUID() {
     if (table->item(table->currentRow(), 0))
         return table->item(table->currentRow(), 0)->text().toStdString();
@@ -640,9 +637,9 @@ void SeriesListWidget::updateFilter(const QString & text) {
     QTableWidgetItem* it;
     int cur = filterCombo_->currentIndex();
     
-    if(text == "") {
-        for(int r=0; r<table->rowCount(); ++r) {
-            for(int c=0; c<table->columnCount(); ++c) {
+    if (text == "") {
+        for (int r=0; r<table->rowCount(); ++r) {
+            for (int c=0; c<table->columnCount(); ++c) {
                 it = table->item(r,c);
                 it->setBackgroundColor(QColor(255, 255, 255, 127));
             }
@@ -650,20 +647,20 @@ void SeriesListWidget::updateFilter(const QString & text) {
     }
     else {
         bool foundInRow;
-        for(int r=0; r<table->rowCount(); ++r) {
+        for (int r=0; r<table->rowCount(); ++r) {
             foundInRow = false;
-             for(int c=0; c < table->columnCount(); ++c) {
+             for (int c=0; c < table->columnCount(); ++c) {
                 it = table->item(r,c);
-                if((c == cur) && (it->text().contains(text, Qt::CaseInsensitive))) {
+                if ((c == cur) && (it->text().contains(text, Qt::CaseInsensitive))) {
                     foundInRow = true;
                 }
                 it->setBackgroundColor(QColor(255, 255, 255, 127));
              }
-            if(foundInRow) {
-                for(int c=0; c<table->columnCount(); ++c) {
+            if (foundInRow) {
+                for (int c=0; c<table->columnCount(); ++c) {
                     it = table->item(r,c);
-//                     if(it->text().contains(text, Qt::CaseInsensitive)) {
-                    if(c == cur) {
+//                     if (it->text().contains(text, Qt::CaseInsensitive)) {
+                    if (c == cur) {
                         it->setBackgroundColor(QColor(255, 0, 0, 127));
                     }
                     else {
@@ -679,10 +676,10 @@ void SeriesListWidget::updateFilter(const QString & text) {
 // Dicomdir
 //
 
-DicomDirDialog::DicomDirDialog()
+DicomDirDialog::DicomDirDialog(QWidget* parent)
+    : QDialog(parent)
 {
-    setWindowTitle("DicomDir");
-    
+    setWindowTitle("DicomDir");    
 
     listWidget_ = new SeriesListWidget();
     openButton_ = new QPushButton("Open");
@@ -698,11 +695,14 @@ DicomDirDialog::DicomDirDialog()
     listWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     setLayout(layout);
-//     if(servers_.size() > 0)
+
+    // set initial size
+    resize(600, 300);        
+    
+//     if (servers_.size() > 0)
 //         displayConfig(servers_[0]);
 
 }
-
 
 void DicomDirDialog::open() {
     hide();

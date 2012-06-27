@@ -62,7 +62,7 @@
 #endif
 
 
-// These fucntions are used by the ambient occlusion raycaster
+// These functions are used by the ambient occlusion raycaster
 
 vec4 triPreClassFetch(vec3 sample, sampler3D volumeTex, VOLUME_PARAMETERS volumeTexParameters,
                       vec3 volumeDimensions, sampler1D classTex, float fetchFactor) {

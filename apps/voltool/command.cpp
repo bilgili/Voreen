@@ -35,7 +35,7 @@ int Command::asInt(const std::string& s) throw(SyntaxException) {
     std::istringstream iss(s);
     int t;
     bool success = !(iss >> std::dec >> t).fail();
-    if(!success)
+    if (!success)
         throw SyntaxException("Failed to convert parameter to integer!");
     return t;
 }
@@ -44,13 +44,13 @@ float Command::asFloat(const std::string& s) throw(SyntaxException) {
     std::istringstream iss(s);
     float t;
     bool success = !(iss >> std::dec >> t).fail();
-    if(!success)
+    if (!success)
         throw SyntaxException("Failed to convert parameter to float!");
     return t;
 }
 
 void Command::checkParameters(bool c) throw(SyntaxException) {
-    if(!c)
+    if (!c)
         throw SyntaxException("Illegal number of parameters!");
 }
 
@@ -67,7 +67,7 @@ CommandMap::CommandMap() {
 CommandMap::~CommandMap() {
     //delete all commands:
     std::map<std::string, Command*>::iterator iter;   
-    while(!commandMap_.empty()) {
+    while (!commandMap_.empty()) {
         iter = commandMap_.begin();
         delete iter->second;
         commandMap_.erase(iter);
@@ -79,7 +79,7 @@ void CommandMap::addCommand(Command* cmd) {
 }
 
 bool CommandMap::available(std::string name) {
-    if(commandMap_.find(name) != commandMap_.end())
+    if (commandMap_.find(name) != commandMap_.end())
         return true;
     else
         return false;
@@ -91,7 +91,7 @@ Command* CommandMap::get(std::string name) {
 
 void CommandMap::listCommands() {
     std::map<std::string, Command*>::iterator iter;   
-    for( iter = commandMap_.begin(); iter != commandMap_.end(); iter++ ) {
+    for ( iter = commandMap_.begin(); iter != commandMap_.end(); iter++ ) {
         LINFOC("voreen.voltool", iter->first << ": " << iter->second->getInfo());
     }
 }

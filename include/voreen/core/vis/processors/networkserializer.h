@@ -189,7 +189,8 @@ public:
     /**
      * Reads a ".vnw" file and returns a ProcessorNetwork holding all Processors, PropertySets and metadata
      */
-    ProcessorNetwork& readNetworkFromFile(std::string filename, bool loadVolumeSetContainer = false);
+    ProcessorNetwork& readNetworkFromFile(std::string filename, bool loadVolumeSetContainer = false)
+        throw (SerializerException);
 
     /**
      * Reads a ".vnw" file and returns if if contains a serialized VolumeSetContainer

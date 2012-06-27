@@ -58,7 +58,6 @@ const std::string Threshold::getProcessorInfo() const {
 }
 
 void Threshold::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,size_.x,size_.y);
 	int source = portMapping->getTarget("image.input");
     int dest = portMapping->getTarget("image.output");
 

@@ -61,8 +61,6 @@ public:
     virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
 	virtual void process(LocalPortMapping* portMapping);
     
-    virtual bool isMultipassCompatible() { return true; }
-
     void setNeedToReRender(bool needed);
 protected:
     bool needToReRender_;

@@ -30,19 +30,13 @@
 #ifndef VRN_VOLUMESETSOURCEPROCESSOR_H
 #define VRN_VOLUMESETSOURCEPROCESSOR_H
 
-#include "processor.h"
-
+#include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/volume/volumesetcontainer.h"
-
-#ifndef VRN_OBSERVER_H
 #include "voreen/core/volume/observer.h"
-#endif
 
 namespace voreen {
 
-class VolumeSetSourceProcessor : public Processor, public Observer
-{
-
+class VolumeSetSourceProcessor : public Processor, public Observer {
 public: 
     VolumeSetSourceProcessor();
     ~VolumeSetSourceProcessor();
@@ -57,8 +51,7 @@ public:
     virtual bool connect(Port* outport, Port* inport);
     virtual Processor* create();
 
-    virtual bool isMultipassCompatible() { return true; }
-    virtual void process(LocalPortMapping* portMapping);
+    virtual void process(LocalPortMapping* /*portMapping*/) {}
     virtual void processMessage(Message* msg,const Identifier &dest);
 
     VolumeSet* getVolumeSet();

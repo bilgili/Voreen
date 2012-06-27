@@ -55,8 +55,6 @@ const std::string Blur::getProcessorInfo() const {
 }
 
 void Blur::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,static_cast<GLsizei>(size_.x),static_cast<GLsizei>(size_.y));
-
 	int source =  portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 

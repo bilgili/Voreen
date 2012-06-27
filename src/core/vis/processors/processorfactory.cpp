@@ -33,21 +33,24 @@
 #include <algorithm> // for sorting vectors
 #include <functional>
 
-#include "voreen/core/vis/geomclippingwidget.h"
+#include "voreen/core/vis/clippingplanewidget.h"
 #include "voreen/core/vis/processors/geometrytestprocessor.h"
 #include "voreen/core/vis/processors/volumesetsourceprocessor.h"
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
 #include "voreen/core/vis/processors/image/background.h"
 #include "voreen/core/vis/processors/image/blur.h"
+#include "voreen/core/vis/processors/image/cacherenderer.h"
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
 #include "voreen/core/vis/processors/image/coarsenessrenderer.h"
 #include "voreen/core/vis/processors/image/colordepth.h"
 #include "voreen/core/vis/processors/image/combine.h"
+#include "voreen/core/vis/processors/image/compositer.h"
 #include "voreen/core/vis/processors/image/depthmask.h"
 #include "voreen/core/vis/processors/image/depthoffield.h"
 #include "voreen/core/vis/processors/image/edgedetect.h"
 #include "voreen/core/vis/processors/image/geometryprocessor.h"
 #include "voreen/core/vis/processors/image/labeling.h"
+#include "voreen/core/vis/processors/image/nullrenderer.h"
 #include "voreen/core/vis/processors/image/regionmodifier.h"
 #include "voreen/core/vis/processors/image/threshold.h"
 #include "voreen/core/vis/processors/render/entryexitpoints.h"
@@ -60,22 +63,21 @@
 #include "voreen/core/vis/processors/render/firsthitrenderer.h"
 #include "voreen/core/vis/processors/render/slicingproxygeometry.h"
 #include "voreen/core/vis/processors/render/slicerenderer.h"
-#include "voreen/core/vis/processors/volume/visiblehumandatasetcreator.h"
 
 namespace voreen {
 
 ProcessorFactory* ProcessorFactory::instance_ = 0;
-    
+
 ProcessorFactory::ProcessorFactory() {
-    tc_ = 0; 
+    tc_ = 0;
     initializeClassList();
 }
 
 
 ProcessorFactory::~ProcessorFactory() {
     for (std::map <Identifier, Processor*>::iterator it = classList_.begin();
-        it != classList_.end();
-        ++it)
+         it != classList_.end();
+         ++it)
     {
         delete it->second;
     }
@@ -85,15 +87,15 @@ ProcessorFactory::~ProcessorFactory() {
 ProcessorFactory* ProcessorFactory::getInstance() {
     if (!instance_)
         instance_ = new ProcessorFactory();
-    
+
     return instance_;
 }
 
 std::string ProcessorFactory::getProcessorInfo(Identifier name) {
     std::map<Identifier, Processor*>::iterator it = classList_.find(name);
-    if ( (it != classList_.end()) && (it->second != 0) )
+    if (it != classList_.end() && it->second != 0)
         return it->second->getProcessorInfo();
-    
+
     return "";
 }
 
@@ -104,9 +106,9 @@ void ProcessorFactory::destroy() {
 
 Processor* ProcessorFactory::create(Identifier name) {
     std::map<Identifier, Processor*>::iterator it = classList_.find(name);
-    if ( (it != classList_.end()) && (it->second != 0) )
+    if (it != classList_.end() && it->second != 0)
         return it->second->create();
-    
+
     return 0;
 }
 
@@ -115,11 +117,11 @@ const std::vector<Identifier>& ProcessorFactory::getKnownClasses() {
 }
 
 void ProcessorFactory::registerClass(Processor* newClass) {
-	Identifier id  = newClass->getClassName().getName(); 
+    Identifier id  = newClass->getClassName().getName();
 
-	classList_.insert(std::make_pair(id.getSubString(1), newClass));
-	knownClasses_.push_back(newClass->getClassName());
-    
+    classList_.insert(std::make_pair(id.getSubString(1), newClass));
+    knownClasses_.push_back(newClass->getClassName());
+
     // sort knownClasses_ in alphabetical order
     //
     // This way is maybe the most suitable: inserting the processor at the
@@ -129,16 +131,14 @@ void ProcessorFactory::registerClass(Processor* newClass) {
     // be probably rare and therefore resorting the entire vector would be
     // fast enough. rfc (Dirk)
     //
-    std::sort( knownClasses_.begin(), knownClasses_.end(), std::less<voreen::Identifier>() );
+    std::sort(knownClasses_.begin(), knownClasses_.end(), std::less<voreen::Identifier>());
 }
 
 void ProcessorFactory::initializeClassList() {
-	registerClass(new VisibleHumanDatasetCreator() );
-
     registerClass(new CubeProxyGeometry());
     registerClass(new SliceProxyGeometry());
     registerClass(new CubeCutProxyGeometry());
-      
+
     registerClass(new CubeEntryExitPoints());
     registerClass(new SliceEntryPoints());
 
@@ -152,23 +152,23 @@ void ProcessorFactory::initializeClassList() {
     registerClass(new ColorDepth());
     registerClass(new DepthOfField());
     registerClass(new Combine());
+    registerClass(new Compositer());
     registerClass(new Blur());
     registerClass(new EdgeDetect());
     registerClass(new Labeling());
     registerClass(new Background());
 
-    registerClass(new GeomBoundingBox());      
-    registerClass(new GeomLightWidget());  
+    registerClass(new GeomBoundingBox());
+    registerClass(new GeomLightWidget());
     registerClass(new GeometryProcessor());
     registerClass(new GeomRegistrationMarkers());
 
-    registerClass(new ClippingWidget());
+    registerClass(new ClippingPlaneWidget());
 
     registerClass(new CoarsenessRenderer());
     registerClass(new CanvasRenderer());
     registerClass(new CacheRenderer());
     registerClass(new NullRenderer());
-    registerClass(new CopyToScreenRenderer());     
     registerClass(new OutputProcessor());
 
     registerClass(new VolumeSetSourceProcessor());
@@ -176,16 +176,6 @@ void ProcessorFactory::initializeClassList() {
 
     registerClass(new SliceRenderer3D());
     registerClass(new SingleSliceRenderer());
-
-    // Add the processors that use the static-initialization mechanism using the
-    // VRN_PROCESSOR_CLASS() and VRN_PROCESSOR_REGISTER() macros.
-    std::vector<Processor::CreateProcessorFunctionPointer> l = Processor::getRegisteredProcessors();
-    for (size_t i=0; i < l.size(); ++i) {
-        // The method specified by the function pointer returns a new instance of the
-        // respective subclass of Processor.
-        Processor::CreateProcessorFunctionPointer createStatic = l[i]; 
-        registerClass(createStatic());
-    }   
 }
 
 void ProcessorFactory::setTextureContainer(voreen::TextureContainer* tc){

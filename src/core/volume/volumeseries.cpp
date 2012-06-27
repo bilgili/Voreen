@@ -49,7 +49,6 @@ VolumeSeries::VolumeSeries(VolumeSet* const parentSet,
                            const std::string& name,
                            const Modality& modality)
     : name_(name),
-      file_(""),
       modality_(modality),
       maximumTimestep_(-1.0f),
       parentVolumeSet_(parentSet)
@@ -85,20 +84,19 @@ const std::string& VolumeSeries::getName() const {
 }
 
 bool VolumeSeries::setName(const std::string& name) {
-    if( name != name_ ) {
+    if (name != name_) {
         // change the name only if there is no
         // VolumeSeries of the same name already contained
         // within a possibly existing parent VolumeSet!
         // The names need to be unique.
         //
-        if( (parentVolumeSet_ != 0)
+        if ( (parentVolumeSet_ != 0)
             && (parentVolumeSet_->findSeries(name) == 0) ) {
             name_ = name;
             notifyObservers();
-            MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
             return true;
         }
-        if( parentVolumeSet_ == 0 ) {
+        if (parentVolumeSet_ == 0) {
             name_ = name;
             return true;
         }
@@ -120,11 +118,9 @@ const Modality& VolumeSeries::getModality() const {
 }
 
 void VolumeSeries::setModality(const Modality& modality) {
-    if( modality != modality_ ) {
+    if (modality != modality_) {
         modality_ = modality;
-        if( (parentVolumeSet_ != 0) && (parentVolumeSet_->getParentContainer() != 0) )
-            parentVolumeSet_->getParentContainer()->notifyObservers();
-        MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
+        notifyObservers();
     }
 }
 
@@ -140,13 +136,12 @@ const VolumeHandle::HandleSet& VolumeSeries::getVolumeHandles() const {
     return handles_;
 }
 
-VolumeHandle* VolumeSeries::getVolumeHandle(const int index) const
-{
+VolumeHandle* VolumeSeries::getVolumeHandle(const int index) const {
     if ((index < 0) || (static_cast<size_t>(index) >= handles_.size()))
         return 0;
 
     VolumeHandle::HandleSet::const_iterator it = handles_.begin();
-    for (int i = 0; it != handles_.end(); ++it, i++) {
+    for (int i = 0; it != handles_.end(); ++it, ++i) {
         if (i == index)
             return const_cast<VolumeHandle*>(*it);
     }
@@ -170,13 +165,12 @@ bool VolumeSeries::addVolumeHandle(VolumeHandle*& handle, const bool forceInsert
     // If the handle has been inserted, the maximum timestep eventually needs to be
     // updated and success is indicated by returning "true"
     //
-    if ( pr.second == true ) {
+    if (pr.second) {
         if ( handle->getTimestep() > maximumTimestep_ )
             maximumTimestep_ = handle->getTimestep();
         (*(pr.first))->setParentSeries(this);
 
         notifyObservers();
-        MsgDistr.postMessage(new BoolMsg(VolumeSeries::msgUpdateTimesteps_, true), "VolumeSelectionProcessor");
         return true;
     }
 
@@ -185,10 +179,10 @@ bool VolumeSeries::addVolumeHandle(VolumeHandle*& handle, const bool forceInsert
     // by then should never fail. If it does nevertheless, some serious problem has
     // been occured and enforcing insertion would probably make no sense either.
     //
-    if ( forceInsertion == true ) {
+    if (forceInsertion) {
         handle->setTimestep(maximumTimestep_ + 1.0f);
         pr = handles_.insert(handle);
-        if ( pr.second == true ) {
+        if (pr.second) {
             (*(pr.first))->setParentSeries(this);
             maximumTimestep_ += 1.0f;
         }
@@ -197,24 +191,28 @@ bool VolumeSeries::addVolumeHandle(VolumeHandle*& handle, const bool forceInsert
     // If insertion fails and the contaiend handle is not the same as the one which is
     // about to be inserted, replace the given one with the contained one.
     //
-    if ( pr.second == false ) {
+    if (!pr.second) {
         VolumeHandle* containedHandle = static_cast<VolumeHandle*>(*(pr.first));
         if (handle != containedHandle) {
             delete handle;
             handle = containedHandle;
         }
-    } else
+    } else {
+        if( (parentVolumeSet_ != 0) && (parentVolumeSet_->getParentContainer() != 0) )
+            parentVolumeSet_->getParentContainer()->notifyObservers();
+
         notifyObservers();
+    }
 
     return pr.second;
 }
 
 VolumeHandle* VolumeSeries::findVolumeHandle(VolumeHandle* const handle) const {
-    if ( handle == 0 )
+    if (handle == 0)
         return 0;
 
     VolumeHandle::HandleSet::const_iterator it = handles_.find(handle);
-    if ( it != handles_.end() )
+    if (it != handles_.end())
         return *it;
 
     return 0;
@@ -226,11 +224,11 @@ VolumeHandle* VolumeSeries::findVolumeHandle(const float timestep) const {
 }
 
 VolumeHandle* VolumeSeries::removeVolumeHandle(VolumeHandle* const handle) {
-    if ( handle == 0 )
+    if (handle == 0)
         return 0;
 
     VolumeHandle* found = findVolumeHandle(handle);
-    if( found != 0 ) {
+    if (found != 0) {
         handles_.erase(handle);
         found->setParentSeries(0);
         adjustMaximumTimestep();
@@ -247,7 +245,7 @@ VolumeHandle* VolumeSeries::removeVolumeHandle(const float timestep) {
 
 bool VolumeSeries::deleteVolumeHandle(VolumeHandle* const handle) {
     VolumeHandle* found = removeVolumeHandle(handle);
-    if ( found == 0 )
+    if (found == 0)
         return false;
 
     delete found;
@@ -257,14 +255,6 @@ bool VolumeSeries::deleteVolumeHandle(VolumeHandle* const handle) {
 bool VolumeSeries::deleteVolumeHandle(const float timestep) {
     VolumeHandle handle(0, 0, timestep);
     return deleteVolumeHandle(&handle);
-}
-
-const std::string& VolumeSeries::getFileName() const {
-    return file_;
-}
-
-void VolumeSeries::setFileName(const std::string& filename) {
-    file_ = filename;
 }
 
 void VolumeSeries::timestepChanged(VolumeHandle* /*handle*/) {
@@ -320,8 +310,6 @@ void VolumeSeries::updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Orig
 }
 
 std::set<std::string> VolumeSeries::getFileNamesFromXml(TiXmlElement* elem) {
-//    errors_.clear();
-//    serializableSanityChecks(elem);
     std::set<std::string> filenames;
     // get all Filenames from the Series
     TiXmlElement* volumehandleElem;
@@ -331,11 +319,9 @@ std::set<std::string> VolumeSeries::getFileNamesFromXml(TiXmlElement* elem) {
     {
         try {
             std::string filename = VolumeHandle::getFileNameFromXml(volumehandleElem);
-//            errors_.store(series->errors());
             filenames.insert(filename);
         }
-        catch (SerializerException& e) { // TODO do something
-//            errors_.store(e);
+        catch (SerializerException& /*e*/) {
         }
     }
     return filenames;
@@ -347,7 +333,7 @@ std::set<std::string> VolumeSeries::getFileNamesFromXml(TiXmlElement* elem) {
 void VolumeSeries::adjustMaximumTimestep() {
     VolumeHandle::HandleSet::const_iterator it = handles_.begin();
     float max = -1.0f;
-    for ( ; it != handles_.end(); ++it ) {
+    for (VolumeHandle::HandleSet::const_iterator it = handles_.begin(); it != handles_.end(); ++it ) {
         if ( (*it != 0) && ((*it)->getTimestep() > max) )
             max = (*it)->getTimestep();
     }
@@ -356,7 +342,6 @@ void VolumeSeries::adjustMaximumTimestep() {
 
 void VolumeSeries::clone(const VolumeSeries& series) {
     name_ = series.getName();
-    file_ = series.getFileName();
     parentVolumeSet_ = series.getParentVolumeSet();
     modality_ = series.getModality();
 
@@ -365,16 +350,14 @@ void VolumeSeries::clone(const VolumeSeries& series) {
 }
 
 void VolumeSeries::freeHandles() {
-    VolumeHandle::HandleSet::iterator it;
-    for (it = handles_.begin(); it != handles_.end(); ++it)
+    for (VolumeHandle::HandleSet::iterator it = handles_.begin(); it != handles_.end(); ++it)
         delete (*it);
     handles_.clear();
 }
 
 void VolumeSeries::notifyObservers() {
-    if( (parentVolumeSet_ != 0) && (parentVolumeSet_->getParentContainer() != 0) )
+    if ( (parentVolumeSet_ != 0) && (parentVolumeSet_->getParentContainer() != 0) )
             parentVolumeSet_->getParentContainer()->notifyObservers();
-    MsgDistr.postMessage(new BoolMsg(VolumeSeries::msgUpdateTimesteps_, true), "VolumeSelectionProcessor");
 }
 
 } // namespace voreen

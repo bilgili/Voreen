@@ -1,16 +1,16 @@
 @echo off
 rem Uncomment, if qt is not in your path
-rem set path=c:\qt\4.3.4\bin
+rem set path=c:\qt\4.4.3\bin
 
 rem Select your Visual Studio version
 rem set QMAKESPEC=win32-msvc.net
 rem set QMAKESPEC=win32-msvc2005
 rem set QMAKESPEC=win32-msvc2008
 
-rem call tools\svnversion.bat . include\voreen\svnversion.h
+rem call tools\svnversion.bat . include\voreen\core\svnversion.h
 
 cd src\core
-qmake.exe -tp vc "CONFIG+=flat voreenlib_core.pro
+qmake.exe -tp vc "CONFIG+=flat" voreenlib_core.pro
 cd ..\qt
 qmake.exe -tp vc "CONFIG+=flat" voreenlib_qt.pro
 cd ..\..\apps\voreenve

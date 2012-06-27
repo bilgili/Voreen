@@ -32,27 +32,25 @@
 
 namespace voreen {
 
-const std::string& Identifier::getName() const
-{
+const std::string& Identifier::getName() const {
     return name_;
 }
 
-const std::string Identifier::getSubString(int index) const
-{
+const std::string Identifier::getSubString(int index) const {
     std::vector<int> points;
     std::string subString;
  
     points.push_back(-1);
-    for (size_t i = 0;i<name_.length();i++)
-        if ( name_.substr(i,1) == "." )
+    for (size_t i = 0; i<name_.length(); ++i) {
+        if (name_.substr(i,1) == ".")
             points.push_back(i); 
+    }
     points.push_back(name_.length());
 
 	subString = name_;
     if (index >= (static_cast<int>(points.size())-1) )
         return subString; 
-    return 
-        subString.substr(points.at(index)+1,points.at(index+1) - points.at(index) - 1); 
+    return subString.substr(points.at(index)+1,points.at(index+1) - points.at(index) - 1); 
 }
 
 } // namespace voreen

@@ -36,77 +36,73 @@
 
 namespace voreen {
 
-    DockBarHandler::DockBarHandler(QWidget* parent, QString title) : 
-        QDockWidget(title, parent),
-        parent_(parent) {
-        setObjectName(title);
-        
-        mainFrame_ = new QFrame();
-        mainFrame_->setFrameStyle(QFrame::NoFrame);
-        mainFrame_->setContentsMargins(-6, -6, -6, -6);
-        mainFrame_->setLayout(new QVBoxLayout());
+DockBarHandler::DockBarHandler(QWidget* parent, QString title) : 
+    QDockWidget(title, parent),
+    parent_(parent)
+{
+    setObjectName(title);
+    
+    mainFrame_ = new QFrame();
+    mainFrame_->setFrameStyle(QFrame::NoFrame);
+    mainFrame_->setContentsMargins(-6, -6, -6, -6);
+    mainFrame_->setLayout(new QVBoxLayout());
 
-        scrollArea_ = new QScrollArea();
-        scrollArea_->setWidget(mainFrame_);
-        scrollArea_->setFrameStyle(QFrame::NoFrame);
-        scrollArea_->setWidgetResizable(true);
-        setWidget(scrollArea_);
+    scrollArea_ = new QScrollArea();
+    scrollArea_->setWidget(mainFrame_);
+    scrollArea_->setFrameStyle(QFrame::NoFrame);
+    scrollArea_->setWidgetResizable(true);
+    setWidget(scrollArea_);
 
-        setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Ignored);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Ignored);
 
-        finished_ = false;
-    }
+    finished_ = false;
+}
 
-    void DockBarHandler::addDialog(PluginDialog* pluginDialog) {
+void DockBarHandler::addDialog(PluginDialog* pluginDialog) {
+    tgtAssert(!finished_, "DockBarHandler layout already finished!");
+    mainFrame_->layout()->addWidget(pluginDialog);
+    dockWidgets_.push_back(pluginDialog);
+    connect(pluginDialog, SIGNAL(topLevelChanged(bool)), this, SLOT(topLevelChanged(bool)));
+    connect(pluginDialog->toggleViewAction(), SIGNAL(triggered(bool)), this, SLOT(viewActionToggled(bool)));
+    connect(pluginDialog, SIGNAL(dialogClose(PluginDialog*)), this, SLOT(dialogClose(PluginDialog*)));
+}
 
-        tgtAssert(!finished_, "DockBarHandler layout already finished!");
-        mainFrame_->layout()->addWidget(pluginDialog);
-        dockWidgets_.push_back(pluginDialog);
-        connect(pluginDialog, SIGNAL(topLevelChanged(bool)), this, SLOT(topLevelChanged(bool)));
-        connect(pluginDialog->toggleViewAction(), SIGNAL(triggered(bool)), this, SLOT(viewActionToggled(bool)));
-        connect(pluginDialog, SIGNAL(dialogClose(PluginDialog*)), this, SLOT(dialogClose(PluginDialog*)));
-    }
+void DockBarHandler::finishLayout() {
+    (static_cast<QVBoxLayout*>(mainFrame_->layout()))->addStretch(100);
+    adjustWidthAndVisibility();
+    finished_ = true;
+}
 
-    void DockBarHandler::finishLayout() {
+void DockBarHandler::topLevelChanged(bool /*topLevel*/) {
+    adjustWidthAndVisibility();
+}
 
-        ((QVBoxLayout*)(mainFrame_->layout()))->addStretch(100);
-        adjustWidthAndVisibility();
-        finished_ = true;
-    }
+void DockBarHandler::viewActionToggled(bool /*checked*/) {
+    adjustWidthAndVisibility();
+}
 
-    void DockBarHandler::topLevelChanged(bool /*topLevel*/) {
+void DockBarHandler::dialogClose(PluginDialog* dialog) {
+    adjustWidthAndVisibility(dialog);
+}
 
-        adjustWidthAndVisibility();
-    }
-
-    void DockBarHandler::viewActionToggled(bool /*checked*/) {
-
-        adjustWidthAndVisibility();
-    }
-
-    void DockBarHandler::dialogClose(PluginDialog* dialog) {
-
-        adjustWidthAndVisibility(dialog);
-    }
-
-    void DockBarHandler::adjustWidthAndVisibility(PluginDialog* dialogToIgnore) {
-        int minWidth = 0;
-        for (size_t i=0; i<dockWidgets_.size(); i++) {
-            if (!dockWidgets_[i]->isHidden() && !dockWidgets_[i]->isFloating()
-                && dockWidgets_[i] != dialogToIgnore ) {
-                minWidth = std::max(minWidth, dockWidgets_[i]->sizeHint().width());
-            }
-        }
-        if (minWidth > 0) {
-            minWidth += scrollArea_->verticalScrollBar()->sizeHint().width() + 8; 
-            setMaximumWidth(minWidth);
-            setMinimumWidth(minWidth);
-            setVisible(true);
-            updateGeometry();
-        }
-        else {
-            setVisible(false);
+void DockBarHandler::adjustWidthAndVisibility(PluginDialog* dialogToIgnore) {
+    int minWidth = 0;
+    for (size_t i=0; i<dockWidgets_.size(); ++i) {
+        if (!dockWidgets_[i]->isHidden() && !dockWidgets_[i]->isFloating()
+            && dockWidgets_[i] != dialogToIgnore )
+        {
+            minWidth = std::max(minWidth, dockWidgets_[i]->sizeHint().width());
         }
     }
+    if (minWidth > 0) {
+        minWidth += scrollArea_->verticalScrollBar()->sizeHint().width() + 8; 
+        setMaximumWidth(minWidth);
+        setMinimumWidth(minWidth);
+        setVisible(true);
+        updateGeometry();
+    }
+    else
+        setVisible(false);
+}
 
 } // namespace voreen

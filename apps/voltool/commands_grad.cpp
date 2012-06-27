@@ -60,20 +60,20 @@ bool CommandGrad::execute(const std::vector<std::string>& parameters) {
     sourceDataset_ = volumeSet->getFirstVolume();
 
 
-    if(parameters[0] == "simple")
+    if (parameters[0] == "simple")
         targetDataset_ = calcGradients<tgt::col4>(sourceDataset_);
-    else if(parameters[0] == "26")
+    else if (parameters[0] == "26")
         targetDataset_ = calcGradients26(sourceDataset_);
-    else if(parameters[0] == "sobel")
+    else if (parameters[0] == "sobel")
         targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, false);
-    else if(parameters[0] == "sobelic")
+    else if (parameters[0] == "sobelic")
         targetDataset_ = calcGradientsSobel<tgt::col4>(sourceDataset_, true);
     else {
         delete sourceDataset_;
         throw SyntaxException("Unknown filter!");
     }
 
-    if(targetDataset_) {
+    if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[2], targetDataset_);
@@ -116,11 +116,11 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
     VolumeSet* volumeSet = serializer->load(parameters[numparams-2]);
     sourceDataset_ = volumeSet->getFirstVolume();
 
-    if(parameters[0] == "simple")
+    if (parameters[0] == "simple")
         targetDataset_ = filterGradients(sourceDataset_);
-    else if(parameters[0] == "mid")
+    else if (parameters[0] == "mid")
         targetDataset_ = filterGradientsMid(sourceDataset_);
-    else if(parameters[0] == "weighted") {
+    else if (parameters[0] == "weighted") {
         int times;
         times = asInt(parameters[1]);
         for (int i=0; i<times; ++i) {
@@ -128,7 +128,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
             sourceDataset_ = targetDataset_;
         }
     }
-    else if(parameters[0] == "weightedic") {
+    else if (parameters[0] == "weightedic") {
         int times;
         times = asInt(parameters[1]);
         for (int i=0; i<times; ++i) {
@@ -141,7 +141,7 @@ bool CommandFilterGrad::execute(const std::vector<std::string>& parameters) {
         throw SyntaxException("Unknown filter!");
     }
 
-    if(targetDataset_) {
+    if (targetDataset_) {
         VolumeSerializerPopulator volLoadPop;
         VolumeSerializer* serializer = volLoadPop.getVolumeSerializer();
         serializer->save(parameters[numparams-1], targetDataset_);

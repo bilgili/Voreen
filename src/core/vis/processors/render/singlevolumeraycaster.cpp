@@ -30,13 +30,14 @@
 #include "voreen/core/vis/processors/render/singlevolumeraycaster.h"
 
 #include "voreen/core/vis/processors/portmapping.h"
+#include "voreen/core/vis/lightmaterial.h"
 #include "voreen/core/volume/modality.h"
 
 namespace voreen {
 
 SingleVolumeRaycaster::SingleVolumeRaycaster()
-    : VolumeRaycaster("rc_singlevolume.frag"),
-      transferFunc_(setTransFunc_, "not used", 0, true)
+    : VolumeRaycaster()
+    , transferFunc_(setTransFunc_, "not used", 0, true)
 {
 	setName("SingleVolumeRaycaster");
 
@@ -58,7 +59,7 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
 	compositingModes1_.push_back("ISO");
 	compositingModes1_.push_back("FHP");
 	compositingModes1_.push_back("FHN");
-	compositingMode1_ = new EnumProp("set.compositing1", "Compositing (OP2)", compositingModes1_, &needRecompileShader_, 0);
+	compositingMode1_ = new EnumProp("set.compositing1", "Compositing (OP2)", compositingModes1_, &needRecompileShader_, 0, false);
 	addProperty(compositingMode1_);
 
 	compositingModes2_.push_back("DVR");
@@ -66,8 +67,13 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
 	compositingModes2_.push_back("ISO");
 	compositingModes2_.push_back("FHP");
 	compositingModes2_.push_back("FHN");
-	compositingMode2_ = new EnumProp("set.compositing2", "Compositing (OP3)", compositingModes2_, &needRecompileShader_, 0);
+	compositingMode2_ = new EnumProp("set.compositing2", "Compositing (OP3)", compositingModes2_, &needRecompileShader_, 0, false);
 	addProperty(compositingMode2_);
+
+    addProperty(&lightPosition_);
+    addProperty(&lightAmbient_);
+    addProperty(&lightDiffuse_);
+    addProperty(&lightSpecular_);
 
 	destActive_[0] = false;
 	destActive_[1] = false;
@@ -86,6 +92,7 @@ SingleVolumeRaycaster::~SingleVolumeRaycaster() {
         MsgDistr.remove(this);
 }
 
+// FIXME: is this method still needed?
 TransFunc* SingleVolumeRaycaster::getTransFunc() {
     return transferFunc_.get();
 }
@@ -109,6 +116,27 @@ void SingleVolumeRaycaster::processMessage(Message* msg, const Identifier& dest)
         }
         invalidate();
 	}
+    // send invalidate and update context, if lighting parameters have changed
+    else if (msg->id_ == LightMaterial::setLightPosition_   ||
+        msg->id_ == LightMaterial::setLightAmbient_         ||
+        msg->id_ == LightMaterial::setLightDiffuse_         ||
+        msg->id_ == LightMaterial::setLightSpecular_        ||
+        msg->id_ == LightMaterial::setLightAttenuation_     ||
+        msg->id_ == LightMaterial::setMaterialAmbient_      ||
+        msg->id_ == LightMaterial::setMaterialDiffuse_      ||
+        msg->id_ == LightMaterial::setMaterialSpecular_     ||
+        msg->id_ == LightMaterial::setMaterialShininess_        ) {
+            setLightingParameters();
+            invalidate();
+    }
+    else if (msg->id_ == "set.compositing1") {
+        compositingMode1_->set(msg->getValue<int>());
+        invalidate();
+    }
+    else if (msg->id_ == "set.compositing2") {
+        compositingMode2_->set(msg->getValue<int>());
+        invalidate();
+    }
 }
 
 void SingleVolumeRaycaster::setPropertyDestination(Identifier tag) {
@@ -127,7 +155,7 @@ int SingleVolumeRaycaster::initializeGL() {
 }
 
 void SingleVolumeRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(),
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_singlevolume.frag",
                                        generateHeader(), false);
 }
 
@@ -186,20 +214,24 @@ void SingleVolumeRaycaster::process(LocalPortMapping* portMapping) {
             invalidateShader();
         }
 	}
-	tc_->setActiveTargets(activeTargets);
-
+	tc_->setActiveTargets(activeTargets, "SingleVolumeRaycaster");
 	
-    glViewport(0, 0, static_cast<GLsizei>(size_.x), static_cast<GLsizei>(size_.y)); //FIXME: is this needed?
+	// FIXME: is this really needed?
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
 	VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);
+    if (volumeHandle != 0) {
+       if (!volumeHandle->isIdentical(currentVolumeHandle_))
+           setVolumeHandle(volumeHandle);
+    }
+    else
+       setVolumeHandle(0); 
 
-    if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
+    if ((currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0))
 		return;
 
 	// compile program
+	// FIXME: do this only before the first rendering pass?
     compileShader();
     LGL_ERROR;
 

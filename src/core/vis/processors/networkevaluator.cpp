@@ -29,39 +29,46 @@
 
 #include "voreen/core/vis/processors/networkevaluator.h"
 
-#include <queue>
-#include <numeric>
-
 #include "voreen/core/geometry/geometrycontainer.h"
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/exception.h"
 #include "voreen/core/vis/idmanager.h"
+#include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/processors/portmapping.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/volumeselectionprocessor.h"
 #include "voreen/core/vis/processors/volumesetsourceprocessor.h"
+#include "voreen/core/vis/processors/image/cacherenderer.h"
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
 #include "voreen/core/vis/processors/image/coarsenessrenderer.h"
 #include "voreen/core/vis/processors/image/geometryprocessor.h"
 
+#include <queue>
+#include <numeric>
+
 namespace voreen {
 
 const Identifier NetworkEvaluator::setReuseTextureContainerTargets_("set.reuseTextureContainerTargets");
-const Identifier NetworkEvaluator::setSizeBackward_("set.size.backward");
 const Identifier NetworkEvaluator::setCachedBackward_("set.cached.backward");
 const Identifier NetworkEvaluator::unsetCachedForward_("unset.cached.forward");
-const Identifier NetworkEvaluator::unsetCachedBackward_("unset.cached.backward");
 const Identifier NetworkEvaluator::addForbiddenTargets_("add.forbidden.targets");
 
-const std::string NetworkEvaluator::loggerCat_("voreen.voreen.NetworkEvaluator");
+const std::string NetworkEvaluator::loggerCat_("voreen.NetworkEvaluator");
 
 NetworkEvaluator::NetworkEvaluator()
-    : readyToEvaluate_(false),
-      tc_(0),
-      geoContainer_(0),
-      reuseTextureContainerTargets_(false)
+    : readyToEvaluate_(false)
+    , tc_(0)
+    , geoContainer_(0)
+    , reuseTextureContainerTargets_(false)
+    , currentViewportSize_(0)
+    , coarsenessActive_(false)
 {        
     setTag("evaluator");
+
+#ifdef DEBUG
+    // add process wrapper for checking OpenGL state
+    addProcessWrapper(new CheckOpenGLStateProcessWrapper());
+#endif
 }
 
 NetworkEvaluator::NetworkEvaluator(std::vector<Processor*> processors)
@@ -72,11 +79,15 @@ NetworkEvaluator::NetworkEvaluator(std::vector<Processor*> processors)
       reuseTextureContainerTargets_(false)
 {
     setTag("evaluator");
+
+#ifdef DEBUG
+    // add process wrapper for checking OpenGL state
+    addProcessWrapper(new CheckOpenGLStateProcessWrapper());
+#endif
 }
 
 NetworkEvaluator::~NetworkEvaluator() {
-    for (std::vector<Processor*>::iterator it = processors_.begin(); it != processors_.end(); ++it)
-        delete (*it);
+    removeProcessWrappers();    
 }
 
 //FIXME: either return an enum or throw an exception, but don't return numbers like -1 or -4!
@@ -90,7 +101,7 @@ int NetworkEvaluator::analyze() {
 	for (size_t i=0; i<processors_.size(); ++i) {
         processors_.at(i)->setGeometryContainer(geoContainer_);
 		processors_.at(i)->setTextureContainer(tc_);
-		processors_.at(i)->setSize(tc_->getSize());
+		//processors_.at(i)->setSize(tc_->getSize());
 		
 		//now check if there are any loops in the network
 		//Every visited processor is put into this vector, and if it comes up again, there is a loop. This
@@ -119,10 +130,7 @@ int NetworkEvaluator::analyze() {
 	//now sort the processors by that priority
 	sortProcessorsByPriority();
     
-    
-    identifyMultipassProcessors();
-	
-	//give every port of every processor its appropriate PortData
+    	//give every port of every processor its appropriate PortData
 	doPortMapping();
 
 	//analyze which render results might be cached during the render process
@@ -179,6 +187,7 @@ TextureContainer* NetworkEvaluator::initTextureContainer(int finalTarget) {
     if (!tc_->initializeGL()) {
         delete tc_;
         tc_ = 0;
+        return tc_;
     }
 
 #ifndef __APPLE__
@@ -253,12 +262,12 @@ void NetworkEvaluator::doPortMapping() {
     do {
         idManTarget = targetList.top(); // should be 0 on first pass.
         targetList.pop(); 
-    } while( (tc_->getAttr(idManTarget) & TextureContainer::VRN_FRAMEBUFFER) != 0 );
+    } while ( (tc_->getAttr(idManTarget) & TextureContainer::VRN_FRAMEBUFFER) != 0 );
 
 	//give the id Manager its target in the texturecontainer
     //
 	IDManager id1;
-    id1.getContent()->renderBufferID_ = idManTarget;
+    id1.getContent()->textureTarget_ = idManTarget;
 	
 	PortDataTexture* pdt;
 
@@ -461,7 +470,7 @@ void NetworkEvaluator::doPortMapping() {
 					while (entryFound) {
 						size_t k=0;
 						//search the finished processor
-						while(k<portVector.size() && portVector.at(k) != finishedPort) {
+						while (k<portVector.size() && portVector.at(k) != finishedPort) {
 							k++;
 						}
 						if (k >= portVector.size())
@@ -477,7 +486,6 @@ void NetworkEvaluator::doPortMapping() {
                                 //
 								std::vector<PortData*> freeTargets = portMap_[portEntries_.at(j)->port];
 								for ( size_t w = 0; w < freeTargets.size(); ++w) {
-									//targetList.push(numTargets - freeTargets[w]->getTarget() - 1);
 									targetList.push(dynamic_cast<PortDataTexture*>(freeTargets[w])->getData() );
                                 }
 							}
@@ -565,42 +573,68 @@ void NetworkEvaluator::doPortMapping() {
 
 void NetworkEvaluator::initializeCaching() {
 	//First we have to set every outports cached attribute to false. That's because if there
-	//previously was a cache renderer in the network, that attribute might still be set to true
-	for (size_t i=0; i<processors_.size(); ++i) {
-		std::vector<Port*> outports = processors_.at(i)->getOutports();
-		for (size_t j=0; j<outports.size(); ++j) {
-			if (outports.at(j)->getConnected().size() < 1)
-				outports.at(j)->setCached(true);
-			else
-				outports.at(j)->setCached(false);
+	//previously was a cacherenderer in the network, that attribute might still be set to true
+	for (size_t i = 0; i < processors_.size(); ++i) {
+		std::vector<Port*> outports = processors_[i]->getOutports();
+		for (size_t j = 0; j < outports.size(); ++j) {
+            outports[j]->setCached(false);
 		}
 	}
-	for (size_t i=0; i<processors_.size(); ++i) {
-		if (processors_.at(i)->getClassName().getSubString(1) == "CacheRenderer")
-			iterateThroughInportsAndSetCaching(processors_.at(i));
+	for (size_t i = 0; i < processors_.size(); ++i) {
+        if (typeid(*processors_[i]) == typeid(CacheRenderer) ||
+            typeid(*processors_[i]) == typeid(CanvasRenderer)) {
+			setCachingOfInports(processors_[i]);
+        }
 	}
-	//if every outport of this processor is connected to a cacherenderer, this processor is cacheable
-	for (size_t i=0; i<processors_.size(); ++i) {
+	//if every outport of a processor is connected to a cacherenderer, the result of the 
+    //processor is cacheable
+	for (size_t i = 0; i < processors_.size(); ++i) {
+        std::vector<Port*> outports = processors_[i]->getOutports();
+        //test whether the connected outports are cached
 		bool cached = true;
-		for (size_t j=0; j<processors_.at(i)->getOutports().size(); j++) {
-			if (processors_.at(i)->getOutports().at(j)->getCached() == false) {
-				cached = false;
-				break;
-			}
+		for (size_t j = 0; j < outports.size(); ++j) {
+            if (outports[j]->getConnected().size() > 0)
+                cached &= outports[j]->getCached();
 		}
-        processors_.at(i)->setCachable(cached);
+        processors_[i]->setCachable(cached);
 	}
 }
 
-void NetworkEvaluator::iterateThroughInportsAndSetCaching(Processor* processor) {
-	for (size_t i=0; i<processor->getInports().size(); ++i) {
-		Port* p = processor->getInports().at(i);
-		std::vector<Port*> &connectedPorts= p->getConnected();
-		for (size_t j=0; j<connectedPorts.size(); ++j) {
-			connectedPorts.at(j)->setCached(true);
-			iterateThroughInportsAndSetCaching(connectedPorts.at(j)->getProcessor());
+void NetworkEvaluator::setCachingOfInports(Processor* processor) {
+    std::vector<Port*> inports = processor->getInports();
+	for (size_t i = 0; i < inports.size(); ++i) {
+		std::vector<Port*>& connectedPorts = inports[i]->getConnected();
+		for (size_t j = 0; j < connectedPorts.size(); ++j) {
+			connectedPorts[j]->setCached(true);
+			setCachingOfInports(connectedPorts[j]->getProcessor());
 		}
 	}
+}
+
+void NetworkEvaluator::getConnectedProcessors(Processor* proc, std::list<Processor*>& processors, bool backward) {
+    //test whether the processor was already inserted
+    std::list<Processor*>::iterator result = std::find(processors.begin(), processors.end(), proc);
+    if (result != processors.end())
+        return;
+
+    processors.push_back(proc);
+    std::vector<Port*> ports;
+    std::vector<Port*> coProc;
+    if (backward) {
+        ports = proc->getInports();
+        coProc = proc->getCoProcessorInports();
+    }
+    else {
+        ports = proc->getOutports();
+        coProc = proc->getCoProcessorOutports();
+    }
+    ports.insert(ports.end(), coProc.begin(), coProc.end());
+    for (size_t i = 0; i < ports.size(); ++i) {
+        std::vector<Port*> connected = ports[i]->getConnected();
+        for (size_t j = 0; j < connected.size(); ++j) {
+            getConnectedProcessors(connected[j]->getProcessor(), processors, backward);
+        }
+    }
 }
 
 void NetworkEvaluator::assignPriority(Processor* processor,int priority) {
@@ -671,49 +705,43 @@ std::vector<Processor*> NetworkEvaluator::findEndProcessorsInNetwork() {
     return p;
 }
 
+//TODO: this calls process() on the processors, so why not call is process() also? joerg
 int NetworkEvaluator::evaluate() {
 	if (readyToEvaluate_) {
 		IDManager id1;
-		id1.initNewRendering();
+        id1.signalizeNewRenderingPass();
 		LGL_ERROR;
-		prepareCoarsenessRenderers();
 
-        //initpass:
-        for (size_t i=0; i<processors_.size(); ++i) {
-            Processor* currentProcessor=processors_.at(i);
-            if ((priorityMap_[currentProcessor] != -1) && currentProcessor->isMultipass())
-                currentProcessor->initFirstPass(localPortMap_[currentProcessor]);
-        }
+		for (size_t i=0; i < processors_.size(); ++i) {
+		    Processor* currentProcessor = processors_.at(i);
+		    if (priorityMap_[currentProcessor] != -1) {
+		        if (!currentProcessor->getCachable() || !currentProcessor->getCached()) {
+                    try {
+                        for (size_t j=0; j < processWrappers_.size(); j++)
+                            processWrappers_[j]->beforeProcess(currentProcessor);
 
-        //find out how many passes are needed:
-        int numPasses = 1;
+                        // run the Processor when its initialized correctly
+                        if (currentProcessor->getInitStatus() == Processor::VRN_OK) {
+                            //viewport does not match size of processor
+                            //-> adjust viewport and remember new size
+                            if (currentViewportSize_ != currentProcessor->getSize()) {
+                                glViewport(0, 0, currentProcessor->getSize().x, 
+                                                 currentProcessor->getSize().y);
+                                currentViewportSize_ = currentProcessor->getSize();
+                            }
+                            currentProcessor->process(localPortMap_[currentProcessor]);
+                        }
 
-        //Do numPasses-1 passes of the multipass section
-        //+the final pass with the complete network:
-        for (int p=0; p < numPasses; ++p) {
-		    for (size_t i=0; i < processors_.size(); ++i) {
-			    Processor* currentProcessor = processors_.at(i);
-			    if (priorityMap_[currentProcessor] != -1) {
-                    if (((p+1) == numPasses) || (currentProcessor->isMultipass())) {
-				        if (!(currentProcessor->getCachable() && currentProcessor->getCached())) {
-                            try {
-                                currentProcessor->process(localPortMap_[currentProcessor]);
-                                checkOpenGLState();
-                            }
-                            catch (OpenGLStateException& e) {
-                                LWARNING("In NetworkEvaluator::evaluate(): "
-                                         << currentProcessor->getClassName().getName()
-                                         << " (" << currentProcessor->getName() << "): " << e.what());
-                            }
-                            catch (std::exception& e) {
-                                LERROR("In NetworkEvaluator::evaluate(): Exception from "
-                                       << currentProcessor->getClassName().getName()
-                                       << " (" << currentProcessor->getName() << "): " << e.what());
-                            }
-				        }
+                        for (size_t j=0; j < processWrappers_.size(); j++)
+                            processWrappers_[j]->afterProcess(currentProcessor);
                     }
-			    }
-            }
+                    catch (std::exception& e) {
+                        LERROR("In NetworkEvaluator::evaluate(): Exception from "
+                               << currentProcessor->getClassName().getName()
+                               << " (" << currentProcessor->getName() << "): " << e.what());
+                    }
+		        }
+		    }
         }
 
         // TODO: check whether this is a good place for deleting rendered Geometry
@@ -733,15 +761,14 @@ int NetworkEvaluator::evaluate() {
     else {
 		return -1;
 	}
-	
 }
 
 int NetworkEvaluator::evaluate(Processor* endProcessor) {
-	for (size_t i=0; i<processors_.size(); ++i) {
-		Processor* currentProcessor=processors_.at(i);
+	for (size_t i=0; i < processors_.size(); ++i) {
+		Processor* currentProcessor = processors_.at(i);
 		
 		if (currentProcessor != endProcessor) {
-			if (priorityMap_[currentProcessor] != -1)
+			if (priorityMap_[currentProcessor] != -1 && currentProcessor->getInitStatus() == Processor::VRN_OK)
 				currentProcessor->process(localPortMap_[currentProcessor]);
 		}
 		else
@@ -750,36 +777,10 @@ int NetworkEvaluator::evaluate(Processor* endProcessor) {
 	return 0;
 }
 
-void NetworkEvaluator::setSizeBackwards(Processor* processor,float factor) {
-	std::list<Processor*>::iterator result = find(visited_.begin() , visited_.end(), processor);
-	if ( result !=visited_.end() ) {
-		//this processor already did set its size
-		return;
-	}
-	else {
-		visited_.push_back(processor);
-		processor->setCoarseness(1.f);
-		tgt::ivec2 size = processor->getSize();
-		processor->setSize(tgt::ivec2(static_cast<int>(size.x*factor), static_cast<int>(size.y*factor)));
-		
-		for (size_t i=0; i<processor->getInports().size(); ++i) {
-			std::vector<Port*> ports= processor->getInports().at(i)->getConnected();
-			for (size_t j=0; j<ports.size(); ++j)
-				setSizeBackwards(ports.at(j)->getProcessor(),factor);
-		} 
-		for (size_t i=0; i<processor->getCoProcessorInports().size(); ++i) {
-			std::vector<Port*> ports= processor->getCoProcessorInports().at(i)->getConnected();
-			for (size_t j=0; j<ports.size(); ++j)
-				setSizeBackwards(ports.at(j)->getProcessor(),factor);
-		}
-	}
-	
-}
-
 void NetworkEvaluator::newPortEntry(Port* p) {
-	portEntry* newEntry = new portEntry();
-	newEntry->port=p;
-	newEntry->connectedPorts=p->getConnected();
+	PortEntry* newEntry = new PortEntry();
+	newEntry->port = p;
+	newEntry->connectedPorts = p->getConnected();
 	portEntries_.push_back(newEntry);
 }
 
@@ -805,47 +806,6 @@ void NetworkEvaluator::sortProcessorsByPriority() {
 	}
 }
 
-void NetworkEvaluator::identifyMultipassProcessors() {
-    //just search for the first raycaster:
-//    LINFO("Multipass Processors:");
-    bool rcFound = false;
-    bool multipassCompatible = true;
-
-//FIXME: b0rked.    
-// This is the original loop:
-    for (size_t i=(processors_.size()-1); i<(size_t)(-1); --i) {
-// equivalent to:
-//    for (unsigned int i = processors_.size()-1; false; --i) {
-// equivalent to:
-//    unsigned int i = processors_.size()-1; {
-    
-//    for (int i= processors_.size()-1; i < -1; --i) {
-        Processor* currentProcessor = processors_.at(i);
-        std::string name = currentProcessor->getClassName().getName();
-        
-        if (name.find("Raycaster.") == 0)
-            rcFound = true;
-
-        if (rcFound) {
-            currentProcessor->setMultipass(true);
-            
-            if (currentProcessor->isMultipassCompatible()) {
-//                LINFO(name);
-            }
-            else {
-//                LINFO(name << " - NOT MULTIPASS COMPATIBLE");
-                multipassCompatible = false;
-            }
-        }
-        else
-            currentProcessor->setMultipass(false);
-    }
-    
-    if (!multipassCompatible) {
-//        LWARNING("Network contains multipass-incompatible processors in multipass section!");
-    }
-}
-
 void NetworkEvaluator::setProcessors(std::vector<Processor*> processors) {
 	processors_.clear();
 	processors_=processors;
@@ -866,227 +826,144 @@ void NetworkEvaluator::invalidate() {
 }
 
 void NetworkEvaluator::invalidateRendering() {
-    for (size_t i=0; i<processors_.size(); ++i)
+    for (size_t i=0; i < processors_.size(); ++i)
 	    processors_[i]->setCached(false);	
 }
 
 int NetworkEvaluator::initializeGL() {
-	for (size_t i=0; i<processors_.size(); ++i) {
-		if (processors_.at(i)->initializeGL() != Processor::VRN_OK)
-			return Processor::VRN_ERROR;
+    bool failed = false;
+	for (size_t i=0; i < processors_.size(); ++i) {
+		if (processors_[i]->initializeGL() != Processor::VRN_OK) {
+			LERROR("initializeGL failed for " << processors_[i]->getClassName().getName()
+                   << " (" << processors_[i]->getName() << ")");
+            // don't break, try to initialize the other processors even if one failed
+            failed = true;
+        }
 	}
-	return Processor::VRN_OK;
+	return (failed ? Processor::VRN_ERROR : Processor::VRN_OK);
 }
 
 void NetworkEvaluator::setSize(const tgt::ivec2& size) {
-	for (size_t i=0; i<processors_.size(); ++i)
-		processors_.at(i)->setSize(size);
+    //the viewport in opengl is already set to new size in voreenpainter (calls this method)
+    //so only save new viewportsize
+    currentViewportSize_ = size;
+    for (size_t i=0; i < processors_.size(); ++i) {
+		processors_[i]->setSize(size);
+        processors_[i]->setCanvasSize(size);
+    }
 }
 
-void NetworkEvaluator::setCoarseness(Processor* processor, float factor) {
-	std::list<Processor*>::iterator result = find(visited_.begin() , visited_.end(), processor);
-	if (result != visited_.end())
-		return;
-	else {
-		visited_.push_back(processor);
-		processor->setSize(tgt::vec2(processor->getSize().x / factor,
-                                     processor->getSize().y / factor));
+void NetworkEvaluator::switchCoarseness(bool active) {
+    //find all coarsenessrenderer in the network
+    std::vector<CoarsenessRenderer*> coarseRenderer;
+    for (size_t i=0; i<processors_.size(); ++i) {
+        if (typeid(*processors_[i]) == typeid(CoarsenessRenderer)) {
+            coarseRenderer.push_back(dynamic_cast<CoarsenessRenderer*>(processors_[i]));
+        }
+    }
 
-		for (size_t i=0; i<processor->getInports().size(); ++i) {
-            for (size_t j=0; j<processor->getInports().at(i)->getConnected().size(); ++j)
-                setCoarseness(processor->getInports().at(i)->getConnected().at(j)->getProcessor(),factor);
-		}
-		for (size_t i=0; i<processor->getCoProcessorInports().size(); ++i) {
-            for (size_t j=0; j<processor->getCoProcessorInports().at(i)->getConnected().size(); ++j)
-                setCoarseness(processor->getCoProcessorInports().at(i)->getConnected().at(j)->getProcessor(),factor);
-		}
-	}
+    for (size_t i = 0; i < coarseRenderer.size(); ++i) {
+        //activate or deactivate coarseness in CoarsenessRenderer
+        coarseRenderer[i]->setUseCoarseness(active);
+        //calculate coarsenessFactor
+        float coarseFactor;
+        if (active)
+            coarseFactor = 1.f / static_cast<float>(coarseRenderer[i]->getCoarsenessFactor());
+        else
+            coarseFactor = static_cast<float>(coarseRenderer[i]->getCoarsenessFactor());
+
+        std::list<Processor*> visitedProcessors;
+        getConnectedProcessors(coarseRenderer[i], visitedProcessors, true);
+        //ignore first entry because its the coarsenessRenderer itself
+        visitedProcessors.pop_front();
+        //iterate through all processors and set new size according to coarseness factor
+        std::list<Processor*>::iterator it;
+        for (it = visitedProcessors.begin(); it != visitedProcessors.end(); ++it) {
+            tgt::vec2 newSize = tgt::vec2((*it)->getSizeFloat().x * coarseFactor,
+                                          (*it)->getSizeFloat().y * coarseFactor);
+
+            //set new size in processor
+		    (*it)->setSize(newSize);  
+        }
+    }
 }
 
-void NetworkEvaluator::prepareCoarsenessRenderers() {
-	for (size_t i=0; i<processors_.size(); ++i) {
-		Processor* currentProcessor = processors_.at(i);
-
-		if (currentProcessor->getClassName().getSubString(1) == "Canvas") {
-			// We found a CanvasRenderer(which can render coarse), so we might have to adjust
-			// the size of predecessing processors			
-			CanvasRenderer* final = static_cast<CanvasRenderer*>(currentProcessor);
-			if (final->useCoarseness_.get() && !final->ignoreCoarseness_) {
-                float factor = static_cast<float>(final->coarsenessFactor_.get());
-				// yep, coarseness is activated, we have to resize the predecessing processors
-				visited_.clear();
-				for (size_t j=0; j<final->getInports().size(); ++j) {
-					for (size_t k=0; k<final->getInports().at(j)->getConnected().size(); ++k)
-						setCoarseness(final->getInports().at(j)->getConnected().at(k)->getProcessor(), factor);
-				}
-				visited_.clear();
-			} 
-            else {
-				// nope, coarseness is off, we have to set the predecessing processors to their normal size
-				for (size_t j=0; j<final->getInports().size(); ++j) {
-					for (size_t k=0; k<final->getInports().at(j)->getConnected().size(); ++k)
-						setCoarseness(final->getInports().at(j)->getConnected().at(k)->getProcessor(), 1.0f);
-				}
-			}
-		}
-		if (currentProcessor->getClassName().getSubString(1) == "CoarsenessRenderer") {
-			// We found a CoarsenessRenderer, so we might have to adjust the size of predecessing processors
-			CoarsenessRenderer* coarse = static_cast<CoarsenessRenderer*>(currentProcessor);
-			if (coarse->useCoarseness_.get() && !coarse->ignoreCoarseness_) {
-				// yep, coarseness is activated, we have to resize the predecessing processors
-				visited_.clear();
-				for (size_t j=0; j<coarse->getInports().size(); ++j) {
-					for (size_t k=0; k<coarse->getInports().at(j)->getConnected().size(); ++k)
-						setCoarseness(coarse->getInports().at(j)->getConnected().at(k)->getProcessor(),
-                                      static_cast<float>(coarse->coarsenessFactor_.get()));
-				}
-				visited_.clear();
-			} 
-            else {
-				// nope, coarseness is off, we have to set the predecessing processors to their normal size
-				for (size_t j=0; j<coarse->getInports().size(); ++j) {
-					for (size_t k=0; k<coarse->getInports().at(j)->getConnected().size(); ++k)
-						setCoarseness(coarse->getInports().at(j)->getConnected().at(k)->getProcessor(),1);
-				}
-			}
-		}
-	}
-}
-
-void NetworkEvaluator::processMessage(Message* msg , const Identifier& /*dest=Message::all_*/) {
-	
-    if (msg->id_ == "evaluate")
+void NetworkEvaluator::processMessage(Message* msg ,const Identifier& /*dest=Message::all_*/) {
+    bool postMsgToProcessors = true;
+    if (msg->id_ == "evaluate") {
 		evaluate(msg->getValue<Processor*>());
-    else if (msg->id_ == setSizeBackward_) {
-		CoarsenessStruct* cs = msg->getValue<CoarsenessStruct*>();
-		if (processors_.end() != std::find(processors_.begin(),processors_.end(),cs->processor) ) {
-			visited_.clear();
-			//setSizeBackwards(cs->processor,cs->coarsenessFactor);
-			for (size_t i=0; i<cs->processor->getInports().size(); ++i) {
-				std::vector<Port*> ports= cs->processor->getInports().at(i)->getConnected();
-				for (size_t j=0; j< ports.size(); ++j)
-					setSizeBackwards(ports.at(j)->getProcessor(),cs->coarsenessFactor);
-			} 
-			for (size_t i=0; i<cs->processor->getCoProcessorInports().size(); ++i) {
-				std::vector<Port*> ports= cs->processor->getCoProcessorInports().at(i)->getConnected();
-				for (size_t j=0; j< ports.size(); ++j)
-					setSizeBackwards(ports.at(j)->getProcessor(),cs->coarsenessFactor);
-			}
-		}
-	}
+        postMsgToProcessors = false;
+    }
+    else if (msg->id_ == VoreenPainter::switchCoarseness_) {
+        if (coarsenessActive_ != msg->getValue<bool>()) {
+            coarsenessActive_ = !coarsenessActive_;
+            switchCoarseness(coarsenessActive_);
+            //the rendering is not invalidated here because the processor invalidates
+            //when the new size is set
+        }
+    }
 	else if (msg->id_ == "do.portmapping") {
 		Processor* p = msg->getValue<Processor*>();
-		if (processors_.end() != std::find(processors_.begin(),processors_.end(),p) )
+		if (processors_.end() != std::find(processors_.begin(), processors_.end(), p))
 			doPortMapping();
-	} 
-    else if (msg->id_ == setReuseTextureContainerTargets_)
+        postMsgToProcessors = false;
+	}
+    else if (msg->id_ == setReuseTextureContainerTargets_) {
 		reuseTextureContainerTargets_=msg->getValue<bool>();
+        postMsgToProcessors = false;
+    }
     else if (msg->id_ == setCachedBackward_) {
-		Processor* p = msg->getValue<Processor*>();
-		if (processors_.end() != std::find(processors_.begin(),processors_.end(),p) ) {
-			visited_.clear();
-			setCachedBackward(p);
-		}
-	} 
+        updateCaching(msg->getValue<Processor*>(), true);
+        postMsgToProcessors = false;
+	}
     else if (msg->id_ == unsetCachedForward_) {
-		Processor* p = msg->getValue<Processor*>();
-		if (processors_.end() != std::find(processors_.begin(),processors_.end(),p) ) {
-			visited2_.clear();
-			unsetCachedForward(p);
-		}
-	} 
-	else if (msg->id_ == unsetCachedBackward_) {
-		Processor* p = msg->getValue<Processor*>();
-		if (processors_.end() != std::find(processors_.begin(),processors_.end(),p) ) {
-			std::list<Processor*> visited;
-			unsetCachedBackward(p,visited);
-		}
-	} 
-    else if (msg->id_ == "processor.delete") {
-		Processor* ren = msg->getValue<Processor*>();
-		for (size_t i=0; i<processors_.size(); ++i) {
-			if (ren == processors_.at(i) ) {
-				processors_.erase(processors_.begin() + i);
-				break;
-			}
-		}
-	} 
-	else if (msg->id_ == NetworkEvaluator::addForbiddenTargets_) {
+        updateCaching(msg->getValue<Processor*>(), false);
+        postMsgToProcessors = false;
+	}
+	else if (msg->id_ == addForbiddenTargets_) {
 		ForbiddenTargetsOfEvaluator forbiddenTargetsOfEvaluator = msg->getValue<ForbiddenTargetsOfEvaluator>();
 		addForbiddenTargets(forbiddenTargetsOfEvaluator.evaluator,forbiddenTargetsOfEvaluator.forbiddenTargets);
+        postMsgToProcessors = false;
 	}
-    else {
+    
+    if (msg->id_ == VoreenPainter::cameraChanged_) {
+        //this message is already caught by any subclass of EntryExitPoints
+        //and the rendering is invalidated there. But we must do it again
+        //because there are networks that doesnt have any EntryExitPoints-Processor.
+        //Maybe we can check the entire network for EntryExitPoints and only invalidate
+        //when there are no EEPs.
+        invalidateRendering();
+        postMsgToProcessors = true;
+    }
+    if (msg->id_ == VoreenPainter::removeEventListener_) 
+        postMsgToProcessors = false;
+    if (postMsgToProcessors == true) {
 		for (size_t i=0; i<processors_.size(); ++i)
-			processors_.at(i)->processMessage(msg);//dest);
+			processors_.at(i)->processMessage(msg);
 	}
+    // perhaps the ProcessWrapper objects are interested
+    for (size_t i=0; i < processWrappers_.size(); i++)
+        processWrappers_[i]->processMessage(msg);
 }
 
-void NetworkEvaluator::setCachedBackward(Processor* processor) {
-	std::list<Processor*>::iterator result = find(visited_.begin() , visited_.end(), processor);
-	if ( result !=visited_.end() )
-		return;
-	else {
-		visited_.push_back(processor);
-		processor->setCached(true);
-		//std::cout << "caching: " << processor->getClassName()<<std::endl;
-		for (size_t i=0; i< processor->getInports().size(); ++i) {
-			Port* p = processor->getInports().at(i);
-			std::vector<Port*> connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); ++j)
-				setCachedBackward(connectedPorts.at(j)->getProcessor());
-		}
-		for (size_t i=0; i<processor->getCoProcessorInports().size(); ++i) {
-			Port* p = processor->getCoProcessorInports().at(i);
-			std::vector<Port*> connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); ++j)
-				setCachedBackward(connectedPorts.at(j)->getProcessor());
-		}
-	}
+void NetworkEvaluator::removeProcessor(Processor* processor) {
+    for (size_t i=0; i<processors_.size(); ++i) {
+	    if (processor == processors_.at(i)) {
+		    processors_.erase(processors_.begin() + i);
+            break;
+        }
+    }
 }
 
-void NetworkEvaluator::unsetCachedForward(Processor* processor) {
-	std::list<Processor*>::iterator result = find(visited2_.begin() , visited2_.end(), processor);
-	if ( result !=visited2_.end() )
-		return;
-	else {
-		visited2_.push_back(processor);
-		processor->setCached(false);
-		for (size_t i=0; i< processor->getOutports().size(); ++i) {
-			Port* p = processor->getOutports().at(i);
-			std::vector<Port*> &connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); ++j) {
-				unsetCachedForward(connectedPorts.at(j)->getProcessor());
-			}
-		}
-		for (size_t i=0; i< processor->getCoProcessorOutports().size(); ++i) {
-			Port* p = processor->getCoProcessorOutports().at(i);
-			std::vector<Port*> &connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); ++j)
-				unsetCachedForward(connectedPorts.at(j)->getProcessor());
-		}
-	}
-}
-
-void NetworkEvaluator::unsetCachedBackward(Processor* processor,std::list<Processor*> visited) {
-	std::list<Processor*>::iterator result = find(visited.begin() , visited.end(), processor);
-	if (result != visited.end())
-		return;
-	else {
-		visited.push_back(processor);
-		processor->setCached(false);
-		for (size_t i=0; i< processor->getInports().size(); ++i) {
-			Port* p = processor->getInports().at(i);
-			std::vector<Port*> &connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); ++j)
-				unsetCachedBackward(connectedPorts.at(j)->getProcessor(),visited);
-		}
-		for (size_t i=0; i< processor->getCoProcessorInports().size(); ++i) {
-			Port* p = processor->getCoProcessorInports().at(i);
-			std::vector<Port*> &connectedPorts= p->getConnected();
-			for (size_t j=0; j<connectedPorts.size(); j++)
-				unsetCachedBackward(connectedPorts.at(j)->getProcessor(),visited);
-		}
-	}
+void NetworkEvaluator::updateCaching(Processor* processor, bool cached) {
+    std::list<Processor*> processors;
+    getConnectedProcessors(processor, processors, cached);
+    if (typeid(*processor) == typeid(CanvasRenderer)) {
+        processors.pop_front();
+    }
+    std::list<Processor*>::iterator it = processors.begin();
+    for (; it != processors.end(); ++it)
+        (*it)->setCached(cached);
 }
 
 void NetworkEvaluator::init() {
@@ -1106,28 +983,33 @@ std::vector<int> NetworkEvaluator::getNewForbiddenTargets() {
 void NetworkEvaluator::addForbiddenTargets(NetworkEvaluator* eval ,std::vector<int> forbiddenTargets) {
 	if (eval == this)
 		return;
+    
 	std::map<NetworkEvaluator*,std::vector<int> >::iterator finder;
 	finder = forbiddenTargetsFromOtherEvaluators_.find(eval);
-	if (finder == forbiddenTargetsFromOtherEvaluators_.end() )
-			forbiddenTargetsFromOtherEvaluators_.insert(std::pair<NetworkEvaluator*,std::vector<int> >(eval,forbiddenTargets));
+
+    if (finder == forbiddenTargetsFromOtherEvaluators_.end())
+        forbiddenTargetsFromOtherEvaluators_.insert(std::pair<NetworkEvaluator*, std::vector<int> >(eval, forbiddenTargets));
 	else
 		finder->second = forbiddenTargets;
 }
 
 std::list<int> NetworkEvaluator::getRenderTargetsUsedInCaching(std::list<int> targetList) {
-	for (size_t i=0; i<processors_.size(); ++i) {
+	for (size_t i=0; i < processors_.size(); ++i) {
 		Processor* currentProcessor = processors_.at(i);
-		if (currentProcessor->getCachable() ) {
+
+        if (currentProcessor->getCachable()) {
 			std::vector<Port*> outports = currentProcessor->getOutports();
-			for (size_t j=0; j<outports.size(); ++j) {
+			for (size_t j=0; j < outports.size(); ++j) {
 				Port* currentPort = outports.at(j);
-				if (currentPort->getConnected().size() > 0) {
+
+                if (currentPort->getConnected().size() > 0) {
 					std::string portType = currentPort->getType().getSubString(0);
-					if (portType != "geometry" && portType != "volumeset" && portType != "volumehandle" && portType != "volume") {
+					if (portType != "geometry" && portType != "volumeset" &&
+                        portType != "volumehandle" && portType != "volume")
+                    {
 						std::vector<PortData*> targets = portMap_[currentPort];
-						for (size_t k=0; k<targets.size(); ++k) {
+						for (size_t k=0; k<targets.size(); ++k)
 							targetList.push_front(dynamic_cast<PortDataTexture*>(targets.at(k))->getData());
-						}
 					}
 				}
 			}
@@ -1142,7 +1024,7 @@ int NetworkEvaluator::getTextureContainerTarget(Port* p,int pos) throw (VoreenEx
 
 	std::vector<PortData*> targets = portMap_[p];
 
-	if (targets.size() < (size_t)pos+1)
+	if (targets.size() < static_cast<size_t>(pos+1))
 		throw VoreenException("No data was mapped for that port.");
 
 	PortDataTexture* pdt = dynamic_cast<PortDataTexture*>(targets.at(pos));
@@ -1175,36 +1057,35 @@ bool checkGL(GLenum pname, const tgt::vec4 value) {
 
 } // namespace
 
-void NetworkEvaluator::checkOpenGLState() throw (OpenGLStateException) {
-#ifdef DEBUG
+void NetworkEvaluator::CheckOpenGLStateProcessWrapper::afterProcess(Processor* p) {
     if (!checkGL(GL_BLEND, false)) {
         glDisable(GL_BLEND);
-        throw OpenGLStateException("GL_BLEND was enabled");
+        warn(p, "GL_BLEND was enabled");
     }
 
     if (!checkGL(GL_DEPTH_TEST, true)) {
         glEnable(GL_DEPTH_TEST);
-        throw OpenGLStateException("GL_DEPTH_TEST was not enabled");
+        warn(p, "GL_DEPTH_TEST was not enabled");
     }
 
     if (!checkGL(GL_CULL_FACE, false)) {
         glDisable(GL_CULL_FACE);
-        throw OpenGLStateException("GL_CULL_FACE was enabled");
+        warn(p, "GL_CULL_FACE was enabled");
     }
     
     if (!checkGL(GL_COLOR_CLEAR_VALUE, tgt::vec4(0.f))) {
         glClearColor(0.f, 0.f, 0.f, 0.f);
-        throw OpenGLStateException("glClearColor() was not set to all zeroes");       
+        warn(p, "glClearColor() was not set to all zeroes");       
     }
 
     if (!checkGL(GL_DEPTH_CLEAR_VALUE, 1.f)) {
         glClearDepth(1.0);
-        throw OpenGLStateException("glClearDepth() was not set to 1.0");       
+        warn(p, "glClearDepth() was not set to 1.0");       
     }
 
-    if (!checkGL(GL_LINE_WIDTH, 1.f)) {
+    if (!checkGL(GL_LINE_WIDTH, 1.0f)) {
         glLineWidth(1.f);
-        throw OpenGLStateException("glLineWidth() was not set to 1.0");
+        warn(p, "glLineWidth() was not set to 1.0");
     }
     
     /* TODO:
@@ -1214,7 +1095,21 @@ void NetworkEvaluator::checkOpenGLState() throw (OpenGLStateException) {
       glCullFace(GL_BACK);
       identity matrix for GL_MODELVIEW, GL_PROJECTION, GL_TEXTURE
     */
-#endif
+}
+
+void NetworkEvaluator::CheckOpenGLStateProcessWrapper::warn(Processor* p, const std::string& message) {
+    LWARNING(p->getClassName().getName() << " (" << p->getName()
+             << "): invalid OpenGL state after processing: " << message);
+}
+
+void NetworkEvaluator::addProcessWrapper(ProcessWrapper* w) {
+    processWrappers_.push_back(w);
+}
+
+void NetworkEvaluator::removeProcessWrappers() {
+    for (size_t i=0; i < processWrappers_.size(); i++)
+        delete processWrappers_[i];
+    processWrappers_.clear();
 }
 
 } // namespace voreen

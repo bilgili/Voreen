@@ -35,5 +35,9 @@ KeyEvent::KeyEvent(KeyCode keyCode, int mod, bool pressed)
 
 }
 
+int KeyEvent::getEventType(){
+    return KEYEVENT;
+}
+
 }
 

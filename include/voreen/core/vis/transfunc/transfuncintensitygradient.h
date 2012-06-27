@@ -32,6 +32,8 @@
 
 #include "voreen/core/vis/transfunc/transfunc.h"
 
+#include "tgt/tgt_gl.h"
+
 class FramebufferObject;
 class TiXmlDocument;
 

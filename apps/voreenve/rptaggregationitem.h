@@ -115,7 +115,6 @@ public:
     void updateGeometry();
 
     QRectF boundingRect() const;
-    //QPainterPath shape() const;
 
 public slots:
     /**
@@ -133,11 +132,6 @@ signals:
      * Send when deaggregate is clicked in context menu.
      */
     void deaggregateSignal();
-
-    /**
-     * Sends a PropertySet containing the aggregated processors on ItemSelectedChange.
-     */
-    void sendProcessor(Processor*,QVector<int>);
 
     void saveSignal(RptAggregationItem*);
 

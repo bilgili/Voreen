@@ -174,8 +174,6 @@ private:
 	// The render target the labeling is rendered to.
     static const Identifier labelTexUnit_;
 
-    Volume* segmentation_;
-
     //
     // Gui-Gen Properties
     //
@@ -436,6 +434,9 @@ private:
     void mouseMoveEvent(tgt::MouseEvent* e);
     void wheelEvent(tgt::MouseEvent* e);
     tgt::Stopwatch time;
+
+    VolumeHandle* currentVolumeHandle_;
+    bool cameraChanged_;
 };
 
 } // namespace voreen

@@ -65,9 +65,8 @@ QAction* PluginDialog::createAction() {
 
 void PluginDialog::floating(bool fl) {
     // resize to plugin's size hint when floating:
-    if (fl) {
+    if (fl)
         resize(plugin_->sizeHint());
-    } 
 }
 
 void PluginDialog::closeEvent(QCloseEvent* /*event*/) {
@@ -75,4 +74,3 @@ void PluginDialog::closeEvent(QCloseEvent* /*event*/) {
 }
 
 } // namespace voreen
-

@@ -36,8 +36,8 @@
 namespace voreen {
 
 DynamicsPlugin::DynamicsPlugin(QWidget* parent, MessageReceiver* msgReceiver)
-  : WidgetPlugin(parent, msgReceiver), numDatasets_(1) {
-    
+  : WidgetPlugin(parent, msgReceiver), numDatasets_(1)
+{
     setObjectName("Dynamics");
     icon_ = QIcon(":/icons/dynamics.png");
     dataset_ = new SliderSpinBoxWidget();
@@ -49,7 +49,6 @@ DynamicsPlugin::~DynamicsPlugin() {
 }
 
 void DynamicsPlugin::createWidgets() {
-
     QVBoxLayout* vboxLayout = new QVBoxLayout();
     QHBoxLayout* ahw = new QHBoxLayout();
     ahw->addWidget(new QLabel(tr("Dataset")));
@@ -125,26 +124,24 @@ void DynamicsPlugin::setNumDatasets(unsigned int num) {
 void DynamicsPlugin::setDataset(int val) {
     dataset_->setValue(val);
     dataset_->update();
-    postMessage(new IntMsg(Processor::setCurrentDataset_, val));
+    //FIXME: this won't wokr anymore
+    //postMessage(new IntMsg(Processor::setCurrentDataset_, val));
     repaintCanvases();
 }
 
-void DynamicsPlugin::play() 
-{
+void DynamicsPlugin::play() {
     if (!timer_->isActive())
         timer_->start(500);
     else
         timer_->stop();
 }
 
-void DynamicsPlugin::stop() 
-{
+void DynamicsPlugin::stop() {
     timer_->stop();
     playButton_->setChecked(false);
 } 
 
 void DynamicsPlugin::rewind() {
-
     int curVal = dataset_->getValue();
     int minVal = dataset_->getMinValue();
     int newVal = (curVal-10 > minVal) ? curVal-10 : minVal;
@@ -152,11 +149,10 @@ void DynamicsPlugin::rewind() {
 }
 
 void DynamicsPlugin::fastForward() {
-
     int curVal = dataset_->getValue();
     int maxVal = dataset_->getMaxValue();
     int newVal = (curVal+10<maxVal) ? curVal+10 : maxVal;
     dataset_->setValue(newVal);
 }
-} // namespace voreen
 
+} // namespace voreen

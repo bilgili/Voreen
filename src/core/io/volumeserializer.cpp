@@ -38,8 +38,7 @@
 namespace {
 
 // extracts the extension of a given filename and transforms it to lowercase
-std::string extractExtensionLowerCase(const std::string& filename)
-{
+std::string extractExtensionLowerCase(const std::string& filename) {
     std::string extension = filename.substr(filename.rfind(".") + 1, filename.length());
     std::transform(extension.begin(), extension.end(), extension.begin(), tolower);
 
@@ -74,7 +73,7 @@ VolumeSerializer::~VolumeSerializer() {
 }
 
 VolumeSet* VolumeSerializer::load(const std::string& filename)
-    throw(tgt::UnsupportedFormatException, tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
+    throw (tgt::FileException, std::bad_alloc)
 {
     std::string extension = extractExtensionLowerCase(filename);
     if (readers_.find(extension) == readers_.end())
@@ -85,23 +84,18 @@ VolumeSet* VolumeSerializer::load(const std::string& filename)
 }
 
 void VolumeSerializer::save(const std::string& filename, Volume* volume)
-    throw(tgt::UnsupportedFormatException, tgt::IOException)
+    throw (tgt::FileException)
 {
     std::string extension = extractExtensionLowerCase(filename);
 
-    if (writers_.find(extension) != writers_.end()) {
-        try {
-            writers_.find(extension)->second->write(filename, volume);
-        } catch (...) {
-            throw; // throw to the caller
-        }
-    }
+    if (writers_.find(extension) != writers_.end())
+        writers_.find(extension)->second->write(filename, volume);
     else
-        throw tgt::UnsupportedFormatException(extension);
+        throw tgt::UnsupportedFormatException(extension, filename);
 }
 
 void VolumeSerializer::registerReader(VolumeReader* vr)
-    throw(FormatClashException)
+    throw (FormatClashException)
 {
     std::vector<std::string> clashes; // already inserted extensions are tracked here
     const std::vector<std::string>& extensions = vr->getExtensions();
@@ -120,7 +114,7 @@ void VolumeSerializer::registerReader(VolumeReader* vr)
 }
 
 void VolumeSerializer::registerWriter(VolumeWriter* vw)
-    throw(FormatClashException)
+    throw (FormatClashException)
 {
     std::vector<std::string> clashes; // already inserted extensions are tracked here
     const std::vector<std::string>& extensions = vw->getExtensions();

@@ -37,7 +37,7 @@ const QString CmdLineParser::usage_(QObject::tr(
 #ifdef VRN_MODULE_DEFORMATION
         "--deform|"
 #endif
-        "--dynamic|--fancy|--glyph|--label|--lens|"
+        "--dynamic|--singlevolume|--glyph|--label|--lens|"
         "--simple|--slice|--vessel|--dao|--virtclip|--mirror|--petct|--raytracing|--fast|--global] "
         "[-x|--maximized] [--ncg] "
         "[--dbg level=(d(ebug)?|w(arning)?|e(rror)?|f(atal)?] [--dbg-cat category] "
@@ -69,11 +69,7 @@ void RendererTypeFound(bool& rendererTypeFound,
 
 CmdLineParser::CmdLineParser(QStringList* args)
   : args_(*args),
-#ifndef VRN_SNAPSHOT
     networkName_("../../data/networks/standard.vnw"),
-#else
-    networkName_("../../data/networks/simple.vnw"),
-#endif
     maximized_(false),
     cat_(""), // default: show messages from all catagories
     dbgLevel_(tgt::Info),
@@ -125,7 +121,7 @@ CmdLineParser::CmdLineParser(QStringList* args)
 #endif
         else if (args_[i] == "--dynamic")
             RendererTypeFound(rendererTypeFound, networkName_);
-        else if (args_[i] == "--fancy")
+        else if (args_[i] == "--singlevolume")
             RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/standard.vnw");
         else if (args_[i] == "--closeups")
             RendererTypeFound(rendererTypeFound, networkName_, "../../data/networks/overviewcloseup.vnw");
@@ -231,7 +227,7 @@ CmdLineParser::CmdLineParser(QStringList* args)
         }
         else {
             if (args_[i][0] == '-') {
-                std::cerr << "unkown option: " << args_[i].toStdString() << std::endl;
+                std::cerr << "unknown option: " << args_[i].toStdString() << std::endl;
                 exit(1);
             }
 

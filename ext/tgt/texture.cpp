@@ -272,7 +272,7 @@ void Texture::uploadTexture() {
 void Texture::downloadTexture() {
     bind();
 
-    if(pixels_ == 0)
+    if (pixels_ == 0)
         alloc();
 
     glGetTexImage(type_, 0, format_, dataType_, pixels_);

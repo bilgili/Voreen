@@ -52,7 +52,6 @@ public:
 
     virtual const Identifier getClassName() const {return "ProxyGeometry.SlicingProxyGeometry";}
     virtual Processor* create() { return new SlicingProxyGeometry(); }
-    virtual bool isMultipassCompatible() { return true; }
 
 	virtual const std::string getProcessorInfo() const;
     virtual void processMessage(Message *msg, const Identifier& dest=Message::all_ );
@@ -76,6 +75,7 @@ public:
     void setClipPlane(const tgt::vec4& plane);
     float getSliceThickness() const;
     void setSliceThickness(const float thickness);
+    int getNumSlices() const;
 
 protected:
     int displayList_;
@@ -83,6 +83,7 @@ protected:
     Polygon3D* proxyGeometry_;
     tgt::vec4 clipPlane_;
     float sliceThickness_;
+    int numSlices_;
 
     // properties
     //
@@ -93,6 +94,8 @@ private:
     void buildCubeProxyGeometry();
     void buildDisplayList();
     void buildProxyGeometry();
+
+    int calculateNumSlices() const;
 };
 
 }   // namespace

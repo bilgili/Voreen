@@ -79,21 +79,15 @@ public:
      */
     int type() const { return Type; }
 
-    /*bool isAggregated() { return isAggregated_; }
-    void setIsAggregated(bool isAggregated) { isAggregated_ = isAggregated; }*/
-
     /**
      * @param id used to identify specific object
      * Returns the represented 
      */
-    //Processor* getProcessor() { return processor_; }
     Processor* getProcessor(RptPortItem* /*port*/=0) { return processor_; }
     
     RptProcessorItem& saveMeta();
     RptProcessorItem& loadMeta();
 
-    QVector<int> getUnequalEntries();
-    
     /**
      * Used to identfy an item in the scene as RptProcessorItem
      */     
@@ -124,7 +118,6 @@ public slots:
 
 signals:
     void aggregateSignal();
-    void sendProcessor(Processor*,QVector<int>);
 
 protected:
     void createContextMenu();

@@ -25,11 +25,11 @@
 #ifndef TGT_MATH_H
 #define TGT_MATH_H
 
-#include <cmath>
-
 #include "tgt/config.h"
 #include "tgt/assert.h"
 #include "tgt/types.h"
+
+#include <cmath>
 
 /*
     work around for windows.h
@@ -48,7 +48,7 @@ namespace tgt {
     constant pi
 */
 
-#if defined(PI)
+#ifdef PI
 #undef PI
 #endif
 
@@ -84,23 +84,23 @@ inline double deg2rad(double d) {
 */
 
 inline float sign(float f) {
-    return f == 0.f ? 0.f : f/std::abs(f);
+    return f == 0.f ? 0.f : f / std::abs(f);
 }
 
 inline double sign(double d) {
-    return d == 0.0 ? 0.0 : d/std::abs(d);
+    return d == 0.0 ? 0.0 : d / std::abs(d);
 }
 
 inline int sign(int i) {
-    return i == 0 ? 0 : i/std::abs(i);
+    return i == 0 ? 0 : i / std::abs(i);
 }
 
 inline int isign(float f) {
-    return static_cast<int>( sign(f) );
+    return static_cast<int>(sign(f));
 }
 
 inline int isign(double d) {
-    return static_cast<int>( sign(d) );
+    return static_cast<int>(sign(d));
 }
 
 /*
@@ -112,12 +112,12 @@ inline int isign(double d) {
 
 /// Return the largest integer not greater than \p f.
 inline int ifloor(float f) {
-    return static_cast<int>( std::floor(f) );
+    return static_cast<int>(std::floor(f));
 }
 
 /// Return the largest integer not greater than \p d.
 inline int ifloor(double d) {
-    return static_cast<int>( std::floor(d) );
+    return static_cast<int>(std::floor(d));
 }
 
 /*
@@ -129,12 +129,12 @@ inline int ifloor(double d) {
 
 /// Return the smallest integer not less than \p f.
 inline int iceil(float f) {
-    return static_cast<int>( std::ceil(f) );
+    return static_cast<int>(std::ceil(f));
 }
 
 /// Return the smallest integer not less than \p d.
 inline int iceil(double d) {
-    return static_cast<int>( std::ceil(d) );
+    return static_cast<int>(std::ceil(d));
 }
 
 /*
@@ -153,12 +153,12 @@ inline double fix(double d) {
 
 /// Truncate \p f towards zero.
 inline int ifix(float f) {
-    return static_cast<int>( fix(f) );
+    return static_cast<int>(fix(f));
 }
 
 /// Truncate \p d towards zero.
 inline int ifix(double d) {
-    return static_cast<int>( fix(d) );
+    return static_cast<int>(fix(d));
 }
 
 /*
@@ -177,12 +177,12 @@ inline double round(double d) {
 
 /// Return the integer nearest to \p f.
 inline int iround(float f) {
-    return static_cast<int>( round(f) );
+    return static_cast<int>(round(f));
 }
 
 /// Return the integer nearest to \p d.
 inline int iround(double d) {
-    return static_cast<int>( round(d) );
+    return static_cast<int>(round(d));
 }
 
 /*
@@ -196,12 +196,12 @@ inline float clamp(float f, float min, float max) {
 
 /// Clamps \p f to range [\p min, \p max].
 inline double clamp(double f, double min, double max) {
-    return std::min( std::max(f,min), max );
+    return std::min(std::max(f, min), max);
 }
 
 /// Clamps \p f to range [\p min, \p max].
 inline int clamp(int f, int min, int max) {
-    return std::min( std::max(f,min), max );
+    return std::min(std::max(f, min), max);
 }
 
 } // namespace tgt

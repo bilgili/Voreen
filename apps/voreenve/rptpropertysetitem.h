@@ -89,15 +89,16 @@ public:
     RptPropertySetItem& saveMeta();
     RptPropertySetItem& loadMeta();
 
-
     /**
      * Connects the given item to this property set.
      */
     bool connectGuiItem(RptGuiItem* item);
+    
     /**
      * Disconnects the given item from this property set.
      */
     bool disconnectGuiItem(QGraphicsItem* item);
+    
     /**
      * Disconnect everything from this property set.
      */
@@ -124,23 +125,11 @@ public:
      */
     virtual void adjustArrows();
 
-    /**
-     * TODO: This method should return the indices of the properties of the given item
-     * that differ from the properties of this property set.
-     */
-    QVector<int> getUnequalEntries(RptProcessorItem* item);
-
     QRectF boundingRect() const;
     QPainterPath propertySetItemPath(QRectF rect) const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 	std::vector<RptGuiItem*> getGuiItems() {return guiItems_;}
-
-signals:
-    /**
-     * Sends a PropertySet containing the selected processors on ItemSelectedChange.
-     */
-    void sendProcessor(Processor*,QVector<int>);
 
 private slots:
     void equalizeSlot();
@@ -180,7 +169,6 @@ public:
     int type() const { return Type; }
 
     QRectF boundingRect() const;
-    //QPainterPath shape() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 protected:

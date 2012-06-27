@@ -113,7 +113,7 @@ GLUTMouse* GLUTCanvas::getMouse() {
 }
 
 void GLUTCanvas::setMouse(GLUTMouse* glutMouse) {
-    this->glutMouse_ = glutMouse;
+    glutMouse_ = glutMouse;
 }
 
 int GLUTCanvas::getWindowID() {
@@ -187,8 +187,8 @@ void GLUTCanvas::keyboard(const unsigned char& key, const int& x, const int& y, 
     keepMouseUpdated(x, y);
 
     // get TGT keyCode and modifier
-    KeyEvent::KeyCode tgtKey = this->getKeyCode(key);
-    int tgtModifier = this->getModifier(modifier);
+    KeyEvent::KeyCode tgtKey = getKeyCode(key);
+    int tgtModifier = getModifier(modifier);
 
     // TODO: encapsulate this by shift press and release events?
     tgt::KeyEvent* ke_press = new tgt::KeyEvent(tgtKey, tgtModifier, true);
@@ -202,8 +202,8 @@ void GLUTCanvas::keyboardSpecial(const int& key, const int& x, const int& y, con
     keepMouseUpdated(x, y);
 
     // get TGT keyCode and modifier
-    KeyEvent::KeyCode tgtKey = this->getSpecialKeyCode(key);
-    int tgtModifier = this->getModifier(modifier);
+    KeyEvent::KeyCode tgtKey = getSpecialKeyCode(key);
+    int tgtModifier = getModifier(modifier);
 
     // TODO: encapsulate this by shift press and release events?
     tgt::KeyEvent* ke_press = new tgt::KeyEvent(tgtKey, tgtModifier, true);

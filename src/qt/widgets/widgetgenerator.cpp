@@ -89,7 +89,7 @@ void WidgetGenerator::createWidgets(){
             ProcessorHeaderWidgets_.push_back(actPlug);
             
             // iterate through all properties of the processor
-            for (size_t i = 0; i < props_tmp.size(); ++i){
+            for (size_t i = 0; i < props_tmp.size(); ++i) {
                 QHBoxLayout* hb = new QHBoxLayout();
                 //special handling for conditional- and group-properties needed
                 if (props_tmp.at(i)->getType() != Property::CONDITION_PROP && !props_tmp.at(i)->isConditioned()
@@ -123,26 +123,24 @@ void WidgetGenerator::createWidgets(){
         overlayPropsList_tmp->state = false;
 
         //add checkbox for enabling/disabling the overlay
-        if (props_tmp.size() > 0) {
+        if (props_tmp.size() > 0)
             vboxLayout->addWidget(new OverlayProcessorHeaderWidget(parWidget_, overlayPropsList_tmp, msgReceiver_, this, props_tmp.size() > 0));
-        }
 
-        for (unsigned int j=0; j<props_tmp.size();++j){
+        for (unsigned int j=0; j<props_tmp.size(); ++j) {
             QHBoxLayout* hb = new QHBoxLayout();
             //special handling for conditional- and groupproperties needed
             if (props_tmp.at(j)->getType() != Property::CONDITION_PROP && !props_tmp.at(j)->isConditioned()
                 && !props_tmp.at(j)->isConditionController() && !props_tmp.at(j)->isGrouped()
-                && props_tmp.at(j)->getType() != Property::GROUP_PROP){
+                && props_tmp.at(j)->getType() != Property::GROUP_PROP)
+            {
                 propsWidgetList_tmp = makeWidget(props_tmp.at(j),hb);
                 overlayPropsList_tmp->propWidg_list_.push_back(propsWidgetList_tmp);
             }
             else {
-                if (props_tmp.at(j)->getType() == Property::GROUP_PROP){
+                if (props_tmp.at(j)->getType() == Property::GROUP_PROP)
                     makeGroupedWidgets(dynamic_cast<GroupProp*>(props_tmp.at(j)), hb, overlayPropsList_tmp);
-                }
-                if (props_tmp.at(j)->isConditionController()){
+                if (props_tmp.at(j)->isConditionController())
                     makeConditionedWidgets(props_tmp.at(j), hb, overlayPropsList_tmp);
-                }
             }
             vboxLayout->addItem(hb);
         }
@@ -151,30 +149,31 @@ void WidgetGenerator::createWidgets(){
 
     vboxLayout->addStretch();
 
-    // textbox for naming the visualization setup
-	QWidget* fileNameWidget = new QWidget();
-	QHBoxLayout* hboxLayout0 = new QHBoxLayout(fileNameWidget);
-	hboxLayout0->setSpacing(1);
-	hboxLayout0->setMargin(0);
-    hboxLayout0->addWidget(new QLabel(tr("Config Name")));
-    configName_ = new QLineEdit(this);
-    hboxLayout0->addWidget(configName_);
-    QPushButton* loadButton = new QPushButton();
-    loadButton->setIcon(QIcon(":/icons/open.png"));
-    hboxLayout0->addWidget(loadButton);
-    connect(loadButton, SIGNAL(clicked(void)), this, SLOT(loadWidgetSettings()));
-    QPushButton* saveButton = new QPushButton();
-    saveButton->setIcon(QIcon(":/icons/floppy.png"));
-    hboxLayout0->addWidget(saveButton);
-    connect (saveButton, SIGNAL(clicked(void)), this, SLOT(saveWidgetSettings()));
-    vboxLayout->addWidget(fileNameWidget);
+    //TODO: doesn't work, is this still useful? joerg
+//     // textbox for naming the visualization setup
+// 	QWidget* fileNameWidget = new QWidget();
+// 	QHBoxLayout* hboxLayout0 = new QHBoxLayout(fileNameWidget);
+// 	hboxLayout0->setSpacing(1);
+// 	hboxLayout0->setMargin(0);
+//     hboxLayout0->addWidget(new QLabel(tr("Config Name")));
+//     configName_ = new QLineEdit(this);
+//     hboxLayout0->addWidget(configName_);
+//     QPushButton* loadButton = new QPushButton();
+//     loadButton->setIcon(QIcon(":/icons/open.png"));
+//     hboxLayout0->addWidget(loadButton);
+//     connect(loadButton, SIGNAL(clicked(void)), this, SLOT(loadWidgetSettings()));
+//     QPushButton* saveButton = new QPushButton();
+//     saveButton->setIcon(QIcon(":/icons/floppy.png"));
+//     hboxLayout0->addWidget(saveButton);
+//     connect (saveButton, SIGNAL(clicked(void)), this, SLOT(saveWidgetSettings()));
+//     vboxLayout->addWidget(fileNameWidget);
 
     setLayout(vboxLayout);
 
     stateChanged();
 }
 
-void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, ProcessorPropsList* propsWidgetLists){
+void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, ProcessorPropsList* propsWidgetLists) {
     GroupFrame* frame = new GroupFrame(prop, propsWidgetLists, msgReceiver_);
     frame->setTitle(tr(prop->getGuiText().c_str()));
     hb->addWidget(frame);
@@ -186,7 +185,7 @@ void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, Proce
 
     frames_.push_back(frame);
     std::vector<Property*> propList = prop->getGroupedProps();
-    for (unsigned int j=0; j<propList.size(); ++j){
+    for (unsigned int j=0; j<propList.size(); ++j) {
         QHBoxLayout* newHBox = new QHBoxLayout();
         listItem_tmp = makeWidget(propList.at(j),newHBox);
         propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
@@ -194,7 +193,7 @@ void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, Proce
     }
 }
 
-void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, OverlayPropsList* propsWidgetLists){
+void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, OverlayPropsList* propsWidgetLists) {
     GroupFrame* frame = new GroupFrame(prop, propsWidgetLists, msgReceiver_);
     frame->setTitle(tr(prop->getGuiText().c_str()));
     hb->addWidget(frame);
@@ -206,7 +205,7 @@ void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, Overl
 
     frames_.push_back(frame);
     std::vector<Property*> propList = prop->getGroupedProps();
-    for (unsigned int j=0; j<propList.size(); ++j){
+    for (unsigned int j=0; j<propList.size(); ++j) {
         QHBoxLayout* newHBox = new QHBoxLayout();
         listItem_tmp = makeWidget(propList.at(j),newHBox);
         propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
@@ -214,7 +213,7 @@ void WidgetGenerator::makeGroupedWidgets(GroupProp* prop, QHBoxLayout* hb, Overl
     }
 }
 
-void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, ProcessorPropsList* propsWidgetLists){
+void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, ProcessorPropsList* propsWidgetLists) {
     GroupFrame* frame = new GroupFrame(prop, propsWidgetLists, msgReceiver_);
     frame->setTitle(tr(prop->getGuiText().c_str()));
     hb->addWidget(frame);
@@ -222,7 +221,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Pr
     QVBoxLayout* newVBox = new QVBoxLayout();
     PropsWidgetList* listItem_tmp;
 
-    if (prop->getType() == Property::BOOL_PROP){
+    if (prop->getType() == Property::BOOL_PROP) {
         frame->setCheckable(true);
         frame->setChecked((dynamic_cast<BoolProp*>(prop))->get());
         // FIXME this is not deleted
@@ -232,7 +231,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Pr
         propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
         frames_.push_back(frame);
     }
-    else{
+    else {
         QHBoxLayout* hb_tmp = new QHBoxLayout();
         newVBox->addLayout(hb_tmp);
         listItem_tmp = makeWidget(prop,hb_tmp, frame);
@@ -241,14 +240,14 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Pr
     }
 
     std::vector<ConditionProp*> condProps = prop->getCondController();
-    for (unsigned int i=0; i<condProps.size(); ++i){
+    for (unsigned int i=0; i<condProps.size(); ++i) {
         std::vector<Property*> propList = condProps.at(i)->getCondProps();
-        for (unsigned int j=0; j<propList.size(); ++j){
+        for (unsigned int j=0; j<propList.size(); ++j) {
             if (propList.at(j)->getType() != Property::CONDITION_PROP){
                 QHBoxLayout* newHBox = new QHBoxLayout();
-                if (propList.at(j)->isConditionController()){
+                if (propList.at(j)->isConditionController())
                     makeConditionedWidgets(propList.at(j), newHBox, propsWidgetLists);
-                } else {
+                else {
                     listItem_tmp = makeWidget(propList.at(j),newHBox);
                     propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
                 }
@@ -259,7 +258,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Pr
     frame->setLayout(newVBox);
 }
 
-void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, OverlayPropsList* propsWidgetLists){
+void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, OverlayPropsList* propsWidgetLists) {
     GroupFrame* frame = new GroupFrame(prop, propsWidgetLists, msgReceiver_);
     frame->setTitle(tr(prop->getGuiText().c_str()));
     hb->addWidget(frame);
@@ -267,7 +266,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Ov
     QVBoxLayout* newVBox = new QVBoxLayout();
     PropsWidgetList* listItem_tmp;
 
-    if (prop->getType() == Property::BOOL_PROP){
+    if (prop->getType() == Property::BOOL_PROP) {
         frame->setCheckable(true);
         frame->setChecked((dynamic_cast<BoolProp*>(prop))->get());
         listItem_tmp = new PropsWidgetList();
@@ -276,7 +275,7 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Ov
         propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
         frames_.push_back(frame);
     }
-    else{
+    else {
         QHBoxLayout* hb_tmp = new QHBoxLayout();
         newVBox->addLayout(hb_tmp);
         listItem_tmp = makeWidget(prop,hb_tmp, frame);
@@ -285,14 +284,14 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Ov
     }
 
     std::vector<ConditionProp*> condProps = prop->getCondController();
-    for (unsigned int i=0; i<condProps.size(); ++i){
+    for (unsigned int i=0; i<condProps.size(); ++i) {
         std::vector<Property*> propList = condProps.at(i)->getCondProps();
-        for (unsigned int j=0; j<propList.size(); ++j){
+        for (unsigned int j=0; j<propList.size(); ++j) {
             if (propList.at(j)->getType() != Property::CONDITION_PROP){
                 QHBoxLayout* newHBox = new QHBoxLayout();
-                if (propList.at(j)->isConditionController()){
+                if (propList.at(j)->isConditionController())
                     makeConditionedWidgets(propList.at(j), newHBox, propsWidgetLists);
-                } else {
+                else {
                     listItem_tmp = makeWidget(propList.at(j),newHBox);
                     propsWidgetLists->propWidg_list_.push_back(listItem_tmp);
                 }
@@ -303,18 +302,19 @@ void WidgetGenerator::makeConditionedWidgets(Property* prop, QHBoxLayout* hb, Ov
     frame->setLayout(newVBox);
 }
 
-WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QHBoxLayout* hb, QGroupBox* frame){
+WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QHBoxLayout* hb, QGroupBox* frame) {
     // FIXME this is not deleted
     PropsWidgetList* propertyPluginPair_tmp = new PropsWidgetList();
     //depending on type of property the appropriate case is selected
     //and so the cast in the case is always working
-    switch (prop->getType()){
-        case Property::FLOAT_PROP : {
+    switch (prop->getType()) {
+    case Property::FLOAT_PROP:
+        {
             FloatProp* prop1 = dynamic_cast<FloatProp*>(prop);
             AGFloatWidget* fplg1 = new AGFloatWidget(parWidget_,msgReceiver_, prop1);
-            if (frame) {
+            if (frame)
                 fplg1->setFrameControler(frame);
-            }
+            
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = fplg1;
             hb->addWidget(fplg1);
@@ -323,12 +323,13 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 fplg1->setVisibleState(prop1->isVisible());
             break;
         }
-        case Property::INT_PROP : {
-			IntProp* prop1 = dynamic_cast<IntProp*>(prop);
+    case Property::INT_PROP:
+        {
+		    IntProp* prop1 = dynamic_cast<IntProp*>(prop);
             AGIntWidget* iplg1 = new AGIntWidget(parWidget_,msgReceiver_, prop1);
-            if (frame){
+            if (frame)
                 iplg1->setFrameControler(frame);
-            }
+            
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = iplg1;
             hb->addWidget(iplg1);
@@ -337,12 +338,13 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 iplg1->setVisibleState(prop1->isVisible());
             break;
         }
-        case Property::BOOL_PROP : {
+    case Property::BOOL_PROP:
+        {
             BoolProp* prop1 = dynamic_cast<BoolProp*>(prop);
             AGBoolWidget* bplg1 = new AGBoolWidget(parWidget_, msgReceiver_,prop1);
-            if (frame){
+            if (frame)
                 bplg1->setFrameControler(frame);
-            }
+
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = bplg1;
             hb->addWidget(bplg1);
@@ -351,12 +353,13 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 bplg1->setVisibleState(prop1->isVisible());
             break;
         }
-        case Property::COLOR_PROP : {
+    case Property::COLOR_PROP:
+        {
             ColorProp* prop1 = dynamic_cast<ColorProp*>(prop);
             AGColorWidget* cplg1 = new AGColorWidget(parWidget_,msgReceiver_, prop1);
-            if (frame){
+            if (frame)
                 cplg1->setFrameControler(frame);
-            }
+
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = cplg1;
             hb->addWidget(cplg1);
@@ -364,13 +367,14 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
             if (prop1->isConditioned() && !prop1->isVisible())
                 cplg1->setVisibleState(prop1->isVisible());
             break;
-        }
-        case Property::ENUM_PROP : {
+       }
+    case Property::ENUM_PROP:
+        {
             EnumProp* prop1 = dynamic_cast<EnumProp*>(prop);
             AGEnumWidget* enplg1 = new AGEnumWidget(parWidget_,msgReceiver_, prop1);
-            if (frame){
+            if (frame)
                 enplg1->setFrameControler(frame);
-            }
+
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = enplg1;
             prop1->setCallback(enplg1);
@@ -379,12 +383,13 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 enplg1->setVisibleState(prop1->isVisible());
             break;
         }
-        case Property::BUTTON_PROP : {
+    case Property::BUTTON_PROP:
+        {
             ButtonProp* prop1 = dynamic_cast<ButtonProp*>(prop);
             AGButtonWidget* bplg1 = new AGButtonWidget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+            if (frame)
                 bplg1->setFrameControler(frame);
-            }
+
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = bplg1;
             // no setCallback
@@ -393,12 +398,13 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 bplg1->setVisibleState(prop1->isVisible());
             break;
         }
-        case Property::FILEDIALOG_PROP : {
+    case Property::FILEDIALOG_PROP:
+        {
             FileDialogProp* prop1 = dynamic_cast<FileDialogProp*>(prop);
             AGFileDialogWidget* fdplg1 = new AGFileDialogWidget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+            if (frame)
                 fdplg1->setFrameControler(frame);
-            }
+
             propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = fdplg1;
             // no setCallback
@@ -407,105 +413,113 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
                 fdplg1->setVisibleState(prop1->isVisible());
             break;
         }
-		case Property::INTEGER_VEC2_PROP : {
-			IntVec2Prop* prop1 = dynamic_cast<IntVec2Prop*>(prop);
-			AGIntVec2Widget* ivec2plug = new AGIntVec2Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	case Property::INTEGER_VEC2_PROP:
+        {
+		    IntVec2Prop* prop1 = dynamic_cast<IntVec2Prop*>(prop);
+		    AGIntVec2Widget* ivec2plug = new AGIntVec2Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 ivec2plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = ivec2plug;
-			hb->addWidget(ivec2plug);
-			prop1->setCallback(ivec2plug);
+		    hb->addWidget(ivec2plug);
+		    prop1->setCallback(ivec2plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 ivec2plug->setVisibleState(prop1->isVisible());
             break;
-		}
-		case Property::INTEGER_VEC3_PROP : {
-			IntVec3Prop* prop1 = dynamic_cast<IntVec3Prop*>(prop);
-			AGIntVec3Widget* ivec3plug = new AGIntVec3Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	    }
+	case Property::INTEGER_VEC3_PROP:
+        {
+		    IntVec3Prop* prop1 = dynamic_cast<IntVec3Prop*>(prop);
+		    AGIntVec3Widget* ivec3plug = new AGIntVec3Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 ivec3plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = ivec3plug;
-			hb->addWidget(ivec3plug);
-			prop1->setCallback(ivec3plug);
+		    hb->addWidget(ivec3plug);
+		    prop1->setCallback(ivec3plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 ivec3plug->setVisibleState(prop1->isVisible());
             break;
-		}
-		case Property::INTEGER_VEC4_PROP : {
-			IntVec4Prop* prop1 = dynamic_cast<IntVec4Prop*>(prop);
-			AGIntVec4Widget* ivec4plug = new AGIntVec4Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	    }
+	case Property::INTEGER_VEC4_PROP:
+        {
+		    IntVec4Prop* prop1 = dynamic_cast<IntVec4Prop*>(prop);
+		    AGIntVec4Widget* ivec4plug = new AGIntVec4Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 ivec4plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = ivec4plug;
-			hb->addWidget(ivec4plug);
-			prop1->setCallback(ivec4plug);
+		    hb->addWidget(ivec4plug);
+		    prop1->setCallback(ivec4plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 ivec4plug->setVisibleState(prop1->isVisible());
             break;
-		}
-   		case Property::FLOAT_VEC2_PROP : {
-			FloatVec2Prop* prop1 = dynamic_cast<FloatVec2Prop*>(prop);
-			AGFloatVec2Widget* fvec2plug = new AGFloatVec2Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	    }
+	case Property::FLOAT_VEC2_PROP:
+        {
+		    FloatVec2Prop* prop1 = dynamic_cast<FloatVec2Prop*>(prop);
+		    AGFloatVec2Widget* fvec2plug = new AGFloatVec2Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 fvec2plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = fvec2plug;
-			hb->addWidget(fvec2plug);
-			prop1->setCallback(fvec2plug);
+		    hb->addWidget(fvec2plug);
+		    prop1->setCallback(fvec2plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 fvec2plug->setVisibleState(prop1->isVisible());
             break;
-		}
-		case Property::FLOAT_VEC3_PROP : {
-			FloatVec3Prop* prop1 = dynamic_cast<FloatVec3Prop*>(prop);
-			AGFloatVec3Widget* fvec3plug = new AGFloatVec3Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	    }
+	case Property::FLOAT_VEC3_PROP:
+        {
+		    FloatVec3Prop* prop1 = dynamic_cast<FloatVec3Prop*>(prop);
+		    AGFloatVec3Widget* fvec3plug = new AGFloatVec3Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 fvec3plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = fvec3plug;
-			hb->addWidget(fvec3plug);
-			prop1->setCallback(fvec3plug);
+		    hb->addWidget(fvec3plug);
+		    prop1->setCallback(fvec3plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 fvec3plug->setVisibleState(prop1->isVisible());
             break;
-		}
-		case Property::FLOAT_VEC4_PROP : {
-			FloatVec4Prop* prop1 = dynamic_cast<FloatVec4Prop*>(prop);
-			AGFloatVec4Widget* fvec4plug = new AGFloatVec4Widget(parWidget_, msgReceiver_, prop1);
-            if (frame){
+	    }
+	case Property::FLOAT_VEC4_PROP:
+        {
+		    FloatVec4Prop* prop1 = dynamic_cast<FloatVec4Prop*>(prop);
+		    AGFloatVec4Widget* fvec4plug = new AGFloatVec4Widget(parWidget_, msgReceiver_, prop1);
+            if (frame)
                 fvec4plug->setFrameControler(frame);
-            }
-			propertyPluginPair_tmp->prop = prop1;
+
+		    propertyPluginPair_tmp->prop = prop1;
             propertyPluginPair_tmp->widget = fvec4plug;
-			hb->addWidget(fvec4plug);
-			prop1->setCallback(fvec4plug);
+		    hb->addWidget(fvec4plug);
+		    prop1->setCallback(fvec4plug);
             if (prop1->isConditioned() && !prop1->isVisible())
                 fvec4plug->setVisibleState(prop1->isVisible());
             break;
-		}
-        case  Property::TRANSFUNC_PROP : {
-//             TransFuncProp* prop1 = dynamic_cast<TransFuncProp*>(prop);
-//             TransFuncPlugin* tfpl1 = new TransFuncPlugin(parWidget_, msgReceiver_, prop1);
-//             tfpl1->createWidgets();
-//             tfpl1->createConnections();
-//             propertyPluginPair_tmp->prop = prop1;
-//             propertyPluginPair_tmp->widget = tfpl1;
-//             hb->addWidget(tfpl1);
-//             prop1->setCallback(tfpl1);
-//             if (prop1->isConditioned() && !prop1->isVisible())
-//                 tfpl1->setVisibleState(prop1->isVisible());
-//             tfpl1->updateTransferFunction(); // so that processor get a valid TF
+	    }
+    case  Property::TRANSFUNC_PROP:
+        {
+    //             TransFuncProp* prop1 = dynamic_cast<TransFuncProp*>(prop);
+    //             TransFuncPlugin* tfpl1 = new TransFuncPlugin(parWidget_, msgReceiver_, prop1);
+    //             tfpl1->createWidgets();
+    //             tfpl1->createConnections();
+    //             propertyPluginPair_tmp->prop = prop1;
+    //             propertyPluginPair_tmp->widget = tfpl1;
+    //             hb->addWidget(tfpl1);
+    //             prop1->setCallback(tfpl1);
+    //             if (prop1->isConditioned() && !prop1->isVisible())
+    //                 tfpl1->setVisibleState(prop1->isVisible());
+    //             tfpl1->updateTransferFunction(); // so that processor get a valid TF
             break;
         }
-        case  Property::TRANSFUNC_ALPHA_PROP : {
+    case  Property::TRANSFUNC_ALPHA_PROP:
+        {
             TransFuncAlphaProp* prop1 = dynamic_cast<TransFuncAlphaProp*>(prop);
             TransFuncAlphaPlugin* tfpl1 = new TransFuncAlphaPlugin(parWidget_, msgReceiver_, prop1,false, QString((prop1->getYAxisText()).c_str()));
             tfpl1->createWidgets();
@@ -519,12 +533,11 @@ WidgetGenerator::PropsWidgetList* WidgetGenerator::makeWidget(Property* prop, QH
             tfpl1->updateTransferFunction(); // so that processor get a valid TF
             break;
         }
-
-        default: break;
+    default:
+        break;
     }
     return propertyPluginPair_tmp;
 }
-
 
 void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_tmp, TiXmlElement* xmlParent) {
     std::string property_text;
@@ -534,9 +547,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
 
     pElem = xmlParent->FirstChildElement();
     for ( ; pElem; pElem=pElem->NextSiblingElement()) {
-
         property_text = pElem->Attribute("Property_text");
-        for (size_t j = 0; j < propsPlugins_tmp.size(); j++) {
+        for (size_t j = 0; j < propsPlugins_tmp.size(); ++j) {
             if ( propsPlugins_tmp.at(j)->prop->getGuiText() == property_text ) {
                 // Found a property in the current pipeline which can get
                 // some attributes from xml file
@@ -552,12 +564,13 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                 pElem->QueryIntAttribute("Autochange", &autoChange_tmp);
 
                 switch (property_type) {
-                    case Property::FLOAT_PROP : {
+                case Property::FLOAT_PROP :
+                    {
                         try {
                             AGFloatWidget* fplg1 = dynamic_cast<AGFloatWidget*>(propsPlugins_tmp.at(j)->widget);
-                            float max;
-                            float min;
-                            float value;
+                            float max = 0.f;
+                            float min = 0.f;
+                            float value = 0.f;
                             pElem->QueryFloatAttribute("Max_value", &max);
                             pElem->QueryFloatAttribute("Min_value", &min);
                             pElem->QueryFloatAttribute("Value", &value);
@@ -568,7 +581,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::INT_PROP : {
+                case Property::INT_PROP:
+                    {
                         try {
                             AGIntWidget* iplg1 = dynamic_cast<AGIntWidget*>(propsPlugins_tmp.at(j)->widget);
                             int max;
@@ -584,7 +598,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::BOOL_PROP : {
+                case Property::BOOL_PROP:
+                    {
                         try {
                             pElem->QueryIntAttribute("Property_type", &property_type);
                             // first check if the property is a condition controller
@@ -608,10 +623,11 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::COLOR_PROP : {
+                case Property::COLOR_PROP:
+                    {
                         try {
                             AGColorWidget* colorplug = dynamic_cast<AGColorWidget*>(propsPlugins_tmp.at(j)->widget);
-                            float color_r, color_g, color_b, color_a;
+                            float color_r = 0.f, color_g = 0.f, color_b = 0.f, color_a = 0.f;
                             pElem->QueryFloatAttribute("Color_r", &color_r);
                             pElem->QueryFloatAttribute("Color_g", &color_g);
                             pElem->QueryFloatAttribute("Color_b", &color_b);
@@ -623,7 +639,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::ENUM_PROP : {
+                case Property::ENUM_PROP:
+                    {
                         try {
                             AGEnumWidget* eplg1 = dynamic_cast<AGEnumWidget*>(propsPlugins_tmp.at(j)->widget);
                             int value;
@@ -635,64 +652,66 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::TRANSFUNC_PROP : {
-//                         try{
-//                             TransFuncPlugin* tflg1 = dynamic_cast<TransFuncPlugin*>(propsPlugins_tmp.at(j)->widget);
-//                             TransFuncIntensity* tf = tflg1->getTransferFunc();
-//
-//                             //iterate through all markers
-//                             //first set conditions for the current item if there're some
-//                             if (!pElem->NoChildren()) {
-//                                 cElem = pElem->FirstChildElement();
-//                                 for (; cElem; cElem=cElem->NextSiblingElement()) {
-//                                     //first get the color
-//                                     float value_tmp;
-//                                     int int_tmp;
-//                                     tgt::col4 color_tmp;
-//                                     cElem->QueryIntAttribute("Color_r", &int_tmp);
-//                                     color_tmp.r = (uint8_t) int_tmp;
-//                                     cElem->QueryIntAttribute("Color_g", &int_tmp);
-//                                     color_tmp.g = (uint8_t) int_tmp;
-//                                     cElem->QueryIntAttribute("Color_b", &int_tmp);
-//                                     color_tmp.b = (uint8_t) int_tmp;
-//                                     cElem->QueryIntAttribute("Color_a", &int_tmp);
-//                                     color_tmp.a = (uint8_t) int_tmp;
-//
-//                                     cElem->QueryFloatAttribute("Source_value", &value_tmp);
-//                                     TransFuncMappingKey* myKey = new TransFuncMappingKey(value_tmp, color_tmp);
-// //                                     myKey->setSourceValue(value_tmp);
-//                                     cElem->QueryFloatAttribute("Dest_left_value", &value_tmp);
-//                                     myKey->setAlphaL(value_tmp);
-//                                     cElem->QueryIntAttribute("isSplit", &int_tmp);
-//                                     if (int_tmp == 1) {
-//                                         myKey->setSplit(true);
-//
-//                                         cElem->QueryFloatAttribute("Dest_right_value", &value_tmp);
-//                                         myKey->setAlphaR(value_tmp);
-//                                         cElem->QueryIntAttribute("Color_alt_r", &int_tmp);
-//                                         color_tmp.r = (uint8_t) int_tmp;
-//                                         cElem->QueryIntAttribute("Color_alt_g", &int_tmp);
-//                                         color_tmp.g = (uint8_t) int_tmp;
-//                                         cElem->QueryIntAttribute("Color_alt_b", &int_tmp);
-//                                         color_tmp.b = (uint8_t) int_tmp;
-// //                                         cElem->QueryIntAttribute("Color_alt_a", &int_tmp);
-// //                                         color_tmp.a = (uint8_t) int_tmp;
-//                                         myKey->setColorR(color_tmp);
-// 								    } else {
-//                                         myKey->setSplit(false);
-// 								    }
-//                                     // push key to vector
-//                                     tf->addKey(myKey);
-//                                 } // for ( pElem; pElem; pElem=pElem->NextSiblingElement())
-//                                 //renderPropertyPlugin_list_[i].second.at(j).first->setConditioned(conditionIdentifier_text, cond_tmp);
-//                             } // if (!pElem->NoChildren())
-//                         } catch (const std::bad_cast& /*ex*/) {
-//                             QMessageBox::warning(this, "Error",
-//                                 "A dynamic-cast was not successfull.");
-//                         }
+                case Property::TRANSFUNC_PROP:
+                    {
+    //                         try{
+    //                             TransFuncPlugin* tflg1 = dynamic_cast<TransFuncPlugin*>(propsPlugins_tmp.at(j)->widget);
+    //                             TransFuncIntensity* tf = tflg1->getTransferFunc();
+    //
+    //                             //iterate through all markers
+    //                             //first set conditions for the current item if there're some
+    //                             if (!pElem->NoChildren()) {
+    //                                 cElem = pElem->FirstChildElement();
+    //                                 for (; cElem; cElem=cElem->NextSiblingElement()) {
+    //                                     //first get the color
+    //                                     float value_tmp;
+    //                                     int int_tmp;
+    //                                     tgt::col4 color_tmp;
+    //                                     cElem->QueryIntAttribute("Color_r", &int_tmp);
+    //                                     color_tmp.r = static_cast<uint8_t>(int_tmp);
+    //                                     cElem->QueryIntAttribute("Color_g", &int_tmp);
+    //                                     color_tmp.g = (uint8_t) int_tmp;
+    //                                     cElem->QueryIntAttribute("Color_b", &int_tmp);
+    //                                     color_tmp.b = static_cast<uint8_t>(int_tmp);
+    //                                     cElem->QueryIntAttribute("Color_a", &int_tmp);
+    //                                     color_tmp.a = static_cast<uint8_t>(int_tmp);
+    //
+    //                                     cElem->QueryFloatAttribute("Source_value", &value_tmp);
+    //                                     TransFuncMappingKey* myKey = new TransFuncMappingKey(value_tmp, color_tmp);
+    // //                                     myKey->setSourceValue(value_tmp);
+    //                                     cElem->QueryFloatAttribute("Dest_left_value", &value_tmp);
+    //                                     myKey->setAlphaL(value_tmp);
+    //                                     cElem->QueryIntAttribute("isSplit", &int_tmp);
+    //                                     if (int_tmp == 1) {
+    //                                         myKey->setSplit(true);
+    //
+    //                                         cElem->QueryFloatAttribute("Dest_right_value", &value_tmp);
+    //                                         myKey->setAlphaR(value_tmp);
+    //                                         cElem->QueryIntAttribute("Color_alt_r", &int_tmp);
+    //                                         color_tmp.r = static_cast<uint8_t>(int_tmp);
+    //                                         cElem->QueryIntAttribute("Color_alt_g", &int_tmp);
+    //                                         color_tmp.g = static_cast<uint8_t>(int_tmp);
+    //                                         cElem->QueryIntAttribute("Color_alt_b", &int_tmp);
+    //                                         color_tmp.b = static_cast<uint8_t>(int_tmp);
+    // //                                         cElem->QueryIntAttribute("Color_alt_a", &int_tmp);
+    // //                                         color_tmp.a = static_cast<uint8_t>(int_tmp);
+    //                                         myKey->setColorR(color_tmp);
+    // 								    } else {
+    //                                         myKey->setSplit(false);
+    // 								    }
+    //                                     // push key to vector
+    //                                     tf->addKey(myKey);
+    //                                 } // for ( pElem; pElem; pElem=pElem->NextSiblingElement())
+    //                                 //renderPropertyPlugin_list_[i].second.at(j).first->setConditioned(conditionIdentifier_text, cond_tmp);
+    //                             } // if (!pElem->NoChildren())
+    //                         } catch (const std::bad_cast& /*ex*/) {
+    //                             QMessageBox::warning(this, "Error",
+    //                                 "A dynamic-cast was not successfull.");
+    //                         }
                         break;
                     }
-                    case Property::INTEGER_VEC2_PROP : {
+                case Property::INTEGER_VEC2_PROP:
+                    {
                         try {
                             AGIntVec2Widget* ivpl1 = dynamic_cast<AGIntVec2Widget*>(propsPlugins_tmp.at(j)->widget);
                             int value_tmp;
@@ -700,17 +719,17 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                             tgt::ivec2 min;
                             tgt::ivec2 max;
                             pElem->QueryIntAttribute("Vector_x", &value_tmp);
-                            vector.x = (uint8_t) value_tmp;
+                            vector.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_y", &value_tmp);
-                            vector.y = (uint8_t) value_tmp;
+                            vector.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_x", &value_tmp);
-                            max.x = (uint8_t) value_tmp;
+                            max.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_y", &value_tmp);
-                            max.y = (uint8_t) value_tmp;
+                            max.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_x", &value_tmp);
-                            min.x = (uint8_t) value_tmp;
+                            min.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_y", &value_tmp);
-                            min.y = (uint8_t) value_tmp;
+                            min.y = static_cast<uint8_t>(value_tmp);
                             ivpl1->initWidgetFromLoadedSettings(min, max, vector);
                         } catch (const std::bad_cast& /*ex*/) {
                             QMessageBox::warning(this, "Error",
@@ -718,7 +737,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::INTEGER_VEC3_PROP : {
+                case Property::INTEGER_VEC3_PROP:
+                    {
                         try {
                             AGIntVec3Widget* ivpl1 = dynamic_cast<AGIntVec3Widget*>(propsPlugins_tmp.at(j)->widget);
                             int value_tmp;
@@ -726,23 +746,23 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                             tgt::ivec3 min;
                             tgt::ivec3 max;
                             pElem->QueryIntAttribute("Vector_x", &value_tmp);
-                            vector.x = (uint8_t) value_tmp;
+                            vector.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_y", &value_tmp);
-                            vector.y = (uint8_t) value_tmp;
+                            vector.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_z", &value_tmp);
-                            vector.z = (uint8_t) value_tmp;
+                            vector.z = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_x", &value_tmp);
-                            max.x = (uint8_t) value_tmp;
+                            max.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_y", &value_tmp);
-                            max.y = (uint8_t) value_tmp;
+                            max.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_z", &value_tmp);
-                            max.z = (uint8_t) value_tmp;
+                            max.z = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_x", &value_tmp);
-                            min.x = (uint8_t) value_tmp;
+                            min.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_y", &value_tmp);
-                            min.y = (uint8_t) value_tmp;
+                            min.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_z", &value_tmp);
-                            min.z = (uint8_t) value_tmp;
+                            min.z = static_cast<uint8_t>(value_tmp);
                             ivpl1->initWidgetFromLoadedSettings(min, max, vector);
                         } catch (const std::bad_cast& /*ex*/) {
                             QMessageBox::warning(this, "Error",
@@ -750,7 +770,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::INTEGER_VEC4_PROP : {
+                case Property::INTEGER_VEC4_PROP:
+                    {
                         try {
                             AGIntVec4Widget* ivpl1 = dynamic_cast<AGIntVec4Widget*>(propsPlugins_tmp.at(j)->widget);
                             int value_tmp;
@@ -758,29 +779,29 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                             tgt::ivec4 min;
                             tgt::ivec4 max;
                             pElem->QueryIntAttribute("Vector_x", &value_tmp);
-                            vector.x = (uint8_t) value_tmp;
+                            vector.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_y", &value_tmp);
-                            vector.y = (uint8_t) value_tmp;
+                            vector.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_z", &value_tmp);
-                            vector.z = (uint8_t) value_tmp;
+                            vector.z = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Vector_w", &value_tmp);
-                            vector.w = (uint8_t) value_tmp;
+                            vector.w = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_x", &value_tmp);
-                            max.x = (uint8_t) value_tmp;
+                            max.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_y", &value_tmp);
-                            max.y = (uint8_t) value_tmp;
+                            max.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_z", &value_tmp);
-                            max.z = (uint8_t) value_tmp;
+                            max.z = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Max_value_w", &value_tmp);
-                            max.w = (uint8_t) value_tmp;
+                            max.w = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_x", &value_tmp);
-                            min.x = (uint8_t) value_tmp;
+                            min.x = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_y", &value_tmp);
-                            min.y = (uint8_t) value_tmp;
+                            min.y = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_z", &value_tmp);
-                            min.z = (uint8_t) value_tmp;
+                            min.z = static_cast<uint8_t>(value_tmp);
                             pElem->QueryIntAttribute("Min_value_w", &value_tmp);
-                            min.w = (uint8_t) value_tmp;
+                            min.w = static_cast<uint8_t>(value_tmp);
                             ivpl1->initWidgetFromLoadedSettings(min, max, vector);
                         } catch (const std::bad_cast& /*ex*/) {
                             QMessageBox::warning(this, "Error",
@@ -788,7 +809,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::FLOAT_VEC2_PROP : {
+                case Property::FLOAT_VEC2_PROP:
+                    {
                         try {
                             AGFloatVec2Widget* ivpl1 = dynamic_cast<AGFloatVec2Widget*>(propsPlugins_tmp.at(j)->widget);
                             tgt::vec2 vector;
@@ -808,7 +830,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::FLOAT_VEC3_PROP : {
+                case Property::FLOAT_VEC3_PROP:
+                    {
                         try {
                             AGFloatVec3Widget* ivpl1 = dynamic_cast<AGFloatVec3Widget*>(propsPlugins_tmp.at(j)->widget);
                             tgt::vec3 vector;
@@ -831,7 +854,8 @@ void WidgetGenerator::loadPropsFromXML(vector< PropsWidgetList* > propsPlugins_t
                         }
                         break;
                     }
-                    case Property::FLOAT_VEC4_PROP : {
+                case Property::FLOAT_VEC4_PROP:
+                    {
                         try {
                             AGFloatVec4Widget* ivpl1 = dynamic_cast<AGFloatVec4Widget*>(propsPlugins_tmp.at(j)->widget);
                             tgt::vec4 vector;
@@ -884,7 +908,8 @@ void WidgetGenerator::loadWidgetSettings() {
 
     TiXmlDocument doc(filename);
 
-    if (!doc.LoadFile()) return;
+    if (!doc.LoadFile())
+        return;
 
     TiXmlHandle hDoc(&doc);
 	TiXmlElement* rElem;
@@ -908,16 +933,16 @@ void WidgetGenerator::loadWidgetSettings() {
     rElem=hRoot.Element();
 
     if (QString(configName_->text()).toStdString() != rElem->Attribute("Config_name")) {
-        switch(QMessageBox::question(this,"Voreen",
+        switch (QMessageBox::question(this,"Voreen",
             tr("The current configuration name does not match the configuration name \n"
             "you are attempting to load, proceed anyway?"),
             QMessageBox::Yes | QMessageBox::Default,
-            QMessageBox::No)) {
-
-            case QMessageBox::No:
-                return;
-            default:
-                break;
+            QMessageBox::No))
+        {
+        case QMessageBox::No:
+            return;
+        default:
+            break;
         }
     }
     configName_->setText(rElem->Attribute("Config_name"));
@@ -935,7 +960,6 @@ void WidgetGenerator::loadWidgetSettings() {
 
         // is there a property?
         if (!rElem->NoChildren()) {
-
             processor_name = rElem->Attribute("Processor_name");
 
             // look for a processor with processor_name in processorproperty_list
@@ -962,14 +986,12 @@ void WidgetGenerator::loadWidgetSettings() {
     rElem = hRoot.FirstChildElement().Element()->NextSiblingElement()->FirstChildElement();
 
     for (; rElem; rElem=rElem->NextSiblingElement()) {
-
         // is there a property?
         if (!rElem->NoChildren()) {
-
             overlay_name = rElem->Attribute("Overlay_name");
 
             // look for a processor with overlay_name in processorproperty_list
-            for (size_t i = 0; i < overlayPropertyPlugin_list_.size(); i++) {
+            for (size_t i = 0; i < overlayPropertyPlugin_list_.size(); ++i) {
                 if ( overlayPropertyPlugin_list_.at(i)->overlay->getName() == overlay_name ) {
                     // found a processor which fits processor_name
                     // iterate through all properties of the current processor and set attributes
@@ -1015,7 +1037,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
         xmlProperty->SetAttribute("Autochange", propsPlugins_tmp.at(i)->prop->getAutoChange());
 
         switch (propsPlugins_tmp.at(i)->prop->getType()) {
-            case Property::FLOAT_PROP : {
+        case Property::FLOAT_PROP:
+            {
                 FloatProp* prop1 = dynamic_cast<FloatProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_PROP);
                 xmlProperty->SetDoubleAttribute("Value", prop1->get());
@@ -1023,22 +1046,25 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Min_value" ,static_cast<int>(prop1->getMinValue()));
                 break;
             }
-            case Property::INT_PROP : {
-				IntProp* prop1 = dynamic_cast<IntProp*>(propsPlugins_tmp.at(i)->prop);
+        case Property::INT_PROP:
+            {
+			    IntProp* prop1 = dynamic_cast<IntProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::INT_PROP);
                 xmlProperty->SetAttribute("Value", prop1->get());
                 xmlProperty->SetAttribute("Max_value" ,prop1->getMaxValue());
                 xmlProperty->SetAttribute("Min_value" ,prop1->getMinValue());
                 break;
             }
-            case Property::BOOL_PROP : {
+        case Property::BOOL_PROP:
+            {
                 BoolProp* prop1 = dynamic_cast<BoolProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::BOOL_PROP);
                 xmlProperty->SetAttribute("Value", prop1->get());
                 break;
             }
-            case Property::COLOR_PROP : {
-				ColorProp* prop1 = dynamic_cast<ColorProp*>(propsPlugins_tmp.at(i)->prop);
+        case Property::COLOR_PROP:
+            {
+			    ColorProp* prop1 = dynamic_cast<ColorProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::COLOR_PROP);
                 xmlProperty->SetDoubleAttribute("Color_r", prop1->get().r);
                 xmlProperty->SetDoubleAttribute("Color_g", prop1->get().g);
@@ -1046,18 +1072,21 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Color_a", prop1->get().a);
                 break;
             }
-            case Property::ENUM_PROP : {
-				EnumProp* prop1 = dynamic_cast<EnumProp*>(propsPlugins_tmp.at(i)->prop);
+        case Property::ENUM_PROP:
+            {
+			    EnumProp* prop1 = dynamic_cast<EnumProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::ENUM_PROP);
                 xmlProperty->SetAttribute("Value", prop1->get());
                 break;
             }
-            case Property::BUTTON_PROP : {
+        case Property::BUTTON_PROP:
+            {
                 xmlProperty->SetAttribute("Property_type", Property::BUTTON_PROP);
                 break;
             }
-            case Property::FILEDIALOG_PROP : {
-				FileDialogProp* prop1 = dynamic_cast<FileDialogProp*>(propsPlugins_tmp.at(i)->prop);
+        case Property::FILEDIALOG_PROP:
+            {
+			    FileDialogProp* prop1 = dynamic_cast<FileDialogProp*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FILEDIALOG_PROP);
                 xmlProperty->SetAttribute("Value", prop1->get());
                 xmlProperty->SetAttribute("Dialog_caption", prop1->getDialogCaption());
@@ -1065,45 +1094,47 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Dialog_filefilter", prop1->getFileFilter());
                 break;
             }
-            case Property::TRANSFUNC_PROP : {
-//                 TransFuncPlugin* transfer = dynamic_cast<TransFuncPlugin*>(renderPropertyPlugin_list_[j]->propWidg_list_[i]->widget);
-//
-//                 xmlProperty->SetAttribute("Property_type", Property::TRANSFERFUNC_PROP);
-//                 TransFuncIntensity* tf = transfer->getTransferFunc();
-//
-//                 // iterate through all markers
-//                 for (size_t m = 0; m < tf->getNumKeys(); ++m) {
-//                     // prepare xml
-//                     myStream_marker.str("");
-//                     myStream_marker << m;
-//                     TiXmlElement *xmlMarker = new TiXmlElement("Marker" + myStream_marker.str());
-//                     //save markers to xml
-//                     xmlMarker->SetDoubleAttribute("Source_value", tf->getKey(m)->getIntensity());
-//                     xmlMarker->SetDoubleAttribute("Dest_left_value", tf->getKey(m)->getAlphaL());
-//                     xmlMarker->SetAttribute("isSplit", tf->getKey(m)->isSplit());
-//                     xmlMarker->SetAttribute("Color_r", tf->getKey(m)->getColorL().r);
-//                     xmlMarker->SetAttribute("Color_g", tf->getKey(m)->getColorL().g);
-//                     xmlMarker->SetAttribute("Color_b", tf->getKey(m)->getColorL().b);
-//                     xmlMarker->SetAttribute("Color_a", tf->getKey(m)->getColorL().a);
-//                     if (tf->getKey(m)->isSplit()) {
-//                         xmlMarker->SetAttribute("Color_alt_r", tf->getKey(m)->getColorR().r);
-//                         xmlMarker->SetAttribute("Color_alt_g", tf->getKey(m)->getColorR().g);
-//                         xmlMarker->SetAttribute("Color_alt_b", tf->getKey(m)->getColorR().b);
-//                         xmlMarker->SetAttribute("Color_alt_a", tf->getKey(m)->getColorR().a);
-//                         xmlMarker->SetDoubleAttribute("Dest_right_value", tf->getKey(m)->getAlphaR());
-//                     }else{
-//                         xmlMarker->SetAttribute("Color_alt_r", 0);
-//                         xmlMarker->SetAttribute("Color_alt_g", 0);
-//                         xmlMarker->SetAttribute("Color_alt_b", 0);
-//                         xmlMarker->SetAttribute("Color_alt_a", 0);
-//                         xmlMarker->SetDoubleAttribute("Dest_right_value", 0);
-//                     }
-//
-//                     xmlProperty->LinkEndChild(xmlMarker);
-//                 } // for (size_t m=0; m<transfer->getNumKeys(); ++m)
+        case Property::TRANSFUNC_PROP:
+            {
+    //                 TransFuncPlugin* transfer = dynamic_cast<TransFuncPlugin*>(renderPropertyPlugin_list_[j]->propWidg_list_[i]->widget);
+    //
+    //                 xmlProperty->SetAttribute("Property_type", Property::TRANSFERFUNC_PROP);
+    //                 TransFuncIntensity* tf = transfer->getTransferFunc();
+    //
+    //                 // iterate through all markers
+    //                 for (size_t m = 0; m < tf->getNumKeys(); ++m) {
+    //                     // prepare xml
+    //                     myStream_marker.str("");
+    //                     myStream_marker << m;
+    //                     TiXmlElement *xmlMarker = new TiXmlElement("Marker" + myStream_marker.str());
+    //                     //save markers to xml
+    //                     xmlMarker->SetDoubleAttribute("Source_value", tf->getKey(m)->getIntensity());
+    //                     xmlMarker->SetDoubleAttribute("Dest_left_value", tf->getKey(m)->getAlphaL());
+    //                     xmlMarker->SetAttribute("isSplit", tf->getKey(m)->isSplit());
+    //                     xmlMarker->SetAttribute("Color_r", tf->getKey(m)->getColorL().r);
+    //                     xmlMarker->SetAttribute("Color_g", tf->getKey(m)->getColorL().g);
+    //                     xmlMarker->SetAttribute("Color_b", tf->getKey(m)->getColorL().b);
+    //                     xmlMarker->SetAttribute("Color_a", tf->getKey(m)->getColorL().a);
+    //                     if (tf->getKey(m)->isSplit()) {
+    //                         xmlMarker->SetAttribute("Color_alt_r", tf->getKey(m)->getColorR().r);
+    //                         xmlMarker->SetAttribute("Color_alt_g", tf->getKey(m)->getColorR().g);
+    //                         xmlMarker->SetAttribute("Color_alt_b", tf->getKey(m)->getColorR().b);
+    //                         xmlMarker->SetAttribute("Color_alt_a", tf->getKey(m)->getColorR().a);
+    //                         xmlMarker->SetDoubleAttribute("Dest_right_value", tf->getKey(m)->getAlphaR());
+    //                     }else{
+    //                         xmlMarker->SetAttribute("Color_alt_r", 0);
+    //                         xmlMarker->SetAttribute("Color_alt_g", 0);
+    //                         xmlMarker->SetAttribute("Color_alt_b", 0);
+    //                         xmlMarker->SetAttribute("Color_alt_a", 0);
+    //                         xmlMarker->SetDoubleAttribute("Dest_right_value", 0);
+    //                     }
+    //
+    //                     xmlProperty->LinkEndChild(xmlMarker);
+    //                 } // for (size_t m=0; m<transfer->getNumKeys(); ++m)
                 break;
             }
-            case Property::INTEGER_VEC2_PROP : {
+        case Property::INTEGER_VEC2_PROP:
+            {
                 IntVec2Prop* prop1 = dynamic_cast<IntVec2Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::INTEGER_VEC2_PROP);
                 xmlProperty->SetAttribute("Vector_x", prop1->get().x);
@@ -1114,7 +1145,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Min_value_y" ,prop1->getMinimum().y);
                 break;
             }
-            case Property::INTEGER_VEC3_PROP : {
+        case Property::INTEGER_VEC3_PROP:
+            {
                 IntVec3Prop* prop1 = dynamic_cast<IntVec3Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::INTEGER_VEC3_PROP);
                 xmlProperty->SetAttribute("Vector_x", prop1->get().x);
@@ -1128,7 +1160,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Min_value_z" ,prop1->getMinimum().z);
                 break;
             }
-            case Property::INTEGER_VEC4_PROP : {
+        case Property::INTEGER_VEC4_PROP:
+            {
                 IntVec4Prop* prop1 = dynamic_cast<IntVec4Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::INTEGER_VEC4_PROP);
                 xmlProperty->SetAttribute("Vector_x", prop1->get().x);
@@ -1145,7 +1178,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetAttribute("Min_value_w" ,prop1->getMinimum().w);
                 break;
             }
-            case Property::FLOAT_VEC2_PROP : {
+        case Property::FLOAT_VEC2_PROP:
+            {
                 FloatVec2Prop* prop1 = dynamic_cast<FloatVec2Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_VEC2_PROP);
                 xmlProperty->SetDoubleAttribute("Vector_x", prop1->get().x);
@@ -1156,7 +1190,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Min_value_y" ,prop1->getMinimum().y);
                 break;
             }
-            case Property::FLOAT_VEC3_PROP : {
+        case Property::FLOAT_VEC3_PROP:
+            {
                 FloatVec3Prop* prop1 = dynamic_cast<FloatVec3Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_VEC3_PROP);
                 xmlProperty->SetDoubleAttribute("Vector_x", prop1->get().x);
@@ -1170,7 +1205,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Min_value_z" ,prop1->getMinimum().z);
                 break;
             }
-            case Property::FLOAT_VEC4_PROP : {
+        case Property::FLOAT_VEC4_PROP:
+            {
                 FloatVec4Prop* prop1 = dynamic_cast<FloatVec4Prop*>(propsPlugins_tmp.at(i)->prop);
                 xmlProperty->SetAttribute("Property_type", Property::FLOAT_VEC4_PROP);
                 xmlProperty->SetDoubleAttribute("Vector_x", prop1->get().x);
@@ -1187,8 +1223,8 @@ void WidgetGenerator::savePropsToXML(vector< PropsWidgetList* > propsPlugins_tmp
                 xmlProperty->SetDoubleAttribute("Min_value_w" ,prop1->getMinimum().w);
                 break;
             }
-            default:
-                break;
+        default:
+            break;
         }
     }
 }
@@ -1241,7 +1277,7 @@ void WidgetGenerator::saveWidgetSettings() {
     root->LinkEndChild(rootProcessor);
 
     //iterate through all processors from processorPropertyPlugin_list_
-    for (size_t j = 0; j < processorPropertyPlugin_list_.size() ; ++j){
+    for (size_t j = 0; j < processorPropertyPlugin_list_.size() ; ++j) {
         //get vector of properties and plugins from actual processor
         propsPlugins_tmp = processorPropertyPlugin_list_[j]->propWidg_list_;
 
@@ -1252,17 +1288,15 @@ void WidgetGenerator::saveWidgetSettings() {
         xmlProcessor->SetAttribute("Processor_name", processorPropertyPlugin_list_[j]->processor->getName());
         xmlProcessor->SetAttribute("State", processorPropertyPlugin_list_[j]->state);
 
-        if (propsPlugins_tmp.size() > 0) {
+        if (propsPlugins_tmp.size() > 0)
             savePropsToXML(propsPlugins_tmp, j, xmlProcessor);
-        }
-
     }
 
     TiXmlElement *rootOverlay = new TiXmlElement("Overlay-settings");
     root->LinkEndChild(rootOverlay);
 
    //iterate through all overlays from overlayPropertyPlugin_list_
-    for (size_t j = 0; j < overlayPropertyPlugin_list_.size() ; ++j){
+    for (size_t j = 0; j < overlayPropertyPlugin_list_.size() ; ++j) {
         //get vector of properties and plugins from actual overlay
         propsPlugins_tmp = overlayPropertyPlugin_list_[j]->propWidg_list_;
 
@@ -1273,10 +1307,8 @@ void WidgetGenerator::saveWidgetSettings() {
         xmlOverlay->SetAttribute("Overlay_name", overlayPropertyPlugin_list_[j]->overlay->getName());
         xmlOverlay->SetAttribute("State", overlayPropertyPlugin_list_[j]->state);
 
-        if (propsPlugins_tmp.size() > 0) {
+        if (propsPlugins_tmp.size() > 0)
             savePropsToXML(propsPlugins_tmp, j, xmlOverlay);
-        }
-
     }
 
     //save xml file
@@ -1286,7 +1318,7 @@ void WidgetGenerator::saveWidgetSettings() {
             tr("Configuration saved successfully!"));
 }
 
-void WidgetGenerator::createAllWidgets(std::vector<Processor*> processors, OverlayManager* mgr){
+void WidgetGenerator::createAllWidgets(std::vector<Processor*> processors, OverlayManager* mgr) {
 	//connect all grouped and conditioned Props to their owners
 	overlays_ = mgr->getOverlays();
 	NetworkAnalyzer::connectOverlayProps(overlays_);
@@ -1294,17 +1326,17 @@ void WidgetGenerator::createAllWidgets(std::vector<Processor*> processors, Overl
     processor_list = processors;
 }
 
-void WidgetGenerator::stateChanged(){
+void WidgetGenerator::stateChanged() {
     //set the visible-state of all properties in the frames and the overlays
     //depending on the visibility of the widget and the property
-    for (unsigned int i=0; i < frames_.size(); ++i){
+    for (unsigned int i=0; i < frames_.size(); ++i) {
         if (frames_.at(i)->list_)
             frames_.at(i)->setVisible(frames_.at(i)->list_->state && frames_.at(i)->prop_->isVisible());
         if (frames_.at(i)->listOverlay_)
             frames_.at(i)->setVisible(frames_.at(i)->listOverlay_->state && frames_.at(i)->prop_->isVisible());
     }
     //set visible-state of all other properties
-    for (unsigned int i=0; i < processorPropertyPlugin_list_.size(); ++i){
+    for (unsigned int i=0; i < processorPropertyPlugin_list_.size(); ++i) {
         std::vector<PropsWidgetList*> vec_tmp = processorPropertyPlugin_list_.at(i)->propWidg_list_;
         for (unsigned int j=0; j < vec_tmp.size(); ++j) {
             if (vec_tmp.at(j)) {
@@ -1319,9 +1351,8 @@ void WidgetGenerator::stateChanged(){
             vec_tmp.at(j)->widget->setVisible(overlayPropertyPlugin_list_.at(i)->state && vec_tmp.at(j)->prop->isVisible());
         }
     }
-    for (size_t i = 0; i < ProcessorHeaderWidgets_.size(); ++i) {
+    for (size_t i = 0; i < ProcessorHeaderWidgets_.size(); ++i)
         ProcessorHeaderWidgets_[i]->updateState();
-    }
 }
 
 std::vector<TransFuncPlugin*> WidgetGenerator::getTransFuncPlugins() {
@@ -1388,7 +1419,7 @@ GroupFrame::GroupFrame(Property* prop, WidgetGenerator::OverlayPropsList* list, 
 
 void GroupFrame::changeChecked(bool val) {
     BoolProp* prop_tmp = dynamic_cast<BoolProp*>(prop_);
-    if ((prop_tmp) && (isVisible())){
+    if ((prop_tmp) && (isVisible())) {
         if (prop_tmp->getAutoChange())
             prop_tmp->set(val);
         else
@@ -1427,4 +1458,3 @@ void GroupFrame::changeValue(bool val) {
 }
 
 } // namespace voreen
-

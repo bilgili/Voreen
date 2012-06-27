@@ -245,7 +245,7 @@ std::vector<InterleavedType> Tesselator::tesselate(
     gluTessBeginPolygon(tesselator_, &polygons);
         gluTessBeginContour(tesselator_);
 
-            for(size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t i = 0; i < vertices.size(); ++i) {
                 //build a vec3d vector
                 Vector3d vec3d(0.0, 0.0, 0.0);
                 for (size_t j = 0; j < size; ++j)
@@ -294,7 +294,7 @@ std::vector<InterleavedType> Tesselator::tesselate(
 
         for (size_t contourIdx = 0; contourIdx < contours.size(); ++contourIdx) {
             gluTessBeginContour(tesselator_);
-                for(size_t i = 0; i < contours[contourIdx].size(); ++i) {
+                for (size_t i = 0; i < contours[contourIdx].size(); ++i) {
                     //build a vec3d vector
                     Vector3d vec3d(0.0, 0.0, 0.0);
                     for (size_t j = 0; j < size; ++j)

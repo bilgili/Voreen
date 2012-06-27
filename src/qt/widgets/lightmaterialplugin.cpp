@@ -55,8 +55,8 @@ LightMaterialPlugin::LightMaterialPlugin(QWidget* parent, MessageReceiver* msgRe
     
     // light settings
     useOpenGLMaterial_ = false;
-    currentLightAmbient_  = 0.4f;
-    currentLightDiffuse_  = 0.7f;
+    currentLightAmbient_  = 0.5f;
+    currentLightDiffuse_  = 0.8f;
     currentLightSpecular_ = 0.6f;
     
     constantAttenuationRange_ = vec2(0.1f, 5.f);
@@ -73,11 +73,9 @@ LightMaterialPlugin::LightMaterialPlugin(QWidget* parent, MessageReceiver* msgRe
     currentMaterialDiffuse_  = tgt::Color(1.f, 1.f, 1.f, 1.f);
     currentMaterialEmission_ = tgt::Color(0.f, 0.f, 0.f, 1.f);
     currentShininess_ = 60;
-
 }
 
 void LightMaterialPlugin::initGLState() {
-
     postMessage(new ColorMsg( LightMaterial::setLightAmbient_, tgt::Color(currentLightAmbient_)));
     postMessage(new ColorMsg( LightMaterial::setLightDiffuse_, tgt::Color(currentLightDiffuse_)));
     postMessage(new ColorMsg( LightMaterial::setLightSpecular_, tgt::Color(currentLightSpecular_)));
@@ -98,17 +96,14 @@ void LightMaterialPlugin::initGLState() {
 }
 
 void LightMaterialPlugin::enableFeatures(int features) {
-
      features_ |= features;
 }
 
 void LightMaterialPlugin::disableFeatures(int features) {
-
      features_ &= ~features;
 }
 
 bool LightMaterialPlugin::isFeatureEnabled(LightMaterialPlugin::Features feature) {
-
     return (features_ & feature);
 }
 
@@ -138,9 +133,8 @@ void LightMaterialPlugin::createWidgets() {
     vboxLayout->addWidget(checkApplyAttenuation_);
     
     groupLightingModel_->setLayout(vboxLayout);
-    if ( !isFeatureEnabled(LIGHTING_MODEL) ) {
+    if (!isFeatureEnabled(LIGHTING_MODEL))
         groupLightingModel_->setVisible( false );
-    }
     mainLayout->addWidget(groupLightingModel_);
 
 
@@ -174,7 +168,7 @@ void LightMaterialPlugin::createWidgets() {
     showLightAmbientColor();
     //gridLayout->addWidget(getLightAmbient_, 0, 0);
     gridLayout->addWidget(laShowLightAmbient_, 0, 2);
-    if ( !isFeatureEnabled(LIGHT_AMBIENT) ) {
+    if (!isFeatureEnabled(LIGHT_AMBIENT)) {
         //getLightAmbient_->setVisible( false );
         laLightAmbient_->setVisible(false);
         sliderLightAmbient_->setVisible(false);
@@ -195,7 +189,7 @@ void LightMaterialPlugin::createWidgets() {
     gridLayout->addWidget(laLightDiffuse_, 1, 0);
     gridLayout->addWidget(sliderLightDiffuse_, 1, 1);
     gridLayout->addWidget(laShowLightDiffuse_, 1, 2);
-    if ( !isFeatureEnabled(LIGHT_DIFFUSE) ) {
+    if (!isFeatureEnabled(LIGHT_DIFFUSE)) {
         //getLightDiffuse_->setVisible( false );
         laLightDiffuse_->setVisible( false );
         sliderLightDiffuse_->setVisible( false );
@@ -217,7 +211,7 @@ void LightMaterialPlugin::createWidgets() {
     gridLayout->addWidget(laLightSpecular_, 2, 0);
     gridLayout->addWidget(sliderLightSpecular_, 2, 1);
     gridLayout->addWidget(laShowLightSpecular_, 2, 2);
-    if ( !isFeatureEnabled(LIGHT_SPECULAR) ) {
+    if (!isFeatureEnabled(LIGHT_SPECULAR)) {
         //getLightSpecular_->setVisible( false );
         laLightSpecular_->setVisible( false );
         sliderLightSpecular_->setValue( false );
@@ -227,9 +221,9 @@ void LightMaterialPlugin::createWidgets() {
     vboxLayout->addLayout(gridLayout);
 
     groupLightColors_->setLayout(vboxLayout);
-    if ( !isFeatureEnabled(LIGHT) ) {
+    if (!isFeatureEnabled(LIGHT))
         groupLightColors_->setVisible( false );
-    }
+    
     mainLayout->addWidget(groupLightColors_);
 
     //
@@ -252,9 +246,8 @@ void LightMaterialPlugin::createWidgets() {
     checkUseOpenGLMaterial_->setChecked(useOpenGLMaterial_);
     //vboxLayout->addWidget(checkUseOpenGLMaterial_);
     gridLayout->addWidget(checkUseOpenGLMaterial_, 0, 0, 1, 3);
-    if ( !isFeatureEnabled(MATERIAL_USE_OPENGL_MATERIAL) ) {
+    if (!isFeatureEnabled(MATERIAL_USE_OPENGL_MATERIAL))
         checkUseOpenGLMaterial_->setVisible(false);
-    }
     
     getMaterialAmbient_  = new QPushButton(tr("Ambient color ..."), this);
     getMaterialAmbient_->adjustSize();
@@ -311,11 +304,10 @@ void LightMaterialPlugin::createWidgets() {
     showMaterialEmissionColor();
     gridLayout->addWidget(getMaterialEmission_, 4, 0);
     gridLayout->addWidget(laShowMaterialEmission_, 4, 2);
-    if ( !isFeatureEnabled(MATERIAL_EMISSION) ) {
+    if (!isFeatureEnabled(MATERIAL_EMISSION)) {
         getMaterialEmission_->setVisible( false );
         laShowMaterialEmission_->setVisible( false );
     }
-
 
     vboxLayout->addLayout(gridLayout);
 
@@ -333,7 +325,7 @@ void LightMaterialPlugin::createWidgets() {
     gridLayout->addWidget(laShininess_, 5, 0);
     gridLayout->addWidget(sliderShininess_, 5, 1);   
     gridLayout->addWidget(spinShininess_, 5, 2);
-    if ( !isFeatureEnabled(MATERIAL_SPECULAR) ) {
+    if (!isFeatureEnabled(MATERIAL_SPECULAR)) {
         laShininess_->setVisible( false );
         sliderShininess_->setVisible( false );
         spinShininess_->setVisible( false );
@@ -349,9 +341,9 @@ void LightMaterialPlugin::createWidgets() {
     vboxLayout->addLayout(gridLayout);
 
     groupMaterialParams_->setLayout(vboxLayout);
-    if ( !isFeatureEnabled(MATERIAL) ) {
+    if (!isFeatureEnabled(MATERIAL))
         groupMaterialParams_->setVisible( false );
-    }    
+    
     mainLayout->addWidget(groupMaterialParams_);
 
     setLayout(mainLayout);
@@ -418,7 +410,6 @@ void LightMaterialPlugin::createWidgets() {
     
     mainLayout->addStretch();
 
-
     // synchronize some sizes for visual appeal
     spinQuadraticAttenuation_->adjustSize();
     int minWidth = spinQuadraticAttenuation_->width(); 
@@ -435,18 +426,15 @@ void LightMaterialPlugin::createWidgets() {
     laLightAmbient_->setMinimumWidth(minWidth);
     laLightDiffuse_->setMinimumWidth(minWidth);
     laLightSpecular_->setMinimumWidth(minWidth);
-
 }
 
 void LightMaterialPlugin::createConnections() {
-    
     connect(checkAddAmbient_, SIGNAL(toggled(bool)),     this,
         SLOT(setAddAmbient(bool)) );
     connect(checkAddSpecular_, SIGNAL(toggled(bool)),     this,
         SLOT(setAddSpecular(bool)) );
     connect(checkApplyAttenuation_, SIGNAL(toggled(bool)),     this,
         SLOT(setApplyAttenuation(bool)) );
-
 
     connect(sliderConstantAttenuation_,  SIGNAL(valueChanged(int)), this,
         SLOT(updateConstantAttenuationSlider()));
@@ -514,11 +502,9 @@ void LightMaterialPlugin::createConnections() {
         SLOT(updateMaterialDiffuseColor()));
     connect(getMaterialEmission_,         SIGNAL(clicked()), this,
         SLOT(updateMaterialEmissionColor()));
-
 }
 
 void LightMaterialPlugin::setAddAmbient(bool checked) {
-
     addAmbient_ = checked;
 
     laLightAmbient_->setEnabled(addAmbient_);
@@ -533,11 +519,9 @@ void LightMaterialPlugin::setAddAmbient(bool checked) {
     
     postMessage(new BoolMsg(LightMaterial::switchPhongAddAmbient_, addAmbient_));
 	repaintCanvases();
-
 }
 
 void LightMaterialPlugin::setAddSpecular(bool checked) {
-
     addSpecular_ = checked;
 
     laShowLightSpecular_->setEnabled(addSpecular_);
@@ -555,11 +539,9 @@ void LightMaterialPlugin::setAddSpecular(bool checked) {
     
     postMessage(new BoolMsg(LightMaterial::switchPhongAddSpecular_, addSpecular_));
 	repaintCanvases();
-
 }
  
 void LightMaterialPlugin::setApplyAttenuation(bool checked) {
-
     applyAttenuation_ = checked;
 
     groupAttenuation_->setEnabled(applyAttenuation_);
@@ -570,12 +552,9 @@ void LightMaterialPlugin::setApplyAttenuation(bool checked) {
 
     postMessage(new BoolMsg(LightMaterial::switchPhongApplyAttenuation_, applyAttenuation_));
 	repaintCanvases();
-    
 }
-        
 
 void LightMaterialPlugin::setUseOGLMaterial(bool b) {
-	
     bool ambientVisible = b && isFeatureEnabled(MATERIAL_AMBIENT);
     bool diffuseVisible = b && isFeatureEnabled(MATERIAL_DIFFUSE);
 
@@ -595,7 +574,6 @@ void LightMaterialPlugin::setUseOGLMaterial(bool b) {
 }
 
 void LightMaterialPlugin::updateLightSpecularColor(int value) {
-
     currentLightSpecular_ = value / 100.f;
     showLightSpecularColor();
     QApplication::processEvents();    
@@ -607,7 +585,6 @@ void LightMaterialPlugin::updateLightSpecularColor(int value) {
 }
 
 void LightMaterialPlugin::updateLightAmbientColor(int value) {
-
     currentLightAmbient_ = value / 100.f;
     showLightAmbientColor();
     QApplication::processEvents();    
@@ -616,11 +593,9 @@ void LightMaterialPlugin::updateLightAmbientColor(int value) {
         tgt::Color(currentLightAmbient_, currentLightAmbient_, currentLightAmbient_, 1.f))  );
 
     repaintCanvases();
-
 }
 
 void LightMaterialPlugin::updateLightDiffuseColor(int value) {
-
     currentLightDiffuse_ = value / 100.f;
     showLightDiffuseColor();
     QApplication::processEvents();    
@@ -629,7 +604,6 @@ void LightMaterialPlugin::updateLightDiffuseColor(int value) {
         tgt::Color(currentLightDiffuse_, currentLightDiffuse_, currentLightDiffuse_, 1.f))  );
 
     repaintCanvases();
-
 }
 
 void LightMaterialPlugin::updateMaterialSpecularColor() {
@@ -648,7 +622,6 @@ void LightMaterialPlugin::updateMaterialSpecularColor() {
 
         repaintCanvases();
         showMaterialSpecularColor();
-    
     } 
 }
 
@@ -668,12 +641,10 @@ void LightMaterialPlugin::updateMaterialAmbientColor() {
         postMessage(new ColorMsg(LightMaterial::setMaterialAmbient_, currentMaterialAmbient_));
         
         repaintCanvases();
-    
     }
 }
 
 void LightMaterialPlugin::updateMaterialDiffuseColor() {
-
     QColor oldDiff =
         QColor::fromRgbF(currentMaterialDiffuse_.r, currentMaterialDiffuse_.g, 
         currentMaterialDiffuse_.b, currentMaterialDiffuse_.a);
@@ -689,12 +660,10 @@ void LightMaterialPlugin::updateMaterialDiffuseColor() {
         postMessage(new ColorMsg(LightMaterial::setMaterialDiffuse_, currentMaterialDiffuse_));
         
         repaintCanvases();
-
     }
 }
 
 void LightMaterialPlugin::updateMaterialEmissionColor() {
-
     QColor oldDiff =
         QColor::fromRgbF(currentMaterialEmission_.r, currentMaterialEmission_.g, 
         currentMaterialEmission_.b, currentMaterialEmission_.a);
@@ -709,111 +678,95 @@ void LightMaterialPlugin::updateMaterialEmissionColor() {
         
         postMessage(new ColorMsg(LightMaterial::setMaterialEmission_, currentMaterialEmission_));
         repaintCanvases();
-
     }
 }
 
 
 void LightMaterialPlugin::showLightAmbientColor() {
-    
     QPalette palette = laShowLightAmbient_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentLightAmbient_*255),
-        int(currentLightAmbient_*255),
-        int(currentLightAmbient_*255),
+        static_cast<int>(currentLightAmbient_*255),
+        static_cast<int>(currentLightAmbient_*255),
+        static_cast<int>(currentLightAmbient_*255),
         255                                   ) 
     );
     laShowLightAmbient_->setPalette(palette);
     laShowLightAmbient_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::showLightDiffuseColor() {
-
     QPalette palette = laShowLightDiffuse_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentLightDiffuse_*255),
-        int(currentLightDiffuse_*255),
-        int(currentLightDiffuse_*255),
+        static_cast<int>(currentLightDiffuse_*255),
+        static_cast<int>(currentLightDiffuse_*255),
+        static_cast<int>(currentLightDiffuse_*255),
         255                                   ) 
     );
     laShowLightDiffuse_->setPalette(palette);
     laShowLightDiffuse_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::showLightSpecularColor() {
-
     QPalette palette = laShowLightSpecular_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentLightSpecular_*255),
-        int(currentLightSpecular_*255),
-        int(currentLightSpecular_*255),
+        static_cast<int>(currentLightSpecular_*255),
+        static_cast<int>(currentLightSpecular_*255),
+        static_cast<int>(currentLightSpecular_*255),
         255                                   ) 
     );
     laShowLightSpecular_->setPalette(palette);
     laShowLightSpecular_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::showMaterialAmbientColor() {
-    
     QPalette palette = laShowMaterialAmbient_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentMaterialAmbient_.r*255),
-        int(currentMaterialAmbient_.g*255),
-        int(currentMaterialAmbient_.b*255),
+        static_cast<int>(currentMaterialAmbient_.r*255),
+        static_cast<int>(currentMaterialAmbient_.g*255),
+        static_cast<int>(currentMaterialAmbient_.b*255),
         255                                   ) 
     );
     laShowMaterialAmbient_->setPalette(palette);
     laShowMaterialAmbient_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::showMaterialDiffuseColor() {
-
     QPalette palette = laShowMaterialDiffuse_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentMaterialDiffuse_.r*255),
-        int(currentMaterialDiffuse_.g*255),
-        int(currentMaterialDiffuse_.b*255),
+        static_cast<int>(currentMaterialDiffuse_.r*255),
+        static_cast<int>(currentMaterialDiffuse_.g*255),
+        static_cast<int>(currentMaterialDiffuse_.b*255),
         255                                   ) 
     );
     laShowMaterialDiffuse_->setPalette(palette);
     laShowMaterialDiffuse_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::showMaterialSpecularColor() {
-
     QPalette palette = laShowMaterialSpecular_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentMaterialSpecular_.r*255),
-        int(currentMaterialSpecular_.g*255),
-        int(currentMaterialSpecular_.b*255),
+        static_cast<int>(currentMaterialSpecular_.r*255),
+        static_cast<int>(currentMaterialSpecular_.g*255),
+        static_cast<int>(currentMaterialSpecular_.b*255),
         255                                   ) 
     );
     laShowMaterialSpecular_->setPalette(palette);
     laShowMaterialSpecular_->setBackgroundRole(palette.Window);
-
 }
  
 void LightMaterialPlugin::showMaterialEmissionColor() {
-
     QPalette palette = laShowMaterialEmission_->palette();
     palette.setColor(QPalette::Window, QColor(
-        int(currentMaterialEmission_.r*255),
-        int(currentMaterialEmission_.g*255),
-        int(currentMaterialEmission_.b*255),
+        static_cast<int>(currentMaterialEmission_.r*255),
+        static_cast<int>(currentMaterialEmission_.g*255),
+        static_cast<int>(currentMaterialEmission_.b*255),
         255                                   ) 
     );
     laShowMaterialEmission_->setPalette(palette);
     laShowMaterialEmission_->setBackgroundRole(palette.Window);
-
 }
 
 void LightMaterialPlugin::updateConstantAttenuationSlider() {
-    
     float att = 
         constantAttenuationRange_.x + spinConstantAttenuation_->singleStep()*sliderConstantAttenuation_->value();
     currentConstantAttenuation_ = att;
@@ -828,7 +781,6 @@ void LightMaterialPlugin::updateConstantAttenuationSlider() {
 }
 
 void LightMaterialPlugin::updateLinearAttenuationSlider() {
-    
     float att = 
         linearAttenuationRange_.x + spinLinearAttenuation_->singleStep()*sliderLinearAttenuation_->value();
     currentLinearAttenuation_ = att;
@@ -840,11 +792,9 @@ void LightMaterialPlugin::updateLinearAttenuationSlider() {
     postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_, 
         tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
     repaintCanvases();
-
 }
 
 void LightMaterialPlugin::updateQuadraticAttenuationSlider() {
-   
     float att = 
         quadraticAttenuationRange_.x + spinQuadraticAttenuation_->singleStep()*sliderQuadraticAttenuation_->value();
     currentQuadraticAttenuation_ = att;
@@ -856,14 +806,12 @@ void LightMaterialPlugin::updateQuadraticAttenuationSlider() {
     postMessage(new Vec3Msg(LightMaterial::setLightAttenuation_, 
         tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
     repaintCanvases();
-
 }
 
 void LightMaterialPlugin::updateConstantAttenuationSpin(double value, bool updateGLState) {
+    currentConstantAttenuation_ = static_cast<float>(value);
     
-    currentConstantAttenuation_ = float(value);
-    
-    int position = int( std::floor( (value - constantAttenuationRange_.x)
+    int position = static_cast<int>( std::floor( (value - constantAttenuationRange_.x)
                                     / (constantAttenuationRange_.y - constantAttenuationRange_.x)
                                     * sliderConstantAttenuation_->maximum() + 0.5f ) );
     
@@ -879,10 +827,9 @@ void LightMaterialPlugin::updateConstantAttenuationSpin(double value, bool updat
 }
 
 void LightMaterialPlugin::updateLinearAttenuationSpin(double value, bool updateGLState) {
-
-    currentLinearAttenuation_ = float(value);
+    currentLinearAttenuation_ = static_cast<float>(value);
     
-    int position = int( std::floor( (value - linearAttenuationRange_.x)
+    int position = static_cast<int>( std::floor( (value - linearAttenuationRange_.x)
                                     / (linearAttenuationRange_.y - linearAttenuationRange_.x)
                                     * sliderLinearAttenuation_->maximum() + 0.5f ) );
     
@@ -895,14 +842,12 @@ void LightMaterialPlugin::updateLinearAttenuationSpin(double value, bool updateG
             tgt::vec3(currentConstantAttenuation_, currentLinearAttenuation_, currentQuadraticAttenuation_)));
         repaintCanvases();
     }
-
 }
 
 void LightMaterialPlugin::updateQuadraticAttenuationSpin(double value, bool updateGLState) {
-
-    currentQuadraticAttenuation_ = float(value);
+    currentQuadraticAttenuation_ = static_cast<float>(value);
     
-    int position = int( std::floor( (value - quadraticAttenuationRange_.x)
+    int position = static_cast<int>( std::floor( (value - quadraticAttenuationRange_.x)
                                     / (quadraticAttenuationRange_.y - quadraticAttenuationRange_.x)
                                     * sliderQuadraticAttenuation_->maximum() + 0.5f ) );
     
@@ -918,8 +863,7 @@ void LightMaterialPlugin::updateQuadraticAttenuationSpin(double value, bool upda
 }
 
 void LightMaterialPlugin::updateShininessSlider(int value) {
-
-    currentShininess_ = float(value);
+    currentShininess_ = static_cast<float>(value);
     
     spinShininess_->blockSignals(true);
     spinShininess_->setValue(currentShininess_);
@@ -931,8 +875,7 @@ void LightMaterialPlugin::updateShininessSlider(int value) {
 }
         
 void LightMaterialPlugin::updateShininessSpin(double value) {
-
-    currentShininess_ = float(value);
+    currentShininess_ = static_cast<float>(value);
     
     sliderShininess_->blockSignals(true);
     sliderShininess_->setSliderPosition(int(value+0.5f));

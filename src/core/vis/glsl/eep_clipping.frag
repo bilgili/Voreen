@@ -28,13 +28,13 @@
  **********************************************************************/
 
 #include "modules/mod_sampler2d.frag"
-#include "modules/mod_sampler3d.frag"           // contains struct VOLUME_PARAMETERS 
+#include "modules/mod_sampler3d.frag"        // contains struct VOLUME_PARAMETERS 
 
 uniform SAMPLER2D_TYPE entryTex_;	     
 uniform SAMPLER2D_TYPE entryTexDepth_;
 uniform SAMPLER2D_TYPE exitTex_; 
 
-uniform VOLUME_PARAMETERS volumeParameters_;    // additional information about the volume the eep are generated for
+uniform VOLUME_PARAMETERS volumeParameters_; // additional information about the volume the eep are generated for
 
 /**
  * Calculates missing entry points (clipped by near plane) by back-projecting the

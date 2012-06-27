@@ -48,57 +48,103 @@ using tgt::vec4;
 
 namespace voreen {
 
-GeometryProcessor::GeometryProcessor(tgt::Camera* camera, TextureContainer* tc)
-    : Processor(camera, tc)
+GeometryProcessor::GeometryProcessor()
+    : Processor()
+    , shaderPrg_(0)
 {
 	setName("Geometry Processor");
 
 	createInport("image.inport");
-	createOutport("image.outport",false,"image.inport");
-	createCoProcessorInport("coprocessor.geometryrenderers",true);
+	createOutport("image.outport");
+	createCoProcessorInport("coprocessor.geometryrenderers", true);
 
 }
 
 GeometryProcessor::~GeometryProcessor() {
+    if (shaderPrg_)
+        ShdrMgr.dispose(shaderPrg_);
+}
+
+int GeometryProcessor::initializeGL() {
+    initStatus_ = Processor::initializeGL();
+    if (initStatus_ != VRN_OK)
+        return initStatus_;
+
+    shaderPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "vrn_interactionmode.frag",
+        generateHeader(), false);
+
+    if (!shaderPrg_)
+        initStatus_ = VRN_ERROR;
+
+    return initStatus_;
+}
+
+const Identifier GeometryProcessor::getClassName() const {
+    return "GeometryRenderer.GeometryProcessor";
+}
+
+Processor* GeometryProcessor::create() {
+    return new GeometryProcessor();
 }
 
 const std::string GeometryProcessor::getProcessorInfo() const {
 	return "Manages the GeometryRenderer objects. Holds a vector of GeometryRenderer \
-           Objects and renders all of them on <i>render()</i>";
+            Objects and renders all of them on <i>render()</i>";
 }
 
 void GeometryProcessor::process(LocalPortMapping* portMapping) {
     int source = portMapping->getTarget("image.inport");
-    tc_->setActiveTarget(source, "GeometryProcessor::process: add geometry");
-    glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
+    int dest = portMapping->getTarget("image.outport");
+
+    //copy previous result to new texturetarget
+    tc_->setActiveTarget(dest, "GeometryProcessor::process() add geometry");
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
+
+    shaderPrg_->activate();
+    setGlobalShaderParameters(shaderPrg_);
+    shaderPrg_->setUniform("shadeTex_", 0);
+    shaderPrg_->setUniform("depthTex_", 1);
+
+    shaderPrg_->setUniform("interactionCoarseness_", 1);
+
+    glDepthFunc(GL_ALWAYS);
+    renderQuad();
+    glDepthFunc(GL_LESS);
+    shaderPrg_->deactivate();
+
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     tgt::loadMatrix(camera_->getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();       
+    glPushMatrix();
     tgt::loadMatrix(camera_->getViewMatrix());
 
-	std::vector<PortDataCoProcessor*> portData = portMapping->getAllCoProcessorData("coprocessor.geometryrenderers");
-	for (size_t i=0; i<portData.size(); i++) {
-		PortDataCoProcessor* pdcp = portData.at(i);
-		pdcp->call("render",portMapping->createLocalPortMapping(pdcp->getProcessor()));
-	}
+    std::vector<PortDataCoProcessor*> portData = portMapping->getAllCoProcessorData("coprocessor.geometryrenderers");
+    for (size_t i=0; i<portData.size(); i++) {
+        PortDataCoProcessor* pdcp = portData.at(i);
+        pdcp->call("render", portMapping->createLocalPortMapping(pdcp->getProcessor()));
+    }
     // restore matrices
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
     glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 }
 
 //---------------------------------------------------------------------------
 
-GeometryRenderer::GeometryRenderer(tgt::Camera* camera, TextureContainer* tc)
-    : Processor(camera, tc)
+GeometryRenderer::GeometryRenderer()
+    : Processor()
 {}
 
-tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float /* z*/) {
+tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float z) {
 	// taken from NEHE article 13
 	// http://nehe.gamedev.net/data/articles/article.asp?article=13
     GLint viewport[4];
@@ -121,12 +167,12 @@ tgt::vec3 GeometryRenderer::getOGLPos(int x, int y,float /* z*/) {
     }
     viewport[0] = 0;
     viewport[1] = 0;
-    viewport[2] = size_.x;
-    viewport[3] = size_.y;
+    viewport[2] = canvasSize_.x;
+    viewport[3] = canvasSize_.y;
 
 	winX = static_cast<GLdouble>(x);
 	winY = static_cast<GLdouble>(viewport[3]) - static_cast<GLint>(y);
-	winZ = 0;
+	winZ = static_cast<GLdouble>(z);
 
 	gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posXh, &posYh, &posZh);
 
@@ -148,23 +194,13 @@ Message* GeometryRenderer::call(Identifier ident,LocalPortMapping* portMapping) 
 
 //---------------------------------------------------------------------------
 
-GeomLightWidget::GeomLightWidget(tgt::Camera* camera, TextureContainer* tc)
-    : GeometryRenderer(camera, tc), tgt::EventListener()
+GeomLightWidget::GeomLightWidget()
+    : GeometryRenderer()
+    , tgt::EventListener()
     , showLightWidget_("set.showLightWidget", "Show Light Widget?", true)
-    , shadowLightPosX_("set.shadowLightPos.x", "Light Position X", 2.3f, -10.0f, 10.0f)
-    , shadowLightPosY_("set.shadowLightPos.y", "Light Position Y", 1.5f, -10.0f, 10.0f)
-    , shadowLightPosZ_("set.shadowLightPos.z", "Light Position Z", 1.5f, -10.0f, 10.0f)
-    , volumeSizeValid_(false)
+    , isClicked_(false)
 {
     setName("Light - Widget");
-
-    shadowMode_ = 0;
-
-    isClicked_ = false;
-
-    addProperty(&shadowLightPosX_);
-    addProperty(&shadowLightPosY_);
-    addProperty(&shadowLightPosZ_);
 
 	showLightWidget_.setAutoChange(true);
 	addProperty(&showLightWidget_);
@@ -187,7 +223,7 @@ GeomLightWidget::GeomLightWidget(tgt::Camera* camera, TextureContainer* tc)
     light_specular[2] = 1.0f;
     light_specular[3] = 1.0f;
 
-    // parameters for yellow light
+    // parameters for yellow plastic
     ye_ambient[0]	= 0.25f;
     ye_ambient[1]	= 0.2f;
     ye_ambient[2]	= 0.07f;
@@ -202,77 +238,34 @@ GeomLightWidget::GeomLightWidget(tgt::Camera* camera, TextureContainer* tc)
     ye_specular[3]	= 1.0f;
     ye_shininess	= 51.0f;
 
-	//lightPosition_.set(tgt::vec4(shadowLightPosX_->get(), shadowLightPosY_->get(), shadowLightPosZ_.get(), 1.f));
-
     IDManager id1;
     id1.addNewPickObj("lightCtrlSph");
 
-	createCoProcessorOutport("coprocessor.light",&Processor::call);
+	createCoProcessorOutport("coprocessor.light", &Processor::call);
 	createCoProcessorInport("coprocessor.proxygeometry");
 
 	setIsCoprocessor(true);
 }
 
 GeomLightWidget::~GeomLightWidget() {
-	MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeMouseListener_,
+	MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_,
 				    (tgt::EventListener*)this));
 }
 
+const Identifier GeomLightWidget::getClassName() const {
+    return "GeometryRenderer.GeomLightWidget";
+}
+
 const std::string GeomLightWidget::getProcessorInfo() const {
-	return "Draws the light widget.";
+	return "Draws a yellow sphere that indicates the position of the lightsource.";
 }
 
 Processor* GeomLightWidget::create() {
     GeomLightWidget* glw = new GeomLightWidget();
     MsgDistr.postMessage(
-        new TemplateMessage<tgt::EventListener*>(VoreenPainter::addMouseListener_,
+        new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_,
         (tgt::EventListener*)glw));
     return glw;
-}
-
-void GeomLightWidget::processMessage(Message* msg, const Identifier& /*dest*/){
-    if (msg->id_ == "set.lightPosition") {
-        shadowLightPosX_.set(msg->getValue<tgt::vec4>().x);
-        shadowLightPosY_.set(msg->getValue<tgt::vec4>().y);
-        shadowLightPosZ_.set(msg->getValue<tgt::vec4>().z);
-        invalidate();
-    }
-    else if (msg->id_ == "rotate.lightYAxis") {
-        float angle = msg->getValue<float>();
-		float radAngle = angle/180.f*tgt::PIf;
-        shadowLightPosX_.set(cos(radAngle) * shadowLightPosX_.get()
-            + sinf(radAngle) * shadowLightPosZ_.get());
-        shadowLightPosZ_.set(-1.f * sin(radAngle) * shadowLightPosX_.get()
-            + cosf(radAngle) * shadowLightPosZ_.get());
-        glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
-            shadowLightPosZ_.get()).elem);
-        invalidate();
-        MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
-    }
-    else if (msg->id_ == "set.shadowLightPos.x") {
-        shadowLightPosX_.set(msg->getValue<float>());
-        glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
-            shadowLightPosZ_.get()).elem);
-        invalidate();
-        MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
-    }
-    else if (msg->id_ == "set.shadowLightPos.y") {
-        glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
-            shadowLightPosZ_.get()).elem);
-        shadowLightPosY_.set(msg->getValue<float>());
-        invalidate();
-        MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
-    }
-    else if (msg->id_ == "set.shadowLightPos.z") {
-        glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec3(shadowLightPosX_.get(),shadowLightPosY_.get(),
-            shadowLightPosZ_.get()).elem);
-        shadowLightPosZ_.set(msg->getValue<float>());
-        invalidate();
-        MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
-    }
-    else if (msg->id_ == "switch.shadowMode") {
-        shadowMode_ = msg->getValue<int>();
-    }
 }
 
 void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
@@ -280,13 +273,14 @@ void GeomLightWidget::mousePressEvent(tgt::MouseEvent *e) {
     if (id1.isClicked("lightCtrlSph", e->x(),tc_->getSize().y - e->y())) {
         e->accept();
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, true), VoreenPainter::visibleViews_);
+        invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
         isClicked_ = true;
         lightPositionAbs_.x = lightPosition_.get().x;
         lightPositionAbs_.y = lightPosition_.get().y;
         lightPositionAbs_.z = lightPosition_.get().z;
-        oldPos_.x = e->coord().x;
-		oldPos_.y = e->coord().y;
+        startCoord_.x = e->coord().x;
+		startCoord_.y = e->coord().y;
     }
     else
         e->ignore();
@@ -303,28 +297,25 @@ void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e) {
         GLdouble winX, winY, winZ;
 		GLdouble posX, posY, posZ;
 
-		deltaX = e->coord().x - oldPos_.x;
-		deltaY = oldPos_.y - e->coord().y;
+		deltaX = e->coord().x - startCoord_.x;
+		deltaY = startCoord_.y - e->coord().y;
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        tgt::loadMatrix(camera_->getViewMatrix());
-        tgt::mat4 projection_tgt = tgt::getTransposeProjectionMatrix();
-        tgt::mat4 modelview_tgt = tgt::getTransposeModelViewMatrix();
+        tgt::mat4 projection_tgt = camera_->getProjectionMatrix();
+        tgt::mat4 modelview_tgt = camera_->getViewMatrix();
         for (int i = 0; i < 4; ++i) {
-            modelview[4*i]    = modelview_tgt[i].x;
-            modelview[4*i+1]  = modelview_tgt[i].y;
-            modelview[4*i+2]  = modelview_tgt[i].z;
-            modelview[4*i+3]  = modelview_tgt[i].w;
-            projection[4*i]   = projection_tgt[i].x;
-            projection[4*i+1] = projection_tgt[i].y;
-            projection[4*i+2] = projection_tgt[i].z;
-            projection[4*i+3] = projection_tgt[i].w;
+            modelview[i+0]   = modelview_tgt[i].x;
+            modelview[i+4]   = modelview_tgt[i].y;
+            modelview[i+8]   = modelview_tgt[i].z;
+            modelview[i+12]  = modelview_tgt[i].w;
+            projection[i+0]  = projection_tgt[i].x;
+            projection[i+4]  = projection_tgt[i].y;
+            projection[i+8]  = projection_tgt[i].z;
+            projection[i+12] = projection_tgt[i].w;
         }
         viewport[0] = 0;
         viewport[1] = 0;
-        viewport[2] = static_cast<GLint>(size_.x);
-        viewport[3] = static_cast<GLint>(size_.y);
+        viewport[2] = static_cast<GLint>(canvasSize_.x);
+        viewport[3] = static_cast<GLint>(canvasSize_.y);
 
 		posX = lightPositionAbs_.x;
 		posY = lightPositionAbs_.y;
@@ -337,42 +328,10 @@ void GeomLightWidget::mouseMoveEvent(tgt::MouseEvent *e) {
 
         gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
-        //if shadowMode == DSM light has to be outside the volume
-        if (shadowMode_ == 1 && volumeSizeValid_) {
-            if (posX<volumeSize_.x && posX>-volumeSize_.x &&
-                posY<volumeSize_.y && posY>-volumeSize_.y &&
-                posZ<volumeSize_.z && posZ>-volumeSize_.z) {
-                double minX1 = static_cast<double>(posX-volumeSize_.x);
-                double minX2 = static_cast<double>(posX+volumeSize_.x);
-                double minY1 = static_cast<double>(posY-volumeSize_.y);
-                double minY2 = static_cast<double>(posY+volumeSize_.y);
-                double minZ1 = static_cast<double>(posZ-volumeSize_.z);
-                double minZ2 = static_cast<double>(posZ+volumeSize_.z);
-                double absMin = std::min(minX1,std::min(minX2, std::min(minY1, std::min(minY2, std::min(minZ1, minZ2)))));
-                if (absMin == minX1)
-                    posX = volumeSize_.x;
-                if (absMin == minX2)
-                    posX = -volumeSize_.x;
-                if (absMin == minY1)
-                    posY = volumeSize_.y;
-                if (absMin == minY2)
-                    posY = -volumeSize_.y;
-                if (absMin == minZ1)
-                    posZ = volumeSize_.z;
-                if (absMin == minZ2)
-                    posZ = -volumeSize_.z;
-            }
-        }
-    
         lightPosition_.set(vec4(static_cast<float>(posX), static_cast<float>(posY), static_cast<float>(posZ), 1.f));
 
-        shadowLightPosX_.set(lightPosition_.get().x);
-        shadowLightPosY_.set(lightPosition_.get().y);
-        shadowLightPosZ_.set(lightPosition_.get().z);
-
-        glPopMatrix();
-
         MsgDistr.postMessage(new Vec4Msg(LightMaterial::setLightPosition_, lightPosition_.get()));
+        invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     else
@@ -384,36 +343,20 @@ void GeomLightWidget::mouseReleaseEvent(tgt::MouseEvent *e) {
         MsgDistr.postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false), VoreenPainter::visibleViews_);
         e->accept();
         isClicked_ = false;
-        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition_.get().elem);
-        MsgDistr.postMessage(new Message("light.changed"), VoreenPainter::visibleViews_);
+        invalidate();
         MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     else
         e->ignore();
 }
 
-void GeomLightWidget::render(LocalPortMapping* portMapping) {
-    PortDataCoProcessor* pdcp = portMapping->getCoProcessorData("coprocessor.proxygeometry");
- 
-    Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
-    if (sizeMsg) {
-        volumeSize_ = sizeMsg->getValue<tgt::vec3>();
-        volumeSizeValid_ = true;
-    }
-    else {
-        volumeSize_ = tgt::vec3(0.f);
-        volumeSizeValid_ = false;
-    }
-    delete sizeMsg;
-
+void GeomLightWidget::render(LocalPortMapping* /*portMapping*/) {
 	if (showLightWidget_.get()) {
-		glPushAttrib(GL_LIGHTING_BIT);
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
 		glShadeModel(GL_SMOOTH);
 		glEnable(GL_LIGHTING);
 		LGL_ERROR;
-
-		tgt::vec3 lightPosCorrected = tgt::vec3(lightPosition_.get().elem);
 
 		glLightfv(GL_LIGHT3,GL_POSITION,light_pos);
 		glLightfv(GL_LIGHT3,GL_AMBIENT,light_ambient);
@@ -433,7 +376,7 @@ void GeomLightWidget::render(LocalPortMapping* portMapping) {
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-		glTranslatef(lightPosCorrected.x, lightPosCorrected.y, lightPosCorrected.z);
+		glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
 
 		IDManager id1;
 		id1.startBufferRendering("lightCtrlSph");
@@ -443,15 +386,15 @@ void GeomLightWidget::render(LocalPortMapping* portMapping) {
 
         glPopMatrix();
 		glPopAttrib();
-        
+
         gluDeleteQuadric(quadric);
 	}
 }
 
 //---------------------------------------------------------------------------
 
-GeomBoundingBox::GeomBoundingBox(tgt::Camera* camera, TextureContainer* tc)
-    : GeometryRenderer(camera, tc)
+GeomBoundingBox::GeomBoundingBox()
+    : GeometryRenderer()
     , bboxColor_("set.BoundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
     , width_("set.BoundingBoxWidth", "Line Width", 1.0f, 1.0f, 10.0f, true)
     , stippleFactor_("set.BoundingBoxStippleFactor", "Stipple Factor", 1, 0, 255)
@@ -508,10 +451,11 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
     Message* sizeMsg = pdcp->call(ProxyGeometry::getVolumeSize_);
     if (sizeMsg)
         dim = sizeMsg->getValue<tgt::vec3>();
-    else 
+    else
         return;
     delete sizeMsg;
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
 
     glColor4f(bboxColor_.get().r, bboxColor_.get().g, bboxColor_.get().b, bboxColor_.get().a);
@@ -599,9 +543,8 @@ void GeomBoundingBox::render(LocalPortMapping* portMapping) {
             }
         }
         glEnd();
-        glPolygonMode(GL_FRONT, GL_FILL);
-        glDisable(GL_CULL_FACE);
     }
+    glPopAttrib();
 }
 
 void GeomBoundingBox::processMessage(Message* msg, const Identifier& /*dest*/) {
@@ -641,8 +584,8 @@ void GeomBoundingBox::processMessage(Message* msg, const Identifier& /*dest*/) {
 
 //---------------------------------------------------------------------------
 
-PickingBoundingBox::PickingBoundingBox(tgt::Camera* camera, TextureContainer* tc)
-  : GeometryRenderer(camera, tc)
+PickingBoundingBox::PickingBoundingBox()
+  : GeometryRenderer()
   , lowerLeftFront_(0.f,0.f,0.f)
   , upperRightBack_(1.f,1.f,1.f)
   , displaySelection_(false)
@@ -745,7 +688,7 @@ GeomRegistrationMarkers::GeomRegistrationMarkers()
   description_(""),
   disableReceiving_(false)
 {
-    
+
 	createCoProcessorOutport("coprocessor.geommarkers",&Processor::call);
 
 	setIsCoprocessor(true);
@@ -771,7 +714,7 @@ void GeomRegistrationMarkers::render(LocalPortMapping* portMapping) {
     delete sizeMsg;
 
     glDisable(GL_LIGHTING);
-	
+
     //tgt::vec3 dim = tgt::vec3(200,200,200);//  pg_->getVolumeSize();
 
     glDisable(GL_DEPTH_TEST);

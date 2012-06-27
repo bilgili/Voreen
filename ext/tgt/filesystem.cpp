@@ -32,6 +32,8 @@
 #include <zlib.h>
 #endif
 
+//TODO: should really switch to exceptions instead of just logging with LERROR. joerg
+
 // anonymous namespace
 namespace {
 
@@ -39,7 +41,9 @@ enum {
     TEMP_BUFFERSIZE = 128,
     LINE_BUFFERSIZE = 512,
 
-    // Standard Archive Format - Standard TAR - USTAR
+    /*
+     * Standard Archive Format - Standard TAR - USTAR
+     */
     RECORDSIZE = 512,
     NAMSIZ = 100,
     TUNMLEN = 32,
@@ -229,29 +233,22 @@ size_t File::skipLine(char delim) {
 
 //-----------------------------------------------------------------------------
 
+const std::string RegularFile::loggerCat_("tgt.RegularFile");
+
 RegularFile::RegularFile(const std::string& filename)
-  : File(filename)
+    : File(filename)
 {
-    file_ = new std::ifstream(filename.c_str(), std::ios::binary);
-    name_ = filename;
+    file_.open(filename.c_str(), std::ios::binary);
 
-    // Check if file is open
     if (!file_) {
-        std::cout << "Failed to open regular file: " << filename << std::endl;
+        LERROR("Cannot open file: " << filename);
         return;
     }
 
-    if (!file_->good()) {
-        std::cout << "Bad regular file: " << filename << std::endl;
-        file_->close();
-        delete file_;
-        file_ = 0;
-        return;
-    }
-
-    file_->seekg(0, std::ios::end);
+    // get file size
+    file_.seekg(0, std::ios::end);
     size_ = tell();
-    file_->seekg(std::ios::beg);
+    file_.seekg(std::ios::beg);
 }
 
 RegularFile::~RegularFile() {
@@ -259,76 +256,71 @@ RegularFile::~RegularFile() {
 }
 
 size_t RegularFile::read(void* buf, size_t count) {
-    if (eof())
-        return 0;
-    if (!file_)
+    if (!open() || eof())
         return 0;
 
-    file_->read(static_cast<char*>(buf), count);
-    return file_->gcount();
+    file_.read(static_cast<char*>(buf), count);
+    return file_.gcount();
 }
 
 void RegularFile::skip(long count) {
-    if (file_)
-        file_->seekg(count, std::ios::cur);
+    if (open())
+        file_.seekg(count, std::ios::cur);
 }
 
 void RegularFile::seek(size_t pos) {
-    if (file_)
-        file_->seekg(pos);
+    if (open())
+        file_.seekg(pos);
 }
 
 void RegularFile::seek(size_t offset, File::SeekDir seekDir) {
-    if (file_) {
+    if (open()) {
         switch (seekDir)  {
         case File::begin:
-            file_->seekg(offset, std::ios_base::beg);
+            file_.seekg(offset, std::ios_base::beg);
             break;
         case File::current:
-            file_->seekg(offset, std::ios_base::cur);
+            file_.seekg(offset, std::ios_base::cur);
             break;
         case File::end:
-            file_->seekg(offset, std::ios_base::end);
+            file_.seekg(offset, std::ios_base::end);
             break;
         }
     }
 }
 
-size_t RegularFile::tell() const {
-    if (file_) {
-        std::streampos p = file_->tellg();
+size_t RegularFile::tell() {
+    if (open()) {
+        std::streampos p = file_.tellg();
         if (p >= 0)
             return static_cast<size_t>(p);
     }
     return 0;
 }
 
-bool RegularFile::eof() const {
-    if (file_) {
+bool RegularFile::eof() {
+    if (open()) {
         if (tell() == size())
             return true;
         else
-            return file_->eof();
+            return file_.eof();
     } else {
         return true;
     }
 }
 
 void RegularFile::close() {
-    if (file_) {
-        file_->close();
-        delete file_;
-        file_ = 0;
-    }
+    if (open())
+        file_.close();
 }
 
-bool RegularFile::open() const {
-    return (file_ != 0);
+bool RegularFile::open() {
+    return file_.is_open();
 }
 
-bool RegularFile::good() const {
-    if (file_)
-        return file_->good();
+bool RegularFile::good() {
+    if (open())
+        return file_.good();
     else
         return false;
 }
@@ -391,23 +383,23 @@ void MemoryFile::seek(size_t offset, File::SeekDir seekDir) {
     }
 }
 
-size_t MemoryFile::tell() const {
+size_t MemoryFile::tell() {
     return pos_;
 }
 
-bool MemoryFile::eof() const {
-    return (pos_ == size_-1);
+bool MemoryFile::eof() {
+    return (pos_ == size_ - 1);
 }
 
 void MemoryFile::close() {
     pos_ = 0;
 }
 
-bool MemoryFile::open() const {
+bool MemoryFile::open() {
     return true;
 }
 
-bool MemoryFile::good() const {
+bool MemoryFile::good() {
     // only possibility not to be good is on EOF
     return !eof();
 }
@@ -487,14 +479,14 @@ void TarFile::seek(size_t offset, File::SeekDir seekDir) {
         file_->seek(offset, seekDir);
 }
 
-size_t TarFile::tell() const {
+size_t TarFile::tell() {
     if (file_)
         return ((size_t)(file_->tell())) - offset_;
     else
         return 0;
 }
 
-bool TarFile::eof() const {
+bool TarFile::eof() {
     if (file_)
        return (tell() == size_);
     else
@@ -509,11 +501,11 @@ void TarFile::close() {
     }
 }
 
-bool TarFile::open() const {
+bool TarFile::open() {
     return (file_ != 0);
 }
 
-bool TarFile::good() const {
+bool TarFile::good() {
     if (eof())
         return false;
         
@@ -867,7 +859,7 @@ File* ZipFileFactory::open(const std::string& filename) {
 
     size_t c = csize;
 
-    File* f;
+    File* f = 0;
 
     if (*compMeth == 8) {
 #ifdef TGT_HAS_ZLIB
@@ -941,31 +933,23 @@ File* FileSystem::open(const std::string& filename) {
         LDEBUG("Opening file " << filename << " from real FS");
 
         RegularFile* f = new RegularFile(filename);
-        if (f->open())
+        if (f->open()) {
             return f;
-        else
+        } else {
+            delete f;
             return 0;
+        }
     }
 }
 
 bool FileSystem::exists(const std::string& filename) {
     if (virtualFS_.find(filename) != virtualFS_.end()) {
-        LDEBUG("Checking if file " << filename << " exists in virtualFS");
+        LDEBUG("Not checking if file " << filename << " exists in virtualFS, unimplemented.");
+        //FIXME: this does not check if file exists in virtualFS, unimplemented! joerg
 		return true;
     } else {
-		bool result;
-        LDEBUG("Opening file " << filename << " from real FS");
-
-		std::ifstream* file = new std::ifstream(filename.c_str(), std::ios::binary);
-
-		//Check if file is open:
-		if (!file) result=false;
-		else result=file->good();
-
-		if (result)
-			file->close();
-
-		return result;
+		std::ifstream file(filename.c_str(), std::ios::binary);
+		return file.good();
 	}
 }
 
@@ -990,7 +974,7 @@ void FileSystem::addMemoryFile(const std::string& filename, const std::string& d
 
 void FileSystem::addPackage(const std::string& filename, const std::string& rootpath) {
     LINFO("adding package " << filename);
-	LDEBUG("Root path: " << rootpath);
+	LDEBUG("root path: " << rootpath);
 
     //TODO: do something like TextureReader in TexMgr...
     std::string::size_type loc = filename.find(".zip", 0);

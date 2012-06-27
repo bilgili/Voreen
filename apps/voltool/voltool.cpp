@@ -40,6 +40,7 @@
 #ifndef VRN_SNAPSHOT
 #include "commands_motion.h"
 #include "commands_dao.h"
+#include "commands_registration.h"
 #endif
 
 #include "tgt/init.h"
@@ -67,9 +68,9 @@ int main(int argc, char** argv) {
 #ifdef VRN_NO_OPENGL
     Singleton<LogManager>::init(new LogManager());
 //     Singleton<FileSystem>::init(new FileSystem());
-#else // VRN_NO_OPENGL
+#else
     tgt::init();
-#endif // VRN_NO_OPENGL
+#endif
     //add a console logger:
     tgt::Log* clog = new tgt::ConsoleLog();
     clog->addCat("", true, tgt::Debug);
@@ -114,6 +115,9 @@ int main(int argc, char** argv) {
     commandMap_.addCommand(new CommandPlotCB());
     commandMap_.addCommand(new CommandPlotHG());
     commandMap_.addCommand(new CommandHistogram());
+
+    //commandMap_.addCommand(new CommandRegistrationUniformScaling());
+    //commandMap_.addCommand(new CommandRegistrationAffine());
 #endif
 
     //commandMap_.addCommand(new CommandStretchHisto());
@@ -153,7 +157,7 @@ int main(int argc, char** argv) {
     //execute operation:
     if (commandMap_.available(operation)) {
         std::vector<std::string> parameters;
-        for(int i=2; i<argc; i++)
+        for (int i=2; i<argc; i++)
             parameters.push_back(argv[i]);
 
         try {

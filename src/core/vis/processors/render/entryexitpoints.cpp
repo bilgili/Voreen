@@ -46,12 +46,12 @@ using tgt::mat4;
 
 namespace voreen {
 
-const Identifier EntryExitPoints::entryParamsTexUnit_      = "entryParamsTexUnit";
-const Identifier EntryExitPoints::entryParamsDepthTexUnit_ = "entryParamsDepthTexUnit";
-const Identifier EntryExitPoints::exitParamsTexUnit_       = "exitParamsTexUnit";
+const Identifier EntryExitPoints::entryPointsTexUnit_      = "entryPointsTexUnit";
+const Identifier EntryExitPoints::entryPointsDepthTexUnit_ = "entryPointsDepthTexUnit";
+const Identifier EntryExitPoints::exitPointsTexUnit_       = "exitPointsTexUnit";
 const Identifier EntryExitPoints::jitterTexUnit_           = "jitterTexUnit";
 
-const std::string EntryExitPoints::loggerCat_("voreen.voreen.EntryExitPoints");
+const std::string EntryExitPoints::loggerCat_("voreen.EntryExitPoints");
 
 /*
     constructor
@@ -59,10 +59,10 @@ const std::string EntryExitPoints::loggerCat_("voreen.voreen.EntryExitPoints");
 
 EntryExitPoints::EntryExitPoints()
     : VolumeRenderer(),
-      pg_(0), 
       shaderProgram_(0),
       shaderProgramClipping_(0),
-      supportCameraInsideVolume_("set.supportCameraInsideVolume", "Support camera inside the volume", true),
+      supportCameraInsideVolume_("set.supportCameraInsideVolume",
+                                 "Support camera inside the volume", true),
       scalingGroup_("entryexit.scaling", "Scaling of EEP"),
       scaleX_("set.scaleX", "X Scale", 1.f, 0.1f, 10.f, true),
       scaleY_("set.scaleY", "Y Scale", 1.f, 0.1f, 10.f, true),
@@ -71,9 +71,10 @@ EntryExitPoints::EntryExitPoints()
       translationX_("set.translationX", "X Translation", 0.f, -5.f, 5.f, true),
       translationY_("set.translationY", "Y Translation", 0.f, -5.f, 5.f, true),
       translationZ_("set.translationZ", "Z Translation", 0.f, -5.f, 5.f, true),
-      jitterEntryParams_("set.jitterEntryParams", "Jitter entry params", false),
+      jitterEntryPoints_("set.jitterEntryPoints", "Jitter entry params", false),
       filterJitterTexture_("set.filterJitterTexture", "Filter jitter texture", true),
-      jitterStepLength_("set.jitterStepLength", "Jitter step length", 0.005f, 0.0005f, 0.025f, true),
+      jitterStepLength_("set.jitterStepLength", "Jitter step length",
+                        0.005f, 0.0005f, 0.025f, true),
       jitterTexture_(0),
       transformationMatrix_(mat4::identity),
       switchFrontAndBackFaces_(false)
@@ -81,16 +82,16 @@ EntryExitPoints::EntryExitPoints()
     setName("EntryExitPoints");
 
     std::vector<Identifier> units;
-    units.push_back(entryParamsTexUnit_);
-    units.push_back(entryParamsDepthTexUnit_);
-    units.push_back(exitParamsTexUnit_);
+    units.push_back(entryPointsTexUnit_);
+    units.push_back(entryPointsDepthTexUnit_);
+    units.push_back(exitPointsTexUnit_);
     units.push_back(jitterTexUnit_);
     tm_.registerUnits(units);
 
     addProperty(&supportCameraInsideVolume_);
 
-    addProperty(&jitterEntryParams_);
-    condJitter_ = new ConditionProp("JitteringCond", &jitterEntryParams_);
+    addProperty(&jitterEntryPoints_);
+    condJitter_ = new ConditionProp("JitteringCond", &jitterEntryPoints_);
     jitterStepLength_.setConditioned("JitteringCond", 1);
     filterJitterTexture_.setConditioned("JitteringCond", 1);
     condJitter_->addCondProp(&jitterStepLength_);
@@ -123,9 +124,6 @@ EntryExitPoints::~EntryExitPoints() {
     if (jitterTexture_)
         TexMgr.dispose(jitterTexture_);
 
-    if (pg_)
-        delete pg_;
-
     if (MessageReceiver::getTag() != Message::all_)
         MsgDistr.remove(this);
 
@@ -134,7 +132,7 @@ EntryExitPoints::~EntryExitPoints() {
 
 void EntryExitPoints::setPropertyDestination(Identifier tag) {
     MessageReceiver::setTag(tag);
-    jitterEntryParams_.setMsgDestination(tag);
+    jitterEntryPoints_.setMsgDestination(tag);
     jitterStepLength_.setMsgDestination(tag);
     scaleX_.setMsgDestination(tag);
     scaleY_.setMsgDestination(tag);
@@ -144,7 +142,7 @@ void EntryExitPoints::setPropertyDestination(Identifier tag) {
     translationY_.setMsgDestination(tag);
     translationZ_.setMsgDestination(tag);
     translationGroup_.setMsgDestination(tag);
-    jitterEntryParams_.setMsgDestination(tag);
+    jitterEntryPoints_.setMsgDestination(tag);
     MsgDistr.insert(this);
 }
 
@@ -156,10 +154,8 @@ int EntryExitPoints::initializeGL() {
     shaderProgramClipping_ = ShdrMgr.loadSeparate("eep_simple.vert", "eep_clipping.frag",
                                                   generateHeader() , false);
 
-    if (shaderProgram_ && shaderProgramClipping_ ) {
-        shaderProgram_->setAttributeLocation(1, "vertex_");
+    if (shaderProgram_ && shaderProgramJitter_ && shaderProgramClipping_)
         return VRN_OK;
-    }
     else
         return VRN_ERROR;
 }
@@ -167,22 +163,18 @@ int EntryExitPoints::initializeGL() {
 void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
     VolumeRenderer::processMessage(msg, dest);
 
-	if (pg_)
-		pg_->processMessage(msg, dest);
-
-	if (msg->id_ == VoreenPainter::cameraChanged_ && msg->getValue<tgt::Camera*>() == camera_)
+    if (msg->id_ == VoreenPainter::cameraChanged_ && msg->getValue<tgt::Camera*>() == camera_)
         invalidate();
-
-    else if (msg->id_ == "set.jitterEntryParams") {
-		jitterEntryParams_.set( msg->getValue<bool>() );
+    else if (msg->id_ == "set.jitterEntryPoints") {
+		jitterEntryPoints_.set(msg->getValue<bool>());
 		invalidate();
 	}
     else if (msg->id_ == "set.jitterStepLength") {
-		jitterStepLength_.set( msg->getValue<float>() );
+		jitterStepLength_.set(msg->getValue<float>());
 		invalidate();
 	}
     else if (msg->id_ == "set.filterJitterTexture") {
-		filterJitterTexture_.set( msg->getValue<bool>() );
+		filterJitterTexture_.set(msg->getValue<bool>());
         generateJitterTexture();
 		invalidate();
 	}
@@ -208,7 +200,8 @@ void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
         translationX_.set(msg->getValue<float>());
         float oldTranslation = transformationMatrix_[0][3];
         if (oldTranslation != translationX_.get()) {
-            setTranslation(tgt::vec3((translationX_.get()-oldTranslation)/transformationMatrix_[0][0], 0.f, 0.f));
+            setTranslation(tgt::vec3((translationX_.get() - oldTranslation)
+                                     / transformationMatrix_[0][0], 0.f, 0.f));
             invalidate();
         }
     }
@@ -216,7 +209,8 @@ void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
         translationY_.set(msg->getValue<float>());
         float oldTranslation = transformationMatrix_[1][3];
         if (oldTranslation != translationY_.get()) {
-            setTranslation(tgt::vec3(0.f, (translationY_.get()-oldTranslation)/transformationMatrix_[1][1], 0.f));
+            setTranslation(tgt::vec3(0.f, (translationY_.get() - oldTranslation)
+                                     / transformationMatrix_[1][1], 0.f));
             invalidate();
         }
     }
@@ -224,7 +218,8 @@ void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
         translationZ_.set(msg->getValue<float>());
         float oldTranslation = transformationMatrix_[2][3];
         if (oldTranslation != translationZ_.get()) {
-            setTranslation(tgt::vec3(0.f, 0.f, (translationZ_.get()-oldTranslation)/transformationMatrix_[3][3]));
+            setTranslation(tgt::vec3(0.f, 0.f, (translationZ_.get() - oldTranslation)
+                                     / transformationMatrix_[3][3]));
             invalidate();
         }
     }
@@ -236,20 +231,9 @@ void EntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
 
 void EntryExitPoints::setVolumeHandle(VolumeHandle* const handle) {
     VolumeRenderer::setVolumeHandle(handle);
-    if ((currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolume() != 0))
+
+    if (currentVolumeHandle_ != 0 && currentVolumeHandle_->getVolume() != 0)
         setTransformationMatrix(currentVolumeHandle_->getVolume()->meta().getTransformation());
-}
-
-void EntryExitPoints::setSize(const tgt::ivec2& size) {
-	Processor::setSize(size);
-}
-
-void EntryExitPoints::setProxyGeometry(ProxyGeometry* pg) {
-    pg_ = pg;
-}
-
-ProxyGeometry* EntryExitPoints::getProxyGeometry() {
-    return pg_;
 }
 
 void EntryExitPoints::setTransformationMatrix(tgt::mat4 trans) {
@@ -333,13 +317,6 @@ void EntryExitPoints::setRotationZ(float angle) {
     }
 }
 
-std::vector<Processor*> EntryExitPoints::getAttachedProcessor() {
-    std::vector<Processor*> result;
-    if (pg_)
-        result.push_back(pg_);
-    return result;
-}
-
 void EntryExitPoints::complementClippedEntryPoints(LocalPortMapping* portMapping) {
     // note: since this a helper function which is only called internally,
     //       we assume that the modelview and projection matrices have already been set correctly
@@ -353,20 +330,20 @@ void EntryExitPoints::complementClippedEntryPoints(LocalPortMapping* portMapping
     int exitSource = portMapping->getTarget("image.exitpoints");
     int entryDest = portMapping->getTarget("image.entrypoints");
     
-    glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
     glBindTexture(tc_->getGLTexTarget(exitSource), tc_->getGLTexID(exitSource));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(entryPointsTexUnit_));
     glBindTexture(tc_->getGLTexTarget(entrySource), tc_->getGLTexID(entrySource));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(entryPointsDepthTexUnit_));
     glBindTexture(tc_->getGLDepthTexTarget(entrySource), tc_->getGLDepthTexID(entrySource));
 
     LGL_ERROR;
 
     shaderProgramClipping_->activate();
     setGlobalShaderParameters(shaderProgramClipping_);
-    shaderProgramClipping_->setUniform("entryTex_", tm_.getTexUnit(entryParamsTexUnit_));
-    shaderProgramClipping_->setUniform("exitTex_", tm_.getTexUnit(exitParamsTexUnit_));
-    shaderProgramClipping_->setUniform("entryTexDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    shaderProgramClipping_->setUniform("entryTex_", tm_.getTexUnit(entryPointsTexUnit_));
+    shaderProgramClipping_->setUniform("exitTex_", tm_.getTexUnit(exitPointsTexUnit_));
+    shaderProgramClipping_->setUniform("entryTexDepth_", tm_.getTexUnit(entryPointsDepthTexUnit_));
     LGL_ERROR;
 
     // set volume parameters
@@ -405,10 +382,12 @@ void EntryExitPoints::jitterEntryPoints(LocalPortMapping* portMapping) {
     int entryDest = portMapping->getTarget("image.entrypoints");
 
     // if canvas resolution has changed, regenerate jitter texture
-    if ( !jitterTexture_ ||
+    if (!jitterTexture_ ||
         (jitterTexture_->getDimensions().x != tc_->getSize().x) ||
         (jitterTexture_->getDimensions().y != tc_->getSize().y))
-            generateJitterTexture();
+    {
+        generateJitterTexture();
+    }
 
     shaderProgramJitter_->activate();
     setGlobalShaderParameters(shaderProgramJitter_);
@@ -420,17 +399,17 @@ void EntryExitPoints::jitterEntryPoints(LocalPortMapping* portMapping) {
     shaderProgramJitter_->setUniform("jitterTexture_", tm_.getTexUnit(jitterTexUnit_));
 
     // bind entry points texture and depth texture
-    glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(entryPointsTexUnit_));
     glBindTexture(tc_->getGLTexTarget(entrySource), tc_->getGLTexID(entrySource));
-    shaderProgramJitter_->setUniform("entryParams_", tm_.getTexUnit(entryParamsTexUnit_));
-    glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
+    shaderProgramJitter_->setUniform("entryPoints_", tm_.getTexUnit(entryPointsTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(entryPointsDepthTexUnit_));
     glBindTexture(tc_->getGLDepthTexTarget(entrySource), tc_->getGLDepthTexID(entrySource));
-    shaderProgramJitter_->setUniform("entryParamsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    shaderProgramJitter_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryPointsDepthTexUnit_));
 
     // bind exit points texture
-    glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
+    glActiveTexture(tm_.getGLTexUnit(exitPointsTexUnit_));
     glBindTexture(tc_->getGLTexTarget(exitSource), tc_->getGLTexID(exitSource));
-    shaderProgramJitter_->setUniform("exitParams_", tm_.getTexUnit(exitParamsTexUnit_));
+    shaderProgramJitter_->setUniform("exitPoints_", tm_.getTexUnit(exitPointsTexUnit_));
 
     shaderProgramJitter_->setUniform("stepLength_", jitterStepLength_.get());
 
@@ -455,7 +434,8 @@ void EntryExitPoints::generateJitterTexture() {
         GL_LUMINANCE8,                              // internal format
         GL_UNSIGNED_BYTE,                           // data type
         tgt::Texture::NEAREST,                      // filter
-        (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE)  // is texture rectangle?
+        (tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE)
+                                                    // is texture rectangle?
     );
 
     // create jitter values
@@ -468,9 +448,11 @@ void EntryExitPoints::generateJitterTexture() {
     for (int x=0; x<screenDim_.x; ++x) {
         for (int y=0; y<screenDim_.y; ++y) {
             int value;
-            if ( filterJitterTexture_.get()==false || x==0 || x==screenDim_.x-1 || y==0 || y==screenDim_.y-1 )
+            if (!filterJitterTexture_.get() || x==0 || x==screenDim_.x-1 ||
+                y==0 || y==screenDim_.y-1 )
+            {
                 value = texData[y*screenDim_.x+x];
-            else {
+            } else {
                 value = texData[y*screenDim_.x+x]*4
                     + texData[(y+1)*screenDim_.x+x]*2 + texData[(y-1)*screenDim_.x+x]*2
                     + texData[y*screenDim_.x+(x+1)]*2 + texData[y*screenDim_.x+(x-1)]*2
@@ -494,51 +476,26 @@ CubeEntryExitPoints::CubeEntryExitPoints()
     , needToReRender_(true)
 {
     createInport("volumehandle.volumehandle");
-	createCoProcessorInport("coprocessor.proxygeometry");
+    createCoProcessorInport("coprocessor.proxygeometry");
     createPrivatePort("image.tmp");
-	createOutport("image.entrypoints");
-	createOutport("image.exitpoints");
+    createOutport("image.entrypoints");
+    createOutport("image.exitpoints");
 }
-
 
 CubeEntryExitPoints::~CubeEntryExitPoints() {
 }
 
 const std::string CubeEntryExitPoints::getProcessorInfo() const {
-	return "Calculates entry/exit params for the SimpleRayCasting.";
+    return "Calculates cuboid entry/exit points for raycasting.";
 }
 
 std::string CubeEntryExitPoints::generateHeader() {
     std::string header = EntryExitPoints::generateHeader();
 
-	//header += "// START OF PROGRAM GENERATED DEFINES\n";
-    CubeProxyGeometry* castcube = dynamic_cast<CubeProxyGeometry*>(pg_);
-#ifndef VRN_SNAPSHOT
-    VirtualClipvolume* castclip = dynamic_cast<VirtualClipvolume*>(pg_);
-    if (((castcube) && (castcube->getUseVirtualClipplane())) || (castclip)) {
-        header += "#define VRN_USE_CLIP_PLANE\n";
-        header += "// END OF PROGRAM GENERATED DEFINES\n#line 1\n";
-    }
-#else
-    if ((castcube) && (castcube->getUseVirtualClipplane())) {
-        header += "#define VRN_USE_CLIP_PLANE\n";
-        header += "// END OF PROGRAM GENERATED DEFINES\n#line 1\n";
-    }
-#endif
-    else
-        header += "// END OF PROGRAM GENERATED DEFINES\n#line 0\n";
-	
-    return header;
-}
+    header += "// START OF PROGRAM GENERATED DEFINES\n";
+    header += "// END OF PROGRAM GENERATED DEFINES\n#line 0\n";
 
-void CubeEntryExitPoints::processMessage(Message* msg, const Identifier& dest) {
-	EntryExitPoints::processMessage(msg, dest);
-#ifndef VRN_SNAPSHOT
-    if (msg->id_ == "switch.virtualClipplane" && dynamic_cast<CubeProxyGeometry*>(pg_)) {
-        shaderProgram_->setHeaders(generateHeader(), false);
-        shaderProgram_->rebuild();
-	}
-#endif
+    return header;
 }
 
 void CubeEntryExitPoints::setNeedToReRender(bool needed) {
@@ -549,18 +506,24 @@ void CubeEntryExitPoints::process(LocalPortMapping*  portMapping) {
     if (needToReRender_) {
         LGL_ERROR;
         VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-        if (volumeHandle != currentVolumeHandle_)
-            setVolumeHandle(volumeHandle);
+        if (volumeHandle != 0) {
+            if (!volumeHandle->isIdentical(currentVolumeHandle_))
+                setVolumeHandle(volumeHandle);
+        } else
+            setVolumeHandle(0);
     
         if (currentVolumeHandle_ == 0)
             return;
 
         int exitSource = portMapping->getTarget("image.exitpoints");
         int entrySource;
-        if (supportCameraInsideVolume_.get() || jitterEntryParams_.get())
-            entrySource = portMapping->getTarget("image.tmp"); // render in tmp texture and jitter afterwards
+        if (supportCameraInsideVolume_.get() || jitterEntryPoints_.get())
+            // render into tmp texture and jitter afterwards
+            entrySource = portMapping->getTarget("image.tmp"); 
         else
-            entrySource = portMapping->getTarget("image.entrypoints"); // render directly in final texture
+            // render directly into final texture
+            entrySource = portMapping->getTarget("image.entrypoints");
+        
         PortDataCoProcessor* pg = portMapping->getCoProcessorData("coprocessor.proxygeometry");
 
         // set volume parameters
@@ -571,11 +534,12 @@ void CubeEntryExitPoints::process(LocalPortMapping*  portMapping) {
             "",
             "volumeParameters_")            // ... but its parameters
         );
-    
         
         tc_->setActiveTarget(exitSource, "exit");
         
-        glViewport(0, 0, getSize().x, getSize().y);
+        // sometimes set to GL_CW. We don't know where and why...
+        // as workaround we overwrite it here. (jms)
+        glFrontFace(GL_CCW);
 
         // set modelview and projection matrices
         glMatrixMode(GL_PROJECTION);
@@ -605,13 +569,13 @@ void CubeEntryExitPoints::process(LocalPortMapping*  portMapping) {
         shaderProgram_->deactivate();
 
         // render front texture
-		// the second initialization is only necessary when using tc with rtt
+		// the second initialization is only necessary when using tc with rtt.
 		// should we use conditional compilation for performance reasons here?
 		// (jennis)
         //TODO: check if this is really necessary
         
         tc_->setActiveTarget(entrySource, "entry");
-        glViewport(0, 0, getSize().x, getSize().y);
+//        glViewport(0, 0, getSize().x, getSize().y);
 
         // set modelview and projection matrices
         glMatrixMode(GL_PROJECTION);
@@ -642,7 +606,7 @@ void CubeEntryExitPoints::process(LocalPortMapping*  portMapping) {
             complementClippedEntryPoints(portMapping);
         
         // jittering of entry points
-        if (jitterEntryParams_.get())
+        if (jitterEntryPoints_.get())
             jitterEntryPoints(portMapping);
 
         // clean up

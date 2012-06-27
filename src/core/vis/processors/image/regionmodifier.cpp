@@ -78,8 +78,6 @@ std::string RegionModifier::generateHeader() {
 }
 
 void RegionModifier::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,static_cast<GLsizei>(size_.x),static_cast<GLsizei>(size_.y));
-
     compileShader(); // need this because of conditioned compilation
 
 	int source =  portMapping->getTarget("image.input");

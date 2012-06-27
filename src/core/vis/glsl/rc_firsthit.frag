@@ -55,7 +55,7 @@ vec4 getFirstHitColor(in vec3 firstHitPos) {
 		// apply shading
 		result.rgb = RC_APPLY_SHADING(voxel.xyz, firstHitPos, volumeParameters_, result.rgb, result.rgb, result.rgb);
 	}
-	return result;	
+	return result;
 }
 
 /***
@@ -67,7 +67,6 @@ void main() {
 
 	// initialize light and material parameters
     matParams = gl_FrontMaterial;
-    lightParams = gl_LightSource[0];
 
     if (firstHitPos == vec3(0.0))
         // background needs no rendering
@@ -84,9 +83,9 @@ void main() {
 						  (textureLookup2D(entryPointsDepth_, gl_FragCoord.xy).z*2.0)-1.0,
 						  1.0);
 		front = gl_ModelViewProjectionMatrixInverse * front;
-		
+
 		front = gl_ModelViewProjectionMatrix * front;
 		gl_FragDepth = ((front.z/front.w)+1.0)/2.0;
-		
+
     }
 }

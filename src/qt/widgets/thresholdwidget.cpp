@@ -31,8 +31,9 @@
 
 namespace voreen {
 
-ThresholdWidget::ThresholdWidget(QWidget* parent ) : QWidget(parent) {
-    
+ThresholdWidget::ThresholdWidget(QWidget* parent ) :
+    QWidget(parent)
+{
     setObjectName(QString::fromUtf8("ThresholdWidget"));
     resize(QSize(329, 149).expandedTo(minimumSizeHint()));
     vboxLayout = new QVBoxLayout(this);
@@ -52,7 +53,6 @@ ThresholdWidget::ThresholdWidget(QWidget* parent ) : QWidget(parent) {
     hboxLayout->setSpacing(6);
     hboxLayout->setMargin(0);
     //hboxLayout->setObjectName(QString::fromUtf8("hboxLayout"));
-
 
     upperValueSLB = new SliderSpinBoxWidget(this);
     upperValueSLB->setObjectName(QString::fromUtf8("upperValue"));
@@ -78,7 +78,6 @@ ThresholdWidget::ThresholdWidget(QWidget* parent ) : QWidget(parent) {
     hboxLayout1->setSpacing(6);
     hboxLayout1->setMargin(0);
     //hboxLayout1->setObjectName(QString::fromUtf8("hboxLayout1"));
-
 
     lowerValueSLB = new SliderSpinBoxWidget(this);
     lowerValueSLB->setObjectName(QString::fromUtf8("lowerValue"));
@@ -171,7 +170,6 @@ void ThresholdWidget::setLowerValue(int value) {
     }
 }
 
-
 void ThresholdWidget::setUpperValue( int value ) {
     if (value != upperValue_) {
         upperValue_ = value;
@@ -199,28 +197,27 @@ void ThresholdWidget::setUpperStateChecked(bool state) {
     }
 }
 
-void ThresholdWidget::setMaxValue( int value ) {
+void ThresholdWidget::setMaxValue(int value) {
     maxValue_ = value;
     lowerValueSLB->setMaxValue(value);
     upperValueSLB->setMaxValue(value);
 }
 
-
-void ThresholdWidget::setMinValue( int value ) {
+void ThresholdWidget::setMinValue(int value) {
     minValue_ = value;
     lowerValueSLB->setMinValue(value);
     upperValueSLB->setMinValue(value);
 }
 
-int ThresholdWidget::getMinValue()const {
+int ThresholdWidget::getMinValue() const {
     return minValue_;
 }
 
-int ThresholdWidget::getMaxValue()const {
+int ThresholdWidget::getMaxValue() const {
     return maxValue_;
 }
 
-int ThresholdWidget::getLowerValue()const {
+int ThresholdWidget::getLowerValue() const {
     return lowerValue_;
 }
 
@@ -238,47 +235,52 @@ void ThresholdWidget::resetThresholds() {
 }
 
 void ThresholdWidget::setHounsfieldRange() {
-    int lower, upper;
-    switch(hounsfield->currentIndex())
-    {
-        //All:
-        case 0: lower = -1024;
-                upper = 4096 - 1024;
-                break;
-        //Air:
-        case 1: lower = -1010;
-                upper = -990;
-                break;
-        //Lung:
-        case 2: lower = -600;
-                upper = -400;
-                break;
-        //Fat:
-        case 3: lower = -100;
-                upper = -60;
-                break;
-        //Water:
-        case 4: lower = -5;
-                upper = 5;
-                break;
-        //Soft Tissue:
-        case 5: lower = 40;
-                upper = 80;
-                break;
-        //Bone:
-        case 6: lower = 400;
-                upper = 1000;
-                break;
-        default:
-            break;
+    int lower = -1, upper = -1;
+    switch (hounsfield->currentIndex()) {
+    //All:
+    case 0:
+        lower = -1024;
+        upper = 4096 - 1024;
+        break;
+    //Air:
+    case 1:
+        lower = -1010;
+        upper = -990;
+        break;
+    //Lung:
+    case 2:
+        lower = -600;
+        upper = -400;
+        break;
+    //Fat:
+    case 3:
+        lower = -100;
+        upper = -60;
+        break;
+    //Water:
+    case 4:
+        lower = -5;
+        upper = 5;
+        break;
+    //Soft Tissue:
+    case 5:
+        lower = 40;
+        upper = 80;
+        break;
+    //Bone:
+    case 6:
+        lower = 400;
+        upper = 1000;
+        break;
+    default:
+        break;
     }
     lower += 1024;
     upper += 1024;
     if (getMaxValue() < 4095) {
-        //8 bit dataset loaded...value need to be transformed
-        //
-        lower = static_cast<int>(lower / 1000.0) * getMaxValue();
-        upper = static_cast<int>(upper / 1000.0) * getMaxValue();
+        // 8 bit dataset loaded, values need to be transformed
+        lower = static_cast<int>(lower / 1000.0 * getMaxValue());
+        upper = static_cast<int>(upper / 1000.0 * getMaxValue());
     }
     upperValueSLB->setValue(upper);
     emit upperValueChanged(upper);

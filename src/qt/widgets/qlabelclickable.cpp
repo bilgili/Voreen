@@ -33,13 +33,12 @@
 
 namespace voreen {
 
-QLabelClickable::QLabelClickable ( const char * text, QWidget * parent, Qt::WFlags f, 
-        Qt::CursorShape hoverCursor) : 
-        QLabel ( text, parent, f ),
-        hoverCursor_(hoverCursor) {
-
-    this->state = false;
-    this->text_ = (std::string)text;
+QLabelClickable::QLabelClickable ( const char * text, QWidget * parent, Qt::WFlags f, Qt::CursorShape hoverCursor) : 
+    QLabel ( text, parent, f ),
+    hoverCursor_(hoverCursor)
+{
+    state = false;
+    text_ = (std::string)text;
 
     QPalette palette = QPalette();
     palette.setColor(QPalette::Dark, QColor(140, 140, 140));
@@ -50,20 +49,20 @@ QLabelClickable::QLabelClickable ( const char * text, QWidget * parent, Qt::WFla
 }
 
 void QLabelClickable::mousePressEvent ( QMouseEvent * e ) {
-    this->state = true;
+    state = true;
     emit pressed();
     e->ignore();
 }
 
 void QLabelClickable::mouseReleaseEvent ( QMouseEvent * e ) {
-    this->state = false;
+    state = false;
     emit released();
     emit clicked();
     e->ignore();
 }
 
 void QLabelClickable::mouseDoubleClickEvent ( QMouseEvent * e ) {
-    this->state = false;
+    state = false;
     emit doubleClicked();
     e->ignore();
 }

@@ -43,6 +43,7 @@ namespace voreen {
         OpenNetworkFileDialog(QWidget* parent, Qt::WindowFlags flags);
         OpenNetworkFileDialog(QWidget* parent = 0, const QString& caption = QString(), const QString& directory = QString(), const QString& filter = QString());
         virtual ~OpenNetworkFileDialog();
+        void setLoadVolumeSetContainer(bool b);
         bool loadVolumeSetContainer();
     private:
         void initialize();

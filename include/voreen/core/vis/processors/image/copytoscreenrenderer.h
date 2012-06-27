@@ -30,8 +30,6 @@
 #ifndef VRN_COPYTOSCREENRENDERER
 #define VRN_COPYTOSCREENRENDERER
 
-#include "tgt/glmath.h"
-
 #include "voreen/core/vis/processors/processor.h"
 
 namespace voreen {
@@ -47,13 +45,9 @@ namespace voreen {
  * same pipeline is possible.
  * \note A pipeline element (Renderer object) has to indicate a change of
  * its rendering parameters that necessiates a new rendering by calling \c invalidate().
-
- * THIS CLASS IS ONLY NEEDED BECAUSE FINAL AND COARSENESSRENDER INHERITE FROM IT!
  */
-class CopyToScreenRenderer : public Processor
-{
+class CopyToScreenRenderer : public Processor {
 public:
-
 	/**
 	 * Default constructor.
 	 * @param camera the \c Camera object used in this pipeline.
@@ -62,14 +56,14 @@ public:
 	CopyToScreenRenderer(tgt::Camera* camera=0, TextureContainer* tc = 0);
     ~CopyToScreenRenderer();
 
-	virtual const Identifier getClassName() const {return "Miscellaneous.CopyToScreenRenderer";}
+	virtual const Identifier getClassName() const { return "Miscellaneous.CopyToScreenRenderer"; }
 	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new CopyToScreenRenderer();}
+    virtual Processor* create() { return new CopyToScreenRenderer(); }
 
     virtual int initializeGL();
 
     virtual void process(LocalPortMapping* /*portMapping*/) {}
-    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    virtual void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
     virtual void invalidate();
 
@@ -93,7 +87,7 @@ public:
      */
     void setIgnoreCoarseness(bool ignoreCoarseness);
 
-//TODO:  protected:
+protected:   
     /**
      * True if the coarseness factor is not passed through to the attached
      * producer. \see coarsenessFactor_
@@ -110,9 +104,6 @@ public:
      * is reduced by this factor during user interaction.
      */
     IntProp coarsenessFactor_;
-
-
-protected:   
 
     /**
      * The shader program used by this \c CopyToScreenRenderer.

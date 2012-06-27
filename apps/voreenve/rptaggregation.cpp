@@ -112,7 +112,7 @@ std::vector<RptPortItem*> RptAggregation::getOutwardsConnectedPortItems() {
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in rendererWrappers
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -123,7 +123,7 @@ std::vector<RptPortItem*> RptAggregation::getOutwardsConnectedPortItems() {
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in rendererWrappers
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -143,7 +143,7 @@ std::vector<RptPortItem*> RptAggregation::getOutwardsConnectedCoProcessorPortIte
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in rendererWrappers
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -154,7 +154,7 @@ std::vector<RptPortItem*> RptAggregation::getOutwardsConnectedCoProcessorPortIte
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in rendererWrappers
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }

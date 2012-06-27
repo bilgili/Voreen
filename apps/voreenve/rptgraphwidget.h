@@ -38,6 +38,8 @@
 
 namespace voreen {
 
+class NetworkEvaluator;
+
 /**
  * Interface for GraphicsItems with custom Tooltips
  */
@@ -58,14 +60,12 @@ public:
  * Also handles drag & drop of processor items.
  */
 class RptGraphWidget : public QGraphicsView {
-
-Q_OBJECT
-
+    Q_OBJECT
 public:
     /**
      * Constructor.
      */
-    RptGraphWidget(QWidget* parent=0);
+    RptGraphWidget(QWidget* parent = 0, NetworkEvaluator* evaluator = 0);
     ~RptGraphWidget();
 
     /** Clears the scene for reusing the GraphWidget.
@@ -84,9 +84,6 @@ public:
     /**
      * Adds a Widget that drop events should be accepted from.
      */
-    // modified in order to allow ANY widget to drop into GraphWidget
-    // (dirk)
-    //void addAllowedWidget(QTreeWidget* widget) {
     void addAllowedWidget(QWidget* widget) {
         allowedWidgets_.push_back(widget);
     }
@@ -101,24 +98,37 @@ public:
     /**
      * Returns the scene.
      */
-	QGraphicsScene* getScene(){return scene_;}
+	QGraphicsScene* getScene(){ return scene_; }
 
-    /** Returns the number of RptProcessorItems currently selected
+    /**
+     * Returns the number of RptProcessorItems currently selected
      * in the widget's scene or -1 if the latter one is NULL.
      */
     int countSelectedProcessorItems() const;
 
     void hideRptTooltip();
 
+    NetworkEvaluator* getEvaluator() const { return evaluator_; }
 
+    QSize sizeHint() const { return QSize(400, 600); }
+    
 signals:
     /**
      * Sent when a processor item is dropped. (connected in mainwindow)
      */
     void processorAdded(Identifier id, QPoint pos);
+
+    /**
+     * Sent when an aggregation is dropped to the graphWidget. (connected in mainwindow)
+     */
     void aggregationAdded(std::string filename, QPoint pos);
 
-    void sendProcessor(Processor*, QVector<int>);
+    /**
+     * Sent when a processor or a set of processors were selected or deselected.
+     * The parameter processor is 0 when no processor was selected.
+     */
+    void processorSelected(Processor* processor);
+    
     /**
      * Sent by context menu (connected in mainwindow).
      */
@@ -142,24 +152,24 @@ private slots:
 
 protected:
     void createContextMenu();
-    void paintEvent(QPaintEvent *event);
+    void paintEvent(QPaintEvent* event);
 
     void scaleView(qreal scaleFactor);
-    void wheelEvent(QWheelEvent *event);
+    void wheelEvent(QWheelEvent* event);
 
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
+    void dragEnterEvent(QDragEnterEvent* event);
+    void dropEvent(QDropEvent* event);
     void dragMoveEvent(QDragMoveEvent* event);
     void dragLeaveEvent(QDragLeaveEvent* event);
 
-    void mousePressEvent(QMouseEvent  *event);
-    void mouseMoveEvent(QMouseEvent  *event);
-    void mouseReleaseEvent(QMouseEvent  *event);
-    void mouseDoubleClickEvent(QMouseEvent  *event);
+    void mousePressEvent(QMouseEvent* event);
+    void mouseMoveEvent(QMouseEvent* event);
+    void mouseReleaseEvent(QMouseEvent* event);
+    void mouseDoubleClickEvent(QMouseEvent* event);
 
-    void contextMenuEvent(QContextMenuEvent *event);
+    void contextMenuEvent(QContextMenuEvent* event);
 
-    void showRptTooltip(const QPoint & pos, HasRptTooltip* hastooltip);
+    void showRptTooltip(const QPoint& pos, HasRptTooltip* hastooltip);
 
     QMenu contextMenu_;
 private:
@@ -170,14 +180,10 @@ private:
     QPointF sceneTranslate_;
     // needed, because Qt::MouseMove returns always Qt::NoButton (setting variable on MousePress)
     bool translateScene_;
-    //RptGraphicsScene* scene_;
 
     // center of scene
     QPointF center_;
 
-    // modified in order to allow ANY widget to drop into GraphWidget
-    // (dirk)
-    //std::vector<QTreeWidget*> allowedWidgets_;
     std::vector<QWidget*> allowedWidgets_;
 
     // For Tooltips
@@ -185,8 +191,10 @@ private:
     QPoint lastMousePosition_; // (I hope) there is no need to initialize it
     HasRptTooltip* lastItemWithTooltip_; // Simmilar hopes here...
     RptTooltipTimer* ttimer_;
+
+    NetworkEvaluator* evaluator_;
 };
 
-} //namespace voreen
+} // namespace voreen
 
 #endif // RPT_GRAPHWIDGET_H

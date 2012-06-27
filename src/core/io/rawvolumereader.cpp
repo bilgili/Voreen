@@ -53,8 +53,10 @@ RawVolumeReader::RawVolumeReader(IOProgress* progress)
       spacing_()
 {}
 
-void RawVolumeReader::readHints(ivec3 dimensions, vec3 spacing, int bitsStored, std::string objectModel, std::string format,
-                                int zeroPoint, tgt::mat4 transformation, Modality modality, float timeStep, std::string metaString)
+void RawVolumeReader::readHints(ivec3 dimensions, vec3 spacing, int bitsStored,
+                                std::string objectModel, std::string format,
+                                int zeroPoint, tgt::mat4 transformation, Modality modality,
+                                float timeStep, std::string metaString, int offset)
 {
     dimensions_ = dimensions;
     bitsStored_ = bitsStored;
@@ -66,6 +68,7 @@ void RawVolumeReader::readHints(ivec3 dimensions, vec3 spacing, int bitsStored, 
     modality_ = modality;
     timeStep_ = timeStep;
     metaString_ = metaString;
+    offset_ = offset;
 }
 
 VolumeSet* RawVolumeReader::read(const std::string &fileName)
@@ -212,6 +215,10 @@ VolumeSet* RawVolumeReader::read(const std::string &fileName)
     else {
         throw tgt::CorruptedFileException("unsupported ObjectModel '" + objectModel_ + "'", fileName);
     }
+
+    // If we have been given an offset, apply it here
+    fin.seekp(offset_, std::ios::beg);
+
 
     VolumeReader::read(volume, fin);
 

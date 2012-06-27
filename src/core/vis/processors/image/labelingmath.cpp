@@ -29,8 +29,8 @@
 
 #include "voreen/core/vis/processors/image/labelingmath.h"
 
-#include "jama/include/jama_qr.h"
 // for least-squares-fitting
+#include "jama/include/jama_qr.h"
 
 using namespace labeling;
 using namespace tgt;
@@ -180,7 +180,7 @@ bool Curve3DPolynomial::calcFunction(float curveLength) {
         xfunc_.coeff[i] = c[i];
 
     // y(t)
-    for (int i=0; i<<static_cast<int>(ctrlPoints_.size()); ++i)
+    for (int i=0; i<static_cast<int>(ctrlPoints_.size()); ++i)
         y[i] = ctrlPoints_[i].y;
 
     c = QR_Matrix.solve(y);
@@ -188,7 +188,7 @@ bool Curve3DPolynomial::calcFunction(float curveLength) {
         yfunc_.coeff[i] = c[i];
 
     // z(t)
-    for (int i=0; i<<static_cast<int>(ctrlPoints_.size()); ++i)
+    for (int i=0; i<static_cast<int>(ctrlPoints_.size()); ++i)
         y[i] = ctrlPoints_[i].z;
     c = QR_Matrix.solve(y);
     for (int i=0; i<numCoeff_; ++i)
@@ -284,21 +284,21 @@ bool Curve2DPolynomial::calcFunction(float curveLength) {
     TNT::Array1D<float> c(numCoeff_);
 
     // Create matrix X and the corresponding QR-matrix
-    for (int i=0; i<<static_cast<int>(ctrlPoints_.size()); i++)
+    for (int i=0; i<static_cast<int>(ctrlPoints_.size()); i++)
         for (int j=0; j<numCoeff_; j++)
             X[i][j] = pow((float)i, (float)j);
     
     JAMA::QR<float> QR_Matrix(X);
 
     // x(t)
-    for (int i=0; i<<static_cast<int>(ctrlPoints_.size()); ++i)
+    for (int i=0; i<static_cast<int>(ctrlPoints_.size()); ++i)
         y[i] = ctrlPoints_[i].x;
     c = QR_Matrix.solve(y);
     for (int i=0; i<numCoeff_; ++i)
         xfunc_.coeff[i] = c[i];
 
     // y(t)
-    for (int i=0; i<<static_cast<int>(ctrlPoints_.size()); ++i)
+    for (int i=0; i<static_cast<int>(ctrlPoints_.size()); ++i)
         y[i] = ctrlPoints_[i].y;
     c = QR_Matrix.solve(y);
     for (int i=0; i<numCoeff_; ++i)

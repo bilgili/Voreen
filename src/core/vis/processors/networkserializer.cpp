@@ -29,10 +29,8 @@
 
 #include "voreen/core/vis/processors/networkserializer.h"
 
-
 #include "voreen/core/vis/processors/processorfactory.h"
 #include "voreen/core/vis/transfunc/transfuncmappingkey.h"
-
 
 namespace voreen {
 
@@ -121,25 +119,32 @@ void ProcessorNetwork::updateFromXml(TiXmlElement* elem) {
     // maps the id to the Processor
     std::map<int, Processor*> idMap;
     // maps (ProcessorId, PortIdentifier) to corresponding (ProcessorId, PortIdentifier)
-    ConnectionMap connectionMap;
+    Processor::ConnectionMap connectionMap;
 
     // deserialize Processors
     TiXmlElement* processorElem;
-    for (processorElem = elem->FirstChildElement(Processor::XmlElementName);
+    for (processorElem = elem->FirstChildElement(Processor::XmlElementName_);
         processorElem;
-        processorElem = processorElem->NextSiblingElement(Processor::XmlElementName))
+        processorElem = processorElem->NextSiblingElement(Processor::XmlElementName_))
     {
         try {
             // read the type of the Processor
             Identifier type = Processor::getClassName(processorElem);
+
+            // compatibility with older versions
+            // TODO: build a more general mechanism
+            if (type == "GeometryRenderer.ClippingWidget")
+                type = "GeometryRenderer.ClippingPlaneWidget";
+            
             Processor* processor = ProcessorFactory::getInstance()->create(type.getSubString(1));
             if (processor == 0)
                 throw XmlAttributeException("Failed to create a Processor of class " + type.getName()); // TODO Better exception
             // deserialize processor
-            std::pair<int, ConnectionMap> localConnectionInfo = processor->getMapAndupdateFromXml(processorElem);
+            std::pair<int, Processor::ConnectionMap> localConnectionInfo
+                = processor->getMapAndupdateFromXml(processorElem);
             errors_.store(processor->errors());
             int processorId = localConnectionInfo.first;
-            ConnectionMap localConnectionMap = localConnectionInfo.second;
+            Processor::ConnectionMap localConnectionMap = localConnectionInfo.second;
             // add processor to the idMap
             idMap[processorId] = processor;
             connectionMap.insert(connectionMap.end(), localConnectionMap.begin(), localConnectionMap.end());
@@ -151,14 +156,15 @@ void ProcessorNetwork::updateFromXml(TiXmlElement* elem) {
     }
 
     // sort connectionMap so incoming Connections are connected in the right order (i.e. combinepp)
-    ConnectionCompare connComp;
+    Processor::ConnectionCompare connComp;
     std::sort(connectionMap.begin(), connectionMap.end(), connComp);
-    ConnectionMap::iterator iter;
+    Processor::ConnectionMap::iterator iter;
     for (iter = connectionMap.begin(); iter != connectionMap.end(); ++iter ) {
         if (idMap.find(iter->first.processorId) == idMap.end() ||
             idMap.find(iter->second.processorId) == idMap.end())
         {
-            errors_.store(SerializerException("There are references to nonexisting Processors!")); // TODO Better exception
+            errors_.store(SerializerException("There are references to nonexisting Processors!"));
+            // TODO: Better exception
         }
         else {
             Processor* processor = idMap[iter->first.processorId];
@@ -166,16 +172,17 @@ void ProcessorNetwork::updateFromXml(TiXmlElement* elem) {
             Processor* otherprocessor = idMap[iter->second.processorId];
             Port* otherport = otherprocessor->getPort(iter->second.portId);
             if (port == 0 || otherport == 0 || !processor->connect(port,otherport))
-                errors_.store(SerializerException("The Connections of this file are messed up!")); // TODO Better exception
-             // I'd prefer Processor::connect to throw an Exception
+                errors_.store(SerializerException("The Connections of this file are messed up!"));
+                // TODO: Better exception
+                // I'd prefer Processor::connect to throw an Exception
         }
     }
 
     // deserialize PropertySets
     TiXmlElement* propertysetElem;
-    for (propertysetElem = elem->FirstChildElement(PropertySet::XmlElementName);
+    for (propertysetElem = elem->FirstChildElement(PropertySet::XmlElementName_);
         propertysetElem;
-        propertysetElem = propertysetElem->NextSiblingElement(PropertySet::XmlElementName))
+        propertysetElem = propertysetElem->NextSiblingElement(PropertySet::XmlElementName_))
     {
         try {
             PropertySet* propertySet = new PropertySet();
@@ -211,18 +218,15 @@ ProcessorNetwork& ProcessorNetwork::setCamera(tgt::Camera* camera) {
 /* ------------------------------------------------------------------------------------- */
 
 NetworkSerializer::NetworkSerializer() {
-	count_=0; //Up to now there are zero processors loaded, so count_ is 0.
-    //infos_ = 0;
+	count_ = 0; //Up to now there are zero processors loaded, so count_ is 0.
 }
 
 NetworkSerializer::~NetworkSerializer() {
-    //if (infos_)
-    //    delete infos_;
-
     idMap_.clear();
 }
 
-ProcessorNetwork& NetworkSerializer::readNetworkFromFile(std::string filename, bool loadVolumeSetContainer) {
+ProcessorNetwork& NetworkSerializer::readNetworkFromFile(std::string filename, bool loadVolumeSetContainer)
+    throw (SerializerException) {
 	//Clear and/or reset some variables,
 	// TODO clean up
 	count_=0;
@@ -234,7 +238,7 @@ ProcessorNetwork& NetworkSerializer::readNetworkFromFile(std::string filename, b
 	//Prepare the TiXmlDoxument
 	TiXmlDocument doc(filename);
 	if (!doc.LoadFile()) 
-		throw SerializerException("Could not load network file!");
+		throw SerializerException("Could not load network file " + filename + "!");
 
 	TiXmlHandle documentHandle(&doc);
 
@@ -338,7 +342,7 @@ int NetworkSerializer::readProcessorsFromXml(TiXmlNode* node) {
 			//every processor has been given a number/id during the save process
 			int processorId=attribute->IntValue();
 
-			//Read the classtype of the processor, for example "volumeraycaster.fancyraycaster"
+			//Read the classtype of the processor, for example "volumeraycaster.singlevolumeraycaster"
 			attribute = attribute->Next();
 			std::string type = attribute->Value();
 
@@ -348,7 +352,7 @@ int NetworkSerializer::readProcessorsFromXml(TiXmlNode* node) {
                 type = "Miscellaneous.Canvas";
 			
 			//we have all the info we need to create the processor (but not the connections)
-			//to create the processor we need the specific type, like "fancyraycaster" for the 
+			//to create the processor we need the specific type, like "singlevolumeraycaster" for the 
 			//processorfactory, so we use the Identifier class to get that
             Identifier ident(type);
             newProcessor = ProcessorFactory::getInstance()->create(ident.getSubString(1));
@@ -509,7 +513,7 @@ int NetworkSerializer::readProcessorsFromXmlVersion1(TiXmlNode* node) {
                 type = "Miscellaneous.Canvas";
 			
 			//we have all the info we need to create the processor (but not the connections)
-			//to create the processor we need the specific type, like "fancyraycaster" for the 
+			//to create the processor we need the specific type, like "singlevolumeraycaster" for the 
 			//processorfactory, so we use the Identifier class to get that
             Identifier ident(type);
             newProcessor = ProcessorFactory::getInstance()->create(ident.getSubString(1));
@@ -702,7 +706,7 @@ int NetworkSerializer::connectProcessors() {
 						//to which port of which processors this port is connected. 
 						std::map<int,int> connectedProcessors = con->connectedProcessors;
 						//first entry stands for the processor id, the second for the port number
-						for(std::map<int,int>::const_iterator k = connectedProcessors.begin(); k != connectedProcessors.end(); ++k) {
+						for (std::map<int,int>::const_iterator k = connectedProcessors.begin(); k != connectedProcessors.end(); ++k) {
 							Processor* dest = findProcessor(k->first);
 							if (static_cast<size_t>(k->second) < dest->getInports().size() ) {
 								Port* destPort = dest->getInports().at(k->second);
@@ -718,7 +722,7 @@ int NetworkSerializer::connectProcessors() {
 						//to which port of which processors this port is connected. 
 						std::map<int,int> connectedProcessors = con->connectedProcessors;
 						//first entry stands for the processor id, the second for the port number
-						for(std::map<int,int>::const_iterator k = connectedProcessors.begin(); k != connectedProcessors.end(); ++k) {
+						for (std::map<int,int>::const_iterator k = connectedProcessors.begin(); k != connectedProcessors.end(); ++k) {
 							Processor* dest = findProcessor(k->first);
 							if (static_cast<size_t>(k->second) < dest->getCoProcessorInports().size() ) {
 								Port* destPort = dest->getCoProcessorInports().at(k->second);
@@ -823,7 +827,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 switch(property_type) {
                 case Property::FLOAT_PROP :
                     try {
-                        float value_tmp;
+                        float value_tmp = 0.f;
 						FloatProp* prop = dynamic_cast<FloatProp*>(props.at(j));
                         pElem->QueryFloatAttribute("Value", &value_tmp);
 						if (prop) {
@@ -838,7 +842,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::INT_PROP :
                     try {
                         IntProp* prop = dynamic_cast<IntProp*>(props.at(j));
-                        int value_tmp;
+                        int value_tmp = 0;
                         pElem->QueryIntAttribute("Value", &value_tmp);
 						if (prop) {
 							prop->set(value_tmp);
@@ -854,7 +858,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                         pElem->QueryIntAttribute("Property_type", &property_type);
                         BoolProp* prop = dynamic_cast<BoolProp*>(props.at(j));
                         if (prop) {
-                            int value_tmp;
+                            int value_tmp = 0;
                             pElem->QueryIntAttribute("Value", &value_tmp);
                             if (value_tmp==1) {
 							    prop->set(true);
@@ -873,10 +877,10 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::COLOR_PROP : 
                     try {
                         ColorProp* prop = dynamic_cast<ColorProp*>(props.at(j));
-                        float color_r;
-                        float color_g;
-                        float color_b;
-                        float color_a;
+                        float color_r = 0.f;
+                        float color_g = 0.f;
+                        float color_b = 0.f;
+                        float color_a = 0.f;
                         pElem->QueryFloatAttribute("Color_r", &color_r);
                         pElem->QueryFloatAttribute("Color_g", &color_g);
                         pElem->QueryFloatAttribute("Color_b", &color_b);
@@ -905,7 +909,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::ENUM_PROP :
                     try {
                         EnumProp* prop = dynamic_cast<EnumProp*>(props.at(j));
-                        int value_tmp;
+                        int value_tmp = 0;
                         pElem->QueryIntAttribute("Value", &value_tmp);
 						if (prop) {
 							prop->set(value_tmp);
@@ -931,8 +935,8 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                              cElem = pElem->FirstChildElement();
                              for (; cElem; cElem=cElem->NextSiblingElement()) {
                                  //first get the color
-                                 float value_tmp;
-                                 int int_tmp;
+                                 float value_tmp = 0.f;
+                                 int int_tmp = 0;
                                  tgt::col4 color_tmp;
                                  cElem->QueryIntAttribute("Color_r", &int_tmp);
                                  color_tmp.r = (uint8_t) int_tmp;
@@ -980,7 +984,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::INTEGER_VEC2_PROP :
                     try{
                         IntVec2Prop* prop = dynamic_cast<IntVec2Prop*>(props.at(j));
-                        int value_tmp;
+                        int value_tmp = 0;
                         tgt::ivec2 vector_tmp;
                         pElem->QueryIntAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = (uint8_t) value_tmp;
@@ -998,7 +1002,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::INTEGER_VEC3_PROP : 
                     try {
                         IntVec3Prop* prop = dynamic_cast<IntVec3Prop*>(props.at(j));
-                        int value_tmp;
+                        int value_tmp = 0;
                         tgt::ivec3 vector_tmp;
                         pElem->QueryIntAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = (uint8_t) value_tmp;
@@ -1018,7 +1022,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::INTEGER_VEC4_PROP :
                     try {
                         IntVec4Prop* prop = dynamic_cast<IntVec4Prop*>(props.at(j));
-                        int value_tmp;
+                        int value_tmp = 0;
                         tgt::ivec4 vector_tmp;
                         pElem->QueryIntAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = (uint8_t) value_tmp;
@@ -1040,7 +1044,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::FLOAT_VEC2_PROP :
                     try {
                         FloatVec2Prop* prop = dynamic_cast<FloatVec2Prop*>(props.at(j));
-                        float value_tmp;
+                        float value_tmp = 0.f;
                         tgt::vec2 vector_tmp;
                         pElem->QueryFloatAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = value_tmp;
@@ -1058,7 +1062,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::FLOAT_VEC3_PROP :
                     try {
                         FloatVec3Prop* prop = dynamic_cast<FloatVec3Prop*>(props.at(j));
-                        float value_tmp;
+                        float value_tmp = 0.f;
                         tgt::vec3 vector_tmp;
                         pElem->QueryFloatAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = value_tmp;
@@ -1078,7 +1082,7 @@ int NetworkSerializer::loadProperties(std::vector<Property* > props, TiXmlElemen
                 case Property::FLOAT_VEC4_PROP :
                     try {
                         FloatVec4Prop* prop = dynamic_cast<FloatVec4Prop*>(props.at(j));
-                        float value_tmp;
+                        float value_tmp = 0.f;
                         tgt::vec4 vector_tmp;
                         pElem->QueryFloatAttribute("Vector_x", &value_tmp);
                         vector_tmp.x = value_tmp;

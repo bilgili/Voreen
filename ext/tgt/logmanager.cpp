@@ -31,9 +31,9 @@ using namespace std;
 namespace tgt {
 
 bool Log::testFilter(const std::string &cat, LogLevel level) {
-	for (unsigned int i = 0; i < filters_.size(); i++) 	{
+	for (size_t i = 0; i < filters_.size(); i++) 	{
 		if (filters_[i].children_) {
-			if (cat.find(filters_[i].cat_,0) == 0) {
+			if (cat.find(filters_[i].cat_, 0) == 0) {
                 if (filters_[i].level_ <= level)
 				    return true;
 			}
@@ -61,37 +61,36 @@ void Log::addCat(const std::string &cat, bool children, LogLevel level) {
 	filters_.push_back(newFilter);
 }
 
-std::string Log::getTimeString(void) {
+std::string Log::getTimeString() {
 	time_t long_time = 0;
-	tm *now = NULL;
+	tm *now = 0;
 	time(&long_time);
 	now = localtime(&long_time);
 	char SzBuffer[300];
-    sprintf(SzBuffer,"%.2i:%.2i:%.2i", now->tm_hour, now->tm_min, now->tm_sec);
+    sprintf(SzBuffer, "%.2i:%.2i:%.2i", now->tm_hour, now->tm_min, now->tm_sec);
 	string temp(SzBuffer);
 	return temp;
 }
 
-
-std::string Log::getDateString(void) {
+std::string Log::getDateString() {
 	time_t long_time = 0;
-	tm *now = NULL;
+	tm *now = 0;
 	time(&long_time);
 	now = localtime(&long_time);
 	char SzBuffer[300];
-    sprintf(SzBuffer ,"%.2i.%.2i.%.4i", now->tm_mday, now->tm_mon + 1, now->tm_year+1900);
+    sprintf(SzBuffer, "%.2i.%.2i.%.4i", now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
 	string temp(SzBuffer);
 	return temp;
 }
 
 std::string Log::getLevelString(LogLevel level) {
     switch (level) {
-        case Debug: return "Debug";
-        case Info: return "Info";
-        case Warning: return "Warning";
-        case Error: return "Error";
-        case Fatal: return "Fatal";
-		default: return "UNKNOWN";
+    case Debug: return "Debug";
+    case Info: return "Info";
+    case Warning: return "Warning";
+    case Error: return "Error";
+    case Fatal: return "Fatal";
+    default: return "UNKNOWN";
 	}
 }
 
@@ -131,23 +130,21 @@ TextLog::~TextLog() {
 	fclose(file_);
 }
 
-bool TextLog::isOpen(void) {
-	return (file_ != NULL);
+bool TextLog::isOpen() {
+	return (file_ != 0);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//FIXME: should work on any unix system...GNUC is not correct
-#ifdef __GNUC__
+#ifdef __unix__
 std::string ConsoleLog::getLevelColor(LogLevel level) {
     switch (level) {
-        case Debug: return "\033[22;32m";   //green
-//        case Info: return "\033[01m";       //bright
-        case Info: return "";       // default terminal color
-        case Warning: return "\033[01;40;33m"; //orange/yellow on black background
-        case Error: return "\033[22;31m";   //red
-        case Fatal: return "\033[22;34m";   //blue
-        default: return "\033[01m";
+    case Debug:   return "\033[22;32m";    // green
+    case Info:    return "";               // default terminal color
+    case Warning: return "\033[01;40;33m"; // orange/yellow on black background
+    case Error:   return "\033[22;31m";    // red
+    case Fatal:   return "\033[22;34m";    // blue
+    default:      return "";
     }
 }
 #else
@@ -158,6 +155,7 @@ std::string ConsoleLog::getLevelColor(LogLevel) {
 
 void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &/*extendedInfo*/) {
     std::string output = getLevelColor(level);
+
     if (dateStamping_)
         output += "[" + getDateString() + "] ";
     if (timeStamping_)
@@ -170,13 +168,10 @@ void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::
         output += '\t';
 
     output += msg;
-#ifdef __GNUC__
+#ifdef __unix__
     output += "\033[00m"; // return to default color (Reset all attributes)
 #endif
-//     if (level > Warning)
-//         std::cerr << output << std::endl;
-//     else
-        std::cout << output << std::endl;
+    std::cout << output << std::endl;
 }
 
 ConsoleLog::ConsoleLog(bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
@@ -250,7 +245,9 @@ HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStampi
 
     if (!file_)
         return;
-	std::string output = "<html>\n\t<head>\n\t\t<title>TGT Logfile</title>\n\t</head>\n\t<body>\n\n\t<table cellpadding=3 cellspacing=0 border=1>\n\t\t<CAPTION>TGT Logfile</CAPTION>\n\n\t\t<THEAD>\n\t\t\t<TR>\n";
+	std::string output = "<html>\n\t<head>\n\t\t<title>TGT Logfile</title>\n\t</head>\n\t"
+        "<body>\n\n\t<table cellpadding=3 cellspacing=0 border=1>\n\t\t"
+        "<CAPTION>TGT Logfile</CAPTION>\n\n\t\t<THEAD>\n\t\t\t<TR>\n";
 	if (dateStamping_)
         output += "\t\t\t\t<th>Date</th>\n";
 	if (timeStamping_)
@@ -271,8 +268,8 @@ HtmlLog::~HtmlLog() {
 	fclose(file_);
 }
 
-bool HtmlLog::isOpen(void) {
-	return (file_ != NULL);
+bool HtmlLog::isOpen() {
+	return (file_ != 0);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -285,9 +282,8 @@ LogManager::LogManager(const std::string& logDir)
 LogManager::~LogManager() {
 	vector<Log*>::iterator it;
  	for ( it = logs_.begin(); it != logs_.end(); it++ )	{
-		if (*it != NULL) {
+		if (*it != 0)
 			delete (*it);
-		}
 	}
     
     if (consoleLog_)
@@ -300,11 +296,11 @@ void LogManager::reinit(const std::string& logDir) {
 
 void LogManager::log(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo) {
     #ifndef tgtDebug
-// 		if(level == Debug) return;
+// 		if (level == Debug) return;
     #endif
     vector<Log*>::iterator it;
     for ( it = logs_.begin(); it != logs_.end(); it++ ) {
-        if (*it != NULL) {
+        if (*it != 0) {
             (*it)->log(cat, level, msg, extendedInfo);
         }
     }
@@ -327,7 +323,7 @@ void LogManager::addLog(Log* log) {
     if (clog) {
         if (consoleLog_) 
             delete consoleLog_;
-         consoleLog_ = clog;
+        consoleLog_ = clog;
     }
     else
         logs_.push_back(log);

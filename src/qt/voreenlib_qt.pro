@@ -22,6 +22,14 @@ win32: {
   }
 }
 
+# Check Qt version:
+# Use a regex that matches all invalid version numbers, i.e, X.*.*
+# with X <= 3 and 4.Y.* with Y <= 2.
+VERSION_CHECK = $$find(QT_VERSION, "^([123]|4\.[12])\..*$")
+!isEmpty(VERSION_CHECK) {
+   error("Your Qt version is $$QT_VERSION but at least 4.3.0 is required!")
+}
+
 # Include local configuration
 !include(../../config.txt) {
   error("config.txt not found! copy config-default.txt to config.txt and edit!")
@@ -40,12 +48,15 @@ RESOURCES = $${VRN_HOME}/resource/qt/vrn_qt.qrc
 
 # please insert new files in alphabetical order!
 SOURCES += \
+    aboutbox.cpp \
     cmdlineparser.cpp \
     datasetserver.cpp \
     helpbrowser.cpp \
+    ioprogressdialog.cpp \
     pyvoreenqt.cpp \
     qcolorluminancepicker.cpp \
     qcolorpicker.cpp \
+    versionqt.cpp \
     voreenapp.cpp \
     voreenmainframe.cpp \
     opennetworkfiledialog.cpp
@@ -58,7 +69,7 @@ SOURCES += \
     widgets/dockbarhandler.cpp \
     widgets/doublesliderwidget.cpp \
     widgets/dynamicsplugin.cpp \
-    widgets/flybyplugin.cpp \
+    widgets/animationplugin.cpp \
     widgets/histogrampainterwidget.cpp \
     widgets/informationplugin.cpp \
     widgets/labelingwidgetqt.cpp \
@@ -75,6 +86,9 @@ SOURCES += \
     widgets/stereoplugin.cpp \
     widgets/thresholdwidget.cpp \
     widgets/volumesetwidget.cpp \
+    widgets/voreenbutton.cpp \
+    widgets/voreentoolwindow.cpp \
+    widgets/voreentoolbar.cpp \
     widgets/widgetplugin.cpp \
     widgets/widgetgenerator.cpp \
     widgets/widgetgeneratorplugins.cpp
@@ -92,13 +106,16 @@ SOURCES += \
     ../../ext/tgt/qt/qttimer.cpp
 
 HEADERS += \
+    ../../include/voreen/qt/aboutbox.h \
     ../../include/voreen/qt/cmdlineparser.h \
     ../../include/voreen/qt/datasetserver.h \
     ../../include/voreen/qt/helpbrowser.h \
+    ../../include/voreen/qt/ioprogressdialog.h \
     ../../include/voreen/qt/pyvoreenqt.h \
     ../../include/voreen/qt/qcolorluminancepicker.h \
     ../../include/voreen/qt/qcolorpicker.h \
     ../../include/voreen/qt/qdebug.h \
+    ../../include/voreen/qt/versionqt.h \
     ../../include/voreen/qt/voreenapp.h \
     ../../include/voreen/qt/voreenmainframe.h \
     ../../include/voreen/qt/opennetworkfiledialog.h
@@ -111,7 +128,7 @@ HEADERS += \
     ../../include/voreen/qt/widgets/dockbarhandler.h \
     ../../include/voreen/qt/widgets/doublesliderwidget.h \
     ../../include/voreen/qt/widgets/dynamicsplugin.h \
-    ../../include/voreen/qt/widgets/flybyplugin.h \
+    ../../include/voreen/qt/widgets/animationplugin.h \
     ../../include/voreen/qt/widgets/histogrampainterwidget.h \
     ../../include/voreen/qt/widgets/informationplugin.h \
     ../../include/voreen/qt/widgets/labelingwidgetqt.h \
@@ -128,6 +145,9 @@ HEADERS += \
     ../../include/voreen/qt/widgets/stereoplugin.h \
     ../../include/voreen/qt/widgets/thresholdwidget.h \
     ../../include/voreen/qt/widgets/volumesetwidget.h \
+    ../../include/voreen/qt/widgets/voreenbutton.h \
+    ../../include/voreen/qt/widgets/voreentoolwindow.h \
+    ../../include/voreen/qt/widgets/voreentoolbar.h \
     ../../include/voreen/qt/widgets/widgetgenerator.h \
     ../../include/voreen/qt/widgets/widgetgeneratorplugins.h \
     ../../include/voreen/qt/widgets/widgetplugin.h
@@ -157,8 +177,8 @@ win32 {
     }
 }
 
-# add files, which are not available in the snapshot release
-# these files will be added to the snapshot, when they are cleaned up
+# Add files which are not available in the snapshot release.
+# These files will be added to the snapshot when they are cleaned up.
 !contains(DEFINES, VRN_SNAPSHOT) {
 SOURCES += \
     widgets/ultrasoundplugin.cpp \
@@ -172,6 +192,8 @@ HEADERS += \
     ../../include/voreen/qt/widgets/usschematicrenderarea.h \
     ../../include/voreen/qt/widgets/vectorfieldplugin.h
 }
+
+FORMS = aboutbox.ui
 
 
 # this must come after all SOURCES, HEADERS and FORMS have been added

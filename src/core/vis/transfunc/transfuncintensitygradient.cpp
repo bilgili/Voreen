@@ -37,6 +37,7 @@
 #include "tgt/tgt_gl.h"
 #include "tgt/glmath.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/texturemanager.h"
 
 #ifdef VRN_WITH_DEVIL
     #include <IL/il.h>
@@ -74,7 +75,6 @@ TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height) {
 }
 
 TransFuncIntensityGradient::~TransFuncIntensityGradient() {
-
 }
 
 std::string TransFuncIntensityGradient::getShaderDefines() {
@@ -82,7 +82,6 @@ std::string TransFuncIntensityGradient::getShaderDefines() {
 }
 
 void TransFuncIntensityGradient::setPixelData(GLfloat* data) {
-
     delete[] tex_->getPixelData();
     tex_->setPixelData(reinterpret_cast<GLubyte*>(data));
     tex_->setBpp(sizeof(GLfloat)*4);
@@ -106,18 +105,15 @@ int TransFuncIntensityGradient::getHeight() const {
 }
     
 void TransFuncIntensityGradient::clear() {
-    
     GLfloat* newData = new GLfloat[getWidth()*getHeight()*4];
-    for (int i=0; i<getWidth()*getHeight()*4; i++)
+    for (int i=0; i<getWidth()*getHeight()*4; ++i)
         newData[i] = 0.f;
 
     setPixelData(newData);
-
 }
 
 #ifdef VRN_WITH_DEVIL
 void TransFuncIntensityGradient::savePNG(const std::string& fname) const {
-    
     ilEnable(IL_FILE_OVERWRITE);
     //download texture and save as png:
     ILuint img;
@@ -142,7 +138,6 @@ void TransFuncIntensityGradient::savePNG(const std::string& /*fname*/) const {
 #endif // VRN_WITH_DEVIL
         
 void TransFuncIntensityGradient::updateTexture() {
-
     tex_->uploadTexture();
 }
 
@@ -154,10 +149,8 @@ TransFuncIntensityGradientPrimitiveContainer::TransFuncIntensityGradientPrimitiv
     TransFuncIntensityGradient(size, size),
     fbo_(0) 
 {
-
-    if ( !GpuCaps.areFramebufferObjectsSupported() ) {
+    if ( !GpuCaps.areFramebufferObjectsSupported() )
         fbo_ = 0;
-    }
     else {
         fbo_ = new FramebufferObject();
         fbo_->Bind(); // Bind framebuffer object.
@@ -172,7 +165,6 @@ TransFuncIntensityGradientPrimitiveContainer::TransFuncIntensityGradientPrimitiv
         else {
             LERROR("fbo invalid!" <<  getTexture()->getId());
         }
-
         // Disable FBO rendering for now...
         FramebufferObject::Disable();
     }
@@ -190,25 +182,22 @@ std::string TransFuncIntensityGradientPrimitiveContainer::getShaderDefines() {
 void TransFuncIntensityGradientPrimitiveContainer::paint() {
     if (primitives_.empty())
         return;
-    for (size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i)
         primitives_[i]->paint();
-    }
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::paintSelection() {
     if (primitives_.empty())
         return;
-    for (size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i)
         primitives_[i]->paintSelection(i);
-    }
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::paintInEditor() {
     if (primitives_.empty())
         return;
-    for (size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i)
         primitives_[i]->paintInEditor();
-    }
 }
 
 TransFuncPrimitive* TransFuncIntensityGradientPrimitiveContainer::getControlPointUnderMouse(tgt::vec2 m) {
@@ -236,15 +225,16 @@ void TransFuncIntensityGradientPrimitiveContainer::save(const std::string& fname
     TiXmlElement* root = new TiXmlElement( "transferfunc2d" );
     doc.LinkEndChild( root );
 
-    for (size_t i=0; i<primitives_.size(); ++i) {
+    for (size_t i=0; i<primitives_.size(); ++i)
          primitives_[i]->save(root);
-    }
+    
     doc.SaveFile(fname);
 }
 
 bool TransFuncIntensityGradientPrimitiveContainer::load(const std::string& fname) {
     TiXmlDocument doc(fname);
-    if (!doc.LoadFile()) return false;
+    if (!doc.LoadFile())
+        return false;
 
     TiXmlHandle hDoc(&doc);
     TiXmlElement* pElem;
@@ -252,17 +242,18 @@ bool TransFuncIntensityGradientPrimitiveContainer::load(const std::string& fname
 
     hRoot=hDoc.FirstChildElement().Element();
     // should always have a valid root but handle gracefully if it does
-    if (!hRoot) return false;
+    if (!hRoot)
+        return false;
 
     pElem=hRoot->FirstChildElement("quad");
-    for ( ; pElem; pElem=pElem->NextSiblingElement("quad")) {
+    for (; pElem; pElem=pElem->NextSiblingElement("quad")) {
         TransFuncQuad* q = new TransFuncQuad(tgt::vec2(0.5f, 0.5f), 0.25f, tgt::col4(255, 0, 0, 128));
         q->load(pElem);
         addPrimitive(q);
     }
 
     pElem=hRoot->FirstChildElement("banana");
-    for ( ; pElem; pElem=pElem->NextSiblingElement("banana")) {
+    for (; pElem; pElem=pElem->NextSiblingElement("banana")) {
         TransFuncBanana* b = new TransFuncBanana(tgt::vec2(0.f, 0.f ), tgt::vec2(0.5f, 0.6f),
                                                  tgt::vec2(0.34f, 0.4f), tgt::vec2(0.45f, 0.f),
                                                  tgt::col4(0, 255, 0, 128));
@@ -273,22 +264,21 @@ bool TransFuncIntensityGradientPrimitiveContainer::load(const std::string& fname
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::removePrimitive(TransFuncPrimitive* p) {
-    std::vector<TransFuncPrimitive*>::iterator it;
-
-    it = primitives_.begin();
-    while(it != primitives_.end()) {
+    for (std::vector<TransFuncPrimitive*>::iterator it = primitives_.begin();
+         it != primitives_.end();
+         ++it)
+    {
         if (*it == p) {
             delete *it;
             primitives_.erase(it);
             return;
         }
-        ++it;
     }
 }
 
 void TransFuncIntensityGradientPrimitiveContainer::clear() {
     std::vector<TransFuncPrimitive*>::iterator it;
-    while(!primitives_.empty()) {
+    while (!primitives_.empty()) {
         it = primitives_.begin();
         delete *it;
         primitives_.erase(it);
@@ -333,7 +323,7 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     
     glBegin(GL_POLYGON);
     glColor4ub(150,150,150,255);
-    for (int i=0; i<20; i++) {
+    for (int i=0; i<20; ++i) {
         t.x = cosf((i/20.0f)*2.0f*PIf)*radius;
         t.y = sinf((i/20.0f)*2.0f*PIf)*radius;
         vertex(t);
@@ -347,7 +337,7 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
         glColor4ub(255,255,255,255);
     else
         glColor4ub(128,128,128,255);
-    for (int i=0; i<20; i++) {
+    for (int i=0; i<20; ++i) {
         t.x = cosf((i/20.0f)*2.0f*PIf)*radius;
         t.y = sinf((i/20.0f)*2.0f*PIf)*radius;
         vertex(t);
@@ -489,10 +479,10 @@ bool TransFuncQuad::mousePress(tgt::vec2 m) {
 
 void TransFuncQuad::save(TiXmlElement* root) {
     TiXmlElement* e = new TiXmlElement( "quad" );
-    for (int i = 0; i<4; ++i) {
+    for (int i = 0; i<4; ++i)
         TransFunc::saveXml(e, coords_[i]);
-    }
-    TransFunc::saveXml(e, color_);
+    
+        TransFunc::saveXml(e, color_);
     e->SetDoubleAttribute("fuzzy", fuzziness_);
     root->LinkEndChild(e);
 }
@@ -507,8 +497,7 @@ void TransFuncQuad::load(TiXmlElement* root) {
     TiXmlElement* pElem;
     pElem = root->FirstChild("vec2")->ToElement();
     int i = 0;
-    for ( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
-    {
+    for (; pElem && i<4; pElem=pElem->NextSiblingElement("vec2")) {
         TransFunc::loadXml(pElem, coords_[i]);
         i++;
     }
@@ -520,14 +509,13 @@ void TransFuncQuad::load(TiXmlElement* root) {
 void TransFuncQuad::mouseDrag(tgt::vec2 offset) {
     if (grabbed_ > -1)
         coords_[grabbed_] += offset;
-    else
-        for (int i = 0; i<4; ++i) {
+    else {
+        for (int i = 0; i<4; ++i)
             coords_[i] += offset;
-        }
+    }
 }
 
 //-----------------------------------------------------------------------------
-
 
 TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col) : TransFuncPrimitive(col) {
     coords_[0] = a;
@@ -700,10 +688,9 @@ void TransFuncBanana::load(TiXmlElement* root) {
     TiXmlElement* pElem;
     pElem = root->FirstChild("vec2")->ToElement();
     int i = 0;
-    for ( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2"))
-    {
+    for ( ; pElem && i<4; pElem=pElem->NextSiblingElement("vec2")) {
         TransFunc::loadXml(pElem, coords_[i]);
-        i++;
+        ++i;
     }
     pElem = root->FirstChild("col4")->ToElement();
     if (pElem)
@@ -713,11 +700,10 @@ void TransFuncBanana::load(TiXmlElement* root) {
 void TransFuncBanana::mouseDrag(tgt::vec2 offset) {
     if (grabbed_ > -1)
         coords_[grabbed_] += offset;
-    else
-        for (int i = 0; i<4; ++i) {
+    else {
+        for (int i = 0; i<4; ++i)
             coords_[i] += offset;
-        }
+    }
 }
 
-
-}
+}  // namespace

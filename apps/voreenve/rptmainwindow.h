@@ -32,10 +32,7 @@
 
 #include <QtGui>
 
-#include "voreen/core/io/iosystem.h"
-#include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/vis/idmanager.h"
-#include "voreen/core/vis/message.h"
 
 namespace voreen {
 
@@ -61,14 +58,12 @@ class TransFuncPlugin;
 class Volume;
 class VolumeSetContainer;
 class VolumeSetWidget;
+class VoreenToolWindow;
+class VoreenToolBar;
 
-#ifdef VRN_MODULE_GLYPHS
-class GlyphsPlugin;
-class DataSourceContainer;
-#endif
-
-#ifdef VRN_WITH_DCMTK
-class DicomDirDialog;
+#ifdef VRN_MODULE_MEASURING
+class SelectionProcessorListWidget;
+class MeasuringProcessorListWidget;
 #endif
 
 /**
@@ -87,95 +82,88 @@ protected:
 
 };
 
-//================================================================================================================
+//---------------------------------------------------------------------------
 
 /**
  * The Main Window that contains all the other widgets, tool bar, menu bar, etc.
  */
-class RptMainWindow : public QMainWindow, public MessageReceiver {
-
-Q_OBJECT
-
+class RptMainWindow : public QMainWindow {
+    Q_OBJECT
 public:
     /**
      * Default Constructor
      */
-    RptMainWindow();
+    RptMainWindow(const std::string& network = "", const std::string& dataset = "");
 	~RptMainWindow();
 
-    /**
-     * Create all Dock Widgets. Has to be called after tgt::initGL() and initCanvas().
-     */
-    void createDockWidgets();
     void createConnections();
 
     /**
-     * Initializes the TextureContainer and IdManager
+     * Initializes the TextureContainer, IdManager and OpenGL state
      */
-    void initTextureContainer();
-
-	virtual void processMessage(Message* msg, const Identifier& = Message::all_);
-
+    void initGL();
+    Volume* loadDataset(const std::string& filename, bool showProgress = true);
+                                                    
 public slots:
-    /**
-     * Adds a new processor item to the processoritem-vector and adds it to the scene.
-     */
-    void addProcessorItem(Identifier type, QPoint pos);
+    //all slots that have something to do with aggegations
+    void addAggregationSlot(std::string filename, QPoint pos);
+    void saveAggregationSlot(RptAggregationItem* aggregation);
+    void createAggregation(std::vector<RptProcessorItem*> processors, std::string name,
+                           QPoint pos = QPoint(10000,10000));
+    void insertAggregation();
+    void deaggregate();
+    void showAggregationContent();
 
-    /**
-     * Connects all selected Processors depending on their position.
-     */
-    void connectButtonPushed();
-    void clearNetwork();
-    void evaluatorButtonPushed();
-    void helpAbout();
-    void helpFirstSteps();
-    void openFileButtonPushed();
-    void addAggregationSlot(std::string filename, QPoint position);
+    //all slots that are used in opening or saving a network
     void openNetworkFileButtonPushed();
     void openNetworkFile(const QString& filename, bool loadVolumeSetContainer = false);
-    void sendProcessorToTable(Processor*,QVector<int>);
     void saveNetworkButtonPushed();
     void saveNetworkAsButtonPushed();
     void saveCurrentNetwork();
-    void saveAggregationSlot(RptAggregationItem* aggregation);
-    void createAggregation(std::vector<RptProcessorItem*> processors, std::string name, QPoint pos = QPoint(10000,10000));
-    void insertAggregation();
-    void editAggregation();
-    void deaggregate();
-    void selectAll();
-    void showAggregationContent();
+    void openRecentFile();
+
+    //all slots for volume management
+    void openFileButtonPushed();
+    void setLoadVolumeSetContainer();
+
+    //slots for buttons in the menu or toolbar
+    void evaluatorButtonPushed();
+    void helpAbout();
+    void helpFirstSteps();
+    void connectButtonPushed();
+    void setResetSettings(bool);
+    void rebuildShaders();
     void setReuseTargets();
+
+    //slots for attaching and detaching the preview window
+    void connectCanvasModifier(bool connect);
+
+    //remaining slots
+    void addProcessorItem(Identifier type, QPoint pos);
+    void processorSelected(Processor* processor);
+    void selectAll();
+    void changeProcessorInfo();
+    void showProperties();
+    void deleteSlot();
     void copyButtonPushed();
     void pasteButtonPushed();
     void createPropertySet();
-    void deleteSlot();
-    void rebuildShaders();
-    void changeProcessorInfo();
+    
+    void clearNetwork();
     void networkModified();
-    void openRecentFile();
-    //void openRecentFile(const QString& filename, const QPoint& position);
-    void showProperties();
-    void dicomDirFinished();
-    bool getFileDialog(QStringList& filenames, QDir& dir);
-    void connectCanvasModifier(bool connect);
-    void detachCanvasSlot();
-    void reAttachCanvasSlot();
 
 private slots:
-    void fileOpenDicomDir();
-    void fileOpenDicomFiles();
+    void runScript();
+    void navigationActionTriggered(QAction* action);
 
 private:
     void updateWindowTitle();
     
-    Volume* loadDataset(const std::string& filename);
-
     void createMenuAndToolBar();
-    void keyPressEvent(QKeyEvent *event);
     void closeEvent(QCloseEvent *event);
     void sortByPosition(std::vector<RptGuiItem*> &v);
-    void createLoadedAggregations(std::map<int,std::vector<RptProcessorItem*> *> aggroList,std::map<int,std::string> aggroNameMap, QPoint pos = QPoint(10000,10000));
+    void createLoadedAggregations(std::map<int,std::vector<RptProcessorItem*> *> aggroList,
+                                  std::map<int,std::string> aggroNameMap, QPoint pos = QPoint(10000,10000));
     void addToScene(RptNetwork& rptnet);
     void clearScene();
     void askSaveNetwork();
@@ -186,32 +174,34 @@ private:
     std::vector<RptProcessorItem*> copyProcessors();
     void addCurrentFileToRecents();
     void updateRecentFileActions();
-    static const int maxRecents = 5;
-    QAction *recentFileActs[maxRecents];
+
+    void initializeProcessorItem(RptProcessorItem* item, QPoint pos = QPoint(0, 0));
+    void initializeProcessor(Processor* processor);
+    void addAggregationsToScene(RptNetwork& rptnet, QPoint pos = QPoint(0,0));
 
     /**
-    * A drag event for loading network files
-    * \param event The event happening on entering the window
-    */
+     * A drag event for loading network files
+     * \param event The event happening on entering the window
+     */
     void dragEnterEvent(QDragEnterEvent* event);
+    
     /**
-    * The drop event for loading network files
-    * \param event The event happening on dropping the file
-    */
+     * The drop event for loading network files
+     * \param event The event happening on dropping the file
+     */
     void dropEvent(QDropEvent* event);
 
-    CanvasModifier* canvasMod_;
-
-	/**
-	* Returns the position the given processor has in the given vector. If not found, -1 is returned. This is
-	* used in copy/paste.
-	*/
-	int findProcessor(std::vector<RptProcessorItem*> vector, Processor* processor);
+    /**
+     * Returns the position the given processor has in the given vector. If not found, -1 is returned. This is
+     * used in copy/paste.
+     */
+    int findProcessor(std::vector<RptProcessorItem*> vector, Processor* processor);
 
     // TESTING
-	void dumpProcessorConnectionInfos();
+    void dumpProcessorConnectionInfos();
 
-    /** Clears the vectors for processors, aggregations and proeperty set and
+    /** 
+     * Clears the vectors for processors, aggregations and proeperty set and
      * calls delete on every single pointer.
      * This is needed in order to load a network when there has already been one:
      * the processor's, aggregation's and property set's dtors need to be called
@@ -220,8 +210,26 @@ private:
      */
     void clearDataVectors();
 
+    /**
+     * Adds an entry to the "Tools" menu and toolbar
+     *
+     * @param name object name used for serialization of position and size
+     * @return the newly created window
+     */
+    VoreenToolWindow* addToolWindow(QAction* action, QWidget* widget, const QString& name = "");
+
+    /**
+     * Create all tool windows. Has to be called after tgt::initGL() and initCanvas().
+     */
+    void createToolWindows();   
+    
+    static const int maxRecents = 5;
+    QAction *recentFileActs[maxRecents];
+
+    CanvasModifier* canvasMod_;
+
     // extracts the processor from the processors_ - vector
-	std::vector<Processor*> getAllProcessors();
+    std::vector<Processor*> getAllProcessors();
 
     // central widget: graph editor
     RptGraphWidget* graphWidget_;
@@ -230,13 +238,14 @@ private:
     RptAggregationListWidget* aggregationListWidget_;
     // widget for infos
     QTextBrowser* processorInfoBox_;
+
     // widget for preview using the voreen engine
     RptPainterWidget* painterWidget_;
 
     // vector with created processor wrappers
     std::vector<RptProcessorItem*> processors_;
-	// vector containing all RptPropertySetItems in the scene
-	std::vector<RptPropertySetItem*> propertySets_;
+    // vector containing all RptPropertySetItems in the scene
+    std::vector<RptPropertySetItem*> propertySets_;
     // vector with aggregations
     std::vector<RptAggregationItem*> aggregations_;
 
@@ -252,16 +261,17 @@ private:
 
     // displays the properties of a given processor
     RptPropertyListWidget* propertyListWidget_;
+	VoreenToolWindow* propertyListTool_;
 
-    // Qt menus and tool bar
+	// Qt menu
     QMenuBar* menu_;
-    QToolBar* toolBar_;
-
     QMenu* fileMenu_;
     QMenu* dicomMenu_;
     QMenu* editMenu_;
-    QMenu* helpMenu_;
+    QMenu* toolsMenu_;
     QMenu* optionsMenu_;
+    QMenu* helpMenu_;
+    QMenu* navigationMenu_;
 
     QAction* aboutAction_;
     QAction* clearAction_;
@@ -279,6 +289,9 @@ private:
     QAction* openDicomDirAct_;
     QAction* openDicomFilesAct_;
     QAction* quitAction_;
+    QAction* trackballNaviAction_;
+    QAction* flythroughNaviAction_;
+    QActionGroup* navigationGroup_;
 
     QAction* selectAllAction_;
     QAction* copyAction_;
@@ -286,19 +299,17 @@ private:
     QAction* setReuseTargetsAction_;
     QAction* rebuildShadersAction_;
     QAction* connectCanvasModAct_;
+    QAction* resetSettingsAct_;
+    QAction* setLoadVolumeSetContainerAction_;
+    QAction* scriptAction_;
 
-    QDockWidget* sceneDock_;
-    QTabWidget* contentTab_;
-    QDockWidget *contentDock_;
-    QTabWidget *canvasTab_;
-    QDockWidget *canvasDock_;
     VolumeSetWidget* volumeSetWidget_;
 
-    LayoutContainer *processorLayout_;
-    LayoutContainer *propertyLayout_;
+    LayoutContainer* processorLayout_;
+    LayoutContainer* propertyLayout_;
 
-	//The TextureContainer
-	TextureContainer* tc_;
+    //the texturecontainer
+    TextureContainer* tc_;
 
     GeometryContainer* geoContainer_;
     VolumeSetContainer* volsetContainer_;
@@ -309,24 +320,16 @@ private:
     //Not sure yet what this is for
     IDManager id1_;
 
-    IOSystem* ioSystem_;
     TransFuncPlugin* transferFuncPlugin_;
 
     // array for session management. has to be a member, because
     // session can only be resored after creation of widgets
     QByteArray sessionArray_;
+    bool resetSettings_;
 
-#ifdef VRN_MODULE_GLYPHS
-    GlyphsPlugin* glyphsPlugin_;
-    voreen::DataSourceContainer* datasourceContainer_;
-#endif
-    VolumeSerializerPopulator volumeSerializerPopulator_;
-//voreen::VolumeContainer* volumeContainer_;
 
     /// Current network path
     QString networkPath_;
-    /// Current data set path
-    QString datasetPath_;
 
     QString currentFile_; //filename of current network
 	std::vector<RptProcessorItem*> copyPasteProcessors_;
@@ -334,19 +337,33 @@ private:
 	std::vector<RptAggregationItem*> copyPasteAggregations_;
 	std::vector<RptPropertySetItem*> copyPastePropertySets_;
 	std::vector<ConnectionInfoForOneProcessor*> copyPasteConnectionInfos_;
-	std::map<int,std::vector<int> > aggregationMap_;
-	std::map<int,std::string> aggregationNameMap_;
+	std::map<int, std::vector<int> > aggregationMap_;
+	std::map<int, std::string> aggregationNameMap_;
 	int numberOfAggregations_;
 	int numberOfPropertySets_;
 	std::map<int,std::vector<int> > propertySetMap_;
 	std::map<int,std::vector<int> > propertySetAggregationMap_;
 	std::map<int,std::string> propertySetNameMap_;
 
-#ifdef VRN_WITH_DCMTK
-    DicomDirDialog* dicomDirDialog_;
+#ifdef VRN_MODULE_MEASURING
+    LayoutContainer* measuringLayout_;
+	SelectionProcessorListWidget* selectionProcessorListWidget_;
+	MeasuringProcessorListWidget* measuringProcessorListWidget_;
+    RptPropertyListWidget* selectionProcessorPropertyListWidget_;
+    RptPropertyListWidget* measuringProcessorPropertyListWidget_;
 #endif
+
     QDir fileDialogDir_;
 
+    bool loadVolumeSetContainer_;
+
+    VoreenToolBar* toolbar_;
+
+    QList<VoreenToolWindow*> toolWindows_;
+    QSettings settings_;
+
+    QString defaultNetwork;
+    QString defaultDataset;    
 };
 
 } // namespace 

@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "tgt/camera.h"
+#include "tgt/shadermanager.h"
 
 #include "voreen/core/opengl/texunitmapper.h"
 #include "voreen/core/opengl/texturecontainer.h"
@@ -40,6 +41,7 @@
 #include "voreen/core/vis/property.h"
 #include "voreen/core/xml/serializable.h"
 #include "voreen/core/vis/processors/port.h"
+
 
 namespace tgt {
 class Shader;
@@ -51,55 +53,10 @@ class ProxyGeometry;
 class PortMapping;
 class LocalPortMapping;
 class GeometryContainer;
-class TextureContainer;
-class VolumeContainer;
-class VolumeGL;
-class VolumeTexture;
-
-//TODO: move this into processor as local structs
-// One site of a connection between to processors. Needed for serialization.
-struct ConnectionSite {
-    int processorId;
-    std::string portId;
-    int order;
-};
-
-// Needed to be able to sort connections based on the order of the outgoing side.
-struct ConnectionCompare {
-    bool operator() ( std::pair< ConnectionSite, ConnectionSite > l,
-                            std::pair< ConnectionSite, ConnectionSite > r) {
-        // connect outgoing connections with lower order prior to those with higher order
-        return (l.second.order<r.second.order);
-    }
-};
-
-// Needed for Serialization.
-// Note: The order for the first port is not really needed.
-typedef std::vector< std::pair< ConnectionSite, ConnectionSite > > ConnectionMap;
-           
+class TextureContainer;        
 
 class PropertyOwner {
-public:
-
 };
-
-/**
- * Macro for automatic registration of Processors using static initialization. The information
- * is used in ProcessorFactory::initializeClassList() which also takes care of freeing the objects.
- *
- * Insert this macro into the declaration (private part) of every processor that should
- * automatically register itself.
- */
-#define VRN_PROCESSOR_CLASS(A) \
-    static const bool isRegistered; \
-    static Processor* createStatic() { return new A; }
-
-/**
- * Insert this macro into the definition of every processor that should automatically register
- * itself.
- */
-#define VRN_PROCESSOR_REGISTER(A) \
-    const bool A::isRegistered = Processor::registerProcessor(&A::createStatic);
 
 /**
  * The base class for all processor classes used in Voreen.
@@ -112,20 +69,33 @@ public:
         VRN_ERROR               = 0x202
     };
 
-    // Function pointer to a static method that returns a new instance of this class. Used for
-    // automatic registration of processors.
-    typedef Processor* (*CreateProcessorFunctionPointer)();
+    // One site of a connection between to processors. Needed for serialization.
+    struct ConnectionSite {
+        int processorId;
+        std::string portId;
+        int order;
+    };
 
-    // Maximum number of different processor types that can register using static
-    // initialization. Can not use a dynamic std::vector because the order of initialization is
-    // unknown.
-    static const size_t MAX_REGISTERED_PROCESSORS = 100;
+    // Needed to be able to sort connections based on the order of the outgoing side.
+    struct ConnectionCompare {
+        bool operator() ( std::pair< ConnectionSite, ConnectionSite > l,
+                          std::pair< ConnectionSite, ConnectionSite > r) {
+            // connect outgoing connections with lower order prior to those with higher order
+            return (l.second.order<r.second.order);
+        }
+    };
+
+    // Needed for Serialization.
+    // Note: The order for the first port is not really needed.
+    typedef std::vector< std::pair< ConnectionSite, ConnectionSite > > ConnectionMap;
+
     
     /**
-    * @param camera The tgt::Camera which is used with this class.
-    * @param tc Some processor subclasses must know of the TextureContainer.
-    */
+     * @param camera The tgt::Camera which is used with this class.
+     * @param tc Some processor subclasses must know of the TextureContainer.
+     */
     Processor(tgt::Camera* camera=0, TextureContainer* tc = 0);
+    
     virtual ~Processor();
     
     virtual const Identifier getClassName() const = 0;
@@ -166,7 +136,7 @@ public:
     virtual void setCamera(tgt::Camera* camera);
 
     /// Returns the camera used by this class.
-    virtual tgt::Camera* getCamera() const { return camera_; }
+    virtual tgt::Camera* getCamera() const;
 
     /// Returns the light source position in world coordinates
     virtual tgt::vec3 getLightPosition() const;
@@ -190,14 +160,18 @@ public:
 
     /// Set a name for this processor
     void setName(const std::string& name);
+
     /// Returns the name of this processor.
     std::string getName() const;
 
 	// Returns processor information
-	virtual const std::string getProcessorInfo() const { return "No information available"; }
+	virtual const std::string getProcessorInfo() const;
 
     /// Set the size of this processor. Forces an update of the projection matrix.
     virtual void setSize(const tgt::ivec2& size);
+
+    /// Set the size of this processor. Forces an update of the projection matrix.
+    virtual void setSize(const tgt::vec2& size);
 
     /// Marks that the processor needs to be updated
     virtual void invalidate();
@@ -211,27 +185,27 @@ public:
     /**
     * Returns the inports of this processor.
     */
-    virtual std::vector<Port*> getInports() const {return inports_;}
+    virtual std::vector<Port*> getInports() const;
     
     /**
     * Returns the outports of this processor.
     */
-    virtual std::vector<Port*> getOutports() const {return outports_;}
+    virtual std::vector<Port*> getOutports() const;
 
     /**
     * Returns the coprocessor inports of this processor.
     */
-	virtual std::vector<Port*> getCoProcessorInports() const {return coProcessorInports_;}
+	virtual std::vector<Port*> getCoProcessorInports() const;
 
     /**
     * Returns the coprocessor outports of this processor.
     */
-	virtual std::vector<Port*> getCoProcessorOutports() const {return coProcessorOutports_;}
+	virtual std::vector<Port*> getCoProcessorOutports() const;
 
     /**
     * Returns the private ports of this processor.
     */
-	virtual std::vector<Port*> getPrivatePorts() const {return privatePorts_;}
+	virtual std::vector<Port*> getPrivatePorts() const;
 
     /**
     * Returns the port that contains (or better that is represented by) the given Identifier. 
@@ -250,7 +224,6 @@ public:
     * @param type The identifier by which this port is adressed in the processor. Something like "image.entrypoints" for example.
     * @param inportIdent Some processors need to render to the same rendertarget they got their input from. If this is neccessary,
     *                    inportIdent holds the Identifier of that inport.
-    * @param allowMultipleConnections Can multiple ports be connected to this processor? Default is true for outports
     * @param isPersistent Should the render result carried by this port be persistent in the TC?
     */
     virtual void createOutport(Identifier type, bool isPersistent = false,Identifier inportIdent="dummy.port.unused");
@@ -276,40 +249,39 @@ public:
     virtual void createCoProcessorOutport(Identifier type, FunctionPointer function=0, bool allowMultipleConnections = true);
 
     /**
-    * Creates a new private port for this processor. Private ports are ports that get a render
-    * target, but that target isn't connected to any other processors. (That port doesn't show
-    * up in rptgui). The combiner for example needs two temporary TC targets to work correctly,
-    * and this is how it gets them. Just create two privatePorts and render your temporary
-    * render results to those targets. Private ports are always persistent.
-    * 
-    * @param type The identifier by which this port is adressed in the processor. Something
-    * like "image.entrypoints" for example.
-    */
+     * Creates a new private port for this processor. Private ports are ports that get a render
+     * target, but that target isn't connected to any other processors. (That port doesn't show
+     * up in rptgui). The combiner for example needs two temporary TC targets to work correctly,
+     * and this is how it gets them. Just create two privatePorts and render your temporary
+     * render results to those targets. Private ports are always persistent.
+     * 
+     * @param type The identifier by which this port is adressed in the processor. Something
+     * like "image.entrypoints" for example.
+     */
 	virtual void createPrivatePort(Identifier type);
 
     /**
-    * Connects one outport of this processor with one inport of another processor. You can use
-    * this function to manually build processor networks, but the easier way is to use rptgui.
-    *
-    * @param outport The outport of this processor that is to be connected
-    * @param inport The inport of the target processor to which the outport should connect.
-    */
+     * Connects one outport of this processor with one inport of another processor. You can use
+     * this function to manually build processor networks, but the easier way is to use rptgui.
+     *
+     * @param outport The outport of this processor that is to be connected
+     * @param inport The inport of the target processor to which the outport should connect.
+     */
     virtual bool connect(Port* outport, Port* inport);
 
     /**
-    * Tests if the outport of this processor can be connected to the inport of the other processor
-    */
+     * Tests if the outport of this processor can be connected to the inport of the other processor
+     */
 	virtual bool testConnect(Port* outport, Port* inport);
 
     /**
-    * Disconnectes the outport of this processor from the inport from another processor
-    */
+     * Disconnectes the outport of this processor from the inport from another processor
+     */
     virtual bool disconnect(Port* outport, Port* inport);
     
-    static const std::string XmlElementName;
     /**
-    * Returns the name of the xml element used when serializing the object
-    */
+     * Returns the name of the xml element used when serializing the object
+     */
     virtual std::string getXmlElementName() const;
     
     /**
@@ -333,66 +305,70 @@ public:
     /**
      * Serialization for metadata
      */
-    void addToMeta(TiXmlElement* elem) { meta_.addData(elem); }
-    void removeFromMeta(std::string elemName) { meta_.removeData(elemName); }
-    void clearMeta() { meta_.clearData(); }
-    TiXmlElement* getFromMeta(std::string elemName) const { return meta_.getData(elemName); }
-    bool hasInMeta(std::string elemName) const { return meta_.hasData(elemName); }
+    void addToMeta(TiXmlElement* elem);
+    void removeFromMeta(std::string elemName);
+    void clearMeta();
+    TiXmlElement* getFromMeta(std::string elemName) const;
+    bool hasInMeta(std::string elemName) const;
 
     /**
-    * Checks whether this processor is a coprocessor or not
-    */
-    bool getIsCoprocessor() const {return isCoprocessor_;}
+     * Checks whether this processor is a coprocessor or not
+     */
+    bool getIsCoprocessor() const;
 
     /**
-    * Sets whether this processor is a coprocessor or not. If you want to create a coprocessor you have
-    * to use this function in the constructor of your processor. This is far from optimal of course, we 
-    * should have a CoProcessor class, but we dont't :) 
-    */ 
-    void setIsCoprocessor(bool b) {isCoprocessor_ = b;}
+     * Sets whether this processor is a coprocessor or not. If you want to create a coprocessor you have
+     * to use this function in the constructor of your processor. This is far from optimal of course, we 
+     * should have a CoProcessor class, but we dont't :) 
+     */ 
+    void setIsCoprocessor(bool b);
 
     /**
-    * Returns whether the render results of this processor are currently cached or not. The networkevaluator
-    * checks this before every rendering, you shouldn't have to use this function at all.
-    */
-    bool getCached() const {return cached_;}
+     * Returns whether the render results of this processor are currently cached or not. The networkevaluator
+     * checks this before every rendering, you shouldn't have to use this function at all.
+     */
+    bool getCached() const;
 
     /**
-    * Sets whether the render results of this processor are currently cached or not. The networkevaluator
-    * can do this after every rendering, you shouldn't have to use this function at all.
-    */
-	void setCached(bool b) {
-		cached_ = b;
-	}
+     * Sets whether the render results of this processor are currently cached or not. The networkevaluator
+     * can do this after every rendering, you shouldn't have to use this function at all.
+     */
+	void setCached(bool b);
 
     /**
-    * Checks if it is possible to cache the render results of this processor. (That means if every outport is somehow
-    * connected to a cacherenderer, not necesserily directly). The networkevaluator checks this when analyzing a network.
-    */
-	bool getCachable() const {return cachable_;}
+     * Checks if it is possible to cache the render results of this processor. (That means if every outport is somehow
+     * connected to a cacherenderer, not necesserily directly). The networkevaluator checks this when analyzing a network.
+     */
+	bool getCachable() const;
 
     /**
-    * Sets if it is possible to cache the render results of this processor. (That means if every outport is somehow
-    * connected to a cacherenderer, not necesserily directly). The networkevaluator does this when analyzing a network.
-    */
-	void setCachable(bool b) {cachable_ = b;}
+     * Sets if it is possible to cache the render results of this processor. (That means if every outport is somehow
+     * connected to a cacherenderer, not necesserily directly). The networkevaluator does this when analyzing a network.
+     */
+	void setCachable(bool b);
 
     /// Returns the error code which occured during \a initializeGL().
-    int getInitStatus() const { return initStatus_; }
+    int getInitStatus() const;
 
     /// Returns the size of the processor canvas.
-    tgt::ivec2 getSize() const { return size_; }
+    tgt::ivec2 getSize() const;
+
+    /// Returns the size of the processor canvas.
+    tgt::vec2 getSizeFloat() const;
 
     /**
      * Returns the projection matrix which was used set
      * after the last setSize call. If you override setSize it is important
      * to set \a projectionMatrix_ accordingly.
      */
-    tgt::mat4 getProjectionMatrix() const { return camera_->getProjectionMatrix(); }
+    tgt::mat4 getProjectionMatrix() const;
 
-    void setCoarseness(float factor);
-
-	float getCoarsenessFactor() const;
+    /**
+     * Tells the processor the size of the canvas.
+     *
+     * @param size size of the canvas
+     */
+    void setCanvasSize(const tgt::ivec2& size);
 
     /** 
 	 * Set the GeometryContainer. The container must be the same as used by the
@@ -416,64 +392,33 @@ public:
      */
     Port* getOutport(Identifier type);
 
-    std::map<Port*,Port*> getOutportToInportMap() {
-        return outportToInportMap_;
-    }
+    std::map<Port*,Port*> getOutportToInportMap();
 
     /// Is this processor an end processors as it does not have any output port?
     virtual bool isEndProcessor() const;
     
-    ///Can this processor be used in the multipass section of a network (between DS and RC)
-    virtual bool isMultipassCompatible() { return false; }
-    
-    ///Set to true if this Processor is part of the multipass section. Default is false.
-    virtual void setMultipass(bool mp) { isMultipass_ = mp; }
-    
-    ///Is this processor part of the multipass section?
-    virtual bool isMultipass() { return isMultipass_; }
-    
-    ///For multipass rendering: Do some init before first pass. (Clear target...)
-    virtual void initFirstPass(LocalPortMapping* /*portMapping*/) {}
-    
-    /// Returns function pointers to the createStatic() method of all processors that have
-    /// registered using static initialization.
-    static std::vector<CreateProcessorFunctionPointer> getRegisteredProcessors() {
-        std::vector<CreateProcessorFunctionPointer> v;
-        for (size_t i=0; i < registeredProcessorsCount(); i++)
-            v.push_back(registeredProcessors_[i]);
-        return v;
-    }
-
     // identifiers commonly used in processors
-    static const Identifier delete_;
     static const Identifier setBackgroundColor_;
-    static const Identifier setCoarseness_;
-    // obsolete in the near future
-    static const Identifier setVolumeContainer_;
-    static const Identifier setCurrentDataset_;
+    static const std::string XmlElementName_;
 
 protected:
-    
     /**
-    * Are the render results of this processor cachable? That means are all outports somehow connected to a cacherenderer. Only
-    * used in the networkevaluator.
-    */
+     * Are the render results of this processor cachable? That means are all outports somehow connected to a cacherenderer. Only
+     * used in the networkevaluator.
+     */
 	bool cachable_;
 
     /**
-    * Are the render results of this processor currently cached? The networkevaluator checks this before rendering.
-    */ 
+     * Are the render results of this processor currently cached? The networkevaluator checks this before rendering.
+     */ 
 	bool cached_;
 
     /**
-    * Is this processor a coprocessor? If you want to create a coprocessor you have
-    * to use the setIsCoProcessor(bool) function in the constructor of your processor. This is far from optimal of course, we 
-    * should have a CoProcessor class, but we dont't :) 
-    */
+     * Is this processor a coprocessor? If you want to create a coprocessor you have
+     * to use the setIsCoProcessor(bool) function in the constructor of your processor. This is far from optimal of course, we 
+     * should have a CoProcessor class, but we dont't :) 
+     */
 	bool isCoprocessor_; //just temporary until we introduce coprocessors classes
-    
-    ///Is this processor in a multipass section?
-    bool isMultipass_;
     
     /// Renders a screen aligned quad.
     void renderQuad();
@@ -513,33 +458,17 @@ protected:
     /// Internally used for making high resolution screenshots.
     void setSizeTiled(uint width, uint height);
 
-    /**
-     * Registers the processor into the processor list for use with the VRN_PROCESSOR_CLASS()
-     * and VRN_PROCESSOR_REGISTER() macros. This information is retrieved by the
-     * ProcessorFactory.
-     * @param createFunc Function pointers to a method that returns a new instance of the
-     * processor to be registered.
-     */   
-    static bool registerProcessor(CreateProcessorFunctionPointer createFunc) {
-        if (registeredProcessorsCount() >= MAX_REGISTERED_PROCESSORS) {
-            return false;
-        } else {
-            registeredProcessors_[registeredProcessorsCount()] = createFunc;
-            registeredProcessorsCount()++;
-            return true;
-        }
-    }
-    
-    GeometryContainer* geoContainer_;
+    GeometryContainer* geoContainer_; ///< container that holds geomtry, e.g. points or pointlists
 
-    tgt::Camera* camera_;
-    TextureContainer* tc_;
-    TexUnitMapper tm_;//TODO: rename?
+    tgt::Camera* camera_;   ///< the camera that will be used in rendering
+    TextureContainer* tc_;  ///< manages render targets. That are textures or the framebuffer.
+    TexUnitMapper tm_;      ///< manages texture units 
 
-    std::string name_;
-    tgt::ivec2 size_;
-	float coarsenessFactor_;
-    ColorProp backgroundColor_;
+    std::string name_;      ///< name of the processor
+    tgt::vec2 size_;        ///< size of the viewport of the processor
+    tgt::ivec2 canvasSize_; ///< size of the canvas
+	
+    ColorProp backgroundColor_; ///< the color of the background
 
     /// The position of the light source used for lighting calculations in world coordinates
     FloatVec4Prop lightPosition_;
@@ -562,29 +491,11 @@ protected:
     /// The material's specular exponent according to the Phong lighting model
     FloatProp materialShininess_;
 
-    std::vector<Property*> props_;
+    std::vector<Property*> props_; ///< vector with all properties of the processor
 
-    static const std::string loggerCat_;
+    static const std::string loggerCat_; ///< category used in logging
 
-    // commonly used texture units
-    static const Identifier entryParamsTexUnitIdent_;
-    static const Identifier entryParamsDepthTexUnitIdent_;
-    static const Identifier exitParamsTexUnitIdent_;
-    static const Identifier exitParamsDepthTexUnitIdent_;
-    static const Identifier volTexUnitIdent_;
-    static const Identifier volTexUnit2Ident_;
-    static const Identifier transferTexUnitIdent_;
-    static const Identifier segmentationTexUnitIdent_;
-    static const Identifier shadowTexUnit1Ident_;
-    static const Identifier shadowTexUnit2Ident_;
-    static const Identifier shadowTexUnit3Ident_;
-    static const Identifier shadowTexUnit4Ident_;
-    static const Identifier ambTexUnitIdent_;
-    static const Identifier ambLookupTexUnitIdent_;
-    static const Identifier firstHitNormalsTexUnitIdent_;
-    static const Identifier firstHitPointsTexUnitIdent_;
-
-    int initStatus_;
+    int initStatus_; ///< status of initialization
 
 private:
 
@@ -599,6 +510,7 @@ private:
      * List of ports that specifies which inputs this processor needs.
      */
     std::vector<Port*> inports_;
+    
     /**
      * List of ports that specifies which outputs this processor creates
      */
@@ -619,23 +531,7 @@ private:
      */
     std::vector<Port*> privatePorts_;
 
-    /**
-     * List of all processors which have registered through the VRN_PROCESSOR_CLASS() and
-     * VRN_PROCESSOR_REGISTER() macros. Contains for each processor a functions pointer to a
-     * method that returns a new instance of the respective processor. A static array is used
-     * instead of a std::vector because the initialization order for the vector is unknown.
-     */
-    static CreateProcessorFunctionPointer registeredProcessors_[MAX_REGISTERED_PROCESSORS];
-
-    /**
-     * Number of processors which have registered through the VRN_PROCESSOR_CLASS() and
-     * VRN_PROCESSOR_REGISTER() macros. Use a method instead a static variable to ensure
-     * correct initialization order.
-     */
-    static size_t& registeredProcessorsCount() { static size_t count = 0; return count; } 
-
     MetaSerializer meta_;
-
 };
 
 typedef TemplateMessage<Processor*> ProcessorPtrMsg;

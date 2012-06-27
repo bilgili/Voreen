@@ -646,7 +646,7 @@ protected:
 
 class FileDialogProp : public TemplateProperty< std::string > {
 public:
-    FileDialogProp(Identifier ident, std::string guiText, std::string dialogCaption, std::string directory, std::string fileFilter);
+    FileDialogProp(Identifier ident, std::string guiText, std::string dialogCaption, std::string directory, std::string fileFilter, bool* needRecompileShader);
 
     virtual std::string PropertyType() const { return "FileDialogProp"; }
     static std::string Type() { return "FileDialogProp"; }
@@ -655,6 +655,7 @@ public:
     std::string getDirectory() const;
     std::string getFileFilter() const;
     TiXmlElement* serializeToXml() const;
+    void updateFromXml(TiXmlElement* propElem);
 protected:
     std::string dialogCaption_;
     std::string directory_;

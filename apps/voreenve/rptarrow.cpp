@@ -36,28 +36,19 @@
 #include "rptpropertysetitem.h"
 #include "rpttcttooltip.h"
 
-//#include <QGraphicsProxyWidget>
-//#include <QPushButton>
-//#include <sstream>
+#include "tgt/math.h"
 
 namespace voreen {
 
-extern NetworkEvaluator* uglyglobalevaluator; // FIXME: Remove after we found a way to access the netev for tooltips
-
-//FIXME: use other Pi ;)
-static const double Pi = 3.14159265358979323846264338327950288419717;
-//static double TwoPi = 2.0 * Pi;
-
 RptArrow::RptArrow(QGraphicsItem *sourceNode, QGraphicsItem *destNode)
     : QGraphicsItem()
-    , arrowSize_(10) //, tooltip_(0)
+    , arrowSize_(10)
 {
     source_ = sourceNode;
     dest_ = destNode;
 
     color_ = Qt::black;
 
-    //setFlag(ItemIsMovable);
     setFlag(ItemIsSelectable);
     if (source_->type() == RptPortItem::Type)
         setZValue(0.2);
@@ -66,20 +57,16 @@ RptArrow::RptArrow(QGraphicsItem *sourceNode, QGraphicsItem *destNode)
     // activate hover events for highlighting
     if (!acceptsHoverEvents())
         setAcceptsHoverEvents(true);
-    
-    //setToolTip("ZOMG has Tooltip!");
+
 }
 
 RptArrow::~RptArrow() {
-    //this->setParentItem(0);
     // check if arrow still in scene, because removeItem will crash then
     
-    if (scene() != 0) {
+    if ((scene() != 0) && (scene()->views().count() > 0)) {
         static_cast<RptGraphWidget*>(scene()->views()[0])->hideRptTooltip(); // FIXME: Hack to fix a crash - make this prettier!
         scene()->removeItem(this);
     }
-    //delete tooltip_;
-    //tooltip_ = 0;
 }
 
 void RptArrow::setDestNode(QGraphicsItem* node) {
@@ -209,28 +196,24 @@ QRectF RptArrow::boundingRect() const {
 }
 
 QPointF RptArrow::center() const {
-    return QPointF((sourcePoint_.x()+destPoint_.x())/2,(sourcePoint_.y()+destPoint_.y())/2);
+    return QPointF((sourcePoint_.x() + destPoint_.x()) / 2,
+                   (sourcePoint_.y() + destPoint_.y()) / 2);
 }
 
 QPainterPath RptArrow::shape() const {
-
     QPainterPath path(sourcePoint_);
 
     qreal defl = deflection();
-    //QPointF center((sourcePoint_+destPoint_)/2);
     if (source_->type() == RptPortItem::Type) {
         if (static_cast<RptPortItem*>(source_)->getPortType().getSubString(0) == "coprocessor") {
-            path.cubicTo(QPointF(sourcePoint_)+QPointF(defl,0), QPointF(destPoint_)-QPointF(defl,0), QPointF(destPoint_)-QPointF(0,0));
+            path.cubicTo(QPointF(sourcePoint_) + QPointF(defl, 0),
+                         QPointF(destPoint_) - QPointF(defl, 0),
+                         QPointF(destPoint_) - QPointF(0, 0));
         }
         else {
-            path.cubicTo(QPointF(sourcePoint_)+QPointF(0,defl), QPointF(destPoint_)-QPointF(0,defl), QPointF(destPoint_)-QPointF(0,arrowSize_));
-            // shift center to the right if s.y > d.y
-            //float variance = 10;
-            //float amplitude = 1000;
-            //center.rx() += amplitude/(sqrt(2*Pi)*variance)*exp(-pow(sourcePoint_.x()-destPoint_.x()/variance,2));
-            //if (sourcePoint_.y()>destPoint_.y()) center.rx() += 20;
-            //path.cubicTo(QPointF(sourcePoint_)+QPointF(0,defl), center, center);
-            //path.cubicTo(center, QPointF(destPoint_)-QPointF(0,defl), QPointF(destPoint_)-QPointF(0,arrowSize_));
+            path.cubicTo(QPointF(sourcePoint_) + QPointF(0, defl),
+                         QPointF(destPoint_) - QPointF(0, defl),
+                         QPointF(destPoint_) - QPointF(0, arrowSize_));
             //some space for the arrow's head
             path.lineTo(destPoint_);
         }
@@ -238,37 +221,10 @@ QPainterPath RptArrow::shape() const {
     else {
         path.lineTo(destPoint_);
     }
-
- 
-    /* I see no reason to add the arrow's head to the shape - d_kirs04
-    // Draw the arrows if there's enough room
-    QLineF line(sourcePoint_, destPoint_);
-
-    double angle = ::acos(line.dx() / line.length());
-    if (line.dy() >= 0)
-        angle = TwoPi - angle;
-
-    QPointF sourceArrowP1 = sourcePoint_ + QPointF(sin(angle + Pi / 3) * arrowSize_,
-        cos(angle + Pi / 3) * arrowSize_);
-    QPointF sourceArrowP2 = sourcePoint_ + QPointF(sin(angle + Pi - Pi / 3) * arrowSize_,
-        cos(angle + Pi - Pi / 3) * arrowSize_);
-    QPointF destArrowP1 = destPoint_ + QPointF(sin(angle - Pi / 3) * arrowSize_,
-        cos(angle - Pi / 3) * arrowSize_);
-    QPointF destArrowP2 = destPoint_ + QPointF(sin(angle - Pi + Pi / 3) * arrowSize_,
-        cos(angle - Pi + Pi / 3) * arrowSize_);
-
-    path.addPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);            std::cout << "Args" << std::endl;
-
-
-    path.addPolygon(QPolygonF() << sourceArrowP1 << sourceArrowP2 << destArrowP2 << destArrowP1);
-    */
-
     return path;
 }
 
 void RptArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) {
-    // Draw the line itself
-    // QLineF line(sourcePoint_, destPoint_);
     QColor tmpColor;    // needed for hover effect
     if (isSelected())
         tmpColor = Qt::red;
@@ -276,49 +232,37 @@ void RptArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
         tmpColor = color_;
     if (option->state & QStyle::State_MouseOver) {
         if (tmpColor == Qt::black)    // Qt is unable to brighten up Qt::black
-			tmpColor = Qt::darkGray;
+			tmpColor = Qt::white;
 		else
 			tmpColor = tmpColor.light();
     }
 	painter->setPen(QPen(tmpColor, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    //painter->drawLine(line);
+
 
 	QPainterPath path(sourcePoint_);
     path.addPath(shape());
  	painter->drawPath(path);
 
-    // Draw the arrows if there's enough room // The actually isn't any check for room...
-    /*
-    double angle = ::acos(line.dx() / line.length());
-    if (line.dy() >= 0)
-        angle = TwoPi - angle;
-    */
 	// Right now I want a fixed angle for the bezier stuff
-	double angle = -Pi / 2;
+    double angle = -tgt::PIf / 2.0;
 
-    QPointF sourceArrowP1 = sourcePoint_ + QPointF(sin(angle + Pi / 3) * arrowSize_,
-        cos(angle + Pi / 3) * arrowSize_);
-    QPointF sourceArrowP2 = sourcePoint_ + QPointF(sin(angle + Pi - Pi / 3) * arrowSize_,
-        cos(angle + Pi - Pi / 3) * arrowSize_);
-    QPointF destArrowP1 = destPoint_ + QPointF(sin(angle - Pi / 3) * arrowSize_,
-        cos(angle - Pi / 3) * arrowSize_);
-    QPointF destArrowP2 = destPoint_ + QPointF(sin(angle - Pi + Pi / 3) * arrowSize_,
-        cos(angle - Pi + Pi / 3) * arrowSize_);
+    QPointF sourceArrowP1 = sourcePoint_ + QPointF(sin(angle + tgt::PIf / 3.f) * arrowSize_,
+        cos(angle + tgt::PIf / 3.f) * arrowSize_);
+    QPointF sourceArrowP2 = sourcePoint_ + QPointF(sin(angle + tgt::PIf - tgt::PIf / 3.f) * arrowSize_,
+        cos(angle + tgt::PIf - tgt::PIf / 3.f) * arrowSize_);
+    QPointF destArrowP1 = destPoint_ + QPointF(sin(angle - tgt::PIf / 3.f) * arrowSize_,
+        cos(angle - tgt::PIf / 3.f) * arrowSize_);
+    QPointF destArrowP2 = destPoint_ + QPointF(sin(angle - tgt::PIf + tgt::PIf / 3.f) * arrowSize_,
+        cos(angle - tgt::PIf + tgt::PIf / 3.f) * arrowSize_);
 
     painter->setBrush(tmpColor);
 
     if (source_->type() == RptPortItem::Type) {
         if (static_cast<RptPortItem*>(source_)->getPortType().getSubString(0) != "coprocessor") {
-            //painter->drawPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);
             painter->drawPolygon(QPolygonF() << destPoint_ << destArrowP1 << destArrowP2);
         }
     }
-  
-    // draw bounding rect
-    //painter->setBrush(Qt::NoBrush);
-    //painter->drawRect(boundingRect());
 }
-
 
 int RptArrow::getSourceTextureContainerTarget(NetworkEvaluator* neteval) const {
     RptPortItem* sourceportitem = dynamic_cast<RptPortItem*>(source_); // Only has TCTarget if it is a Port
@@ -336,49 +280,34 @@ int RptArrow::getSourceTextureContainerTarget(NetworkEvaluator* neteval) const {
     }
 }
 
-/* This is done in the rptgraphwidget
-bool RptArrow::sceneEvent(QEvent* event) {
-    // FIXME: IMHO this should be done with GraphicsSceneHelp but those Events never reach the Items :/
-    if (event->type() == QEvent::GraphicsSceneHoverEnter) {
-        //QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
-        showTCTTooltip();
-    } else if (event->type() == QEvent::GraphicsSceneHoverLeave) {
-        hideTCTTooltip();
+QGraphicsItem* RptArrow::rptTooltip() const {    
+    // If there is a tctarget and the network is valid I can show a Tooltip
+    int tctarget = -1;    
+    NetworkEvaluator* neteval = 0;
+
+    // Retrieve the NetworkEvaluator from the RptGraphWidget that is the parent
+    if (scene() && scene()->parent()) {
+        if (dynamic_cast<RptGraphWidget*>(scene()->parent()))
+            neteval = dynamic_cast<RptGraphWidget*>(scene()->parent())->getEvaluator();
+        if (neteval) 
+            tctarget = getSourceTextureContainerTarget(neteval);
     }
     
-    // Used this to figure out which events actually arrive here
-    // std::ostringstream s;
-    // s << event->type();
-    //std::cout << s.str() << std::endl;
-
-    return QGraphicsItem::sceneEvent(event);
-}
-*/
-
-QGraphicsItem* RptArrow::rptTooltip() const {
-    // Where do I get the networkevaluator from?
-    NetworkEvaluator* neteval = uglyglobalevaluator; // FIXME: Need to get the NetworkEvaluator from different source
-    int tctarget = getSourceTextureContainerTarget(neteval);
-    // If there is a tctarget and the network is valid I can show a Tooltip
     if (tctarget != -1 && neteval->isValid()) {
-        /*
-        if (!tooltip_) {
-            tooltip_ = new RptTCTTooltip(0,0,100,100);
-            static_cast<RptTCTTooltip*>(tooltip_)->initialize(tctarget, neteval->getTextureContainer());
-        }
-        */
-        RptTCTTooltip* tooltip = new RptTCTTooltip(-100,-100,100,100);
+        RptTCTTooltip* tooltip = new RptTCTTooltip(-100, -100, 100, 100);
         tooltip->initialize(tctarget, neteval->getTextureContainer());
         return tooltip;
-    } else {
-        //QGraphicsRectItem* notooltip = new QGraphicsRectItem(-112, -20, 122, 20);
-        QGraphicsSimpleTextItem* notooltiptext = new QGraphicsSimpleTextItem("no tooltip available");
-        QGraphicsRectItem* notooltip = new QGraphicsRectItem((notooltiptext->boundingRect()).adjusted(-4,0,4,0));
+    }
+    else {
+        QGraphicsSimpleTextItem* notooltiptext
+            = new QGraphicsSimpleTextItem(QObject::tr("no tooltip available"));
+        QGraphicsRectItem* notooltip
+            = new QGraphicsRectItem((notooltiptext->boundingRect()).adjusted(-4, 0, 4, 0));
         notooltiptext->setParentItem(notooltip);
-        notooltip->translate(-notooltip->rect().width(),-notooltip->rect().height());
-        notooltip->setBrush(QBrush(QColor(253, 237, 212),Qt::SolidPattern));
+        notooltip->translate(-notooltip->rect().width(), -notooltip->rect().height());
+        notooltip->setBrush(QBrush(QColor(253, 237, 212), Qt::SolidPattern));
         return notooltip;
     }
 }
 
-} //namespace voreen
+} // namespace voreen

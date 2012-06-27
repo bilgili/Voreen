@@ -35,13 +35,14 @@
 namespace voreen {
 
 const std::string VolumeHandle::loggerCat_("Voreen.VolumeHandle");
+unsigned int VolumeHandle::nextObjectID_ = 0;
 
 VolumeHandle::VolumeHandle(VolumeSeries* const parentSeries, Volume* const volume, const float time)
     : volume_(volume), 
       time_(time),
       hardwareVolumeMask_(VolumeHandle::HARDWARE_VOLUME_NONE),
       parentSeries_(parentSeries), 
-      file_("")
+      objectID_(++nextObjectID_)
 {
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
@@ -58,7 +59,7 @@ VolumeHandle::VolumeHandle(const VolumeHandle& handle) : Serializable() {
         time_ = handle.getTimestep();
         parentSeries_ = handle.getParentSeries();
         hardwareVolumeMask_ = handle.getHardwareVolumeMask();
-        file_ = handle.getFileName();
+        objectID_ = ++nextObjectID_;
 #ifndef VRN_NO_OPENGL
         volumeGL_ = handle.volumeGL_;
 #endif
@@ -80,6 +81,17 @@ bool VolumeHandle::operator<(const VolumeHandle& handle) const {
 
 bool VolumeHandle::operator==(const VolumeHandle& handle) const {
     return (time_ == handle.time_);
+}
+
+bool VolumeHandle::isIdentical(const VolumeHandle& handle) const {
+    return (objectID_ == handle.getObjectID());
+}
+
+bool VolumeHandle::isIdentical(VolumeHandle* const handle) const {
+    if( handle == 0 )
+        return false;
+
+    return (objectID_ == handle->getObjectID());
 }
 
 VolumeHandle::operator float() const {
@@ -131,12 +143,8 @@ void VolumeHandle::setParentSeries(VolumeSeries* const series) {
     parentSeries_ = series;
 }
 
-const std::string& VolumeHandle::getFileName() const {
-    return file_;
-}
-
-void VolumeHandle::setFileName(const std::string& filename) {
-    file_ = filename;
+unsigned int VolumeHandle::getObjectID() const {
+    return objectID_;
 }
 
 int VolumeHandle::getHardwareVolumeMask() const {
@@ -194,7 +202,7 @@ Volume* VolumeHandle::getRelatedVolume(const Modality& modality) const {
     VolumeSet* set = parentSeries_->getParentVolumeSet();
     if (set != 0) {
         std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for (size_t i = 0; i < series.size(); i++) {
+        for (size_t i = 0; i < series.size(); ++i) {
             if (series[i] != 0 && series[i] != parentSeries_) {
                 VolumeHandle* handle = series[i]->findVolumeHandle(time_);
                 if (handle != 0)
@@ -214,7 +222,7 @@ VolumeGL* VolumeHandle::getRelatedVolumeGL(const Modality& modality) {
     VolumeSet* set = parentSeries_->getParentVolumeSet();
     if (set != 0) {
         std::vector<VolumeSeries*> series = set->findSeries(modality);
-        for (size_t i = 0; i < series.size(); i++) {
+        for (size_t i = 0; i < series.size(); ++i) {
             if (series[i] != 0 && series[i] != parentSeries_) {
                 VolumeHandle* handle = series[i]->findVolumeHandle(time_);
                 if (handle != 0)
@@ -301,10 +309,8 @@ void VolumeHandle::updateFromXml(TiXmlElement* elem) {
     serializableSanityChecks(elem);
     // deserialize VolumeHandle TODO remove filename
     float timestep;
-    if (!(/*elem->Attribute("filename") &&*/
-          elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
+    if (!(elem->QueryFloatAttribute("timestep", &timestep) == TIXML_SUCCESS))
         throw XmlAttributeException("Attributes missing on VolumeHandle element"); // TODO Better Exception
-    //setFileName(elem->Attribute("filename"));
     setTimestep(timestep);
     // deserialize Origin
     origin_.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
@@ -321,8 +327,6 @@ void VolumeHandle::updateFromXml(TiXmlElement* elem, std::map<VolumeHandle::Orig
 }
 
 std::string VolumeHandle::getFileNameFromXml(TiXmlElement* elem) {
-//    errors_.clear();
-//    serializableSanityChecks(elem);
     Origin origin;
     origin.updateFromXml(elem->FirstChildElement(Origin::XmlElementName));
     return origin.filename;

@@ -48,8 +48,38 @@ namespace voreen {
 
 const std::string DatVolumeReader::loggerCat_ = "voreen.io.VolumeReader.dat";
 
-VolumeSet* DatVolumeReader::read(const std::string &fileName)
-    throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
+DatVolumeReader::DatVolumeReader(IOProgress* progress)
+    : VolumeReader(progress)
+{
+    name_ = "Dat Reader";
+    extensions_.push_back("dat");
+}
+
+VolumeSet* DatVolumeReader::readVolumeFile(const std::string &fileName, const tgt::ivec3& dims)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    RawVolumeReader rawReader(getProgress());
+
+    rawReader.readHints(
+        dims,               // dimensions of the volume
+        ivec3(1, 1, 1),     // thickness of one slice
+        16,                 // bits per voxel
+        "I",                // intensity image
+        "USHORT",           // one unsigned short per voxel
+        0,                  // default values
+        tgt::mat4::identity,
+        Modality::MODALITY_UNKNOWN,
+        -1.0f,
+        "",
+        6);                 // loading offset
+            
+    VolumeSet* volumeSet = rawReader.read(fileName);
+    fixOrigins(volumeSet, fileName);
+    return volumeSet;
+}
+
+VolumeSet* DatVolumeReader::readMetaFile(const std::string &fileName)
+    throw (tgt::FileException, std::bad_alloc)
 {
     std::string objectFilename;
     std::string taggedFilename;
@@ -72,7 +102,7 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName)
     TextFileReader reader(fileName);
 
     if (!reader)
-        throw tgt::IOException();
+        throw tgt::FileNotFoundException("reading dat file", fileName);
 
     std::string type;
     std::istringstream args;
@@ -167,14 +197,15 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName)
         LERROR("No raw file specified");
         error = true;
     }
-    if ( hor(lessThanEqual(resolution,ivec3(0,0,0))) ) {
+    
+    if (hor(lessThanEqual(resolution,ivec3(0, 0, 0)))) {
         LERROR("Invalid resolution or resolution not specified: " << resolution[0] << " x " <<
                resolution[1] << " x " << resolution[2])
         error = true;
     }
 
     if (!error) {
-        RawVolumeReader rawReader(progress_);
+        RawVolumeReader rawReader(getProgress());
         rawReader.readHints(resolution, sliceThickness, bits, objectModel, format, zeroPoint,
             transformation, modality, timeStep, metaString);
 
@@ -190,18 +221,46 @@ VolumeSet* DatVolumeReader::read(const std::string &fileName)
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeSet* volumeSet = 0;
-        try {
-            volumeSet = rawReader.read(objectFilename);
-        }
-        catch (...) {
-            throw; // throw it to the caller
-        }
+        VolumeSet* volumeSet = rawReader.read(objectFilename);
         fixOrigins(volumeSet, fileName);
         return volumeSet;
     } else {
-        throw tgt::CorruptedFileException();
+        throw tgt::CorruptedFileException("error while reading data", fileName);
     }
+}
+
+VolumeSet* DatVolumeReader::read(const std::string &fileName)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    // First of all, we have to test if the file is a simple meta-text file or contains a whole
+    // volume of its own.
+
+    std::fstream fin(fileName.c_str(), std::ios::in | std::ios::binary);
+    if (!fin.good() || fin.eof() || !fin.is_open())
+        throw tgt::FileNotFoundException("Unable to open dat file for reading", fileName);
+    
+    // Determine the dimensions of the volume (provided it is one).
+    // They are stored in the first 3 blocks as 2 bytes each.
+    tgt::Vector3<unsigned short> dimensions;
+
+    fin.read(reinterpret_cast<char*>(dimensions.elem), sizeof(dimensions));
+    
+    // Calculate the supposed size of the file:
+    // *2  because each voxel is saved as 2 bytes
+    // +6  because of the header in which the dimension-information reside
+    long supposedSize = (dimensions.x * dimensions.y * dimensions.z * sizeof(unsigned short)) + sizeof(dimensions);
+
+    // Jump to the end of the file and 
+    // get the real size of the file in bytes
+    fin.seekg(0, std::ios_base::end);
+    long realSize = static_cast<long>(fin.tellg());
+
+    fin.close();
+    
+    if (realSize == supposedSize)
+        return readVolumeFile(fileName, tgt::ivec3(dimensions));
+    else
+        return readMetaFile(fileName);
 }
 
 } // namespace voreen

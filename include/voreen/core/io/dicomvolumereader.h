@@ -50,7 +50,7 @@ namespace voreen {
  */
 class DicomVolumeReader : public VolumeReader {
 public:
-    DicomVolumeReader();
+    DicomVolumeReader(IOProgress* progress = 0);
     virtual ~DicomVolumeReader() {}
 
     void setSecurityOptions(const DicomSecurityOptions& security);
@@ -85,7 +85,7 @@ public:
      * @return Volume or 0 if an error occured.
      */
     virtual VolumeSet* read(const std::string& fileName)
-        throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Loads a single Dicom slice into a 2D-tgt::Texture.
@@ -170,9 +170,13 @@ private:
      * @fileNames List of Dicom file names
      * @filterSeriesInstanceUID Specifies the series that should be
      * loaded. If the string is empty, the first series found is loaded.
+     * @skipBroken Do not abort when a file could not be read. This is useful when some
+     * non-DICOM files are lying around in a directory.
      */
     virtual Volume* readDicomFiles(const std::vector<std::string>& fileNames,
-                                   const std::string& filterSeriesInstanceUID = "");
+                                   const std::string& filterSeriesInstanceUID = "",
+                                   bool skipBroken = false)
+        throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Retrieves information about the series of a Dicom file.

@@ -27,11 +27,9 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VRN_POLYGON3D_H
 #include "voreen/core/vis/slicing/polygon3d.h"
 
-namespace voreen
-{
+namespace voreen {
 
 using std::set;
 
@@ -44,11 +42,11 @@ Edge3D* Edge3D::createEdge(EdgeVertex3D* const first, EdgeVertex3D* const second
     // the insertion fails, if an equal edge is already contained!
     //
     EdgeVertex3D* v1 = e->getFirst();
-    if ( v1 != 0 )
+    if (v1 != 0)
         v1->addEdge(e);
 
     EdgeVertex3D* v2 = e->getSecond();
-    if ( v2 != 0 )
+    if (v2 != 0)
         v2->addEdge(e);
 
     return e;
@@ -59,10 +57,11 @@ Edge3D::Edge3D(const Edge3D& edge) {
 }
 
 Edge3D::Edge3D(EdgeVertex3D* const first, EdgeVertex3D* const second, Polygon3D* const parent) 
-: first_(first), second_(second), polyParent_(parent) {
-}
+: first_(first), second_(second), polyParent_(parent)
+{}
 
 Edge3D::~Edge3D() {
+//std::cout << "~Edge3D() on #" << this << "...\n";
     clear();
 }
 
@@ -102,28 +101,27 @@ void Edge3D::setFirst(EdgeVertex3D* const v) {
     first_ = v;
 }
 
-void Edge3D::setSecond(EdgeVertex3D* const v)  {
+void Edge3D::setSecond(EdgeVertex3D* const v) {
     second_ = v;
 }
 
 void Edge3D::disconnect(const EdgeVertex3D* const v) {
-    if ( v == 0 )
+    if (v == 0)
         return;
     
-    // as this edge becomes now invalid, remove it from all face to which
+    // as this edge becomes now invalid, remove it from all faces to which
     // it belongs
     //
     PolygonFace3D::FaceSet::iterator itF = polygons_.begin();
-    for ( ; itF != polygons_.end(); itF++ ) {
-        PolygonFace3D* face = *itF;
-        if ( face != 0 )
-            face->removeEdge(this);
+    for (; itF != polygons_.end(); ++itF ) {
+        if (*itF != 0)
+            (*itF)->removeEdge(this);
     }
     polygons_.clear();
 
     // also remove it from parent polygon's edge list
     //
-    if ( polyParent_ != 0 )
+    if (polyParent_ != 0)
         polyParent_->removeEdge(this);
 
     // find the member whose pointer equals the vertex which
@@ -132,68 +130,52 @@ void Edge3D::disconnect(const EdgeVertex3D* const v) {
     // so remove it from the other vertex' list, too, and set both members
     // to 0.
     //
-    if ( first_ == v )
+    if (first_ == v)
         second_->removeEdge(this);
 
-    if ( second_ == v )
+    if (second_ == v)
         first_->removeEdge(this);
 
     first_ = 0;
     second_ = 0;
 }
 
-bool Edge3D::operator==(const Edge3D& e) const
-{
+bool Edge3D::operator==(const Edge3D& e) const {
     const EdgeVertex3D* v1 = e.getFirst();
     const EdgeVertex3D* v2 = e.getSecond();
 
     if ( (first_ == 0) || (second_ == 0) || (v1 == 0) || (v2 == 0) )
-    {
         return false;
-    }
 
-    if ( ((*first_ == *v1) && (*second_ == *v2))
-        || ((*first_ == *v2) && (*second_ == *v1)) )
-    {
+    if ( ((*first_ == *v1) && (*second_ == *v2)) || ((*first_ == *v2) && (*second_ == *v1)) )
         return true;
-    }
 
     return false;
 }
 
-bool Edge3D::operator!=(const Edge3D& e) const
-{
+bool Edge3D::operator!=(const Edge3D& e) const {
     return (! (*this == e) );
 }
 
-bool Edge3D::addFace(PolygonFace3D* const p)
-{
+bool Edge3D::addFace(PolygonFace3D* const p) {
     std::pair<PolygonFace3D::FaceSet::iterator, bool> pr = polygons_.insert(p);
     return pr.second;
 }
 
-void Edge3D::removeFace(PolygonFace3D* const p)
-{
-    if ( p == 0 )
-    {
+void Edge3D::removeFace(PolygonFace3D* const p) {
+    if (p == 0)
         return;
-    }
     polygons_.erase(p);
 }
 
-bool Edge3D::containsVertex(const tgt::vec3& v) const
-{
+bool Edge3D::containsVertex(const tgt::vec3& v) const {
     EdgeVertex3D ev(v, 0);
-    bool res = this->containsVertex(&ev);
-    return res;
+    return containsVertex(&ev);
 }
 
-bool Edge3D::containsVertex(EdgeVertex3D* const v) const
-{
+bool Edge3D::containsVertex(EdgeVertex3D* const v) const {
     if ( (first_ == 0) || (second_ == 0 ) )
-    {
         return false;
-    }
 
     const tgt::vec3& dirThis = getEdgeDirection();
     tgt::vec3 dirOther( (v->getVertex() - first_->getVertex()) );
@@ -206,49 +188,34 @@ bool Edge3D::containsVertex(EdgeVertex3D* const v) const
     //
     float f = dot(dirOther, dirThis);
     if ( (f < 0.999999f) || (f > 1.000001) )
-    {
         return false;
-    }
 
     // if the edges are parallel, the considered vertex can only be part
     // of this edge, if its distance to the first vertex on it is short or
     // equal to the distance from first to second one!
     //
-    if ( lenOther <= getEdgeLength() )
-    {
-        return true;
-    }
-    return false;
+    return (lenOther <= getEdgeLength());
 }
 
-bool Edge3D::isPartOf(const EdgeVertex3D* v) const
-{
+bool Edge3D::isPartOf(const EdgeVertex3D* v) const {
     if ( (v == 0) || (first_ == 0) || (second_ == 0) )
-    {
         return false;
-    }
 
     if ( ((*first_ == *v) || (*second_ == *v)) )
-    {
         return true;
-    }
+   
     return false;
 }
 
-Edge3D* Edge3D::split(EdgeVertex3D& v)
-{
+Edge3D* Edge3D::split(EdgeVertex3D& v) {
     if ( (first_ == 0) || (second_ == 0) )
-    {
         return 0;
-    }
 
     // if the split vertex is one of the vertices contained in this edge
     // do not split the edge and return a NULL-pointer!
     //
     if ( ((*first_ == v) || (*second_ == v)) )
-    {
         return 0;
-    }
 
     // remove this edge from my second vertex and
     // store it in tmp
@@ -271,15 +238,12 @@ Edge3D* Edge3D::split(EdgeVertex3D& v)
     // add e to all polygons this edge is part of.
     //
     PolygonFace3D::FaceSet::iterator it = polygons_.begin();
-    for ( ; it != polygons_.end(); it++ )
-    {
+    for (; it != polygons_.end(); ++it)
         (*it)->insertEdge(e);
-    }
     return e;
 }
 
-Edge3D* Edge3D::split(const tgt::vec3& v)
-{
+Edge3D* Edge3D::split(const tgt::vec3& v) {
     // simply pack the vector into a temporary EdgeVertex3D
     // object and call the appropriated method
     //
@@ -300,10 +264,9 @@ void Edge3D::clear() {
     // remove the reference to this edge from all polygons containing it
     //
     PolygonFace3D::FaceSet::iterator it = polygons_.begin();
-    for ( ; it != polygons_.end(); it++ ) {
-        PolygonFace3D* face = *it;
-        if ( face != 0 )
-            face->removeEdge(this);
+    for (; it != polygons_.end(); ++it ) {
+        if (*it != 0)
+            (*it)->removeEdge(this);
     }
     polygons_.clear();
 }
@@ -315,5 +278,3 @@ void Edge3D::clone(const voreen::Edge3D& /*edge*/) {
 }
 
 }   // namespace
-
-#endif

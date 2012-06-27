@@ -23,6 +23,15 @@ unix {
                              find $$EBROWSE_DIRS -not -name \"moc_*\" -and -name \"*.cpp\") | \
                             ebrowse --output-file=BROWSE
   QMAKE_EXTRA_TARGETS += update-ebrowse
+
+  # clean up old Makefiles also
+  mrproper.target = mrproper
+  MRPROPER_DIRS=src/core src/qt apps/*
+  mrproper.commands = @echo \"Removing Makefiles...\"; \
+                            find $$MRPROPER_DIRS -name \"Makefile*\" -or -name "Makefile" | \
+                            xargs /bin/rm -fv
+  QMAKE_EXTRA_TARGETS += mrproper
+
 }
 
 ### Local Variables:

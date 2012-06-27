@@ -110,9 +110,8 @@ void SnapshotPlugin::makeSnapshot() {
     if (path_ != QString(""))
         filedialog->setDirectory(path_);
     QStringList fileList;
-    if (filedialog->exec()) {
+    if (filedialog->exec())
         fileList = filedialog->selectedFiles();
-    }
     if (fileList.empty())
         return;
 
@@ -162,9 +161,8 @@ void SnapshotPlugin::updateAntialiasingLabel() {
         laAntialiasing_->setText(tr("Antialiasing: 16 x 16"));
         break;
     }
-
 }
 
 // bucky icon: (HLw,[fg1,lpg1,[ny,0,0,WCy)
-} // namespace voreen
 
+} // namespace voreen

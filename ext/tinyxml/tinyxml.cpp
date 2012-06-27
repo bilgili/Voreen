@@ -593,7 +593,7 @@ const TiXmlDocument* TiXmlNode::GetDocument() const
 {
 	const TiXmlNode* node;
 
-	for( node = this; node; node = node->parent )
+	for ( node = this; node; node = node->parent )
 	{
 		if ( node->ToDocument() )
 			return node->ToDocument();
@@ -605,7 +605,7 @@ TiXmlDocument* TiXmlNode::GetDocument()
 {
 	TiXmlNode* node;
 
-	for( node = this; node; node = node->parent )
+	for ( node = this; node; node = node->parent )
 	{
 		if ( node->ToDocument() )
 			return node->ToDocument();
@@ -655,7 +655,7 @@ TiXmlElement::~TiXmlElement()
 void TiXmlElement::ClearThis()
 {
 	Clear();
-	while( attributeSet.First() )
+	while ( attributeSet.First() )
 	{
 		TiXmlAttribute* node = attributeSet.First();
 		attributeSet.Remove( node );
@@ -854,7 +854,7 @@ void TiXmlElement::Print( FILE* cfile, int depth ) const
 			node->Print( cfile, depth+1 );
 		}
 		fprintf( cfile, "\n" );
-		for( i=0; i<depth; ++i )
+		for ( i=0; i<depth; ++i )
 		fprintf( cfile, "    " );
 		fprintf( cfile, "</%s>", value.c_str() );
 	}
@@ -899,7 +899,7 @@ void TiXmlElement::CopyTo( TiXmlElement* target ) const
 	// Element class: 
 	// Clone the attributes, then clone the children.
 	const TiXmlAttribute* attribute = 0;
-	for(	attribute = attributeSet.First();
+	for (	attribute = attributeSet.First();
 	attribute;
 	attribute = attribute->Next() )
 	{
@@ -1074,7 +1074,7 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	// convention, and not work generally.
 
 	/*
-	while( fgets( buf, sizeof(buf), file ) )
+	while ( fgets( buf, sizeof(buf), file ) )
 	{
 		data += buf;
 	}
@@ -1092,7 +1092,7 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	const char* p = buf;
 
 	buf[length] = 0;
-	while( *p ) {
+	while ( *p ) {
 		assert( p < (buf+length) );
 		if ( *p == 0xa ) {
 			// Newline character. No special rules for this. Append all the characters
@@ -1605,7 +1605,7 @@ void TiXmlAttributeSet::Remove( TiXmlAttribute* removeMe )
 {
 	TiXmlAttribute* node;
 
-	for( node = sentinel.next; node != &sentinel; node = node->next )
+	for ( node = sentinel.next; node != &sentinel; node = node->next )
 	{
 		if ( node == removeMe )
 		{
@@ -1623,7 +1623,7 @@ const TiXmlAttribute* TiXmlAttributeSet::Find( const TIXML_STRING& name ) const
 {
 	const TiXmlAttribute* node;
 
-	for( node = sentinel.next; node != &sentinel; node = node->next )
+	for ( node = sentinel.next; node != &sentinel; node = node->next )
 	{
 		if ( node->name == name )
 			return node;
@@ -1635,7 +1635,7 @@ TiXmlAttribute*	TiXmlAttributeSet::Find( const TIXML_STRING& name )
 {
 	TiXmlAttribute* node;
 
-	for( node = sentinel.next; node != &sentinel; node = node->next )
+	for ( node = sentinel.next; node != &sentinel; node = node->next )
 	{
 		if ( node->name == name )
 			return node;

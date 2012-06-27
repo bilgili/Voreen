@@ -30,6 +30,9 @@
 #ifndef VRN_PROCESSORFACTORY_H
 #define VRN_PROCESSORFACTORY_H
 
+#include <vector>
+#include <map>
+#include <string>
 
 namespace voreen {
 
@@ -44,7 +47,7 @@ public:
 
     const std::vector<Identifier>& getKnownClasses();
 
-    static ProcessorFactory* getInstance(); 
+    static ProcessorFactory* getInstance();
 
 	// Returns processor information
 	std::string getProcessorInfo(Identifier);
@@ -61,7 +64,7 @@ public:
 
     /**
      * sets the TextureContainer
-     * 
+     *
      */
     void setTextureContainer(voreen::TextureContainer* tc);
 
@@ -74,7 +77,7 @@ public:
 private:
     static ProcessorFactory* instance_;
 
-    ProcessorFactory();   
+    ProcessorFactory();
     ~ProcessorFactory();
 
     void registerClass(Processor* newClass);

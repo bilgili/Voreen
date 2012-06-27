@@ -41,16 +41,15 @@ VoreenPainterOverlay::VoreenPainterOverlay(tgt::GLCanvas* canvas)
       activated_(false),
       activateable_(false),
       name_("Unnamed")
-{
-}
+{}
 
 //------------------------------------------------------------------------------
 
 // init statics
 tgt::GLCanvas* VoreenPainter::lastCanvas_ = 0;
 
-const Identifier VoreenPainter::removeMouseListener_("remove.mouseListener");
-const Identifier VoreenPainter::addMouseListener_("add.mouseListener");
+const Identifier VoreenPainter::addEventListener_("add.eventListener");
+const Identifier VoreenPainter::removeEventListener_("remove.eventListener");
 const Identifier VoreenPainter::addCanvasOverlay_("add.canvasOverlay");
 const Identifier VoreenPainter::addFrameOverlay_("add.frameOverlay");
 const Identifier VoreenPainter::delCanvasOverlay_("del.canvasOverlay");
@@ -94,7 +93,7 @@ void VoreenPainter::sizeChanged(const tgt::ivec2& size) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     
-	gluPerspective(getCamera()->getFovy(), static_cast<GLfloat>(validSize.x) / static_cast<GLfloat>(validSize.y), getCamera()->getNearDist(), getCamera()->getFarDist());
+	gluPerspective(getCamera()->getFovy(), static_cast<GLdouble>(validSize.x) / static_cast<GLdouble>(validSize.y), getCamera()->getNearDist(), getCamera()->getFarDist());
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -130,14 +129,14 @@ void VoreenPainter::paint() {
         evaluator_->getTextureContainer()->getSize() != getSize() && getSize() != tgt::ivec2(0))
     {
         //FIXME: should be handled differently
-        std::cout << "VoreenPainter::paint(): resizing TextureContainer from "
-                  << evaluator_->getTextureContainer()->getSize()
-                  << " to " << getSize() << std::endl;
+        LINFO("VoreenPainter::paint(): resizing TextureContainer from "
+              << evaluator_->getTextureContainer()->getSize()
+              << " to " << getSize());
         evaluator_->getTextureContainer()->setSize(getSize());
         evaluator_->invalidateRendering();
     }
 
-    glMatrixMode(GL_MODELVIEW);
+    glMatrixMode(GL_MODELVIEW);//FIXME: needed? joerg
 
     if (stereoMode_ == VRN_STEREOSCOPIC) { // FIXME resupport stereo
 //         glDrawBuffer(GL_BACK_LEFT);
@@ -165,39 +164,36 @@ void VoreenPainter::paint() {
 //         camera->setEye(tgt::Camera::EYE_MIDDLE);
     }
     else {
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//FIXME: necessary? joerg
 
-        if (evaluator_) {
+        if (evaluator_)
             evaluator_->evaluate();
-        }
 
         if (overlayMgr_)
             overlayMgr_->paint();
     
         MsgDistr.postMessage(new Message(renderingFinished_) );
-        
     }
-
-	//getCanvas()->swap();
 }
 
 //FIXME: where is this called? duplicating functionality from setEvaluator()? joerg
 void VoreenPainter::initialize() {
     getCanvas()->getGLFocus();
-    if (evaluator_) {
+    if (evaluator_)
         evaluator_->initializeGL();
-    }
 }
 
-void VoreenPainter::setEvaluator(NetworkEvaluator* eval) {
+bool VoreenPainter::setEvaluator(NetworkEvaluator* eval) {
 	getCanvas()->getGLFocus();
 
     evaluator_ = eval;
-    evaluator_->initializeGL(); //TODO: check if this makes sense here. joerg
+
+    //TODO: this method should just set the evaluator!
+    // the caller should handle this directly. joerg
+    return (evaluator_->initializeGL() == Processor::VRN_OK);
 }
 
 void VoreenPainter::setTrackball(tgt::Trackball* trackball) {
-
     trackball_ = trackball;
 }
 
@@ -209,10 +205,9 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
     getCanvas()->getGLFocus();
     MessageReceiver::processMessage(msg, dest);
 
-    if (msg->id_ == repaint_) {
+    if (msg->id_ == repaint_)
         //FIXME: should this not better call update()? joerg
         getCanvas()->repaint();
-    }
     else if (msg->id_ == resize_) {
         tgt::ivec2 newsize = msg->getValue<tgt::ivec2>();
         sizeChanged(newsize);
@@ -224,12 +219,10 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
         }
     }
     else if (msg->id_ == "set.cameraApplyOrientationAndDistanceAnimated") {
-        using tgt::quat;
-
         tgt::Camera* camera = getCanvas()->getCamera();
         std::vector<float> keyframe = msg->getValue<std::vector<float> >();
 
-        quat newQuat;
+        tgt::quat newQuat;
         newQuat.x = keyframe[0];
         newQuat.y = keyframe[1];
         newQuat.z = keyframe[2];
@@ -238,16 +231,16 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
 
         float t = 0.1f;
 
-        quat oldQuat = camera->getQuat();
+        tgt::quat oldQuat = camera->getQuat();
         float oldDist = camera->getFocalLength();
         trackball_->reset();
-        quat initQuat = camera->getQuat();
+        tgt::quat initQuat = camera->getQuat();
         initQuat.invert();
 
         if (evaluator_)
             evaluator_->postMessage(new BoolMsg(switchCoarseness_, true));
-        for (int i = 0; i <= 9; i++) {
-            quat tmp = tgt::slerpQuat(oldQuat, newQuat, std::min(t, 1.f));
+        for (int i = 0; i <= 9; ++i) {
+            tgt::quat tmp = tgt::slerpQuat(oldQuat, newQuat, std::min(t, 1.f));
             float tmpDist = t*(newDist - oldDist) + oldDist;
             trackball_->reset();
             trackball_->zoomAbsolute(tmpDist);
@@ -271,12 +264,10 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
         getCanvas()->repaint();
     }
     else if (msg->id_ == "set.cameraApplyOrientation") {
-        using tgt::quat;
-
         tgt::Camera* camera = getCanvas()->getCamera();
         std::vector<float> keyframe = msg->getValue<std::vector<float> >();
 
-        quat newQuat;
+        tgt::quat newQuat;
         newQuat.x = keyframe[0];
         newQuat.y = keyframe[1];
         newQuat.z = keyframe[2];
@@ -289,7 +280,7 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
 
         float dist = camera->getFocalLength();
         trackball_->reset();
-        quat initQuat = camera->getQuat();
+        tgt::quat initQuat = camera->getQuat();
         initQuat.invert();
         trackball_->rotate(initQuat);
         trackball_->rotate(newQuat);
@@ -310,14 +301,20 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
     else if (msg->id_ == "set.cameraPosition") {
         tgt::Camera* cam = getCanvas()->getCamera();
         cam->setPosition(msg->getValue<tgt::vec3>());
-        postMessage(new CameraPtrMsg(cameraChanged_, cam), MsgDistr.getCurrentViewId());
-        postMessage(new Message(repaint_), MsgDistr.getCurrentViewId());
+        postMessage(new CameraPtrMsg(cameraChanged_, cam));
+    //    postMessage(new Message(repaint_), MsgDistr.getCurrentViewId());
     }
     else if (msg->id_ == "set.cameraFocus") {
         tgt::Camera* cam = getCanvas()->getCamera();
         cam->setFocus(msg->getValue<tgt::vec3>());
-        postMessage(new CameraPtrMsg(cameraChanged_, cam), MsgDistr.getCurrentViewId());
-        postMessage(new Message(repaint_), MsgDistr.getCurrentViewId());
+        postMessage(new CameraPtrMsg(cameraChanged_, cam));
+    //    postMessage(new Message(repaint_), MsgDistr.getCurrentViewId());
+    }
+    else if (msg->id_ == "set.cameraUp") {
+        tgt::Camera* cam = getCanvas()->getCamera();
+        cam->setUpVector(msg->getValue<tgt::vec3>());
+        postMessage(new CameraPtrMsg(cameraChanged_, cam));
+    //    postMessage(new Message(repaint_), MsgDistr.getCurrentViewId());
     }
     else if (msg->id_ == "set.cameraReset") {
         tgt::Camera* cam = getCanvas()->getCamera();
@@ -356,11 +353,11 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
         getCanvas()->getGLFocus();
         msg->getValue<voreen::VoreenPainterOverlay*>()->resize(size_.x, size_.y);
     }
-    else if (msg->id_ == addMouseListener_) {
-        addMouseListener(msg->getValue<tgt::EventListener*>());
+    else if (msg->id_ == addEventListener_) {
+        addEventListener(msg->getValue<tgt::EventListener*>());
     }
-	else if (msg->id_ == removeMouseListener_) {
-		removeMouseListener(msg->getValue<tgt::EventListener*>());
+	else if (msg->id_ == removeEventListener_) {
+		removeEventListener(msg->getValue<tgt::EventListener*>());
 	}
     else if (msg->id_ == "msg.paintToFile") {
         renderToSnapshot(size_, msg->getValue<std::string>());
@@ -372,16 +369,16 @@ void VoreenPainter::processMessage(Message* msg, const Identifier& dest) {
         evaluator_->processMessage(msg, dest);
 }
 
-void VoreenPainter::addMouseListener(tgt::EventListener* listener) {
+void VoreenPainter::addEventListener(tgt::EventListener* listener) {
     getCanvas()->getEventHandler()->removeListener(listener);
     getCanvas()->getEventHandler()->addListenerToFront(listener);
 }
 
-void VoreenPainter::removeMouseListener(tgt::EventListener* listener) {
+void VoreenPainter::removeEventListener(tgt::EventListener* listener) {
     getCanvas()->getEventHandler()->removeListener(listener);
 }
 
-void VoreenPainter::removeAllMouseListener() {
+void VoreenPainter::removeAllEventListeners() {
     getCanvas()->getEventHandler()->clear();
 }
 
@@ -419,7 +416,6 @@ void VoreenPainter::renderToSnapshot(tgt::ivec2 size, std::string fileName) {
 
 #ifdef VRN_WITH_DEVIL
 ILuint VoreenPainter::renderToILImage(tgt::ivec2 size, bool (progress)(float _progress), int _aaLevel) {
-    
     bool sizeModified = false;
 
     // adjust viewport size
@@ -436,15 +432,13 @@ ILuint VoreenPainter::renderToILImage(tgt::ivec2 size, bool (progress)(float _pr
         if (sizeModified)
             sizeChanged(getCanvas()->getSize());
     }
-    else {
+    else
         LWARNING("No canvas");
-    }
 
     return image;
 }
 
 ILuint VoreenPainter::renderToILImage(bool (progress)(float _progress), int _aaLevel) {
-    
     tgtAssert(evaluator_, "No evaluator");
 
     if (_aaLevel > 4)
@@ -490,9 +484,8 @@ void OverlayManager::addOverlay(VoreenPainterOverlay* overlay) {
 void OverlayManager::removeOverlay(VoreenPainterOverlay* overlay) {
     std::vector<VoreenPainterOverlay*> temp;
     for (size_t i = 0; i < overlays_.size(); ++i) {
-        if (overlays_.at(i) != overlay) {
+        if (overlays_.at(i) != overlay)
             temp.push_back(overlays_.at(i));
-        }
     }
     overlays_.clear();
     overlays_ = temp;
@@ -515,15 +508,13 @@ void OverlayManager::resize(int width, int height) {
 }
 
 void OverlayManager::processMessage(Message* msg, const Identifier& dest) {
-    for (size_t i = 0; i < overlays_.size(); ++i) {
+    for (size_t i = 0; i < overlays_.size(); ++i)
         overlays_.at(i)->processMessage(msg,dest);
-    }
-    if (msg->id_ == "pushOverlayDirect") {
+    
+    if (msg->id_ == "pushOverlayDirect")
         overlays_.push_back(msg->getValue<VoreenPainterOverlay*>());
-    }
-    else if (msg->id_ == "popOverlayDirect") {
+    else if (msg->id_ == "popOverlayDirect")
         overlays_.pop_back();
-    }
 }
 
 } // namespace

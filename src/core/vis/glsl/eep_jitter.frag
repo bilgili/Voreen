@@ -29,12 +29,12 @@
 
 #include "modules/mod_sampler2d.frag"
 
-uniform SAMPLER2D_TYPE entryPoints_;	 // ray entry points
+uniform SAMPLER2D_TYPE entryPoints_;	  // ray entry points
 uniform SAMPLER2D_TYPE entryPointsDepth_; // depth values of entry points
-uniform SAMPLER2D_TYPE exitPoints_;	     // ray exit points
-uniform SAMPLER2D_TYPE jitterTexture_;   // 8 bit random values
+uniform SAMPLER2D_TYPE exitPoints_;	      // ray exit points
+uniform SAMPLER2D_TYPE jitterTexture_;    // 8 bit random values
 
-uniform float stepLength_;		     // raycasting step length
+uniform float stepLength_;		          // raycasting step length
 
 /**
  * Jitter entry points in ray direction

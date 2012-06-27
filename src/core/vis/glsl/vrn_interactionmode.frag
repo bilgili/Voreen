@@ -46,6 +46,13 @@ void main() {
 
     fragCoord.x /= float(interactionCoarseness_);
     fragCoord.y /= float(interactionCoarseness_);
+
+    // correction offsets for coarseness mode: prevents fragments from
+    // being projected to a position outside the significant image area
+    if (interactionCoarseness_ > 1) {
+        fragCoord.x -= 0.5;
+        fragCoord.y -= 0.5;
+    }
     
     gl_FragColor = textureLookup2D(shadeTex_, fragCoord.xy);
     gl_FragDepth = textureLookup2D(depthTex_, fragCoord.xy).z;

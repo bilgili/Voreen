@@ -48,8 +48,6 @@ const std::string DepthMask::getProcessorInfo() const {
 }
 
 void DepthMask::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,size_.x,size_.y);
-
 	int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 

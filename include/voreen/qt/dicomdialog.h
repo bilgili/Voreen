@@ -27,8 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef DICOMDIALOG_H
-#define DICOMDIALOG_H
+#ifndef VRN_DICOMDIALOG_H
+#define VRN_DICOMDIALOG_H
 
 #include <QDialog>
 #include <QString>
@@ -44,7 +44,6 @@
 #include <QThread>
 #include <QProgressDialog>
 
-
 #include <string>
 #include <vector>
 #include "voreen/core/volume/volumeatomic.h"
@@ -53,8 +52,8 @@
 namespace voreen {
 
 /**
-*   The dicom download runs in this thread while the gui thread refreshes the progressdialog.
-*/
+ * The dicom download runs in this thread while the gui thread refreshes the progressdialog.
+ */
 class DownloadThread : public QThread {
     std::string targetPath_;
     std::string callAE_;
@@ -62,7 +61,12 @@ class DownloadThread : public QThread {
     bool success_;
 public:
     ///See dicommove functions for explanation of the parameters.
-    DownloadThread(std::string targetPath, std::string callAE, std::string selectedSeriesInstanceUID) : targetPath_(targetPath), callAE_(callAE), selectedSeriesInstanceUID_(selectedSeriesInstanceUID) {}
+    DownloadThread(std::string targetPath, std::string callAE,
+                   std::string selectedSeriesInstanceUID)
+        : targetPath_(targetPath),
+          callAE_(callAE),
+          selectedSeriesInstanceUID_(selectedSeriesInstanceUID) {}
+    
     ///Call QThread::start() to start this thread and download.
     void run();
     ///Call this after thread has finished to find out if download was successful
@@ -165,7 +169,8 @@ public:
     ServerDialog();
 
 public slots:
-    ///Add a server to the bookmarks: Ask for a name and then open the edit dialog. The configuration is saved.
+    ///Add a server to the bookmarks: Ask for a name and then open the edit dialog. The
+    ///configuration is saved.
     void addServer();
     ///Delete server from bookmarks. The configuration is saved.
     void deleteServer();
@@ -188,7 +193,8 @@ public slots:
     void cancelDownload();
     ///Called by the timer usually; updates the progressbar.
     void updateProgressbar();
-    ///Called by the DownloadThread after finishing. Displays success in a messagebox, closses progressdialog and stops timer.
+    ///Called by the DownloadThread after finishing. Displays success in a messagebox, closses
+    ///progressdialog and stops timer.
     void downloadFinished();
     std::string getURL();
     
@@ -225,9 +231,12 @@ private:
 class DicomDirDialog : public QDialog {
     Q_OBJECT
 public:
-    DicomDirDialog();
+    DicomDirDialog(QWidget* parent = 0);
     ///Fill the list with seriesinfos
-    void setSeries(std::vector<voreen::DicomSeriesInfo>& list, std::string filename) { listWidget_->setSeries(list); filename_ = filename; }
+    void setSeries(std::vector<voreen::DicomSeriesInfo>& list, std::string filename) {
+        listWidget_->setSeries(list);
+        filename_ = filename;
+    }
     std::string getFilename();
 
 public slots:
@@ -243,6 +252,6 @@ private:
     std::string filename_;
 };
 
-} //namespace
+} // namespace
 
 #endif

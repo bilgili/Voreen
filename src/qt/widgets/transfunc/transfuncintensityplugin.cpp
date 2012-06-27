@@ -29,8 +29,6 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncintensityplugin.h"
 
-
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 #include "tgt/gpucapabilities.h"
@@ -71,7 +69,12 @@ TransFuncIntensityPlugin::TransFuncIntensityPlugin(QWidget* parent, MessageRecei
 }
 
 TransFuncIntensityPlugin::~TransFuncIntensityPlugin() {
-    delete transferFunc_;
+    if (gradient_)
+        delete gradient_;
+/*
+	if (transferFunc_)
+	    delete transferFunc_;
+*/
 }
 
 void TransFuncIntensityPlugin::createWidgets() {
@@ -93,7 +96,7 @@ void TransFuncIntensityPlugin::createWidgets() {
     gradient_ = new TransFuncGradient(0);
 	gradient_->getCanvas()->getGLFocus();
 	transferFunc_ = new TransFuncIntensity();
-    transCanvas_ = new TransFuncMappingCanvas(0, transferFunc_, gradient_, msgReceiver_);
+    transCanvas_ = new TransFuncMappingCanvas(0, transferFunc_, gradient_);
     transferFunc_->createTex(256);
 
     gridLayout->addWidget(transCanvas_);
@@ -150,6 +153,7 @@ void TransFuncIntensityPlugin::createWidgets() {
     histogramEnabledButton_->setChecked(false);
     histogramEnabledButton_->setIcon(QIcon(":/icons/histogram.png"));
     histogramEnabledButton_->setToolTip(tr("Show data histogram"));
+    histogramEnabledButton_->setEnabled(false);//FIXME: enable when it works again
     gridHistoBox->addWidget(histogramEnabledButton_);
 
     clearButton_ = new QToolButton(bottomwidget);
@@ -334,34 +338,34 @@ void TransFuncIntensityPlugin::dataSourceChanged(Volume* newDataset) {
 
     int bits = newDataset->getBitsStored();
     switch (bits) {
-        case 8:
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            transferFunc_->createTex(256);
+    case 8:
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        transferFunc_->createTex(256);
+        updateTransferFunction();
+        break;
+    case 12:
+        if (GpuCaps.getMaxTextureSize() >= 1024) {
+            transferFunc_->createTex(1024);
             updateTransferFunction();
-            break;
-        case 12:
-            if (GpuCaps.getMaxTextureSize() >= 1024) {
-                transferFunc_->createTex(1024);
-                updateTransferFunction();
-            }
-            setMaxValue(4095);
-            setScaleFactor(1.0f/4095.0f);
-            break;
-        case 16:
-            if (GpuCaps.getMaxTextureSize() >= 1024) {
-                transferFunc_->createTex(1024);
-                updateTransferFunction();
-            }
-            setMaxValue(65535);
-            setScaleFactor(1.0f/65535.0f);
-            break;
-        case 32:
-            transferFunc_->createTex(256);
+        }
+        setMaxValue(4095);
+        setScaleFactor(1.0f/4095.0f);
+        break;
+    case 16:
+        if (GpuCaps.getMaxTextureSize() >= 1024) {
+            transferFunc_->createTex(1024);
             updateTransferFunction();
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            break;
+        }
+        setMaxValue(65535);
+        setScaleFactor(1.0f/65535.0f);
+        break;
+    case 32:
+        transferFunc_->createTex(256);
+        updateTransferFunction();
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        break;
     }
 }
 
@@ -369,7 +373,7 @@ void TransFuncIntensityPlugin::setVisibleState(bool vis) {
     setVisible(vis);
 }
 
-void TransFuncIntensityPlugin::changeValue(TransFunc* /*tf*/){
+void TransFuncIntensityPlugin::changeValue(TransFunc* /*tf*/) {
 
 }
 
@@ -391,24 +395,24 @@ TransFunc* TransFuncIntensityPlugin::getTransFunc() {
     return transferFunc_;
 }
 
-void TransFuncIntensityPlugin::processorChanged(int bits){
+void TransFuncIntensityPlugin::processorChanged(int bits) {
     switch (bits) {
-        case 8:
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            break;
-        case 12:
-            setMaxValue(4095);
-            setScaleFactor(1.0f/4095.0f);
-            break;
-        case 16:
-            setMaxValue(65535);
-            setScaleFactor(1.0f/65535.0f);
-            break;
-        case 32:
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            break;
+    case 8:
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        break;
+    case 12:
+        setMaxValue(4095);
+        setScaleFactor(1.0f/4095.0f);
+        break;
+    case 16:
+        setMaxValue(65535);
+        setScaleFactor(1.0f/65535.0f);
+        break;
+    case 32:
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        break;
     }
 
 }
@@ -428,7 +432,7 @@ void TransFuncIntensityPlugin::mouseMoveEvent(tgt::MouseEvent *e) {
         center = std::max(std::min(center - shift.y / 400.f, 1.f), 0.f);
         width = std::max(std::min(width + shift.x / 400.f, 1.f), 0.f);
         transCanvas_->setRampParams(center, width);
-        syncRampSliders(int(center*maxValue_+0.5f), int(width*maxValue_+0.5f));
+        syncRampSliders(static_cast<int>(center*maxValue_+0.5f), static_cast<int>(width*maxValue_+0.5f));
             
         e->accept();
     }
@@ -436,11 +440,11 @@ void TransFuncIntensityPlugin::mouseMoveEvent(tgt::MouseEvent *e) {
 
 void TransFuncIntensityPlugin::mousePressEvent(tgt::MouseEvent *e) {
     e->ignore();
-
     if  ( isVisible() &&
         ( e->button() & tgt::MouseEvent::MOUSE_BUTTON_RIGHT) &&
         ( e->modifiers() & tgt::MouseEvent::ALT)
-        ) {
+        )
+    {
             e->accept();
             if (rampMode_) {
                 lastMousePos_ = e->coord();
@@ -453,7 +457,10 @@ void TransFuncIntensityPlugin::mousePressEvent(tgt::MouseEvent *e) {
 void TransFuncIntensityPlugin::mouseReleaseEvent(tgt::MouseEvent *e) {
     e->ignore();
 
-    if ( isVisible() && (e->button() & tgt::MouseEvent::MOUSE_BUTTON_RIGHT) && rampModeTracking_ ) {
+    if ( isVisible() &&
+       ( e->button() & tgt::MouseEvent::MOUSE_BUTTON_RIGHT) &&
+        rampModeTracking_ )
+    {
         e->accept();
         if (rampModeTracking_) {
             rampModeTracking_ = false;
@@ -466,8 +473,8 @@ void TransFuncIntensityPlugin::mouseDoubleClickEvent(tgt::MouseEvent *e) {
     e->ignore();
 
     if ( isVisible() && (e->button() & tgt::MouseEvent::MOUSE_BUTTON_RIGHT) && 
-        (e->modifiers() & tgt::MouseEvent::ALT) ) {
-        
+        (e->modifiers() & tgt::MouseEvent::ALT) )
+    {
         e->accept();
         if (rampMode_)
             setStandardFunc();   
@@ -540,8 +547,8 @@ void TransFuncIntensityPlugin::toggleRampMode(bool on) {
 
 void TransFuncIntensityPlugin::updateRampCenter(int center) {
     int width = spinRampWidth_->value();
-    float centerf = float(center) / maxValue_;
-    float widthf = float(width) / maxValue_;
+    float centerf = static_cast<float>(center) / maxValue_;
+    float widthf = static_cast<float>(width) / maxValue_;
     transCanvas_->setRampParams(centerf, widthf);
     syncRampSliders(center, width);
 
@@ -549,8 +556,8 @@ void TransFuncIntensityPlugin::updateRampCenter(int center) {
   
 void TransFuncIntensityPlugin::updateRampWidth(int width) {
     int center = spinRampCenter_->value();
-    float centerf = float(center) / maxValue_;
-    float widthf = float(width) / maxValue_;
+    float centerf = static_cast<float>(center) / maxValue_;
+    float widthf = static_cast<float>(width) / maxValue_;
     transCanvas_->setRampParams(centerf, widthf);
     syncRampSliders(center, width);
 
@@ -569,7 +576,6 @@ void TransFuncIntensityPlugin::syncRampSliders(int rampCenter, int rampWidth) {
     sliderRampWidth_->blockSignals(false);
     spinRampCenter_->blockSignals(false);
     spinRampWidth_->blockSignals(false);
-            
 }
 
 void TransFuncIntensityPlugin::setScaleFactor(float scale) {

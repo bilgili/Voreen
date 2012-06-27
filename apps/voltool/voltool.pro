@@ -5,6 +5,9 @@ TARGET = voltool
 TEMPLATE	= app
 LANGUAGE	= C++
 
+CONFIG += console
+CONFIG -= qt
+
 # Include local configuration
 include(../../config.txt)
 
@@ -18,20 +21,21 @@ contains(DEFINES, VRN_WITH_DEVIL) {
 }
 
 
-CONFIG += console
 
 SOURCES	+= voltool.cpp \
            command.cpp \   
            commands_grad.cpp \
            commands_convert.cpp \
            commands_create.cpp \
-           commands_modify.cpp
+           commands_modify.cpp \
+           commands_registration.cpp
 
 HEADERS +=  command.h \
             commands_grad.h \
             commands_convert.h \
             commands_create.h \
-            commands_modify.h
+            commands_modify.h \
+            commands_registration.h
 
 # add files, which are not available in the snapshot release
 # these files will be added to the snapshot, when they are cleaned up

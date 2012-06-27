@@ -31,17 +31,9 @@
 
 namespace voreen {
 
-/*
-    constructor
-*/
-
 IOProgress::IOProgress()
   : progress_(0)
 {}
-
-/*
-    getters and setters
-*/
 
 void IOProgress::set(int progress) {
     progress_ = progress;

@@ -32,7 +32,9 @@
 
 namespace voreen {
 
-CanvasModifier::CanvasModifier(tgt::GLCanvas* canvas, bool useSignals) : useSignals_(useSignals) {
+CanvasModifier::CanvasModifier(tgt::GLCanvas* canvas, bool useSignals)
+: useSignals_(useSignals)
+{
     canvas_ = canvas;
     canvasDetached_ = false;
     canvasWidget_ = 0;
@@ -46,9 +48,9 @@ void CanvasModifier::keyEvent(tgt::KeyEvent* e) {
     }
 
     bool printSize = false;
-    if (keyPrint_ == e->keyCode() && e->pressed()) {
+    if (keyPrint_ == e->keyCode() && e->pressed())
         printSize = true;
-    }
+
     if (e->keyCode() == tgt::KeyEvent::K_0) {
         qtCanvas->resize(64, 64);
         printSize = true;

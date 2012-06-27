@@ -34,26 +34,17 @@ namespace voreen {
 
 class IOProgress {
 public:
-
-/*
-    constructor
-*/
     IOProgress();
     virtual ~IOProgress() {}
-
-/*
-    getters and setters
-*/
 
     void set(int progress);
     int get() const;
 
-    /// Override this method to get notified.
+    // Override these methods to get notified on IO progress.
     virtual void update() = 0;
     virtual void setNumSteps(int numSteps) = 0;
 
 protected:
-
     int progress_;
 };
 

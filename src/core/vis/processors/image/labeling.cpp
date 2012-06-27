@@ -85,51 +85,48 @@ const Identifier Labeling::setSegmentDescriptionFile_("set.SegmentDescriptionFil
 
 const Identifier Labeling::labelTexUnit_ = "labelTexUnit";
 
-const std::string Labeling::loggerCat_("voreen.voreen.Labeling");
+const std::string Labeling::loggerCat_("voreen.Labeling");
 
-//RPTMERGE: todo: adapt labeling
-
-// constructor
-Labeling::Labeling() :
-    GenericFragment("pp_labeling"), tgt::EventListener(),
-        labelingWidget_(NULL),
-        pg_(0),
-        labelShader_(NULL),
-        segmentation_(NULL),
-        labelColorExtern_(setLabelColor_, "Label-Color", tgt::Color::blue),
-        haloColorExtern_(setHaloColor_, "Halo-Color", Color(0.8f, 0.8f, 0.8f, 1.0f)),
-        fontSizeExtern_(setFontSize_, "Font-Size", 12, 6, 60),
-        lockInternalFontSettings_("set.lockInternalFontSettings", "Lock internal to external font settings", true),
-        labelColorIntern_("set.labelColorIntern", "Label-Color", tgt::Color::blue),
-        haloColorIntern_("set.haloColorIntern", "Halo-Color", Color(0.8f, 0.8f, 0.8f, 1.0f)),
-        fontSizeIntern_("set.fontSizeIntern", "Font-Size", 12, 6, 60),
-        shape3D_("set.shape3D", "3D shape fitting", true),
-        drawHalo_(switchDrawHalo_, "Draw Halo", true),
-        minSegmentSize_("set.minSegmentSize", "Minimal segment size", 10, 0, 500),
-        maxIterations_("set.maxIterations", "Iteration limit", 40, 1, 100),
-        filterDelta_("set.filterDelta", "Filter gap", 2, 1, 10),
-        distanceMapStep_("set.distanceMapStep", "Distance map step", 4, 1, 10),
-        glyphAdvance_("set.glyphAdvance", "Glyph advance", 2, 0, 10),
-        polynomialDegree_("set.polynomialDegree", "Polynomial degree", 2, 1, 10),
-        bezierHorzDegree_("set.bezierHorzDegree", "Bezier horz. degree", 8, 1, 12),
-        bezierVertDegree_("set.bezierVertDegree", "Bezier vert. degree", 4, 1, 10),
-        fontPath_("fonts/Vera.ttf"),
-        valid_(false),
-        coarse_(false),
-        editMode_(false),
-        drag_(false),
-        pickedLabel_(NULL)
-
+Labeling::Labeling() : GenericFragment("pp_labeling"), 
+    tgt::EventListener(),
+    labelingWidget_(0),
+    pg_(0),
+    labelShader_(0),
+    labelColorExtern_(setLabelColor_, "Label-Color", tgt::Color::blue),
+    haloColorExtern_(setHaloColor_, "Halo-Color", Color(0.8f, 0.8f, 0.8f, 1.0f)),
+    fontSizeExtern_(setFontSize_, "Font-Size", 12, 6, 60),
+    lockInternalFontSettings_("set.lockInternalFontSettings", "Lock internal to external font settings", true),
+    labelColorIntern_("set.labelColorIntern", "Label-Color (internal)", tgt::Color::blue),
+    haloColorIntern_("set.haloColorIntern", "Halo-Color (internal)", Color(0.8f, 0.8f, 0.8f, 1.0f)),
+    fontSizeIntern_("set.fontSizeIntern", "Font-Size (internal)", 12, 6, 60),
+    shape3D_("set.shape3D", "3D shape fitting", true),
+    drawHalo_(switchDrawHalo_, "Draw Halo", true),
+    minSegmentSize_("set.minSegmentSize", "Minimal segment size", 10, 0, 500),
+    maxIterations_("set.maxIterations", "Iteration limit", 40, 1, 100),
+    filterDelta_("set.filterDelta", "Filter gap", 2, 1, 10),
+    distanceMapStep_("set.distanceMapStep", "Distance map step", 4, 1, 10),
+    glyphAdvance_("set.glyphAdvance", "Glyph advance", 2, 0, 10),
+    polynomialDegree_("set.polynomialDegree", "Polynomial degree", 2, 1, 10),
+    bezierHorzDegree_("set.bezierHorzDegree", "Bezier horz. degree", 8, 1, 12),
+    bezierVertDegree_("set.bezierVertDegree", "Bezier vert. degree", 4, 1, 10),
+    fontPath_("fonts/Vera.ttf"),
+    valid_(false),
+    coarse_(false),
+    editMode_(false),
+    drag_(false),
+    pickedLabel_(0), 
+    currentVolumeHandle_(0),
+    cameraChanged_(true)
 #ifdef labelDEBUG
-        , showSegmentIDs_("showSegmentIDs", "Show segment IDs", false),
-        drawDebugMaps_("drawDebugMaps", "Draw debug maps", false),
-        drawConvexHull_("drawConvexHull", "Draw convex hull", false)
+    , showSegmentIDs_("showSegmentIDs", "Show segment IDs", false),
+    drawDebugMaps_("drawDebugMaps", "Draw debug maps", false),
+    drawConvexHull_("drawConvexHull", "Draw convex hull", false)
 #endif
         
 {
     setName("Labeling");
 
-    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::addMouseListener_, this));
+    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::addEventListener_, this));
 
     std::vector<Identifier> units;
     units.push_back(labelTexUnit_);
@@ -164,12 +161,16 @@ Labeling::Labeling() :
     layout_ = new EnumProp("set.labelLayoutAsString", "Layout", layoutEnum, SILHOUETTE);
     addProperty(layout_);
 
-    GroupProp* fontProps = new GroupProp("fontProperties", "Font Properties");
+    /*GroupProp* fontProps = new GroupProp("fontProperties", "Font Properties");
     fontProps->addGroupedProp(&fontSizeExtern_);
     fontProps->addGroupedProp(&labelColorExtern_);
     fontProps->addGroupedProp(&haloColorExtern_);
     fontProps->addGroupedProp(&drawHalo_);
-    addProperty(fontProps);
+    addProperty(fontProps);*/
+    addProperty(&fontSizeExtern_);
+    addProperty(&labelColorExtern_);
+    addProperty(&haloColorExtern_);
+    addProperty(&drawHalo_);
 
     createFilterKernels();
     std::vector<std::string> filterEnum;
@@ -177,13 +178,16 @@ Labeling::Labeling() :
         filterEnum.push_back(kernels_[i].caption);
     
     filterKernel_ = new EnumProp("set.filterKernel", "Filter kernel", filterEnum, 2);
-    GroupProp* distMapProps = new GroupProp("distMapProps", "Distance Map Settings");
+    /*GroupProp* distMapProps = new GroupProp("distMapProps", "Distance Map Settings");
     distMapProps->addGroupedProp(filterKernel_);
     distMapProps->addGroupedProp(&filterDelta_);
     distMapProps->addGroupedProp(&distanceMapStep_);
-    addProperty(distMapProps);
+    addProperty(distMapProps);*/
+    addProperty(filterKernel_);
+    addProperty(&filterDelta_);
+    addProperty(&distanceMapStep_);
 
-    GroupProp* internGroup = new GroupProp("internalLabelSettings", "Internal Labels");
+    /*GroupProp* internGroup = new GroupProp("internalLabelSettings", "Internal Labels");
 
     internGroup->addGroupedProp( &lockInternalFontSettings_ );
     internGroup->addGroupedProp( &fontSizeIntern_ );
@@ -195,8 +199,16 @@ Labeling::Labeling() :
     internGroup->addGroupedProp( &bezierHorzDegree_ );
     internGroup->addGroupedProp( &bezierVertDegree_ );
     internGroup->addGroupedProp( &glyphAdvance_ );
-    addProperty( internGroup );
-
+    addProperty( internGroup );*/
+    addProperty( &lockInternalFontSettings_ );
+    addProperty( &fontSizeIntern_ );
+    addProperty( &labelColorIntern_ );
+    addProperty( &haloColorIntern_ );
+	addProperty( &shape3D_ );
+    addProperty( &polynomialDegree_ );
+    addProperty( &bezierHorzDegree_ );
+    addProperty( &bezierVertDegree_ );
+    addProperty( &glyphAdvance_ );
 
 #ifdef labelDEBUG
 
@@ -215,6 +227,7 @@ Labeling::Labeling() :
 
 #endif
 
+    createInport("volumehandle.volumehandle");
     createInport("image.idmap");
     createOutport("image.labeling");
 }
@@ -243,6 +256,7 @@ Labeling::~Labeling() {
 
     if ( tgt::Singleton<MessageDistributor>::isInited() )
         MsgDistr.remove(this);
+    MsgDistr.postMessage(new TemplateMessage<tgt::EventListener*>(VoreenPainter::removeEventListener_, this));
 }
 
 void Labeling::processMessage(Message* msg, const Identifier& dest) {
@@ -256,6 +270,7 @@ void Labeling::processMessage(Message* msg, const Identifier& dest) {
         if ( (layout == layout_->get()) || ( (layout != LEFTRIGHT) && (layout != SILHOUETTE) ) )
             return;
         layout_->set( static_cast<LabelLayouts>( layout ) );
+        cameraChanged_ = true; // force layout recalculation 
         invalidate();
     }
     else if (msg->id_ == "set.labelLayoutAsString") {
@@ -264,6 +279,7 @@ void Labeling::processMessage(Message* msg, const Identifier& dest) {
             layout_->set( SILHOUETTE );
         else if (layoutStr == "Left-Right")
             layout_->set( LEFTRIGHT );
+        cameraChanged_ = true; // force layout recalculation 
         invalidate();
     }
     else if (msg->id_ == "set.showLabels") {
@@ -358,21 +374,6 @@ void Labeling::processMessage(Message* msg, const Identifier& dest) {
         readSegmentData(filename);
         genTextures();
         invalidate();
-        // FIXME: obsoleted by new volume concept. Move additional code
-        // to section where the VolumeHandle is set.
-        //
-    /*} else if (msg->id_ == setVolumeContainer_) {
-        VolumeContainer* volCont = msg->getValue<VolumeContainer*>();
-        tgtAssert(msg->getValue<VolumeContainer*>(), "No volume container");
-        if ( volCont->getVolume(Modality::MODALITY_SEGMENTATION) ) {
-            segmentation_ = volCont->getVolume(Modality::MODALITY_SEGMENTATION);
-            std::string filename = segmentation_->meta().getFileName();
-            filename.replace(filename.length()-3, 3, "xml");
-            readSegmentData(filename);
-            genTextures();
-            invalidate();
-        }
-        */
     }
     else if ( msg->id_ == "set.filterKernel") {
         std::string filterCaption = msg->getValue<std::string>();
@@ -436,6 +437,8 @@ void Labeling::processMessage(Message* msg, const Identifier& dest) {
     }
     else if ( msg->id_ == setLabelingWidget_)
         msg->getValue<LabelingWidget*>(labelingWidget_);
+    else if (msg->id_ == VoreenPainter::cameraChanged_)
+        cameraChanged_ = true;
 
 #ifdef labelDEBUG
     else if (msg->id_ == "showSegmentIDs") {
@@ -445,15 +448,6 @@ void Labeling::processMessage(Message* msg, const Identifier& dest) {
     }
     else if (msg->id_ == "drawConvexHull") {
         drawConvexHull_.set(msg->getValue<bool>());
-    }
-    else if (msg->id_ == "drawDebugMaps") {
-        drawDebugMaps_.set(msg->getValue<bool>());
-        if ( !drawDebugMaps_.get() ) {
-            if (segmentationTarget_)
-                tc_->releaseTarget(segmentationTarget_);
-            if (distanceMapTarget_)
-                tc_->releaseTarget(distanceMapTarget_);
-        }
     }
 #endif
 
@@ -479,6 +473,22 @@ void Labeling::process(LocalPortMapping* portMapping) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPopAttrib();
 
+    VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
+    if (volumeHandle != 0) {
+        if (!volumeHandle->isIdentical(currentVolumeHandle_)) {
+            currentVolumeHandle_ = volumeHandle;
+            std::string filename = volumeHandle->getVolume()->meta().getFileName();
+            filename.replace(filename.length()-3, 3, "xml");
+            readSegmentData(filename);
+            genTextures();
+        }
+    }
+    else
+       currentVolumeHandle_ = 0;
+
+    if (currentVolumeHandle_ == 0)
+		return;
+
     // if not in coarseness-mode, perform labeling
 	if (!coarse_ && labelPersistentData_.size() > 0) {
 
@@ -486,15 +496,24 @@ void Labeling::process(LocalPortMapping* portMapping) {
         if (!editMode_) {
 
 			pickedLabel_ = NULL;
-			deleteLabels();
+			/*deleteLabels();
             readImage(source);
             findAnchors();
-            labelLayout();
+            labelLayout();*/
+
 
 #ifdef labelDEBUG
             if (drawDebugMaps_.get())
                renderMaps();
 #endif
+        }
+
+        if (cameraChanged_) {
+            cameraChanged_ = false;
+            deleteLabels();
+            readImage(source);
+            findAnchors();
+            labelLayout();
         }
 
         renderLabels(dest);
@@ -911,7 +930,7 @@ void Labeling::findAnchors() {
 
     int oldID;
     int newID;
-    int lastID;
+    int lastID = -1;
     int distance;
     int lastDist;
     int offset;
@@ -2213,6 +2232,7 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
                     int max_x = min(x_t + lineWidth / 2, image_.width-1);
                     int min_y = max(y_t - lineWidth / 2, 0);
                     int max_y = min(y_t + lineWidth / 2, image_.height-1);
+
                     for (int x_new = min_x; x_new <= max_x; ++x_new) {
                         for (int y_new = min_y; y_new <= max_y; ++y_new) {
                             // hull
@@ -2233,7 +2253,7 @@ bool Labeling::midPointLine(ivec2 const &start, const ivec2 &end, MidPointLineAc
             swap(x0,y0);
         }
 
-        --x;
+        ++x;
         if (d <= 0) {
             d += deltaE;
         }
@@ -3237,7 +3257,7 @@ void Labeling::readImage(int source) {
 
     image_.firstHitPositions.setData(positionBuffer, image_.width, image_.height, 3);
   //  image_.firstHitPositions.setVolumeSize(pg_->getVolumeSize());
-    image_.firstHitPositions.setVolumeSize(segmentation_->getCubeSize() / 2.f);
+    image_.firstHitPositions.setVolumeSize(currentVolumeHandle_->getVolume()->getCubeSize() / 2.f);
     image_.firstHitPositions.calcTransformationMatrix(camera_->getViewMatrix(),
         camera_->getProjectionMatrix(),
         ivec2(image_.width, image_.height));

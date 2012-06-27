@@ -103,11 +103,14 @@ int SimpleRaycaster::initializeGL() {
 }
 
 void SimpleRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(),
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_simple.frag",
                                        generateHeader(), false);
 }
 
 void SimpleRaycaster::compile() {
+    if (!raycastPrg_)
+        return;
+
     raycastPrg_->setHeaders(generateHeader(), false);
 	raycastPrg_->rebuild();
 }
@@ -119,12 +122,14 @@ void SimpleRaycaster::process(LocalPortMapping* portMapping) {
 	int dest = portMapping->getTarget("image.output");	
     tc_->setActiveTarget(dest,"SimpleRaycaster::image.output");
     
-    glViewport(0, 0, size_.x, size_.y); //FIXME: is this needed?
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
 	VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);
+    if (volumeHandle != 0) {
+        if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
+            setVolumeHandle(volumeHandle);
+    } else
+        setVolumeHandle(0);
 
     if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
 		return;

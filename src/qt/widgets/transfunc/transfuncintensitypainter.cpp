@@ -35,7 +35,8 @@ namespace voreen {
 
 TransFuncIntensityPainter::TransFuncIntensityPainter(tgt::GLCanvas* cv)
 	: tgt::Painter(cv),
-	tf_(0) {
+	tf_(0)
+{
 	startingPoint_ = 0.f;
 	endingPoint_ = 1.f;
 
@@ -54,7 +55,7 @@ void TransFuncIntensityPainter::setTransFunc(TransFuncIntensity* tf) {
 }
 
 void TransFuncIntensityPainter::paint() {
-    if ( GpuCaps.areShadersSupported() )
+    if (GpuCaps.areShadersSupported())
         tgt::Shader::deactivate();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -65,9 +66,9 @@ void TransFuncIntensityPainter::paint() {
         glBegin(GL_QUADS);
             // Front Face
             if (i % 2)
-                glColor3f(0.6,0.6,0.6);
+                glColor3f(0.6f,0.6f,0.6f);
             else
-                glColor3f(1.0,1.0,1.0);
+                glColor3f(1.0f,1.0f,1.0f);
             glVertex3f( i*inc, 0.0f,  -0.5f);  // Bottom Left Of The Texture and Quad
             glVertex3f( (i+1)*inc, 0.0f,  -0.5f);  // Bottom Right Of The Texture and Quad
             glVertex3f( (i+1)*inc, 0.5f,  -0.5f);  // Top Right Of The Texture and Quad
@@ -136,6 +137,5 @@ void TransFuncIntensityPainter::sizeChanged(const tgt::ivec2& size) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
-
 
 } // namespace

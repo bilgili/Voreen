@@ -201,7 +201,7 @@
             <Processor id="11" port="coprocessor.geometryrenderers" order="1" />
         </Outport>
     </Processor>
-    <Processor type="GeometryRenderer.ClippingWidget" name="ClippingWidget" id="14">
+    <Processor type="GeometryRenderer.ClippingPlaneWidget" name="ClippingPlaneWidget" id="14">
         <MetaData>
             <RptProcessorItem x="-235" y="226" />
         </MetaData>

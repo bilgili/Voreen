@@ -30,32 +30,86 @@
 #ifndef VRN_COARSENESSRENDERER_H
 #define VRN_COARSENESSRENDERER_H
 
-#include "tgt/glmath.h"
-
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
+
 namespace voreen {
 
-class CoarsenessRenderer : public CopyToScreenRenderer
-{
+class CoarsenessRenderer : public Processor {
 public:
-
 	/**
-	 * Default constructor.
-	 * @param camera the \c Camera object used in this pipeline.
-	 * @param tc the \c TextureContainer object to use. \see TextureContainer
+	 * Default constructor. Sets the processorname, creates one in- and one outport and registers
+     * the coarsenessfactor property.
 	 */
-	CoarsenessRenderer(tgt::Camera* camera=0, TextureContainer* tc = 0);
+	CoarsenessRenderer();
     ~CoarsenessRenderer();
 
-	virtual void process(LocalPortMapping* portMapping);
-	virtual const Identifier getClassName() const {return "Miscellaneous.CoarsenessRenderer";}
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new CoarsenessRenderer();}
- 
-
-protected:
+    /**
+    * Gets the identifier for "Miscellaneous.CoarsenessRenderer"
+    * @return The identifier
+    */
+	virtual const Identifier getClassName() const;
+	
+    /**
+    * Gets further information about the processor.
+    * @return A short text describing the processor
+    */
+    virtual const std::string getProcessorInfo() const;
     
+    /**
+    * Returns a new instance of this processor
+    * @return A newly created coarseness renderer
+    */
+    virtual Processor* create();
+    
+    /**
+    * Loads the appropriate vertex and fragment shaders.
+    * @return VRN_OK if everything went fine. VRN_ERROR or VRN_OPENGL_INSUFFICIENT otherwise
+    */
+    virtual int initializeGL();
+	virtual void process(LocalPortMapping* portMapping);
+    virtual void processMessage(Message* msg, const Identifier& dest=Message::all_);
+    
+    /// Getter for useCoarseness_
+    bool getUseCoarseness();
+    /// Getter for ignoreCoarseness_
+    bool getIgnoreCoarseness();
+    /// Getter for coarsenessFactior_
+    int getCoarsenessFactor();
+
+    /// setter for useCoarseness
+    void setUseCoarseness(bool use);
+
+    /**
+     * If ignoreCoarseness is set to true, the \c CoarsenessRenderer
+     * does not pass through the coarseness factor to its attached
+     * pipeline. This is useful, if there is more than one
+     * \c CoarsenessRenderer in a pipeline. In this case, all
+     * \c CoarsenessRenderer objects except the last have to ignore
+     * the coarseness.
+     * default: false
+     */
+    void setIgnoreCoarseness(bool ignoreCoarseness);
+
+private:
+
+	/**
+     * Indicates if the coarseness factor is ignored. \see setIgnoreCoarseness
+     */
+    bool useCoarseness_;
+
+    /**
+     * The current coarseness factor. The rendering target's resolution
+     * is reduced by this factor during user interaction.
+     */
+    IntProp coarsenessFactor_;
+
+    /**
+     * The shader program used by this \c CoarsenessRenderer.
+     */
+    tgt::Shader* raycastPrg_;
+
+    static const Identifier setCoarseness_;
+
 };
 
 } // namespace voreen

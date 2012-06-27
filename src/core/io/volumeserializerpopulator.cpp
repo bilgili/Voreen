@@ -67,61 +67,57 @@
 
 namespace voreen {
 
-/*
-    constructor and destructor
-*/
-
 VolumeSerializerPopulator::VolumeSerializerPopulator(IOProgress* progress /*= 0*/)
   : progress_(progress),
-    vs_ ( new VolumeSerializer() )
+    vs_(new VolumeSerializer())
 {
     /*
         populate array with all known VolumeReaders
         --> if an FormatClashException occurs here it is an error in this method
     */
-    readers_.push_back( new DatVolumeReader(progress_) );
-    readers_.push_back( new NrrdVolumeReader() );
-    readers_.push_back( new QuadHidacVolumeReader() );
-    readers_.push_back( new RawVolumeReader(progress_) );
-    readers_.push_back( new TUVVolumeReader() );
-    readers_.push_back( new InterfileVolumeReader() );
+    readers_.push_back(new DatVolumeReader(progress_));
+    readers_.push_back(new NrrdVolumeReader());
+    readers_.push_back(new QuadHidacVolumeReader());
+    readers_.push_back(new RawVolumeReader(progress_));
+    readers_.push_back(new TUVVolumeReader());
+    readers_.push_back(new InterfileVolumeReader());
 
 #ifdef VRN_WITH_DCMTK
-    readers_.push_back( new DicomVolumeReader() );
+    readers_.push_back(new DicomVolumeReader(progress_));
 #endif
 
 #ifdef VRN_WITH_MATLAB
 #ifdef VRN_MODULE_GLYPHS_MESH
-    readers_.push_back( new MatContourReader() );
+    readers_.push_back(new MatContourReader());
 #else
-    readers_.push_back( new MatVolumeReader() );
+    readers_.push_back(new MatVolumeReader());
 #endif
 #endif
 
 #ifdef VRN_WITH_PVM
-    readers_.push_back( new PVMVolumeReader(progress_) );
+    readers_.push_back(new PVMVolumeReader(progress_));
 #endif
 
 #ifdef VRN_WITH_TIFF
-    readers_.push_back( new TiffVolumeReader(progress_) );
+    readers_.push_back(new TiffVolumeReader(progress_));
 #endif
 
 #ifdef VRN_WITH_ZIP
-    readers_.push_back( new ZipVolumeReader(progress_) );
+    readers_.push_back(new ZipVolumeReader(progress_));
 #endif
 
     for (size_t i = 0; i < readers_.size(); ++i)
-        vs_->registerReader( readers_[i] );
+        vs_->registerReader(readers_[i]);
 
     /*
         populate array with all known VolumeWriters
         --> if an FormatClashException occurs here it is an error in this method
     */
-    writers_.push_back( new DatVolumeWriter() );
-    writers_.push_back( new NrrdVolumeWriter() );
+    writers_.push_back(new DatVolumeWriter());
+    writers_.push_back(new NrrdVolumeWriter());
 
     for (size_t i = 0; i < writers_.size(); ++i)
-        vs_->registerWriter( writers_[i] );
+        vs_->registerWriter(writers_[i]);
 }
 
 VolumeSerializerPopulator::~VolumeSerializerPopulator() {
@@ -133,10 +129,6 @@ VolumeSerializerPopulator::~VolumeSerializerPopulator() {
     for (size_t i = 0; i < writers_.size(); ++i)
         delete writers_[i];
 }
-
-/*
-    getter
-*/
 
 VolumeSerializer* VolumeSerializerPopulator::getVolumeSerializer() {
     return vs_;

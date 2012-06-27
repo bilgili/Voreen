@@ -27,16 +27,9 @@
 #include "tgt/gpucapabilities.h"
 #include "tgt/logmanager.h"
 
-
 namespace tgt {
 
-
-//------------------------------------------------------------------------------
-// TextureReader
-//------------------------------------------------------------------------------
-
 const std::string TextureReader::loggerCat_("tgt.Texture.Reader");
-
 
 TextureReader::TextureReader()
 {}
@@ -54,15 +47,13 @@ bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter) {
     if ((t->dimensions_.x != checkSize(t->dimensions_.x)) ||
         (t->dimensions_.y != checkSize(t->dimensions_.y)))
     {
-        LWARNING("tex size not power of 2" + name);
-
         if (GpuCaps.isNpotSupported()) {
-            LINFO("using hardware support");
+            LDEBUG("Resizing using hardware support.");
             return true;
         } else {
-            LWARNING("resizing - SLOW!!!" + name);
-            if ( (filter == Texture::MIPMAP) || (filter == Texture::ANISOTROPIC) )
-            LWARNING("Filter not supported for resizing -> setting to LINEAR." + name);
+            LWARNING("Texture size not power of 2. Resizing - SLOW!!!" + name);
+            if (filter == Texture::MIPMAP || filter == Texture::ANISOTROPIC)
+                LWARNING("Filter not supported for resizing -> setting to LINEAR." + name);
             filter = Texture::LINEAR;
         }
 
@@ -79,14 +70,14 @@ bool TextureReader::rescaleTexture(Texture* t, Texture::Filter filter) {
         size_t newArraySize = newWidth * newHeight *  t->bpp_;
         newPixels = new GLubyte[newArraySize];
 
-        LWARNING("  resizing " << t->dimensions_.x << "x" << t->dimensions_.y
+        LWARNING("  Resizing " << t->dimensions_.x << "x" << t->dimensions_.y
                  << " to " << newWidth << "x" << newHeight << name);
         GLint scaleResult
             = gluScaleImage(t->format_, t->dimensions_.x, t->dimensions_.y, t->dataType_, t->pixels_,
                             newWidth, newHeight, t->dataType_, newPixels);
 
         if (scaleResult != 0) {
-            LERROR("Error resizing tex to power of 2:" << gluErrorString(scaleResult) << name);
+            LERROR("Error resizing texture to power of 2:" << gluErrorString(scaleResult) << name);
             return false;
         }
         
@@ -103,22 +94,23 @@ bool TextureReader::create1DTexture(Texture* t, Texture::Filter filter, bool com
     t->type_ = GL_TEXTURE_1D;
 
     switch (t->bpp_) {
-        case 3:
-            t->format_ = GL_RGB;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
-            break;
+    case 3:
+        t->format_ = GL_RGB;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+        break;
 
-        case 4:
-            t->format_ = GL_RGBA;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
-            break;
+    case 4:
+        t->format_ = GL_RGBA;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+        break;
 
-        default:
-            LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
-            return false;
+    default:
+        LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
+        return false;
     }
 
     if (createOGLTex) {
+        //FIXME: needed? joerg
 //         if (!rescaleTexture(t, filter))
 //             return false;
 
@@ -138,19 +130,19 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
     t->type_ = GL_TEXTURE_2D;
 
     switch (t->bpp_) {
-        case 3:
-            t->format_ = GL_RGB;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
-            break;
+    case 3:
+        t->format_ = GL_RGB;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+        break;
 
-        case 4:
-            t->format_ = GL_RGBA;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
-            break;
+    case 4:
+        t->format_ = GL_RGBA;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+        break;
 
-        default:
-            LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
-            return false;
+    default:
+        LERROR(static_cast<int>(t->bpp_)<< " bits per pixel...error!");
+        return false;
     }
 
     if (createOGLTex) {
@@ -171,24 +163,25 @@ bool TextureReader::create2DTexture(Texture* t, Texture::Filter filter, bool com
 
 bool TextureReader::createRectangleTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex) {
     switch (t->bpp_) {
-        case 3:
-            t->format_ = GL_RGB;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
-            break;
+    case 3:
+        t->format_ = GL_RGB;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+        break;
 
-        case 4:
-            t->format_ = GL_RGBA;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
-            break;
+    case 4:
+        t->format_ = GL_RGBA;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+        break;
 
-        default:
-            LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
-            return false;
+    default:
+        LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
+        return false;
     }
 
     if (createOGLTex) {
-      //  if (!rescaleTexture(t, filter))
-      //      return false;
+        //FIXME: needed? joerg
+        //  if (!rescaleTexture(t, filter))
+        //      return false;
 
         glGenTextures(1, &t->id_);
 #ifdef GL_TEXTURE_RECTANGLE_ARB
@@ -207,25 +200,26 @@ bool TextureReader::create3DTexture(Texture* t, Texture::Filter filter, bool com
     t->type_ = GL_TEXTURE_3D;
 
     switch (t->bpp_) {
-        case 1:
-            t->internalformat_ = GL_INTENSITY;
-            break;
-        case 2:
-            t->internalformat_ = GL_INTENSITY16;
-            break;
-        case 3:
-            t->format_ = GL_RGB;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
-            break;
-        case 4:
-            t->format_ = GL_RGBA;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
-            break;
-        default:
-            LERROR(t->bpp_<< " bits per pixel...error!");
-            return false;
+    case 1:
+        t->internalformat_ = GL_INTENSITY;
+        break;
+    case 2:
+        t->internalformat_ = GL_INTENSITY16;
+        break;
+    case 3:
+        t->format_ = GL_RGB;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
+        break;
+    case 4:
+        t->format_ = GL_RGBA;
+        compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
+        break;
+    default:
+        LERROR(t->bpp_<< " bits per pixel...error!");
+        return false;
     }
 
+    //FIXME: needed? joerg
 //     if (!rescaleTexture(t, filter))
 //         return false;
 

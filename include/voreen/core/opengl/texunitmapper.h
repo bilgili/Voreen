@@ -32,7 +32,10 @@
 
 #include <set>
 #include <map>
+#include <vector>
 #include <stdexcept>
+
+#include "tgt/tgt_gl.h"
 
 namespace voreen {
 

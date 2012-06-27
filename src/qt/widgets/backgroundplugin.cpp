@@ -65,11 +65,9 @@ BackgroundPlugin::BackgroundPlugin(QWidget* parent, MessageReceiver* msgReceiver
 }
 
 BackgroundPlugin::~BackgroundPlugin()
-{
-}
+{}
 
 void BackgroundPlugin::setIsSliceRenderer(bool isSlice) {
-    
     // renderer type change not allowed after initialization
     if (groupBox_ != 0)
         return;
@@ -80,20 +78,14 @@ void BackgroundPlugin::setIsSliceRenderer(bool isSlice) {
 }
 
 void BackgroundPlugin::enableBackgroundLayouts(int bitString) {
-
     activeLayouts_ |= bitString;
-
 }
 
 void BackgroundPlugin::disableBackgroundLayouts(int bitString) {
-
     activeLayouts_ &= ~bitString;
-
 }
 
 void BackgroundPlugin::createWidgets() {
-
-     
     QVBoxLayout* mainLayout = new QVBoxLayout();
     QVBoxLayout *subLayout;
     QHBoxLayout *hboxLayout;
@@ -101,7 +93,6 @@ void BackgroundPlugin::createWidgets() {
     groupBox_ = new QGroupBox(tr("Background"));
 
     if (isSliceRenderer_) {
-
         QGridLayout *gridLayout = new QGridLayout();
 
         subLayout = new QVBoxLayout();
@@ -121,9 +112,9 @@ void BackgroundPlugin::createWidgets() {
         colorLabelBackground_->setAutoFillBackground(true);
         QPalette palette = colorLabelBackground_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundColor_.r*255),
-            int(backgroundColor_.g*255),
-            int(backgroundColor_.b*255),
+            static_cast<int>(backgroundColor_.r*255),
+            static_cast<int>(backgroundColor_.g*255),
+            static_cast<int>(backgroundColor_.b*255),
             255                                   ) 
             );
         colorLabelBackground_->setPalette(palette);
@@ -133,11 +124,9 @@ void BackgroundPlugin::createWidgets() {
 
         subLayout->addLayout(gridLayout);
         groupBox_->setLayout(subLayout);
-
     }
     else {
         // Background for raycasting (with Background)
-        
         QGridLayout *gridLayout = new QGridLayout();
 
         gridLayout->setColumnStretch(0,2);
@@ -195,15 +184,14 @@ void BackgroundPlugin::createWidgets() {
         colorLabelBackground_->setAutoFillBackground(true);
         QPalette palette = colorLabelBackground_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundColor_.r*255),
-            int(backgroundColor_.g*255),
-            int(backgroundColor_.b*255),
+            static_cast<int>(backgroundColor_.r*255),
+            static_cast<int>(backgroundColor_.g*255),
+            static_cast<int>(backgroundColor_.b*255),
             255                                   ) 
             );
         colorLabelBackground_->setPalette(palette);
         colorLabelBackground_->setBackgroundRole(palette.Window);
         gridLayout->addWidget(colorLabelBackground_, 2, 1);
-
 
         // Background first / second color
         buttonBackgroundFirstColor_ = new QPushButton(tr("First color ..."));
@@ -215,9 +203,9 @@ void BackgroundPlugin::createWidgets() {
         gridLayout->addLayout(hboxLayout, 3, 0);
         palette = colorLabelBackgroundFirst_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundFirstColor_.r*255),
-            int(backgroundFirstColor_.g*255),
-            int(backgroundFirstColor_.b*255),
+            static_cast<int>(backgroundFirstColor_.r*255),
+            static_cast<int>(backgroundFirstColor_.g*255),
+            static_cast<int>(backgroundFirstColor_.b*255),
             255                                   ) 
             );
         colorLabelBackgroundFirst_->setPalette(palette);
@@ -233,9 +221,9 @@ void BackgroundPlugin::createWidgets() {
         gridLayout->addLayout(hboxLayout, 4, 0);
         palette = colorLabelBackgroundSecond_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundSecondColor_.r*255),
-            int(backgroundSecondColor_.g*255),
-            int(backgroundSecondColor_.b*255),
+            static_cast<int>(backgroundSecondColor_.r*255),
+            static_cast<int>(backgroundSecondColor_.g*255),
+            static_cast<int>(backgroundSecondColor_.b*255),
             255                                   ) 
             );
         colorLabelBackgroundSecond_->setPalette(palette);
@@ -279,7 +267,6 @@ void BackgroundPlugin::createWidgets() {
 }
 
 void BackgroundPlugin::createConnections() {
-    
     connect(buttonBackgroundColor_, SIGNAL(clicked()), this, SLOT(selectBackgroundColor())); 
     
     if (!isSliceRenderer_) {
@@ -292,7 +279,6 @@ void BackgroundPlugin::createConnections() {
 }
 
 void BackgroundPlugin::initParameters() {
-  
     isSliceRenderer_ = false;
  
     backgroundColor_ = Color( 235.f, 235.f, 235.f, 0.f ) / 255.f;
@@ -301,30 +287,25 @@ void BackgroundPlugin::initParameters() {
     backgroundSecondColor_ = Color( 204.f, 204.f, 204.f, 0.f ) / 255.f;
     backgroundAngle_ = 180;
     backgroundTile_ = 1;
-
 }
 
 void BackgroundPlugin::setWidgetState() {
-
     // return, if widget has not yet been initialized
     if (!groupBox_)
         return;
 
     if (isSliceRenderer_) {
-        
         QPalette palette = colorLabelBackground_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundColor_.r*255),
-            int(backgroundColor_.g*255),
-            int(backgroundColor_.b*255),
+            static_cast<int>(backgroundColor_.r*255),
+            static_cast<int>(backgroundColor_.g*255),
+            static_cast<int>(backgroundColor_.b*255),
             255                                   ) 
             );
         colorLabelBackground_->setPalette(palette);
-    
     }
     else {
         // assuming: Raycasting with Background
-    
         layoutLabel_->setVisible(true);
         backgroundLayoutCombo_->setVisible(true);
         
@@ -344,16 +325,15 @@ void BackgroundPlugin::setWidgetState() {
             colorLabelBackground_->setVisible(true);
             QPalette palette = colorLabelBackground_->palette();
             palette.setColor(QPalette::Window, QColor(
-                int(backgroundColor_.r*255),
-                int(backgroundColor_.g*255),
-                int(backgroundColor_.b*255),
+                static_cast<int>(backgroundColor_.r*255),
+                static_cast<int>(backgroundColor_.g*255),
+                static_cast<int>(backgroundColor_.b*255),
                 255                                   ) 
                 );
             colorLabelBackground_->setPalette(palette);
         
         }
         else if (backgroundLayout_ == GRADIENT || backgroundLayout_ == RADIAL) {
-        
             buttonBackgroundFirstColor_->setVisible(true);
             colorLabelBackgroundFirst_->setVisible(true);
             buttonBackgroundSecondColor_->setVisible(true);
@@ -361,18 +341,18 @@ void BackgroundPlugin::setWidgetState() {
             
             QPalette palette = colorLabelBackgroundFirst_->palette();
             palette.setColor(QPalette::Window, QColor(
-                int(backgroundFirstColor_.r*255),
-                int(backgroundFirstColor_.g*255),
-                int(backgroundFirstColor_.b*255),
+                static_cast<int>(backgroundFirstColor_.r*255),
+                static_cast<int>(backgroundFirstColor_.g*255),
+                static_cast<int>(backgroundFirstColor_.b*255),
                 255                                   ) 
             );
             colorLabelBackgroundFirst_->setPalette(palette);
         
             palette = colorLabelBackgroundSecond_->palette();
             palette.setColor(QPalette::Window, QColor(
-                int(backgroundSecondColor_.r*255),
-                int(backgroundSecondColor_.g*255),
-                int(backgroundSecondColor_.b*255),
+                static_cast<int>(backgroundSecondColor_.r*255),
+                static_cast<int>(backgroundSecondColor_.g*255),
+                static_cast<int>(backgroundSecondColor_.b*255),
                 255                                   ) 
                 );
             colorLabelBackgroundSecond_->setPalette(palette);
@@ -391,61 +371,49 @@ void BackgroundPlugin::setWidgetState() {
 
         }
         else if (backgroundLayout_ == CLOUD ) {
-           
             tileLabel_->setVisible(true);
             spinBoxTile_->setVisible(true);
             spinBoxTile_->setValue(backgroundTile_);
-    
         }
     }
-
 }
 
 void BackgroundPlugin::initGL() {
-
     std::string layout;
-    if (backgroundLayout_ == MONOCHROME) {
+    if (backgroundLayout_ == MONOCHROME)
         layout = "Monochrome";
-    } else if (backgroundLayout_ == GRADIENT) {
+    else if (backgroundLayout_ == GRADIENT)
         layout = "Gradient";
-    } else if (backgroundLayout_ == RADIAL) {
+    else if (backgroundLayout_ == RADIAL)
         layout = "Radial";
-    } else if (backgroundLayout_ == CLOUD) {
+    else if (backgroundLayout_ == CLOUD)
         layout = "Cloud";
-    } else if (backgroundLayout_ == TEXTURE) {
+    else if (backgroundLayout_ == TEXTURE)
         layout = "Texture";
-    }
 
-    postMessage(new ColorMsg(Background::setBackgroundColor_,
-            backgroundColor_));
-    postMessage(new ColorMsg(Background::setBackgroundFirstColor_,
-            backgroundFirstColor_));
-    postMessage(new ColorMsg(Background::setBackgroundSecondColor_,
-            backgroundSecondColor_));
+    postMessage(new ColorMsg(Background::setBackgroundColor_, backgroundColor_));
+    postMessage(new ColorMsg(Background::setBackgroundFirstColor_, backgroundFirstColor_));
+    postMessage(new ColorMsg(Background::setBackgroundSecondColor_, backgroundSecondColor_));
     postMessage(new StringMsg("set.backgroundModeAsString", layout));
     postMessage(new IntMsg(Background::setBackgroundAngle_, backgroundAngle_));
     postMessage(new FloatMsg("set.backgroundTile", float(backgroundTile_)));
-
 }
 
-
-void BackgroundPlugin::selectBackgroundColor(){
-    
+void BackgroundPlugin::selectBackgroundColor() {
     QColor color = QColorDialog::getRgba( qRgba(
-        int(255*backgroundColor_.r),
-        int(255*backgroundColor_.g),
-        int(255*backgroundColor_.b),
+        static_cast<int>(255*backgroundColor_.r),
+        static_cast<int>(255*backgroundColor_.g),
+        static_cast<int>(255*backgroundColor_.b),
         255 ) , 0, buttonBackgroundColor_);
 	
 	if (color.isValid()) {
-
         backgroundColor_ = Color(color.redF(), color.greenF(), color.blueF(), 0.f);
 
         QPalette palette = colorLabelBackground_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundColor_.r*255),
-            int(backgroundColor_.g*255),
-            int(backgroundColor_.b*255),
+            static_cast<int>(backgroundColor_.r*255),
+            static_cast<int>(backgroundColor_.g*255),
+            static_cast<int>(backgroundColor_.b*255),
             255                                   ) 
         );
         colorLabelBackground_->setPalette(palette);
@@ -455,26 +423,23 @@ void BackgroundPlugin::selectBackgroundColor(){
 
         repaintCanvases();
 	}
-
 }
 
 void BackgroundPlugin::selectBackgroundFirstColor(){
-    
     QColor color = QColorDialog::getRgba( qRgba(
-        int(255*backgroundFirstColor_.r),
-        int(255*backgroundFirstColor_.g),
-        int(255*backgroundFirstColor_.b),
+        static_cast<int>(255*backgroundFirstColor_.r),
+        static_cast<int>(255*backgroundFirstColor_.g),
+        static_cast<int>(255*backgroundFirstColor_.b),
         255 ) , 0, buttonBackgroundFirstColor_);
 	
 	if (color.isValid()) {
-
         backgroundFirstColor_ = Color(color.redF(), color.greenF(), color.blueF(), 0);
 
         QPalette palette = colorLabelBackgroundFirst_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundFirstColor_.r*255),
-            int(backgroundFirstColor_.g*255),
-            int(backgroundFirstColor_.b*255),
+            static_cast<int>(backgroundFirstColor_.r*255),
+            static_cast<int>(backgroundFirstColor_.g*255),
+            static_cast<int>(backgroundFirstColor_.b*255),
             255                                   ) 
         );
         colorLabelBackgroundFirst_->setPalette(palette);
@@ -484,26 +449,23 @@ void BackgroundPlugin::selectBackgroundFirstColor(){
 
         repaintCanvases();
 	}
-
 }
 
 void BackgroundPlugin::selectBackgroundSecondColor(){
-     
     QColor color = QColorDialog::getRgba( qRgba(
-        int(255*backgroundSecondColor_.r),
-        int(255*backgroundSecondColor_.g),
-        int(255*backgroundSecondColor_.b),
+        static_cast<int>(255*backgroundSecondColor_.r),
+        static_cast<int>(255*backgroundSecondColor_.g),
+        static_cast<int>(255*backgroundSecondColor_.b),
         255 ) , 0, buttonBackgroundSecondColor_);
 	
 	if (color.isValid()) {
-
         backgroundSecondColor_ = Color(color.redF(), color.greenF(), color.blueF(), 0.f);
 
         QPalette palette = colorLabelBackgroundSecond_->palette();
         palette.setColor(QPalette::Window, QColor(
-            int(backgroundSecondColor_.r*255),
-            int(backgroundSecondColor_.g*255),
-            int(backgroundSecondColor_.b*255),
+            static_cast<int>(backgroundSecondColor_.r*255),
+            static_cast<int>(backgroundSecondColor_.g*255),
+            static_cast<int>(backgroundSecondColor_.b*255),
             255                                   ) 
         );
         colorLabelBackgroundSecond_->setPalette(palette);
@@ -513,11 +475,9 @@ void BackgroundPlugin::selectBackgroundSecondColor(){
 
         repaintCanvases();
 	}
-
 }
 
 void BackgroundPlugin::setBackgroundLayout(int /*value*/) {
-
     std::string layout;
     QString text = backgroundLayoutCombo_->currentText();
     if (text == tr("Plain")) {
@@ -525,16 +485,20 @@ void BackgroundPlugin::setBackgroundLayout(int /*value*/) {
         backgroundLayout_ = MONOCHROME;
         postMessage(new ColorMsg(Background::setBackgroundColor_,
 		    backgroundColor_));
-    } else if (text == tr("Gradient")) {
+    }
+    else if (text == tr("Gradient")) {
         layout = "Gradient";
         backgroundLayout_ = GRADIENT;
-    } else if (text == tr("Radial")) {
+    }
+    else if (text == tr("Radial")) {
         layout = "Radial";
         backgroundLayout_ = RADIAL;
-    } else if (text == tr("Cloud")) {
+    }
+    else if (text == tr("Cloud")) {
         layout = "Cloud";
         backgroundLayout_ = CLOUD;
-    } else if (text == tr("Texture")) {
+    }
+    else if (text == tr("Texture")) {
         layout = "Texture";
         backgroundLayout_ = TEXTURE;
     }
@@ -543,20 +507,16 @@ void BackgroundPlugin::setBackgroundLayout(int /*value*/) {
 
     postMessage(new StringMsg("set.backgroundModeAsString", layout));
     repaintCanvases();
-
 }
 
 void BackgroundPlugin::setBackgroundAngle(int value) {
-
     backgroundAngle_ = value;
     postMessage(new IntMsg(Background::setBackgroundAngle_, value));
 
     repaintCanvases();
-
 }
 
 void BackgroundPlugin::setBackgroundTile(int value) {
-    
     backgroundTile_ = value;
     postMessage(new FloatMsg("set.backgroundTile", float(value)));
 
@@ -564,4 +524,3 @@ void BackgroundPlugin::setBackgroundTile(int value) {
 }
 
 } // namespace voreen
-

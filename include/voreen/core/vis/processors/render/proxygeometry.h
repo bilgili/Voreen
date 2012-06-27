@@ -72,7 +72,8 @@ public:
     virtual void render() {}
 
 	virtual void process(LocalPortMapping* portMapping);
-	virtual Message* call (Identifier ident, LocalPortMapping* portMapping);
+    virtual Message* call (Identifier ident, LocalPortMapping* portMapping);
+
 protected:
     bool needsBuild_;
     tgt::vec3 volumeSize_;
@@ -80,8 +81,7 @@ protected:
 };
 
 /**
- * Provides a simple cube proxy. The resulting geometry depends
- * on the ratio of the values in dim.
+ * Provides a simple cube proxy with clipping.
  */
 class CubeProxyGeometry : public ProxyGeometry {
 public:
@@ -118,8 +118,6 @@ public:
     virtual tgt::vec3 getClipPlaneRUB();
     virtual void render();
     
-    virtual bool isMultipassCompatible() { return true; }
-
 protected:
     void revalidateCubeGeometry();
     /**

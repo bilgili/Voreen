@@ -57,10 +57,10 @@ const Identifier ProxyGeometry::resetClipPlanes_("reset.clipPlanes");
 const Identifier ProxyGeometry::getVolumeSize_("get.volumeSize");
 
 ProxyGeometry::ProxyGeometry()
-    : VolumeRenderer(),
-      needsBuild_(true),
-      volumeSize_(tgt::vec3::zero),
-      volume_(0)
+    : VolumeRenderer()
+    , needsBuild_(true)
+    , volumeSize_(tgt::vec3::zero)
+    , volume_(0)
 {}
 
 int ProxyGeometry::initializeGL() {
@@ -69,12 +69,12 @@ int ProxyGeometry::initializeGL() {
 
 void ProxyGeometry::setVolumeHandle(VolumeHandle* const handle) {
     VolumeRenderer::setVolumeHandle(handle);
-    if ( currentVolumeHandle_ == 0 ) {
+
+    if (!currentVolumeHandle_) {
         volume_ = 0;
         return;
     }
 
-    //volume_ = currentVolumeHandle_->getVolume();
 	volume_ = currentVolumeHandle_->getVolumeGL()->getVolume();
     if (volume_ != 0) {
         needsBuild_ = true;
@@ -84,16 +84,18 @@ void ProxyGeometry::setVolumeHandle(VolumeHandle* const handle) {
 
 void ProxyGeometry::process(LocalPortMapping* portMapping) {
     VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);    
+    if (volumeHandle != 0) {
+        if (!volumeHandle->isIdentical(currentVolumeHandle_))
+            setVolumeHandle(volumeHandle);
+    } else
+        setVolumeHandle(0);
 }
 
 Message* ProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/) {
-	if (ident == "render") {
-		render();
-		return 0;
-	}
+    if (ident == "render") {
+        render();
+        return 0;
+    }
     else if (ident == getVolumeSize_) {
         return new Vec3Msg("", getVolumeSize());
     }
@@ -102,7 +104,7 @@ Message* ProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMapping*/
 }
 
 tgt::vec3 ProxyGeometry::getVolumeSize() {
-	return volumeSize_;
+    return volumeSize_;
 }
 
 //---------------------------------------------------------------------------
@@ -110,20 +112,20 @@ tgt::vec3 ProxyGeometry::getVolumeSize() {
 //TODO: RPTMERGE: reintroduce setting of useVirtualClipplane (deleted from constructor)
 
 CubeProxyGeometry::CubeProxyGeometry()
-  : ProxyGeometry(),
-    useClipping_(setUseClipping_, "Use Clipping", true),
-    clipLeftX_(setLeftClipPlane_, "Left Clippingplane", 0, 0, 100, true),
-    clipRightX_(setRightClipPlane_, "Right Clippingplane", 0, 0, 100, true),
-    clipUpY_(setTopClipPlane_, "Top Clippingplane", 0, 0, 100, true),
-    clipDownY_(setBottomClipPlane_, "Bottom Clippingplane", 0, 0, 100, true),
-    clipFrontZ_(setFrontClipPlane_, "Front Clippingplane", 0, 0, 100, true),
-    clipBackZ_(setBackClipPlane_, "Back Clippingplane", 0, 0, 100, true),
-    dl_(0),
-    useVirtualClipplane_("switch.virtualClipplane", "Use Virtual Clipplane", false),
-    clipPlane_("set.virtualClipplane", "Plane equation", vec4(1.f/5.f, 2.f/5.f, 1.f, 0.3f),
-               tgt::vec4(-10.f), tgt::vec4(10.f))
+    : ProxyGeometry(),
+      useClipping_(setUseClipping_, "Use clipping", true),
+      clipLeftX_(setLeftClipPlane_, "Left clipping plane", 0, 0, 100, true),
+      clipRightX_(setRightClipPlane_, "Right clipping plane", 0, 0, 100, true),
+      clipUpY_(setTopClipPlane_, "Top clipping plane", 0, 0, 100, true),
+      clipDownY_(setBottomClipPlane_, "Bottom clipping plane", 0, 0, 100, true),
+      clipFrontZ_(setFrontClipPlane_, "Front clipping plane", 0, 0, 100, true),
+      clipBackZ_(setBackClipPlane_, "Back clipping plane", 0, 0, 100, true),
+      dl_(0),
+      useVirtualClipplane_("switch.virtualClipplane", "Use virtual clipping plane", false),
+      clipPlane_("set.virtualClipplane", "Plane equation", vec4(1.f/5.f, 2.f/5.f, 1.f, 0.3f),
+                 tgt::vec4(-10.f), tgt::vec4(10.f))
 {
-    setName("Cube-ProxyGeometry");
+    setName("CubeProxyGeometry");
     addProperty(&useClipping_);
     addProperty(&useVirtualClipplane_);
     addProperty(new ConditionProp("virtualClipPlaneCond", &useVirtualClipplane_));
@@ -137,7 +139,7 @@ CubeProxyGeometry::CubeProxyGeometry()
     addProperty(&clipFrontZ_);
     addProperty(&clipBackZ_);
 
-    clipplaneGroup_ = new GroupProp("group.clipPlanesSlider","Clipping Planes");
+    clipplaneGroup_ = new GroupProp("group.clipPlanesSlider", "Clipping Planes");
     addProperty(clipplaneGroup_);
 
     clipLeftX_.setGrouped("group.clipPlanesSlider");
@@ -154,7 +156,7 @@ CubeProxyGeometry::CubeProxyGeometry()
 }
 
 const std::string CubeProxyGeometry::getProcessorInfo() const {
-	return "Provides a simple cube proxy. The resulting geometry depends on the ratio of the values in dim.";
+	return "Provides a simple cube proxy with clipping.";
 }
 
 void CubeProxyGeometry::setPropertyDestination(Identifier tag) {
@@ -187,31 +189,29 @@ bool CubeProxyGeometry::getUseVirtualClipplane() {
 }
 
 /**
- * Renders the OpenGL list (and creates it, when needed).
+ * Renders the OpenGL display list (and creates it, when needed).
  */
 void CubeProxyGeometry::render() {
     if (volume_) {
         if (needsBuild_) {
-            if (!dl_)
-                dl_ = glGenLists(1);
-            
             revalidateCubeGeometry();
             needsBuild_ = false;
         }
-        glCallList(dl_);
+        if (dl_)
+            glCallList(dl_);
     }
 }
 
 tgt::vec3 CubeProxyGeometry::getClipPlaneLDF() {
     return tgt::vec3(static_cast<float>(clipLeftX_.get()),
-        static_cast<float>(clipDownY_.get()),
-        static_cast<float>(clipFrontZ_.get()) );
+                     static_cast<float>(clipDownY_.get()),
+                     static_cast<float>(clipFrontZ_.get()) );
 }
 
 tgt::vec3 CubeProxyGeometry::getClipPlaneRUB() {
     return tgt::vec3(static_cast<float>(clipRightX_.get()),
-        static_cast<float>(clipUpY_.get()),
-        static_cast<float>(clipBackZ_.get()) );
+                     static_cast<float>(clipUpY_.get()),
+                     static_cast<float>(clipBackZ_.get()) );
 }
 
 void CubeProxyGeometry::revalidateCubeGeometry() {
@@ -220,20 +220,23 @@ void CubeProxyGeometry::revalidateCubeGeometry() {
 
 	if (useClipping_.get()) {
 		// clipping along the xyz axes
-    	geomLlf[0] = geomLlf[0] + clipLeftX_.get()/50.0f*volumeSize_.x;
-    	geomLlf[1] = geomLlf[1] + clipDownY_.get()/50.0f*volumeSize_.y;
-    	geomLlf[2] = geomLlf[2] + clipFrontZ_.get()/50.0f*volumeSize_.z;
+    	geomLlf[0] = geomLlf[0] + clipLeftX_.get()  / 50.0f * volumeSize_.x;
+    	geomLlf[1] = geomLlf[1] + clipDownY_.get()  / 50.0f * volumeSize_.y;
+    	geomLlf[2] = geomLlf[2] + clipFrontZ_.get() / 50.0f * volumeSize_.z;
 
-    	geomUrb[0] = geomUrb[0] - clipRightX_.get()/50.0f*volumeSize_.x;
-    	geomUrb[1] = geomUrb[1] - clipUpY_.get()/50.0f*volumeSize_.y;
-    	geomUrb[2] = geomUrb[2] - clipBackZ_.get()/50.0f*volumeSize_.z;
+    	geomUrb[0] = geomUrb[0] - clipRightX_.get() / 50.0f * volumeSize_.x;
+    	geomUrb[1] = geomUrb[1] - clipUpY_.get()    / 50.0f * volumeSize_.y;
+    	geomUrb[2] = geomUrb[2] - clipBackZ_.get()  / 50.0f * volumeSize_.z;
 	}
 
+    if (!dl_)
+        dl_ = glGenLists(1);           
+    
     // recreate display list
     glNewList(dl_, GL_COMPILE);
 
     if (useVirtualClipplane_.get()) {
-        tgt::plane clipPlane( normalize(vec3(clipPlane_.get().elem)), clipPlane_.get().w);
+        tgt::plane clipPlane(normalize(vec3(clipPlane_.get().elem)), clipPlane_.get().w);
 
 		std::vector<vec3> clippedPolygon;
 		clipPlane.clipAAB(geomLlf, geomUrb, clippedPolygon);
@@ -299,7 +302,7 @@ void CubeProxyGeometry::resetClippingPlanes() {
     clipUpY_.set(0);
 }
 
-void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
+void CubeProxyGeometry::processMessage(Message* msg, const Identifier& dest) {
     ProxyGeometry::processMessage(msg, dest);
 
     if (msg->id_ == setUseClipping_) {
@@ -310,7 +313,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setLeftClipPlane_) {
         clipLeftX_.set(msg->getValue<int>());
         if ((clipLeftX_.get() + clipRightX_.get()) >= 100) {
-            clipRightX_.set(99-clipLeftX_.get());
+            clipRightX_.set(100-clipLeftX_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -318,7 +321,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setRightClipPlane_) {
         clipRightX_.set(msg->getValue<int>());
         if ((clipLeftX_.get() + clipRightX_.get()) >= 100) {
-            clipLeftX_.set(99-clipRightX_.get());
+            clipLeftX_.set(100-clipRightX_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -326,7 +329,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setTopClipPlane_) {
         clipUpY_.set(msg->getValue<int>());
         if ((clipUpY_.get() + clipDownY_.get()) >= 100) {
-            clipDownY_.set(99-clipUpY_.get());
+            clipDownY_.set(100-clipUpY_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -334,7 +337,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setBottomClipPlane_) {
         clipDownY_.set(msg->getValue<int>());
         if ((clipUpY_.get() + clipDownY_.get()) >= 100) {
-            clipUpY_.set(99-clipDownY_.get());
+            clipUpY_.set(100-clipDownY_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -342,7 +345,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setFrontClipPlane_) {
         clipFrontZ_.set(msg->getValue<int>());
         if ((clipFrontZ_.get() + clipBackZ_.get()) >= 100) {
-            clipBackZ_.set(99-clipFrontZ_.get());
+            clipBackZ_.set(100-clipFrontZ_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -350,7 +353,7 @@ void CubeProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
     else if (msg->id_ == setBackClipPlane_) {
         clipBackZ_.set(msg->getValue<int>());
         if ((clipBackZ_.get() + clipFrontZ_.get()) >= 100) {
-            clipFrontZ_.set(99-clipBackZ_.get());
+            clipFrontZ_.set(100-clipBackZ_.get());
         }
         needsBuild_ = true;
         invalidate();
@@ -380,7 +383,7 @@ CubeCutProxyGeometry::CubeCutProxyGeometry()
     cubeSize_("set.cutCubeSize", "Cutted cube size", vec3(25.f, 50.f, 75.f), vec3(0.f), vec3(100.f)),
     dl_(0)
 {
-    setName("CubeCut-ProxyGeometry");
+    setName("CubeCutProxyGeometry");
     addProperty(&cutCube_);
     addProperty(&cubeSize_);
 
@@ -579,7 +582,7 @@ void CubeCutProxyGeometry::revalidateCubeGeometry() {
 
 }
 
-void CubeCutProxyGeometry::processMessage(Message *msg, const Identifier& dest) {
+void CubeCutProxyGeometry::processMessage(Message* msg, const Identifier& dest) {
     ProxyGeometry::processMessage(msg, dest);
 	if (msg->id_ == "set.cutCubeSize") {
 		cubeSize_.set(msg->getValue<vec3>());

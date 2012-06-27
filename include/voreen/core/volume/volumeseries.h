@@ -34,16 +34,9 @@
 #include <iostream>
 #include <set>
 
-#ifndef VRN_MODALITY_H
 #include "voreen/core/volume/modality.h"
-#endif
-
-#ifndef VRN_VOLUMEHANDLE_H
 #include "voreen/core/volume/volumehandle.h"
-#endif
-
 #include "voreen/core/xml/serializable.h"
-
 
 namespace voreen {
 
@@ -59,16 +52,14 @@ class VolumeSet;
  *
  * @author  Dirk Feldmann, July - September 2008
  */
-class VolumeSeries : public Serializable
-{
+class VolumeSeries : public Serializable {
 public:
     /**
      * Comparator structure for ensuring that the comparison of VolumeSeries used
      * by the std::set compares the dereferenced pointers and not the pointers 
      * themselves!
      */
-    struct VolumeSeriesComparator
-    {
+    struct VolumeSeriesComparator {
         bool operator()(const VolumeSeries* const series1, const VolumeSeries* const series2) const {
             if ( (series1 == 0) || (series2 == 0) )
                 return false;
@@ -77,7 +68,6 @@ public:
     };
     typedef std::set<VolumeSeries*, VolumeSeriesComparator> SeriesSet;
 
-public:
     /**
      * Ctor.
      * @param   parentSet   VolumeSet this VolumeSeries object belongs to.
@@ -265,20 +255,6 @@ public:
     bool deleteVolumeHandle(const float timestep);
 
     /**
-     * Returns the name of the file from which this VolumeSeries has been loaded.
-     * If the returned string is empty, this indicates, that the VolumeSeries is
-     * probably from the same file as the VolumeSet which might contain this
-     * series.
-     */
-    const std::string& getFileName() const;
-
-    /**
-     * Sets the name of the file from which this VolumeSeries is loaded from.
-     * Use carefully in order to prevent chaos on serialization!
-     */
-    void setFileName(const std::string& filename);
-
-    /**
      * Indicates that the given VolumeHandle has changed its timestep.
      * Calls this method only if necessary. It only adjusts the maximum
      * timestep and notifies its observers about the event.
@@ -306,7 +282,6 @@ public:
      */
     static std::set<std::string> getFileNamesFromXml(TiXmlElement* elem);
 
-public:
     /**
      * This message is sent to VolumeSelectionProcessor object so that they can
      * update their properties on chanding the content of this VolumeSeries.
@@ -318,7 +293,6 @@ public:
 
 protected:
     std::string name_;  /** name of this series */
-    std::string file_; /** the file from which this series has been loaded */
     Modality modality_; /** the modality of this series */
     VolumeHandle::HandleSet handles_;   /** all VolumeHandles stored in this series */
     float maximumTimestep_; /** currently greatest timestep from all VolumeHandles contained */

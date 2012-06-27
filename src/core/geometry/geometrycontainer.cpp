@@ -54,7 +54,7 @@ void GeometryContainer::resetGeometry(Geometry* geo) {
 // public methods
 //
 int GeometryContainer::getNextID() const {
-    return nextID_;
+    return nextID_++;
 }
 
 bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifier& name) {
@@ -91,11 +91,6 @@ bool GeometryContainer::addGeometry(const int id, Geometry* geo, const Identifie
         resetGeometry(geo);
         return false;
     }
-
-    // As the given ID has been used successfully by now, the next call
-    // to getNextID() must return a new ID. Therefore nextID_ is incermented.
-    //
-    nextID_++;
 
     return true;
 }

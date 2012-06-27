@@ -37,16 +37,13 @@ namespace voreen {
 
 RptAggregationItem::RptAggregationItem(std::vector<RptProcessorItem*> processors, QGraphicsScene* scene,
                                        std::string name, QGraphicsItem* parent)
-    : RptGuiItem(name, parent),
-      processors_(processors)
+    : RptGuiItem(name, parent)
+    , processors_(processors)
 {
-    //textItem_->setPlainText(QString(name_.c_str()));
-    //textItem_->setTextInteractionFlags(Qt::TextEditable);
-
     std::string s;
     for (size_t i=0; i<processors_.size(); i++) {
-        //processors_[i]->setParentItem(this);
-        if (i!=0) s.append("\n");
+        if (i!=0)
+            s.append("\n");
         s.append(processors_[i]->getType().getName());
 
         for (size_t j=0; j<processors_[i]->getPropertySets().size(); j++) {
@@ -80,17 +77,16 @@ RptAggregationItem::RptAggregationItem(std::vector<RptProcessorItem*> processors
     createContextMenu();
 
     setZValue(0.1);
-
 }
 
 RptAggregationItem::RptAggregationItem(std::vector<RptProcessorItem*> processors, std::string name, QGraphicsItem* parent)
-    : RptGuiItem(name, parent),
-      processors_(processors)
+    : RptGuiItem(name, parent)
+    , processors_(processors)
 {
     std::string s;
     for (size_t i=0; i<processors_.size(); i++) {
-        //processors_[i]->setParentItem(this);
-        if (i!=0) s.append("\n");
+        if (i!=0)
+            s.append("\n");
         s.append(processors_[i]->getType().getName());
 
         for (size_t j=0; j<processors_[i]->getPropertySets().size(); j++) {
@@ -114,22 +110,11 @@ RptAggregationItem::RptAggregationItem(std::vector<RptProcessorItem*> processors
 }
 
 RptAggregationItem::~RptAggregationItem() {
-    // --- property sets ---
-    /*for (size_t i=0; i<propertySets_.size(); i++) {
-        propertySets_[i]->disconnectGuiItem(this);
-        for (size_t j=0; j<processors_.size(); j++) {
-            std::vector<RptRendererWrapperGui*> w = aggregation_->getRendererWrappers();
-            propertySets_[i]->connectGuiItem(w[j]->getGuiItem());
-        }
-    }*/
-
     disconnectAll();
     for (size_t i=0; i<processors_.size(); i++) {
-        delete processors_[i];//->setParentItem(0);
+        delete processors_[i];
         processors_[i] = 0;
     }
-    QVector<int> dummy;
-    emit sendProcessor(0, dummy);
 }
 
 void RptAggregationItem::initialize() {
@@ -180,7 +165,7 @@ std::vector<RptPortItem*> RptAggregationItem::getOutwardsConnectedPortItems() {
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are this aggregation
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -191,7 +176,7 @@ std::vector<RptPortItem*> RptAggregationItem::getOutwardsConnectedPortItems() {
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in this aggregation
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -211,7 +196,7 @@ std::vector<RptPortItem*> RptAggregationItem::getOutwardsConnectedCoProcessorPor
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in this aggregation
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -222,7 +207,7 @@ std::vector<RptPortItem*> RptAggregationItem::getOutwardsConnectedCoProcessorPor
         for (size_t j=0; j<portVector.size(); j++) {
             // check if connectedPorts' parentItems are in this aggregation
             for (size_t k=0; k<portVector[j]->getConnected().size(); k++) {
-                if (!this->contains(portVector[j]->getConnected()[k]->getParent())) {
+                if (!contains(portVector[j]->getConnected()[k]->getParent())) {
                     ports.push_back(portVector[j]);
                     break;  // so don't push_back a port twice
                 }
@@ -247,9 +232,7 @@ void RptAggregationItem::createContextMenu() {
     
     // createActions
     showContentAction_ = new QAction(tr("Show Content (double click)"), this);
-    //showContentAction_->setShortcut(tr("Ctrl+A"));
     deaggregateAction_ = new QAction(tr("Deaggregate"), this);
-    //showContentAction_->setShortcut(tr("Ctrl+A"));
     QAction* saveAction = new QAction(tr("Save"),this);
 
     // add actions to context menu
@@ -372,7 +355,6 @@ void RptAggregationItem::createAndConnectCoProcessorPorts() {
                     // disconnect from processor port item
                     outwardItem->getParent()->disconnect(outwardItem, items[i]);
                     // and therefore connect it to aggregation port item
-                    //coProcessorInports_.push_back(new RptPortItem(items[i]->getPortType(), items[i]->getPort(), this));
                     outwardItem->getParent()->connectAndCreateArrow(outwardItem, inport);
                     j--;
                 }
@@ -386,43 +368,34 @@ void RptAggregationItem::createAndConnectCoProcessorPorts() {
 }
 
 void RptAggregationItem::showContent(bool show) {
-    //prepareGeometryChange();
-    
     if (show && !showContent_) {
         showContent_ = true;
         setZValue(0.1);
 
         deaggregate();
 
-        QPointF p;
-
         for (size_t i=0; i<processors_.size(); i++) {
             QPointF mov = scenePos() - oldPos_;
+            processors_[i]->moveBy(mov.x(), mov.y());
 
             QPointF tmp = processors_[i]->scenePos();
-            
+
             processors_[i]->setParentItem(this);
 
             QPointF tmp2 = processors_[i]->scenePos();
             QPointF correction = tmp - tmp2;
             processors_[i]->moveBy(correction.x(), correction.y());
 
-            //processors_[i]->setPos(mapFromParent(newPos));
-            //processors_[i]->moveBy(mapFromParent(mov).x(), mapFromParent(mov).y());
-            processors_[i]->moveBy(mov.x(), mov.y());
-
             processors_[i]->adjustArrows();
         }
-
         updateGeometry();
-
     }
     else if (!show && showContent_) {
         showContent_ = false;
         setZValue(1);
 
         for (size_t i=0; i<processors_.size(); i++) {
-            if (scene()) {
+            if (scene() && scene() == processors_[i]->scene()) {
                 processors_[i]->removeAllArrows();
                 QPointF tmp = processors_[i]->scenePos();
                 
@@ -432,21 +405,8 @@ void RptAggregationItem::showContent(bool show) {
                 QPointF tmp2 = processors_[i]->scenePos();
                 QPointF correction = tmp - tmp2;
                 processors_[i]->moveBy(correction.x(), correction.y());
-
-                /*for (size_t j=0; j<propertySets_.size(); j++) {
-                    propertySets_[j]->disconnectGuiItem(processors_[i]);
-                }*/
             }
         }
-    
-        //// correct position
-        //QPoint newPos = QPoint(0,0);
-        //for (size_t i=0; i<processors_.size(); i++) {
-        //    newPos += processors_[i]->scenePos().toPoint();
-        //}
-        //newPos /= processors_.size();
-        //setPos(newPos);
-
         oldPos_ = scenePos();
 
         updateGeometry();
@@ -455,12 +415,10 @@ void RptAggregationItem::showContent(bool show) {
         createAndConnectCoProcessorPorts();
         repositionPorts();
 
-
         QGraphicsScene* s = scene();
         s->removeItem(this);
         s->addItem(this);
 
-        //
         for (size_t i=0; i<propertySets_.size(); i++) {
             propertySets_[i]->aggregate(this);
         }
@@ -468,12 +426,9 @@ void RptAggregationItem::showContent(bool show) {
         adjustArrows();
     }
     updateGeometry();
-
 }
 
 std::vector<RptProcessorItem*> RptAggregationItem::deaggregate() {
-    //prepareGeometryChange();
-
     for (size_t i=0; i<processors_.size(); i++) {
         scene()->addItem(processors_[i]);
         processors_[i]->showAllArrows();
@@ -539,6 +494,7 @@ std::vector<RptProcessorItem*> RptAggregationItem::deaggregate() {
         delete(inports_[i]);
     }
     inports_.clear();
+
     for (size_t i=0; i<outports_.size(); i++) {
         delete(outports_[i]);
     }
@@ -549,30 +505,24 @@ std::vector<RptProcessorItem*> RptAggregationItem::deaggregate() {
         delete(coProcessorInports_[i]);
     }
     coProcessorInports_.clear();
+
     for (size_t i=0; i < coProcessorOutports_.size(); i++) {
         delete(coProcessorOutports_[i]);
     }
     coProcessorOutports_.clear();
 
-    //
     for (size_t i=0; i < propertySets_.size(); i++) {
         propertySets_[i]->deaggregate(this);
     }
 
     return processors_;
-    
 }
 
 Processor* RptAggregationItem::getProcessor(RptPortItem* port) {
-    //return port->getParent()->getProcessor(port);
     return port->getPort()->getProcessor();
 }
 
 QVariant RptAggregationItem::itemChange(GraphicsItemChange change, const QVariant &value) {
-    if (change == ItemPositionChange) {
-
-    }
-
     return RptGuiItem::itemChange(change, value);
 }
 
@@ -669,14 +619,13 @@ void RptAggregationItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
         painter->setBrush(QColor(255, 255, 255, 70));
     // frame indicates selected process
     if (option->state & QStyle::State_Selected)
-            painter->setPen(QPen(Qt::green, 3));
+        painter->setPen(QPen(Qt::green, 3));
     // draw frame / hover effect
     painter->drawPath(shapePath(false, 3));
 }
 
-void RptAggregationItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+void RptAggregationItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
     if (showContent_) {
-        //this->prepareGeometryChange();
         for (size_t i=0; i<processors_.size(); i++) {
             processors_[i]->adjustArrows();
         }
@@ -686,7 +635,6 @@ void RptAggregationItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
 
 void RptAggregationItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     if (showContent_) {
-        //this->prepareGeometryChange();
         for (size_t i=0; i<processors_.size(); i++) {
             processors_[i]->adjustArrows();
         }

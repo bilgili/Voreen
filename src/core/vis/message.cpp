@@ -37,9 +37,10 @@ const Identifier Message::discarded_("discarded");
 using std::vector;
 
 Message::Message(const Identifier& id)
-  : id_(id),
-    stamped_(false)
-{}
+    : id_(id)
+    , stamped_(false)
+{
+}
 
 void Message::discard() {
     id_ = discarded_;
@@ -51,41 +52,53 @@ bool Message::isDiscarded() {
 
 //------------------------------------------------------------------------------
 
-void MessageReceiver::processMessage(Message* msg, const Identifier& /*dest*/)
+MessageReceiver::MessageReceiver(const Identifier& tag)
+    : tag_(tag)
 {
+}
+
+MessageReceiver::~MessageReceiver() {
+}
+
+void MessageReceiver::processMessage(Message* msg, const Identifier& /*dest*/) {
     if (!msg->stamped_)
         throw message_error("voreen::message is not stamped! MessageReceiver::processMessage() was called directly, "
                             "call MessageReceiver::postMessage() instead.");
 }
 
-void MessageReceiver::processMessage(Message* msg, const vector<Identifier>& dest)
-{
+void MessageReceiver::processMessage(Message* msg, const vector<Identifier>& dest) {
 	for (vector<Identifier>::const_iterator iter = dest.begin(); iter != dest.end(); ++iter)
 		processMessage(msg, *iter);
 }
 
-void MessageReceiver::postMessage(Message* msg, const Identifier& dest)
-{
-    if (msg->stamped_) {
+void MessageReceiver::postMessage(Message* msg, const Identifier& dest) {
+    if (msg->stamped_)
         throw message_error("voreen::Message already stamped! Was MessageReceiver::postMessage() called twice?");
-    } else {
+    else
         msg->stamped_ = true;
-    }
+    
     processMessage(msg, dest);
     delete msg;
     msg = 0;
 }
 
-void MessageReceiver::postMessage(Message* msg, const vector<Identifier>& dest)
-{
-    if (msg->stamped_) {
+void MessageReceiver::postMessage(Message* msg, const vector<Identifier>& dest) {
+    if (msg->stamped_)
         throw message_error("voreen::Message already posted! Was MessageReceiver::postMessage() called twice?");
-    } else {
+    else
         msg->stamped_ = true;
-    }
+    
     processMessage(msg, dest);
     delete msg;
     msg = 0;
+}
+
+Identifier MessageReceiver::getTag() {
+    return tag_;
+}
+
+void MessageReceiver::setTag(Identifier tag) {
+    tag_ = tag;
 }
 
 } // namespace voreen

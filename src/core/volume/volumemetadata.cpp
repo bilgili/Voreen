@@ -95,7 +95,7 @@ std::string VolumeMetaData::getFileNameWithoutPath(const std::string& fullpath) 
     std::string filename = fullpath;
     size_t pos = fullpath.find_last_of('/');
 
-    if (pos != std::string::npos)
+    if (pos >= fullpath.find_last_of('\\'))
         filename = fullpath.substr(pos + 1);
     else {
         pos = fullpath.find_last_of('\\');

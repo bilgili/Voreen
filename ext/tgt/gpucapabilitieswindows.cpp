@@ -189,68 +189,93 @@ GpuCapabilitiesWindows::FileVersion GpuCapabilitiesWindows::getDriverVersion() {
 
 }
 
-DWORD GpuCapabilitiesWindows::readVRAMSizeFromReg() {
-    HKEY hKey = NULL;
-    LONG stat = RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Hardware\\Devicemap\\Video", 0, KEY_READ, &hKey);
+char* GpuCapabilitiesWindows::findPrimaryDevicesKey() {
+    BOOL res = TRUE;
+    DISPLAY_DEVICE dd;
+    int count = 0;
+    char* devicesKey = 0;
+    LDEBUG("Enumerating all installed display devices...");
 
-    if ( stat != ERROR_SUCCESS ) {
-        LERROR("Unable to open registry key HKEY_LOCAL_MACHINE\\Hardware\\Devicemap\\Video!");
+    do {
+        memset(&dd, 0, sizeof(DISPLAY_DEVICE));
+        dd.cb = sizeof(DISPLAY_DEVICE);
+        res = EnumDisplayDevices(NULL, count, &dd, 0);
+        if ( res == TRUE ) {
+            LDEBUG("Graphics Adapter #" << count << " is valid:");
+            LDEBUG("DeviceName: " << dd.DeviceName);
+            LDEBUG("DeviceString: " << dd.DeviceString);
+            LDEBUG("StateFlags: " << dd.StateFlags);
+            bool primary = (dd.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE);
+            bool desktop = (dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP);
+            LDEBUG("\tis primary device? " << ((primary == true) ? "true" : "false"));
+            LDEBUG("\tis attached to desktop? " << ((desktop == true) ? "true" : "false"));
+            LDEBUG("DeviceID: " << dd.DeviceID);
+            LDEBUG("DeviceKey: " << dd.DeviceKey << "\n");
+
+            if ( (primary == true) && (desktop == true) ) {
+                size_t len = strlen(dd.DeviceKey);
+                devicesKey = new char[len + 1];
+                devicesKey[len] = 0;
+                memcpy(devicesKey, dd.DeviceKey, len);
+            }
+        }
+        ++count;
+    }while( res != FALSE );
+
+    return devicesKey;
+}
+
+DWORD GpuCapabilitiesWindows::readVRAMSizeFromReg() {
+    DWORD memSize = 0;
+    char* devicesKey = findPrimaryDevicesKey();
+    if ( devicesKey == 0 ) {
+        LERROR("Failed to determine primary graphics adapter by calling findPrimaryDevicesKey()!");
         return 0;
     }
 
-    DWORD memSize = 0;
-    DWORD bufferSize = 255;
-    char* buffer = new char[bufferSize + 1];
-    memset(buffer, 0, bufferSize + 1);
+    for ( size_t i = 0; i < strlen(devicesKey); i++ )
+        devicesKey[i] = tolower(devicesKey[i]);
+    
+    char* substr = strstr(devicesKey, "\\registry\\machine\\");
+    if ( substr != 0 )
+        substr += strlen("\\registry\\machine\\");
+    else
+        substr = devicesKey;
+    LDEBUG("registry key: " << substr);
 
-    stat = RegQueryValueEx(hKey, "\\Device\\Video0", NULL, NULL, (BYTE*) buffer, &bufferSize);
-    RegCloseKey(hKey);
-    hKey = NULL;
+    HKEY hKey = NULL;
+    LONG stat = RegOpenKeyEx(HKEY_LOCAL_MACHINE, substr, 0, KEY_READ, &hKey);
     if ( stat == ERROR_SUCCESS ) {
-        for ( size_t i = 0; i < strlen(buffer); i++ )
-            buffer[i] = tolower(buffer[i]);
-            LINFO("reg value: " << buffer);
-        char* substr = strstr(buffer, "\\registry\\machine\\");
-        if ( substr != 0 )
-            substr += strlen("\\registry\\machine\\");
-        else
-            substr = buffer;
-        LINFO("substring: " << substr);
+        DWORD type = 0;
+        DWORD bufferSize = 4;
+        char* data = new char[bufferSize + 1];
+        memset(data, 0, bufferSize + 1);
+        stat = RegQueryValueEx(hKey, "HardwareInformation.MemorySize", 
+            NULL, &type, (BYTE*) data, &bufferSize);
+        if ( (stat == ERROR_SUCCESS) && (type == REG_BINARY) ) {
+            LDEBUG("read " << bufferSize << " BYTES from key 'HardwareInformation.MemorySize'...");
+            for ( DWORD i = (bufferSize - 1); ; i-- ) {
+                LDEBUG("data[" << i << "]: " << static_cast<DWORD>(data[i]));
+                memSize |= (data[i] << (i * 8));
 
-        stat = RegOpenKeyEx(HKEY_LOCAL_MACHINE, substr, 0, KEY_READ, &hKey);
-        if ( stat == ERROR_SUCCESS ) {
-            DWORD type = 0;
-            bufferSize = 4;
-            char* data = new char[bufferSize + 1];
-            memset(data, 0, bufferSize + 1);
-            stat = RegQueryValueEx(hKey, "HardwareInformation.MemorySize", 
-                NULL, &type, (BYTE*) data, &bufferSize);
-            if ( (stat == ERROR_SUCCESS) && (type == REG_BINARY) ) {
-                LINFO("read " << bufferSize << " BYTE from key 'HardwareInformation.MemorySize'...");
-                for ( DWORD i = (bufferSize - 1); ; i-- ) {
-                    LINFO("data: " << data[i]);
-                    memSize |= (data[i] << (i * 8));
-
-                    // As DWORD is unsigned, the loop would never exit if
-                    // it would not be broken...
-                    //
-                    if ( i == 0 )
-                        break;
-                 }
-                 LINFO("data converted to " << memSize << " (means " << (memSize / (1024 * 1024)) << " MByte)\n");
-            }
-            RegCloseKey(hKey);
-            hKey = NULL;
-            delete [] data;
-            data = 0;            
-        } 
-        else {
-            LERROR("Error opening key " << substr << ": " << stat);
+                // As DWORD is unsigned, the loop would never exit if
+                // it would not be broken...
+                //
+                if ( i == 0 )
+                    break;
+             }
+             LDEBUG("data converted to " << memSize << " (means " << (memSize / (1024 * 1024)) << " MByte)\n");
         }
-    }
+        RegCloseKey(hKey);
+        hKey = NULL;
+        delete [] data;
+        data = 0;            
+    } 
+    else
+        LERROR("Error opening key " << substr << ". Reason: " << stat);
 
-    delete [] buffer;
-    buffer = 0;
+    delete [] devicesKey;
+    devicesKey = 0;
     return memSize;
 }
 
@@ -258,7 +283,7 @@ int GpuCapabilitiesWindows::getVideoRamSize() {
     if (videoRamSize_ != -1)
         return videoRamSize_;
 #ifdef TGT_WITH_WMI
-    LINFO("Reading video ram size using WMI...");
+    LDEBUG("Reading video ram size using WMI...");
 
     if (WMIinit()) {       
         // Win32_VideoController class: http://msdn2.microsoft.com/en-us/library/aa394512.aspx
@@ -284,7 +309,7 @@ int GpuCapabilitiesWindows::getVideoRamSize() {
     LDEBUG("Compiled without WMI support.");
 #endif
     if (videoRamSize_ == -1) {
-        LINFO("Reading video ram size from registry...");
+        LDEBUG("Reading video ram size from registry...");
         videoRamSize_ = readVRAMSizeFromReg();
         // return result in MB
         videoRamSize_ /= 1048576;
@@ -370,7 +395,7 @@ GpuCapabilitiesWindows::GraphicsDriverSettings GpuCapabilitiesWindows::getDriver
     driverSettings.tripleBuffering = false;
 
     if ( getVendor() != GPU_VENDOR_NVIDIA && getVendor() != GPU_VENDOR_ATI ) {
-        LINFO("Driver settings for vertical synchronization and triple buffering \
+        LDEBUG("Driver settings for vertical synchronization and triple buffering \
 can only be detected for NVIDIA and ATi GPUs.")
     } 
     else {

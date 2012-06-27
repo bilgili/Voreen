@@ -29,22 +29,22 @@
 
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 
+#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
 
 #include <tinyxml/tinyxml.h>
-
-#include "voreen/core/vis/transfunc/transfuncmappingkey.h"
+#include <fstream>
 
 using tgt::col4;
 using tgt::ivec3;
 using tgt::ivec4;
 
-
 namespace voreen {
 
-const std::string TransFuncIntensity::loggerCat_("voreen.voreen.TransFunc.IntensityKeys");
+const std::string TransFuncIntensity::loggerCat_("voreen.TransFunc.Intensity");
 
 TransFuncIntensity::TransFuncIntensity(int width/*=256*/)
-  : TransFunc() {
+  : TransFunc()
+{
 	tex_ = 0;
     createTex(width);
     createStdFunc();
@@ -52,7 +52,7 @@ TransFuncIntensity::TransFuncIntensity(int width/*=256*/)
 
 TransFuncIntensity::TransFuncIntensity(const TransFuncIntensity& tf) : TransFunc() {
     std::vector<TransFuncMappingKey*> keys_;
-    for (size_t i = 0 ; i < tf.keys_.size() ; ++i) {
+    for (size_t i = 0; i < tf.keys_.size(); ++i) {
         TransFuncMappingKey* k = new TransFuncMappingKey(*(tf.keys_.at(i)));
         addKey(k);
     }
@@ -65,7 +65,7 @@ TransFuncIntensity::TransFuncIntensity(const TransFuncIntensity& tf) : TransFunc
 }
 
 TransFuncIntensity::~TransFuncIntensity() {
-    for (size_t i = 0 ; i < keys_.size() ; ++i)
+    for (size_t i = 0; i < keys_.size(); ++i)
         delete keys_[i];
 }
 
@@ -73,7 +73,7 @@ void TransFuncIntensity::createTex(int width) {
     if (tex_)
         delete tex_;
 
-    if ( !GpuCaps.isNpotSupported() ) {
+    if (!GpuCaps.isNpotSupported()) {
         int k = 1;
         while (k < width)
             k <<= 1;
@@ -97,7 +97,6 @@ void TransFuncIntensity::createTex(int width) {
     tex_->setWrapping(tgt::Texture::CLAMP);
 }
 
-
 void TransFuncIntensity::createStdFunc() {
     clearKeys();
     keys_.push_back(new TransFuncMappingKey(0.0, tgt::col4(0,0,0,0)));
@@ -105,7 +104,7 @@ void TransFuncIntensity::createStdFunc() {
     updateTexture();
 }
 
-void TransFuncIntensity::createAlphaFunc(){
+void TransFuncIntensity::createAlphaFunc() {
     clearKeys();
     keys_.push_back(new TransFuncMappingKey(0.0, tgt::col4(91,173,255,70)));
     keys_.push_back(new TransFuncMappingKey(1.0, tgt::col4(91,173,255,70)));
@@ -115,7 +114,7 @@ void TransFuncIntensity::createAlphaFunc(){
 tgt::vec4 TransFuncIntensity::getMeanValue(float segStart, float segEnd) const {
     tgt::ivec4 result(0);
     float width = static_cast<float>(tex_->getWidth());
-    for (int i = int(segStart*width) ; i < segEnd*width ; ++i)
+    for (int i = static_cast<int>(segStart*width); i < segEnd*width; ++i)
         result += ivec4( tex_->texel<col4>(i) );
 
     return static_cast<tgt::vec4>(result)/(segEnd*width-segStart*width);
@@ -157,43 +156,33 @@ col4 TransFuncIntensity::getMappingForValue(float value) const {
 }
 
 void TransFuncIntensity::updateTexture() {
-/*    if (!tex_)
-        createTex(256);
-    int imageWidth = tex_->getWidth();
-
-    for (int x = 0 ; x < imageWidth ; ++x)
-        tex_->texel<col4>(x) = col4( getMappingForValue( static_cast<float>(x) / imageWidth) );
-    tex_->uploadTexture();
-*/
     if (!tex_)
         createTex(256);
 
     int imageWidth = tex_->getWidth();
 
     updateTexture(0, imageWidth);
-    
-    // updateTexture( 50 , 150);
 }
 
 void TransFuncIntensity::updateTexture(int leftValue, int rightValue) {
     if (!tex_)
         createTex(256);
     
-    for (int x = leftValue ; x < rightValue ; ++x)
+    for (int x = leftValue; x < rightValue; ++x)
         tex_->texel<col4>(x) = col4( getMappingForValue( static_cast<float>(x) / rightValue) );
     
     tex_->uploadTexture();
 }
 
-int TransFuncIntensity::getNumKeys() const{
+int TransFuncIntensity::getNumKeys() const {
     return keys_.size();
 }
 
-TransFuncMappingKey* TransFuncIntensity::getKey(int i) const{
+TransFuncMappingKey* TransFuncIntensity::getKey(int i) const {
     return keys_.at(i);
 }
 
-const std::vector<TransFuncMappingKey*> TransFuncIntensity::getKeys() const{
+const std::vector<TransFuncMappingKey*> TransFuncIntensity::getKeys() const {
     return keys_;
 }
 
@@ -247,7 +236,7 @@ bool TransFuncIntensity::isSignificant() const {
     uint8_t oneValue = keys_[0]->getColorL().a;
     if (keys_[0]->isSplit() && (abs(keys_[0]->getColorR().a - oneValue) > epsilon))
         return true;
-    for (size_t i=1 ; i < keys_.size() ; ++i) {
+    for (size_t i=1; i < keys_.size(); ++i) {
         if (abs(keys_[i]->getColorL().a - oneValue) > epsilon)
             return true;
         if (keys_[i]->isSplit() && (abs(keys_[i]->getColorR().a - oneValue) > epsilon))
@@ -272,7 +261,7 @@ bool TransFuncIntensity::save(const std::string& filename) {
     TiXmlElement* root = new TiXmlElement("TransFuncIntensity");
     doc.LinkEndChild( root );
 
-    for (int i = 0 ; i < getNumKeys() ; ++i) {
+    for (int i = 0; i < getNumKeys(); ++i) {
         TransFuncMappingKey* k = getKey(i);
 
         TiXmlElement* e = new TiXmlElement( "key" );
@@ -300,7 +289,7 @@ bool TransFuncIntensity::savePNG(const std::string& filename, int width) {
 
     GLubyte* im = new GLubyte[width*4];
 
-    for (int x = 0 ; x < width ; ++x) {
+    for (int x = 0; x < width; ++x) {
         tgt::col4 c = getMappingForValue( static_cast<float>(x)/width );
         im[(x*4)+0] = c.r;
         im[(x*4)+1] = c.g;
@@ -315,7 +304,6 @@ bool TransFuncIntensity::savePNG(const std::string& filename, int width) {
     delete[] im;
     return true;
 }
-
 #else
 bool TransFuncIntensity::savePNG(const std::string& /*filename*/, int /*width*/) {
     LERROR("Saving as PNG failed: No DevIL support.");
@@ -383,7 +371,7 @@ bool TransFuncIntensity::loadWithDevIL(const std::string& filename) {
     // In order to do this, we'll go through both arrays at different paces and add the
     // required 255 in the 'newData' array
     ILubyte* newImageData = new ILubyte[imageWidth*4];
-    for (int i = 0 ; i < imageWidth ; ++i) {
+    for (int i = 0; i < imageWidth; ++i) {
         newImageData[i*4 + 0] = imageData[i*3 + 0];
         newImageData[i*4 + 1] = imageData[i*3 + 1];
         newImageData[i*4 + 2] = imageData[i*3 + 2];
@@ -430,7 +418,7 @@ bool TransFuncIntensity::loadFromXML(const std::string& filename) {
     keys_.clear();
 
     pElem=hRoot->FirstChildElement("key");
-    for ( ; pElem ; pElem=pElem->NextSiblingElement("key")) {
+    for (; pElem; pElem=pElem->NextSiblingElement("key")) {
         TransFuncMappingKey* k = new TransFuncMappingKey(0.0, tgt::col4(255,255,255,255));
         pElemC = pElem->FirstChildElement("col4");
         if (pElemC) {
@@ -467,7 +455,7 @@ bool TransFuncIntensity::loadTextTable(const std::string& filename) {
 
     if (file) {
         char* data = new char[256*4];
-        for (int i = 0 ; i < 256 ; ++i) {
+        for (int i = 0; i < 256; ++i) {
             int _red, _green, _blue, _alpha;
             fscanf(file, "%d %d %d %d", &_red, &_green, &_blue, &_alpha);
 
@@ -482,7 +470,8 @@ bool TransFuncIntensity::loadTextTable(const std::string& filename) {
         delete[] data;
         
         return true;
-    } else {
+    }
+    else {
         fclose(file);
         LWARNING("unable to open transfer function: " << filename);
         createStdFunc();
@@ -517,7 +506,7 @@ bool TransFuncIntensity::loadOsirixCLUT(const std::string& filename) {
 
         char* data = new char[256*4];
 
-        for (int i = 0 ; i < 255 ; ++i) {
+        for (int i = 0; i < 255; ++i) {
             blueNode = blueNode->NextSibling("integer");
             greenNode = greenNode->NextSibling("integer");
             redNode = redNode->NextSibling("integer");
@@ -577,12 +566,11 @@ bool TransFuncIntensity::loadImageJ(const std::string& filename) {
 
     } else {
         // The file couldn't be opened and because of that, a default transfer function
-        // is generated
+        // must be generated
         LWARNING("unable to open transfer function: " << filename);
         createStdFunc();
         return false;
     }
-
 }
 
 int TransFuncIntensity::openImageJBinary(std::ifstream& fileStream, bool raw) {
@@ -618,7 +606,7 @@ int TransFuncIntensity::openImageJBinary(std::ifstream& fileStream, bool raw) {
 
     char* data = new char[256*4];
 
-    for (int i = 0 ; i < 256 ; ++i) {
+    for (int i = 0; i < 256; ++i) {
         data[i*4 + 0] = redColors[i];
         data[i*4 + 1] = greenColors[i];
         data[i*4 + 2] = blueColors[i];
@@ -647,7 +635,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
         strToIntConversionStatus = sscanf(entry, "%i", &tmp);
         
         // If an integer is encountered, add it to the array and increase the number of values
-        if (strToIntConversionStatus == 1){
+        if (strToIntConversionStatus == 1) {
             data[numValues] = tmp;
             ++numValues;
         }
@@ -658,7 +646,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
         768, if there were 3 entries in a row
         1024, if there were 4 entires
     */
-    if ((numValues != 768) && (numValues != 1024)){
+    if ((numValues != 768) && (numValues != 1024)) {
         // A wrong file was loaded
         return 0;
     }
@@ -666,7 +654,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
     if (numValues == 1024) {
         // The first entry is an index, therefore it can be overwritten
         // Additional to that, an alpha value of 255 is inserted at the 4th position
-        for (int i = 0 ; i < 256; ++i){
+        for (int i = 0; i < 256; ++i) {
             data[i*4 + 0] = data[i*4 + 1];
             data[i*4 + 1] = data[i*4 + 2];
             data[i*4 + 2] = data[i*4 + 3];
@@ -674,7 +662,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
         }
         generateKeys(data);
     }
-    else{
+    else {
         /* This one is a little bit tricky. We had 768 values in the file and added them
         sequentially to the data-array. Now we have to insert a '255' at every fourth position.
         In order to do that, we create a new array and move through both arrays at different
@@ -682,7 +670,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
         */
         char* newData = new char[1024];
 
-        for (int i = 0 ; i < 256 ; ++i) {
+        for (int i = 0; i < 256; ++i) {
             newData[i*4 + 0] = data[i*3 + 0];
             newData[i*4 + 1] = data[i*3 + 1];
             newData[i*4 + 2] = data[i*3 + 2];
@@ -697,7 +685,7 @@ int TransFuncIntensity::openImageJText(std::ifstream& fileStream){
     return 256;
 }
 
-void TransFuncIntensity::generateKeys(char* data, int width){
+void TransFuncIntensity::generateKeys(char* data, int width) {
     /* A short overview about the idea behind this method. For the sake of simplicity this is
     demonstrated with only one color channel, say 'Red'. It is generalized in the code below:
 
@@ -751,7 +739,7 @@ void TransFuncIntensity::generateKeys(char* data, int width){
     newDeltaAlpha = data[4*1 + 3] - data[4*0 + 3];
 
     // The main loop. We start at 2 because the value for 1 already has been calculated.
-    for (int iter = 2 ; iter < width ; ++iter){
+    for (int iter = 2; iter < width; ++iter) {
         // Backup the old values and generate the new ones.
         oldDeltaRed = newDeltaRed;
         oldDeltaGreen = newDeltaGreen;
@@ -817,7 +805,7 @@ inline int TransFuncIntensity::readInt(std::ifstream& stream) {
 
 	// The bytes are inserted backwards because of a discrepancy of 
 	// most significant bit <-> least significant bit between Java and C++
-    for (int i = 3 ; i >= 0 ; --i)
+    for (int i = 3; i >= 0; --i)
         stream >> buffer[i];
 
     return *(reinterpret_cast<int*>(buffer));
@@ -827,7 +815,7 @@ inline int TransFuncIntensity::readInt(std::ifstream& stream) {
 inline short TransFuncIntensity::readShort(std::ifstream& stream) {
     char* buffer = new char[2];
 
-    for (int i = 1 ; i >= 0 ; --i)
+    for (int i = 1; i >= 0; --i)
         stream >> buffer[i];
     
     return *(reinterpret_cast<short*>(buffer));
@@ -837,7 +825,7 @@ inline short TransFuncIntensity::readShort(std::ifstream& stream) {
 inline double TransFuncIntensity::readDouble(std::ifstream& stream) {
     char* buffer = new char[8];
 
-    for (int i = 7 ; i >= 0 ; --i)
+    for (int i = 7; i >= 0; --i)
         stream >> buffer[i];
 
     return *(reinterpret_cast<double*>(buffer));

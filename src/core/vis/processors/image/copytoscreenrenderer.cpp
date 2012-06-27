@@ -35,34 +35,33 @@
 namespace voreen {
 
 CopyToScreenRenderer::CopyToScreenRenderer(tgt::Camera* camera, TextureContainer* tc)
-  : Processor(camera, tc)
-  , ignoreCoarseness_(false)
-  , useCoarseness_(VoreenPainter::switchCoarseness_, "Use Interaction Coarseness", false)
-  , coarsenessFactor_(setCoarseness_, "Interaction Coarseness", 4, 1, 20)
-  , raycastPrg_(0)
-  , caching_(true)
-  , cachedImage_(-1)
-  , cachedStereoImageLeft_(-1)
-  , cachedStereoImageRight_(-1)
+    : Processor(camera, tc)
+    , ignoreCoarseness_(false)
+    , useCoarseness_(VoreenPainter::switchCoarseness_, "Use Interaction Coarseness", false)
+    , coarsenessFactor_(setCoarseness_, "Interaction Coarseness", 4, 1, 20)
+    , raycastPrg_(0)
+    , caching_(true)
+    , cachedImage_(-1)
+    , cachedStereoImageLeft_(-1)
+    , cachedStereoImageRight_(-1)
 {
     setName("CopyToScreenRenderer");
     addProperty(&coarsenessFactor_);
     addProperty(&useCoarseness_);
     coarsenessFactor_.setAutoChange(true);
- }
+}
 
 CopyToScreenRenderer::~CopyToScreenRenderer() {
 }
 
 const std::string CopyToScreenRenderer::getProcessorInfo() const {
-	return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to \
-           render (copy) its producer's rendering result to screen. Additionally it is able to cache \
-           the producer's rendering, if no parameters regarding any element of the producer have been \
-           changed since last <i>render()</i> call. An object of this class can also be used within the \
-           network in order to cache a network's fork. The usage of multiple CopyToScreenRenderer objects \
-           in the same network is possible. A network element (Renderer object) has to indicate a change \
-           of its rendering parameters that necessiates a new rendering by calling <i>invalidate()</i>. \
-           THIS CLASS IS ONLY NEEDED BECAUSE FINAL AND COARSENESSRENDER INHERITE FROM IT!";
+	return "A CopyToScreenRenderer is the root node of the rendering network. Its main purpose is to "
+           "render (copy) its producer's rendering result to screen. Additionally it is able to cache "
+           "the producer's rendering, if no parameters regarding any element of the producer have been "
+           "changed since last <i>render()</i> call. An object of this class can also be used within the "
+           "network in order to cache a network's fork. The usage of multiple CopyToScreenRenderer objects "
+           "in the same network is possible. A network element (Renderer object) has to indicate a change "
+           "of its rendering parameters that necessiates a new rendering by calling <i>invalidate()</i>." ;
 }
 
 int CopyToScreenRenderer::initializeGL() {
@@ -102,7 +101,6 @@ void CopyToScreenRenderer::setIgnoreCoarseness(bool ignoreCoarseness) {
 }
 
 void CopyToScreenRenderer::invalidate() {
-    //crashes:
     Processor::invalidate();
 
     // no distinction between stereo/non-stereo mode is done here because it is not clear whether

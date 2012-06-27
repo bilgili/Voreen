@@ -181,7 +181,7 @@ void main() {
 			discard;
 		}
 		else {
-			if(any(notEqual(vec3(shadeCol), vec3(backgroundColor_))) ) {
+			if (any(notEqual(vec3(shadeCol), vec3(backgroundColor_))) ) {
 				result = fillColor_;
 			}
 			else { 

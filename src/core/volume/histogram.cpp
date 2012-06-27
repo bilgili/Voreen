@@ -37,7 +37,7 @@ using tgt::ivec2;
 namespace voreen {
 
 HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
-    for (int i=0; i<bucketCount; i++)
+    for (int i=0; i<bucketCount; ++i)
         hist_.push_back(0);
        
     maxValue_ = 0;
@@ -47,20 +47,19 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     if (sourceDataset8Bit) {
         int bucket;
         float m = (bucketCount-1.0f) / 255.0f;
-        for (int z=0; z<volume->getDimensions().z; z++) {
-            for (int y=0; y<volume->getDimensions().y; y++) {
-                for (int x=0; x<volume->getDimensions().x; x++) {
+        for (int z=0; z<volume->getDimensions().z; ++z) {
+            for (int y=0; y<volume->getDimensions().y; ++y) {
+                for (int x=0; x<volume->getDimensions().x; ++x) {
                     bucket = static_cast<int>(floor(sourceDataset8Bit->voxel(ivec3(x,y,z))*m));
                     hist_[bucket]++;
 
                     if ( hist_[bucket] > maxValue_ && bucket > 0)
                         maxValue_ = hist_[bucket];
 
-                    if ( bucket < significantRange_.x )
+                    if (bucket < significantRange_.x)
                         significantRange_.x = bucket;
-                    if ( bucket > significantRange_.y )
+                    if (bucket > significantRange_.y)
                         significantRange_.y = bucket;
-
                 }
             }
         }
@@ -71,20 +70,19 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     if (sourceDataset32Bit) {
         int bucket;
         float m = (bucketCount-1.0f) / 255.0f;
-        for (int z=0; z<volume->getDimensions().z; z++) {
-            for (int y=0; y<volume->getDimensions().y; y++) {
-                for (int x=0; x<volume->getDimensions().x; x++) {
+        for (int z=0; z<volume->getDimensions().z; ++z) {
+            for (int y=0; y<volume->getDimensions().y; ++y) {
+                for (int x=0; x<volume->getDimensions().x; ++x) {
                     bucket = static_cast<int>(floor(sourceDataset32Bit->voxel(ivec3(x,y,z))[3]*m));
                     hist_[bucket]++;
 
                     if ( hist_[bucket] > maxValue_ && bucket > 0)
                         maxValue_ = hist_[bucket];
 
-                    if ( bucket < significantRange_.x )
+                    if (bucket < significantRange_.x)
                         significantRange_.x = bucket;
-                    if ( bucket > significantRange_.y )
+                    if (bucket > significantRange_.y)
                         significantRange_.y = bucket;
-
                 }
             }
         }
@@ -96,9 +94,9 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         int bucket;
         float maxValue = (sourceDataset16Bit->getBitsStored() == 12) ? 4095.f : 65535.f;
         float m = (bucketCount-1.0f) / maxValue;
-        for (int z=0; z<volume->getDimensions().z; z++) {
-            for (int y=0; y<volume->getDimensions().y; y++) {
-                for (int x=0; x<volume->getDimensions().x; x++) {
+        for (int z=0; z<volume->getDimensions().z; ++z) {
+            for (int y=0; y<volume->getDimensions().y; ++y) {
+                for (int x=0; x<volume->getDimensions().x; ++x) {
                     bucket = static_cast<int>(floor(sourceDataset16Bit->voxel(ivec3(x,y,z))*m));
 					if (bucket < static_cast<int>(hist_.size())) {
 						hist_[bucket]++;
@@ -106,12 +104,11 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
 						if ( hist_[bucket] > maxValue_ && bucket > 0)
 							maxValue_ = hist_[bucket];
 
-						if ( bucket < significantRange_.x )
+						if (bucket < significantRange_.x)
 							significantRange_.x = bucket;
-						if ( bucket > significantRange_.y )
+						if (bucket > significantRange_.y)
 							significantRange_.y = bucket;
 					}
-
                 }
             }
         }
@@ -191,7 +188,4 @@ tgt::ivec2 HistogramIntensityGradient::getSignificantRangeGradient() const {
     return significantRangeGradient_;
 }
 
-//-----------------------------------------------------------------------------
-
 } // namespace voreen
-

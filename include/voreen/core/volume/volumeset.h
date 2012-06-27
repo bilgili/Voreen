@@ -42,7 +42,6 @@ namespace voreen {
 class VolumeSetContainer;
 
 class VolumeSet : public Serializable {
-
 public:
     /**
      * Struct used as a comparator for std::set. The set stores pointers, but the comparsion
@@ -236,7 +235,6 @@ public:
      */
     static std::set<std::string> getFileNamesFromXml(TiXmlElement* elem);
 
-public:
     /**
      * This message is sent to VolumeSetSourceProcessor in order to
      * indicate changes on the VolumeSet, so that the processors
@@ -250,6 +248,8 @@ public:
     static const std::string XmlElementName;
 
 protected:
+    void notifyObservers();
+
     VolumeSeries::SeriesSet series_;    /** The VolumeSeries stored in this VolumeSet */
     std::string name_;  /** The name of the VolumeSet (usually the file name incl. path) */
     std::map<std::string, int> modalityCounter_; /** counts the different modalities. */

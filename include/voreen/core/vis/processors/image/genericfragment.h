@@ -36,43 +36,30 @@
 namespace voreen {
 
 /**
- * Base class for fragment shader based post processors
+ * Base class for fragment shader based post processors.
  *
- * Normally in a derived class you have only to call the actor with the
+ * Normally in a derived class you have only to call the ctor with the
  * appropriate shader name und overwrite the render method.
  */
 class GenericFragment : public PostProcessor {
 public:
-
     /**
-     * The Constructor.
-     *
-     */
-
-	GenericFragment();
-
-    /**
-     * The Constructor.
+     * Constructor.
      *
      * @param shaderFilename The filename of the shader that will be used.
      */
-
-    GenericFragment(std::string shaderFilename);
-
-    virtual const Identifier getClassName() {return "PostProcessor.GenericFragment";}
-    
+    GenericFragment(const std::string& shaderFilename = "");
     virtual ~GenericFragment();
 
+    virtual const Identifier getClassName() const { return "PostProcessor.GenericFragment"; }   
     virtual int initializeGL();
 
 protected:
-
     void compileShader();
 
     /**
-    * Load the needed shader.
-    *
-    */
+     * Load the needed shader.
+     */
     virtual void compile();
 
     tgt::Shader* program_;
@@ -83,8 +70,6 @@ protected:
     static const Identifier shadeTexUnit_;
     static const Identifier depthTexUnit_;
 };
-
-
 
 } // namespace voreen
 

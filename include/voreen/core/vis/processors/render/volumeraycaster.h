@@ -51,15 +51,10 @@ class ShadowHelper;
  */
 class VolumeRaycaster : public VolumeRenderer {
 public:
-
     /**
-     * The Constructor.
-     *
-     * @param camera The camera from wich we will get information about the current modelview-matrix.
-     * @param tc The TextureContainer that will be used to manage TextureUnits for all render-to-texture work done by the VolumeRaycaster.
-     * @param fragmentShaderFilename The name of the fragment-shader this VolumeRaycaster will use.
+     * Constructor.
      */
-    VolumeRaycaster(std::string fragmentShaderFilename = "rc_simple.frag");
+    VolumeRaycaster();
 
     virtual ~VolumeRaycaster();
 
@@ -153,12 +148,15 @@ protected:
 
     bool needRecompileShader_; ///< should the shader recompiled?
     tgt::Shader* raycastPrg_; ///< The shader-program to be used with this raycaster.
-    std::string fragmentShaderFilename_; ///< The name of the used Fragment-Shader.
 
-    static const Identifier entryParamsTexUnit_;      ///< The texture unit used for entry-parameters
-    static const Identifier entryParamsDepthTexUnit_; ///< The texture unit used for the depth-values of the entry-parameters
-    static const Identifier exitParamsTexUnit_;       ///< The texture unit used for exit-parameters
-    static const Identifier exitParamsDepthTexUnit_;  ///< The texture unit used for the depth-values of exit-parameters
+	static const Identifier entryParamsTexUnit_;       ///< The texture unit used for entry-parameters
+	static const Identifier entryParamsDepthTexUnit_;  ///< The texture unit used for the depth-values of the entry-parameters
+	static const Identifier exitParamsTexUnit_;        ///< The texture unit used for exit-parameters
+	static const Identifier exitParamsDepthTexUnit_;   ///< The texture unit used for the depth-values of exit-parameters
+	static const Identifier entryParamsTexUnit2_;      ///< The texture unit used for entry-parameters 2
+	static const Identifier entryParamsDepthTexUnit2_; ///< The texture unit used for the depth-values of the entry-parameters 2
+	static const Identifier exitParamsTexUnit2_;       ///< The texture unit used for exit-parameters 2
+	static const Identifier exitParamsDepthTexUnit2_;  ///< The texture unit used for the depth-values of exit-parameters 2
 
 	static const Identifier volTexUnit_;              ///< The texture unit used for the actual volume that is supposed to be raycasted
     static const Identifier volTexUnit2_;             ///< The texture unit used for the actual volume that is supposed to be raycasted
@@ -179,10 +177,6 @@ protected:
 
     IntProp splitMode_; ///< The property that controls the split-mode
 
-
-
-    ProxyGeometry* pg_;
-
     FloatProp raycastingQualityFactor_; ///< The property that can be used to change the quality-factor of the raycasting
     std::vector<std::string> raycastingQualities_; ///< contains the different quality-modes
     EnumProp* raycastingQualitiesEnumProp_; /// Controls the kind of quality used for raycasting
@@ -190,10 +184,10 @@ protected:
 	// properties for all volume raycasters
     EnumProp* maskingMode_;			  				///< What masking should be applied (thresholding, segmentation)
     std::vector<std::string> maskingModes_;
+	EnumProp* gradientMode_;						///< What type of calculation should be used for on-the-fly gradients
+	std::vector<std::string> gradientModes_;
     EnumProp* classificationMode_;					///< What type of transfer function should be used for classification
     std::vector<std::string> classificationModes_;
-    EnumProp* gradientMode_;						///< What type of calculation should be used for on-the-fly gradients
-    std::vector<std::string> gradientModes_;
     EnumProp* shadeMode_;							///< What shading method should be applied
     std::vector<std::string> shadeModes_;
     EnumProp* compositingMode_;						///< What compositing mode should be applied

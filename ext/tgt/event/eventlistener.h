@@ -35,7 +35,7 @@ namespace tgt {
 
 class EventListener {
 public:
-    EventListener() {}
+	EventListener();
     virtual ~EventListener() {}
 
     virtual void mousePressEvent(MouseEvent* e) { e->ignore(); }
@@ -47,6 +47,16 @@ public:
     virtual void keyEvent(KeyEvent* e) { e->ignore(); }
 
     virtual void onEvent(Event* e);
+    
+    void setEventTypes(int eventTypes);
+    int getEventTypes();
+
+private:
+	/*
+     * bitmask in which all eventTypes this EventListener is listening to are stored 
+     * could be used to deactivate an EventListener by setting eventTypes_ = 0
+     */
+	int eventTypes_;
 };
 
 }

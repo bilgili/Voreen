@@ -31,12 +31,12 @@
 #extension GL_ARB_draw_buffers : enable
 
 // include required shader modules
-#include "modules/mod_sampler2d.frag";
-#include "modules/mod_sampler3d.frag";
-#include "modules/mod_raysetup.frag";
-#include "modules/mod_masking.frag";
-#include "modules/mod_gradients.frag";
-#include "modules/mod_transfunc.frag";
-#include "modules/mod_shading.frag";
-#include "modules/mod_compositing.frag";
-#include "modules/mod_depth.frag";
+#include "modules/mod_sampler2d.frag"
+#include "modules/mod_sampler3d.frag"
+#include "modules/mod_raysetup.frag"
+#include "modules/mod_masking.frag"
+#include "modules/mod_transfunc.frag"
+#include "modules/mod_gradients.frag"
+#include "modules/mod_shading.frag"
+#include "modules/mod_compositing.frag"
+#include "modules/mod_depth.frag"

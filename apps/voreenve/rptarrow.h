@@ -43,7 +43,6 @@ class RptPortItem;
  * or to a QPointF position.
  */
 class RptArrow : public QGraphicsItem, public HasRptTooltip {
-
 public:
     /**
      * Constructor. Every Arrow has to have a source node, where it starts.
@@ -55,6 +54,7 @@ public:
      * Returns the item where the arrow starts.
      */
 	QGraphicsItem* getSourceNode() { return source_; }
+    
     /**
      * Returns the item the arrow is pointing on (may be 0).
      */
@@ -70,6 +70,7 @@ public:
      * This function has only an effect if the arrow has both, a source- and a dest-node.
      */
     void adjust();
+    
     /**
      * Adjusts the arrow so that it points to the given QPointF.
      */
@@ -88,14 +89,17 @@ public:
     QRectF boundingRect() const;
     QPointF center() const;
     QPainterPath shape() const;
+    
     /**
-     * Shows the Texture Container Target Tooltip if available - returns this-Pointer in case of success TODO Oh, think twice... Use Exceptions!
+     * Shows the Texture Container Target Tooltip if available - returns this-Pointer in case
+     * of success
+     * TODO: Oh, think twice... Use Exceptions!
      */
     QGraphicsItem* rptTooltip() const;
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
-    /* bool sceneEvent(QEvent* event); */
+
     /**
     * Returns the mapped texture container target for the port of the source port.
     * If no texture container target is mapped, -1 is returned.
@@ -109,7 +113,6 @@ private:
     // arrow goes from source_ to dest_
     QGraphicsItem* source_;
     QGraphicsItem* dest_;
-    // QGraphicsItem* tooltip_;
 
     // start and end point of arrow
     QPointF sourcePoint_;
@@ -121,6 +124,6 @@ private:
     QColor color_;
 };
 
-} //namespace voreen
+} // namespace voreen
 
 #endif // VRN_RPTARROW_H

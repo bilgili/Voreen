@@ -54,6 +54,7 @@ public slots:
      * otherwise false
      */
     bool isDistant(const QPoint & p);
+    
     /**
      * This will restart the timer if p is farer away from the initialisation point than radius and set the point to p
      */

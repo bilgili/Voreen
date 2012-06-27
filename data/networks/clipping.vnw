@@ -83,7 +83,7 @@
             <Processor id="5" port="volumeset.volumeset" />
         </Outport>
     </Processor>
-    <Processor type="GeometryRenderer.ClippingWidget" name="ClippingWidget" id="7">
+    <Processor type="GeometryRenderer.ClippingPlaneWidget" name="ClippingPlaneWidget" id="7">
         <MetaData>
             <RptProcessorItem x="-468" y="82" />
         </MetaData>
@@ -246,13 +246,4 @@
             <Processor id="12" port="image.inputs" order="1" />
         </Outport>
     </Processor>
-    <VolumeSetContainer>
-        <VolumeSet name="C:/voreen/data/nucleon.raw">
-            <VolumeSeries name="unknown" modality="unknown">
-                <VolumeHandle timestep="0.000000">
-                    <Origin filename="C:/voreen/data/nucleon.dat" seriesname="unknown" timestep="0.000000" />
-                </VolumeHandle>
-            </VolumeSeries>
-        </VolumeSet>
-    </VolumeSetContainer>
 </ProcessorNetwork>

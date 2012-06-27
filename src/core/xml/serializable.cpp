@@ -55,25 +55,26 @@ std::vector<std::exception> ErrorCollector::pop() {
 
 //---------------------------------------------------------------------------
 
-Serializable::Serializable() : serializable_(true) {
+Serializable::Serializable()
+: serializable_(true)
+{
     errors_ = ErrorCollector();
 }
 
 Serializable::~Serializable() {
 }
 
-void Serializable::setSerializable(const bool serializable)
-{
+void Serializable::setSerializable(const bool serializable) {
     serializable_ = serializable;
 }
 
-bool Serializable::isSerializable() const
-{
+bool Serializable::isSerializable() const {
     return serializable_;
 }
 
 void Serializable::serializableSanityChecks(const TiXmlElement* elem) const {
-    if (!serializable_) throw NotSerializableException("You tried to deserialize an Object, that isn't serializable.");
+    if (!serializable_)
+        throw NotSerializableException("You tried to deserialize an Object, that isn't serializable.");
     if (elem && elem->Value() != getXmlElementName())
         throw XmlElementException(std::string("You tried to deserialize a ") + elem->Value() + " as a " + getXmlElementName());
 }
@@ -155,6 +156,4 @@ bool MetaSerializer::hasData(std::string elemName) const {
     return metadata_->FirstChildElement(elemName) ? true : false;
 }
 
-
 } //namespace Voreen
-

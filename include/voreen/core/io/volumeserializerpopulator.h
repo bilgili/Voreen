@@ -47,7 +47,6 @@ class VolumeSerializer;
  */
 class VolumeSerializerPopulator {
 public:
-
     VolumeSerializerPopulator(IOProgress* progress = 0);
     ~VolumeSerializerPopulator();
 
@@ -55,7 +54,6 @@ public:
     VolumeSerializer* getVolumeSerializer();
 
 private:
-
     IOProgress* progress_;
 
     std::vector<VolumeReader*> readers_;

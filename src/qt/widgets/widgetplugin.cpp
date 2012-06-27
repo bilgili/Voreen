@@ -34,11 +34,11 @@
 
 namespace voreen {
 
-QIcon WidgetPlugin::getIcon(){
+QIcon WidgetPlugin::getIcon() {
     return icon_;
 }
 
-void WidgetPlugin::setMessageReceiver(MessageReceiver* receiver){
+void WidgetPlugin::setMessageReceiver(MessageReceiver* receiver) {
     msgReceiver_ = receiver;
 }
 
@@ -60,5 +60,5 @@ void WidgetPlugin::postMessage(Message* msg, const Identifier& dest) {
     if (msgReceiver_)
         msgReceiver_->postMessage(msg, dest);
 }
-} // namespace voreen
 
+} // namespace voreen

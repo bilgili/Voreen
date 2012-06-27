@@ -57,7 +57,7 @@ class OrientationPlugin;
 
 class SchematicOverlayObject {
 public:
-    enum Faces {Front, Back, Top, Bottom, Left, Right};
+    enum Faces { Front, Back, Top, Bottom, Left, Right };
 
     SchematicOverlayObject();
     ~SchematicOverlayObject();
@@ -85,7 +85,6 @@ public:
     bool getShowTextures();
 
 private:
-
     tgt::Color cubeColorFrontObject_;
     tgt::Color cubeColorBackObject_;
     tgt::Color cubeColorLeftObject_;
@@ -103,7 +102,6 @@ private:
     tgt::Texture* leftTex_;
     tgt::Texture* bottomTex_;
     tgt::Texture* rightTex_;
-
     
     std::string textureNames_[6];
 };
@@ -144,131 +142,132 @@ protected:
 class OrientationPlugin : public WidgetPlugin, public MessageReceiver, public tgt::EventListener   {
     Q_OBJECT
 public:
+    /**
+     * This enumeration is used to define which orientation features are presented to the user.
+     * By default all features are enabled.
+     */
+    enum Features {
+        ORIENTATION_AND_DISTANCE    = 1, ///< Should orientation-and-distance box be shown?
+        ORIENTATION_OVERLAY         = 2, ///< Should the checkbox for enabling orientation overlay be shown?
+        CONTINUOUS_MOTION           = 4, ///< Should the continous-motion box be shown?
+        TRACKBALL_BOX               = 8, ///< Should the save-and-load box be shown?
+        ALL_FEATURES                = 15 ///< Show everything
+    };
 
-        /**
-         * This enumeration is used to define which orientation features are presented to the user.
-         * By default all features are enabled.
-         */
-        enum Features {
-            ORIENTATION_AND_DISTANCE    = 1, ///< Should orientation-and-distance box be shown?
-            ORIENTATION_OVERLAY         = 2, ///< Should the checkbox for enabling orientation overlay be shown?
-            CONTINUOUS_MOTION           = 4, ///< Should the continous-motion box be shown?
-            TRACKBALL_BOX               = 8, ///< Should the save-and-load box be shown?
-            ALL_FEATURES                = 15 ///< Show everything
-        };
+    OrientationPlugin(QWidget* parent = 0, MessageReceiver* rec = 0, tgt::QtCanvas* canvas = 0, 
+                      tgt::Trackball* track = 0, TextureContainer* tc = 0);
+    ~OrientationPlugin();
 
-        OrientationPlugin(QWidget* parent = 0, MessageReceiver* rec = 0, tgt::QtCanvas* canvas = 0, 
-            tgt::Trackball* track = 0, TextureContainer* tc = 0);
-        ~OrientationPlugin();
+    void deinit();
 
-        void deinit();
+    /// Enable features by passing a bitstring. \see Features
+    void enableFeatures(int features);
+    /// Disable features by passing a bitstring. \see Features
+    void disableFeatures(int features);
 
-        /// Enable features by passing a bitstring. \see Features
-        void enableFeatures(int features);
-        /// Disable features by passing a bitstring. \see Features
-        void disableFeatures(int features);
+    void processMessage(Message* msg, const Identifier& dest = Message::all_);
 
-        void processMessage(Message* msg, const Identifier& dest = Message::all_);
+    void mousePressEvent(tgt::MouseEvent* e);
+    void mouseMoveEvent(tgt::MouseEvent* e);
+    void mouseReleaseEvent(tgt::MouseEvent* e);
+    void mouseDoubleClickEvent(tgt::MouseEvent *e);
 
-        void mousePressEvent(tgt::MouseEvent* e);
-        void mouseMoveEvent(tgt::MouseEvent* e);
-        void mouseReleaseEvent(tgt::MouseEvent* e);
-        void mouseDoubleClickEvent(tgt::MouseEvent *e);
-
-        int isClicked(int, int);
+    int isClicked(int, int);
 
 public slots:
-        void toAbove();
-        void toBelow();
-        void toBehind();
-        void toFront();
-        void toLeft();
-        void toRight();
-        void updateDistance();
-        void orientationChanged(int);
-        void distanceSliderChanged(int);
-        void distanceSliderPressed();
-        void distanceSliderReleased();
+    void toAbove();
+    void toBelow();
+    void toBehind();
+    void toFront();
+    void toLeft();
+    void toRight();
+    void updateDistance();
+    void orientationChanged(int);
+    void distanceSliderChanged(int);
+    void distanceSliderPressed();
+    void distanceSliderReleased();
 
-        void saveTrackballToDisk();
-        void saveTrackballToDisk(std::string s, bool shutdown = false);
-        void restoreTrackball();
-        void restoreTrackball(std::string s);
+    void saveTrackballToDisk();
+    void saveTrackballToDisk(std::string s, bool shutdown = false);
+    void restoreTrackball();
+    void restoreTrackball(std::string s);
         
-        void setRestore(bool b);
-        bool getRestore();
+    void setRestore(bool b);
+    bool getRestore();
 
-        void enableContSpin(bool b);
+    void enableContSpin(bool b);
 
-        void enableX(bool b);
-        void enableY(bool b);
-        void enableZ(bool b);
+    void enableX(bool b);
+    void enableY(bool b);
+    void enableZ(bool b);
 
-		void enableOrientationOverlay(bool b);
+    void enableOrientationOverlay(bool b);
 
-        void setShowTextures(bool show);
-        void loadTextures(Identifier set);
+    void setShowTextures(bool show);
+    void loadTextures(Identifier set);
 
-protected:
-        virtual void createWidgets();
-        virtual void createConnections();
-        /// Returns wether a certain feature is enabled.
-        bool isFeatureEnabled(Features feature);
-        virtual void timerEvent(QTimerEvent *event);
-        void checkCameraState();
-        void showEvent(QShowEvent* event);
+    virtual void createWidgets();
+    virtual void createConnections();
 
-        QtCanvasSchematicOverlay schematicOverlay_;
+protected:       
+    /// Returns wether a certain feature is enabled.
+    bool isFeatureEnabled(Features feature);
+    virtual void timerEvent(QTimerEvent *event);
+    void checkCameraState();
+    void showEvent(QShowEvent* event);
 
-        tgt::Trackball* track_;
-    	tgt::QtCanvas* canvas_;
-        int isClicked_;
+    QtCanvasSchematicOverlay schematicOverlay_;
 
-        const int MIN_CAM_DIST;
-        const int MAX_CAM_DIST;
-        const float CAM_DIST_SCALE_FACTOR;
+    tgt::Trackball* track_;
+    tgt::QtCanvas* canvas_;
+    int isClicked_;
 
-        const tgt::vec3 AXIAL_VIEW;
-        const tgt::vec3 CORONAL_VIEW;
-        const tgt::vec3 SAGITTAL_VIEW;
-        const tgt::vec3 AXIAL_INV_VIEW;
-        const tgt::vec3 CORONAL_INV_VIEW;
-        const tgt::vec3 SAGITTAL_INV_VIEW;
+    const int MIN_CAM_DIST;
+    const int MAX_CAM_DIST;
+    const float CAM_DIST_SCALE_FACTOR;
 
-        /// Determines which features are presented to the user for modification.
-        int features_;
+    const tgt::vec3 AXIAL_VIEW;
+    const tgt::vec3 CORONAL_VIEW;
+    const tgt::vec3 SAGITTAL_VIEW;
+    const tgt::vec3 AXIAL_INV_VIEW;
+    const tgt::vec3 CORONAL_INV_VIEW;
+    const tgt::vec3 SAGITTAL_INV_VIEW;
+
+    /// Determines which features are presented to the user for modification.
+    int features_;
 
 private:
-
-        void applyOrientation(const tgt::quat& q);
-        void shutdownSave(bool b);
-        void startupRestore();
+    void applyOrientation(const tgt::quat& q);
+    void shutdownSave(bool b);
+    void startupRestore();
+    /// enabled or disables timer based on whether rotation is active
+    void setTimerState();
         
-        bool restore_;
+    bool restore_;
 
-        QGroupBox* orientationBox_;
-        QGroupBox* motionBox_;
-        QGroupBox* trackballBox_;
-        QComboBox* comboOrientation_;
-        QSlider *slDistance_;
+    QGroupBox* orientationBox_;
+    QGroupBox* motionBox_;
+    QGroupBox* trackballBox_;
+    QComboBox* comboOrientation_;
+    QSlider* slDistance_;
 
-        QCheckBox* rotateAroundX_;
-        QCheckBox* rotateAroundY_;
-        QCheckBox* rotateAroundZ_;
-        QCheckBox* continueSpin_;
-		QCheckBox* showOrientationOverlay_;
-		QBasicTimer *timer_;
+    QCheckBox* rotateAroundX_;
+    QCheckBox* rotateAroundY_;
+    QCheckBox* rotateAroundZ_;
+    QCheckBox* continueSpin_;
+    QCheckBox* showOrientationOverlay_;
+    QBasicTimer* timer_;
 
-        float dist_;
-        bool rotateX_;
-        bool rotateY_;
-        bool rotateZ_;
+    float dist_;
+    bool rotateX_;
+    bool rotateY_;
+    bool rotateZ_;
 
-        QToolButton* buSaveTrackball_;
-        QToolButton* buRestoreTrackball_;
-        QCheckBox* cbRestoreOnStartup_;
+    QToolButton* buSaveTrackball_;
+    QToolButton* buRestoreTrackball_;
+    QCheckBox* cbRestoreOnStartup_;
 
-        TextureContainer* tc_;
+    TextureContainer* tc_;
 };
 
 } // namespace voreen

@@ -12,7 +12,11 @@
         <file>icons/open_dicom.png</file>
         <file>icons/save.png</file>
         <file>icons/wizard.png</file>
+        <file>icons/zoom.png</file>
+        <file>icons/grid.png</file> 
+        <file>icons/translation.png</file> 
+        <file>icons/rotation.png</file> 
         <file>image/aboutbox.png</file>
-        <file>image/splash.png</file>
+        <file>image/splash.png</file>   
     </qresource>
 </RCC>

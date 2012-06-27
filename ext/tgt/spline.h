@@ -30,25 +30,86 @@
 #include "tgt/config.h"
 #include "tgt/types.h"
 #include "tgt/vector.h"
-#include "tgt/camera.h"
 #include "tgt/curve.h"
 
 
-namespace tgt
-{
+namespace tgt {
+
+/**
+ * Uniform B-Spline of arbitrary degree, which is evaluated by Cox-deBoor recursion.
+ * 
+ * In order to force the spline to interpolate the first and last control point, 
+ * degree+1 knot values are repeated at the beginning and the end of 
+ * the knot vector, respectively. 
+ *
+ */
+class BSpline : public Curve { 
+
+public:
+    
+    /**
+     * Constructor expecting the spline's control points. The inner knot values are 
+     * distributed uniformly and range from 0.0 till 1.0.
+     *
+     * @param ctrlPoints The spline's control points. Note: The number of control points must
+     *          exceed the spline's degree.
+     * @param degree The spline's degree, i.e. the degree of its basis functions. By default,
+     *          a cubic B-Spline is generated. Note: The degree must be greater zero.
+     * @param stepCount Only relevant, if the spline is to be rendered: It specifies the number
+     *          of line segments the spline is divided into.
+     */
+    BSpline(const std::vector<vec3>& ctrlPoints, int degree = 3, GLuint stepCount = 50);
+
+    /**
+     * Constructor expecting the spline's control points and the corresponding knot values.
+     * The passed knot-vector is rescaled uniformly and shifted to match the interval [0.0, 1.0].
+     *
+     * @param ctrlPoints The spline's control points. Note: The number of control points must
+     *          exceed the spline's degree.
+     * @param knotValues The spline's knot values. Note: The number of knot values must match 
+     *          the number of control points and must be passed in non-decreasing order.
+     * @param degree The spline's degree, i.e. the degree of its basis functions. By default,
+     *          a cubic B-Spline is generated. Note: The degree must be greater zero.
+     * @param stepCount Only relevant, if the spline is to be rendered: It specifies the number
+     *          of line segments the spline is divided into.
+     */
+    BSpline(const std::vector<vec3>& ctrlPoints, const std::vector<float>& knotValues, int degree = 3, GLuint stepCount = 50);
+
+    /**
+     * Evaluates the B-Spline at an arbitrary position t within the interval [0.0,1.0].
+     */
+    vec3 getPoint(GLfloat t);
+
+    /**
+     * Calculates the B-Spline's first derivative (tangent) at an arbitrary position t 
+     * within the interval [0.0,1.0]. Not implemented, yet.
+     */
+    vec3 getDerivative(GLfloat t);
+
+private:
+    
+    // Cox-deBoor recursion
+    float evalBasisFunction(int knotID, int deg, float u);
+
+    // generates the spline's knot values
+    void generateKnotVector();
+
+    // degree and control points
+    int degree_;
+    std::vector<vec3> ctrlPoints_;
+    
+    // knot vector (internally generated)
+    std::vector<float> knots_;
+
+};
+
+
 
 /**
     A Spline-Class, that implements Curve-Class. It has a user-defined number of controlpoints that build the
     B-Spline curve.  This curve can, for example, be used to run a camera or a light source along itself.
 */
-    class Spline : public Curve {
-private:
-
-    /// This std::vector contains the controlpoints
-    std::vector<vec3> controlPoints_;
-
-    /// tau is a measure for how tightly or loosely the curve follows the controlpoints.
-    float tau_;
+class Spline : public Curve {
 
 public:
     //Spline() : Curve (100, Bounds(), true, true) {}
@@ -98,8 +159,18 @@ public:
 	vec3 getDerivative(GLfloat t){
 		return firstDerive(t);
 	}
+
+private:
+
+    /// This std::vector contains the controlpoints
+    std::vector<vec3> controlPoints_;
+
+    /// tau is a measure for how tightly or loosely the curve follows the controlpoints.
+    float tau_;
 };
 
-} //_SPLINE_H_
 
-#endif
+} // namespace tgt
+
+#endif //#ifndef _SPLINE_H_
+

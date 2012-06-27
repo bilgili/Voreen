@@ -36,19 +36,23 @@
 
 namespace voreen {
 
-const std::string PropertySet::XmlElementName = "PropertySet";
+const std::string PropertySet::XmlElementName_("PropertySet");
+PropertySet* PropertySet::tmpPropSet_(0);
 
 PropertySet::PropertySet(bool equalize)
-: VolumeRaycaster(""), equalize_(equalize), name_("PropertySet")
+    : VolumeRaycaster()
+    , equalize_(equalize)
 {
+    name_ = "PropertySet";
     props_.clear();
     meta_ = MetaSerializer();
 }
 
 PropertySet::PropertySet(std::vector<Processor*> processors, bool equalize)
-: VolumeRaycaster(""),
-  equalize_(equalize), name_("PropertySet")
-{    
+    : VolumeRaycaster()
+    , equalize_(equalize)
+{
+    name_ = "PropertySet";
     props_.clear();
     setProcessors(processors);
     meta_ = MetaSerializer();
@@ -82,15 +86,54 @@ void PropertySet::clear() {
 
 TransFunc* PropertySet::getTransFunc() {
     for (size_t i=0; i<processors_.size(); ++i) {
-        if (processors_[i]->getClassName().getSubString(0) == "Raycaster") {
-            VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
-            if (vr) {
-                return vr->getTransFunc();
-                break;
-            }
-        }
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
+        if (vr)
+            return vr->getTransFunc();
     }
     return 0;
+}
+
+VolumeHandle* PropertySet::getVolumeHandle() {
+    std::vector<VolumeHandle*> volumeHandles;
+    //collect all volumehandles in propertyset
+    for (size_t i = 0; i < processors_.size(); ++i) {
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
+        if (vr && vr->getVolumeHandle())
+            volumeHandles.push_back(vr->getVolumeHandle());
+    }
+    if (!volumeHandles.size())
+        return 0;
+    //test whether all volumehandles have same bitdepth
+    bool same = true;
+    int bitdepth = volumeHandles[0]->getVolume()->getBitsStored();
+    for (size_t i = 1; i < volumeHandles.size(); ++i) {
+        if (bitdepth != volumeHandles[i]->getVolume()->getBitsStored()) {
+            same = false;
+            break;
+        }
+    }
+    if (same)
+        return volumeHandles[0];
+    else
+        return 0;
+}
+
+float PropertySet::getLowerThreshold() const {
+    for (size_t i = 0; i < processors_.size(); ++i) {
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
+        if (vr)
+            return vr->getLowerThreshold();
+    }
+    return 0.f;
+}
+
+float PropertySet::getUpperThreshold() const {
+    for (size_t i = 0; i < processors_.size(); ++i) {
+        VolumeRenderer* vr = dynamic_cast<VolumeRenderer*>(processors_[i]);
+        if (vr)
+            return vr->getUpperThreshold();
+    }
+    return 1.f;
 }
 
 void PropertySet::createProperties() {
@@ -106,23 +149,23 @@ void PropertySet::createProperties() {
             switch (props[i]->getType()) {
 
             case Property::FLOAT_PROP:
-                p = new FloatProp(*static_cast<FloatProp*>(props[i]));
+                p = new FloatProp(*dynamic_cast<FloatProp*>(props[i]));
                 break;
 
             case Property::BOOL_PROP:
-                p = new BoolProp(*static_cast<BoolProp*>(props[i]));
+                p = new BoolProp(*dynamic_cast<BoolProp*>(props[i]));
                 break;
 
             case Property::INT_PROP:
-                p = new IntProp(*static_cast<IntProp*>(props[i]));
+                p = new IntProp(*dynamic_cast<IntProp*>(props[i]));
                 break;
 
             case Property::COLOR_PROP:
-                p = new ColorProp(*static_cast<ColorProp*>(props[i]));
+                p = new ColorProp(*dynamic_cast<ColorProp*>(props[i]));
                 break;
 
             case Property::ENUM_PROP:
-                p = new EnumProp(*static_cast<EnumProp*>(props[i]));
+                p = new EnumProp(*dynamic_cast<EnumProp*>(props[i]));
                 break;
 
             // ? ---
@@ -144,35 +187,35 @@ void PropertySet::createProperties() {
 
             // ---
             case Property::TRANSFUNC_PROP:
-                p = new TransFuncProp(*static_cast<TransFuncProp*>(props[i]));
+                p = new TransFuncProp(*dynamic_cast<TransFuncProp*>(props[i]));
                 break;
 
             case Property::TRANSFUNC_ALPHA_PROP:
-                p = new TransFuncAlphaProp(*static_cast<TransFuncAlphaProp*>(props[i]));
+                p = new TransFuncAlphaProp(*dynamic_cast<TransFuncAlphaProp*>(props[i]));
                 break;
 
             case Property::FLOAT_VEC2_PROP:
-                p = new FloatVec2Prop(*static_cast<FloatVec2Prop*>(props[i]));
+                p = new FloatVec2Prop(*dynamic_cast<FloatVec2Prop*>(props[i]));
                 break;
 
             case Property::FLOAT_VEC3_PROP:
-                p = new FloatVec3Prop(*static_cast<FloatVec3Prop*>(props[i]));
+                p = new FloatVec3Prop(*dynamic_cast<FloatVec3Prop*>(props[i]));
                 break;
 
             case Property::FLOAT_VEC4_PROP:
-                p = new FloatVec4Prop(*static_cast<FloatVec4Prop*>(props[i]));
+                p = new FloatVec4Prop(*dynamic_cast<FloatVec4Prop*>(props[i]));
                 break;
 
             case Property::INTEGER_VEC2_PROP:
-                p = new IntVec2Prop(*static_cast<IntVec2Prop*>(props[i]));
+                p = new IntVec2Prop(*dynamic_cast<IntVec2Prop*>(props[i]));
                 break;
 
             case Property::INTEGER_VEC3_PROP:
-                p = new IntVec3Prop(*static_cast<IntVec3Prop*>(props[i]));
+                p = new IntVec3Prop(*dynamic_cast<IntVec3Prop*>(props[i]));
                 break;
 
             case Property::INTEGER_VEC4_PROP:
-                p = new IntVec4Prop(*static_cast<IntVec4Prop*>(props[i]));
+                p = new IntVec4Prop(*dynamic_cast<IntVec4Prop*>(props[i]));
                 break;
 
             default:
@@ -187,7 +230,7 @@ void PropertySet::createProperties() {
         return;
 
     // go through processors_ and erase properties from props_ that do not exist in every single processor
-    // in other words: this->props_ is the intersection of the properties from the processors_-vector
+    // in other words: props_ is the intersection of the properties from the processors_-vector
     for (size_t i=0; i<processors_.size(); ++i) {
         for (size_t k=0; k<props_.size(); ++k) {
             bool found = false;
@@ -339,13 +382,9 @@ void PropertySet::processMessage(Message* msg , const Identifier& dest=Message::
 	}
 }
 
-std::string PropertySet::getXmlElementName() const {
-    return XmlElementName;
-}
-
 TiXmlElement* PropertySet::serializeToXml() const {
     serializableSanityChecks();
-    TiXmlElement* propertysetElem = new TiXmlElement(XmlElementName);
+    TiXmlElement* propertysetElem = new TiXmlElement(XmlElementName_);
     // metadata
     TiXmlElement* metaElem = meta_.serializeToXml();
     propertysetElem->LinkEndChild(metaElem);
@@ -382,9 +421,9 @@ void PropertySet::updateFromXml(TiXmlElement* propertysetElem, const std::map<in
     updateFromXml(propertysetElem);
     
     TiXmlElement* processorElem;
-    for (processorElem = propertysetElem->FirstChildElement(Processor::XmlElementName);
+    for (processorElem = propertysetElem->FirstChildElement(Processor::XmlElementName_);
         processorElem;
-        processorElem = processorElem->NextSiblingElement(Processor::XmlElementName))
+        processorElem = processorElem->NextSiblingElement(Processor::XmlElementName_))
     {
         try {
             int id;
@@ -408,6 +447,4 @@ PropertySet* PropertySet::getTmpPropSet() {
     return tmpPropSet_;
 }
 
-PropertySet* PropertySet::tmpPropSet_ = 0;
-
-} // namespace
+} // namespace voreen

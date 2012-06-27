@@ -108,8 +108,9 @@ bool Script::compile() {
 }
 
 bool Script::run() {
+    char str_pytgt[] = "PyTgt";
     if (compiled_)
-        PyImport_ExecCodeModule("PyTgt", byteCode_);
+        PyImport_ExecCodeModule(str_pytgt, byteCode_);
     else
         PyRun_SimpleString(source_);
 
@@ -129,7 +130,8 @@ ScriptManager::ScriptManager(bool initSignalHandlers)
     : ResourceManager<Script>()
 {
     // Pass PyTgt to the Python interpreter
-    Py_SetProgramName("PyTgt");
+    char str_pytgt[] = "PyTgt";
+    Py_SetProgramName(str_pytgt);
 
     // Initialize the Python interpreter.  Required.
     Py_InitializeEx(initSignalHandlers);

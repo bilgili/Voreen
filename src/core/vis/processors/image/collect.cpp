@@ -1,3 +1,4 @@
+
 /**********************************************************************
  *                                                                    *
  * Voreen - The Volume Rendering Engine                               *
@@ -54,7 +55,6 @@ void Collect::process(LocalPortMapping*  portMapping) {
 }
 
 void Collect::processIterative(LocalPortMapping* portMapping) {
-	glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
 	std::vector<int> sources = portMapping->getAllTargets("image.inputs");
 	if (sources.size() <= 1)
         return;

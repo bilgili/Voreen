@@ -46,17 +46,17 @@ const Identifier Background::shadeTexUnit1_ = "shadeTex1";
 const Identifier Background::depthTexUnit1_ = "depthTex1";
 
 Background::Background()
-    : GenericFragment("pp_combine"),
-      firstcolor_(setBackgroundFirstColor_, "first color",
-                  tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
-      secondcolor_(setBackgroundSecondColor_, "second color",
-                   tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f)),
-      angle_(setBackgroundAngle_, "angle", 180, 0, 359, false),
-      tex_(0),
-      textureloaded_(false),
-      filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
-                "", "*.jpg;*.bmp;*.png"),
-      tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false) 
+    : GenericFragment("pp_combine")
+    , firstcolor_(setBackgroundFirstColor_, "first color",
+                  tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f))
+    , secondcolor_(setBackgroundSecondColor_, "second color",
+                   tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
+    , angle_(setBackgroundAngle_, "angle", 180, 0, 359, false)
+    , tex_(0)
+    , textureloaded_(false)
+    , filename_("set.backgroundfilenameAsString", "Texture", "Select texture",
+                "", "*.jpg;*.bmp;*.png", &needRecompileShader_)
+    , tile_("set.backgroundtile", "Repeat Background", 1.0f, 0.f, 100.f, false) 
 {
     setName("Background");
 
@@ -82,16 +82,19 @@ Background::Background()
     conds.push_back(1);
     conds.push_back(2);
     conds.push_back(3);
-    tile_.setConditioned("backgroundModeCond", conds);
+    //tile_.setConditioned("backgroundModeCond", conds);
     mode_ = MONOCHROME;
 
     conds.clear();
     conds.push_back(0);
     conds.push_back(1);
     conds.push_back(2);
-    firstcolor_.setConditioned("backgroundModeCond", conds);
-    secondcolor_.setConditioned("backgroundModeCond", conds);
-    angle_.setConditioned("backgroundModeCond", conds);
+    
+    // Note: Conditioning does currently not work properly,
+    // and will become obsolete with the new property mechanism
+    //firstcolor_.setConditioned("backgroundModeCond", conds);
+    //secondcolor_.setConditioned("backgroundModeCond", conds);
+    //angle_.setConditioned("backgroundModeCond", conds);
 
     addProperty(&firstcolor_);
     addProperty(&secondcolor_);
@@ -149,7 +152,6 @@ void Background::process(LocalPortMapping* portMapping) {
 	    tc_->setActiveTarget(dest, "Background::process()"); // render directly into destination
     else 
         tc_->setActiveTarget(tmpBckgrnd, "Background::process() tmp for background"); // render first in tmp target
-    glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 
     compileShader();
     
@@ -173,7 +175,6 @@ void Background::process(LocalPortMapping* portMapping) {
     // leave if there's nothing to render above
 	if (source != -1) {
         tc_->setActiveTarget(dest, "Background::process()"); // now blend src and tmp into dest
-        glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// use pp_combine.frag to blend the orginal picture over the background
@@ -204,7 +205,6 @@ void Background::process(LocalPortMapping* portMapping) {
 
 		program_->deactivate();
 		glActiveTexture(TexUnitMapper::getGLTexUnitFromInt(0));
-
 	}
     LGL_ERROR;
 }

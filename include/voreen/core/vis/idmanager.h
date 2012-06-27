@@ -27,8 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VOREEN_IDMANAGER_H
-#define VOREEN_IDMANAGER_H
+#ifndef VRN_IDMANAGER_H
+#define VRN_IDMANAGER_H
 
 #include "tgt/vector.h"
 #include "voreen/core/vis/message.h"
@@ -38,8 +38,8 @@ namespace voreen {
 class TextureContainer;
 
 /**
-  * Data Structure - enhanced Identifier
-  */
+ * Data Structure - enhanced Identifier
+ */
 class IDF {
 public:
     IDF(std::string name);
@@ -55,103 +55,106 @@ public:
 };
 
 /**
-  * Construct an IDF with a std::string
-  */
+ * Construct an IDF with a std::string
+ */
 inline IDF::IDF(std::string name) : name_(name) {}
 
 /**
-  * Compares two IDF's
-  */
-inline bool operator==(const IDF &x, const IDF &y)
-{
+ * Compares two IDF's
+ */
+inline bool operator==(const IDF &x, const IDF &y) {
     return x.name_.compare(y.name_) == 0;
 }
 
 /**
-  * Compares std:string with IDF
-  */
-inline bool operator==(const std::string &x, const IDF &y)
-{
+ * Compares std:string with IDF
+ */
+inline bool operator==(const std::string &x, const IDF &y) {
     return x.compare(y.name_) == 0;
 }
 
 /**
-  * Compares IDF with std::string
-  */
-inline bool operator==(const IDF &x, const std::string &y)
-{
+ * Compares IDF with std::string
+ */
+inline bool operator==(const IDF &x, const std::string &y) {
     return x.name_.compare(y) == 0;
 }
 
 
 /**
-  * IDManager class for picking
-  * usage: 
-  * Pipeline: initNewRendering() - addNewPickObj() - startBufferRenderering() - stopBufferRendering()
-  * Validation: isClicked()
-  */
+ * IDManager class for picking
+ * usage: 
+ * Processor: addNewPickObj() - startBufferRenderering() - stopBufferRendering()
+ * Validation: isClicked()
+ */
 class IDManager {
 
-    // Add vars to be saved here
     class IDManagerContents {
     public:
         IDManagerContents();
         int currentID_R_;
         int currentID_G_;
         int currentID_B_;
-        int renderBufferID_;
+        int textureTarget_;
         int oldRT_;
         bool isTC_;
+        bool newRenderingPass_;
         TextureContainer* tc_;
         std::vector<IDF> picks_;
     };
 
-// Add functions for the IDManager here
 public:
     IDManager();
 
 	static IDManagerContents* getContent() {return content_;}
 
     /**
-      * adds new picking object to the manager
-      * @param ident identifies the picking object
-      */
+     * adds new picking object to the manager
+     * @param ident identifies the picking object
+     */
     void addNewPickObj(Identifier ident);
 
     /**
-      * clears buffer (picking texture)
-      */
-    void initNewRendering();
+     * clears buffer (picking texture)
+     */
+    void clearTextureTarget();
 
     /**
-      * Sets rendering target to picking buffer 
-      * Sets the correct color for picking object
-      */
+     * Tells the IDManager that a new rendering pass has begun. The content of the
+     * textureTarget will be deleted when startBufferRendering is called for the first time
+     * in a rendering pass.
+     */
+    void signalizeNewRenderingPass();
+
+    /**
+     * Sets rendering target to picking buffer 
+     * Sets the correct color for picking object
+     */
     void startBufferRendering(Identifier identIN);
 
     /**
-      * Resets rendering target
-      */
+     * Resets rendering target
+     */
     void stopBufferRendering();
 
     /**
-      * Validates picking objects position 
-      */
+     * Validates picking objects position 
+     */
     bool isClicked(Identifier ident, int x, int y);
 
     /**
-      * Resets saved picking objects
-      */
+     * Resets saved picking objects
+     */
     void clearIDs();
 
     /**
-      * Sets texture container
-      */
+     * Sets texture container
+     */
     void setTC(TextureContainer* tc);
 
     /**
-      * Returns color at position (x,y) in the picking texture
-      */
+     * Returns color at position (x,y) in the picking texture
+     */
     tgt::vec3 getIDatPos(int x, int y) const;
 
     /** Returns the name of the picked object at position (x, y).
@@ -163,9 +166,6 @@ public:
      *
      */
     std::string getNameAtPos(int x, int y) const;
-
-    // Identifiers for Picking
-    static const Identifier widget3DBoundingBox;
 
 private:
     static IDManagerContents* content_;

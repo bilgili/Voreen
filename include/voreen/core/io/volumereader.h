@@ -35,14 +35,12 @@
 
 #include "tgt/exception.h"
 
-#ifndef VRN_VOLUMESET_H
 #include "voreen/core/volume/volumeset.h"
-#endif
+#include "voreen/core/io/ioprogress.h"
 
 namespace voreen {
 
 // forward declarations
-class IOProgress;
 class Volume;
 
 /**
@@ -51,7 +49,6 @@ class Volume;
  */
 class VolumeReader {
 public:
-
     VolumeReader(IOProgress* progress = 0);
     virtual ~VolumeReader() {}
 
@@ -62,21 +59,22 @@ public:
      * @return new VolumeSet, the caller is responsible for freeing the memory
      */
     virtual VolumeSet* read(const std::string& fileName)
-        throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc) = 0;
+        throw(tgt::FileException, std::bad_alloc) = 0;
 
     void fixOrigins(VolumeSet* vs, const std::string& fn);
 
     const std::vector<std::string>& getExtensions() const;
 
 protected:
-
     void read(Volume* volume, std::fstream& fin);
-
+    IOProgress* getProgress() const { return progress_; }
+    
     std::vector<std::string> extensions_;
     std::string name_;
-    IOProgress* progress_;
-
     static const std::string loggerCat_;
+
+private:
+    IOProgress* progress_;   
 };
 
 } // namespace voreen

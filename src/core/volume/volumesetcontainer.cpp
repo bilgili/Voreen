@@ -46,8 +46,7 @@ VolumeSetContainer::VolumeSetContainer() {
 
 VolumeSetContainer::~VolumeSetContainer() {
     // can not use clear() here because of postMessage()
-    VolumeSet::VSPSet::iterator it;
-    for (it = volumesets_.begin(); it != volumesets_.end(); it++)
+    for (VolumeSet::VSPSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
         delete *it;
 
     volumesets_.clear();
@@ -55,8 +54,7 @@ VolumeSetContainer::~VolumeSetContainer() {
 
 void VolumeSetContainer::clear() {
 	MsgDistr.postMessage(new VolumeSetContainerMsg("volumesetcontainer.clear", this));
-    VolumeSet::VSPSet::iterator it;
-	for (it = volumesets_.begin(); it != volumesets_.end(); it++)
+	for (VolumeSet::VSPSet::iterator it = volumesets_.begin(); it != volumesets_.end(); ++it)
         delete *it;
 
     volumesets_.clear();
@@ -73,9 +71,13 @@ bool VolumeSetContainer::addVolumeSet(VolumeSet*& volset) {
     // 
     if (pr.second) {
         volset->setParentContainer(this);
-        MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, this));
+
+        if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
+            MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, this));
+
         notifyObservers();
-    } else {
+    }
+    else {
         // The insertion failed because the VolumeSet in volset was already contained in the
         // VolumeSetContainer.
         // Therefore replace volset by the one from the container if it is not itself!
@@ -90,7 +92,7 @@ bool VolumeSetContainer::addVolumeSet(VolumeSet*& volset) {
 }
 
 VolumeSet* VolumeSetContainer::findVolumeSet(VolumeSet* const volsetWanted) {
-    if ( (volumesets_.empty() == true) || (volsetWanted == 0) )
+    if ( volumesets_.empty() || (volsetWanted == 0) )
         return 0;
 
     VolumeSet::VSPSet::iterator it = volumesets_.find(volsetWanted);
@@ -118,7 +120,9 @@ VolumeSet* VolumeSetContainer::removeVolumeSet(VolumeSet* const volset) {
         // As the content of the VolumeSetContainer has changed, the responsible processors
         // need to update their properties. Therefore this message is sent.
         //
-        MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, this));
+        if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
+            MsgDistr.postMessage(new VolumeSetContainerMsg(VolumeSetContainer::msgUpdateVolumeSetContainer_, this));
+
         notifyObservers();
     }
 
@@ -147,7 +151,10 @@ bool VolumeSetContainer::deleteVolumeSet(const std::string& name) {
 std::vector<std::string> VolumeSetContainer::getVolumeSetNames() const {
     std::vector<std::string> names;
     VolumeSet::VSPSet::const_iterator itVS = volumesets_.begin();
-    for (; itVS != volumesets_.end(); ++itVS) {
+    for (VolumeSet::VSPSet::const_iterator itVS = volumesets_.begin();
+        itVS != volumesets_.end();
+        ++itVS)
+    {
         VolumeSet* vs = *itVS;
         if (vs == 0)
             continue;
@@ -163,13 +170,25 @@ const VolumeSet::VSPSet& VolumeSetContainer::getVolumeSets() const {
     return volumesets_;
 }
 
+void VolumeSetContainer::notifyObservers() const {
+    Observable::notifyObservers();
+
+    if (tgt::Singleton<voreen::MessageDistributor>::isInited() == true)
+        MsgDistr.postMessage(new BoolMsg(VolumeSet::msgUpdateVolumeSeries_, true), "VolumeSelectionProcessor");
+}
+
+// ---------------------------------------------------------------------------
+
 TiXmlElement* VolumeSetContainer::serializeToXml() const {
     serializableSanityChecks();
     TiXmlElement* containerElem = new TiXmlElement(getXmlElementName());
     // Serialize VolumeSets and add them to the container element
-    VolumeSet::VSPSet::const_iterator it;
-    for (it = volumesets_.begin(); it != volumesets_.end(); it++)
+    for (VolumeSet::VSPSet::const_iterator it = volumesets_.begin();
+        it != volumesets_.end();
+        it++)
+    {
         containerElem->LinkEndChild((*it)->serializeToXml());
+    }
     return containerElem;
 }
 
@@ -184,14 +203,8 @@ void VolumeSetContainer::updateFromXml(TiXmlElement* elem) {
         volumesetElem;
         volumesetElem = volumesetElem->NextSiblingElement(VolumeSet::XmlElementName))
     {
-//        try {
-            std::set<std::string> volsetfilenames = VolumeSet::getFileNamesFromXml(volumesetElem);
-//            errors_.store(volset->errors());
-            filenames.insert(volsetfilenames.begin(), volsetfilenames.end());
-//        }
-//        catch (SerializerException& e) {
-//            errors_.store(e);
-//        }
+        std::set<std::string> volsetfilenames = VolumeSet::getFileNamesFromXml(volumesetElem);
+        filenames.insert(volsetfilenames.begin(), volsetfilenames.end());
     }
     
     // load these files into VolumeSets and get the Handles from them
@@ -225,7 +238,7 @@ void VolumeSetContainer::updateFromXml(TiXmlElement* elem) {
     // Store all Volumes in a Map that maps Origin -> (Volume, VolumeUsed?)
     std::map<VolumeHandle::Origin, std::pair<Volume*, bool> > volumeMap;
     size_t j;
-    for (j=0; j<originalhandles.size(); j++) {
+    for (j=0; j<originalhandles.size(); ++j) {
         VolumeHandle* handle = originalhandles.at(j);
         volumeMap.insert(std::make_pair(handle->getOrigin(), std::make_pair(handle->getVolume(), false)));
     }
@@ -251,9 +264,8 @@ void VolumeSetContainer::updateFromXml(TiXmlElement* elem) {
             delete ite->second.first;
             volumeMap.erase(ite++); // The iterator is increased before the element is erased so this should work
         }
-        else {
+        else
             ++ite;
-        }
     }
 }
 

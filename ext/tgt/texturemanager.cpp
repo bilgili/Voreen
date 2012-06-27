@@ -37,7 +37,7 @@ namespace {
 
 // cannot use tolower directly, due to some template overloading issues
 int lower_case(int c) {
-  return tolower(c);
+    return tolower(c);
 }
 
 } // namespace
@@ -85,7 +85,7 @@ Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Tex
     if (compress && !GpuCaps.isTextureCompressionSupported())
         compress = false;
 
-    if ((useCache) && (isLoaded(filename))) {
+    if (useCache && isLoaded(filename)) {
         increaseUsage(filename);
         return get(filename);
     }
@@ -126,7 +126,7 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     if (compress && !GpuCaps.isTextureCompressionSupported())
         compress = false;
 
-    if ((useCache) && (isLoaded(filename))) {
+    if (useCache && isLoaded(filename)) {
         increaseUsage(filename);
         return get(filename);
     }
@@ -145,17 +145,17 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
         t = readers_[ending]->loadTexture(completeFilename, filter, compress,
                                           keepPixels, createOGLTex, textureRectangle);
 
-        // try just the filename
-        if (!t) {
+        // else try just the filename without path
+        if (!t && completeFilename != filename) {
             t = readers_[ending]->loadTexture(filename, filter, compress,
                                               keepPixels, createOGLTex, textureRectangle);
         }
 
-        if ((t) && (useCache)) {
+        if (t && useCache)
             reg(t, filename);
-        }
+
         if (!t)
-            LERROR( "Texture file not found: " + filename );
+            LERROR("Texture file not found: " + filename);
     }
     else {
         LERROR("No matching reader found for " << ending << " while loading " << filename);
@@ -213,16 +213,15 @@ Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool
 std::string TextureManager::getEnding(const std::string& filename) const {
     std::string ending = "";
     size_t pos = filename.find_last_of('.');
-    if (pos != std::string::npos) {
-        ending = filename.substr(pos+1);
-    }
+    if (pos != std::string::npos)
+        ending = filename.substr(pos + 1);
+
     return ending;
 }
 
 void TextureManager::registerReader(TextureReader* r) {
     readerSet_.insert(r);
     LDEBUG("TextureManager: Registering reader: " << r->getName());
-
 
     std::string formats = "";
     std::vector<std::string> knownEndings = r->getEndings();

@@ -468,6 +468,8 @@ public:
     /// Returns a 3D-Vector consisting of the first 3 channels
     /// of pixel (x,y).
     inline tgt::Vector3<T> getPixel3Ch(int x, int y){
+        x = tgt::clamp(x, 0, width_-1);
+        y = tgt::clamp(y, 0, height_-1);
         return tgt::Vector3<T>(data_[(width_*y + x)*channels_],
             data_[(width_*y + x)*channels_ + 1],
             data_[(width_*y + x)*channels_ + 2]  );

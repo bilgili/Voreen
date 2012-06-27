@@ -35,8 +35,8 @@ TransFuncMappingKey::TransFuncMappingKey(float i, const tgt::col4& color) : inte
     colorL_(color), colorR_(color), split_(false)
 {}
 
-TransFuncMappingKey::~TransFuncMappingKey()
-{}
+TransFuncMappingKey::~TransFuncMappingKey() {
+}
 
 void TransFuncMappingKey::setColorL(const tgt::col4& color) {
     colorL_ = color;
@@ -71,15 +71,15 @@ tgt::col4& TransFuncMappingKey::getColorR() {
 }
 
 void TransFuncMappingKey::setAlphaR(float a) {
-    colorR_.a = (uint8_t) (a*255.0);
+    colorR_.a = static_cast<uint8_t>(a*255.0);
     if (!split_)
-        colorL_.a = (uint8_t) (a*255.0);
+        colorL_.a = static_cast<uint8_t>(a*255.0);
 }
 
 void TransFuncMappingKey::setAlphaL(float a) {
-    colorL_.a = (uint8_t) (a*255.0);
+    colorL_.a = static_cast<uint8_t>(a*255.0);
     if (!split_)
-        colorR_.a = (uint8_t) (a*255.0);
+        colorR_.a = static_cast<uint8_t>(a*255.0);
 }
 
 float TransFuncMappingKey::getAlphaR() {
@@ -114,6 +114,5 @@ float TransFuncMappingKey::getIntensity() {
 void TransFuncMappingKey::setIntensity(float i) {
     intensity_ = i; 
 }
-
 
 } // namespace

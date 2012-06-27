@@ -45,8 +45,6 @@ using std::string;
 using std::vector;
 using std::ifstream;
 using std::ios;
-using std::cout;
-using std::endl;
 using std::ostream;
 
 namespace voreen {

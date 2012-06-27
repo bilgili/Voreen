@@ -37,7 +37,7 @@ RptNetworkSerializerGui::RptNetworkSerializerGui() {
 int RptNetworkSerializerGui::readVersionFromFile(std::string filename) {
     TiXmlDocument doc(filename);
     if (!doc.LoadFile()) 
-        throw SerializerException("Could not load network file!");
+        throw SerializerException("Could not load network file " + filename + "!");
     int version = findVersion(&doc);
     return version;
 }
@@ -115,7 +115,8 @@ ProcessorNetwork RptNetworkSerializerGui::makeProcessorNetwork(const RptNetwork&
 }
 
 RptNetwork RptNetworkSerializerGui::makeRptNetwork(const ProcessorNetwork& net) {
-    if (net.version < 2) throw AncientVersionException("This file version needs to be loaded with the old methods but they have been deleted!");
+    if (net.version < 2)
+        throw AncientVersionException("This file version needs to be loaded with the old methods but they have been deleted!");
     RptNetwork rptnet = RptNetwork();
     rptnet.version = net.version;
     rptnet.reuseTCTargets = net.reuseTCTargets;
@@ -204,7 +205,6 @@ RptNetwork RptNetworkSerializerGui::makeRptNetwork(const ProcessorNetwork& net) 
         rptnet.aggregationItems.push_back(aggregationItem);
     }
 
-    // FIXED?: produces C2662 under MS VC 2005 (dirk) was const problem (d_kirs04)
     rptnet.errors = net.getErrors();
 
     return rptnet;

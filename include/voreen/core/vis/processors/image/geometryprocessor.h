@@ -44,14 +44,19 @@ class GeometryRenderer;
  */
 class GeometryProcessor : public Processor {
 public:
-    GeometryProcessor(tgt::Camera* camera=0, TextureContainer* tc=0);
+    GeometryProcessor();
     ~GeometryProcessor();
 
-	virtual const Identifier getClassName() const {return "GeometryRenderer.GeometryProcessor";}
+    virtual int initializeGL();
+
+	virtual const Identifier getClassName() const;
 	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() {return new GeometryProcessor();}
+    virtual Processor* create();
 
 	virtual void process(LocalPortMapping* portMapping);
+
+private:
+    tgt::Shader* shaderPrg_;
 };
 
 //---------------------------------------------------------------------------
@@ -61,10 +66,11 @@ public:
  */
 class GeometryRenderer : public Processor {
 public:
-    GeometryRenderer(tgt::Camera* camera=0, TextureContainer* tc=0);
+    GeometryRenderer();
 
     virtual void process(LocalPortMapping* portMapping);
     virtual Message* call(Identifier ident, LocalPortMapping* portMapping=0);
+
 protected:
     virtual void render(LocalPortMapping* localPortMapping) = 0;
     ///Get 3D vector from screen position (unproject)
@@ -76,14 +82,14 @@ typedef TemplateMessage<GeometryRenderer*> GeomRendererMsg;
 //---------------------------------------------------------------------------
 
 /**
-  * Light widget
-  */
-class GeomLightWidget : public GeometryRenderer, public tgt::EventListener{
+ * Light widget
+ */
+class GeomLightWidget : public GeometryRenderer, public tgt::EventListener {
 public:
-	GeomLightWidget(tgt::Camera* camera=0, TextureContainer* tc=0);
+	GeomLightWidget();
 	~GeomLightWidget();
 
-	virtual const Identifier getClassName() const {return "GeometryRenderer.GeomLightWidget";}
+	virtual const Identifier getClassName() const;
 	virtual const std::string getProcessorInfo() const;
     virtual Processor* create();
 
@@ -91,33 +97,21 @@ public:
     virtual void mouseMoveEvent(tgt::MouseEvent *e);
     virtual void mouseReleaseEvent(tgt::MouseEvent *e);
 
-    /**
-    * Process voreen message, accepted identifiers:
-    * - set.activateShadows
-    */
-    void processMessage(Message* msg, const Identifier& dest = Message::all_);
 protected:
     /**
-      * Renders the light widget
-      */
-	void render(LocalPortMapping* localPortMapping);
+     * Renders the light widget
+     */
+	virtual void render(LocalPortMapping* localPortMapping);
+
 private:
 	BoolProp showLightWidget_;
-
-    int shadowMode_;
-
-    FloatProp shadowLightPosX_;
-    FloatProp shadowLightPosY_;
-    FloatProp shadowLightPosZ_;
 
     bool isClicked_;
 
     tgt::vec4 lightPositionAbs_;
-    tgt::ivec2 oldPos_;
-    tgt::vec3 volumeSize_;
-    bool volumeSizeValid_;
+    tgt::ivec2 startCoord_;
 
-    //Material red plastic
+    //material yellow plastic
 	GLfloat ye_ambient[4];
 	GLfloat ye_diffuse[4];
 	GLfloat ye_specular[4];
@@ -136,7 +130,7 @@ private:
 ///Draws bounding box around the data set
 class GeomBoundingBox : public GeometryRenderer {
 public:
-	GeomBoundingBox(tgt::Camera* camera=0, TextureContainer* tc=0);
+	GeomBoundingBox();
     ~GeomBoundingBox();
 
     /**
@@ -179,7 +173,7 @@ private:
 
 class PickingBoundingBox : public GeometryRenderer {
 public:
-	PickingBoundingBox(tgt::Camera* camera=0, TextureContainer* tc=0);
+	PickingBoundingBox();
 	virtual const Identifier getClassName() const {return "GeometryRenderer.PickingBoundingBox";}
 	virtual const std::string getProcessorInfo() const;
     virtual Processor* create() {return new PickingBoundingBox();}

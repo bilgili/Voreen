@@ -25,12 +25,11 @@
 #ifndef TGT_FRUSTUM_H
 #define TGT_FRUSTUM_H
 
-#include <cmath>
-
 #include "tgt/config.h"
 #include "tgt/types.h"
 #include "tgt/vector.h"
 #include "tgt/bounds.h"
+#include "tgt/math.h"
 
 namespace tgt {
 

@@ -35,13 +35,10 @@
 #include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/trackballnavigation.h"
-#include "tgt/navigation/trackball.h"
+#include "voreen/core/vis/flythroughnavigation.h"
 
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
-#include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/io/volumeserializer.h"
-#include "iosystem.h"
 
 
 namespace voreen {
@@ -49,26 +46,45 @@ namespace voreen {
 class RptPainterWidget : public tgt::QtCanvas, tgt::EventListener {
     Q_OBJECT
 public:
-    RptPainterWidget(QWidget* parent = 0);
-    void init(TextureContainer* tc,tgt::Camera* camera);
-    voreen::TextureContainer* getTextureContainer();
+
+    enum CameraNavigation {
+        TRACKBALL_NAVIGATION,
+        FLYTHROUGH_NAVIGATION
+    };
+
+    RptPainterWidget(QWidget* parent = 0, CameraNavigation navigation = TRACKBALL_NAVIGATION);
+    ~RptPainterWidget();
+
+    void init(TextureContainer* tc, tgt::Camera* camera);
+    TextureContainer* getTextureContainer();
+    bool setEvaluator(NetworkEvaluator* evaluator);
+
+    void closeEvent(QCloseEvent* e);
+    void hideEvent(QHideEvent* e);
+
+    TrackballNavigation* getTrackballNavigation() const;
+    FlythroughNavigation* getFlythroughNavigation() const;
+    
+    void setCurrentNavigation(CameraNavigation navi);
+    CameraNavigation getCurrentNavigation() const;
+
+    VoreenPainter* getPainter();
+
     NetworkEvaluator* eval;
-    VoreenPainter* painter_;
-    void setEvaluator(NetworkEvaluator* evaluator);
+    
 
 signals:
     void detachSignal();
     void attachSignal();
 
 private:
-    IOSystem* ioSystem_;
-    voreen::TextureContainer* tc_;
-    tgt::Trackball* trackball_;
+    TextureContainer* tc_;
+    
     TrackballNavigation* trackNavi_;
-    voreen::VolumeSerializer* volumeSerializer_;
-    voreen::VolumeSerializerPopulator volumeSerializerPopulator_;
-    voreen::VolumeContainer* newVolumeContainer_;
-    voreen::Volume* dataSet_;
+    FlythroughNavigation* flythroughNavi_;
+    CameraNavigation currentNavigation_;
+
+    VoreenPainter* painter_;
 
     bool canvasDetached_;
 

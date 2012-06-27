@@ -38,15 +38,7 @@ using tgt::ivec3;
 
 namespace voreen {
 
-/*
- * init static
- */
-
-const std::string Volume::loggerCat_("voreen.core.volume.volume");
-
-/*
- * constructor
- */
+const std::string Volume::loggerCat_("Voreen.Volume");
 
 Volume::Volume(const ivec3& dimensions,
                int bitsStored,

@@ -29,7 +29,6 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncalphaplugin.h"
 
-
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPainter>
@@ -37,14 +36,12 @@
 #include <QFrame>
 #include <QGroupBox>
 
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
 #include "voreen/core/vis/processors/render/volumerenderer.h"
 #include "voreen/core/vis/transfunc/transfunc.h"
 #include "voreen/core/vis/transfunc/transfuncintensity.h"
 
 #include "voreen/qt/widgets/transfunc/transfuncmappingcanvas.h"
 #include "voreen/qt/widgets/transfunc/transfuncgradient.h"
-
 
 namespace voreen {
 
@@ -64,11 +61,10 @@ TransFuncAlphaPlugin::TransFuncAlphaPlugin(QWidget* parent, MessageReceiver* msg
 	maxValue_ = 255;
 
     //else case should never be used
-    if (prop_) {
+    if (prop_)
         msgIdent_ = prop->getIdent();
-    } else {
+    else
         msgIdent_ = VolumeRenderer::setTransFunc_;
-    }
 }
 
 TransFuncAlphaPlugin::~TransFuncAlphaPlugin() {
@@ -106,7 +102,7 @@ void TransFuncAlphaPlugin::createWidgets() {
     histogramEnabledButton_->setToolTip(tr("Show data histogram"));
     gridLayout->addWidget(histogramEnabledButton_);
     
-    //FIXME: workaround for qt-bug: size calculation for vboxlayout within a splitter is corrupt
+    //workaround for qt-bug: size calculation for vboxlayout within a splitter is corrupt
     //see: http://www.trolltech.com/developer/task-tracker/index_html?method=entry&id=118893
     //bug has been fixed in 4.3.0 (joerg-stefan)
 #if (QT_VERSION < 0x040300)
@@ -124,7 +120,7 @@ void TransFuncAlphaPlugin::createWidgets() {
 
     setLayout(mainLayout);
 
-    //this->setStandardFunc();
+    //setStandardFunc();
 }
 
 void TransFuncAlphaPlugin::createConnections() {
@@ -156,7 +152,6 @@ void TransFuncAlphaPlugin::readFromDisc(std::string filename) {
 }
 
 void TransFuncAlphaPlugin::setStandardFunc() {
-    
     transCanvas_->setStandardFunc();
     emit(transferFunctionReset());
 
@@ -169,11 +164,11 @@ void TransFuncAlphaPlugin::updateTransferFunction() {
     
 //     gradient_->exportFunction(transferFunc_);
     transferFunc_->updateTexture();
-    if (prop_) {
+    if (prop_)
         postMessage(new TransFuncPtrMsg(msgIdent_, transferFunc_), prop_->getMsgDestination());
-    } else {
+    else
         postMessage(new TransFuncPtrMsg(msgIdent_, transferFunc_));
-    }
+    
     if (isVisible())
         repaintCanvases();
 }
@@ -207,7 +202,6 @@ void TransFuncAlphaPlugin::setThresholds(int l, int u) {
 }
     
 void TransFuncAlphaPlugin::dataSourceChanged(Volume* newDataset) {
-    
     if (transCanvas_ != 0) {
         transCanvas_->dataSourceChanged(newDataset);
         setStandardFunc();
@@ -215,22 +209,22 @@ void TransFuncAlphaPlugin::dataSourceChanged(Volume* newDataset) {
 
     int bits = newDataset->getBitsStored();
     switch (bits) {
-        case 8:
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            break;
-        case 12:
-            setMaxValue(4095);
-            setScaleFactor(1.0f/4095.0f);
-            break;
-        case 16:
-            setMaxValue(65535);
-            setScaleFactor(1.0f/65535.0f);
-            break;
-        case 32:
-            setMaxValue(255);
-            setScaleFactor(1.0f/255.0f);
-            break;
+    case 8:
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        break;
+    case 12:
+        setMaxValue(4095);
+        setScaleFactor(1.0f/4095.0f);
+        break;
+    case 16:
+        setMaxValue(65535);
+        setScaleFactor(1.0f/65535.0f);
+        break;
+    case 32:
+        setMaxValue(255);
+        setScaleFactor(1.0f/255.0f);
+        break;
     }
 }
 
@@ -243,4 +237,3 @@ void TransFuncAlphaPlugin::setMaxValue(unsigned int value) {
 }
 
 } // namespace voreen
-

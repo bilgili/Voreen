@@ -41,6 +41,7 @@
  * @param rayDirection the ray direction
  */
 vec3 fixClipBorderGradient(vec3 samplePos, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+	return vec3(0.0);
     vec3 v0 = normalize(textureLookup2D(entryPoints, vec2(gl_FragCoord.x+2.0, gl_FragCoord.y) ).rgb - samplePos);
     vec3 v1 = normalize(textureLookup2D(entryPoints, vec2(gl_FragCoord.x, gl_FragCoord.y+2.0) ).rgb - samplePos);
     //FIXME: error handling if v0 or v1 is (0,0,0)
@@ -308,6 +309,35 @@ vec3 calcGradientFiltered(sampler3D volume, VOLUME_PARAMETERS volumeParameters, 
  */
 vec3 calcGradient(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, SAMPLER2D_TYPE entryPoints) {
 	return calcGradientA(volume, volumeParameters, samplePos, 0.5, vec3(0.0), entryPoints);
+}
+
+/**
+ * Calculates a voxel's gradient in volume object space based on the alpha
+ * channel by incorporating the transfer function and using central differences.
+ *
+ * @param volume the voxel's volume
+ * @param volumeParameters additional information about the passed volume
+ * @param samplePos the sample's position in texture space
+ * @param t the ray parameter, needed to fix gradients on clipping and
+ *          volume borders
+ * @param rayDirection the ray direction
+ */
+vec3 calcGradientATF(sampler3D volume, VOLUME_PARAMETERS volumeParameters, vec3 samplePos, float t, vec3 rayDirection, SAMPLER2D_TYPE entryPoints) {
+    vec3 gradient;
+    if (t == 0.0) gradient = fixClipBorderGradient(samplePos, rayDirection, entryPoints);
+    else {
+		vec3 offset = volumeParameters.datasetDimensionsRCP_;
+		float v0 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(offset.x, 0.0, 0.0)).a).a;
+		float v1 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(0, offset.y, 0)).a).a;
+		float v2 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(0, 0, offset.z)).a).a;
+		float v3 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(-offset.x, 0, 0)).a).a;
+		float v4 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(0, -offset.y, 0)).a).a;
+		float v5 = applyTF(textureLookup3DUnnormalized(volume, volumeParameters, samplePos + vec3(0, 0, -offset.z)).a).a;
+		gradient = vec3(v3 - v0, v4 - v1, v5 - v2) * 0.5;
+		gradient *= volumeParameters.datasetSpacingRCP_;
+		gradient *= volumeParameters.bitDepthScale_;
+	}    
+    return gradient;
 }
 
 

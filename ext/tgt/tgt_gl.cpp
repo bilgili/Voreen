@@ -32,8 +32,6 @@ GLenum _lGLError(int line, const char* file) {
     GLenum err = glGetError();
 
     if (err != GL_NO_ERROR) {
-        char title[100];
-        sprintf(title, "OpenGL-Error %d:", err);
         const GLubyte* exp = gluErrorString(err);
 
         std::ostringstream tmp1, tmp2, loggerCat;

@@ -26,8 +26,6 @@
 #define TGT_SHADERMANAGER_H
 
 #include <list>
-#include <iostream>
-#include <fstream>
 #include <string>
 
 #include "tgt/config.h"
@@ -39,8 +37,9 @@
 namespace tgt {
 
 /**
- * ShaderObject, can be vertex or fragment shader
+ * Type of a shader object, can be vertex, fragment or geometry shader
  */
+//TODO: move into ShaderObject. joerg
 enum ShaderType {
     VERTEX_SHADER = GL_VERTEX_SHADER,
     FRAGMENT_SHADER = GL_FRAGMENT_SHADER,
@@ -54,7 +53,7 @@ public:
     friend class Shader;
     
     /**
-     * Creates a shader object of the specified type (GL_VERTEX_SHADER or GL_FRAGMENT_SHADER)
+     * Creates a shader object of the specified type
      */
     ShaderObject(const std::string& filename, ShaderType type = VERTEX_SHADER);
 
@@ -63,8 +62,9 @@ public:
      */
     ~ShaderObject();
 
-    bool loadSourceFromFile(const std::string &filename);
+    bool loadSourceFromFile(const std::string& filename);
 
+    //TODO: this should be protected. joerg
     void uploadSource();
 
     /**
@@ -84,11 +84,12 @@ public:
      * //GL_GEOMETRY_VERTICES_OUT_EXT(42)
      * [...]
      */
+    //TODO: this should be protected. joerg
 	bool scanDirectives();
 
 	/**
      * Set directives using glProgramParameteriEXT(...), used for geometry shaders.
-     * Call before linking.
+     * Call before compiling.
      * @param id Set the directives for this shader
      */
 	void setDirectives(GLuint id);
@@ -198,16 +199,15 @@ public:
     bool rebuildFromFile();
 
     void setHeaders(const std::string& customHeader, bool processHeader = true);
-	void replaceIncludes();
 
     /**
      * Activates the shader
      */
     void activate();
     
-    static void activate(GLint id) { glUseProgram(id); }
+    static void activate(GLint id);
 
-    static void deactivate() { glUseProgram(0); }
+    static void deactivate();
 
     static GLint getCurrentProgram();
 
@@ -228,217 +228,146 @@ public:
 
     /**
      * Returns uniform location, or -1 on failure
+     * @param ignoreError Do not log error message on failure
      */
-    GLint getUniformLocation(const std::string &name, bool ignoreError = false);
+    GLint getUniformLocation(const std::string& name, bool ignoreError = false);
     
     // Floats
-    bool setUniform(const std::string &name, GLfloat value);
-    bool setUniform(const std::string &name, GLfloat v1, GLfloat v2);
-    bool setUniform(const std::string &name, GLfloat v1, GLfloat v2, GLfloat v3);
-    bool setUniform(const std::string &name, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4);
-    bool setUniform(const std::string &name, int count, GLfloat* v);
+    bool setUniform(const std::string& name, GLfloat value);
+    bool setUniform(const std::string& name, GLfloat v1, GLfloat v2);
+    bool setUniform(const std::string& name, GLfloat v1, GLfloat v2, GLfloat v3);
+    bool setUniform(const std::string& name, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4);
+    bool setUniform(const std::string& name, GLfloat* v, int count);
 
     // Integers
-    bool setUniform(const std::string &name, GLint value);
-    bool setUniform(const std::string &name, GLint v1, GLint v2);
-    bool setUniform(const std::string &name, GLint v1, GLint v2, GLint v3);
-    bool setUniform(const std::string &name, GLint v1, GLint v2, GLint v3, GLint v4);
-    bool setUniform(const std::string &name, int count, GLint* v);
+    bool setUniform(const std::string& name, GLint value);
+    bool setUniform(const std::string& name, GLint v1, GLint v2);
+    bool setUniform(const std::string& name, GLint v1, GLint v2, GLint v3);
+    bool setUniform(const std::string& name, GLint v1, GLint v2, GLint v3, GLint v4);
+    bool setUniform(const std::string& name, GLint* v, int count);
 
+/*
 #ifdef __APPLE__
 	// Glew (1.4.0) defines 'GLint' as 'long' on Apple, so these wrappers are necessary.
 	// On all other platforms 'GLint' is defined as 'int' instead.
-	bool setUniform(const std::string &name, int value);
-    bool setUniform(const std::string &name, int v1, int v2);
-    bool setUniform(const std::string &name, int v1, int v2, int v3);
-    bool setUniform(const std::string &name, int v1, int v2, int v3, int v4);
-    bool setUniform(const std::string &name, int count, int* v);
+    // Glew (1.5.1) defines 'GLint' as 'int' just as normal
+	bool setUniform(const std::string& name, int value);
+    bool setUniform(const std::string& name, int v1, int v2);
+    bool setUniform(const std::string& name, int v1, int v2, int v3);
+    bool setUniform(const std::string& name, int v1, int v2, int v3, int v4);
+    bool setUniform(const std::string& name, int* v, int count);
 #endif
-
+*/
+    
     // Booleans
-    bool setUniform(const std::string &name, bool value);
-    bool setUniform(const std::string &name, bool v1, bool v2);
-    bool setUniform(const std::string &name, bool v1, bool v2, bool v3);
-    bool setUniform(const std::string &name, bool v1, bool v2, bool v3, bool v4);
-    bool setUniform(const std::string &name, int count, GLboolean* v);
+    bool setUniform(const std::string& name, bool value);
+    bool setUniform(const std::string& name, bool v1, bool v2);
+    bool setUniform(const std::string& name, bool v1, bool v2, bool v3);
+    bool setUniform(const std::string& name, bool v1, bool v2, bool v3, bool v4);
+    bool setUniform(const std::string& name, GLboolean* v, int count);
 
     // Vectors
-    bool setUniform(const std::string &name, Vector2f value, GLsizei count = 1);
-    bool setUniform(const std::string &name, Vector2f* vectors, GLsizei count = 1);
-    bool setUniform(const std::string &name, Vector3f value, GLsizei count = 1);
-    bool setUniform(const std::string &name, Vector3f* vectors, GLsizei count = 1);
-    bool setUniform(const std::string &name, Vector4f value, GLsizei count = 1);
-    bool setUniform(const std::string &name, Vector4f* vectors, GLsizei count = 1);
-    bool setUniform(const std::string &name, int count, Vector4f* vectors);
-    bool setUniform(const std::string &name, ivec2 value, GLsizei count = 1);
-    bool setUniform(const std::string &name, ivec2* vectors, GLsizei count = 1);
-    bool setUniform(const std::string &name, ivec3 value, GLsizei count = 1);
-    bool setUniform(const std::string &name, ivec3* vectors, GLsizei count = 1);
-    bool setUniform(const std::string &name, ivec4 value, GLsizei count = 1);
-    bool setUniform(const std::string &name, ivec4* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const Vector2f& value);
+    bool setUniform(const std::string& name, Vector2f* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const Vector3f& value);
+    bool setUniform(const std::string& name, Vector3f* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const Vector4f& value);
+    bool setUniform(const std::string& name, Vector4f* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const ivec2& value);
+    bool setUniform(const std::string& name, ivec2* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const ivec3& value);
+    bool setUniform(const std::string& name, ivec3* vectors, GLsizei count = 1);
+    bool setUniform(const std::string& name, const ivec4& value);
+    bool setUniform(const std::string& name, ivec4* vectors, GLsizei count = 1);
 
     // Note: Matrix is transposed by OpenGL
-    bool setUniform(const std::string &name, const Matrix2f &value, bool transpose = false,
-                    GLsizei count = 1);
+    bool setUniform(const std::string& name, const Matrix2f& value, bool transpose = false);
 
-    bool setUniform(const std::string &name, const Matrix3f &value, bool transpose = false,
-                    GLsizei count = 1);
+    bool setUniform(const std::string& name, const Matrix3f& value, bool transpose = false);
 
-    bool setUniform(const std::string &name, const Matrix4f &value, bool transpose = false,
-                    GLsizei count = 1);
+    bool setUniform(const std::string& name, const Matrix4f& value, bool transpose = false);
 
     // No location lookup
-    static void setUniform(GLint l, GLfloat value)
-        { glUniform1f(l, value); }
-    
-    static void setUniform(GLint l, GLfloat v1, GLfloat v2)
-        { glUniform2f(l, v1, v2); }
-
-    static void setUniform(GLint l, GLfloat v1, GLfloat v2, GLfloat v3)
-        { glUniform3f(l, v1, v2, v3); }
-
-    static void setUniform(GLint l, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4)
-        { glUniform4f(l, v1, v2, v3, v4); }
+    // 
+    // Floats    
+    static void setUniform(GLint l, GLfloat value);
+    static void setUniform(GLint l, GLfloat v1, GLfloat v2);
+    static void setUniform(GLint l, GLfloat v1, GLfloat v2, GLfloat v3);
+    static void setUniform(GLint l, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4);
 
     // Integers
-    static void setUniform(GLint l, GLint value)
-        { glUniform1i(l, value); }
-
-    static void setUniform(GLint l, GLint v1, GLint v2)
-        { glUniform2i(l, v1, v2); }
-
-    static void setUniform(GLint l, GLint v1, GLint v2, GLint v3)
-        { glUniform3i(l, v1, v2, v3); }
-
-    static void setUniform(GLint l, GLint v1, GLint v2, GLint v3, GLint v4)
-        { glUniform4i(l, v1, v2, v3, v4); }
+    static void setUniform(GLint l, GLint value);
+    static void setUniform(GLint l, GLint v1, GLint v2);
+    static void setUniform(GLint l, GLint v1, GLint v2, GLint v3);
+    static void setUniform(GLint l, GLint v1, GLint v2, GLint v3, GLint v4);
 
     // Vectors
-    static void setUniform(GLint l, Vector2f value, GLsizei count = 1)
-        { glUniform2fv(l, count, value.elem); }
+    static void setUniform(GLint l, const Vector2f& value);
+    static void setUniform(GLint l, const Vector3f& value);
+    static void setUniform(GLint l, const Vector4f& value);
+    static void setUniform(GLint l, const ivec2& value);
+    static void setUniform(GLint l, const ivec3& value);
+    static void setUniform(GLint l, const ivec4& value);
+    static void setUniform(GLint l, const Matrix2f& value, bool transpose = false);
+    static void setUniform(GLint l, const Matrix3f& value, bool transpose = false);
+    static void setUniform(GLint l, const Matrix4f& value, bool transpose = false);
 
-    static void setUniform(GLint l, Vector3f value, GLsizei count = 1)
-        { glUniform3fv(l, count, value.elem); }
-
-    static void setUniform(GLint l, Vector4f value, GLsizei count = 1)
-        { glUniform4fv(l, count, value.elem); }
-
-    static void setUniform(GLint l, ivec2 value, GLsizei count = 1)
-        { glUniform2iv(l, count,  (GLint *) value.elem); }
-
-    static void setUniform(GLint l, ivec3 value, GLsizei count = 1)
-        { glUniform3iv(l, count,  (GLint *) value.elem); }
-
-    static void setUniform(GLint l, ivec4 value, GLsizei count = 1)
-        { glUniform4iv(l, count,  (GLint *) value.elem); }
-
-    static void setUniform(GLint l, Matrix2f value, bool transpose = false, GLsizei count = 1)
-        { glUniformMatrix2fv(l, count, !transpose, value.elem); }
-
-    static void setUniform(GLint l, Matrix3f value, bool transpose = false, GLsizei count = 1)
-        { glUniformMatrix3fv(l, count, !transpose, value.elem); }
-
-    static void setUniform(GLint l, Matrix4f value, bool transpose = false, GLsizei count = 1)
-        { glUniformMatrix4fv(l, count, !transpose, value.elem); }
-    
     // Attributes
-    GLint getAttributeLocation(const std::string &name);
-
+    // 
     // 1 component
-    static void setAttribute(GLint index, GLfloat v1)
-        { glVertexAttrib1f(index, v1); }
-
-    static void setAttribute(GLint index, GLshort v1)
-        { glVertexAttrib1s(index, v1); }
-
-    static void setAttribute(GLint index, GLdouble v1)
-        { glVertexAttrib1d(index, v1); }
+    static void setAttribute(GLint index, GLfloat v1);
+    static void setAttribute(GLint index, GLshort v1);
+    static void setAttribute(GLint index, GLdouble v1);
 
     // 2 components
-    static void setAttribute(GLint index, GLfloat v1, GLfloat v2)
-        { glVertexAttrib2f(index, v1, v2); }
-
-    static void setAttribute(GLint index, GLshort v1, GLshort v2)
-        { glVertexAttrib2s(index, v1, v2); }
-
-    static void setAttribute(GLint index, GLdouble v1, GLdouble v2)
-        { glVertexAttrib2d(index, v1, v2); }
+    static void setAttribute(GLint index, GLfloat v1, GLfloat v2);
+    static void setAttribute(GLint index, GLshort v1, GLshort v2);
+    static void setAttribute(GLint index, GLdouble v1, GLdouble v2);
 
     // 3 components
-    static void setAttribute(GLint index, GLfloat v1, GLfloat v2, GLfloat v3)
-        { glVertexAttrib3f(index, v1, v2, v3); }
-
-    static void setAttribute(GLint index, GLshort v1, GLshort v2, GLshort v3)
-        { glVertexAttrib3s(index, v1, v2, v3); }
-
-    static void setAttribute(GLint index, GLdouble v1, GLdouble v2, GLdouble v3)
-        { glVertexAttrib3d(index, v1, v2, v3); }
+    static void setAttribute(GLint index, GLfloat v1, GLfloat v2, GLfloat v3);
+    static void setAttribute(GLint index, GLshort v1, GLshort v2, GLshort v3);
+    static void setAttribute(GLint index, GLdouble v1, GLdouble v2, GLdouble v3);
 
     // 4 components
-    static void setAttribute(GLint index, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4)
-        { glVertexAttrib4f(index, v1, v2, v3, v4); }
-
-    static void setAttribute(GLint index, GLshort v1, GLshort v2, GLshort v3, GLshort v4)
-        { glVertexAttrib4s(index, v1, v2, v3, v4); }
-
-    static void setAttribute(GLint index, GLdouble v1, GLdouble v2, GLdouble v3, GLdouble v4)
-        { glVertexAttrib4d(index, v1, v2, v3, v4); }
+    static void setAttribute(GLint index, GLfloat v1, GLfloat v2, GLfloat v3, GLfloat v4);
+    static void setAttribute(GLint index, GLshort v1, GLshort v2, GLshort v3, GLshort v4);
+    static void setAttribute(GLint index, GLdouble v1, GLdouble v2, GLdouble v3, GLdouble v4);
 
     // For vectors
-    static void setAttribute(GLint index, const Vector2f &v)
-        { glVertexAttrib2fv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector3f &v)
-        { glVertexAttrib3fv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4f &v)
-        { glVertexAttrib4fv(index, v.elem); }
+    static void setAttribute(GLint index, const Vector2f& v);
+    static void setAttribute(GLint index, const Vector3f& v);
+    static void setAttribute(GLint index, const Vector4f& v);
 
-    static void setAttribute(GLint index, const Vector2d &v)
-        { glVertexAttrib2dv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector3d &v)
-        { glVertexAttrib3dv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4d &v)
-        { glVertexAttrib4dv(index, v.elem); }
+    static void setAttribute(GLint index, const Vector2d& v);
+    static void setAttribute(GLint index, const Vector3d& v);
+    static void setAttribute(GLint index, const Vector4d& v);
 
-    static void setAttribute(GLint index, const Vector2<GLshort> &v)
-        { glVertexAttrib2sv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector3<GLshort> &v)
-        { glVertexAttrib3sv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4<GLshort> &v)
-        { glVertexAttrib4sv(index, v.elem); }
+    static void setAttribute(GLint index, const Vector2<GLshort>& v);
+    static void setAttribute(GLint index, const Vector3<GLshort>& v);
+    static void setAttribute(GLint index, const Vector4<GLshort>& v);
 
-    static void setAttribute(GLint index, const Vector4<GLint> &v)
-        { glVertexAttrib4iv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4<GLbyte> &v)
-        { glVertexAttrib4bv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4<GLubyte> &v)
-        { glVertexAttrib4ubv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4<GLushort> &v)
-        { glVertexAttrib4usv(index, v.elem); }
-    static void setAttribute(GLint index, const Vector4<GLuint> &v)
-        { glVertexAttrib4uiv(index, v.elem); }
+    static void setAttribute(GLint index, const Vector4<GLint>& v);
+    static void setAttribute(GLint index, const Vector4<GLbyte>& v);
+    static void setAttribute(GLint index, const Vector4<GLubyte>& v);
+    static void setAttribute(GLint index, const Vector4<GLushort>& v);
+    static void setAttribute(GLint index, const Vector4<GLuint>& v);
 
     // Attribute locations
-    void setAttributeLocation(GLuint index, const std::string name)
-        { glBindAttribLocation(id_, index, name.c_str()); }
+    void setAttributeLocation(GLuint index, const std::string& name);
+    GLint getAttributeLocation(const std::string& name);
 
     // Normalized attributes
-    static void setNormalizedAttribute(GLint index, GLubyte v1, GLubyte v2, GLubyte v3, GLubyte v4)
-        { glVertexAttrib4Nub(index, v1, v2, v3, v4); }
+    static void setNormalizedAttribute(GLint index, GLubyte v1, GLubyte v2, GLubyte v3, GLubyte v4);
 
-    static void setNormalizedAttribute(GLint index, const Vector4<GLbyte> &v)
-        { glVertexAttrib4Nbv(index, v.elem); }
-    static void setNormalizedAttribute(GLint index, const Vector4<GLshort> &v)
-        { glVertexAttrib4Nsv(index, v.elem); }
-    static void setNormalizedAttribute(GLint index, const Vector4<GLint> &v)
-        { glVertexAttrib4Niv(index, v.elem); }
+    static void setNormalizedAttribute(GLint index, const Vector4<GLbyte>& v);
+    static void setNormalizedAttribute(GLint index, const Vector4<GLshort>& v);
+    static void setNormalizedAttribute(GLint index, const Vector4<GLint>& v);
 
     // Unsigned version
-    static void setNormalizedAttribute(GLint index, const Vector4<GLubyte> &v)
-        { glVertexAttrib4Nubv(index, v.elem); }
-    static void setNormalizedAttribute(GLint index, const Vector4<GLushort> &v)
-        { glVertexAttrib4Nusv(index, v.elem); }
-    static void setNormalizedAttribute(GLint index, const Vector4<GLuint> &v)
-        { glVertexAttrib4Nuiv(index, v.elem); }
+    static void setNormalizedAttribute(GLint index, const Vector4<GLubyte>& v);
+    static void setNormalizedAttribute(GLint index, const Vector4<GLushort>& v);
+    static void setNormalizedAttribute(GLint index, const Vector4<GLuint>& v);
 
     /**
      * Load filename.vert and filename.frag (vertex and fragment shader) and link shader
@@ -450,6 +379,7 @@ public:
      */
     bool load(const std::string& filename, const std::string& customHeader = "",
               bool processHeader = true);
+    //FIXME: argument order different than in ShaderManager::loadSeparate(). joerg
     bool loadSeparate(const std::string& vert_filename, const std::string& frag_filename,
 		const std::string& customHeader = "", bool processHeader = true, const std::string& geom_filename = "");
 
@@ -467,6 +397,7 @@ protected:
 
 class ShaderManager : public ResourceManager<Shader> {
 public:
+    //TODO: document "cache". joerg
     ShaderManager(bool cache = true);
 
     /**
@@ -501,6 +432,8 @@ public:
                                  const std::string& customHeader = "", bool processHeader = true,
                                  bool activate = true);
 
+    //FIXME: can't distinguish loadSeparate("vert", "geom" "frag")
+    //       and loadSeparate("vert","geom" "header")! joerg
     virtual Shader* loadSeparate(const std::string& vert_filename, const std::string& geom_filename,
                                  const std::string& frag_filename,
                                  const std::string& customHeader = "", bool processHeader = true,
@@ -509,8 +442,7 @@ public:
     bool rebuildAllShadersFromFile();
 
 protected:
-    static const std::string loggerCat_;
-    
+    static const std::string loggerCat_;   
 };
 
 } // namespace tgt

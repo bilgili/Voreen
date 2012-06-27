@@ -34,6 +34,7 @@ Trackball::Trackball(GLCanvas* canvas, bool defaultEventHandling, Timer* continu
     : Navigation(canvas),
       continuousSpin_(false),
       continuousSpinTimer_(continuousSpinTimer),
+      continuousSpinStopwatch_(0),
       moveCenter_(true),
       size_(1.f),
       tracking_(false)
@@ -97,7 +98,7 @@ vec3 Trackball::coordTransform(vec3 const axis) const {
 void Trackball::startMouseDrag(MouseEvent* e) {
     mouse_ = scaleMouse( ivec2(e->x(), e->y()) );
 
-    if (continuousSpin_) {
+    if (continuousSpin_ && continuousSpinTimer_) {
         if ( mouseRotateButton_ & e->button() &&
              (mouseRotateMod_ == e->modifiers() || mouseRotateMod_ & e->modifiers()) ) {
             // keep track how long last roation took
@@ -112,7 +113,7 @@ void Trackball::startMouseDrag(MouseEvent* e) {
 }
 
 void Trackball::endMouseDrag(MouseEvent* e) {
-    if (continuousSpin_) {
+    if (continuousSpin_ && continuousSpinStopwatch_) {
         // Make sure this endMouseDrag belongs to a rotation
         if ((mouseRotateButton_ & e->button()) &&
             (mouseRotateMod_ == e->modifiers() || mouseRotateMod_ & e->modifiers())) {
@@ -169,7 +170,7 @@ void Trackball::rotate(Quaternion<float> quat) {
     getCamera()->positionCamera( position, focus, upVector );
 
     lastOrientationChange_ = quat;
-    if (continuousSpin_) {
+    if (continuousSpin_ && continuousSpinStopwatch_) {
         // keep track how long last roation took
         continuousSpinLastOrientationChangeMSecs_ = continuousSpinStopwatch_->getRuntime();
         continuousSpinStopwatch_->reset();
@@ -178,10 +179,12 @@ void Trackball::rotate(Quaternion<float> quat) {
     
     getCanvas()->update();
 }
+
 void Trackball::rotate(vec3 axis, float phi) {
     // use coordTransform to get axis in world coordinates according to the axis given in camera coordinates
     rotate(quat::createQuat(phi, coordTransform(axis)));
 }
+
 void Trackball::rotate(vec2 newMouse) {
 
 /* Project the points onto the virtual trackball,
@@ -402,6 +405,7 @@ void Trackball::mousePressEvent(MouseEvent* e) {
     startMouseDrag( e );
     e->ignore();
 }
+
 void Trackball::mouseReleaseEvent(MouseEvent* e) {
     endMouseDrag( e );
     e->ignore();
@@ -453,6 +457,7 @@ void Trackball::wheelEvent(MouseEvent* e) {
     }
     e->ignore();
 }
+
 void Trackball::keyEvent(KeyEvent* e) {
     if ((keyRotateMod_ == e->modifiers() || keyRotateMod_ & e->modifiers())
         && e->pressed() == keyRotatePressed_) {

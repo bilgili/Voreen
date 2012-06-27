@@ -94,7 +94,6 @@ void main() {
 
 	// initialize light and material parameters
     matParams = gl_FrontMaterial;
-    lightParams = gl_LightSource[0];
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)

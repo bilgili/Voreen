@@ -31,14 +31,13 @@
 #define VRN_RPTPROPERTYLISTWIDGET_H
 
 #include <QtGui>
+
 #include "voreen/core/vis/property.h"
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/processor.h"
 #include "voreen/core/vis/voreenpainter.h"
 
 #include "rptpropertybutton.h"
-
-
 
 namespace voreen {
 
@@ -52,50 +51,48 @@ namespace voreen {
  * - ColorProp - displayed with a colored label
  */
 class RptPropertyListWidget : public QTableWidget, MessageReceiver {
-Q_OBJECT
-
+    Q_OBJECT
 public:
     RptPropertyListWidget(QWidget* parent=0);
     ~RptPropertyListWidget();
     
     /**
-    * this method can be called to display the properties of the given processor in a table
-    */
-	void setProcessor(Processor*,QVector<int>);
+     * this method can be called to display the properties of the given processor in a table
+     */
+	void setProcessor(Processor* processor);
+    
     /**
-    * checks if @param processor is equal to processor that was given by setProcessor, if so then clear table 
-    */
+     * checks if @param processor is equal to processor that was given by setProcessor, if so then clear table 
+     */
     void deselectProcessor(Processor* processor);
-    void resizeEvent(QResizeEvent *event);
+    void resizeEvent(QResizeEvent* event);
+    
     /**
-    * write cell values back into the properties of a given processor
-    */
+     * write cell values back into the properties of a given processor
+     */
     void exportCellValues();
-    void processMessage(Message* msg, const Identifier& dest /*=Message::all_*/);
 
-	void setPainter(VoreenPainter* painter) {
-		painter_=painter;
-	}
+    virtual void processMessage(Message* msg, const Identifier& dest =Message::all_);
 
-	VoreenPainter* getPainter() {
-		return painter_;
-	}
+	void setPainter(VoreenPainter* painter) { painter_ = painter; }
 
+	VoreenPainter* getPainter() const { return painter_; }
+
+    QSize sizeHint() const { return QSize(400, 400); }   
   
 protected:
-
 	VoreenPainter* painter_;
 
 	/**
-	* When checking if float props have changed, direct comparisons are unreliable, so we check if their difference
-	* is greater than this epsilon value;
-	*/
+	 * When checking if float props have changed, direct comparisons are unreliable, so we check if their difference
+	 * is greater than this epsilon value;
+	 */
 	float epsilon_;
 
     /**
-    * expects a vector of pointer of properties, i.e. processor->getProperties()
-    * to build the table
-    */
+     * expects a vector of pointer of properties, i.e. processor->getProperties()
+     * to build the table
+     */
     void insertProperties(std::vector<Property*> propertyList);
    
     /**
@@ -128,9 +125,6 @@ protected:
 
     std::vector<Property*> propertyList_;
 
-    // used by propertysets, contains information on processor connected to a propset
-	// which have same properties but different values
-	QVector<int> unequalEntries_;
     std::vector<std::vector<QWidget*> > vectorWidgetList_; 
     QComboBox* proxyGeometryBox_;
 	Processor* processor_;
@@ -142,8 +136,6 @@ protected slots:
 	void propertyButtonClicked(Property* prop);
 	void stringPropButtonPushed(StringProp* prop);
 	void stringVectorPropButtonPushed(StringVectorProp* prop);
-
-
 };
 
 //---------------------------------------------------------------------------
@@ -167,6 +159,36 @@ protected:
 
 protected slots:
     void clickedColorBt();
+};
+
+//---------------------------------------------------------------------------
+
+/**
+ * FIXME: this class is for FileDialogProperties, because VoreenVE does not use voreen's widget generator yet.
+ * It has to be removed when new property system is created (FW)
+ */
+class FileDialogPropertyWidget : public QWidget {
+    Q_OBJECT
+public:
+    /**
+     *Creates a new AGButtonWidget - the button send a (dummy) bool msg
+     */
+    FileDialogPropertyWidget(QWidget* parent = 0, FileDialogProp* prop = 0);
+
+public slots:
+    /**
+     * SLOT-method of pushbutton - opens file dialog
+     */
+    void clicked();
+
+private:
+    FileDialogProp* myProp_;
+    QPushButton* openFileDialogBtn_;
+
+    std::string dialogCaption_;
+    std::string directory_;
+    std::string fileFilter_;
+    QGroupBox* groupBox_; // equals zero if Plugin is not FrameControler
 };
 
 } //namespace voreen

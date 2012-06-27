@@ -77,7 +77,7 @@ ShowTexContainerWidget::ShowTexContainerWidget(const QGLWidget* shareWidget)
 	typeToShowACG_->addAction(posZBufferACT_);
 	typeToShowACG_->addAction(negZBufferACT_);
 
-	for(unsigned int i=0; i<16; ++i) {
+	for (unsigned int i=0; i<16; ++i) {
 		showType_[i] = 0;
 	}
 
@@ -143,71 +143,61 @@ void ShowTexContainerWidget::mousePressEvent(QMouseEvent * e) {
                     depthBufferACT_->setEnabled(true);
                 }
                 switch(showType_[selected_]) {
-                    case 1:
-                        colorBufferACT_->setChecked(true);
-                        break;
-                    case 2:
-                        depthBufferACT_->setChecked(true);
-                        break;
-                    case 3:
-                        posXBufferACT_->setChecked(true);
-                        break;
-                    case 4:
-                        negXBufferACT_->setChecked(true);
-                        break;
-                    case 5:
-                        posYBufferACT_->setChecked(true);
-                        break;
-                    case 6:
-                        negYBufferACT_->setChecked(true);
-                        break;
-                    case 7:
-                        posZBufferACT_->setChecked(true);
-                        break;
-                    case 8:
-                        negZBufferACT_->setChecked(true);
-                        break;
-                    case 9:
-                        alphaChannelACT_->setChecked(true);
-                        break;
+                case 1:
+                    colorBufferACT_->setChecked(true);
+                    break;
+                case 2:
+                    depthBufferACT_->setChecked(true);
+                    break;
+                case 3:
+                    posXBufferACT_->setChecked(true);
+                    break;
+                case 4:
+                    negXBufferACT_->setChecked(true);
+                    break;
+                case 5:
+                    posYBufferACT_->setChecked(true);
+                    break;
+                case 6:
+                    negYBufferACT_->setChecked(true);
+                    break;
+                case 7:
+                    posZBufferACT_->setChecked(true);
+                    break;
+                case 8:
+                    negZBufferACT_->setChecked(true);
+                    break;
+                case 9:
+                    alphaChannelACT_->setChecked(true);
+                    break;
                 }
                 contextMenuMEN_->exec(e->globalPos());
-                if (colorBufferACT_->isChecked()) {
+                if (colorBufferACT_->isChecked())
                     showType_[selected_] = 1;
-                }
-                if (depthBufferACT_->isChecked()) {
+                if (depthBufferACT_->isChecked())
                     showType_[selected_] = 2;
-                }
-                if (posXBufferACT_->isChecked()) {
+                if (posXBufferACT_->isChecked())
                     showType_[selected_] = 3;
-                }
-                if (negXBufferACT_->isChecked()) {
+                if (negXBufferACT_->isChecked())
                     showType_[selected_] = 4;
-                }
-                if (posYBufferACT_->isChecked()) {
+                if (posYBufferACT_->isChecked())
                     showType_[selected_] = 5;
-                }
-                if (negYBufferACT_->isChecked()) {
+                if (negYBufferACT_->isChecked())
                     showType_[selected_] = 6;
-                }
-                if (posZBufferACT_->isChecked()) {
+                if (posZBufferACT_->isChecked())
                     showType_[selected_] = 7;
-                }
-                if (negZBufferACT_->isChecked()) {
+                if (negZBufferACT_->isChecked())
                     showType_[selected_] = 8;
-                }
-                if (alphaChannelACT_->isChecked()) {
+                if (alphaChannelACT_->isChecked())
                     showType_[selected_] = 9;
-                }
             }
         }
     }
 }
 
 void ShowTexContainerWidget::keyPressEvent(QKeyEvent* e) {
-    if ((e->key() == Qt::Key_T && (e->modifiers() & Qt::ControlModifier)) || e->key() == Qt::Key_Escape) {
+    if ((e->key() == Qt::Key_T && (e->modifiers() & Qt::ControlModifier)) || e->key() == Qt::Key_Escape)
         close();
-    }
 }
 
 void ShowTexContainerWidget::timerEvent (QTimerEvent* /*event*/) {
@@ -249,9 +239,8 @@ void ShowTexContainerWidget::paintInfos(unsigned int id) {
 	QString idStr = QString("%1").arg(id);
 	unsigned int attr = tc_->getAttr(id);
     LGL_ERROR;
-	if (attr&TextureContainer::VRN_FRAMEBUFFER_CONSTS_MASK) {
+	if (attr&TextureContainer::VRN_FRAMEBUFFER_CONSTS_MASK)
 		colorStr = depthStr = tc_->getTypeAsString(attr&TextureContainer::VRN_FRAMEBUFFER_CONSTS_MASK).c_str();
-	}
 	else {
 		if (attr&TextureContainer::VRN_COLOR_CONSTS_MASK) {
 			colorStr = tc_->getTypeAsString(attr&(TextureContainer::VRN_COLOR_CONSTS_MASK|
@@ -281,19 +270,14 @@ std::string ShowTexContainerWidget::generateHeader() {
     std::string header = "";
  //   header += "#version 110 \n";
     if (tc_) {
-        if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D ){
+        if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_2D )
             header += "#define VRN_TEXTURE_2D\n";
-        } 
-        else if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE ) {
+        else if ( tc_->getTextureContainerTextureType() == TextureContainer::VRN_TEXTURE_RECTANGLE )
             header += "#define VRN_TEXTURE_RECTANGLE\n";
-        }
-        if ( tc_->getTextureContainerType() == TextureContainer::VRN_TEXTURE_CONTAINER_FBO) {
+        if ( tc_->getTextureContainerType() == TextureContainer::VRN_TEXTURE_CONTAINER_FBO)
             header += "#define VRN_TEXTURE_CONTAINER_FBO\n";
-        }
-        else if (tc_->getTextureContainerType() == TextureContainer::VRN_TEXTURE_CONTAINER_RTT) {
+        else if (tc_->getTextureContainerType() == TextureContainer::VRN_TEXTURE_CONTAINER_RTT)
             header += "#define VRN_TEXTURE_CONTAINER_RTT\n";
-        }
-
     }
     return header;
 }
@@ -302,7 +286,8 @@ void ShowTexContainerWidget::paint(unsigned int id) {
 	glActiveTexture(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
 
-    if (id>15) return;
+    if (id>15)
+        return;
 
 	unsigned int attr = tc_->getAttr(id);
 	if (showType_[id] == 0) {
@@ -312,15 +297,15 @@ void ShowTexContainerWidget::paint(unsigned int id) {
             else
                 showType_[id] = 1;
 		}
-		else if (attr&TextureContainer::VRN_DEPTH_CONSTS_MASK) {
+		else if (attr&TextureContainer::VRN_DEPTH_CONSTS_MASK)
 			showType_[id] = 2;
-		}
 	}
 	switch(showType_[id]) {
-		case 1: // color buffer
-        case 9: {
+	case 1: // color buffer
+    case 9:
+        {
             GLenum texTarget = tc_->getGLTexTarget(id);
-			glBindTexture(texTarget, tc_->getGLTexID(id));
+		    glBindTexture(texTarget, tc_->getGLTexID(id));
 
             //FIXME: set consistent texture filtering mode here, but restore old state afterwards
 
@@ -328,8 +313,8 @@ void ShowTexContainerWidget::paint(unsigned int id) {
 
             if (!prg)
                 return;
-		    prg->activate();
-		    prg->setUniform("tex_", 0);
+	        prg->activate();
+	        prg->setUniform("tex_", 0);
             LGL_ERROR;
 
             GLint location = prg->getUniformLocation("screenDim_", true);
@@ -340,7 +325,7 @@ void ShowTexContainerWidget::paint(unsigned int id) {
                 prg->setUniform(location, 1.f / tgt::vec2(tc_->getSize()));
 
             LGL_ERROR;
-			if (showType_[id] == 9)
+		    if (showType_[id] == 9)
                 prg->setUniform("showAlpha_", true);
             else
                 prg->setUniform("showAlpha_", false);
@@ -348,47 +333,51 @@ void ShowTexContainerWidget::paint(unsigned int id) {
 
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_LIGHTING);
-			glBegin(GL_QUADS);
-			glTexCoord3f(0, 0, 0); glVertex3f(-1, -1, -0.5f);
-			glTexCoord3f(1, 0, 0); glVertex3f(1, -1, -0.5f);
-			glTexCoord3f(1, 1, 0); glVertex3f(1,  1, -0.5f);
-			glTexCoord3f(0, 1, 0); glVertex3f(-1,  1, -0.5f);
-			glEnd();
-			prg->deactivate();
-			break;
+		    glBegin(GL_QUADS);
+		    glTexCoord3f(0, 0, 0); glVertex3f(-1, -1, -0.5f);
+		    glTexCoord3f(1, 0, 0); glVertex3f(1, -1, -0.5f);
+		    glTexCoord3f(1, 1, 0); glVertex3f(1,  1, -0.5f);
+		    glTexCoord3f(0, 1, 0); glVertex3f(-1,  1, -0.5f);
+		    glEnd();
+            glEnable(GL_DEPTH_TEST);
+		    prg->deactivate();
+		    break;
         }
-        case 2: {// depth buffer
+
+    case 2: // depth buffer
+        {
             GLenum texTarget = tc_->getGLTexTarget(id);
-			glBindTexture(texTarget,tc_->getGLDepthTexID(id));
+		    glBindTexture(texTarget,tc_->getGLDepthTexID(id));
             tgt::Shader* prg = depthProgram_;
 
-			prg->activate();
-			prg->setUniform("tex_", 0);
+		    prg->activate();
+		    prg->setUniform("tex_", 0);
             prg->setUniform("screenDim_", static_cast<tgt::vec2>(tc_->getSize()));
             LGL_ERROR;
-			prg->setUniform("screenDimRCP_", 1.f/static_cast<tgt::vec2>(tc_->getSize()));
+		    prg->setUniform("screenDimRCP_", 1.f/static_cast<tgt::vec2>(tc_->getSize()));
             LGL_ERROR;
             
-            glDisable(GL_DEPTH);
+            glDisable(GL_DEPTH_TEST);
             glDisable(GL_LIGHTING);
-			glBegin(GL_QUADS);
-			glTexCoord3f(0, 0, 0); glVertex3f(-1, -1, -0.5f);
-			glTexCoord3f(1, 0, 0); glVertex3f(1, -1, -0.5f);
-			glTexCoord3f(1, 1, 0); glVertex3f(1,  1, -0.5f);
-			glTexCoord3f(0, 1, 0); glVertex3f(-1,  1, -0.5f);
-			glEnd();
-			prg->deactivate();
-			break;
+		    glBegin(GL_QUADS);
+		    glTexCoord3f(0, 0, 0); glVertex3f(-1, -1, -0.5f);
+		    glTexCoord3f(1, 0, 0); glVertex3f(1, -1, -0.5f);
+		    glTexCoord3f(1, 1, 0); glVertex3f(1,  1, -0.5f);
+		    glTexCoord3f(0, 1, 0); glVertex3f(-1,  1, -0.5f);
+		    glEnd();
+		    glEnable(GL_DEPTH_TEST);
+            prg->deactivate();
+		    break;
         }
-		case 3:; // cube map pos x
-		case 4:; // cube map neg x
-		case 5:; // cube map pos y
-		case 6:; // cube map neg y
-		case 7:; // cube map pos z
-		case 8: // cube map neg z
-			glBindTexture(tc_->getGLTexTarget(id), tc_->getGLTexID(id));
-			break;
-		default:; // do nothing
+	case 3: // cube map pos x
+	case 4: // cube map neg x
+	case 5: // cube map pos y
+	case 6: // cube map neg y
+	case 7: // cube map pos z
+	case 8: // cube map neg z
+		glBindTexture(tc_->getGLTexTarget(id), tc_->getGLTexID(id));
+		break;
+	default:; // do nothing
 	}
     LGL_ERROR;
 
@@ -433,10 +422,10 @@ void ShowTexContainerWidget::paintGL() {
 	glPushMatrix();
 	glLoadIdentity();
 
-    if (fullscreen_) {
+    if (fullscreen_)
         paint(selected_);
-    } else {
-		for(int i=0; i<tc_->getNumAvailable(); ++i) {
+    else {
+		for (int i=0; i<tc_->getNumAvailable(); ++i) {
 			glPushMatrix();
 			glTranslatef(-0.75+0.5*(i%4), -0.75+0.5*(i/4), 0.0);
 			glScalef(0.25, 0.25, 1.0);
@@ -457,7 +446,10 @@ void ShowTexContainerWidget::paintGL() {
 //---------------------------------------------------------------------------
 
 ShowTexture::ShowTexture(QWidget *parent, bool shareContext) :
-tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, parent, shareContext), tex_(0) {
+tgt::QtCanvas("", tgt::ivec2(1, 1), 
+tgt::GLCanvas::RGBADD, parent, shareContext),
+tex_(0)
+{
     fragProgram_ = ShdrMgr.load("stc_showtexture", generateHeader(), false);
     startTimer(500);
 }

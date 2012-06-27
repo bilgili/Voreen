@@ -114,16 +114,17 @@ public:
     void setShowRendererWidget(bool show);
 
     /**
-    * Propagates the changed to the TransFuncEditorPlugins
-    * \param newDataSource The new volume which the editors should use
-    */
-    void dataSourceChanged(Volume* newDataSource);
-    
-    /**
     * Just sets the visibility of this object
     * \param vis Should this be visible?
     */
     void setVisibleState(bool vis);
+
+   /**
+    * Returns the transfer function property
+    * \return The transfer function property
+    * \sa TransFuncProp
+    */
+    TransFuncProp* getTransFuncProp();
 
 	/**
 	* Sets the MessageReceiver. This is neccessary because depending on which renderer is
@@ -139,6 +140,8 @@ public:
     */
     void setProcessor(Processor* r);
 	
+	void setProcessors(const std::vector<Processor*> &processors);
+	
 	/**
 	* Checks if the given processor is already in the processors_ vector, and if so,
 	* sets it to the active processor. If it's not in the vector, nothing is done.
@@ -150,6 +153,11 @@ public:
 	* first one to active.
 	*/
 	void setEvaluator(NetworkEvaluator* eval);
+
+    /**
+	* Returns all processors
+	*/
+    std::vector<VolumeRenderer*> getProcessors();
 
 	/**
 	* Removes a processor from the processors_ vector. This is neccessary because with the new 
@@ -187,6 +195,12 @@ public slots:
     * \param thresholdWidget The new thresholdWidget will should be used by the current Editor
     */
     void setThresholdWidget(ThresholdWidget* thresholdWidget);
+
+    /**
+    * Propagates the changed to the TransFuncEditorPlugins
+    * \param newDataSource The new volume which the editors should use
+    */
+    void dataSourceChanged(Volume* newDataSource);
 
     /**
     * Activates the processor stored in processors_ at position i and propagates him
@@ -252,6 +266,8 @@ private:
     MessageReceiver* msgReceiver_;
 
     Identifier msgIdent_;
+
+    bool showTresholdWidget_;
 };
 
 //-----------------------------------------------------------------------------

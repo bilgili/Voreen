@@ -28,7 +28,7 @@
 #include "tgt/config.h"
 
 namespace tgt {
-
+	
 /**
  *  The base class for all events. Provides the accepted/ignore mechanism.
  */
@@ -54,6 +54,26 @@ public:
         META = LMETA | RMETA
     };
 
+    /*
+     * enum to select to which eventType has to be broadcast, see EventHandler::broadcast
+     */
+	enum eventType{
+    	MOUSEPRESSEVENT       = 0x0001,
+	    MOUSERELEASEEVENT     = 0x0002,
+	    MOUSEMOVEEVENT        = 0x0004,
+	    MOUSEDOUBLECLICKEVENT = 0x0008,
+	    WHEELEVENT            = 0x0010,
+	    TIMEREVENT            = 0x0020,
+	    KEYEVENT              = 0x0040,
+        ROTATIONEVENT         = 0x0080,
+	    ZOOMEVENT             = 0x0100,
+	    SIZINGEVENT           = 0x0200,
+        TRANSLATIONEVENT      = 0x0400,
+
+	    ALLEVENTTYPES = MOUSEPRESSEVENT | MOUSERELEASEEVENT | MOUSEMOVEEVENT | MOUSEDOUBLECLICKEVENT | WHEELEVENT| TIMEREVENT | KEYEVENT | ROTATIONEVENT | ZOOMEVENT | SIZINGEVENT | TRANSLATIONEVENT
+	};
+
+
     /**
      * The Constructor. The use of the \a accepted_ variable is modeled after qt-events; \a accepted_ being on true 
      * as the default-value just opens the possibility to pass on the event using ignore().
@@ -75,10 +95,12 @@ public:
         accepted_ = false;
     }
 
+	virtual int getEventType() =0;
+
     bool accepted_;
+
 };
 
 }
 
 #endif //TGT_EVENT_H
-

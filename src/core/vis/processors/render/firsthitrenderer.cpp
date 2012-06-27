@@ -35,8 +35,7 @@
 namespace voreen {
 
 FirstHitRenderer::FirstHitRenderer()
-    : VolumeRaycaster("rc_firsthit.frag"),
-
+    : VolumeRaycaster(),
       transferFunc_(setTransFunc_, "not used", 0, true)
 {
 	setName("FirstHitRenderer");
@@ -102,7 +101,7 @@ int FirstHitRenderer::initializeGL() {
 }
 
 void FirstHitRenderer::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(),
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_firsthit.frag",
                                        generateHeader(), false);
 }
 
@@ -116,12 +115,14 @@ void FirstHitRenderer::process(LocalPortMapping* portMapping) {
 
 	tc_->setActiveTarget(portMapping->getTarget("image.output"));
 
-	glViewport(0, 0, size_.x, size_.y); //FIXME: is this needed? (tr)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //FIXME: is this needed? (tr)
     
 	VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);
+    if (volumeHandle != 0) {
+        if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
+            setVolumeHandle(volumeHandle);
+    } else
+        setVolumeHandle(0);
 
     if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
 		return;

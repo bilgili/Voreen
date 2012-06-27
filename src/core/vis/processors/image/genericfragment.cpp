@@ -34,17 +34,8 @@ namespace voreen {
 const Identifier GenericFragment::shadeTexUnit_ = "shadeTexUnit";
 const Identifier GenericFragment::depthTexUnit_ = "depthTexUnit";
 
-GenericFragment::GenericFragment()
-    : PostProcessor(), shaderFilename_(""), needRecompileShader_(true)
-{
-    std::vector<Identifier> units;
-    units.push_back(shadeTexUnit_);
-    units.push_back(depthTexUnit_);
-    tm_.registerUnits(units);
-}
-
-GenericFragment::GenericFragment(std::string shaderFilename)
-    : PostProcessor(), shaderFilename_(shaderFilename), needRecompileShader_(true)
+GenericFragment::GenericFragment(const std::string& shaderFilename)
+    : PostProcessor(), program_(0), shaderFilename_(shaderFilename), needRecompileShader_(true)
 {
     std::vector<Identifier> units;
     units.push_back(shadeTexUnit_);
@@ -58,18 +49,21 @@ GenericFragment::~GenericFragment() {
 }
 
 int GenericFragment::initializeGL() {
-    if (shaderFilename_.length() > 0) {
+    if (!shaderFilename_.empty()) {
         program_ = ShdrMgr.loadSeparate("pp_identity.vert", shaderFilename_ + ".frag", generateHeader(), false);
         if (program_) {
             needRecompileShader_ = true;
             compileShader();
         }
-        return (program_ ? VRN_OK : VRN_ERROR);
+        initStatus_ = program_ ? VRN_OK : VRN_ERROR;
     }
     else {
         program_ = 0;
+        initStatus_ = VRN_OK;
         return VRN_OK;
     }
+
+    return initStatus_;
 }
 
 void GenericFragment::compileShader() {

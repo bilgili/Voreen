@@ -41,7 +41,9 @@ class Processor;
  * This class has a vector of Processors. The properties of PropertySet consist
  * of the intersection of the properties from the Processor vector.
  * Changing the properties of the set causes the properties of the Processors to change accordingly.
+ *
  * To handle transfer functions too, it inherits from VolumeRenderer.
+ * TODO: this should be changed somehow. joerg
  */
 class PropertySet : public VolumeRaycaster {
 public:
@@ -60,21 +62,21 @@ public:
 
 	virtual const Identifier getClassName() const {return "Miscellaneous.Propertyset";}
     
-    //void setName(std::string name) { name_ = name; };
-    //std::string getName() const { return name_; };
-
     /**
      * Set the processors for this property set.
      */
     void setProcessors(std::vector<Processor*> processors);
+    
     /**
      * Add a processor to the Processor vector.
      */
     void addProcessor(Processor* processor);
+    
     /**
      * Remove a Processor from the Processor vector.
      */
     bool removeProcessor(Processor* processor);
+    
     /**
      * Clear the processor vector.
      */
@@ -98,20 +100,29 @@ public:
      */
     void setProperties(Identifier id);
 
-    void processMessage(Message* msg, const Identifier& dest);
+    virtual void processMessage(Message* msg, const Identifier& dest);
 
     /**
      * Returns the Transfer Function.
      */
     TransFunc* getTransFunc();
-    
-    static const std::string XmlElementName;
-    /**
-    * Returns the name of the xml element uses when serializing the object
-    */
-    virtual std::string getXmlElementName() const;
 
     /**
+     * Returns the volumeHandle that is used in this propertyset
+     */
+    VolumeHandle* getVolumeHandle();
+
+    /**
+     * Returns the lower threshold of the volumeRenderer in this propertyset
+     */
+    float getLowerThreshold() const;
+
+    /**
+     * Returns the upper threshold of the volumeRenderer in this propertyset
+     */
+    float getUpperThreshold() const;
+
+   /**
     * serializes the PropertySet to xml
     */
     virtual TiXmlElement* serializeToXml() const;
@@ -128,6 +139,8 @@ public:
     void clearMeta() { meta_.clearData(); }
     TiXmlElement* getFromMeta(std::string elemName) { return meta_.getData(elemName); }
 
+    static const std::string XmlElementName_;
+
     /**
      * Returns a static PropertySet, that can be used for temporary property sets,
      * e.g. when two processors are selected in RptGui, the PropertyListWidget shows their intersection.
@@ -137,10 +150,12 @@ public:
 private:
     // properties get created depending on the contained processors
     void createProperties();
+
     std::vector<Processor*> processors_;
     bool equalize_;
+    
     static PropertySet* tmpPropSet_;
-    std::string name_;
+    
     MetaSerializer meta_;
 };
 

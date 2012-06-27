@@ -221,6 +221,7 @@ private:
     bool createVersionStringFromDigits(FileVersion &fileVersion);
 
     DWORD readVRAMSizeFromReg();
+    char* findPrimaryDevicesKey();
 
 #ifdef TGT_WITH_WMI
    // WMI internals. Should not be touched outside the present WMI functions.

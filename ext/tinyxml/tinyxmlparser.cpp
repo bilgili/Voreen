@@ -363,7 +363,7 @@ const char* TiXmlBase::SkipWhiteSpace( const char* p, TiXmlEncoding encoding )
 #ifdef TIXML_USE_STL
 /*static*/ bool TiXmlBase::StreamWhiteSpace( TIXML_ISTREAM * in, TIXML_STRING * tag )
 {
-	for( ;; )
+	for ( ;; )
 	{
 		if ( !in->good() ) return false;
 
@@ -409,7 +409,7 @@ const char* TiXmlBase::ReadName( const char* p, TIXML_STRING * name, TiXmlEncodi
 	if (    p && *p 
 		 && ( IsAlpha( (unsigned char) *p, encoding ) || *p == '_' ) )
 	{
-		while(		p && *p
+		while (		p && *p
 				&&	(		IsAlphaNum( (unsigned char ) *p, encoding ) 
 						 || *p == '_'
 						 || *p == '-'
@@ -501,7 +501,7 @@ const char* TiXmlBase::GetEntity( const char* p, char* value, int* length, TiXml
 	}
 
 	// Now try to match it.
-	for( i=0; i<NUM_ENTITY; ++i )
+	for ( i=0; i<NUM_ENTITY; ++i )
 	{
 		if ( strncmp( entity[i].str, p, entity[i].strLength ) == 0 )
 		{
@@ -805,7 +805,7 @@ TiXmlNode* TiXmlNode::Identify( const char* p, TiXmlEncoding encoding )
 	TiXmlNode* returnNode = 0;
 
 	p = SkipWhiteSpace( p, encoding );
-	if( !p || !*p || *p != '<' )
+	if ( !p || !*p || *p != '<' )
 	{
 		return 0;
 	}
@@ -895,7 +895,7 @@ void TiXmlElement::StreamIn (TIXML_ISTREAM * in, TIXML_STRING * tag)
 {
 	// We're called with some amount of pre-parsing. That is, some of "this"
 	// element is in "tag". Go ahead and stream to the closing ">"
-	while( in->good() )
+	while ( in->good() )
 	{
 		int c = in->get();
 		if ( c <= 0 )
@@ -953,7 +953,7 @@ void TiXmlElement::StreamIn (TIXML_ISTREAM * in, TIXML_STRING * tag)
 			bool closingTag = false;
 			bool firstCharFound = false;
 
-			for( ;; )
+			for ( ;; )
 			{
 				if ( !in->good() )
 					return;
@@ -1563,7 +1563,7 @@ const char* TiXmlDeclaration::Parse( const char* p, TiXmlParsingData* data, TiXm
 		else
 		{
 			// Read over whatever it is.
-			while( p && *p && *p != '>' && !IsWhiteSpace( *p ) )
+			while ( p && *p && *p != '>' && !IsWhiteSpace( *p ) )
 				++p;
 		}
 	}

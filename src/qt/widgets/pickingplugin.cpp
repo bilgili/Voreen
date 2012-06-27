@@ -43,22 +43,16 @@ namespace voreen {
 PickingPlugin::PickingPlugin(QWidget* parent, MessageReceiver* msgReceiver) :
     WidgetPlugin(parent, msgReceiver),
     thresholdValues_(0,255)
-       
-   
 {
     setObjectName(tr("Picking"));
     icon_ = QIcon(":/icons/bulb.png");
 
     // lighting model settings
-   
 }
-
-
 
 void PickingPlugin::createWidgets() {
     resize(600,300);
     
-
     QVBoxLayout* mainLayout = new QVBoxLayout();
     QGridLayout* thresholdBoxLayout = new QGridLayout();
     QGridLayout* segmentBoxLayout = new QGridLayout();
@@ -84,7 +78,6 @@ void PickingPlugin::createWidgets() {
     thresholdBoxLayout->addWidget(thresholdStandardDerivationValueLbl_,1,1);
     thresholdBoxLayout->addWidget(thresholdCalcBt_,2,0,1,2);
 
-
     segmentCapacityLbl_ = new QLabel(tr("capacity:"));
     segmentCapacityValueLbl_ = new QLabel(tr("0"));
 
@@ -105,18 +98,17 @@ void PickingPlugin::createWidgets() {
     mainLayout->addWidget(segmentBox_);
 
     setLayout(mainLayout);
-
 }
 
 void PickingPlugin::createConnections() {
  connect(thresholdCalcBt_,SIGNAL(clicked()),this,SLOT(evaluateThreshold()));
 }
 
-void PickingPlugin::setLowerThreshold(float threshold){
+void PickingPlugin::setLowerThreshold(float threshold) {
     thresholdValues_.x = threshold;
 }
 
-void PickingPlugin::setUpperThreshold(float threshold){
+void PickingPlugin::setUpperThreshold(float threshold) {
     thresholdValues_.y = threshold;
 }
 
@@ -160,8 +152,10 @@ void PickingPlugin::initiateFloodFill(tgt::ivec3 /*position*/) {
 }
 
 int max(int x, int y) {
- if (x >= y) return x; 
- else return y;
+    if (x >= y)
+        return x; 
+    else
+        return y;
 }
 
 // FIXME: dataset_ is not available anymore due to removal of
@@ -222,7 +216,7 @@ void PickingPlugin::floodFill(tgt::ivec3 /*position*/) {
 
 
 //   if (density < lowerThreshold)  lowerThreshold = density;  
-       while(!voxelStack.empty()) {
+       while (!voxelStack.empty()) {
           val = voxelStack.top();
           voxelStack.pop();
           density = dataset_->getVoxelFloat(val,0);
@@ -348,7 +342,7 @@ tc_ = tc;
 // FIXME: dataset_ is not available anymore due to removal of
 // VolumeContainer.
 //
-void PickingPlugin::evaluateThreshold(){
+void PickingPlugin::evaluateThreshold() {
 /*
   VolumeUInt8* vol = dynamic_cast<VolumeUInt8*>(dataset_);
   float count = 0;
@@ -387,7 +381,5 @@ void PickingPlugin::evaluateThreshold(){
             thresholdStandardDerivationValueLbl_->setText(QString::number(derivationSum));
 */
 }
-
-
 
 } // namespace voreen

@@ -69,6 +69,8 @@ public:
         setDrawStyle(LINE);
     }
 
+    virtual ~Curve() {}
+
     //! Evaluate the spacecurve for parameter t. \n
     /// Only values inside the range [0,1] are accepted.
     virtual vec3 getPoint(GLfloat t) = 0;
@@ -114,8 +116,6 @@ public:
         return drawStyle_;
     }
 
-    virtual ~Curve() {}
-    ;
     virtual void init() {}
     virtual void deinit() {}
 

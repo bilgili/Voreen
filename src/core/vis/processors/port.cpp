@@ -30,6 +30,9 @@
 #include "voreen/core/vis/processors/port.h"
 #include "voreen/core/vis/processors/processor.h"
 
+#include <sstream>
+
+
 namespace voreen {
 
 PortData::PortData(Identifier type) 

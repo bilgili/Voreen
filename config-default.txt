@@ -18,22 +18,19 @@ CONFIG += warn_on
 VRN_MODULES += most
 
 #
-# External libraries 
+# External libraries
 #
 # You may adjust the paths in the section "Paths" at the bottom of this file.
 #
 
+# Do we have the devil library?
+#DEFINES += VRN_WITH_DEVIL
+
+# Do we have the libtiff?
+#DEFINES += VRN_WITH_TIFF
+
 # Do we have the dcmtk libraries (DICOM support)?
 #DEFINES += VRN_WITH_DCMTK
-
-# Do we have the fboClass?
-DEFINES += VRN_WITH_FBO_CLASS
-
-# Do we have the renderToTexture class?
-DEFINES += VRN_WITH_RENDER_TO_TEXTURE
-
-# Do we have the devil library?
-DEFINES += VRN_WITH_DEVIL
 
 # Do we have the freetype library?
 #DEFINES += VRN_WITH_FREETYPE
@@ -41,7 +38,7 @@ DEFINES += VRN_WITH_DEVIL
 # Do we have the ftgl library?
 #DEFINES += VRN_WITH_FTGL
 
-# Enable reader for Matlab files
+# Enable reader for Matlab files, required Matlab libs.
 #DEFINES += VRN_WITH_MATLAB
 
 # Use OpenMP?
@@ -50,20 +47,24 @@ DEFINES += VRN_WITH_DEVIL
 # Python scripting support
 #DEFINES += VRN_WITH_PYTHON
 
-# Use the PVM file format code from Stefan Roettger?
-DEFINES += VRN_WITH_PVM
-
-# Do we have the libtiff?
-DEFINES += VRN_WITH_TIFF
-
-# Do we have zip support?
+# Do we have the ZipArchive library?
 #DEFINES += VRN_WITH_ZIP
-
-# Do we have the tinyxml library?
-DEFINES += VRN_WITH_TINYXML
 
 # Do we have the bugtrap library? (Windows only)
 #DEFINES += VRN_WITH_BUGTRAP
+
+#
+# Basic features
+#
+
+# Use frame buffer objects (FBOs)?
+DEFINES += VRN_WITH_FBO_CLASS
+
+# Use the renderToTexture class?
+#DEFINES += VRN_WITH_RENDER_TO_TEXTURE
+
+# Activate the PVM file format code from Stefan Roettger?
+DEFINES += VRN_WITH_PVM
 
 # Use Windows Management Instrumentation (WMI) 
 # for hardware detection on Windows?
@@ -71,6 +72,9 @@ DEFINES += VRN_WITH_TINYXML
 
 # Do we want support for 3D-tracking?
 #DEFINES += VRN_WITH_TRACKING
+
+# Allow debug outputs
+#DEFINES += TGT_DEBUG
 
 #
 # Libraries that are only used in some modules.
@@ -96,7 +100,7 @@ DEFINES += VRN_WITH_TINYXML
 # Additional settings
 #
 
-# Use additional debug code in voreen
+# Activate additional debug code in voreen
 #DEFINES += VRN_DEBUG
 
 # Write log output into a file
@@ -125,8 +129,8 @@ LIBDIR +=
 # Show splash screen
 DEFINES += VRN_SPLASHSCREEN
 
-# For debugging of shaders with includes. Saves a copy of the
-# preprocessed shader which into the Voreen path. 
+# Saves a copy of the preprocessed shader into the Voreen path, for
+# debugging of shaders with includes.
 #DEFINES += TGT_SHADER_INCLUDE_DEBUG
 
 #
@@ -140,6 +144,8 @@ unix {
 # For Linux@math use:
 #INCLUDEPATH += /share/voreen/linux/include
 #LIBDIR += /share/voreen/linux/lib
+
+# Disable usage of libwrap, sometimes needed with DCMTK
 #CONFIG += without_libwrap
 
 # Disable optimization (useful for debugging)
@@ -148,12 +154,10 @@ unix {
 
 
 #
-# Paths
-#
-# Normally you do not need to change them.
+# Defaults paths
 #
 
-# Path to voreen home
+# Path to Voreen home, detected automatically
 VRN_HOME = $$PWD
 
 win32 {

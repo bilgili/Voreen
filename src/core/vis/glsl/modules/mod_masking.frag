@@ -45,7 +45,7 @@ uniform float upperThreshold_;
  * Returns true if the given intensity lies in the threshold interval.
  */
 bool inThresholdInterval(in float intensity) {
-	return (intensity >= lowerThreshold_ && intensity < upperThreshold_);
+	return (intensity >= lowerThreshold_ && intensity <= upperThreshold_);
 }
 
 
@@ -74,7 +74,7 @@ bool inSegmentation(vec3 sample) {
 
 
 // THE FOLLOWING FUNCTION IS OBSOLETE
-// it can be removed when rc_simple and rc_fancy are removed
+// it can be removed when rc_simple is removed
 
 /***
  * Returns 1 if the current sample belongs to the current segment

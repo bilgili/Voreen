@@ -29,7 +29,7 @@ namespace tgt {
 GLUTMouse::GLUTMouse(float rate, bool show)
   : Mouse(rate, show) 
 {
-    if(show)
+    if (show)
         glutSetCursor( GLUT_CURSOR_INHERIT );
     else
         glutSetCursor( GLUT_CURSOR_NONE );

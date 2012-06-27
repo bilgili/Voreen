@@ -35,7 +35,9 @@
 
 namespace voreen {
 
-RenderObjectsPlugin::RenderObjectsPlugin(QWidget* parent, MessageReceiver* msgReceiver) : WidgetPlugin(parent, msgReceiver) {
+RenderObjectsPlugin::RenderObjectsPlugin(QWidget* parent, MessageReceiver* msgReceiver) :
+    WidgetPlugin(parent, msgReceiver)
+    {
     setObjectName(tr("Render objects"));
     icon_ = QIcon(":/icons/information.png");
     tree_ = new QTreeWidget();
@@ -74,7 +76,7 @@ void RenderObjectsPlugin::readRenderingPipeline() {
             QTreeWidgetItem* typeItem = new QTreeWidgetItem(tree_, QStringList(QString(type.c_str())));
             typeItem->setText(1, name.c_str());
             pp=0;//rcObject->getNextStage();
-            while(pp) {
+            while (pp) {
                 type = pp->getType();
                 std::string ppName = pp->getName();
                 QTreeWidgetItem* ppItem = new QTreeWidgetItem(typeItem, QStringList(QString(type.c_str())));
@@ -99,5 +101,5 @@ void RenderObjectsPlugin::readRenderingPipeline() {
     }
     */
 }
-} // namespace voreen
 
+} // namespace voreen

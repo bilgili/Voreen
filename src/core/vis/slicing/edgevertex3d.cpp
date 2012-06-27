@@ -32,8 +32,7 @@
 
 using std::list;
 
-namespace voreen
-{
+namespace voreen {
 
 // public methods
 //
@@ -42,7 +41,7 @@ EdgeVertex3D::EdgeVertex3D(const tgt::vec3& v) : v_(v) {
 }
 
 EdgeVertex3D::EdgeVertex3D(const tgt::vec3& v, Edge3D* const edge) : v_(v) {
-    if ( edge != 0 )
+    if (edge != 0)
         addEdge(edge);
 }
 
@@ -51,6 +50,7 @@ EdgeVertex3D::EdgeVertex3D(const EdgeVertex3D& vertex) {
 }
 
 EdgeVertex3D::~EdgeVertex3D() {
+//std::cout << "~EdgeVertex3D() on " << v_ << "...\n";
     clear();
 }
 
@@ -60,46 +60,51 @@ EdgeVertex3D& EdgeVertex3D::operator=(const EdgeVertex3D& vertex) {
     return *this;
 }
 
-bool EdgeVertex3D::operator ==(const EdgeVertex3D& v) const
-{
+bool EdgeVertex3D::operator ==(const EdgeVertex3D& v) const {
     return (v_ == v.getVertex());
 }
 
-bool EdgeVertex3D::operator !=(const EdgeVertex3D& v) const
-{
+bool EdgeVertex3D::operator !=(const EdgeVertex3D& v) const {
     return (! (v_ == v.getVertex()) );
 }
 
-bool EdgeVertex3D::operator <(const EdgeVertex3D& v) const
-{
+bool EdgeVertex3D::operator <(const EdgeVertex3D& v) const {
     const tgt::vec3& v2 = v.getVertex();
-    if ( v_.x < v2.x ) { return true; }
-    if ( (v_.x == v2.x) && (v_.y < v2.y) ) { return true; }
-    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z < v2.z) ) { return true; }
+    if ( v_.x < v2.x )
+        return true;
+    if ( (v_.x == v2.x) && (v_.y < v2.y) )
+        return true;
+    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z < v2.z) )
+        return true;
+
     return false;
 }
 
-bool EdgeVertex3D::operator >(const EdgeVertex3D& v) const
-{
+bool EdgeVertex3D::operator >(const EdgeVertex3D& v) const {
     const tgt::vec3& v2 = v.getVertex();
-    if ( v_.x > v2.x ) { return true; }
-    if ( (v_.x == v2.x) && (v_.y > v2.y) ) { return true; }
-    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z > v2.z) ) { return true; }
+    if ( v_.x > v2.x )
+        return true;
+    if ( (v_.x == v2.x) && (v_.y > v2.y) )
+        return true;
+    if ( (v_.x == v2.x) && (v_.y == v2.y) && (v_.z > v2.z) )
+        return true;
+    
     return false;
 }
 
-const Edge3D::EdgeSet& EdgeVertex3D::getEdges() const
-{
+const Edge3D::EdgeSet& EdgeVertex3D::getEdges() const {
     return edges_;
 }
 
-tgt::vec3 EdgeVertex3D::getVertex() const { return v_; }
-void EdgeVertex3D::setVertex(const tgt::vec3& v) { v_ = v; }
+tgt::vec3 EdgeVertex3D::getVertex() const {
+    return v_;
+}
+void EdgeVertex3D::setVertex(const tgt::vec3& v) {
+    v_ = v;
+}
 
-bool EdgeVertex3D::addEdge(Edge3D* e)
-{
-    if ( e != 0 )
-    {
+bool EdgeVertex3D::addEdge(Edge3D* e) {
+    if (e != 0) {
         // due to special comparison on pointers, the edge will NOT
         // be inserted, if the DEREFERENCED edge pointers are equal!
         //
@@ -109,24 +114,17 @@ bool EdgeVertex3D::addEdge(Edge3D* e)
     return false;
 }
 
-void EdgeVertex3D::removeEdge(Edge3D* const e)
-{
+void EdgeVertex3D::removeEdge(Edge3D* const e) {
     edges_.erase(e);
 }
 
-bool EdgeVertex3D::isAdjacentToEdge(Edge3D* e) const
-{
-    if ( e == 0 )
-    {
+bool EdgeVertex3D::isAdjacentToEdge(Edge3D* e) const {
+    if (e == 0)
         return false;
-    }
 
     Edge3D::EdgeSet::const_iterator it = edges_.find(e);
-    if ( it != edges_.end() )
-    {
-        return true;
-    }
-    return false;
+
+    return (it != edges_.end());
 }
 
 // private
@@ -138,13 +136,11 @@ void EdgeVertex3D::clear() {
     // disconnect and will be deleted.
     //
     Edge3D::EdgeSet::iterator it = edges_.begin();
-    for ( ; it != edges_.end(); it++ ) {
-        Edge3D* e = *it;
-        if ( e != 0 )
-            e->disconnect(this);
+    for (; it != edges_.end(); ++it ) {
+        if (*it != 0)
+            (*it)->disconnect(this);
 
-        delete e;
-        e = 0;
+        delete *it;
     }
     edges_.clear();
 }

@@ -41,7 +41,6 @@ class Port;
 class PortData;
 class PortDataCoProcessor;
 class PortDataVolume;
-//class PortDataTexture;
 class LocalPortMapping;
 class VolumeHandle;
 class Processor;
@@ -121,6 +120,8 @@ public:
 protected:
     std::map<Port*,std::vector<PortData*> > portMap_;
 };
+
+//---------------------------------------------------------------------------
 
 class LocalPortMapping {
 public:

@@ -28,241 +28,87 @@
  **********************************************************************/
 
 #include "voreen/core/vis/processors/image/canvasrenderer.h"
-#include "voreen/core/vis/voreenpainter.h"
 #include "voreen/core/vis/messagedistributor.h"
 #include "voreen/core/vis/processors/networkevaluator.h"
 #include "voreen/core/opengl/texturecontainer.h"
 #include "voreen/core/vis/processors/portmapping.h"
 
-
 namespace voreen {
 
-CanvasRenderer::CanvasRenderer() : CopyToScreenRenderer() {
+CanvasRenderer::CanvasRenderer()
+    : Processor()
+    , raycastPrg_(0)
+    , useCaching_("set.useCaching", "Use caching?", true)
+{
+    setName("CanvasRenderer");
 	createInport("image.input");
+
+    useCaching_.setAutoChange(true);
+    addProperty(&useCaching_);
 }
 
 CanvasRenderer::~CanvasRenderer() {
+    if (raycastPrg_)
+        ShdrMgr.dispose(raycastPrg_);
 }
 
 const std::string CanvasRenderer::getProcessorInfo() const {
-	return "A Canvas is the last processor in a network. Its only purpose is to copy its input to the finaltarget of texture container.     \
-        It inherits from CopyToScreenRenderer because of the coarseness properties they both share.";
+	return "A CanvasRenderer is the last processor in a network. Its only purpose is to copy \
+            its input to the finaltarget of texture container. Additionally the CanvasRenderer \
+            is able to cache the rendering result, if no parameter in any processor in the network \
+            has been changed since last rendering.";
 }
 
-void CanvasRenderer::process(LocalPortMapping*  portMapping) {
-	if (useCoarseness_.get() && !ignoreCoarseness_) {
-		CoarsenessStruct* cs = new CoarsenessStruct();
-		cs->coarsenessFactor = static_cast<float>(coarsenessFactor_.get());
-		cs->processor = this;
-		CoarsenessMsg* msg = new CoarsenessMsg(NetworkEvaluator::setSizeBackward_,cs);
-		MsgDistr.postMessage(msg,"evaluator");
-	} 
-  
+const Identifier CanvasRenderer::getClassName() const {
+    return "Miscellaneous.Canvas";
+}
+
+Processor* CanvasRenderer::create() {
+    return new CanvasRenderer();
+}
+
+void CanvasRenderer::process(LocalPortMapping* portMapping) {
 	int source = portMapping->getTarget("image.input");
 	int dest = tc_->getFinalTarget();
 
     tc_->setActiveTarget(dest, "CanvasRenderer::process() dest");
-		glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	if (source != -1) {
+    if (source != -1) {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-		if (useCoarseness_.get() && !ignoreCoarseness_)
-			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		raycastPrg_->activate();
 		setGlobalShaderParameters(raycastPrg_);
 		raycastPrg_->setUniform("shadeTex_", 0);
 		raycastPrg_->setUniform("depthTex_", 1);
 
-		if (useCoarseness_.get() && !ignoreCoarseness_)
-			raycastPrg_->setUniform("interactionCoarseness_", coarsenessFactor_.get());
-		else
-			raycastPrg_->setUniform("interactionCoarseness_", 1);
+		raycastPrg_->setUniform("interactionCoarseness_", 1);
 
 		glDepthFunc(GL_ALWAYS);
 		renderQuad();
 		glDepthFunc(GL_LESS);
 		raycastPrg_->deactivate();
 
-		if (useCoarseness_.get() && !ignoreCoarseness_) {
-			glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
-		}
-
+        if (useCaching_.get())
+            MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::setCachedBackward_, this), "evaluator");
 	}
 }
 
-//---------------------------------------------------------------------------
+int CanvasRenderer::initializeGL() {
+    initStatus_ = Processor::initializeGL();
+    if (initStatus_ != VRN_OK)
+        return initStatus_;
 
-CacheRenderer::CacheRenderer() : CopyToScreenRenderer()
-{
-	props_.clear();
-	
-	createInport("image.input");
-	createOutport("image.output");
-}
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "vrn_interactionmode.frag",
+        generateHeader(), false);
 
-CacheRenderer::~CacheRenderer() {
-}
+    if (!raycastPrg_)
+        initStatus_ = VRN_ERROR;
 
-const std::string CacheRenderer::getProcessorInfo() const {
-	return "A CacheRenderer is the last processor in a network. Its only purpose is to copy its input to the finaltarget of texture container. It inherits from CopyToScreenRenderer because of the coarseness properties they both share.";
-}
-
-void CacheRenderer::process(LocalPortMapping*  portMapping)
-{
-    LGL_ERROR;
-	glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
-  
-
-//  
-//    // look for cached image
-//    int cacheRT = -1;
-//    if (!stereo)
-//        if (cachedImage_ > -1){
-//			cacheRT = cachedImage_;
-//        }
-//	else { // FIXME reenable stereo support
-////         if (camera_->getEye() == tgt::Camera::EYE_LEFT)
-////             if (cachedStereoImageLeft_ > -1)
-//// 				cacheRT = cachedStereoImageLeft_;
-//// 		else if (camera_->getEye() == tgt::Camera::EYE_RIGHT)
-////             if (cachedStereoImageRight_ > -1)
-//// 				cacheRT = cachedStereoImageRight_;
-//	}
-//
-//    // if cached image found, use this as source.
-//    // otherwise let producer perform a rendering pass.
-//    if (cacheRT == -1)
-//    {
-//        tc_->releaseTarget(cacheRT);
-//
-//        if (useCoarseness_.get() && !ignoreCoarseness_) {
-//            // apply coarseness
-//            producer_->setSize(tgt::ivec2(static_cast<int>(size_.x)/coarsenessFactor_.get(), static_cast<int>(size_.y)/coarsenessFactor_.get()));
-//            glViewport(0,0, static_cast<int>(size_.x)/coarsenessFactor_.get(), static_cast<int>(size_.y)/coarsenessFactor_.get());
-//        }
-//
-//        LGL_ERROR;
-//        producer_->render();
-//        LGL_ERROR;
-//
-//        if (useCoarseness_.get() && !ignoreCoarseness_) {
-//            // revoke coarseness
-//            producer_->setSize(size_);
-//            glViewport(0, 0, static_cast<int>(size_.x), static_cast<int>(size_.y));
-//        }
-//        source = tc_->findTarget(getTargetType(ttImage_));
-//
-//        if (caching_ && source != -1) {
-//            // mark image for reuse
-//            cachedImage_ = -1;
-//            cachedStereoImageLeft_ = -1;
-//            cachedStereoImageRight_ = -1;
-//            if (!stereo) {
-//                cachedImage_ = source;
-//                tc_->changeType(cachedImage_, getTargetType(ttCachedImage_));
-//                tc_->setPersistent(cachedImage_, true);
-//            }
-//            else {
-////                 if (camera_->getEye() == tgt::Camera::EYE_LEFT) {
-////                     cachedStereoImageLeft_ = source;
-////                     tc_->changeType(cachedStereoImageLeft_, getTargetType(ttCachedImageStereoLeft_));
-////                     tc_->setPersistent(cachedStereoImageLeft_, true);
-////                 }
-////                 else if (camera_->getEye() == tgt::Camera::EYE_RIGHT) {
-////                     cachedStereoImageRight_ = source;
-////                     tc_->changeType(cachedStereoImageRight_, getTargetType(ttCachedImageStereoRight_));
-////                     tc_->setPersistent(cachedStereoImageRight_, true);
-////                 }
-//            }
-//        }
-//    }
-//    else {
-//        source = cacheRT;
-//    }
-
-    // render result
-	int source= portMapping->getTarget("image.input");
-    int dest = portMapping->getTarget("image.output");
-    /*if (renderToScreen_)
-        dest = tc_->getFinalTarget();
-    else {
-        dest = tc_->allocTarget(getTargetType(ttImage_));
-    }
-    tc_->setDebugLabel(dest, "CopyToScreenRenderer::render() dest");*/
-    tc_->setActiveTarget(dest,"CacheRenderer::process() image.output");
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    if (source != -1) {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(tc_->getGLDepthTexTarget(source), tc_->getGLDepthTexID(source));
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(tc_->getGLTexTarget(source), tc_->getGLTexID(source));
-        /*if (useCoarseness_.get() && !ignoreCoarseness_)
-            glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
-
-        raycastPrg_->activate();
-        setGlobalShaderParameters(raycastPrg_);
-        raycastPrg_->setUniform("shadeTex_", 0);
-        raycastPrg_->setUniform("depthTex_", 1);
-
-        /*if (useCoarseness_.get() && !ignoreCoarseness_)
-            raycastPrg_->setUniform("interactionCoarseness_", coarsenessFactor_.get());
-        else*/
-        raycastPrg_->setUniform("interactionCoarseness_", 1);
-
-        glDepthFunc(GL_ALWAYS);
-        renderQuad();
-        glDepthFunc(GL_LESS);
-        raycastPrg_->deactivate();
-
-        /*if (useCoarseness_.get() && !ignoreCoarseness_)
-            glTexParameteri(tc_->getGLTexTarget(source), GL_TEXTURE_MAG_FILTER, GL_NEAREST);*/
-
-        // if source does not contain a cached image, free target
-        /*if (source != cachedImage_ && source != cachedStereoImageLeft_ && source != cachedStereoImageRight_)
-            tc_->releaseTarget(source);*/
-		MsgDistr.postMessage(new ProcessorPointerMsg(NetworkEvaluator::setCachedBackward_,this),"evaluator");
-	}
-    LGL_ERROR;
-}
-
-// ---------------------------------------------------------------------------
-
-NullRenderer::NullRenderer() : CopyToScreenRenderer() {
-	createInport("image.input");
-}
-
-NullRenderer::~NullRenderer() {
-}
-
-const std::string NullRenderer::getProcessorInfo() const {
-	return "A NullCanvas is the last processor in a network. \
-           Its only purpose is to terminate a network and to \
-           keep the id of the rendered image from the texture container. \
-           This processor does neither create any output nor does it render\
-           to the frame buffer!";
-}
-
-void NullRenderer::process(LocalPortMapping* portMapping) {
-	if (useCoarseness_.get() && !ignoreCoarseness_) {
-		CoarsenessStruct* cs = new CoarsenessStruct();
-		cs->coarsenessFactor = static_cast<float>(coarsenessFactor_.get());
-		cs->processor = this;
-		CoarsenessMsg* msg = new CoarsenessMsg(NetworkEvaluator::setSizeBackward_,cs);
-		MsgDistr.postMessage(msg,"evaluator");
-	} 
-  
-	imageID_ = portMapping->getTarget("image.input");
-	int dest = tc_->getFinalTarget();
-    tc_->setActiveTarget(dest, "NullRenderer::process() dest");
-
-    // omit the entire stuff which would be done here by the CanvasRenderer if this
-    // processor was one.
+    return initStatus_;
 }
 
 } // namespace voreen

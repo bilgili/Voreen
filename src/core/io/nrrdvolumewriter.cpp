@@ -57,8 +57,8 @@ void NrrdVolumeWriter::write(const std::string& filename, Volume* volume)
 
     // write nrrd header
     std::string type;
-    char* data;
-    size_t numbytes;
+    char* data = 0;
+    size_t numbytes = 0;
 
     if (VolumeUInt8* vol = dynamic_cast<VolumeUInt8*>(volume)) {
         type = "uchar";

@@ -126,7 +126,7 @@ vec4 shadowRunner(in vec3 curVoxel, in vec3 lightPosition) {
 
     //while (!finished) {
 	t += 0.01;
-	for(int loop=0; !finished && loop < 255; ++loop){
+	for (int loop=0; !finished && loop < 255; ++loop){
         for (int loop1=0; !finished && loop1 < 255; ++loop1){
 		    t += stepIncr;
 		    vec3 sample = curVoxel + t * direction;
@@ -164,7 +164,7 @@ vec4 shadowRunner(in vec3 curVoxel, in vec3 lightPosition) {
 
     //while (!finished) {
 	t += 0.01;
-	for(int loop=0; !finished && loop < 255; ++loop){
+	for (int loop=0; !finished && loop < 255; ++loop){
         for (int loop1=0; !finished && loop1 < 255; ++loop1){
     		t += stepIncr;
 		    vec3 sample = curVoxel + t * direction;

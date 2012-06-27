@@ -122,11 +122,6 @@ struct TemplateMessage : public Message {
 };
 
 
-struct CoarsenessStruct {
-	Processor* processor;
-	float coarsenessFactor;
-};
-
 typedef TemplateMessage<bool> BoolMsg;
 typedef TemplateMessage<size_t> SizeTMsg;
 typedef TemplateMessage<int> IntMsg;
@@ -147,7 +142,6 @@ typedef TemplateMessage<tgt::Camera*> CameraPtrMsg;
 class Glyphs;
 typedef TemplateMessage<Glyphs*> GlyphPtrMsg;
 typedef TemplateMessage<Processor*> ProcessorPointerMsg;
-typedef TemplateMessage<CoarsenessStruct*> CoarsenessMsg;
 typedef TemplateMessage<std::vector<std::string> > StringVectorMsg;
 
 /**
@@ -164,10 +158,9 @@ public:
 	 * If it is set to Message::all_ (default argument), the MessageDistributer
 	 * will address this class on all events.
 	 */
-    MessageReceiver(const Identifier& tag = Message::all_)
-        : tag_(tag)
-    {}
-    virtual ~MessageReceiver() {}
+    MessageReceiver(const Identifier& tag = Message::all_);
+
+    virtual ~MessageReceiver();
 
     /**
      * Processes a message. If the message is not stamped (i.e., postMessage() was not called),
@@ -206,14 +199,10 @@ public:
     virtual void postMessage(Message* msg, const std::vector<Identifier>& dest);
 
 	/// Gets the tag for this class.
-    Identifier getTag() {
-        return tag_;
-    }
+    Identifier getTag();
 
 	/// Sets the tag for this class.
-    void setTag(Identifier tag) {
-        tag_ = tag;
-    }
+    void setTag(Identifier tag);
 
 protected:
     Identifier tag_;

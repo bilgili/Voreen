@@ -82,7 +82,7 @@ void QColorPicker::setCol(const QPoint &pt) {
 void QColorPicker::setCol(int h, int s) {
     int nhue = qMin(qMax(0,h), 359);
     int nsat = qMin(qMax(0,s), 255);
-    if (nhue == hue && nsat == sat)
+    if ((nhue == hue) && (nsat == sat))
         return;
     QRect r(colPt(), QSize(20,20));
     hue = nhue;
@@ -112,7 +112,7 @@ void QColorPicker::paintEvent(QPaintEvent* /*event*/) {
     QPainter p(this);
     drawFrame(&p);
     QRect r = contentsRect();
-    if (r.width() <= 1 || r.height() <= 1)
+    if ((r.width() <= 1) || (r.height() <= 1))
         return;
 
     int w = r.width();
@@ -136,7 +136,6 @@ void QColorPicker::paintEvent(QPaintEvent* /*event*/) {
     p.setPen(Qt::black);
     p.fillRect(pt.x()-9, pt.y(), 20, 2, Qt::black);
     p.fillRect(pt.x(), pt.y()-9, 2, 20, Qt::black);
-
 }
 
 } // namespace

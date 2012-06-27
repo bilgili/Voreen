@@ -301,6 +301,7 @@ public:
     KeyCode keyCode() { return keyCode_; };
     int modifiers() { return mod_; };
     bool pressed() { return pressed_; };
+	virtual int getEventType();
 };
 
 }

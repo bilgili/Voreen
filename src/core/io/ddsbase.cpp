@@ -375,7 +375,7 @@ unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigne
 
     unsigned int skip, strip;
 
-    unsigned char *data, *ptr;
+    unsigned char *data = 0, *ptr = 0;
 
     unsigned int cnt, cnt1, cnt2;
     int bits, act;

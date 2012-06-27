@@ -34,7 +34,9 @@
 
 namespace voreen {
 
-ConsolePlugin::ConsolePlugin(QWidget* parent, MessageReceiver* msgReceiver) : WidgetPlugin(parent, msgReceiver) {
+ConsolePlugin::ConsolePlugin(QWidget* parent, MessageReceiver* msgReceiver)
+: WidgetPlugin(parent, msgReceiver)
+{
     setObjectName(tr("Console"));
     icon_ = QIcon(":/icons/console.png");
 
@@ -64,5 +66,5 @@ void ConsolePlugin::createWidgets() {
 
 void ConsolePlugin::createConnections() {
 }
-} // namespace voreen
 
+} // namespace voreen

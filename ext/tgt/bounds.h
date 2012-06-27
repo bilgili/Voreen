@@ -33,8 +33,7 @@ namespace tgt {
 /**
 *   Axis-aligned bounding box
 */
-class Bounds
-{
+class Bounds {
     uint points_;   //points added to the box
     vec3 llf_; //lower left front
     vec3 urb_; //upper right back

@@ -36,13 +36,12 @@
 #include "tgt/quaternion.h"
 #include "tgt/glcanvas.h"
 
-/**
-    This class implements a standard Camera with a position, a focus point
-    and an up-vector which make up its orientation.
-*/
-
 namespace tgt {
 
+/**
+ * This class implements a standard Camera with a position, a focus point
+ * and an up-vector which make up its orientation.
+ */
 class Camera {
 public:
     /// Selects eye for stereo viewing
@@ -51,39 +50,6 @@ public:
         EYE_RIGHT,
         EYE_MIDDLE  /// no stereo
     };
-
-protected:
-
-    vec3 position_; /// location of the camera
-    vec3 focus_;    /// location, the camera looks at
-    vec3 upVector_; /// up vector, always normalized
-
-    /// A frustum is saved in order to cull objects that are not lying within the
-    /// view of the camera
-    /// In stereo mode, it will always be the frustum of the eye previously used when calling look()
-    Frustum frust_;
-
-    float eyesep_; /// Eye separation for stereo viewing
-
-    /// This is the actual matrix that holds the current orientation and position of the Camera.
-    mutable mat4 viewMatrix_;
-    mutable bool viewMatrixValid_; /// if the model-view matrix is up-to-date
-
-    /// viewMatrix will not always be up to date according to position-, focus- and upVector.
-    /// Make sure it is up to date.
-    void updateVM() const {
-        if (!viewMatrixValid_) {
-            viewMatrix_ = mat4::createLookAt(getPosition(), getFocus(), getUpVector() );
-        }
-        viewMatrixValid_ = true;
-    }
-
-    /// Mark viewMatrix as outdated.
-    void invalidateVM() const {
-        viewMatrixValid_ = false;
-    }
-
-public:
 
     /**
      * Constructor.  A standard starting speed and orientation are given.
@@ -96,24 +62,24 @@ public:
      * @param distn distance to nearplane
      * @param distf distance to farplane
      */
-    Camera( const vec3& position =  vec3(0.0f, 0.0f,  0.0f),
-            const vec3& focus    =  vec3(0.0f, 0.0f, -1.0f),
-            const vec3& up       =  vec3(0.0f, 1.0f,  0.0f),
-            float fovy           =  45.f,
-            float ratio          =  static_cast<float>(GLCanvas::DEFAULT_WINDOW_WIDTH) / GLCanvas::DEFAULT_WINDOW_HEIGHT,
-            float distn          =  .1f,
-            float distf          =  50.f);
+    Camera(const vec3& position =  vec3(0.f, 0.f,  0.f),
+           const vec3& focus    =  vec3(0.f, 0.f, -1.f),
+           const vec3& up       =  vec3(0.f, 1.f,  0.f),
+           float fovy           =  45.f,
+           float ratio          =  static_cast<float>(GLCanvas::DEFAULT_WINDOW_WIDTH) /
+                                   GLCanvas::DEFAULT_WINDOW_HEIGHT,
+           float distn          =  0.1f,
+           float distf          =  50.f);
 
     virtual ~Camera();
 
-public:
     /// Setter / Getter
     void setPosition(const vec3& pos) {
         position_ = pos;
         invalidateVM();
     }
     void setFocus(const vec3& foc) {
-        focus_ =foc;
+        focus_  = foc;
         invalidateVM();
     }
     void setUpVector(const vec3& up) {
@@ -124,10 +90,10 @@ public:
     void setFrustum(const Frustum& frust) { frust_ = frust; }
 
     /// get Camera's strafe vector - a vector directing to the 'right'
-    vec3 getStrafe()   const { return cross(getLook(), getUpVector()); }
+    vec3 getStrafe()   const { return normalize(cross(getLook(), getUpVector())); }
 
     vec3 getUpVector() const { return upVector_; }
-    vec3 getLook()     const { return normalize( getFocus()-getPosition() ); }
+    vec3 getLook()     const { return normalize(getFocus() - getPosition()); }
     vec3 getPosition() const { return position_; }
     vec3 getFocus()    const { return focus_; }
 
@@ -143,64 +109,64 @@ public:
     float getFrustTop() const { return frust_.getTop(); }
     float getFrustBottom() const { return frust_.getBottom(); }
 
-    /// set vertical viewing angle of camera
+    /// Set vertical viewing angle of camera.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     /// @param fovy angle in degree
     void setFovy(float fovy) {
         frust_.setFovy(fovy);
     }
 
-    /// set aspect ratio
+    /// Set aspect ratio.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setRatio(float ratio) {
         frust_.setRatio(ratio);
     }
 
-    /// set distance from camera to nearplane
+    /// Set distance from camera to nearplane.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setNearDist(float neardist) {
         frust_.setNearDist(neardist);
     }
 
-    /// set distance from camera to farplane
+    /// Set distance from camera to farplane.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setFarDist(float fardist) {
         frust_.setFarDist(fardist);
     }
 
-    /// set coordiante of left clipping plane
+    /// Set coordiante of left clipping plane.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setFrustLeft(float v) {
         frust_.setLeft(v);
     }
 
-    /// set coordiante of right clipping plane
+    /// Set coordiante of right clipping plane.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setFrustRight(float v) {
         frust_.setRight(v);
     }
 
-    /// set coordiante of top clipping plane
+    /// Set coordiante of top clipping plane.
     ///
-    /// normals of frustum do not get updated by this method, call updateFrustum manually before
+    /// Normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
     void setFrustTop(float v) {
         frust_.setTop(v);
     }
 
-    /// set coordiante of bottom clipping plane
+    /// Set coordiante of bottom clipping plane.
     ///
     /// normals of frustum do not get updated by this method, call updateFrustum manually before
     /// using e.g. culling methods!
@@ -213,7 +179,7 @@ public:
     }
 
     void setFocalLength(float f)   {
-        setFocus( getPosition() + f*getLook() );
+        setFocus(getPosition() + f * getLook());
     }
 
     float getEyeSeparation() const {
@@ -251,45 +217,80 @@ public:
     mat4 getViewMatrix() const;
 
     /// Sets a new view matrix; "reverse engineers" \a position_ and other parameters
-    void setViewMatrix(mat4 mvMat);
+    void setViewMatrix(const mat4& mvMat);
 
     /// This returns the inverse of the current ViewMatrix.
     mat4 getViewMatrixInverse() const;
 
-    /// If you need only the matrix that represents the current rotation of the camera-tripod, use this function.
+    /// If you need only the matrix that represents the current rotation of the camera-tripod,
+    /// use this function.
     mat4 getRotateMatrix() const;
 
-    /// This method returns the matrix that we need as the projection-matrix for off-axis-stereo-rendering
+    /// This method returns the matrix that we need as the projection-matrix for
+    /// off-axis-stereo-rendering
     mat4 getStereoPerspectiveMatrix(Eye eye, float fov, float aspect, float near, float far) const;
 
     /// This method returns the frustum matrix
-    mat4 getFrustumMatrix() const;
+    virtual mat4 getFrustumMatrix() const;
 
     /// This method returns the projection matrix
     virtual mat4 getProjectionMatrix() const;
+
+protected:
+
+    /// viewMatrix will not always be up to date according to position-, focus- and upVector.
+    /// Make sure it is up to date.
+    void updateVM() const {
+        if (!viewMatrixValid_) {
+            viewMatrix_ = mat4::createLookAt(getPosition(), getFocus(), getUpVector() );
+        }
+        viewMatrixValid_ = true;
+    }
+
+    /// Mark viewMatrix as outdated.
+    void invalidateVM() const {
+        viewMatrixValid_ = false;
+    }
+
+    vec3 position_; /// location of the camera
+    vec3 focus_;    /// location, the camera looks at
+    vec3 upVector_; /// up vector, always normalized
+
+    /// A frustum is saved in order to cull objects that are not lying within the view of the
+    /// camera In stereo mode, it will always be the frustum of the eye previously used when
+    /// calling look()
+    Frustum frust_;
+
+    float eyesep_; /// Eye separation for stereo viewing
+
+    /// This is the actual matrix that holds the current orientation and position of the
+    /// Camera.
+    mutable mat4 viewMatrix_;
+    mutable bool viewMatrixValid_; /// if the model-view matrix is up-to-date
 };
 
 //------------------------------------------------------------------------------
 
-/*
-  This class implements a orthograpic camera. The only difference to an camera-object
-  is in construction of projection matrix.
+/**
+ * This class implements a orthograpic camera. The only difference to an
+ * camera-object is the construction of the projection matrix.
  */
 class OrthographicCamera : public Camera {
 public:
-    OrthographicCamera(const vec3& position =  vec3(0.0f, 0.0f,  0.0f),
-                       const vec3& focus    =  vec3(0.0f, 0.0f, -1.0f),
-                       const vec3& up       =  vec3(0.0f, 1.0f,  0.0f),
-                       float left           =  -1.f,
-                       float right          =   1.f,
-                       float bottom         =  -1.f,
-                       float top            =   1.f,
-                       float distn          =  -1.f,
-                       float distf          =   1.f);
+    OrthographicCamera(const vec3& position = vec3(0.f, 0.f,  0.f),
+                       const vec3& focus    = vec3(0.f, 0.f, -1.f),
+                       const vec3& up       = vec3(0.f, 1.f,  0.f),
+                       float left           = -1.f,
+                       float right          =  1.f,
+                       float bottom         = -1.f,
+                       float top            =  1.f,
+                       float distn          = -1.f,
+                       float distf          =  1.f);
 
     /// This method returns the projection matrix
     virtual mat4 getProjectionMatrix() const;
 
+    virtual mat4 getFrustumMatrix() const;
 };
 
 } //namespace tgt

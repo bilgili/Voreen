@@ -51,15 +51,13 @@ GLCanvas::GLCanvas(const std::string& title,
 {}
 
 GLCanvas::~GLCanvas() {
-    if (eventHandler_->getListenerNumber() > 1)
-        eventHandler_->removeListener((EventListener*) this); // FIXME: is casting really elegant? a 'const'-keyword somewhere in the EventHandler::removeListener-declaration might work as well ...
-    else
-        delete eventHandler_;
+    eventHandler_->clear();
+    delete eventHandler_;
 }
 
 void GLCanvas::sizeChanged(const ivec2& size) {
     size_ = size;
-    if(painter_)
+    if (painter_)
         painter_->sizeChanged(size);
 }
 
@@ -97,10 +95,6 @@ void GLCanvas::initPainter() {
         painter_->init();
         painter_->sizeChanged(size_);
     }
-}
-
-void GLCanvas::setEventHandler(EventHandler* eh) {
-    eventHandler_ = eh;
 }
 
 EventHandler* GLCanvas::getEventHandler() const {

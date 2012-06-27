@@ -33,6 +33,7 @@
 #include <QtGui>
 
 namespace voreen {
+
 using tgt::Color;
 
 TransFuncGradient::TransFuncGradient(QWidget *parent, bool clipThresholds)
@@ -66,18 +67,14 @@ void TransFuncGradient::toggleClipThresholds(bool enabled) {
 }
 
 void TransFuncGradient::setThresholds(float lowerThreshold, float upperThreshold) {
-
     lowerThreshold_ = lowerThreshold;
     upperThreshold_ = upperThreshold;
     if (clipThresholds_)
         update();
-
 }
 
 void TransFuncGradient::setTextureCoords(float start, float end) {
-
     painter_->setTextureCoords(start, end);
-
 }
 
 void TransFuncGradient::setTransFunc(TransFuncIntensity* tf) {

@@ -42,9 +42,8 @@
 
 namespace voreen {
 
-
 ProcessorHeaderWidget::ProcessorHeaderWidget(QWidget *parent, WidgetGenerator::ProcessorPropsList* actRenderer,
-                                   MessageReceiver* msgReceiver, WidgetGenerator* widgetGen, bool showCheckBox) : QWidget(parent)
+                                   MessageReceiver* msgReceiver, WidgetGenerator* widgetGen, bool showCheckBox): QWidget(parent)
 {
     widgetGen_ = widgetGen;
     msgReceiver_ = msgReceiver;
@@ -113,7 +112,7 @@ OverlayProcessorHeaderWidget::OverlayProcessorHeaderWidget(QWidget *parent, Widg
         connect( btnButton , SIGNAL( clicked(void) ) , this , SLOT( setVisOverlay(void) ));
         hboxLayout->addWidget(btnButton);
     }
-    else{
+    else {
         QLabel* label = new QLabel(tr(actOverlay->overlay->getName().c_str()));
         label->setFont(font);
         hboxLayout->addWidget(label);
@@ -127,7 +126,7 @@ void OverlayProcessorHeaderWidget::setVisOverlay() {
 
 //---------------------------------------------------------------------
 
-AGFloatWidget::AGFloatWidget(QWidget* parent, MessageReceiver* msgReceiver, FloatProp* prop) : QWidget(parent), TemplatePlugin<float>(){
+AGFloatWidget::AGFloatWidget(QWidget* parent, MessageReceiver* msgReceiver, FloatProp* prop) : QWidget(parent), TemplatePlugin<float>() {
     msgReceiver_ = msgReceiver;
     msgIdent_ = prop->getIdent();
     sliderValue_ = 0;
@@ -160,7 +159,7 @@ AGFloatWidget::AGFloatWidget(QWidget* parent, MessageReceiver* msgReceiver, Floa
     groupBox_ = 0;
 }
 
-void AGFloatWidget::setFrameControler(QGroupBox* box){
+void AGFloatWidget::setFrameControler(QGroupBox* box) {
     groupBox_ = box;
 }
 
@@ -218,8 +217,8 @@ void AGFloatWidget::sendMessage() {
     MsgDistr.postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
 }
 
-void AGFloatWidget::spinboxChanged(double value){
-    if ((spinValue_ != value) && (value >= minimum_)){
+void AGFloatWidget::spinboxChanged(double value) {
+    if ((spinValue_ != value) && (value >= minimum_)) {
         int i;
         double m;
         m = 99.0f/(maximum_ - minimum_);
@@ -237,13 +236,12 @@ void AGFloatWidget::spinboxChanged(double value){
         connect( spinBox_, SIGNAL( valueChanged(double) ), this, SLOT( spinboxChanged(double) ) );
     }
 }
-void AGFloatWidget::released(){
-    if (!slider_->hasTracking()) {
+void AGFloatWidget::released() {
+    if (!slider_->hasTracking())
         sendMessage();
-    }
 }
 
-void AGFloatWidget::changeValue(float f){
+void AGFloatWidget::changeValue(float f) {
     int i;
     double m;
     m = 99.0f/(maximum_ - minimum_);
@@ -258,7 +256,7 @@ void AGFloatWidget::changeValue(float f){
     spinBox_->blockSignals(false);
 }
 
-void AGFloatWidget::sliderChanged(int value){
+void AGFloatWidget::sliderChanged(int value) {
     if (value != sliderValue_) {
         float fl;
         double m;
@@ -271,15 +269,14 @@ void AGFloatWidget::sliderChanged(int value){
         disconnect( spinBox_, SIGNAL( valueChanged(double) ), this, SLOT( spinboxChanged(double) ) );
         spinBox_->setValue(fl);
         connect( spinBox_, SIGNAL( valueChanged(double) ), this, SLOT( spinboxChanged(double) ) );
-        if (slider_->hasTracking()) {
+        if (slider_->hasTracking())
             sendMessage();
-        }
     }
 }
 
 //---------------------------------------------------------------------
 
-AGIntWidget::AGIntWidget(QWidget* parent, MessageReceiver* msgReceiver, IntProp* prop) : QWidget(parent), TemplatePlugin<int>(){
+AGIntWidget::AGIntWidget(QWidget* parent, MessageReceiver* msgReceiver, IntProp* prop) : QWidget(parent), TemplatePlugin<int>() {
     msgReceiver_ = msgReceiver;
     msgIdent_ = prop->getIdent();
     value_ = 0;
@@ -318,23 +315,23 @@ void AGIntWidget::initWidgetFromLoadedSettings(int min, int max, int value) {
         msgReceiver_->postMessage(new IntMsg(msgIdent_, value_), myProp_->getMsgDestination());
 }
 
-void AGIntWidget::setFrameControler(QGroupBox* box){
+void AGIntWidget::setFrameControler(QGroupBox* box) {
     groupBox_ = box;
 }
 
-void AGIntWidget::setVisibleState(bool vis){
+void AGIntWidget::setVisibleState(bool vis) {
 	setVisible(vis);
     if (groupBox_)
         groupBox_->setVisible(vis);
 }
 
-void AGIntWidget::setRange(int min, int max){
+void AGIntWidget::setRange(int min, int max) {
     slider_->setRange(min, max);
     slider_->setPageStep(static_cast<int>(max/10.f));
     spinBox_->setRange(min, max);
 }
 
-void AGIntWidget::changeValue(int i){
+void AGIntWidget::changeValue(int i) {
     if (i != value_) {
         value_ = i;
         slider_->setSliderPosition(value_);
@@ -381,7 +378,7 @@ void AGIntWidget::valChanged(int value) {
 
 //---------------------------------------------------------------------
 
-AGBoolWidget::AGBoolWidget(QWidget* parent, MessageReceiver* msgReceiver, BoolProp* prop) : QWidget(parent), TemplatePlugin<bool>(){
+AGBoolWidget::AGBoolWidget(QWidget* parent, MessageReceiver* msgReceiver, BoolProp* prop) : QWidget(parent), TemplatePlugin<bool>() {
     setObjectName(QString::fromUtf8("Bool-Checkbox"));
     msgReceiver_ = msgReceiver;
     msgIdent_ = prop->getIdent();
@@ -437,7 +434,7 @@ void AGBoolWidget::changeValue(bool b) {
 
 //---------------------------------------------------------------------
 
-AGColorWidget::AGColorWidget(QWidget* parent, MessageReceiver* msgReceiver, ColorProp* prop) : QWidget(parent), TemplatePlugin<tgt::vec4>(){
+AGColorWidget::AGColorWidget(QWidget* parent, MessageReceiver* msgReceiver, ColorProp* prop) : QWidget(parent), TemplatePlugin<tgt::vec4>() {
     setObjectName(QString::fromUtf8("Color-Dialog"));
     QHBoxLayout* hboxLayout = new QHBoxLayout(this);
 	hboxLayout->setSpacing(1);
@@ -1165,17 +1162,17 @@ int AGFloatVec2Widget::calculateDecimals(float min, float max) {
 void AGFloatVec2Widget::setRange(tgt::vec2 min, tgt::vec2 max) {
 	spinBox_x->setRange(min.x, max.x);
 	int decimals = calculateDecimals(min.x, max.x);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_x->setDecimals(decimals);
-	}
-	spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_y->setDecimals(decimals);
-	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 
@@ -1304,24 +1301,24 @@ int AGFloatVec3Widget::calculateDecimals(float min, float max) {
 void AGFloatVec3Widget::setRange(tgt::vec3 min, tgt::vec3 max) {
     spinBox_x->setRange(min.x, max.x);
 	int decimals = calculateDecimals(min.x, max.x);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_x->setDecimals(decimals);
-	}
-	spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_x->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_y->setDecimals(decimals);
-	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_z->setRange(min.z, max.z);
 	decimals = calculateDecimals(min.z, max.z);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_z->setDecimals(decimals);
-	}
-	spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 
@@ -1433,7 +1430,6 @@ AGFloatVec4Widget::AGFloatVec4Widget(QWidget* parent, MessageReceiver* msgReceiv
 	connect( spinBox_z, SIGNAL( valueChanged(double) ), this, SLOT( valChangedZ(double) ) );
 	connect( spinBox_w, SIGNAL( valueChanged(double) ), this, SLOT( valChangedW(double) ) );
     groupBox_ = 0;
-
 }
 
 void AGFloatVec4Widget::initWidgetFromLoadedSettings(tgt::vec4 min, tgt::vec4 max, tgt::vec4 value) {
@@ -1490,24 +1486,24 @@ void AGFloatVec4Widget::setRange(tgt::vec4 min, tgt::vec4 max) {
 
 	spinBox_y->setRange(min.y, max.y);
 	decimals = calculateDecimals(min.y, max.y);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_y->setDecimals(decimals);
-	}
-	spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_y->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_z->setRange(min.z, max.z);
 	decimals = calculateDecimals(min.z, max.z);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_z->setDecimals(decimals);
-	}
-	spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_z->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 	spinBox_w->setRange(min.w, max.w);
 	decimals = calculateDecimals(min.w, max.w);
-	if (decimals > 2) {
+	if (decimals > 2)
 		spinBox_w->setDecimals(decimals);
-	}
-	spinBox_w->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
+	
+    spinBox_w->setSingleStep(1.0f/pow(10.0f, static_cast<float>(decimals)));
 
 }
 
@@ -1577,4 +1573,3 @@ void AGFloatVec4Widget::valChangedW(double w) {
 }
 
 } // namespace voreen
-

@@ -31,47 +31,47 @@ namespace tgt {
 
 Frustum::Frustum(float fovy, float ratio, float nearDist, float farDist)
   : nearDist_(nearDist),
-    farDist_ (farDist )
+    farDist_ (farDist)
 {
     setFovy(fovy);
     setRatio(ratio);
 }
 
 Frustum::Frustum(float left, float right, float bottom, float top, float nearDist, float farDist)
-  : lnear_(left  ),
-    rnear_(right ),
+  : lnear_(left),
+    rnear_(right),
     bnear_(bottom),
-    tnear_(top   ),
+    tnear_(top),
     nearDist_(nearDist),
-    farDist_ (farDist )
+    farDist_(farDist)
 {}
 
 void Frustum::update(Camera* c) {
     campos_ = c->getPosition();
 
-    normals_[FARN]  = normalize(c->getLook()); // FIXME: we do not need to normalize -- Camera::getLook() always returns a normalized vector anyway
-    normals_[NEARN] = -1.f*normals_[FARN];
+    normals_[FARN]  = c->getLook();
+    normals_[NEARN] = -1.f * normals_[FARN];
 
     vec3 cam2near = normals_[FARN] * nearDist_;
 
     nearp_ = campos_ + cam2near;
     farp_  = campos_ + normals_[FARN] * farDist_;
 
-    vec3 up = normalize(c->getUpVector()); // FIXME: we do not need to normalize -- Camera::getUpVector() always returns a normalized vector anyway
-    vec3 strafe = normalize(c->getStrafe());// FIXME: we do not need to normalize -- Camera::getStrafe() always returns a normalized vector anyway
+    vec3 up = c->getUpVector();
+    vec3 strafe = c->getStrafe();
     vec3 tmp;
 	
     tmp = cam2near + tnear_ * cross(strafe, c->getLook());
-    normals_[TOPN]    = normalize( cross(strafe, tmp) );
+    normals_[TOPN]    = normalize(cross(strafe, tmp));
 
     tmp = cam2near + bnear_ * cross(strafe, c->getLook());
-    normals_[BOTTOMN] = normalize( cross(tmp, strafe) );
+    normals_[BOTTOMN] = normalize(cross(tmp, strafe));
 
     tmp = cam2near + lnear_ * strafe;
-    normals_[LEFTN]   = normalize( cross(cross(strafe, c->getLook()), tmp) );
+    normals_[LEFTN]   = normalize(cross(cross(strafe, c->getLook()), tmp));
 
     tmp = cam2near + rnear_ * strafe;
-    normals_[RIGHTN]  = normalize( cross(tmp, cross(strafe, c->getLook())) );
+    normals_[RIGHTN]  = normalize(cross(tmp, cross(strafe, c->getLook())));
 }
 
 // Is this bounding-box culled?
@@ -85,7 +85,7 @@ bool Frustum::isCulledXZ(const Bounds& bounds) const {
     points[2] = vec3(urb.x, 0.f, urb.z);
     points[3] = vec3(llf.x, 0.f, urb.z);
 
-    // all 6 sides of the frustum are tested against all four corners
+    // All 6 sides of the frustum are tested against all four corners
     // of the bounding box. If all four points of the box are outside of
     // a frustum-plane, then the bounding box is not visible and we return
     // true.  If the box survives all tests then it is visible.
@@ -103,7 +103,7 @@ bool Frustum::isCulledXZ(const Bounds& bounds) const {
     return false;
 }
 
-// TODO: Seems to work, but not really tested.
+// Note: Seems to work, but not really tested.
 bool Frustum::isCulled(const Bounds& bounds) const {
     vec3 urb = bounds.getURB();
     vec3 llf = bounds.getLLF();
@@ -123,6 +123,7 @@ bool Frustum::isCulled(const Bounds& bounds) const {
         for (size_t j = 0; j < 8; j++) {
             vec3 pos = (i < 4) ? campos_
                 : ((i == 4) ? nearp() : farp());
+
             if (dot(getNormal(i), points[j] - pos) >= 0.f)
                 ++outside;
         }
@@ -136,25 +137,25 @@ bool Frustum::isCulled(const Bounds& bounds) const {
 
 // Is this point culled?
 bool Frustum::isCulled(const vec3& v) const {
-
     // the position of the camera is lying on the top, bottom, left, and right
     // plane, so we might as well use it as the reference point for those planes
     vec3 dist = v - campos_;
+
     // test the point against all 6 planes of the frustum (there are more
-    // efficient algorithms for this, if you deem this to slow knock yourself out and
+    // efficient algorithms for this, if you deem this too slow knock yourself out and
     // code something fancy)
-    if (
-        (dot(leftn(),   dist) >= 0.f) ||
+    if ((dot(leftn(),   dist) >= 0.f) ||
         (dot(rightn(),  dist) >= 0.f) ||
         (dot(bottomn(), dist) >= 0.f) ||
         (dot(topn(),    dist) >= 0.f) ||
         (dot(farn(),    v - farp()) >= 0.f) ||
-        (dot(nearn(),   v - nearp() ) >= 0.f)
-        )
+        (dot(nearn(),   v - nearp() ) >= 0.f))
+    {
         return true;
-    else
+    } else {
         // all tests survived? then the point is visible
         return false;
+    }
 }
 
 }; // namespace tgt

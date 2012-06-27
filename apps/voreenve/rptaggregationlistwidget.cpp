@@ -53,7 +53,6 @@ void RptAggregationListWidget::buildItems() {
     QStringList savedAggregations = dir.entryList(filters, QDir::Files, QDir::Name);
     
     for (int i=0; i<savedAggregations.size(); i++) {
-        std::cout << savedAggregations[i].toStdString() << std::endl;
         items_.append(new RptAggregationListItem(savedAggregations[i].toStdString()));
     }
 
@@ -87,28 +86,29 @@ void RptAggregationListWidget::mousePressEvent(QMouseEvent *event) {
         
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimeData);
-    //drag->setPixmap(pixmap);
-    //drag->setHotSpot(event->pos()-item->pos());
 
     drag->start(Qt::CopyAction);
 
 }
 
 void RptAggregationListWidget::removeActionSlot() {
-    QString s = this->selectedItems().at(0)->text(0);
-    QDir dir = QDir("../../data/networks/aggregations/aggregations");
+    QString s = selectedItems().at(0)->text(0);
+    QDir dir = QDir("../../data/networks/aggregations");
     dir.remove(s);
     buildItems();
 }
 
 void RptAggregationListWidget::contextMenuEvent(QContextMenuEvent *event) {
-    QMenu menu;
-    QAction* removeAction = new QAction(tr("Remove"),this);
-    menu.addAction(removeAction);
+    QList<QTreeWidgetItem*> selected = selectedItems();
+    if (selected.count() > 0) {
+        QMenu menu;
+        QAction* removeAction = new QAction(tr("Remove"),this);
+        menu.addAction(removeAction);
 
-    QObject::connect(removeAction, SIGNAL(triggered()), this, SLOT(removeActionSlot()));
+        QObject::connect(removeAction, SIGNAL(triggered()), this, SLOT(removeActionSlot()));
 
-    menu.exec(event->globalPos());
+        menu.exec(event->globalPos());
+    }
 
     QTreeWidget::contextMenuEvent(event);
 }
@@ -116,8 +116,8 @@ void RptAggregationListWidget::contextMenuEvent(QContextMenuEvent *event) {
 // ----------------------------------------------------------------------------
 
 RptAggregationListItem::RptAggregationListItem(std::string filename)
-    : QTreeWidgetItem(QStringList(QString(filename.c_str()))),
-      filename_(filename)
+    : QTreeWidgetItem(QStringList(QString(filename.c_str())))
+    , filename_(filename)
 {}
 
 } // namespace

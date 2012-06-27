@@ -29,29 +29,29 @@
 
 #include "rptgraphwidget.h"
 
+#include "voreen/core/vis/processors/networkevaluator.h"
+
 #include "rptprocessoritem.h"
 #include "rptaggregationitem.h"
 #include "rptpropertysetitem.h"
 #include "rptarrow.h"
-
-#ifndef VRN_RPTAGGREGATIONLISTWIDGET_H
 #include "rptaggregationlistwidget.h"   // required for safe determination of drop source (dirk)
-#endif
 
 #include <iostream>
 
 namespace voreen {
 
-RptGraphWidget::RptGraphWidget(QWidget* parent)
-    : QGraphicsView(parent), activeRptTooltip_(0)
+RptGraphWidget::RptGraphWidget(QWidget* parent, NetworkEvaluator* evaluator)
+    : QGraphicsView(parent)
+    , activeRptTooltip_(0)
+    , evaluator_(evaluator)
 {
     scene_ = new QGraphicsScene(this);
-    //scene_ = new RptGraphicsScene(this);
     setScene(scene_);
     translateScene_ = false;
     scene_->setItemIndexMethod(QGraphicsScene::NoIndex);
-    //scene_->setSceneRect(-width()/2,-height()/2, width(), height());
 
+	setBackgroundBrush(QBrush(Qt::darkGray));
     setCacheMode(CacheBackground);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(AnchorUnderMouse);
@@ -62,84 +62,48 @@ RptGraphWidget::RptGraphWidget(QWidget* parent)
     ttimer_->setSingleShot(true);
     connect(ttimer_, SIGNAL(timeout()), this, SLOT(showRptTooltip()));
 
-
-    //setOptimizationFlags(QGraphicsView::DontAdjustForAntialiasing);
-
     createConnections();
     createContextMenu();
 
     setDragMode(QGraphicsView::RubberBandDrag);
-    //setDragMode(QGraphicsView::ScrollHandDrag);
-
+    setMinimumSize(200, 200);
 }
 
 RptGraphWidget::~RptGraphWidget() {
     hideRptTooltip();
+    delete ttimer_;
 }
 
 void RptGraphWidget::addItem(RptGuiItem* item, QPoint pos) {
     scene_->addItem(item);
     item->moveBy(mapToScene(pos).x(), mapToScene(pos).y());
-
-    // old
-    /*scene_->addItem(item->getContainerItem());
-    item->getContainerItem()->moveBy(mapToScene(pos).x(), mapToScene(pos).y());
-    // DEBUG
-    std::cout << "Identifier: " << item->getContainerItem()->data(0).toString().toStdString()
-        << ", id: " << item->getContainerItem()->data(1).toInt() << std::endl;
-    */
 }
+
 void RptGraphWidget::addItem(RptGuiItem* item) {
     scene_->addItem(item);
-    //item->setPos(pos);
 }
 
 void RptGraphWidget::clearScene() {
-    if ( scene_ == 0 )
-    {
+    if (scene_ == 0)
         return;
-    }
+
     resetMatrix();
     center_ = QPointF(0, 0);
-    // get a reference to scene's items and remove them
-    //
-    QList<QGraphicsItem*> list = scene_->items();
-    while( list.empty() == false )
-    {
-        // Remove QGraphicsItems which belong directly
-        // to the scene, because the have been added
-        // via scene_->addItem().
-        //
-        scene_->removeItem(list.first());
 
-        // The items in the scene have reduced. now we fetch
-        // the smaller list again, as removing an item will
-        // cause its children to be removed, too. Therefore
-        // the list might be a lot smaller when items are
-        // capsulated within each other and we can save
-        // iterations.
-        //
-        list = scene_->items();
-    }
+    // Remove QGraphicsItems which belong directly
+    // to the scene, because the have been added
+    // via scene_->addItem().
+    QList<QGraphicsItem*> list = scene_->items();
+    for (int i=0; i < list.size(); ++i)
+        scene_->removeItem(list[i]);
 }
 
 void RptGraphWidget::createConnections() {
-
 }
 
-// FIXME: when scaled the items create artefacts
 void RptGraphWidget::scaleView(qreal scaleFactor) {
-    /*qreal factor = matrix().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-    if (factor < 0.07 || factor > 100)
-        return;*/
-
     scale(scaleFactor, scaleFactor);
 }
-
-//void RptGraphWidget::wheelEvent(QWheelEvent *event) {
-//    scaleView(pow(static_cast<double>(2), -event->delta() / 240.0));
-//}
-
 
 void RptGraphWidget::paintEvent(QPaintEvent *event) {
     QPaintEvent adjusted = *event;
@@ -150,24 +114,17 @@ void RptGraphWidget::paintEvent(QPaintEvent *event) {
     }
     
     QGraphicsView::paintEvent(&adjusted);
-    return;
 }
 
-int RptGraphWidget::countSelectedProcessorItems() const
-{
+int RptGraphWidget::countSelectedProcessorItems() const {
     int nCount = 0;
-    if ( scene_ == 0 )
-    {
+    if (scene_ == 0)
         return -1;
-    }
 
-    for ( int i = 0; i < scene_->selectedItems().size(); i++ )
-    {
+    for (int i = 0; i < scene_->selectedItems().size(); i++ ) {
         QGraphicsItem* item = scene_->selectedItems()[i];
-        if ( typeid(*item) == typeid(RptProcessorItem) )
-        {
+        if (typeid(*item) == typeid(RptProcessorItem))
             nCount++;
-        }
     }
     return nCount;
 }
@@ -185,8 +142,6 @@ void RptGraphWidget::setCenter(QPointF pos) {
 }
 
 void RptGraphWidget::updateSelectedItems() {
-    QVector<int> dummy;
-
     std::vector<Processor*> selectedProcessors;
     for (int i=0; i<scene()->selectedItems().size(); i++) {
         if (scene()->selectedItems()[i]->type() == RptProcessorItem::Type) {
@@ -204,13 +159,13 @@ void RptGraphWidget::updateSelectedItems() {
     }
 
     if (selectedProcessors.size() == 0)
-        emit sendProcessor(0, dummy);
+        emit processorSelected(0);
     else if (selectedProcessors.size() == 1)
-        emit sendProcessor(selectedProcessors[0], dummy);
+        emit processorSelected(selectedProcessors[0]);
     else {
         PropertySet* tps = PropertySet::getTmpPropSet();
         tps->setProcessors(selectedProcessors);
-        emit sendProcessor(tps, dummy);
+        emit processorSelected(tps);
     }
 }
 
@@ -239,8 +194,7 @@ void RptGraphWidget::pasteActionSlot() {
 // --- drag and drop ----------------------------------------------------------
 
 void RptGraphWidget::dragEnterEvent(QDragEnterEvent *event) {
-    if ( (event->mimeData()->hasText()) || (event->mimeData()->hasFormat("application/x-voreenvolumesetpointer")) )
-    {
+    if ((event->mimeData()->hasText()) || (event->mimeData()->hasFormat("application/x-voreenvolumesetpointer"))) {
         bool allowed = false;
         for (size_t i=0; i<allowedWidgets_.size(); i++) {
             if (event->source() == allowedWidgets_[i])
@@ -249,10 +203,12 @@ void RptGraphWidget::dragEnterEvent(QDragEnterEvent *event) {
         if (allowed) {
             event->setDropAction(Qt::CopyAction);
             event->accept();
-        } else {
+        }
+        else {
             event->acceptProposedAction();
         }
-    } else {
+    }
+    else {
         event->ignore();
     }
 }
@@ -261,8 +217,7 @@ void RptGraphWidget::dropEvent(QDropEvent* event) {
     if (allowedWidgets_.size() < 2)
         return;
 
-    if ( event->mimeData()->hasText() ) {
-//        QWidget* w = this->childAt(event->pos());
+    if (event->mimeData()->hasText()) {
         QString idString = event->mimeData()->text();
         QPoint position = event->pos();
 
@@ -271,17 +226,13 @@ void RptGraphWidget::dropEvent(QDropEvent* event) {
         // and the typeid of the widget class to determine, which widget class
         // is the source of the event and to choose the action. (dirk)
         //
-        //if (event->source() == allowedWidgets_[0]) { //this) {
-        if ( dynamic_cast<RptProcessorListWidget*>(event->source()) != 0 )
-        {
+        if (dynamic_cast<RptProcessorListWidget*>(event->source()) != 0) {
             event->setDropAction(Qt::CopyAction);
             event->accept();
             Identifier id(idString.toStdString());
             emit processorAdded(id,position);
         }
-        //else if (event->source() == allowedWidgets_[1]) {
-        else if ( dynamic_cast<RptAggregationListWidget*>(event->source()) != 0 )
-        {
+        else if (dynamic_cast<RptAggregationListWidget*>(event->source()) != 0) {
             event->setDropAction(Qt::CopyAction);
             event->accept();
             emit aggregationAdded(idString.toStdString(), position);
@@ -289,23 +240,21 @@ void RptGraphWidget::dropEvent(QDropEvent* event) {
         else {
             event->acceptProposedAction();
         }
-    } else {
-        if ( event->mimeData()->hasFormat("application/x-voreenvolumesetpointer") )
-        {
+    }
+    else {
+        if (event->mimeData()->hasFormat("application/x-voreenvolumesetpointer")) {
             // Determine, whether "something" has been dropped onto a RptProcessorItem and foreward
             // the event if so.
             //
-            RptProcessorItem* procItem = dynamic_cast<RptProcessorItem*>( itemAt(event->pos()) );
-            if ( procItem != 0 )
-            {
+            RptProcessorItem* procItem = dynamic_cast<RptProcessorItem*>(itemAt(event->pos()));
+            if (procItem != 0) {
                 procItem->dropEvent(event);
                 event->setDropAction(Qt::CopyAction);
                 event->accept();
             }
             event->acceptProposedAction();
         }
-        else
-        {
+        else {
             event->ignore();
         }
     }
@@ -321,11 +270,10 @@ void RptGraphWidget::mousePressEvent(QMouseEvent* event) {
     // needed for copy action on scene. Without items would be deselected before copied
     if (event->button() == Qt::RightButton)
         return;
-    // shift and left button activate translation of scene
+    // shift and left button activate translation of scene. FIXME: broken
     else if ((event->button() == Qt::LeftButton) && (event->modifiers() == Qt::ShiftModifier)) {
         translateScene_ = true;
         sceneTranslate_ = mapToScene(event->globalPos());
-        //setCacheMode(QGraphicsView::CacheBackground);
     }
     else
         QGraphicsView::mousePressEvent(event);
@@ -342,14 +290,13 @@ void RptGraphWidget::mouseMoveEvent(QMouseEvent *event) {
         lastMousePosition_ = event->pos();
         QGraphicsItem* item;
         HasRptTooltip* hastooltip;
-        if (    (item = itemAt(event->pos())) && // Is there an item at the cursor's position?
-                (hastooltip = dynamic_cast<HasRptTooltip*>(item)) )  // Does it have a custom tooltip?
+        if ((item = itemAt(event->pos())) && // Is there an item at the cursor's position?
+            (hastooltip = dynamic_cast<HasRptTooltip*>(item)))  // Does it have a custom tooltip?
         {
             lastItemWithTooltip_ = hastooltip;
             ttimer_->resetIfDistant(event->pos(),500);
         }
-        else
-        {
+        else {
              if (ttimer_->isDistant(event->pos()))
                  hideRptTooltip();
         }
@@ -358,63 +305,58 @@ void RptGraphWidget::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void RptGraphWidget::mouseReleaseEvent(QMouseEvent  *event) {
-    translateScene_ = false;
-    //setCacheMode(QGraphicsView::CacheNone);
+    if (event->button() == Qt::LeftButton)
+        translateScene_ = false;
+
     QGraphicsView::mouseReleaseEvent(event);
-	updateSelectedItems();
+
+    if (event->button() == Qt::LeftButton)
+        updateSelectedItems();
 }
 
 void RptGraphWidget::wheelEvent(QWheelEvent *event) {
     scaleView(pow(2.0, -event->delta() / 240.0));
-    //QGraphicsView::wheelEvent(event);  causes application crash!!!
 }
 
 void RptGraphWidget::mouseDoubleClickEvent(QMouseEvent  *event) {
-    if (itemAt(event->pos()))
-        emit showPropertiesSignal();
-    else
-        centerOn(center_);
+    if (event->button() == Qt::LeftButton) {
+        if (itemAt(event->pos()))
+            emit showPropertiesSignal();
+        else
+            centerOn(center_);
+    }
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 
 void RptGraphWidget::contextMenuEvent(QContextMenuEvent *event) {
-    QGraphicsItem* item = this->itemAt(event->pos());
+    QGraphicsItem* item = itemAt(event->pos());
 
-    if ( item != 0 )
-    {
-        if ( typeid(*item) == typeid(RptProcessorItem) )
-        {
+    if (item != 0) {
+        if (typeid(*item) == typeid(RptProcessorItem)) {
             RptProcessorItem* pProc = static_cast<RptProcessorItem*>(item);
             const int numProcis = countSelectedProcessorItems();
-            if ( numProcis <= 1 )
-            {
+            if (numProcis <= 1) {
                 pProc->enableAggregateContextMenuEntry(false);
             }
-            else
-            {
+            else {
                 pProc->enableAggregateContextMenuEntry(true);
             }
         }
         QGraphicsView::contextMenuEvent(event); // send event to item
     }
-    else
-    {
+    else {
         contextMenu_.exec(event->globalPos());
     }
 }
 
 void RptGraphWidget::showRptTooltip(const QPoint & pos, HasRptTooltip* hastooltip) {
-    if (!activeRptTooltip_)
-    {
+    if (!activeRptTooltip_) {
         activeRptTooltip_ = hastooltip->rptTooltip();
         if (activeRptTooltip_) {
             activeRptTooltip_->setPos(mapToScene(pos));
             activeRptTooltip_->setZValue(10); // Towering above the rest
             scene_->addItem(activeRptTooltip_);
         }
-        //std::cout << "Position of Cursor x " << pos.x() << " y " << pos.y() << std::endl;
-        //std::cout << "Position of Tooltip x " << activeRptTooltip_->x() << " y " << activeRptTooltip_->y() << std::endl;
-
     }
 }
 
@@ -424,8 +366,7 @@ void RptGraphWidget::showRptTooltip() {
 
 void RptGraphWidget::hideRptTooltip() {
     ttimer_->stop();
-    if (activeRptTooltip_)
-    {
+    if (activeRptTooltip_) {
         delete activeRptTooltip_; // Item is automatically removed from the scene
         activeRptTooltip_ = 0;
     }

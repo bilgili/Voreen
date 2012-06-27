@@ -30,30 +30,38 @@
 #ifndef VRN_VOLUMESETWIDGET_H
 #define VRN_VOLUMESETWIDGET_H
 
-#include <QtGui>
-
 #include <string>
 #include <vector>
 #include <typeinfo>
 
-#include "voreen/core/volume/volumesetcontainer.h"
-
-#include "voreen/core/io/volumeserializerpopulator.h"
-#include "voreen/core/io/ioprogress.h"
+#include <QDialog>
+#include <QTreeWidgetItem>
 
 #ifdef VRN_WITH_DCMTK
 #include "voreen/core/io/dicomvolumereader.h"
 #include "voreen/qt/dicomdialog.h"
 #endif
 
+// forward declarations for speed
+class QComboBox;
+class QGridLayout;
+class QGroupBox;
+class QPushButton;
+
 namespace voreen {
 
-/**
- * Class for managing currently loaded VolumeSet / files in Voreen applications.
- *
- * @author  Dirk Feldmann, 2008
- */
+class IOProgressDialog;
+class VolumeHandle;
+class VolumeSerializerPopulator;
+class VolumeSeries;
+class VolumeSet;
+class VolumeSetContainer;
 
+/**
+ * Class for managing currently loaded VolumeSet files in Voreen applications.
+ *
+ * @author Dirk Feldmann, 2008
+ */
 class VolumeSetWidget : public QDialog {
     Q_OBJECT
 public:
@@ -81,7 +89,7 @@ public:
      * @param   flags   QWindow flags for the window appearance
      */
 	VolumeSetWidget(VolumeSetContainer* const volumeSetContainer, QWidget* parent = 0, 
-                    int levels = LEVEL_ALL, Qt::WFlags flags = 0);
+                    int levels = LEVEL_ALL, bool allowClose = false, Qt::WFlags flags = 0);
 
     /**
      * Dtor. Does not delete the VolumeSetContainer.
@@ -149,9 +157,9 @@ public:
      * as new VolumeSet and returns it. Use this method for initial loading data sets from your
      * application.
      */
-    VolumeSet* loadVolumeSet(const std::string& filename, const bool add2Container = true);
+    VolumeSet* loadVolumeSet(const std::string& filename, const bool addToContainer = true);
 
-    VolumeSet* loadDicomDir(const std::string& file);
+    void loadDicomDir(const std::string& file);
     void loadDicomFiles(const std::string& dir);
 
     /** Shows a dialog for opening files and returns the selected file names.
@@ -159,6 +167,16 @@ public:
      * to determine the capability of multiple file selection and the supported file extensions.
      */
     std::vector<std::string> openFileDialog();
+
+    /**
+     * Clean up - delete all volumesets
+     */
+    void clear();
+
+    /**
+     * Show progress bar while loading?
+     */
+    void setUseProgress(bool useProgress) { useProgress_ = useProgress; }
 
 public slots:
     /**
@@ -176,7 +194,7 @@ public slots:
 
     void comboModalitySelectionChanged(const QString& text);
 
-    void dicomDirFinished();
+    void dicomDirDialogFinished();
 
     /**
      * The action performed when altering the selection of the QTreeWidget.
@@ -262,57 +280,6 @@ protected:
         void moveItem(VolumeHandleItem* child, VolumeSeriesItem* newParent);
     };
 
-    /**
-     * A class for a small dialog indicating the progress of loading a file by
-     * using a QProgressDialog. This obsoletes the former class IOSystem in all
-     * Voreen applications.
-     */
-    class IOObserver : public voreen::IOProgress {
-    public:
-        IOObserver(QWidget* parent) : progressDialog_(new QProgressDialog(parent)) {
-            progressDialog_->setCancelButton(0);
-            progressDialog_->setWindowModality(Qt::WindowModal);
-        }
-
-        ~IOObserver() {
-            delete progressDialog_;
-        }
-
-        virtual void update() {
-            progressDialog_->setValue(progress_);
-        }
-
-        virtual void setNumSteps(int numSteps) {
-            progressDialog_->setRange(0, numSteps - 1);
-        }
-
-        void show(const std::string& filename = "") {
-            if ( progressDialog_ != 0 ) {
-                set(0);
-                std::string title("Loading file");
-                if ( filename.empty() == false ) {
-                    title += " \"";
-                    title += filename;
-                    title += "\"";
-                }
-                title += "...";
-                progressDialog_->setLabelText(tr(title.c_str()));
-                progressDialog_->show();
-                progressDialog_->raise();
-                progressDialog_->activateWindow();
-            }
-        }
-
-        void hide() {
-            if ( progressDialog_ != 0 ) {
-                set( progressDialog_->maximum() );
-                progressDialog_->hide();
-            }
-        }
-    protected:
-        QProgressDialog* progressDialog_;
-    };
-
     VolumeSerializerPopulator* volumeSerializerPopulator_;
     VolumeSetContainer* volumeSetContainer_;
 
@@ -343,35 +310,14 @@ protected:
 #endif
 
 private:
-    // FIXME: hack in order to force generation of hardware volumes
-    // in VolumeHandles. Remove if a more beautiful solution has been found
-    //
-    void generateHardwareVolumes(const int hwVolumesMask, VolumeSet* const volumeSet) {
-        const VolumeSeries::SeriesSet& seriesSet = volumeSet->getSeries();
-        VolumeSeries::SeriesSet::const_iterator itSeries = seriesSet.begin();
-        for( ; itSeries != seriesSet.end(); ++itSeries ) {
-            VolumeSeries* series = *itSeries;
-            if( series == 0 )
-                continue;
-            
-            const VolumeHandle::HandleSet& handles = series->getVolumeHandles();
-            VolumeHandle::HandleSet::const_iterator it = handles.begin();
-            for( ; it != handles.end(); ++it ) {
-                VolumeHandle* handle = *it;
-                if( handle == 0 )
-                    continue;
-
-                handle->generateHardwareVolumes(hwVolumesMask);
-            }   // for
-        }   // for
-    }
-
-private:
-    IOObserver* ioObserver_;
+    IOProgressDialog* progress_;
 
     typedef std::map<std::string, int> ModalityIndexMap;
     ModalityIndexMap modalityIndices_;
 
+    bool allowClose_;
+    bool useProgress_;
+    
     void appendVolumeSets(VolumeRootItem* node);
     void appendVolumeSeries(QTreeWidgetItem* node, VolumeSet* const volumeSet);
     void appendVolumeHandles(QTreeWidgetItem* node, VolumeSeries* const volumeSeries);
@@ -379,5 +325,6 @@ private:
     void setModalityComboIndex(const std::string& modalityName);
 }; 
 
-}   // namespace
-#endif // VOLUMESETWIDGET_H
+} // namespace
+
+#endif // VRN_VOLUMESETWIDGET_H

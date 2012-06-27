@@ -59,8 +59,8 @@ void DatVolumeWriter::write(const std::string& filename, Volume* volume)
     std::string format;
     std::string model = "I";
     std::string zeroString = "";
-    char* data;
-    size_t numbytes;
+    char* data = 0;
+    size_t numbytes = 0;
 
     if (VolumeUInt8* vol = dynamic_cast<VolumeUInt8*>(volume)) {
         format = "UCHAR";

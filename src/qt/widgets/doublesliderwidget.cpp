@@ -43,8 +43,7 @@ DoubleSlider::DoubleSlider(QWidget *parent)
   setFixedHeight(20);  
 }
 
-void DoubleSlider::paintEvent(QPaintEvent* /*e*/)
-{  
+void DoubleSlider::paintEvent(QPaintEvent* /*e*/) {  
   int leftMarker = tgt::iround(minValue * width());
   int rightMarker = tgt::iround(maxValue * width());
   QPoint leftSlider[5] = {
@@ -90,10 +89,9 @@ void DoubleSlider::paintEvent(QPaintEvent* /*e*/)
   paint->end();
 }
 
-void DoubleSlider::mousePressEvent( QMouseEvent *e )
-{
+void DoubleSlider::mousePressEvent(QMouseEvent *e) {
 	//calculate which marker is nearest to mouse position
-	normalizedMousePos = float((e->pos()).x()) / float(width());
+	normalizedMousePos = static_cast<float>((e->pos()).x()) / static_cast<float>(width());
 	mV1 = minValue;
 	mV2 = maxValue;
 	if (e->button() == Qt::LeftButton) {
@@ -114,8 +112,8 @@ void DoubleSlider::mousePressEvent( QMouseEvent *e )
 	emit valuesChanged(minValue, maxValue);
 }
 
-void DoubleSlider::mouseMoveEvent( QMouseEvent *e ){
-	float normalizedMousePosTmp = float((e->pos()).x()) / float(width());
+void DoubleSlider::mouseMoveEvent(QMouseEvent *e){
+	float normalizedMousePosTmp = static_cast<float>((e->pos()).x()) / static_cast<float>(width());
 	if (normalizedMousePosTmp > 1.f)
 		normalizedMousePosTmp = 1.f;
 	else if (normalizedMousePosTmp < 0.f)
@@ -138,13 +136,12 @@ void DoubleSlider::moveSlider(float mousePos) {
 	internalCall = false;
 }
 
-void DoubleSlider::setMinValue( float val ) {
-	float normalizedSliderWidth = float(sliderWidth) / float(width());
+void DoubleSlider::setMinValue(float val) {
+	float normalizedSliderWidth = static_cast<float>(sliderWidth) / static_cast<float>(width());
 	if ( val < 0 )
 		val = 0.f;
-	if ( val + normalizedSliderWidth < maxValue ) {
+	if ( val + normalizedSliderWidth < maxValue )
 		minValue = val;		
-	}
 	else {
 		maxValue = val + normalizedSliderWidth;
 		if (maxValue > 1.f) {
@@ -159,13 +156,12 @@ void DoubleSlider::setMinValue( float val ) {
 		emit valuesSet(minValue, maxValue);
 }
 
-void DoubleSlider::setMaxValue( float val ) {
-	float normalizedSliderWidth = float(sliderWidth) / float(width());
+void DoubleSlider::setMaxValue(float val) {
+	float normalizedSliderWidth = static_cast<float>(sliderWidth) / static_cast<float>(width());
 	if ( val > 1.f)
 		val = 1.f;
-	if (minValue + normalizedSliderWidth < val) {
+	if (minValue + normalizedSliderWidth < val)
 		maxValue = val;
-	}
 	else {
 		minValue = val - normalizedSliderWidth;
 		if (minValue < 0.f) {
@@ -180,11 +176,11 @@ void DoubleSlider::setMaxValue( float val ) {
 		emit valuesSet(minValue, maxValue);
 }
 
-void DoubleSlider::setSliderWidth( int sliderW ) {
+void DoubleSlider::setSliderWidth(int sliderW) {
 	sliderWidth = sliderW;
 }
 
-void DoubleSlider::setValues( float val1, float val2 ) {
+void DoubleSlider::setValues(float val1, float val2) {
 	internalCall = true;
 	if ( val1 < val2 ) {
 		setMinValue(val1);

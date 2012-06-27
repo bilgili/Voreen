@@ -208,7 +208,7 @@ void VevoVolumeReader::loadFramesDescrFromFile(const string& fname,
     string s;
 
     while (getline(in, s)) {
-        size_t frameNum, frameOffset, frameSize;
+        size_t frameNum = 0, frameOffset = 0, frameSize = 0;
         unsigned short f_direction;
         double frameTstamp;
         // remove \n

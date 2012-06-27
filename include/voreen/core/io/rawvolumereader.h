@@ -49,14 +49,13 @@ class IOProgress;
  */
 class RawVolumeReader : public VolumeReader {
 public:
-
     RawVolumeReader(IOProgress* progress = 0);
 
     /**
      * Set hints about the volume dataset. Must be set before read() is called.
      *
      * @param dimensions number of voxels in x-, y- and z-direction
-     * @param bitsStored number of bits stored in this dataset
+     * @param bitsStored number of bits stored in this dataset per voxel
      * @param spacing non-uniform voxel scaling
      * @param objectModel \c I (intensity) or \c RGBA
      * @param format voxel data format, one of \c UCHAR, \c USHORT, \c USHORT_12 (for CT datasets),
@@ -64,6 +63,7 @@ public:
      * @param zeroPoint offset for the voxel data for supporting signed data
      * @param transformation 4x4-matrix for affine transformation of volume
      * @param metaString a string containing arbitrary meta-data
+     * @param offset if the loading shouldn't start at the beginning but at an offset
      */
     void readHints(tgt::ivec3 dimensions,
                    tgt::vec3 spacing,
@@ -73,7 +73,8 @@ public:
                    int zeroPoint = 0,
                    tgt::mat4 transformation = tgt::mat4::identity,
                    Modality modality = Modality::MODALITY_UNKNOWN, float timeStep_ = -1.0f,
-                   std::string metaString = "");
+                   std::string metaString = "",
+                   int offset = 0);
 
     virtual VolumeSet* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
@@ -90,6 +91,7 @@ private:
     Modality modality_;
     float timeStep_;
     std::string metaString_;
+    int offset_;
 
     static const std::string loggerCat_;
 };

@@ -39,13 +39,14 @@
 namespace voreen {
 
 RptProcessorItem::RptProcessorItem(Identifier type, QGraphicsItem* parent)
-    : RptGuiItem(type.getName(),parent)
-    , type_(type), aggregateAction_(0)
+    : RptGuiItem(type.getName(), parent)
+    , type_(type)
+    , aggregateAction_(0)
 {
     processor_ = ProcessorFactory::getInstance()->create(type_);
-    if ( !processor_)
+    if (!processor_)
         return;
-    //textItem_->setPlainText(QString(type.getName().c_str()));
+
     setColor();
     createIO();
     createContextMenu();
@@ -58,7 +59,7 @@ RptProcessorItem::RptProcessorItem(Processor* processor, QGraphicsItem* parent)
     , aggregateAction_(0)
 {
     processor_ = processor;
-    if ( !processor_)
+    if (!processor)
         return;
     setColor();
     createIO();
@@ -70,24 +71,21 @@ RptProcessorItem::~RptProcessorItem() {
     disconnectAll();
     delete processor_;
     processor_ = 0;
-    QVector<int> dummy;
-    emit sendProcessor(0, dummy);
 }
 
-bool RptProcessorItem::enableAggregateContextMenuEntry(const bool newState)
-{
+bool RptProcessorItem::enableAggregateContextMenuEntry(const bool newState) {
     const bool prevState = aggregateAction_->isEnabled();
     aggregateAction_->setEnabled(newState);
     return prevState;
 }
 
 void RptProcessorItem::setName(std::string name) {
-    getProcessor()->setName(name); // FIXME: deprecate this through a new mechanism of identifying processors
+    getProcessor()->setName(name);
     RptGuiItem::setName(name);
 }
 
 void RptProcessorItem::setColor() {
-        color_ = QColor(233,218,176);
+    color_ = QColor(233,218,176);
 }
 
 void RptProcessorItem::createContextMenu() {
@@ -108,9 +106,7 @@ void RptProcessorItem::aggregateActionSlot() {
 }
 
 void RptProcessorItem::createIO() {
-	/*qreal w = boundingRect().width();
-    qreal h = boundingRect().height();*/
-    
+
 	std::vector<Port*> inports = processor_->getInports();
     std::vector<Port*> outports = processor_->getOutports();
 
@@ -120,15 +116,6 @@ void RptProcessorItem::createIO() {
 	for (size_t i=0;i<outports.size();i++) {
 		outports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
 	}
-
-    //for (size_t i=0; i<inports_.size(); i++) {
-    //    inports_.at(i)->moveBy((i+1) * w/(inports_.size()+1) - inports_.at(i)->boundingRect().width()/2 - 15, 0);
-    //    //inports_.at(i)->setParentItem(this);
-    //}
-    //for (size_t i=0; i<outports_.size(); i++) {
-    //    outports_.at(i)->moveBy((i+1) * w/(outports_.size()+1) - outports_.at(i)->boundingRect().width()/2 - 15, h - outports_.at(i)->boundingRect().height());
-    //    //outports_.at(i)->setParentItem(this);
-    //}
 
     // coProcessorPorts
     inports = processor_->getCoProcessorInports();
@@ -141,28 +128,7 @@ void RptProcessorItem::createIO() {
 		coProcessorOutports_.push_back(new RptPortItem(outports.at(i)->getType(), outports.at(i), this));
 	}
 
-    //for (size_t i=0; i<coProcessorInports_.size(); i++) {
-    //    coProcessorInports_.at(i)->moveBy(0-15, (i+1) * h/(coProcessorInports_.size()+1) - coProcessorInports_.at(i)->boundingRect().height()/2);
-    //    //inports_.at(i)->setParentItem(this);
-    //}
-    //for (size_t i=0; i<coProcessorOutports_.size(); i++) {
-    //    coProcessorOutports_.at(i)->moveBy(w - coProcessorOutports_.at(i)->boundingRect().width() - 15, (i+1) * h/(coProcessorOutports_.size()+1) - coProcessorOutports_.at(i)->boundingRect().height()/2);
-    //    //outports_.at(i)->setParentItem(this);
-    //}
-
     repositionPorts();
-
-}
-
-QVector<int> RptProcessorItem::getUnequalEntries() {
-    QVector<int> unequalEntries;
-
-    // TODO: fix RptPropertySetItem->getUnequalEntries first
-    /*for (size_t i=0; i<propertySets_.size(); i++) {
-        unequalEntries += propertySets_[i]->getUnequalEntries(this);
-    }*/
-
-    return unequalEntries;
 }
 
 QVariant RptProcessorItem::itemChange(GraphicsItemChange change, const QVariant &value) {
@@ -224,8 +190,76 @@ QPainterPath RptProcessorItem::canvasBoundingPath(QRectF rect) const {
     return path;
 }
 
-void RptProcessorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) {
+void RptProcessorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* ) {
+	QRectF button_rect = drawingRect();
 
+	QColor button_color = QColor(50, 50, 50);
+
+	// hover effect
+	if (option->state & QStyle::State_MouseOver)
+		button_color = Qt::blue;
+	// frame indicates selected process
+	if (option->state & QStyle::State_Selected)
+		button_color = Qt::red;
+
+
+	QColor m_shadow = QColor(Qt::black);
+/*
+    float roundness = 15.0;
+	//outline
+	painter->setPen(QPen(QBrush(Qt::black), 2.0));
+	QPainterPath outline;
+	//outline.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
+	outline.addRect(0, 0, button_rect.width(), button_rect.height());
+	painter->setOpacity(1.0);
+	painter->drawPath(outline);
+*/
+
+	painter->drawRect(button_rect);
+	/////painter->drawRoundedRect(button_rect, roundness, roundness);
+
+	//gradient
+	QLinearGradient gradient(0, 0, 0, button_rect.height());
+	gradient.setSpread(QGradient::ReflectSpread);
+	gradient.setColorAt(0.0, button_color);
+	gradient.setColorAt(0.4, m_shadow);
+	gradient.setColorAt(0.6, m_shadow);
+	gradient.setColorAt(1.0, button_color);
+
+	QBrush brush(gradient);
+	painter->setBrush(brush); 
+	painter->setPen(QPen(QBrush(button_color), 2.0));
+
+	
+	//main button
+	/*
+	// the clipper clips the glass highlight ellipse
+	QPainterPath painter_path;
+	painter_path.addRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
+	//painter_path.addRect(0, 0, button_rect.width(), button_rect.height());
+	painter->setClipPath(painter_path);
+	*/
+
+	painter->setOpacity(1.0);
+	//painter->drawRoundRect(0, 0, button_rect.width(), button_rect.height(), roundness, roundness);
+	//painter->drawRect(0, 0, button_rect.width(), button_rect.height());
+	painter->drawRect(button_rect);
+	/////painter->drawRoundedRect(button_rect, roundness, roundness);
+
+	//glass highlight
+	painter->setBrush(QBrush(Qt::white));
+	painter->setPen(QPen(QBrush(Qt::white), 0.01));
+	painter->setOpacity(0.30);
+	//painter->drawRect(0, 0, button_rect.width(), (button_rect.height() / 2));
+	button_rect.setHeight(button_rect.height()/2.0);
+	painter->drawRect(button_rect);
+	/////painter->drawRoundedRect(button_rect, roundness, roundness);
+
+
+//	painter->setPen(Qt::red);
+//	painter->drawRoundRect(drawingRect());
+    
+/*    
 	painter->setPen(Qt::NoPen);
 	// draw shadow
 	painter->setBrush(Qt::darkGray);
@@ -265,21 +299,15 @@ void RptProcessorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
         painter->drawPath(canvasBoundingPath(drawingRect()));
 	else
 		painter->drawRoundRect(drawingRect());
-
-    //DEBUG
-    /*painter->setPen(QPen(Qt::black, 1));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(boundingRect());*/
+*/
 }
 
-void RptProcessorItem::dropEvent(QDropEvent *event)
-{
+void RptProcessorItem::dropEvent(QDropEvent* event) {
     // Determine, whether the target was a VolumeSetSourceProcessor
     // and the mime data matches the requirements.
     //
     VolumeSetSourceProcessor* vssp = dynamic_cast<VolumeSetSourceProcessor*>(processor_);
-    if ( (vssp != 0) )
-    {
+    if (vssp != 0) {
         // Set the dropped data (a pointer to a VolumeSet object) for the processor.
         // The data have been converted from VolumeSet* to qulonglong in order to
         // be passed by a QByteArray. I know it's ugly and dangerous but I see no easier
@@ -292,18 +320,15 @@ void RptProcessorItem::dropEvent(QDropEvent *event)
         event->setDropAction(Qt::CopyAction);
         event->accept();
     }
-    else
-    {
+    else {
         event->ignore();
     }
 }
 
 RptProcessorItem& RptProcessorItem::saveMeta() {
-    //processor_->clearMeta();
     TiXmlElement* meta = new TiXmlElement("RptProcessorItem");
     meta->SetAttribute("x", static_cast<int>(x()));
     meta->SetAttribute("y", static_cast<int>(y()));
-    //meta->SetAttribute("name", getName());
     processor_->addToMeta(meta);
     return *this;
 }
@@ -314,13 +339,7 @@ RptProcessorItem& RptProcessorItem::loadMeta() {
     if (meta->QueryFloatAttribute("x",&x) != TIXML_SUCCESS || meta->QueryFloatAttribute("y",&y) != TIXML_SUCCESS)
         throw XmlAttributeException("The Position of a ProcessorItem remains unknown!");
     setPos(x,y);
-    //if (meta->Attribute("name"))
-    //    setName(meta->Attribute("name"));
     return *this;
 }
-
-//void RptProcessorItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
-//    contextMenu_.exec(event->screenPos());
-//}
 
 } //namespace voreen

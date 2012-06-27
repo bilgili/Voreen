@@ -62,23 +62,31 @@ bool CommandCutToPieces::execute(const std::vector<std::string>& parameters) {
     cx = sourceDataset_->getDimensions().x / dimensions.x;
     cy = sourceDataset_->getDimensions().y / dimensions.y;
     cz = sourceDataset_->getDimensions().z / dimensions.z;
-    if((sourceDataset_->getDimensions().x % dimensions.x) != 0) ++cx;
-    if((sourceDataset_->getDimensions().y % dimensions.y) != 0) ++cy;
-    if((sourceDataset_->getDimensions().z % dimensions.z) != 0) ++cz;
+    if ((sourceDataset_->getDimensions().x % dimensions.x) != 0)
+        ++cx;
+    if ((sourceDataset_->getDimensions().y % dimensions.y) != 0)
+        ++cy;
+    if ((sourceDataset_->getDimensions().z % dimensions.z) != 0)
+        ++cz;
     LINFO("Cutting input dataset with dimensions: " << sourceDataset_->getDimensions());
     LINFO("Into " << cx << " * " << cy << " * " << cz << " = " << (cx * cy * cz) << " pieces with dimensions: " << dimensions);
 
     char string[500];
-    for(int x = 0; x < cx; x++) {
-        for(int y = 0; y < cy; y++) {
-            for(int z = 0; z < cz; z++) {
+    for (int x = 0; x < cx; x++) {
+        for (int y = 0; y < cy; y++) {
+            for (int z = 0; z < cz; z++) {
                 tgt::ivec3 dim = dimensions;
                 start.x = dimensions.x * x;
                 start.y = dimensions.y * y;
                 start.z = dimensions.z * z;
-                if(start.x + dimensions.x > sourceDataset_->getDimensions().x) dim.x = (sourceDataset_->getDimensions().x - start.x);
-                if(start.y + dimensions.y > sourceDataset_->getDimensions().y) dim.y = (sourceDataset_->getDimensions().y - start.y);
-                if(start.z + dimensions.z > sourceDataset_->getDimensions().z) dim.z = (sourceDataset_->getDimensions().z - start.z);
+
+                if (start.x + dimensions.x > sourceDataset_->getDimensions().x)
+                    dim.x = (sourceDataset_->getDimensions().x - start.x);
+                if (start.y + dimensions.y > sourceDataset_->getDimensions().y)
+                    dim.y = (sourceDataset_->getDimensions().y - start.y);
+                if (start.z + dimensions.z > sourceDataset_->getDimensions().z)
+                    dim.z = (sourceDataset_->getDimensions().z - start.z);
+
                 Volume* targetDataset_ = sourceDataset_->createSubset(start, dim);
                 sprintf( string, "%s-%i-%i-%i", parameters.back().c_str(), x, y, z);
                 
@@ -134,7 +142,7 @@ bool CommandScale::execute(const std::vector<std::string>& parameters) {
     dimensions.y = asInt(parameters[2]);
     dimensions.z = asInt(parameters[3]);
 
-    if( hor(lessThan(dimensions, tgt::ivec3(1))) )
+    if ( hor(lessThan(dimensions, tgt::ivec3(1))) )
         throw SyntaxException("target dimensions must be greater equal one");
     
     VolumeSerializerPopulator volLoadPop;
@@ -208,6 +216,5 @@ bool CommandSubSet::execute(const std::vector<std::string>& parameters) {
     delete targetDataset_;
     return true;
 }
-
 
 }   //namespace voreen

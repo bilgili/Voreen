@@ -163,6 +163,8 @@ public:
      */
     void clear();
     
+    virtual void notifyObservers() const;
+
     /**
      * Returns the name of the xml element used when serializing the object
      */

@@ -39,6 +39,20 @@ QtCanvas::QtCanvas(const std::string& title,
     resize(size.x, size.y);
     if (shared && shareWidget_ == 0)
         shareWidget_ = this;
+
+    setWindowTitle(QString(title.c_str()));
+
+    // we have our own AutoBufferSwap-mechanism (GLCanvas::setAutoFlush), so disable the one of qt
+    setAutoBufferSwap(false);
+
+    rgbaSize_ = ivec4(format().redBufferSize(),
+                      format().greenBufferSize(),
+                      format().blueBufferSize(),
+                      format().alphaBufferSize());
+    stencilSize_ = format().stencilBufferSize();
+    depthSize_ = format().depthBufferSize();
+    doubleBuffered_ = doubleBuffer();
+    stereoViewing_ = format().stereo();
 }
 
 QtCanvas::QtCanvas(QWidget* parent, bool shared, Qt::WFlags f, char* /*name*/)
@@ -47,29 +61,29 @@ QtCanvas::QtCanvas(QWidget* parent, bool shared, Qt::WFlags f, char* /*name*/)
 {
     if (shared && shareWidget_ == 0)
         shareWidget_ = this;
-}
-
-QtCanvas::~QtCanvas() {}
-
-void QtCanvas::init() {
-    setWindowTitle(QString(title_.c_str()));
 
     // we have our own AutoBufferSwap-mechanism (GLCanvas::setAutoFlush), so disable the one of qt
     setAutoBufferSwap(false);
 
-    // FIXME TODO comment
-//    setAttribute(Qt::WA_DeleteOnClose, true);
-
-    show();
-
-    rgbaSize_ = ivec4( format().redBufferSize(),
-                       format().greenBufferSize(),
-                       format().blueBufferSize(),
-                       format().alphaBufferSize() );
+    rgbaSize_ = ivec4(format().redBufferSize(),
+                      format().greenBufferSize(),
+                      format().blueBufferSize(),
+                      format().alphaBufferSize());
     stencilSize_ = format().stencilBufferSize();
     depthSize_ = format().depthBufferSize();
     doubleBuffered_ = doubleBuffer();
     stereoViewing_ = format().stereo();
+}
+
+QtCanvas::~QtCanvas() {}
+
+//TODO: check if this is necessary. joerg
+void QtCanvas::init() {
+
+    // FIXME: TODO comment
+//    setAttribute(Qt::WA_DeleteOnClose, true);
+
+    show();
 
     GLCanvas::init();
 }
@@ -102,7 +116,7 @@ void QtCanvas::getGLFocus() {
 }
 
 void QtCanvas::toggleFullScreen() {
-    if(fullscreen_) {
+    if (fullscreen_) {
         fullscreen_ = false;
         showNormal();
     }

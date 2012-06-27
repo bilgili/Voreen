@@ -144,9 +144,6 @@ public:
     
     void connectGuionly(RptPortItem* outport, RptPortItem* inport);
 
-    // deprecated
-    //bool connect(Identifier sourcePort, RptProcessorItem* dest, Identifier destPort);
-
     /**
      * Disconnects the given ports. Returns true if disconnecting successful.
      */
@@ -160,10 +157,12 @@ public:
      * Adds the given property set.
      */
     void addPropertySet(RptPropertySetItem* propSet);
+    
     /**
      * Returns the property sets this item belongs to.
      */
     std::vector<RptPropertySetItem*> getPropertySets() { return propertySets_; }
+    
     /**
      * Removes the given property set.
      */
@@ -180,6 +179,7 @@ public:
      * Removes arrows connected to the given item from the scene.
      */
     void removeArrows(RptGuiItem* item);
+    
     /**
      * Removes all the arrows connected to this item from the scene.
      */
@@ -195,20 +195,6 @@ public:
      */
     virtual void adjustArrows();
     
-    ///**
-    // * Used to identfy the class of an item in the scene.
-    // */     
-    //enum { Type = UserType + 0 };
-
-    /**
-     * Returns the type that identifies this item's class.
-     */
-    //int type() const { return Type; }
-    /**
-     * same as type(), but static.
-     */
-    //static int getType() {return Type; }
-
     // TESTING
     int getCollisionPriority() { return collisionPriority_; }
     void setCollisionPriority(int c) { collisionPriority_ = c; }
@@ -216,7 +202,7 @@ public:
     void contentChanged();
 
     QRectF boundingRect() const;
-    //QPainterPath shape() const;
+    
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 signals:
@@ -257,8 +243,6 @@ protected:
 
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
 
-    //void hoverEnterEvent(QGraphicsSceneHoverEvent* event);
-    
     // item that shows the name of type_
     RptTextItem* textItem_;
 
@@ -294,7 +278,6 @@ public:
      * @param port represented port
      */
     RptPortItem(Identifier type, Port* port, RptGuiItem* parent);
-    ~RptPortItem();
 
     /**
      * Used to identfy an item in the scene as RptPortItem
@@ -335,12 +318,6 @@ public:
      * Disconnects given inport from this port item.
      */
     void disconnect(RptPortItem* inport);
-    /**
-     * Disconnects from all connected port items.
-     */
-    // This method is used nowhere (Dirk)
-    //
-    //void disconnectAll();
 
     /**
      * Returns true, if this port is an Outport.
@@ -363,7 +340,6 @@ public:
     bool doesArrowExist(RptPortItem*);
 
     QRectF boundingRect() const;
-    //QPainterPath shape() const;
 
 protected:
     // sets the color depending on port type
@@ -376,15 +352,12 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-    //void hoverEnterEvent(QGraphicsSceneHoverEvent* event);
 
 private:    
     // list of outgoing arrows
     std::vector<RptArrow*> arrowList_;
     // list of gui items that are connected to this port.
     std::vector<RptPortItem*> connectedPorts_;
-    // GuiItem
-    //RptGuiItem* parent_;
     // port type
     Identifier type_;
     // represented port
@@ -403,7 +376,6 @@ class RptTextItem : public QGraphicsTextItem {
 
 public:
     RptTextItem(const QString& text, RptGuiItem* parent = 0, QGraphicsScene* scene = 0);
-    ~RptTextItem() { }
 
     /**
      * Used to identfy an item in the scene as RptPortItem
@@ -419,7 +391,6 @@ public:
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-    //void keyPressEvent(QKeyEvent *event);
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event);
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
 

@@ -85,14 +85,12 @@ VoreenMainframe::~VoreenMainframe() {
     delete painter_;
 }
 
-void VoreenMainframe::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/)
-{
+void VoreenMainframe::processMessage(Message* msg, const Identifier& dest/*=Message::all_*/) {
     MessageReceiver::processMessage(msg, dest);
     MsgDistr.processMessage(msg, dest);
 
-    if (msg->id_ == "main.dataset.load") {
+    if (msg->id_ == "main.dataset.load")
         fileOpen(QStringList(QString(msg->getValue<std::string>().c_str())), false);
-    }
 }
 
 void VoreenMainframe::init(QStringList args) {
@@ -183,8 +181,7 @@ void VoreenMainframe::createMenus() {
 }
 
 // show file open dialog
-bool VoreenMainframe::getFileDialog(QStringList& filenames, QDir& dir)
-{
+bool VoreenMainframe::getFileDialog(QStringList& filenames, QDir& dir) {
     QFileDialog *fd = new QFileDialog(this, tr("Choose a volume dataset to open"),
                                         dir.absolutePath());
 
@@ -289,7 +286,8 @@ void VoreenMainframe::fileExport() {
 }
 
 void VoreenMainframe::showDatasetInfo(Volume* dataset, QString fileName) {
-    if (!infoPlugin_) return;
+    if (!infoPlugin_)
+        return;
 
     std::ostringstream info;
     info << tr("Filename: ").toStdString() << fileName.toStdString() << "\n";
@@ -312,7 +310,6 @@ void VoreenMainframe::closeEvent(QCloseEvent* event) {
 }
 
 void VoreenMainframe::helpAbout() {
-
     QDialog* window = new QDialog(this);
 //     Ui::VoreenAboutBox ui;
 //     ui.setupUi(window);
@@ -355,7 +352,6 @@ void VoreenMainframe::initializeWidgets() {
 }
 
 void VoreenMainframe::initializeRenderer() {
-
     /*RPTMERGE
     RendererFactory factory(camera_);
 
@@ -363,11 +359,6 @@ void VoreenMainframe::initializeRenderer() {
 
     rendererType = cmdLineParser_->getRendererType();
 
-    if (rendererType == RendererFactory::VRN_FANCYRAYCASTING && !factory.tryToInitRenderer(RendererFactory::VRN_FANCYRAYCASTING)){
-        LWARNING("FancyRaycaster not supported!");
-        rendererType = RendererFactory::VRN_SIMPLERAYCASTING;
-        LINFO("Trying Simple-Raycaster as renderer type.")
-    }
     if (rendererType == RendererFactory::VRN_SIMPLERAYCASTING && !factory.tryToInitRenderer(RendererFactory::VRN_SIMPLERAYCASTING)){
         LWARNING("Simple-Raycaster not supported!");
         rendererType = RendererFactory::VRN_SLICERENDERER3D;

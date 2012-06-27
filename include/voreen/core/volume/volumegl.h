@@ -156,29 +156,36 @@ public:
     static LargeVolumeSupport getLargeVolumeSupport();
 
     /**
-     * Use this method to dictate VolumeGL which maximal 3d texture size
+     * Use this method to tell VolumeGL what maximum 3D texture size
      * should be used for the handling of large datasets. Setting this to 0
      * (the default value) will indicate VolumeGL to use
      * GpuCaps.getMax3DTextureSize() instead. Using a greater value than this will
-     * cause errors. Furthermore, it is assumed that \p Max3DTexSize is a power
+     * cause errors. Furthermore, it is assumed that \p max3DTexSize is a power
      * of two.
      *
-     * @param lvSupport How should large datasets be handled?
+     * @param max3DTexSize Maximum texture size
+     *
+     * FIXME: to prevent mixing up texture size with memory, this should be renamed to
+     * something like texture "dimensions". joerg
      */
     static void setMax3DTexSize(int max3DTexSize);
 
-    /// What is the maximal 3d textures size used in VolumeGL?
+    /**
+     * Return the maximum 3D textures size in VolumeGL
+     */
     static int getMax3DTexSize();
 
 	/**
-	* Use this method to dictate VolumeGL how much memory on the video card
-	* is available for textures. Size has to be given in MegaByte (MB) (??? df)
-	*/
+     * Use this method to tell VolumeGL how much memory on the video card
+     * is available for textures.
+     *
+     * @param Available memory (in megabytes)
+     */
 	static void setAvailableGpuMemory(int availableGpuMemory);
 
 	/**
-	* What is the maximal memory size VolumeGL can use on the video card?
-	*/
+     * Return the maximal memory size VolumeGL can use on the video card (in megabytes)
+     */
 	static int getAvailableGpuMemory();
 
     //

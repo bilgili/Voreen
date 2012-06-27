@@ -68,9 +68,8 @@ void NetworkAnalyzer::associateCondProps(std::vector<ConditionProp*> cond_props,
     Identifier ident = prop->getCondControllerIdent();
     Identifier destIdent = prop->getMsgDestination();
     for (size_t k=0; k< cond_props.size(); ++k) {
-        if (cond_props.at(k)->getCondIdent() == ident && cond_props.at(k)->getCondControllerProp()->getMsgDestination() == destIdent) {
+        if (cond_props.at(k)->getCondIdent() == ident && cond_props.at(k)->getCondControllerProp()->getMsgDestination() == destIdent)
             cond_props.at(k)->addCondProp(prop);
-        }
     }
 }
 
@@ -78,9 +77,8 @@ void NetworkAnalyzer::associateGroupProps(std::vector<GroupProp*> group_props, P
     Identifier ident = prop->getGroup();
     Identifier destIdent = prop->getMsgDestination();
     for (size_t k=0; k<group_props.size(); ++k) {
-        if (group_props.at(k)->getGroupIdent() == ident && group_props.at(k)->getMsgDestination() == destIdent) {
+        if (group_props.at(k)->getGroupIdent() == ident && group_props.at(k)->getMsgDestination() == destIdent)
             group_props.at(k)->addGroupedProp(prop);
-        }
     }
 }
 
@@ -90,7 +88,7 @@ void NetworkAnalyzer::connectOverlayProps(std::vector<VoreenPainterOverlay*> ove
 
     for (size_t i=0; i<overlays.size(); ++i) {
         const Properties& props_tmp = overlays.at(i)->getProperties();
-        for (unsigned j=0; j<props_tmp.size(); ++j) {
+        for (size_t j=0; j<props_tmp.size(); ++j) {
             if (props_tmp.at(j)->getType() == Property::CONDITION_PROP)
                 cond_props.push_back(dynamic_cast<ConditionProp*>(props_tmp.at(j)));
             if (props_tmp.at(j)->getType() == Property::GROUP_PROP)
@@ -100,12 +98,10 @@ void NetworkAnalyzer::connectOverlayProps(std::vector<VoreenPainterOverlay*> ove
     for (size_t i=0; i<overlays.size(); ++i) {
         const Properties& props_tmp = overlays.at(i)->getProperties();
         for (size_t j=0; j<props_tmp.size(); ++j) {
-            if (props_tmp.at(j)->isConditioned()) {
+            if (props_tmp.at(j)->isConditioned())
                 associateCondProps(cond_props,props_tmp.at(j));
-            }//conditioned
-            else if (props_tmp.at(j)->isGrouped()) {
+            else if (props_tmp.at(j)->isGrouped())
                 associateGroupProps(group_props,props_tmp.at(j));
-            }//grouped
         }
     }
 }
@@ -114,15 +110,12 @@ void NetworkAnalyzer::markCondProps(std::vector<Processor*> rend, std::vector<Co
     for (size_t i=0; i<rend.size(); ++i) {
         const Properties& props_tmp = rend.at(i)->getProperties();
         for (size_t j=0; j<props_tmp.size(); ++j) {
-            if (props_tmp.at(j)->isConditioned()) {
+            if (props_tmp.at(j)->isConditioned())
                 associateCondProps(conds,props_tmp.at(j));
-            }//conditioned
-            else if (props_tmp.at(j)->isGrouped()) {
+            else if (props_tmp.at(j)->isGrouped())
                 associateGroupProps(groups,props_tmp.at(j));
-            }//grouped
         }
     }
 }
-
 
 }//namespace

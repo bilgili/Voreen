@@ -40,8 +40,18 @@ namespace voreen {
 class Observable;
 
 class Observer {
+
+friend class Observable;    // needed to allow calling removeObservedFriend() from there
+
 public:
-    virtual ~Observer() {}
+    Observer();
+    virtual ~Observer();
+
+    bool addObserved(Observable* const observed);
+    Observable* findObserved(Observable* const observed);
+    bool removeObserved(Observable* const observed);
+    void clearObserverds();
+    int getNumObserveds() const;
 
     /**
      * This method is called by the observed object which should inherit from
@@ -54,17 +64,34 @@ public:
      *      Please note, that the parameter is a constant pointer to a constant
      *      object as the task of an observer is to observe, not to manipulate!
      */
-    virtual void notify(const Observable* const /*source = 0*/) = 0;
+    virtual void notify(const Observable* const source = 0) = 0;
+
+protected:
+    std::set<Observable*> observeds_;
+
+private:
+    /**
+     * This method is to be called from Observable::removeObserver(). Unlike the
+     * public method removeObserved(), this method does not try to remove the object
+     * itself (this) from its role as an observer on the passed Observable pointer. 
+     * If it did so, the methods removeObserver() and removeObserved() would call each 
+     * other mutually and hook up in an infinite loop!
+     */
+    bool removeObservedFriend(Observable* const observed);
 };
 
 // ---------------------------------------------------------------------------
 
 class Observable {
+
+friend class Observer;  // needed to allow calling removeObserverFriend() from there
+
 public:
     Observable();
     virtual ~Observable();
 
     bool addObserver(Observer* const observer);
+    Observer* findObserver(Observer* const observer);
     bool removeObserver(Observer* const observer);
     void clearObservers();
     int getNumObservers() const;
@@ -82,6 +109,16 @@ public:
 
 protected:
     std::set<Observer*> observers_;
+
+private:
+    /**
+     * This method is called from Observer::removeObserved(). Unlike the
+     * public method removeObserver(), this method does not try to remove
+     * the object itself (this) from its role as an obseved object on the passed
+     * Observer* pointer. If it did so, removeObserver() and removeObserved() would
+     * call each other mutually and hook up in an infinite loop!
+     */
+    bool removeObserverFriend(Observer* const observer);
 };
 
 }   // namespace

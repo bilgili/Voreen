@@ -75,14 +75,6 @@ public:
 
     virtual void loadShader();
 
-    /**
-     * If the \c IDRaycaster is not in stand alone mode, it does not free
-     * the entry/exit params. This can be used in order to put the
-     * \c IDRaycaster in the same pipeline as the image raycaster.
-     * default: true
-     */
-    void setStandAlone(bool standAlone);
-
     virtual void process(LocalPortMapping* portMapping_);
 
 protected:
@@ -102,24 +94,12 @@ protected:
     /// Indicates if pipeline is currently in coarseness-mode.
     bool coarse_;
 
-    /// \see setStandAlone()
-    bool standAlone_;
-
-    /// If true, the first-hit-positions are blurred.
-    BoolProp useBlurring_;
-
-    /// The blur filter size.
-    FloatProp blurDelta_;
-
     /// Indicates how deep a ray penetrates the volume, if no segment is hit.
     FloatProp penetrationDepth_;
 
-    /// Transfer function to use for id-raycasting.
-    TransFuncProp transferFunc_;
+    static const Identifier firstHitPointsTexUnit_;     
+    static const Identifier firstHitPointsDepthTexUnit_;
 
-    static const Identifier firstHitTexUnit_;
-    /// Texture unit used to bind the depth channel of the first-hit-positions.
-    static const Identifier firstHitDepthTexUnit_;
 };
 
 } // namespace voreen

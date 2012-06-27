@@ -91,22 +91,27 @@ void SchematicOverlayObject::loadTextures(Identifier set) {
         frontTex_ = TexMgr.load(textureNames_[Front]);
     else 
         frontTex_ = 0;
+
     if (textureNames_[Back] != "")
         backTex_ = TexMgr.load(textureNames_[Back]);
     else 
         backTex_ = 0;
+
     if (textureNames_[Bottom] != "")
         bottomTex_ = TexMgr.load(textureNames_[Bottom]);
     else
         bottomTex_ = 0;
+
     if (textureNames_[Left] != "")
         leftTex_ = TexMgr.load(textureNames_[Left]);
     else
         leftTex_ = 0;
+
     if (textureNames_[Top] != "")
         topTex_ = TexMgr.load(textureNames_[Top]);
     else 
         topTex_ = 0;
+
     if (textureNames_[Right] != "")
         rightTex_ = TexMgr.load(textureNames_[Right]);
     else
@@ -240,7 +245,7 @@ void SchematicOverlayObject::renderCubeToBuffer() {
 void SchematicOverlayObject::renderCube() {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_TEXTURE_2D);
-    glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     
     //top
     if (showTextures_ && topTex_) {
@@ -391,15 +396,14 @@ void SchematicOverlayObject::renderCube() {
     glPopAttrib();
 }
 
-
 /*-------------------------------------end orientation overlay object-------------------------------------------*/
 
 QtCanvasSchematicOverlay::QtCanvasSchematicOverlay(tgt::QtCanvas* canvas)
     : VoreenPainterOverlay(canvas)
 {
-
     setName("OrientationOverlay");
-    canvas_->getGLFocus();
+    if (canvas_)
+        canvas_->getGLFocus();
     IDManager myIdMan;
 
     myIdMan.addNewPickObj("OrientationWidget.cubeFrontClicked");
@@ -467,6 +471,10 @@ void QtCanvasSchematicOverlay::setCubePosY(float y) {
 }
 
 void QtCanvasSchematicOverlay::paint() {
+    
+    if (!canvas_)
+        return;
+
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_DEPTH_TEST);
 
@@ -522,8 +530,11 @@ void QtCanvasSchematicOverlay::loadTextures(Identifier set) {
 
 /*-------------------------------------end orientation overlay--------------------------------------------------*/
 
-OrientationPlugin::OrientationPlugin(QWidget* parent, MessageReceiver* rec, tgt::QtCanvas* canvas,
-                                     tgt::Trackball* track, TextureContainer* tc)
+OrientationPlugin::OrientationPlugin(QWidget* parent, 
+                                     MessageReceiver* rec, 
+                                     tgt::QtCanvas* canvas,
+                                     tgt::Trackball* track, 
+                                     TextureContainer* tc)
     : WidgetPlugin(parent, rec)
     , schematicOverlay_(canvas)
     , track_(track)
@@ -544,7 +555,6 @@ OrientationPlugin::OrientationPlugin(QWidget* parent, MessageReceiver* rec, tgt:
     icon_ = QIcon(":/icons/trackball-reset.png");
     dist_ = 5;
     timer_ = new QBasicTimer();
-    timer_->start(25, this);
     rotateX_ = rotateY_ = rotateZ_ = false;
 
     MsgDistr.insert(this);
@@ -552,21 +562,23 @@ OrientationPlugin::OrientationPlugin(QWidget* parent, MessageReceiver* rec, tgt:
     restore_ = false;
     startupRestore();
 
-    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::addCanvasOverlay_, &schematicOverlay_), "mainview");
+    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::addCanvasOverlay_,
+                                                                         &schematicOverlay_), "mainview");
     schematicOverlay_.setIsActivated(false);
 }
 
 OrientationPlugin::~OrientationPlugin() {
     delete timer_;
     
-    if (restore_)
+    /*if (restore_)
         shutdownSave(true);
     else
-        shutdownSave(false);
+        shutdownSave(false); */
 }
 
 void OrientationPlugin::deinit() {
-    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::delCanvasOverlay_, &schematicOverlay_), "mainview");
+    WidgetPlugin::postMessage(new TemplateMessage<VoreenPainterOverlay*>(VoreenPainter::delCanvasOverlay_,
+                                                                         &schematicOverlay_), "mainview");
     MsgDistr.remove(this);
 }
 
@@ -616,7 +628,7 @@ void OrientationPlugin::createWidgets() {
     gridLayout->addWidget(separator, 4, 0, 1, 0);
     showOrientationOverlay_ = new QCheckBox(tr("Show orientation overlay"));
     gridLayout->addWidget(showOrientationOverlay_, 5, 0, 1, 0);
-    if ( !isFeatureEnabled(ORIENTATION_OVERLAY) ) {
+    if (!isFeatureEnabled(ORIENTATION_OVERLAY)) {
         separator->setVisible(false);
         showOrientationOverlay_->setVisible(false);
     }
@@ -624,9 +636,8 @@ void OrientationPlugin::createWidgets() {
     orientationBox_->setLayout(gridLayout);
     mainLayout->addWidget(orientationBox_);
 
-    if ( !isFeatureEnabled(ORIENTATION_AND_DISTANCE) ) {
+    if (!isFeatureEnabled(ORIENTATION_AND_DISTANCE))
         orientationBox_->setVisible(false);
-    }
 
     // Group box for motion settings
     motionBox_ = new QGroupBox(tr("Continuous Motion"));
@@ -643,24 +654,22 @@ void OrientationPlugin::createWidgets() {
     vboxLayout->addWidget(continueSpin_);
     motionBox_->setLayout(vboxLayout);
     mainLayout->addWidget(motionBox_);
-    if ( !isFeatureEnabled(CONTINUOUS_MOTION) ) {
+    if (!isFeatureEnabled(CONTINUOUS_MOTION))
         motionBox_->setVisible(false);
-    }
 
     // Group box for trackball
-    trackballBox_ = new QGroupBox(tr("Trackball"));
+    trackballBox_ = new QGroupBox(tr("Load/Save Camera Settings"));
     QHBoxLayout* hboxLayout2 = new QHBoxLayout();
 
     hboxLayout2->addWidget(buRestoreTrackball_ = new QToolButton(0));
     hboxLayout2->addSpacing(10);
     hboxLayout2->addWidget(buSaveTrackball_ = new QToolButton(0));
     hboxLayout2->addSpacing(10);
-//     buRestoreTrackball_->setIcon(QIcon(":/icons/trackball-reset.png"));
     buRestoreTrackball_->setIcon(QIcon(":/icons/open.png"));
-    buRestoreTrackball_->setToolTip(tr("Load a camera position from a file"));
+    buRestoreTrackball_->setToolTip(tr("Load camera settings from a file"));
     buSaveTrackball_->setIcon(QIcon(":/icons/save.png"));
-    buSaveTrackball_->setToolTip(tr("Save a camera position to a file"));
-    hboxLayout2->addWidget(cbRestoreOnStartup_ = new QCheckBox(tr("Restore / save trackball\non startup / shutdown")));
+    buSaveTrackball_->setToolTip(tr("Save camera settings to a file"));
+    hboxLayout2->addWidget(cbRestoreOnStartup_ = new QCheckBox(tr("Restore on startup")));
     if (restore_)
         cbRestoreOnStartup_->setCheckState(Qt::Checked);
     cbRestoreOnStartup_->setEnabled(false);
@@ -668,9 +677,8 @@ void OrientationPlugin::createWidgets() {
 
     trackballBox_->setLayout(hboxLayout2);
     mainLayout->addWidget(trackballBox_);
-    if ( !isFeatureEnabled(TRACKBALL_BOX) ) {
+    if (!isFeatureEnabled(TRACKBALL_BOX))
         trackballBox_->setVisible(false);
-    }
 
     mainLayout->addStretch();
 
@@ -684,16 +692,17 @@ void OrientationPlugin::createConnections() {
     connect(continueSpin_,               SIGNAL(toggled(bool)),     this, SLOT(enableContSpin(bool)));
     connect(showOrientationOverlay_,     SIGNAL(toggled(bool)),     this, SLOT(enableOrientationOverlay(bool)));
 
-    connect(comboOrientation_, SIGNAL(activated(int)), this, SLOT(orientationChanged(int)));
-    connect(slDistance_, SIGNAL(valueChanged(int)), this, SLOT(distanceSliderChanged(int)));
-    connect(slDistance_, SIGNAL(sliderPressed()), this, SLOT(distanceSliderPressed()) );
-    connect(slDistance_, SIGNAL(sliderReleased()), this, SLOT(distanceSliderReleased()) );
+    connect(comboOrientation_,   SIGNAL(activated(int)),    this, SLOT(orientationChanged(int)));
+    connect(slDistance_,         SIGNAL(valueChanged(int)), this, SLOT(distanceSliderChanged(int)));
+    connect(slDistance_,         SIGNAL(sliderPressed()),   this, SLOT(distanceSliderPressed()));
+    connect(slDistance_,         SIGNAL(sliderReleased()),  this, SLOT(distanceSliderReleased()));
 
     connect(buRestoreTrackball_, SIGNAL(clicked()),     this, SLOT(restoreTrackball()));
     connect(buSaveTrackball_,    SIGNAL(clicked()),     this, SLOT(saveTrackballToDisk()));
     connect(cbRestoreOnStartup_, SIGNAL(toggled(bool)), this, SLOT(setRestore(bool)));
 
-    canvas_->getEventHandler()->addListenerToBack(this);
+    if (canvas_)
+        canvas_->getEventHandler()->addListenerToBack(this);
 }
 
 void OrientationPlugin::enableOrientationOverlay(bool b) {
@@ -704,13 +713,14 @@ void OrientationPlugin::enableOrientationOverlay(bool b) {
 void OrientationPlugin::processMessage(Message* msg, const Identifier& dest) {
     MessageReceiver::processMessage(msg, dest);
 
-    if ( isVisible() && msg->id_ == VoreenPainter::cameraChanged_ && 
-         canvas_ && msg->getValue<tgt::Camera*>() == canvas_->getCamera()) {
+    if (isVisible() && msg->id_ == VoreenPainter::cameraChanged_ && 
+         canvas_ && msg->getValue<tgt::Camera*>() == canvas_->getCamera())
+    {
         checkCameraState();    
     }
 }
 
-void OrientationPlugin::mousePressEvent(tgt::MouseEvent *e) {
+void OrientationPlugin::mousePressEvent(tgt::MouseEvent* e) {
     isClicked_ = isClicked(e->x(), e->y());
     if (isClicked_) {
         // cube front is clicked
@@ -743,10 +753,9 @@ void OrientationPlugin::mousePressEvent(tgt::MouseEvent *e) {
         e->ignore();
 }
 
-void OrientationPlugin::mouseMoveEvent(tgt::MouseEvent *e) {
-    if (isClicked_ && tgt::MouseEvent::CTRL) {
+void OrientationPlugin::mouseMoveEvent(tgt::MouseEvent* e) {
+    if (isClicked_ && tgt::MouseEvent::CTRL)
         e->accept();
-    }
     else
         e->ignore();
 }
@@ -759,7 +768,7 @@ void OrientationPlugin::mouseReleaseEvent(tgt::MouseEvent* e) {
 }
 
 int OrientationPlugin::isClicked(int x, int y) {
-    if (!tc_)
+    if (!tc_ || !canvas_)
         return 0;
 
     IDManager id1;
@@ -829,7 +838,8 @@ void OrientationPlugin::applyOrientation(const quat& q) {
     } else {
         message = "set.cameraApplyOrientation";
     } */
-    message = "set.cameraApplyOrientationAndDistanceAnimated";
+    //message = "set.cameraApplyOrientationAndDistanceAnimated";
+    message = "set.cameraApplyOrientation";
 
     WidgetPlugin::postMessage(new TemplateMessage<std::vector<float> >(message,
         keyframe), MsgDistr.getCurrentViewId());
@@ -844,34 +854,39 @@ void OrientationPlugin::updateDistance() {
 
 void OrientationPlugin::orientationChanged(int index) {
 	switch (index) {
-        case 1:
-            // axial (top to bottom)
-            toAbove();
-            break;
-        case 2:
-            // coronal (front to back)
-            toFront();
-            break;
-        case 3:
-            // sagittal (volume's right to left)
-            toRight();
-            break;
-        case 4:
-            // axial bottom (bottom to top)
-            toBelow();
-            break;
-        case 5:
-            // coronal back (back to front)
-            toBehind();
-            break;
-        case 6:
-            // sagittal left (volume's left to right)
-            toLeft();
-            break;
+    case 1:
+        // axial (top to bottom)
+        toAbove();
+        break;
+    case 2:
+        // coronal (front to back)
+        toFront();
+        break;
+    case 3:
+        // sagittal (volume's right to left)
+        toRight();
+        break;
+    case 4:
+        // axial bottom (bottom to top)
+        toBelow();
+        break;
+    case 5:
+        // coronal back (back to front)
+        toBehind();
+        break;
+    case 6:
+        // sagittal left (volume's left to right)
+        toLeft();
+        break;
     }
 }
 
-void OrientationPlugin::distanceSliderChanged(int /*value*/) {
+void OrientationPlugin::distanceSliderChanged(int value) {
+    if (value != slDistance_->value()) {
+        slDistance_->blockSignals(true);
+        slDistance_->setValue(value);
+        slDistance_->blockSignals(false);
+    }
     updateDistance();
 }
 
@@ -883,12 +898,17 @@ void OrientationPlugin::distanceSliderPressed() {
 
 void OrientationPlugin::distanceSliderReleased() {
     WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
-    canvas_->repaint();
+    if (canvas_)
+        canvas_->repaint();
 }
 
 
 void OrientationPlugin::timerEvent(QTimerEvent* /*event*/) {
-     if (rotateX_ || rotateY_ || rotateZ_) {
+     
+    if (!track_)
+        return;
+
+    if (rotateX_ || rotateY_ || rotateZ_) {
          continueSpin_->setCheckState(Qt::Unchecked);
          WidgetPlugin::postMessage(new BoolMsg("switch.trackballContinuousSpin", false));
      }
@@ -912,28 +932,27 @@ void OrientationPlugin::timerEvent(QTimerEvent* /*event*/) {
 }
 
 void OrientationPlugin::checkCameraState() {
-    if ( track_ && track_->getCamera() ) {
-
+    if (track_ && track_->getCamera()) {
         // update distance slider
         slDistance_->blockSignals(true);
-        slDistance_->setValue( tgt::iround(CAM_DIST_SCALE_FACTOR*track_->getCenterDistance()) );
+        slDistance_->setValue(tgt::iround(CAM_DIST_SCALE_FACTOR*track_->getCenterDistance()));
         slDistance_->blockSignals(false);
 
         // update orientation box
         const float MAX_DEVIATION = 1e-4;
         tgt::vec3 look = track_->getCamera()->getLook();
         comboOrientation_->blockSignals(true);
-        if ( abs(tgt::dot(AXIAL_VIEW,look)-1.f) < MAX_DEVIATION )
+        if (abs(tgt::dot(AXIAL_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(1);
-        else if ( abs(tgt::dot(CORONAL_VIEW,look)-1.f) < MAX_DEVIATION )
+        else if (abs(tgt::dot(CORONAL_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(2);
-        else if ( abs(tgt::dot(SAGITTAL_VIEW,look)-1.f) < MAX_DEVIATION )
+        else if (abs(tgt::dot(SAGITTAL_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(3);
-        else if ( abs(tgt::dot(AXIAL_INV_VIEW,look)-1.f) < MAX_DEVIATION )
+        else if (abs(tgt::dot(AXIAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(4);
-        else if ( abs(tgt::dot(CORONAL_INV_VIEW,look)-1.f) < MAX_DEVIATION )
+        else if (abs(tgt::dot(CORONAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(5);
-        else if ( abs(tgt::dot(SAGITTAL_INV_VIEW,look)-1.f) < MAX_DEVIATION )
+        else if (abs(tgt::dot(SAGITTAL_INV_VIEW,look)-1.f) < MAX_DEVIATION)
             comboOrientation_->setCurrentIndex(6);
         else
             comboOrientation_->setCurrentIndex(0);
@@ -942,7 +961,8 @@ void OrientationPlugin::checkCameraState() {
     }
 }
 
-void OrientationPlugin::showEvent(QShowEvent* /*event*/) {
+void OrientationPlugin::showEvent(QShowEvent* event) {
+    WidgetPlugin::showEvent(event);
     checkCameraState();
 }
 
@@ -963,11 +983,12 @@ void OrientationPlugin::enableContSpin(bool b) {
 }
 
 void OrientationPlugin::enableX(bool b) {
-    if (!b && !(rotateY_ || rotateZ_)){
+    if (!b && !(rotateY_ || rotateZ_)) {
         WidgetPlugin::postMessage(new BoolMsg(VoreenPainter::switchCoarseness_, false));
         WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateX_ = b;
+    setTimerState();
 }
         
 void OrientationPlugin::enableY(bool b) {
@@ -976,6 +997,7 @@ void OrientationPlugin::enableY(bool b) {
         WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateY_ = b;
+    setTimerState();
 }
 
 void OrientationPlugin::enableZ(bool b) {
@@ -984,8 +1006,8 @@ void OrientationPlugin::enableZ(bool b) {
         WidgetPlugin::postMessage(new Message(VoreenPainter::repaint_), VoreenPainter::visibleViews_);
     }
     rotateZ_ = b;
+    setTimerState();
 }
-
 
 void OrientationPlugin::saveTrackballToDisk() {
     QString s = QFileDialog::getSaveFileName(
@@ -1006,11 +1028,11 @@ void OrientationPlugin::saveTrackballToDisk(std::string fn, bool shutdown) {
     TiXmlDocument doc;
     TiXmlComment * comment;
     std::string s;
-    TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );
-    doc.LinkEndChild( decl );
+    TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "", "");
+    doc.LinkEndChild(decl);
 
     TiXmlElement * root = new TiXmlElement("root");
-    doc.LinkEndChild( root );
+    doc.LinkEndChild(root);
 
     tgt::quat tripod = track_->getCamera()->getQuat();
     tgt::vec3 pos    = track_->getCamera()->getPosition();
@@ -1018,23 +1040,23 @@ void OrientationPlugin::saveTrackballToDisk(std::string fn, bool shutdown) {
     comment = new TiXmlComment();
     s = "Saved Flyby";
     comment->SetValue(s.c_str());
-    root->LinkEndChild( comment );
+    root->LinkEndChild(comment);
 
-    TiXmlElement* sdElem = new TiXmlElement( "shutdown" );
+    TiXmlElement* sdElem = new TiXmlElement("shutdown");
     root->LinkEndChild(sdElem);
     sdElem->SetAttribute("shut", static_cast<int>(shutdown));
 
     TiXmlElement* quatElem;
-    quatElem = new TiXmlElement( "tripod" );
-    root->LinkEndChild( quatElem );
+    quatElem = new TiXmlElement("tripod");
+    root->LinkEndChild(quatElem);
     quatElem->SetDoubleAttribute("x", tripod.x);
     quatElem->SetDoubleAttribute("y", tripod.y);
     quatElem->SetDoubleAttribute("z", tripod.z);
     quatElem->SetDoubleAttribute("w", tripod.w);
 
     TiXmlElement* posElem;
-    posElem = new TiXmlElement( "position" );
-    root->LinkEndChild( posElem );
+    posElem = new TiXmlElement("position");
+    root->LinkEndChild(posElem);
     posElem->SetDoubleAttribute("x", pos.x);
     posElem->SetDoubleAttribute("y", pos.y);
     posElem->SetDoubleAttribute("z", pos.z);
@@ -1044,7 +1066,8 @@ void OrientationPlugin::saveTrackballToDisk(std::string fn, bool shutdown) {
 
 void OrientationPlugin::restoreTrackball(std::string fn) {
     TiXmlDocument doc(fn.c_str());
-    if (!doc.LoadFile()) return;
+    if (!doc.LoadFile())
+        return;
 
     TiXmlHandle hDoc(&doc);
     TiXmlElement* elem;
@@ -1052,7 +1075,8 @@ void OrientationPlugin::restoreTrackball(std::string fn) {
 
     elem=hDoc.FirstChildElement().Element();
     // should always have a valid root but handle gracefully if it doesn't
-    if (!elem) return;
+    if (!elem)
+        return;
 
     // save this for later
     hRoot=TiXmlHandle(elem);
@@ -1086,15 +1110,14 @@ void OrientationPlugin::restoreTrackball() {
     QString fn = QFileDialog::getOpenFileName(this, tr("Open trackball position"), ".",
                                               tr("Trackball positions (*.tbp)"));
     std::string s = fn.toStdString();
-    if (s.length() == 0)
-        return;
-    else
+    if (!s.empty())
         restoreTrackball(s);
 }
 
 void OrientationPlugin::startupRestore() {
     TiXmlDocument doc("./lastcam.tbp");
-    if (!doc.LoadFile()) return;
+    if (!doc.LoadFile())
+        return;
 
     TiXmlHandle hDoc(&doc);
     TiXmlElement* elem;
@@ -1116,7 +1139,6 @@ void OrientationPlugin::startupRestore() {
     }
     else {
         restore_ = false;
-        return;
     }
 }
 
@@ -1128,5 +1150,14 @@ void OrientationPlugin::loadTextures(Identifier set) {
     schematicOverlay_.loadTextures(set);
 }
 
-} // namespace voreen
+void OrientationPlugin::setTimerState() {
+    if (timer_->isActive()) {
+        if (!(rotateX_ || rotateY_ || rotateZ_))
+            timer_->stop();
+    } else {
+        if (rotateX_ || rotateY_ || rotateZ_)
+            timer_->start(25, this);
+    }    
+}
 
+} // namespace voreen

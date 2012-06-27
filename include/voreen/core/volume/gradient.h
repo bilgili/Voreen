@@ -89,7 +89,7 @@ VolumeAtomic<U>* calcGradients(VolumeAtomic<T> *input, int mapping) {
                 else
                     v5 = 0;
                 
-                gradient = tgt::vec3(v3 - v0, v4 - v1, v5 - v2) / 2.f;
+                gradient = tgt::vec3(static_cast<float>(v3 - v0), static_cast<float>(v4 - v1), static_cast<float>(v5 - v2)) / 2.f;
                 gradient /= input->getSpacing();
 
                                 

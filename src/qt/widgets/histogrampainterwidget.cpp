@@ -41,12 +41,10 @@ HistogramPainter::HistogramPainter(QWidget *parent)
 }
 
 void HistogramPainter::setHistogram(HistogramIntensity* histo_) {
-
 	histogram_ = histo_;
 }
 
-void HistogramPainter::paintEvent(QPaintEvent* /*e*/)
-{  
+void HistogramPainter::paintEvent(QPaintEvent* /*e*/) {  
 	QPainter *paint = new QPainter();  
 	paint->begin(this);
 
@@ -54,51 +52,47 @@ void HistogramPainter::paintEvent(QPaintEvent* /*e*/)
     paint->setBrush(QColor(255, 255, 255, 128));
 	paint->drawRect(QRect(QPoint(0,0), QPoint(width(),height())));
 
-	if (histogram_){ 
-	
-	// draw histogram
-    paint->setBrush(QColor(200, 0, 0, 120));
-    paint->setRenderHint(QPainter::Antialiasing, true);
+    if (histogram_) {
+	    // draw histogram
+        paint->setBrush(QColor(200, 0, 0, 120));
+        paint->setRenderHint(QPainter::Antialiasing, true);
 
-    int histogramWidth = histogram_->getBucketCount();
+        int histogramWidth = histogram_->getBucketCount();
 
-    QPointF *points = new QPointF[histogramWidth + 2];
+        QPointF *points = new QPointF[histogramWidth + 2];
 
-    float max = 0.0;
-    for (int i=0; i<histogramWidth; i++)
-        if (static_cast<float>(histogram_->getValue(i)) > max) 
-			max = static_cast<float>(histogram_->getValue(i));
-	for (int x=0; x<histogramWidth; x++) {
-		float value = static_cast<float>(histogram_->getValue(x))/max;
-		value = powf(value, 0.2f);
-		tgt::vec2 p = tgt::vec2(static_cast<float>(x)/histogramWidth * width(), (1.f - value) * static_cast<float>(height()));
-		points[x].setX(p.x);
-		points[x].setY(p.y);
-	}
-	tgt::vec2 p;
+        float max = 0.0;
+        for (int i=0; i<histogramWidth; ++i)
+            if (static_cast<float>(histogram_->getValue(i)) > max) 
+			    max = static_cast<float>(histogram_->getValue(i));
+	    for (int x=0; x<histogramWidth; ++x) {
+		    float value = static_cast<float>(histogram_->getValue(x))/max;
+		    value = powf(value, 0.2f);
+		    tgt::vec2 p = tgt::vec2(static_cast<float>(x)/histogramWidth * width(), (1.f - value) * static_cast<float>(height()));
+		    points[x].setX(p.x);
+		    points[x].setY(p.y);
+	    }
+	    tgt::vec2 p;
 
-    points[histogramWidth].rx() = static_cast<float>(width());
-    points[histogramWidth].ry() = static_cast<float>(height());
-	
-    points[histogramWidth + 1].rx() = 0.f;
-    points[histogramWidth + 1].ry() = static_cast<float>(height());
+        points[histogramWidth].rx() = static_cast<float>(width());
+        points[histogramWidth].ry() = static_cast<float>(height());
+    	
+        points[histogramWidth + 1].rx() = 0.f;
+        points[histogramWidth + 1].ry() = static_cast<float>(height());
 
-    paint->drawConvexPolygon(points, histogramWidth + 2);
+        paint->drawConvexPolygon(points, histogramWidth + 2);
 
-    delete[] points;
-	
+        delete[] points;
 	}
 
 	// show threshold function
     paint->setPen(Qt::lightGray);
     paint->setBrush(Qt::Dense4Pattern);
 
-    if (thresholdL_ > 0.0f) {
+    if (thresholdL_ > 0.0f)
         paint->drawRect(0, 0, static_cast<int>(thresholdL_* width()), height());
-    }
-    if (thresholdU_ < 1.0f) {
+    if (thresholdU_ < 1.0f)
         paint->drawRect(static_cast<int>(thresholdU_ * width()), 0, width(), height());
-    }
 
     paint->setRenderHint(QPainter::Antialiasing, false);
 
@@ -118,8 +112,5 @@ void HistogramPainter::setUpperThreshold( float value ) {
 	thresholdU_ = value;
 	repaint();
 }
-
-
-
 
 } //namespace

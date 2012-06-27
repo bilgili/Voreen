@@ -29,16 +29,18 @@
 
 #include "voreen/core/volume/gradient.h"
 
+#include "tgt/logmanager.h"
+
 using namespace voreen;
 using namespace tgt;
 
 namespace voreen {
 
-Volume4xUInt8* calcGradients26(Volume* vol){
+Volume4xUInt8* calcGradients26(Volume* vol) {
     // generate 32 bit data set to store results
     Volume4xUInt8* result = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
     if (vol->getBitsStored() == 8) {
-        VolumeUInt8* input = (VolumeUInt8*) vol;
+        VolumeUInt8* input = static_cast<VolumeUInt8*>(vol);
 
         vec3 offset = vec3(1.0, 1.0, 1.0);
         ivec3 gradient;
@@ -47,9 +49,9 @@ Volume4xUInt8* calcGradients26(Volume* vol){
         ivec3 dim = vol->getDimensions();
         uint8_t gX,gY,gZ;
 
-        for (pos.z = 0; pos.z < vol->getDimensions().z; pos.z++) {
-            for (pos.y = 0; pos.y < vol->getDimensions().y; pos.y++) {
-                for (pos.x = 0; pos.x < vol->getDimensions().x; pos.x++) {
+        for (pos.z = 0; pos.z < vol->getDimensions().z; ++pos.z) {
+            for (pos.y = 0; pos.y < vol->getDimensions().y; ++pos.y) {
+                for (pos.x = 0; pos.x < vol->getDimensions().x; ++pos.x) {
 
                     if (pos.x >= 1 && pos.x < dim.x-1 &&
                         pos.y >= 1 && pos.y < dim.y-1 &&
@@ -105,20 +107,19 @@ Volume4xUInt8* calcGradients26(Volume* vol){
 
                         gradient /= 9;
 
-                        gX = (uint8_t)(gradient.x/2)+128;
-                        gY = (uint8_t)(gradient.y/2)+128;
-                        gZ = (uint8_t)(gradient.z/2)+128;
+                        gX = static_cast<uint8_t>(gradient.x/2)+128;
+                        gY = static_cast<uint8_t>(gradient.y/2)+128;
+                        gZ = static_cast<uint8_t>(gradient.z/2)+128;
                         result->voxel(pos) = col4(gX, gY, gZ, v111);
                     }
-                    else {
+                    else
                         result->voxel(pos) = col4(128, 128, 128, input->voxel(pos));
-                    }
                 }
             }
         }
     }
     else {
-        std::cout << "ERROR: calcGradients26 does currently only work with a 8-bit dataset as input" << std::endl;
+        LERRORC("gradient", "calcGradients26 does currently only work with a 8-bit dataset as input");
         delete result;
         return 0;
     }
@@ -126,18 +127,18 @@ Volume4xUInt8* calcGradients26(Volume* vol){
 
 }
 
-Volume4xUInt8* filterGradientsMid(Volume* vol){
+Volume4xUInt8* filterGradientsMid(Volume* vol) {
    if (vol->getBitsStored() == 32) {
-       Volume4xUInt8* input = (Volume4xUInt8*)vol;
+       Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
        vec3 delta = vec3(1.0);
 
        ivec3 pos;
        ivec3 dim = vol->getDimensions();
-       for (pos.z = 0; pos.z < vol->getDimensions().z; pos.z++) {
-           for (pos.y = 0; pos.y < vol->getDimensions().y; pos.y++) {
-               for (pos.x = 0; pos.x < vol->getDimensions().x; pos.x++) {
+       for (pos.z = 0; pos.z < vol->getDimensions().z; ++pos.z) {
+           for (pos.y = 0; pos.y < vol->getDimensions().y; ++pos.y) {
+               for (pos.x = 0; pos.x < vol->getDimensions().x; ++pos.x) {
 
                    if (pos.x >= 1 && pos.x < dim.x-1 &&
                        pos.y >= 1 && pos.y < dim.y-1 &&
@@ -160,31 +161,30 @@ Volume4xUInt8* filterGradientsMid(Volume* vol){
                        vec4 filteredGrad = vec4(0.25)*(vec4(0.5)*mix0+vec4(0.5)*mix1) + vec4(0.75)*g0;
                        resultFiltered->voxel(pos) = vec4(filteredGrad.x, filteredGrad.y, filteredGrad.z, g0.a);
                    }
-                   else {
+                   else
                        resultFiltered->voxel(pos) = vec4(0.f,0.f,0.f,input->voxel(vec3(pos)).a);
-                   }
                }
            }
        }
        return resultFiltered;
    } else {
-       std::cout << "ERROR: filterGradients needs a 32-bit dataset as input" << std::endl;
+       LERRORC("gradient", "filterGradients needs a 32-bit dataset as input");
        return 0;
    }
 }
 
-Volume4xUInt8* filterGradientsWeighted(Volume* vol, bool intensityCheck){
+Volume4xUInt8* filterGradientsWeighted(Volume* vol, bool intensityCheck) {
    if (vol->getBitsStored() == 32) {
-       Volume4xUInt8* input = (Volume4xUInt8*)vol;
+       Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
        vec3 delta = vec3(1.0);
 
        ivec3 pos;
        ivec3 dim = vol->getDimensions();
-       for (pos.z = 0; pos.z < vol->getDimensions().z; pos.z++) {
-           for (pos.y = 0; pos.y < vol->getDimensions().y; pos.y++) {
-               for (pos.x = 0; pos.x < vol->getDimensions().x; pos.x++) {
+       for (pos.z = 0; pos.z < vol->getDimensions().z; ++pos.z) {
+           for (pos.y = 0; pos.y < vol->getDimensions().y; ++pos.y) {
+               for (pos.x = 0; pos.x < vol->getDimensions().x; ++pos.x) {
 
                    if (pos.x >= 1 && pos.x < dim.x-1 &&
                        pos.y >= 1 && pos.y < dim.y-1 &&
@@ -271,22 +271,21 @@ Volume4xUInt8* filterGradientsWeighted(Volume* vol, bool intensityCheck){
                        resultFiltered->voxel(pos) = vec4(filteredGrad.x, filteredGrad.y, filteredGrad.z,
                                                          input->voxel(vec3(pos)).a);
                    }
-                   else {
+                   else
                        resultFiltered->voxel(pos) = vec4(0.f,0.f,0.f,input->voxel(vec3(pos)).a);
-                   }
                }
            }
        }
        return resultFiltered;
    } else {
-       std::cout << "ERROR: filterGradients needs a 32-bit dataset as input" << std::endl;
+       LERRORC("gradient", "filterGradients needs a 32-bit dataset as input");
        return 0;
    }
 }
 
-Volume4xUInt8* filterGradients(Volume* vol){
+Volume4xUInt8* filterGradients(Volume* vol) {
     if (vol->getBitsStored() == 32) {
-        Volume4xUInt8* input = (Volume4xUInt8*)vol;
+        Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
         Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
         vec3 offset = vec3(1.0);
@@ -297,9 +296,9 @@ Volume4xUInt8* filterGradients(Volume* vol){
         vec4 curGrad;
         vec4 filteredGrad;
         ivec3 dim = vol->getDimensions();
-        for (pos.z = 0; pos.z < vol->getDimensions().z; pos.z++) {
-            for (pos.y = 0; pos.y < vol->getDimensions().y; pos.y++) {
-                for (pos.x = 0; pos.x < vol->getDimensions().x; pos.x++) {
+        for (pos.z = 0; pos.z < vol->getDimensions().z; ++pos.z) {
+            for (pos.y = 0; pos.y < vol->getDimensions().y; ++pos.y) {
+                for (pos.x = 0; pos.x < vol->getDimensions().x; ++pos.x) {
 
                     if (pos.x >= 1 && pos.x < dim.x-1 &&
                         pos.y >= 1 && pos.y < dim.y-1 &&
@@ -311,22 +310,28 @@ Volume4xUInt8* filterGradients(Volume* vol){
                         // check if the current gradient is a zero gradient
                         if (curGrad.xyz() == zeroGrad) {
                             vec4 v0 = input->voxel(vec3(pos) + vec3(offset.x, 0.0, 0.0));
-                            if (v0.xyz() != zeroGrad) filteredGrad = v0;
+                            if (v0.xyz() != zeroGrad)
+                                filteredGrad = v0;
                             else {
                                 vec4 v1 = input->voxel(vec3(pos) + vec3(0, offset.y, 0));
-                                if (v1.xyz() != zeroGrad) filteredGrad = v1;
+                                if (v1.xyz() != zeroGrad)
+                                    filteredGrad = v1;
                                 else {
                                     vec4 v2 = input->voxel(vec3(pos) + vec3(0, 0, offset.z));
-                                    if (v2.xyz() != zeroGrad) filteredGrad = v2;
+                                    if (v2.xyz() != zeroGrad)
+                                        filteredGrad = v2;
                                     else {
                                         vec4 v3 = input->voxel(vec3(pos) + vec3(-offset.x, 0, 0));
-                                        if (v3.xyz() != zeroGrad) filteredGrad = v3;
+                                        if (v3.xyz() != zeroGrad)
+                                            filteredGrad = v3;
                                         else {
                                             vec4 v4 = input->voxel(vec3(pos) + vec3(0, -offset.y, 0));
-                                            if (v4.xyz() != zeroGrad) filteredGrad = v4;
+                                            if (v4.xyz() != zeroGrad)
+                                                filteredGrad = v4;
                                             else {
                                                 vec4 v5 = input->voxel(vec3(pos) + vec3(0, 0, -offset.z));
-                                                if (v5.xyz() != zeroGrad) filteredGrad = v5;
+                                                if (v5.xyz() != zeroGrad)
+                                                    filteredGrad = v5;
                                             }
                                         }
                                     }
@@ -340,7 +345,7 @@ Volume4xUInt8* filterGradients(Volume* vol){
         }
         return resultFiltered;
     } else {
-        std::cout << "ERROR: filterGradients needs a 32-bit dataset as input" << std::endl;
+        LERRORC("gradient", "filterGradients needs a 32-bit dataset as input");
         return 0;
     }
 }

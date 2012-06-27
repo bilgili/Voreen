@@ -37,8 +37,8 @@
 
 namespace tgt {
 
-    class Camera;
-    class Painter;
+class Camera;
+class Painter;
 
 /**
  * This class is the base class for all tgt-Canvases. It provides the functionality of using
@@ -49,9 +49,9 @@ namespace tgt {
  */
 class GLCanvas {
 public:
-
     enum {
-        DEFAULT_WINDOW_WIDTH = 512, DEFAULT_WINDOW_HEIGHT = 512
+        DEFAULT_WINDOW_WIDTH  = 512,
+        DEFAULT_WINDOW_HEIGHT = 512
     };
 
     enum Buffers {
@@ -66,21 +66,23 @@ public:
         RGBA_BUFFER         = RGB_BUFFER | ALPHA_BUFFER,
 
         // frequently used settings
-        RGBD                = RGB_BUFFER | DEPTH_BUFFER,
-        RGBDS               = RGB_BUFFER | DEPTH_BUFFER | STENCIL_BUFFER,
-        RGBDD               = RGB_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER,
-        RGBDDS              = RGB_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER,
-        RGBA                = RGB_BUFFER | ALPHA_BUFFER,
-        RGBAD               = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER,
-        RGBADS              = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | STENCIL_BUFFER,
-        RGBADD              = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER,
-        RGBADDS             = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER
+        RGBD    = RGB_BUFFER | DEPTH_BUFFER,
+        RGBDS   = RGB_BUFFER | DEPTH_BUFFER | STENCIL_BUFFER,
+        RGBDD   = RGB_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER,
+        RGBDDS  = RGB_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER,
+        RGBA    = RGB_BUFFER | ALPHA_BUFFER,
+        RGBAD   = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER,
+        RGBADS  = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | STENCIL_BUFFER,
+        RGBADD  = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER,
+        RGBADDS = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER
     };
 
     /// A Constructor
     /// @param title     window title if canvas is standalone window
     /// @param size      size of canvas in pixels
-    /// @param buffers   which buffer setting to use, default is to use double-buffered RGB buffer with alpha and depth buffer, @see GLCanvas::Buffers ... TODO: Doxygen-Verweis auf Buffers ...
+    /// @param buffers   which buffer setting to use, default is to use double-buffered
+    ///                  RGB buffer with alpha and depth buffer
+    ///                  @see GLCanvas::Buffers
     GLCanvas(const std::string& title = "",
              const ivec2& size = ivec2(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT),
              const Buffers buffers = RGBADD );
@@ -91,7 +93,8 @@ public:
      */
     virtual ~GLCanvas();
 
-    /// This is the method that swaps the front- and backbuffer. To be overridden by derived Canvas classes.
+    /// This is the method that swaps the front- and backbuffer. To be overridden by derived
+    /// Canvas subclasses.
     virtual void swap() = 0;
 
     /**
@@ -131,11 +134,13 @@ public:
 
     Painter* getPainter() const;
 
-    /// Calls init()- and sizeChanged()-method of the canvas' painter.
-    /// These methods shall initializes OpenGL context (and maby some user dependend stuff of the painter) and make the painter adapt to the current width and height of the canvas. @see Painter::init(), @see Painter::sizeChanged()
+    /// Calls init()- and sizeChanged()-method of the canvas' painter. These methods shall
+    /// initializes OpenGL context (and maybe some user dependant stuff of the painter) and
+    /// make the painter adapt to the current width and height of the canvas.
+    /// @see Painter::init()
+    /// @see Painter::sizeChanged()
     void initPainter();
 
-    void setEventHandler(EventHandler* eh);
     EventHandler* getEventHandler() const;
 
     /// make the canvas call glFlush/swap automatically or not
@@ -202,14 +207,15 @@ protected:
     bool    doubleBuffered_;
     bool    stereoViewing_;
     bool    fullscreen_;
-    bool    autoFlush_; // whether to call glFlush or swap automatically
+    bool    autoFlush_; ///< whether to call glFlush or swap automatically
     bool    initialized_; // FIXME: does this make sense?
 
-    Camera* camera_; /// the camera is used to look around
+    Camera* camera_; ///< the camera is used to look around
 
-    Painter* painter_;  /// the painter that will be used for rendering
+    Painter* painter_;  ///< the painter that will be used for rendering
 
-    EventHandler* eventHandler_;  /// the eventHandler that will distribute incoming events to its eventListeners
+    EventHandler* eventHandler_;  ///< the eventHandler that will distribute incoming events to
+                                  ///< its eventListeners
 };
 
 }

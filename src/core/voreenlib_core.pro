@@ -28,7 +28,7 @@ include(../../commonconf.txt)
 
 # Include tgt
 #define TGT_COMPILED_FOR_VOREEN
-include(../../tgt.pro)
+include(tgt.pro)
 
 # Include modules which are selected in local configuration. The entry
 # 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
@@ -38,6 +38,16 @@ for(i, VRN_MODULES) : include(../modules/$${i}/$${i}_core.pri)
 PRECOMPILED_HEADER = ../../pch.h
 
 # please insert new files in alphabetically order!
+SOURCES += \
+        version.cpp
+SOURCES += \
+	cmdparser/command.cpp \
+	cmdparser/command_boolean.cpp \
+	cmdparser/command_float.cpp \
+	cmdparser/command_integer.cpp \
+	cmdparser/command_loglevel.cpp \
+	cmdparser/command_string.cpp \
+	cmdparser/commandlineparser.cpp
 SOURCES += \
 	geometry/geometrycontainer.cpp
 SOURCES += \
@@ -62,6 +72,7 @@ SOURCES += \
     opengl/texturecontainer.cpp \
     opengl/texunitmapper.cpp
 SOURCES += \
+    vis/processors/benchmark.cpp \
     vis/processors/networkevaluator.cpp \
     vis/processors/networkserializer.cpp \
     vis/processors/port.cpp \
@@ -69,26 +80,29 @@ SOURCES += \
     vis/processors/processor.cpp \
     vis/processors/processorfactory.cpp \
     vis/processors/propertyset.cpp \
+    vis/processors/interactionhandler.cpp\
     vis/processors/volumeselectionprocessor.cpp \
     vis/processors/volumesetsourceprocessor.cpp \
     vis/processors/image/background.cpp \
     vis/processors/image/coarsenessrenderer.cpp \
     vis/processors/image/canvasrenderer.cpp \
-    vis/processors/image/copytoscreenrenderer.cpp \
     vis/processors/image/geometryprocessor.cpp \
     vis/processors/image/labeling.cpp \
     vis/processors/image/labelingmath.cpp \
     vis/processors/image/postprocessor.cpp \
     vis/processors/image/blur.cpp \
     vis/processors/image/regionmodifier.cpp \
+    vis/processors/image/cacherenderer.cpp \
     vis/processors/image/collect.cpp \
     vis/processors/image/colordepth.cpp \
     vis/processors/image/combine.cpp \
+    vis/processors/image/compositer.cpp \
     vis/processors/image/depthmask.cpp \
     vis/processors/image/depthoffield.cpp \
     vis/processors/image/edgedetect.cpp \
     vis/processors/image/genericfragment.cpp \
     vis/processors/image/merge.cpp \
+    vis/processors/image/nullrenderer.cpp \
     vis/processors/image/threshold.cpp \
     vis/processors/render/entryexitpoints.cpp \
     vis/processors/render/firsthitrenderer.cpp \
@@ -106,13 +120,14 @@ SOURCES += \
     vis/processors/volume/visiblehumandatasetcreator.cpp
 SOURCES += \
     vis/transfunc/transfunc.cpp \
-	vis/transfunc/transfunceditor.cpp \
+    vis/transfunc/transfunceditor.cpp \
     vis/transfunc/transfuncintensitygradient.cpp \
     vis/transfunc/transfuncintensity.cpp \
     vis/transfunc/transfuncmappingkey.cpp \
     vis/transfunc/transfuncpainter.cpp
 SOURCES += \
-    vis/geomclippingwidget.cpp \
+    vis/clippingplanewidget.cpp \
+    vis/flythroughnavigation.cpp \
     vis/identifier.cpp \
     vis/idmanager.cpp \
     vis/lightmaterial.cpp \
@@ -120,17 +135,18 @@ SOURCES += \
     vis/messagedistributor.cpp \
     vis/networkanalyzer.cpp \
     vis/property.cpp \
+    vis/pyvoreen.cpp \
     vis/trackballnavigation.cpp \
     vis/voreenpainter.cpp
 SOURCES += \
-	vis/slicing/edge3d.cpp \
-	vis/slicing/edgevertex3d.cpp \
-	vis/slicing/polygon3d.cpp \
-	vis/slicing/polygonface3d.cpp
+    vis/slicing/edge3d.cpp \
+    vis/slicing/edgevertex3d.cpp \
+    vis/slicing/polygon3d.cpp \
+    vis/slicing/polygonface3d.cpp
 SOURCES += \
     volume/modality.cpp \
+    volume/noisevolume.cpp \
     volume/volume.cpp \
-#volume/volumecontainer.cpp \
     volume/volumegl.cpp \
     volume/volumehandle.cpp \
     volume/volumemetadata.cpp \
@@ -142,6 +158,7 @@ SOURCES += \
     volume/histogram.cpp \
     volume/observer.cpp
 SOURCES += \
+    xml/xmlserializable.cpp \
     xml/serializable.cpp
 SOURCES += \
     ../../ext/tinyxml/tinyxml.cpp \
@@ -168,6 +185,7 @@ win32 {
             vis/glsl/pp_regionmodifier.frag \
             vis/glsl/pp_colordepth.frag \
             vis/glsl/pp_combine.frag \
+            vis/glsl/pp_compositer.frag \
             vis/glsl/pp_depthmask.frag \
             vis/glsl/pp_depthoffield.frag \
             vis/glsl/pp_edgedetect.frag \
@@ -198,8 +216,19 @@ win32 {
 }
 
 HEADERS += \
+    ../../include/voreen/core/version.h
+HEADERS += \
+	../../include/voreen/core/cmdparser/command.h \
+	../../include/voreen/core/cmdparser/command_boolean.h \
+	../../include/voreen/core/cmdparser/command_float.h \
+	../../include/voreen/core/cmdparser/command_integer.h \
+	../../include/voreen/core/cmdparser/command_loglevel.h \
+	../../include/voreen/core/cmdparser/command_string.h \
+	../../include/voreen/core/cmdparser/commandlineparser.h
+HEADERS += \
     ../../include/voreen/core/geometry/geometry.h \
     ../../include/voreen/core/geometry/geometrycontainer.h \
+    ../../include/voreen/core/geometry/pointgeometry.h \
     ../../include/voreen/core/geometry/pointlistgeometry.h \
     ../../include/voreen/core/geometry/tgtvec3pointlistgeometry.h
 HEADERS += \
@@ -224,6 +253,7 @@ HEADERS += \
     ../../include/voreen/core/opengl/texturecontainer.h \
     ../../include/voreen/core/opengl/texunitmapper.h
 HEADERS += \
+    ../../include/voreen/core/vis/processors/benchmark.h\
     ../../include/voreen/core/vis/processors/networkevaluator.h\
     ../../include/voreen/core/vis/processors/networkserializer.h\
     ../../include/voreen/core/vis/processors/port.h \
@@ -231,16 +261,18 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/processor.h \
     ../../include/voreen/core/vis/processors/processorfactory.h \
     ../../include/voreen/core/vis/processors/propertyset.h \
+    ../../include/voreen/core/vis/processors/interactionhandler.h\
     ../../include/voreen/core/vis/processors/volumeselectionprocessor.h \
     ../../include/voreen/core/vis/processors/volumesetsourceprocessor.h \
     ../../include/voreen/core/vis/processors/image/background.h \
     ../../include/voreen/core/vis/processors/image/blur.h \
+    ../../include/voreen/core/vis/processors/image/cacherenderer.h \
     ../../include/voreen/core/vis/processors/image/canvasrenderer.h \
     ../../include/voreen/core/vis/processors/image/coarsenessrenderer.h \
     ../../include/voreen/core/vis/processors/image/collect.h \
     ../../include/voreen/core/vis/processors/image/colordepth.h \
     ../../include/voreen/core/vis/processors/image/combine.h \
-    ../../include/voreen/core/vis/processors/image/copytoscreenrenderer.h \
+    ../../include/voreen/core/vis/processors/image/compositer.h \
     ../../include/voreen/core/vis/processors/image/depthmask.h \
     ../../include/voreen/core/vis/processors/image/depthoffield.h \
     ../../include/voreen/core/vis/processors/image/edgedetect.h \
@@ -249,6 +281,7 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/image/labeling.h \
     ../../include/voreen/core/vis/processors/image/labelingmath.h \
     ../../include/voreen/core/vis/processors/image/merge.h \
+    ../../include/voreen/core/vis/processors/image/nullrenderer.h \
     ../../include/voreen/core/vis/processors/image/postprocessor.h \
     ../../include/voreen/core/vis/processors/image/postprocessor.h \
     ../../include/voreen/core/vis/processors/image/regionmodifier.h \
@@ -269,14 +302,15 @@ HEADERS += \
     ../../include/voreen/core/vis/processors/volume/visiblehumandatasetcreator.h
 HEADERS += \
     ../../include/voreen/core/vis/transfunc/transfunc.h \
-	../../include/voreen/core/vis/transfunc/transfunceditor.h \
+    ../../include/voreen/core/vis/transfunc/transfunceditor.h \
     ../../include/voreen/core/vis/transfunc/transfuncmappingkey.h \
     ../../include/voreen/core/vis/transfunc/transfuncintensitygradient.h \
     ../../include/voreen/core/vis/transfunc/transfuncintensity.h \
     ../../include/voreen/core/vis/transfunc/transfuncpainter.h
 HEADERS += \
     ../../include/voreen/core/vis/exception.h \
-    ../../include/voreen/core/vis/geomclippingwidget.h \
+    ../../include/voreen/core/vis/flythroughnavigation.h \
+    ../../include/voreen/core/vis/clippingplanewidget.h \
     ../../include/voreen/core/vis/identifier.h \
     ../../include/voreen/core/vis/idmanager.h \
     ../../include/voreen/core/vis/lightmaterial.h \
@@ -284,15 +318,16 @@ HEADERS += \
     ../../include/voreen/core/vis/messagedistributor.h \
     ../../include/voreen/core/vis/networkanalyzer.h \
     ../../include/voreen/core/vis/property.h \
+    ../../include/voreen/core/vis/pyvoreen.h \
     ../../include/voreen/core/vis/trackballnavigation.h \
     ../../include/voreen/core/vis/voreenpainter.h
 HEADERS += \
-	../../include/voreen/core/vis/slicing/polygon3d.h
+    ../../include/voreen/core/vis/slicing/polygon3d.h
 HEADERS += \
     ../../include/voreen/core/volume/modality.h \
+    ../../include/voreen/core/volume/noisevolume.h \
     ../../include/voreen/core/volume/volume.h \
     ../../include/voreen/core/volume/volumeatomic.h \
-#../../include/voreen/core/volume/volumecontainer.h \
     ../../include/voreen/core/volume/volumeelement.h \
     ../../include/voreen/core/volume/volumefusion.h \
     ../../include/voreen/core/volume/volumegl.h \
@@ -306,6 +341,7 @@ HEADERS += \
     ../../include/voreen/core/volume/histogram.h \
     ../../include/voreen/core/volume/observer.h
 HEADERS += \
+    ../../include/voreen/core/xml/xmlserializable.h \
     ../../include/voreen/core/xml/serializable.h
 HEADERS += \
     ../../ext/tinyxml/tinyxml.h \
@@ -319,52 +355,97 @@ SOURCES += \
     vis/borderoverlay.cpp \
     vis/fpsoverlay.cpp \
     vis/geomplane.cpp \
-    vis/geomvirtualclippingwidget.cpp \
-    vis/pyvoreen.cpp \
+    vis/arbitraryclippingplanewidget.cpp \
     vis/virtualclipping.cpp \
     vis/processors/ultrasoundprocessor.cpp \
     vis/processors/image/crosshair.cpp \
     vis/processors/image/glow.cpp \
     vis/processors/image/magicmirror.cpp \
-    vis/processors/image/measuring.cpp \
     vis/processors/image/normalestimation.cpp \
     vis/processors/image/texturerenderer.cpp \
     vis/processors/render/aoraycaster.cpp \
     vis/processors/render/cpuraycaster.cpp \
-    vis/processors/render/fancyraycaster.cpp \
+    vis/processors/render/globalillumraycaster.cpp \
     vis/processors/render/optimizedentryexitpoints.cpp \
     vis/processors/render/multilayerraycaster.cpp \
     vis/processors/render/petctraycaster.cpp \
     vis/processors/render/registrationraycaster.cpp \
     vis/processors/render/rgbaraycaster.cpp \
     vis/processors/render/rgbraycaster.cpp \
-    vis/processors/volume/motionestimation.cpp \
+    vis/processors/volume/motionestimation.cpp
+SOURCES += \
+    viewevents/history.cpp \
+    viewevents/interactionevent.cpp \
+    viewevents/viewgroup.cpp \
+    viewevents/vrntrackball.cpp \
+    viewevents/eventport.cpp
+SOURCES += \
+    views/allslicesview.cpp \
+    views/reangulationview.cpp \
+    views/sliceview.cpp \
+    views/standardview.cpp \
+    views/tgtdemoview.cpp \
+    views/view.cpp \
+    views/viewregister.cpp
 
 HEADERS += \
     ../../include/voreen/core/vis/borderoverlay.h \
     ../../include/voreen/core/vis/fpsoverlay.h \
     ../../include/voreen/core/vis/geomplane.h \
-    ../../include/voreen/core/vis/geomvirtualclippingwidget.h \
-    ../../include/voreen/core/vis/pyvoreen.h \
+    ../../include/voreen/core/vis/arbitraryclippingplanewidget.h \
     ../../include/voreen/core/vis/virtualclipping.h \
     ../../include/voreen/core/vis/processors/ultrasoundprocessor.h \
     ../../include/voreen/core/vis/processors/image/crosshair.h \
     ../../include/voreen/core/vis/processors/image/glow.h \
     ../../include/voreen/core/vis/processors/image/magicmirror.h \
-    ../../include/voreen/core/vis/processors/image/measuring.h \
     ../../include/voreen/core/vis/processors/image/normalestimation.h \
     ../../include/voreen/core/vis/processors/image/texturerenderer.h \
     ../../include/voreen/core/vis/processors/render/aoraycaster.h \
     ../../include/voreen/core/vis/processors/render/cpuraycaster.h \
-    ../../include/voreen/core/vis/processors/render/fancyraycaster.h \
+    ../../include/voreen/core/vis/processors/render/globalillumraycaster.h \
     ../../include/voreen/core/vis/processors/render/multilayerraycaster.h \
     ../../include/voreen/core/vis/processors/render/optimizedentryexitpoints.h \
     ../../include/voreen/core/vis/processors/render/petctraycaster.h \
     ../../include/voreen/core/vis/processors/render/registrationraycaster.h \
     ../../include/voreen/core/vis/processors/render/rgbaraycaster.h \
     ../../include/voreen/core/vis/processors/render/rgbraycaster.h \
+    ../../include/voreen/core/vis/processors/render/segmentationraycaster.h \
     ../../include/voreen/core/vis/processors/volume/motionestimation.h \
-    ../../include/voreen/core/volume/vq.h \
+    ../../include/voreen/core/volume/vq.h
+HEADERS += \
+    ../../include/voreen/core/viewevents/history.h \
+    ../../include/voreen/core/viewevents/interactionevent.h \
+    ../../include/voreen/core/viewevents/sliceevent.h \
+    ../../include/voreen/core/viewevents/viewevent.h \
+    ../../include/voreen/core/viewevents/vieweventlistener.h \
+    ../../include/voreen/core/viewevents/viewgroup.h \
+    ../../include/voreen/core/viewevents/vrntrackball.h \
+    ../../include/voreen/core/viewevents/eventport.h
+HEADERS += \
+    ../../include/voreen/core/views/allslicesview.h \
+    ../../include/voreen/core/views/reangulationview.h \
+    ../../include/voreen/core/views/sliceview.h \
+    ../../include/voreen/core/views/standardview.h \
+    ../../include/voreen/core/views/tgtdemoview.h \
+    ../../include/voreen/core/views/view.h \
+    ../../include/voreen/core/views/viewregister.h
+HEADERS += \
+    ../../include/voreen/core/viewevents/history.h \
+    ../../include/voreen/core/viewevents/interactionevent.h \
+    ../../include/voreen/core/viewevents/sliceevent.h \
+    ../../include/voreen/core/viewevents/viewevent.h \
+    ../../include/voreen/core/viewevents/vieweventlistener.h \
+    ../../include/voreen/core/viewevents/viewgroup.h \
+    ../../include/voreen/core/viewevents/vrntrackball.h \
+    ../../include/voreen/core/viewevents/eventport.h
+HEADERS += \
+    ../../include/voreen/core/views/allslicesview.h \
+    ../../include/voreen/core/views/reangulationview.h \
+    ../../include/voreen/core/views/sliceview.h \
+    ../../include/voreen/core/views/standardview.h \
+    ../../include/voreen/core/views/tgtdemoview.h \
+    ../../include/voreen/core/views/view.h \
+    ../../include/voreen/core/views/viewregister.h
 
 	win32 {
 		MSC_VER = $$find( QMAKE_COMPILER_DEFINES, "_MSC_VER")
@@ -372,8 +453,8 @@ HEADERS += \
 		    SOURCES += \
             vis/glsl/mipmap_minmax.frag \
             vis/glsl/rc_ambientocclusion.frag \
-            vis/glsl/rc_fancy.frag \
             vis/glsl/rc_fusion.frag \
+            vis/glsl/rc_globalillum.frag \
             vis/glsl/rc_mapto3dtexture.frag \
             vis/glsl/rc_multilayer.frag \
             vis/glsl/rc_rgb.frag \
@@ -400,14 +481,13 @@ contains(DEFINES, VRN_WITH_CLOSEUP_RENDERER) {
     vis/closeup.cpp \
     vis/processors/render/closeuprenderer.cpp \
     vis/processors/render/overviewentryexitpoints.cpp \
-    vis/processors/render/overviewraycaster.cpp \
-    ../../ext/freetype_nehe/FreeType.cpp
-  HEADERS += \
+    vis/processors/render/overviewraycaster.cpp
+
+	HEADERS += \
     ../../include/voreen/core/vis/closeup.h \
     ../../include/voreen/core/vis/processors/render/closeuprenderer.h \
     ../../include/voreen/core/vis/processors/render/overviewentryexitpoints.h \
-    ../../include/voreen/core/vis/processors/render/overviewraycaster.h \
-    ../../ext/freetype_nehe/FreeType.h
+    ../../include/voreen/core/vis/processors/render/overviewraycaster.h
 }
 
 contains(DEFINES, VRN_WITH_FBO_CLASS) {

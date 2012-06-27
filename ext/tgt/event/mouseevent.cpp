@@ -33,7 +33,30 @@ MouseEvent::MouseEvent(int x, int y, MouseAction action, int mod, MouseButtons b
     action_(action),
     mod_(mod)
 {
+	
+}
 
+int MouseEvent::getEventType(){
+	switch (action_){
+		case MOTION:
+			// motion = move?
+			return MOUSEMOVEEVENT;
+			break;
+		case PRESSED:
+			return MOUSEPRESSEVENT;
+			break;
+		case RELEASED:
+			return MOUSERELEASEEVENT;
+			break;
+		case DOUBLECLICK:
+		    return MOUSEDOUBLECLICKEVENT;
+			break;
+		case WHEEL:
+			return WHEELEVENT;
+			break;
+		default:
+			return 0;
+	}
 }
 
 }

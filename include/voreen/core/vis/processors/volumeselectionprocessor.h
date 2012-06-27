@@ -53,13 +53,14 @@ public:
     virtual const std::string getProcessorInfo() const;
     virtual Processor* create();
 
-    virtual bool isMultipassCompatible() { return true; }
     virtual void process(LocalPortMapping* portMapping);
     virtual void processMessage(Message* msg, const Identifier& dest);
 
     VolumeHandle** getVolumeHandleAddress();
 
     void setVolumeSet(VolumeSet* const volumeset);
+    void setVolumeSeries(VolumeSeries* const volumeSeries);
+    void setVolumeHandle(VolumeHandle* const volumeHandle);
 
     static const Identifier msgSetCurrentModality_;
     static const Identifier msgSetCurrentTimestep_;
@@ -71,7 +72,7 @@ public:
      * Instead of only notifying the processors, the observed objects shall
      * try to cast their observers to a VolumeSelectionProcessor and call
      * the desired method like it is done by the VolumeSelectionPlugin from
-     * kahuna: on changing the selected VolumeSet, the plugin calls
+     * VoreenMV: on changing the selected VolumeSet, the plugin calls
      * <code>setVolumeSeries()</code> and <code>setVolumeHandle()</code>
      * on the casted observer.
      */

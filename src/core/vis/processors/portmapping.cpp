@@ -93,7 +93,7 @@ int PortMapping::getGeometryNumber(Processor* processor, Identifier ident, int p
 
 	std::vector<PortData*> portData = portMap_[p];
 
-	if (static_cast<int>(portData.size()) < pos)
+	if (static_cast<int>(portData.size()) <= pos)
 		throw VoreenException("No data was mapped for that port: '" + ident.getName() + "'");
 
 	PortDataGeometry* pdg = dynamic_cast<PortDataGeometry*>(portData.at(pos));
@@ -173,9 +173,11 @@ std::vector<PortDataCoProcessor*> PortMapping::getAllCoProcessorData(Processor* 
 
 //---------------------------------------------------------------------------
 
-LocalPortMapping::LocalPortMapping(PortMapping* portMapping, Processor* processor) :
-    portMapping_(portMapping), processor_(processor)
-{}
+LocalPortMapping::LocalPortMapping(PortMapping* portMapping, Processor* processor)
+    : portMapping_(portMapping)
+    , processor_(processor)
+{
+}
 
 int LocalPortMapping::getTarget(Identifier ident, int pos) throw (std::exception) {
 	return portMapping_->getTarget(processor_, ident, pos);
@@ -201,9 +203,8 @@ std::vector<PortDataCoProcessor*> LocalPortMapping::getAllCoProcessorData(Identi
 	return portMapping_->getAllCoProcessorData(processor_, ident);
 }
 
-LocalPortMapping* LocalPortMapping::createLocalPortMapping(voreen::Processor *processor) throw(std::exception)  {
-	LocalPortMapping* newMapping = new LocalPortMapping(portMapping_,processor);
-	return newMapping;
+LocalPortMapping* LocalPortMapping::createLocalPortMapping(Processor *processor) throw(std::exception)  {
+	return new LocalPortMapping(portMapping_, processor);
 }
 
 } //namespace voreen

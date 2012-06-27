@@ -30,80 +30,35 @@
 #ifndef VRN_CANVASRENDERER_H
 #define VRN_CANVASRENDERER_H
 
-#include "tgt/glmath.h"
-
 #include "voreen/core/vis/processors/processor.h"
-#include "voreen/core/vis/processors/image/copytoscreenrenderer.h"
 
 namespace voreen {
 
 /**
  * A CanvasRenderer is the last processor in a network. Its only purpose is to copy
- * its input to the finaltarget of texture container. It inherits from CopyToScreenRenderer
- * because of the coarseness properties they both share. 
+ * its input to the finaltarget of texture container. Additionally the CanvasRenderer
+ * is able to cache the rendering result, if no parameter in any processor in the network
+ * has been changed since last rendering.
  */
-//TODO: Since the CopyToScreenRenderer is more or less deprecated now, that functionality
-//should be shifted to the CanvasRenderer and CoarsenessRenderer in my opinion (Stephan)
-class CanvasRenderer : public CopyToScreenRenderer {
+class CanvasRenderer : public Processor {
 public:
 	CanvasRenderer();
     ~CanvasRenderer();
     virtual void process(LocalPortMapping* portMapping);
 
-	virtual const Identifier getClassName() const { return "Miscellaneous.Canvas"; }
+	virtual const Identifier getClassName() const;
 	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() { return new CanvasRenderer(); }
-};
+    virtual Processor* create();
+        
+    virtual int initializeGL();
 
-/**
- * A CacheRenderer is the last processor in a network. Its only purpose is to copy
- * its input to the finaltarget of texture container. It inherits from CopyToScreenRenderer
- * because of the coarseness properties they both share. But since the CopyToScreenRenderer
- * is more or less deprecated now, that functionality should be shifted to the CanvasRenderer
- * and CoarsenessRenderer in my opinion (Stephan)
- */
-//TODO: include this functionality into CanvasRenderer. joerg
-class CacheRenderer : public CopyToScreenRenderer {
-public:
-	CacheRenderer();
-    ~CacheRenderer();
-
-	virtual void process(LocalPortMapping* portMapping);
-
-	virtual const Identifier getClassName() const { return "Miscellaneous.CacheRenderer"; }
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() { return new CacheRenderer(); }
-};
-
-// ---------------------------------------------------------------------------
-
-/**
- * A NullRenderer is the last processor in a network. Its only purpose is to terminate a
- * network and to keep the id of the rendered image from the texture container.
- * This processor does neither create any output nor does it render to the frame buffer!
- *
- * @author  Dirk Feldmann, October 2008
- */
-//TODO: simply allow multiple CanvasRenderers
-class NullRenderer : public CopyToScreenRenderer {
-public:
-	NullRenderer();
-    ~NullRenderer();
-    virtual void process(LocalPortMapping* portMapping);
-
-	virtual const Identifier getClassName() const { return "Miscellaneous.NullCanvas"; }
-	virtual const std::string getProcessorInfo() const;
-    virtual Processor* create() { return new NullRenderer(); }
-
+protected:   
     /**
-     * Returns the ID of the image which will be copied to the frame buffer in order
-     * to enable others to access the render target from the TextureContainer where
-     * the final image is held. (added by Dirk for prosem SS 2008)
+     * The shader program used by this \c CanvasRenderer.
      */
-    int getImageID() { return imageID_; }
+    tgt::Shader* raycastPrg_;
 
-protected:
-    int imageID_;   /** render target holding the final image within TextureContainer. */
+    BoolProp useCaching_; ///< property that activates or deactivates caching in this processor
 };
 
 } // namespace voreen

@@ -34,7 +34,8 @@
 
 namespace voreen {
 
-ClipperWidget::ClipperWidget(const char *text, QWidget *parent) : QWidget(parent) 
+ClipperWidget::ClipperWidget(const char *text, QWidget *parent)
+: QWidget(parent) 
 {
     slider1Down_ = false;
     slider2Down_ = false;
@@ -97,7 +98,8 @@ void ClipperWidget::setLCDDisplay() {
 			slider2_->setValue(slider2_->getValue()+slider1_->getValue()-oldSlider1Val_);
 		else if (slider1_->getValue() >= slider2_->getValue()-1)
 			slider2_->setValue(slider1_->getValue()+1);
-	} else if (sender() == slider2_) {
+	}
+    else if (sender() == slider2_) {
 		if (slidersLocked_ && !slider1Down_)
 			slider1_->setValue(slider1_->getValue()+slider2_->getValue()-oldSlider2Val_);
 		else 

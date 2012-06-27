@@ -104,7 +104,7 @@ void RptTCTTooltip::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 {
     QGraphicsRectItem::paint(painter, option, widget);
     if (image_)
-        painter->drawImage(this->rect(), *image_);
+        painter->drawImage(rect(), *image_);
 }
 
 } //namespace voreen

@@ -35,11 +35,15 @@
 namespace voreen {
 
 /**
- * Reader for <tt>.dat</tt> volume description files. The actual volume data is contained in a
- * corresponding <tt>.raw</tt>.
+ * Reader for <tt>.dat</tt> files. These files can either be volume description files (the actual
+ * volume data is contained in a corresponding <tt>.raw</tt>) or they may be volumes of their own.
+ * These two types can be distinguished by their size and the contents of the first 6 bytes. The
+ * format used for the .dat-volumes says that the first six bytes contain the information about
+ * the dimension of the volume. If the file size is different from the multiplicated value of these
+ * dimensions, it must be a meta description file.
  *
  * The following tags are understood by the reader:
- * - <tt>ObjectFileNamee</tt>: Name of the corresponding <tt>.raw</tt> file. The name may not
+ * - <tt>ObjectFileName</tt>: Name of the corresponding <tt>.raw</tt> file. The name may not
  *    contain whitespaces.
  * - <tt>TaggedFileName</tt>: ignored
  * - <tt>Resolution</tt>: Number of voxels in x-, y- and z-direction
@@ -70,18 +74,19 @@ GridType:       EQUIDISTANT
  */
 class DatVolumeReader : public VolumeReader {
 public:
-    DatVolumeReader(IOProgress* progress = 0)
-      : VolumeReader(progress)
-    {
-        name_ = "Dat Reader";
-        extensions_.push_back("dat");
-    }
-
+    DatVolumeReader(IOProgress* progress = 0);
+    
     virtual VolumeSet* read(const std::string& fileName)
-        throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        throw (tgt::FileException, std::bad_alloc);
 
 private:
     static const std::string loggerCat_;
+
+    VolumeSet* readVolumeFile(const std::string& fileName, const tgt::ivec3& dims)
+        throw (tgt::FileException, std::bad_alloc);
+
+    VolumeSet* readMetaFile(const std::string& fileName)
+        throw (tgt::FileException, std::bad_alloc);
 };
 
 } // namespace voreen

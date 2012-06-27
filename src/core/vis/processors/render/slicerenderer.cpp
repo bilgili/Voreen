@@ -299,7 +299,7 @@ void SliceRendererBase::processMessage(Message* msg, const Identifier& dest/*=Me
             transferFunc_ = tf;
         }
 
-        if( (currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolumeGL() != 0) )
+        if ( (currentVolumeHandle_ != 0) && (currentVolumeHandle_->getVolumeGL() != 0) )
             // VolumeGL handles all hardware support cases
             currentVolumeHandle_->getVolumeGL()->applyTransFunc(transferFunc_); 
     }
@@ -731,10 +731,12 @@ void SliceRenderer3D::paint() {
 
 
 void SliceRenderer3D::process(LocalPortMapping* portMapping) {
-
     VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);
+    if (volumeHandle != 0) {
+        if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
+            setVolumeHandle(volumeHandle);
+    } else
+        setVolumeHandle(0);
     
     if ( currentVolumeHandle_ == 0 )
         return;
@@ -745,7 +747,6 @@ void SliceRenderer3D::process(LocalPortMapping* portMapping) {
 		int dest = portMapping->getTarget("image.outport");
         tc_->setActiveTarget(dest, oss.str());
     }
-    glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
     LGL_ERROR;
     // set background to background color, even if no dataset is rendered
     tgt::Color clearColor = backgroundColor_.get();
@@ -974,21 +975,17 @@ void OverviewRenderer::process(LocalPortMapping* /*localPortMapping*/) {
     restoreModelViewAndTextureMatrices();
 
     glEnable(GL_DEPTH_TEST);
-
-	/*
-    if (tc_)
-        tc_->releaseTarget(dest, getTargetConfig(ttImage_));
-	*/
 }
 
 void OverviewRenderer::processMessage(Message* msg, const Identifier& dest) {
 
     SliceRendererBase::processMessage(msg, dest);
 
-    if (msg->id_ == setVolumeContainer_)
+    //TODO: adapt to volumesetContainer concept
+    /*if (msg->id_ == setVolumeContainer_)
         showOverview();
     else if (msg->id_ == setCurrentDataset_)
-        showOverview();
+        showOverview();*/
 
 }
 
@@ -1161,11 +1158,11 @@ int OverviewRenderer::distanceToNearestCenter(int &slice_x, int &slice_y) {
 
 void OverviewRenderer::getSliceCoords(int sliceID, vec2 &ll, vec2 &ur) {
 
-    if( currentVolumeHandle_ == 0 )
+    if ( currentVolumeHandle_ == 0 )
         return;
 
     Volume* volume = currentVolumeHandle_->getVolume();
-    if( volume == 0 )
+    if ( volume == 0 )
         return;
 
     tgtAssert(sliceID >= 0 &&
@@ -1259,7 +1256,7 @@ void SingleSliceRenderer::process(LocalPortMapping* portMapping) {
 
     // init stuff
     VolumeGL* volumeGL = currentVolumeHandle_->getVolumeGL();
-    if( volumeGL == 0 )
+    if ( volumeGL == 0 )
         return;
 
     setupTextures();
@@ -1523,7 +1520,7 @@ void CustomSliceRenderer::process(LocalPortMapping* localPortMapping) {
     // FIXME: implement portmapping for new volume concept.
 
     Volume* volume = currentVolumeHandle_->getVolume();
-    if( volume == 0 )
+    if ( volume == 0 )
         return;
 
     mat4 m = camera_->getViewMatrix();
@@ -1649,7 +1646,7 @@ void EmphasizedSliceRenderer3D::calculateTransformation() {
 }
 
 void EmphasizedSliceRenderer3D::paint() {
-    if( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
+    if ( (currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0) )
         return;
 
     glEnable(GL_BLEND);
@@ -1659,7 +1656,7 @@ void EmphasizedSliceRenderer3D::paint() {
     // volTexUnit_ is now active
 
     const VolumeTexture* volTex = currentVolumeHandle_->getVolumeGL()->getTexture();
-    if( volTex == 0 )
+    if ( volTex == 0 )
         return;
 
     volTex->bind();

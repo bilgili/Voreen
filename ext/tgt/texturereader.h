@@ -25,14 +25,26 @@
 #ifndef TGT_TEXTUREREADER_H
 #define TGT_TEXTUREREADER_H
 
-#include <vector>
-
 #include "tgt/config.h"
 #include "tgt/texture.h"
+
+#include <vector>
 
 namespace tgt {
 
 class TextureReader {
+public:
+    TextureReader();
+    virtual ~TextureReader() {}
+
+    virtual const std::vector<std::string>& getEndings() const { return extensions_; }
+    
+    virtual Texture* loadTexture(const std::string& filename, Texture::Filter filter,
+                                 bool compress = false, bool keepPixels = false,
+                                 bool createOGLTex = true, bool textureRectangle = false) = 0;
+    
+    virtual std::string getName() const { return name_; }
+
 protected:
     static const std::string loggerCat_;
 
@@ -40,45 +52,35 @@ protected:
     std::string name_;
 
     /**
-    *   Create OpenGL texture
-    */
+     *   Create OpenGL texture
+     */
     bool create1DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex = true);
 
     /**
-    *   Create OpenGL texture
-    */
+     *   Create OpenGL texture
+     */
     bool create2DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex = true);
 
 	/**
-    *   Create OpenGL texture
-    */
+     *   Create OpenGL texture
+     */
     bool createRectangleTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex = true);
 
-public:
     /**
-    *   Create OpenGL texture
-    */
+     *   Create OpenGL texture
+     */
     bool create3DTexture(Texture* t, Texture::Filter filter, bool compress, bool createOGLTex = true);
 
-protected:
     /**
-    *   Find nearest (larger) power-of-2 value
-    */
+     *   Find nearest (larger) power-of-2 value
+     */
     GLsizei checkSize(GLsizei s);
     /**
-    *   If necessary scale texture to power of 2
-    */
+     *   If necessary scale texture to power of 2
+     */
     bool rescaleTexture(Texture* t, Texture::Filter filter);
-
-
-public:
-    TextureReader();
-    virtual ~TextureReader() {}
-    virtual const std::vector<std::string>& getEndings() const { return extensions_; }
-    virtual Texture* loadTexture(const std::string& filename, Texture::Filter filter, bool compress = false,
-                                 bool keepPixels = false, bool createOGLTex = true, bool textureRectangle = false) = 0;
-    virtual std::string getName() const { return name_; }
 };
 
-} // namepsace tgt
+} // namespace tgt
+
 #endif // TGT_TEXTUREREADER_H

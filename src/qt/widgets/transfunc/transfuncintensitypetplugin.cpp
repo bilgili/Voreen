@@ -29,7 +29,6 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncintensitypetplugin.h"
 
-
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
@@ -43,7 +42,6 @@
 
 #include "voreen/qt/widgets/transfunc/transfuncgradient.h"
 #include "voreen/qt/widgets/doublesliderwidget.h"
-
 
 namespace voreen {
 
@@ -166,7 +164,6 @@ void TransFuncIntensityPetPlugin::createWidgets() {
 }
 
 void TransFuncIntensityPetPlugin::createConnections() {
-	
 	connect(loadButton_, SIGNAL(clicked()), this, SLOT(readFromDisc()));
 	connect(doubleSlider_ , SIGNAL(valuesChanged(float, float)), this, SLOT(sliderChanged(float, float)));
 	connect(minBox_ , SIGNAL(valueChanged(int)), this, SLOT(minBoxChanged(int)));
@@ -176,7 +173,7 @@ void TransFuncIntensityPetPlugin::createConnections() {
 }
 
 void TransFuncIntensityPetPlugin::minBoxChanged(int value) {
-    if (fabs(float(value) / float(greatestIntensity) - thresholds.x) > 0.00001f) {
+    if (fabs(static_cast<float>(value) / static_cast<float>(greatestIntensity) - thresholds.x) > 0.00001f) {
 	    thresholds.x = float(value) / float(greatestIntensity);
 	    histo_->setLowerThreshold(thresholds.x);
         doubleSlider_->blockSignals(true);
@@ -191,7 +188,7 @@ void TransFuncIntensityPetPlugin::minBoxChanged(int value) {
 }
 
 void TransFuncIntensityPetPlugin::maxBoxChanged(int value) {
-    if (fabs(float(value) / float(greatestIntensity) - thresholds.y) > 0.00001f) {
+    if (fabs(static_cast<float>(value) / static_cast<float>(greatestIntensity) - thresholds.y) > 0.00001f) {
 	    thresholds.y = float(value) / float(greatestIntensity);
 	    histo_->setUpperThreshold(thresholds.y);
         doubleSlider_->blockSignals(true);
@@ -211,7 +208,7 @@ void TransFuncIntensityPetPlugin::sliderChanged(float x, float y) {
 }
 
 void TransFuncIntensityPetPlugin::commitGradient() {
-	if (tf_){
+	if (tf_) {
 		offset.x = tf_->getKey(0)->getIntensity();
 		offset.y = tf_->getKey(tf_->getNumKeys()-1)->getIntensity();
 	}
@@ -227,15 +224,14 @@ void TransFuncIntensityPetPlugin::resetGradient() {
 }
 
 void TransFuncIntensityPetPlugin::updateToThresholds(){
-	if (tf_){
-		
+	if (tf_) {
 		float recRange = 1/range;
 		range = thresholds.y - thresholds.x;		
 		float gradientRange = doubleSlider_->getMaxValue() - doubleSlider_->getMinValue();
 		float plus = doubleSlider_->getMinValue();
 
 		float intensity;
-		for (int i=0; i < tf_->getNumKeys(); i++){
+		for (int i=0; i < tf_->getNumKeys(); ++i){
 			// renormalize intensity
 			intensity = recRange * (tf_->getKey(i)->getIntensity() - oldThreshX);
 			// calculate intensity values for gradient and transferfunc
@@ -260,7 +256,7 @@ void TransFuncIntensityPetPlugin::readFromDisc() {
 	maxBox_->setValue(greatestIntensity);
 	
 	// load new transfer function
-	if(mousePress){
+	if (mousePress){
 		QString fileName = QFileDialog::getOpenFileName(this,
 					"Choose transfer function to open",
 					"../../data/transferfuncs",
@@ -292,18 +288,18 @@ void TransFuncIntensityPetPlugin::dataSourceChanged(Volume* newDataset) {
 	int bits = newDataset->getBitsStored();
     lowestIntensity = 0;
 	switch (bits) {
-        case 8:
-			greatestIntensity = 255;
-            break;
-        case 12:
-            greatestIntensity = 4095;            
-            break;
-        case 16:
-            greatestIntensity = 65535;
-            break;
-        case 32:
-            greatestIntensity = 255;
-            break;
+    case 8:
+		greatestIntensity = 255;
+        break;
+    case 12:
+        greatestIntensity = 4095;            
+        break;
+    case 16:
+        greatestIntensity = 65535;
+        break;
+    case 32:
+        greatestIntensity = 255;
+        break;
 	}
 
 	minBox_->setMaximum(greatestIntensity);
@@ -327,7 +323,6 @@ void TransFuncIntensityPetPlugin::dataSourceChanged(Volume* newDataset) {
 	histo_->repaint();
 }
 
-
 void TransFuncIntensityPetPlugin::setThresholds(int l, int u) {
     minBox_->setValue(l);
     maxBox_->setValue(u);
@@ -349,6 +344,5 @@ void TransFuncIntensityPetPlugin::setTransFunc(TransFuncIntensity* tf) {
     gradient_->update();
     transFuncChanged();
 }
-
 
 } //namespace voreen

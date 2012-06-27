@@ -27,14 +27,26 @@
  *                                                                    *
  **********************************************************************/
 
+// do this at very first
+#ifdef VRN_WITH_PYTHON
+#include "tgt/scriptmanager.h"
+#endif // VRN_WITH_PYTHON
+
 #include "rptmainwindow.h"
 
 #include "tgt/init.h"
 #include "tgt/logmanager.h"
 #include "tgt/filesystem.h"
 
+#include "voreen/core/cmdparser/commandlineparser.h"
 #include "voreen/core/vis/messagedistributor.h"
-#include "voreen/core/vis/processors/networkevaluator.h" // FIXME: remove after global pointer is gone
+
+#include "voreen/qt/versionqt.h"
+
+#ifdef VRN_WITH_PYTHON
+#include "voreen/core/vis/pyvoreen.h"
+#include "voreen/qt/pyvoreenqt.h"
+#endif
 
 #ifdef VRN_SPLASHSCREEN
 #include <QSplashScreen>
@@ -45,42 +57,99 @@
     #include "tgt/gpucapabilitieswindows.h"
 #endif
 
-#ifdef VRN_WITH_SVNVERSION
-#include "voreen/svnversion.h"
-#endif
-
 using namespace voreen;
 
-namespace voreen {
-    NetworkEvaluator* uglyglobalevaluator = 0; // FIXME: remove after we found a way to access the NetEv for Tooltips
+// Check whether working directory is set correctly and try to fix it for some common
+// situations.
+bool checkVoreenPath(const QString& appname = "") {
+    const QString shaderPath = "../../src/core/vis/glsl";
+    QDir dir;
+    if (!dir.exists(shaderPath)) {
+        QDir dir;
+        LWARNINGC("voreenve.main", "shader path " << shaderPath.toStdString()
+                  << " not found from current directory "
+                  << dir.canonicalPath().toStdString());
+
+        if (dir.cdUp() && dir.exists(shaderPath)) {
+            // found from parent directory
+            LWARNINGC("voreenve.main", "changing working directory to "
+                      << dir.absolutePath().toStdString());
+
+            QDir::setCurrent(dir.path());
+            return true;
+        }
+        else if (!appname.isEmpty()) {
+            // try directory named like the application
+            QDir dir;
+            if (dir.cd(appname) && dir.exists(shaderPath)) {
+                // found from appname directory
+                LWARNINGC("voreenve.main", "changing working directory to "
+                          << dir.absolutePath().toStdString());
+                QDir::setCurrent(dir.path());
+                return true;
+            }            
+        }
+    } else {
+        return true;
+    }
+
+    LERRORC("voreenve.main", "shader path not found, check your working directory");
+    QMessageBox::critical(0, QObject::tr("Error"),
+                          QObject::tr("Could not find the shader path %1.\n"
+                                      "Check your working directory!\n"
+                                      "(currently set to: %2)\n")
+                          .arg(shaderPath).arg(dir.canonicalPath()));
+    return false;
 }
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
-#ifdef VRN_SPLASHSCREEN
-    QPixmap pixmap(":/vrn_app/image/splash.png");
-    QSplashScreen splash(pixmap);
-    splash.show();
-#endif
+
+    CommandlineParser cmdparser("VoreenVE");
+    cmdparser.setCommandLine(argc, argv);
+
+    tgt::LogLevel logLevel = tgt::Info;
+    cmdparser.addCommand(new Command_LogLevel(&logLevel));
+
+    std::string datasetFilename;
+    cmdparser.addCommand(new Command_LoadDataset(&datasetFilename));
+
+    std::string networkFilename;
+    cmdparser.addCommand(new Command_LoadNetwork(&networkFilename));
+
+    cmdparser.execute();   
+
     tgt::Singleton<voreen::MessageDistributor>::init(new MessageDistributor());    
     tgt::init();
 
     tgt::Log* clog = new tgt::ConsoleLog();
-    clog->addCat("", true, tgt::Info);
+    clog->addCat("", true, logLevel);
     LogMgr.addLog(clog);
 
 #ifdef VRN_ADD_FILE_LOGGER
     // add a file logger
     tgt::Log* log = new tgt::HtmlLog("voreenve-log.html");
-    log->addCat("", true, tgt::Info);
+    log->addCat("", true, logLevel);
     LogMgr.addLog(log);
 #endif
 
-#ifdef VRN_SVN_REVISON
-    LINFOC("voreenve.main", "voreenve svn version " << VRN_SVN_REVISON << " starting..."); 
+    VoreenVersionQt::logAll("voreen.VoreenVE");
+
+#ifdef VRN_SPLASHSCREEN
+    QPixmap pixmap(":/vrn_app/image/splash.png");
+    QSplashScreen splash(pixmap);
+    splash.show();
 #endif
     
-    // init resources for voreen_qt
+#if (QT_VERSION >= 0x040400) && !defined(__APPLE__)
+    // load and set style sheet (only on Qt 4.4 or newer)
+	QFile file(":/widgetstyle/voreen.qss");
+	file.open(QFile::ReadOnly);
+	QString styleSheet = QLatin1String(file.readAll());
+	app.setStyleSheet(styleSheet);
+#endif
+
+// init resources for voreen_qt
     Q_INIT_RESOURCE(vrn_qt);
     // init common application resources
     Q_INIT_RESOURCE(vrn_app);
@@ -88,14 +157,22 @@ int main(int argc, char** argv) {
     QApplication::setOrganizationDomain("voreen.org");
     QApplication::setApplicationName("VoreenVE");
 
-// initialize virtual file system for shaders
+#ifdef VRN_WITH_PYTHON
+    ScriptMgr.addPath("");
+    initVoreenPythonModule();
+    initVoreenqtPythonModule();
+#endif // VRN_WITH_PYTHON
+
+    // initialize virtual file system for shaders
     // (only in release builds)
 #ifdef NDEBUG
-    #pragma message("WARNING: Using 'shader.tar'. Is it up to date???")
+    #pragma message("WARNING: Using 'shaders.tar'. Is it up to date???")
     LINFOC("voreenve.main", "Loading file 'shaders.tar' from Qt's virtual file system ...");
     QFile shaderFile(":/shaders.tar");
     if (!shaderFile.open(QIODevice::ReadOnly)) {
         LERRORC("voreenve.main", "FAILED to load file 'shaders.tar' from Qt's virtual file system!");
+        if (!checkVoreenPath("voreenve"))
+            return 0;
     } else {
         LDEBUGC("voreenve.main", "Reading data from shader file ...");
         QByteArray dataArray = shaderFile.readAll();
@@ -104,12 +181,15 @@ int main(int argc, char** argv) {
         char* data = new char[dataLength];
         memcpy(data, dataArray.data(), dataLength);
         FileSys.addMemoryFile("shader_memory.tar", data, dataLength);
-        FileSys.addPackage("shader_memory.tar", "../../src/core/vis/glsl/");
+        FileSys.addPackage("shader_memory.tar", "../../src/core/vis/");
     }
+#else
+    if (!checkVoreenPath("voreenve"))
+        return 0;
 #endif
 
-    RptMainWindow* mainWindow = new RptMainWindow();
-    mainWindow->show();
+    RptMainWindow mainWindow(networkFilename, datasetFilename);
+    mainWindow.show();
     tgt::initGL();
 
 #ifdef WIN32
@@ -118,14 +198,8 @@ int main(int argc, char** argv) {
     GpuCaps.logCapabilities(false, true);
 #endif
 
-    mainWindow->initTextureContainer(); 
-    mainWindow->createDockWidgets();
-    mainWindow->createConnections();
-
-    //FIXME: merge with common cmdlineparser in all apps
-    if (app.arguments().size() > 1) {
-        mainWindow->openNetworkFile(app.arguments().at(1));
-    }
+    mainWindow.initGL(); 
+    mainWindow.createConnections();
     
 #ifdef VRN_SPLASHSCREEN
     splash.close();

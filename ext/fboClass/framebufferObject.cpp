@@ -208,8 +208,12 @@ FramebufferObject::_FramebufferTextureND( GLenum attachment, GLenum texTarget,
                                GL_TEXTURE_1D, texId, mipLevel );
   }
   else if (texTarget == GL_TEXTURE_3D) {
-    glFramebufferTexture3DEXT( GL_FRAMEBUFFER_EXT, attachment,
-                               GL_TEXTURE_3D, texId, mipLevel, zSlice );
+	  glFramebufferTexture3DEXT( GL_FRAMEBUFFER_EXT, attachment,
+		  GL_TEXTURE_3D, texId, mipLevel, zSlice );
+  }
+  else if (texTarget == GL_TEXTURE_2D_ARRAY_EXT) {
+	  glFramebufferTextureLayerEXT( GL_FRAMEBUFFER_EXT, attachment,
+		  texId, mipLevel, zSlice );
   }
   else {
     // Default is GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_ARB, or cube faces

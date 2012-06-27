@@ -144,7 +144,16 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
 		    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 #endif
+
             volumeTex->bind();
+
+            // Returns the residence status of the target texture. If the value returned in params is
+            // GL_TRUE, the texture is resident in texture memory
+            GLint resident;
+            glGetTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_RESIDENT, &resident);
+
+            if (resident != GL_TRUE)
+                LWARNING("texture not resident: " << volume->meta().getFileName())
             
             shader->setUniform(loc, texUnit);
         }
@@ -203,7 +212,7 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
 }
 
 VolumeRenderer::VolumeStruct::VolumeStruct() {
-    volume_ = NULL;
+    volume_ = 0;
 }
 
 float VolumeRenderer::getLowerThreshold() const {

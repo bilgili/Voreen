@@ -49,7 +49,7 @@ void EventHandler::removeListener(EventListener* e) {
     std::deque<EventListener*>::iterator pos;
     pos = std::find(listeners_.begin(), listeners_.end(), e);
 
-    if(pos != listeners_.end())
+    if (pos != listeners_.end())
         listeners_.erase(pos);
 }
 
@@ -59,9 +59,12 @@ void EventHandler::clear() {
 
 void EventHandler::broadcast(Event* e) {
     for (size_t i = 0 ; i < listeners_.size() ; ++i) {
-        listeners_[i]->onEvent(e);
-        if (e->isAccepted())
-            break;
+		// check if current listener listens to the eventType of e
+		if(listeners_[i]->getEventTypes() & e->getEventType() ){
+            listeners_[i]->onEvent(e);
+            if (e->isAccepted())
+                break;
+		}
     }
     delete e;
 }

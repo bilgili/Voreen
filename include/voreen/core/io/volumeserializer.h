@@ -91,7 +91,7 @@ public:
      * @param filename The file name of the dataset
      */
     VolumeSet* load(const std::string& filename)
-        throw(tgt::UnsupportedFormatException, tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Saves a Volume to the given file.
@@ -100,7 +100,7 @@ public:
      * @param volume The Volume that should be saved.
      */
     void save(const std::string& filename, Volume* volume)
-        throw(tgt::UnsupportedFormatException, tgt::IOException);
+        throw (tgt::FileException);
 
     /**
      * Use this method to register a VolumeReader.
@@ -108,7 +108,7 @@ public:
      * @param vr The VolumeReader to be registered.
      */
     void registerReader(VolumeReader* vr)
-        throw(FormatClashException);
+        throw (FormatClashException);
 
     /**
      * Use this method to register a VolumeWriter.
@@ -116,10 +116,9 @@ public:
      * @param vw The VolumeWriter to be registered.
      */
     void registerWriter(VolumeWriter* vw)
-        throw(FormatClashException);
+        throw (FormatClashException);
 
 private:
-
     typedef std::map<std::string, VolumeReader*> Readers;
     typedef std::map<std::string, VolumeWriter*> Writers;
     Readers readers_; ///< maps one or more extensions to a VolumeReader

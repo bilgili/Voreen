@@ -46,7 +46,7 @@
 
 namespace tgt {
 
-class Navigation : public EventListener {
+class Navigation : virtual public EventListener {
 
 protected:
 

@@ -48,9 +48,7 @@ namespace tgt {
  * The global identifier of this class' singleton is <tt>GpuCaps</tt>.
  */
 class GpuCapabilities {
-
 public:
-
     /**
      * Specifies the major and minor version
      * of the OpenGL implementation.
@@ -68,7 +66,8 @@ public:
         TGT_GL_VERSION_1_4,
         TGT_GL_VERSION_1_5,
         TGT_GL_VERSION_2_0,
-        TGT_GL_VERSION_2_1
+        TGT_GL_VERSION_2_1,
+        TGT_GL_VERSION_3_0
     };
 
     /**
@@ -143,6 +142,13 @@ public:
      */
     GpuVendor getVendor();
 
+    /**
+     * Returns the vendor of the GPU.
+     *
+     * @see GpuVendor
+     */
+    std::string getVendorAsString();
+    
     /**
      * Returns wether a certain OpenGL extension
      * is supported by this implementation. The
@@ -320,7 +326,6 @@ public:
     std::string getOSVersionString();
 
 protected:
-
     /**
      * Is called by the constructor and performs the
      * complete hardware detection. The results
@@ -338,7 +343,6 @@ protected:
     static const std::string loggerCat_;
 
 private:
-
     // detection results are stored in the following members
 
     OSVersion osVersion_;
@@ -368,7 +372,6 @@ private:
     bool sharedPalettedTextures_;
     int colorTableWidth_;
     bool framebufferObjects_;
-
 };
 
 } // namespace tgt

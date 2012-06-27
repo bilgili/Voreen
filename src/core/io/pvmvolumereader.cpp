@@ -41,9 +41,6 @@
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/volume/volumeatomic.h"
 
-using std::cout;
-using std::cerr;
-using std::endl;
 using std::string;
 using tgt::Texture;
 
@@ -84,7 +81,7 @@ VolumeSet* PVMVolumeReader::read(const std::string &fileName)
         after the use of all other returned pointers. (roland)
     */
     try {
-        tmpData = readPVMvolume(const_cast<char*>(fileName.c_str()), progress_, &width, &height, &depth, &components,
+        tmpData = readPVMvolume(const_cast<char*>(fileName.c_str()), getProgress(), &width, &height, &depth, &components,
                                 &scalex, &scaley, &scalez, &description, &courtesy,
                                 &parameter, &comment);
         data = new uint8_t[width * height * depth * components];

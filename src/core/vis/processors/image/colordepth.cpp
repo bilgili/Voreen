@@ -66,8 +66,6 @@ const std::string ColorDepth::getProcessorInfo() const {
 }
 
 void ColorDepth::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,static_cast<int>(size_.x),static_cast<int>(size_.y));
-
 	int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 

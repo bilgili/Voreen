@@ -115,3 +115,19 @@ vec4 compositeFHN(in vec3 gradient, in vec4 curResult, in float t, inout float t
 	}
 	return result;
 }
+
+/**
+ * Performs first hit texture coordinate compositing.
+ */
+vec4 compositeFHT(in vec3 texCoords, in vec4 curResult, in float t, inout float tDepth) {
+	vec4 result = curResult;
+	// save first hit normal
+	if (result.xyz == vec3(0.0)) {
+		result.xyz = texCoords;
+		result.a = 1.0;
+		// save first hit ray parameter for depth value calculation
+		if (tDepth < 0.0)
+			tDepth = t;
+	}
+	return result;
+}

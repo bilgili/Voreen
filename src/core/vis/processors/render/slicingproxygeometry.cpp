@@ -27,9 +27,7 @@
  *                                                                    *
  **********************************************************************/
 
-#ifndef VRN_SLICINGPROXYGEOMETRY_H
 #include "voreen/core/vis/processors/render/slicingproxygeometry.h"
-#endif
 
 #include "tgt/camera.h"
 
@@ -41,21 +39,23 @@ namespace voreen
 const Identifier SlicingProxyGeometry::msgSetClipPlane_("set.ClipPlane");
 const Identifier SlicingProxyGeometry::msgSetSliceThickness_("set.SliceThickness");
 
-SlicingProxyGeometry::SlicingProxyGeometry() : ProxyGeometry(),
-    displayList_(0),
-    cubeProxy_(0),
-    proxyGeometry_(0),
-    clipPlane_(1.0f, 0.0f, 0.0f, 0.1f),
-    sliceThickness_(0.1f),
-    clipPlaneProp_(0),
-    sliceThicknessProp_(0)
+SlicingProxyGeometry::SlicingProxyGeometry() 
+    : ProxyGeometry()
+    , displayList_(0)
+    , cubeProxy_(0)
+    , proxyGeometry_(0)
+    , clipPlane_(1.0f, 0.0f, 0.0f, 0.1f)
+    , sliceThickness_(0.1f)
+    , numSlices_(0)
+    , clipPlaneProp_(0)
+    , sliceThicknessProp_(0)
 {
     createInport("volumehandle.volumehandle");
 	createCoProcessorOutport("coprocessor.proxygeometry", &Processor::call);
 	setIsCoprocessor(true);
 
     clipPlaneProp_ = new FloatVec4Prop(msgSetClipPlane_, "Plane equation", clipPlane_, 
-        tgt::vec4(-1.0f), tgt::vec4(1.0f));
+        tgt::vec4(-2.0f), tgt::vec4(2.0f));
     addProperty(clipPlaneProp_);
     sliceThicknessProp_ = new FloatProp(msgSetSliceThickness_, "slice thickness", sliceThickness_, 
         0.0f, 1.0f);
@@ -86,29 +86,38 @@ void SlicingProxyGeometry::processMessage(Message* msg, const Identifier& dest) 
     if ( msg == 0 )
         return;
     ProxyGeometry::processMessage(msg, dest);
-    if ( msg->id_ == msgSetClipPlane_ ) {
+    if ( msg->id_ == msgSetClipPlane_ )
         setClipPlane(msg->getValue<tgt::vec4>());
-    } else if ( msg->id_ == msgSetSliceThickness_) {
+    else if ( msg->id_ == msgSetSliceThickness_)
         setSliceThickness(msg->getValue<float>());
-    }
 }
 
 void SlicingProxyGeometry::process(LocalPortMapping* portMapping) {
     VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.volumehandle");
-    if (volumeHandle != currentVolumeHandle_)
-        setVolumeHandle(volumeHandle);
+    if (volumeHandle != 0) {
+        if ( (volumeHandle->isIdentical(currentVolumeHandle_) == false) )
+            setVolumeHandle(volumeHandle);
+    } else
+        setVolumeHandle(0);
 }
 
 void SlicingProxyGeometry::setVolumeHandle(VolumeHandle* const handle) {
     ProxyGeometry::setVolumeHandle(handle);
+
+    if( volume_ == 0 )
+        return;
+
+    numSlices_ = calculateNumSlices();
+
     // adjust maximum slice thickness for wort case:
     // the slice is the entire volume along its diagonal
     //
     if ( sliceThicknessProp_ != 0 ) {
-        float len = 2.0f * tgt::length(volumeSize_);
+        float len = tgt::length((volumeSize_ * 2.0f));
         sliceThicknessProp_->setMinValue(0.0f);
         sliceThicknessProp_->setMaxValue(len);
     }
+
     buildCubeProxyGeometry();
 }
 
@@ -122,9 +131,9 @@ Message* SlicingProxyGeometry::call(Identifier ident, LocalPortMapping* /*portMa
     } else if ( ident == "renderFrontFaces" ) {
         render(true);
         return 0;
-    } else if (ident == getVolumeSize_) {
+    } else if (ident == getVolumeSize_)
         return new Vec3Msg("", getVolumeSize());
-    }
+
 	return 0;
 }
 
@@ -133,9 +142,9 @@ void SlicingProxyGeometry::renderDisplayList() {
         return;
 
     if (needsBuild_) {
-        if ( displayList_ <= 0 ) {
+        if ( displayList_ <= 0 )
             displayList_ = glGenLists(1);
-        }
+        
         buildDisplayList();
         needsBuild_ = false;
     }
@@ -169,20 +178,18 @@ void SlicingProxyGeometry::render(const bool renderFrontFaces) {
         // continue with next face if back faces are to be rendered
         // and the cosine of the enclosed angle is really less than zero
         //
-        if ( (renderFrontFaces == false) && (f < -0.001) ) {
+        if ( (renderFrontFaces == false) && (f < -0.001) )
             continue;
         // continue with next face if front faces are to be rendered
         // and the cosine of the enclosed angle is really greater than zero
         //
-        } else if ( (renderFrontFaces == true) && (f > 0.001) ) {
+        else if ( (renderFrontFaces == true) && (f > 0.001) )
             continue;
-        }
 
         std::list<tgt::vec3>::const_iterator it = v.begin();
         glBegin(GL_POLYGON);
-        for ( ; it != v.end(); ++it ) {
+        for ( ; it != v.end(); ++it )
             glVertex3f(it->x, it->y, it->z);
-        }
         glEnd();
     }
 }
@@ -192,9 +199,17 @@ tgt::vec4& SlicingProxyGeometry::getClipPlane() {
 }
 
 void SlicingProxyGeometry::setClipPlane(const tgt::vec4& plane) {
-    clipPlane_ = plane;
-    if ( clipPlaneProp_ != 0 )
-        clipPlaneProp_->set(clipPlane_);
+    if( clipPlane_ != plane) {
+        clipPlane_ = plane;
+
+        if ( clipPlaneProp_ != 0 )
+            clipPlaneProp_->set(clipPlane_);
+    }
+
+    // FIXME: calcuate the number of slices needed by regarding
+    // the length of the volume along the direction of the plane's
+    // normal.
+    
     needsBuild_ = true;
 }
 
@@ -204,9 +219,14 @@ float SlicingProxyGeometry::getSliceThickness() const {
 
 void SlicingProxyGeometry::setSliceThickness(const float thickness) {
     sliceThickness_ = thickness;
+    numSlices_ = calculateNumSlices();
     if ( sliceThicknessProp_ != 0 )
         sliceThicknessProp_->set(sliceThickness_);
     needsBuild_ = true;
+}
+
+int SlicingProxyGeometry::getNumSlices() const {
+    return numSlices_;
 }
 
 // private methods
@@ -225,14 +245,15 @@ void SlicingProxyGeometry::buildDisplayList() {
     glNewList(displayList_, GL_COMPILE);
 	const PolygonFace3D::FaceSet& faces = proxyGeometry_->getFaces();
     PolygonFace3D::FaceSet::const_iterator itFaces = faces.begin();
-    for ( ; itFaces != faces.end(); itFaces++ ) {
+    for ( ; itFaces != faces.end(); ++itFaces ) {
         PolygonFace3D* face = *itFaces;
         const std::list<tgt::vec3>& v = face->getVertices();
         std::list<tgt::vec3>::const_iterator it = v.begin();
         glBegin(GL_POLYGON);
-        for ( ; it != v.end(); ++it ) {
+
+        for ( ; it != v.end(); ++it )
             glVertex3f(it->x, it->y, it->z);
-        }
+
         glEnd();
     }
     glEndList();
@@ -262,12 +283,12 @@ void SlicingProxyGeometry::buildCubeProxyGeometry() {
     // consists of the line segments defined by a 
     // successive pair of indices for the vertices above.
     //
-    DWORD top[8] = {4, 5, 5, 6, 6, 7, 7, 4};
-    DWORD bottom[8] = {0, 3, 3, 2, 2, 1, 1, 0};
-    DWORD front[8] = {0, 4, 4, 7, 7, 3, 3, 0};
-    DWORD back[8] = {1, 2, 2, 6, 6, 5, 5, 1};
-    DWORD left[8] = {0, 1, 1, 5, 5, 4, 4, 0};
-    DWORD right[8] = {2, 3, 3, 7, 7, 6, 6, 2};
+    unsigned long top[8] = {4, 5, 5, 6, 6, 7, 7, 4};
+    unsigned long bottom[8] = {0, 3, 3, 2, 2, 1, 1, 0};
+    unsigned long front[8] = {0, 4, 4, 7, 7, 3, 3, 0};
+    unsigned long back[8] = {1, 2, 2, 6, 6, 5, 5, 1};
+    unsigned long left[8] = {0, 1, 1, 5, 5, 4, 4, 0};
+    unsigned long right[8] = {2, 3, 3, 7, 7, 6, 6, 2};
 
     cubeProxy_->addFace(cubeVertices, 8, bottom, 8, 0, tgt::vec3(0.0f, -1.0f, 0.0f));
     cubeProxy_->addFace(cubeVertices, 8, top, 8, 1, tgt::vec3(0.0f, 1.0f, 0.0f));
@@ -310,6 +331,14 @@ void SlicingProxyGeometry::buildProxyGeometry() {
     pos += (normal * sliceThickness_);
     proxyGeometry_->clip(normal, pos);
     needsBuild_ = true;
+}
+
+int SlicingProxyGeometry::calculateNumSlices() const {
+    // FIXME: this calculates only the worst case for the length:
+    // a plane might be aligned along the diagonal axis of volume
+    //
+    float len = tgt::length((volumeSize_ * 2.0f));
+    return static_cast<int>( ceilf((len / sliceThickness_)) );
 }
 
 }   // namespace

@@ -29,7 +29,7 @@
 #include "tgt/event/event.h"
 #include "tgt/vector.h"
 
-namespace tgt {
+namespace tgt { 
 
 class MouseEvent : public Event {
 public:
@@ -69,6 +69,7 @@ public:
 
     // HACK for voreen paper... it shouldn't be possible to set Coordinates after creation... or maybe it should?
     void setCoord(const ivec2& coord) { coord_ = coord; }
+	virtual int getEventType();
     
 };
 

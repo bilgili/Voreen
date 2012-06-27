@@ -36,12 +36,11 @@
 #include <stack>
 #include <map>
 
-#include "tgt/types.h"
-#include "tgt/vector.h"
-
 #include "voreen/core/vis/identifier.h"
 
-#include <GL/glew.h>
+#include "tgt/types.h"
+#include "tgt/vector.h"
+#include "tgt/tgt_gl.h"
 
 #ifdef VRN_WITH_FBO_CLASS
 class FramebufferObject;
@@ -53,7 +52,6 @@ class Renderbuffer;
 // project, which would introduce some pretty nasty global defines (e.g. "Status").
 class RenderTexture; 
 #endif
-
 
 namespace voreen {
 
@@ -138,12 +136,14 @@ public:
      * @param sharing Share with other TextureContainers
      */
     TextureContainer(int numRT, bool sharing = false);
+
     virtual ~TextureContainer();
 
     /**
      * Creates a TextureContainer which is supported on the current hardware.
      */
-    static TextureContainer* createTextureContainer(int numRT, bool sharing = false, TextureContainerType type=VRN_TEXTURE_CONTAINER_AUTO);
+    static TextureContainer* createTextureContainer(int numRT, bool sharing = false,
+                                                    TextureContainerType type = VRN_TEXTURE_CONTAINER_AUTO);
 
     /**
      * Returns the type of this TextureContainer.
@@ -159,6 +159,14 @@ public:
      * @param incr capacity increment
      */
     virtual void setCapacityIncr(int incr);
+
+    /**
+     * Clears all targets.
+     *
+     * @param clearColor color to clear with
+     * @param depth depth value to clear with
+     */
+    virtual void clearAllTargets(tgt::Color clearColor=tgt::Color::black, float depth=0.0f);
 
     /**
      * Initialize the TextureContainer. Since the TextureContainer depends on the
@@ -194,16 +202,15 @@ public:
      * @param id Id of the new active rt.
      * @param cubeMapSide Side of the cube map to attach.
      */
-    virtual void setActiveTarget(int id, CubemapOrientation cubemapOrientation);
-
-    virtual void setActiveTarget(int id, const std::string& debugLabel = "", CubemapOrientation cubemapOrientation=VRN_NONE) = 0;
+    virtual void setActiveTarget(int id, const std::string& debugLabel = "",
+                                 CubemapOrientation cubemapOrientation = VRN_NONE) = 0;
 
     /**
-     * Work in progress: This function currently only supports a vector with 2 elements,
+     * TODO: Work in progress: This function currently only supports a vector with 2 elements,
      *        the first render target is set normally (as when calling activateTarget), the
      *        second render target is only set as a color attachment.
      */
-    virtual void setActiveTargets(const std::vector<int>& targets) = 0;
+    virtual void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "") = 0;
 
     /**
      * Returns the OpenGL texture id of the color texture.
@@ -361,8 +368,16 @@ public:
      */
     virtual TextureTarget getTextureContainerTextureType();
 
+    /**
+     * Returns the current size of the entire texture container in byte. The
+     * size depends on the current texture size (width and height), the number
+     * of components within the texture (RGBA, depth) and the number of targets
+     * currently used.
+     */
+    int getCurrentMemorySize();
+
     friend std::ostream& operator<<(std::ostream& os, const TextureContainer& tc);
-    GLuint shadowTexID_;
+    GLuint shadowTexID_;//FIXME: remove? joerg
 
 protected:
     /**
@@ -506,16 +521,15 @@ public:
      * @param id Id of the new active rt.
      * @param cubeMapSide Side of the cube map to attach.
      */
-    //virtual void setActiveTarget(int id, CubemapOrientation cubemapOrientation);
-
-    virtual void setActiveTarget(int id, const std::string& debugLabel = "", CubemapOrientation cubemapOrientation=VRN_NONE);
+    virtual void setActiveTarget(int id, const std::string& debugLabel = "",
+                                 CubemapOrientation cubemapOrientation = VRN_NONE);
 
     /**
      * Work in progress: This function currently only supports a vector with 2 elements,
      *        the first render target is set normally (as when calling activateTarget), the
      *        second render target is only set as a color attachment.
      */
-    void setActiveTargets(const std::vector<int>& targets);
+    void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "");
 
     /**
      * Returns the OpenGL texture id of the color texture.
@@ -571,10 +585,9 @@ public:
     FramebufferObject* getFBO();
 
     friend std::ostream& operator<<(std::ostream& os, const TextureContainerFBO& tc);
-    GLuint shadowTexID_;
+    GLuint shadowTexID_; //TODO: remove? joerg
     
 protected:
-
     /**
      * Select appropriate texture types (depending on graphics board.)
      */
@@ -611,6 +624,8 @@ protected:
     bool isFBOActive_;
     /// The FBO
     FramebufferObject* fbo_;
+
+    static const std::string loggerCat_;
 };
 
 // output for debugging
@@ -629,14 +644,11 @@ inline std::ostream& operator<<(std::ostream& os, const TextureContainerFBO& tc)
 
 #ifdef VRN_WITH_RENDER_TO_TEXTURE
 
-class TextureContainerRTT : public TextureContainer 
-{
-public:
-protected:
-    TextureContainerRTT(int numRT, bool sharing = false);
+class TextureContainerRTT : public TextureContainer  {
 public:
     friend TextureContainer* TextureContainer::createTextureContainer(int numRT, bool sharin,
-        TextureContainer::TextureContainerType type);
+                                                                      TextureContainer::TextureContainerType type);
+    
     ~TextureContainerRTT();
 
     virtual TextureContainerType getTextureContainerType();
@@ -650,6 +662,7 @@ public:
      * @return: true if initialization was succesfull, false otherwise
      */
     virtual bool initializeGL();
+
     /**
      * Initialize a RenderTarget.
      *
@@ -664,6 +677,7 @@ public:
      * For rendering into the framebuffer use VRN_FRAMEBUFFER.
      */
     virtual void initializeTarget(int id, int attr);
+
     /**
      * Makes the rendertarget id the active RenderTarget.
      *
@@ -673,16 +687,16 @@ public:
      * @param id Id of the new active rt.
      * @param cubeMapSide Side of the cube map to attach.
      */
-    //virtual void setActiveTarget(int id, CubemapOrientation cubemapOrientation);
-
-    virtual void setActiveTarget(int id, const std::string& debugLabel = "", CubemapOrientation cubemapOrientation=VRN_NONE);
+    virtual void setActiveTarget(int id, const std::string& debugLabel = "",
+                                 CubemapOrientation cubemapOrientation = VRN_NONE);
 
     /**
      * Work in progress: This function currently only supports a vector with 2 elements,
      *        the first render target is set normally (as when calling activateTarget), the
      *        second render target is only set as a color attachment.
      */
-    virtual void setActiveTargets(const std::vector<int>& targets);
+    virtual void setActiveTargets(const std::vector<int>& targets, const std::string& debugLabel = "");
+
     /**
      * Returns the OpenGL texture id of the color texture.
      *
@@ -723,6 +737,7 @@ public:
      * @param id Id of the rt.
      */
     virtual GLenum getGLDepthTexTarget(int id);
+    
     /**
      * Resizes all stored elements.
      *
@@ -731,6 +746,8 @@ public:
     virtual void setSize(const tgt::ivec2& size);
 
 protected:
+    TextureContainerRTT(int numRT, bool sharing = false);
+    
     virtual void unattach(int id);
     virtual void unattach(std::vector<int> id);
 
@@ -740,6 +757,8 @@ protected:
     virtual int adaptToGraphicsBoard(int attr);
 
     RenderTexture* curRenderTexture_;
+
+    static const std::string loggerCat_;
 };
 
 #endif // VRN_WITH_RENDER_TO_TEXTURE

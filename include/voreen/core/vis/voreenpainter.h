@@ -213,21 +213,21 @@ public:
     }
 
     /**
-     * Add a MouseListener to the canvas. Incoming tgt-Events will be broadcast to the listener.
+     * Add an EventListener to the canvas. Incoming tgt-Events will be broadcast to the listener.
      *
      * @param listener The listener that is to be added.
      */
-    void addMouseListener(tgt::EventListener* listener);
+    void addEventListener(tgt::EventListener* listener);
 
     /**
-     * Remove a MouseListener from canvas.
+     * Remove an EventListener from canvas.
      *
-     * @param listener The listener that is removed.
+     * @param listener The listener that shall be removed.
      */
-    void removeMouseListener(tgt::EventListener* listener);
+    void removeEventListener(tgt::EventListener* listener);
 
-    /// removes all registered MouseListener from Eventhandler
-    void removeAllMouseListener();
+    /// removes all registered EventListeners from Eventhandler
+    void removeAllEventListeners();
 
     /**
      * Takes care of incoming messages. Accepts the following message-ids: <br>
@@ -265,7 +265,8 @@ public:
      */
     void paint();
 
-	void setEvaluator(NetworkEvaluator* eval);
+	bool setEvaluator(NetworkEvaluator* eval);
+    
 	NetworkEvaluator* getEvaluator() const {
 		return evaluator_;
 	}
@@ -288,8 +289,8 @@ public:
      */
     void renderToSnapshot(tgt::ivec2 size, std::string fileName);
 
-	static const Identifier removeMouseListener_;
-    static const Identifier addMouseListener_;
+	static const Identifier removeEventListener_;
+    static const Identifier addEventListener_;
     static const Identifier addCanvasOverlay_;
     static const Identifier addFrameOverlay_;
     static const Identifier delCanvasOverlay_;

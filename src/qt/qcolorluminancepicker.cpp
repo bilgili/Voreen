@@ -82,8 +82,7 @@ void QColorLuminancePicker::setVal(int v) {
 }
 
 // receives from a hue,sat chooser and relays.
-void QColorLuminancePicker::setCol(int h, int s)
-{
+void QColorLuminancePicker::setCol(int h, int s) {
     setCol(h, s, val);
     emit newHsv(h, s, val);
 }

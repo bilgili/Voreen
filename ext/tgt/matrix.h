@@ -661,7 +661,7 @@ typedef Matrix4<bool>   bmat4;
 #define TGT_MAT_TRANSPOSE \
 template<class T> inline TGT_BASE_TYPE<T> transpose(const TGT_BASE_TYPE<T>& m) { \
     TGT_BASE_TYPE<T> mRes; \
-    for(size_t row = 0; row < m.rows; ++row) \
+    for (size_t row = 0; row < m.rows; ++row) \
         for (size_t col = 0; col < m.cols; ++col) \
             mRes.elemRowCol[col][row] = m.elemRowCol[row][col]; \
     return mRes; \
@@ -1015,7 +1015,7 @@ Matrix4<T> Matrix4<T>::createLookAt(const Vector3<T>& eye, const Vector3<T>& foc
 }
 
 template<class T>
-Matrix4<T> Matrix4<T>::createFrustum(T left, T right, T top, T bottom, T pnear, T pfar) {
+Matrix4<T> Matrix4<T>::createFrustum(T left, T right, T bottom, T top, T pnear, T pfar) {
 #ifdef TGT_DEBUG
     if ((pnear == pfar) || (left == right) || (top == bottom)) {
         tgtAssert(false, "The parameters passed to createFrustum cannot be used to form a projection matrix.");
@@ -1026,7 +1026,7 @@ Matrix4<T> Matrix4<T>::createFrustum(T left, T right, T top, T bottom, T pnear, 
     Matrix4<T> m(
         T(2)*pnear/(right-left),        T(0),               (right+left)/(right-left),             T(0),
                 T(0),           T(2)*pnear/(top-bottom),    (top+bottom)/(top-bottom),             T(0),
-                T(0),                   T(0),               (pfar+pnear)/(pfar-pnear),  T(2)*pfar*pnear/(pfar-pnear),
+                T(0),                   T(0),               (pnear+pfar)/(pnear-pfar),  (T(2)*pfar*pnear)/(pnear-pfar),
                 T(0),                   T(0),                          -T(1),                      T(0)
     );
 

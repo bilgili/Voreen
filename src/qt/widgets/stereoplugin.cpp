@@ -97,19 +97,19 @@ void StereoPlugin::createConnections() {
 }
 
 void StereoPlugin::changeStereoMode(int stereoMode) {
-    switch(stereoMode){
-        case 0:
-            postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_MONOSCOPIC));
-            repaintCanvases();
-            break;
-        case 1:
-            postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_STEREOSCOPIC));
-            repaintCanvases();
-            break;
-        case 2:
-            postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_AUTOSTEREOSCOPIC));
-            repaintCanvases();
-            break;
+    switch(stereoMode) {
+    case 0:
+        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_MONOSCOPIC));
+        repaintCanvases();
+        break;
+    case 1:
+        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_STEREOSCOPIC));
+        repaintCanvases();
+        break;
+    case 2:
+        postMessage(new IntMsg(setStereoMode_, VoreenPainter::VRN_AUTOSTEREOSCOPIC));
+        repaintCanvases();
+        break;
     }
 }
 
@@ -132,4 +132,3 @@ void StereoPlugin::correctWindowPos(bool /*on*/) {
 }
 
 } // namespace voreen
-

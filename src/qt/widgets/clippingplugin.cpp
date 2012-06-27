@@ -36,7 +36,9 @@
 
 namespace voreen {
 
-ClippingPlugin::ClippingPlugin(QWidget* parent, MessageReceiver* msgReceiver) : WidgetPlugin(parent, msgReceiver) {
+ClippingPlugin::ClippingPlugin(QWidget* parent, MessageReceiver* msgReceiver)
+: WidgetPlugin(parent, msgReceiver)
+{
     setObjectName(tr("Clipping Planes"));
     icon_ = QIcon(":/icons/clipping.png");
 }
@@ -69,30 +71,26 @@ void ClippingPlugin::createConnections() {
 }
 
 
-void ClippingPlugin::updateXClippingPlanes()
-{
+void ClippingPlugin::updateXClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setLeftClipPlane_, clipXWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setRightClipPlane_, clipXWidget_->get2ndSliderValue()));
     repaintCanvases();
 }
 
-void ClippingPlugin::updateYClippingPlanes()
-{
+void ClippingPlugin::updateYClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setTopClipPlane_, clipYWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setBottomClipPlane_, clipYWidget_->get2ndSliderValue()));
     repaintCanvases();
 }
 
-void ClippingPlugin::updateZClippingPlanes()
-{
+void ClippingPlugin::updateZClippingPlanes() {
     postMessage(new IntMsg(ProxyGeometry::setFrontClipPlane_, clipZWidget_->get1stSliderValue()));
     postMessage(new IntMsg(ProxyGeometry::setBackClipPlane_, clipZWidget_->get2ndSliderValue()));
     repaintCanvases();
 }
 
 
-void ClippingPlugin::sliderPressedChanged(bool pressed)
-{
+void ClippingPlugin::sliderPressedChanged(bool pressed) {
     if (pressed)
         startTracking();
     else
@@ -134,5 +132,5 @@ void ClippingPlugin::cropDataset() {
     }
 */
 }
-} // namespace voreen
 
+} // namespace voreen

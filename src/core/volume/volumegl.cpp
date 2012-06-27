@@ -240,7 +240,7 @@ VolumeGL::VolumeGL(Volume* volume, const TransFunc* tf /*= 0*/, float alphaScale
     if (GpuCaps.areShadersSupported())
         tfSupport_ = SHADER;
     else {
-        if ( GpuCaps.areSharedPalettedTexturesSupported() ) {
+        if (GpuCaps.areSharedPalettedTexturesSupported()) {
             LINFO("Fragment shaders cannot be used for transfer function lookups. Using paletted textures instead.");
             tfSupport_ = PALETTED_TEXTURES;
 
@@ -252,20 +252,20 @@ VolumeGL::VolumeGL(Volume* volume, const TransFunc* tf /*= 0*/, float alphaScale
 
             // convert GL_ALPHAx to GL_COLOR_INDEXx
             switch (internalFormat_) {
-                case GL_ALPHA4:
-                    internalFormat_ = GL_COLOR_INDEX4_EXT;
-                    break;
-                case GL_ALPHA8:
-                    internalFormat_ = GL_COLOR_INDEX8_EXT;
-                    break;
-                case GL_ALPHA12:
-                    internalFormat_ = GL_COLOR_INDEX12_EXT;
-                    break;
-                case GL_ALPHA16:
-                    internalFormat_ = GL_COLOR_INDEX16_EXT;
-                    break;
-                default:
-                    tgtAssert(false, "unsupported volume type");
+            case GL_ALPHA4:
+                internalFormat_ = GL_COLOR_INDEX4_EXT;
+                break;
+            case GL_ALPHA8:
+                internalFormat_ = GL_COLOR_INDEX8_EXT;
+                break;
+            case GL_ALPHA12:
+                internalFormat_ = GL_COLOR_INDEX12_EXT;
+                break;
+            case GL_ALPHA16:
+                internalFormat_ = GL_COLOR_INDEX16_EXT;
+                break;
+            default:
+                tgtAssert(false, "unsupported volume type");
             }
         }
         else {
@@ -316,7 +316,7 @@ size_t VolumeGL::getNumTextures() const {
 }
 
 const VolumeTexture* VolumeGL::getTexture(size_t i /*= 0*/) const {
-    tgtAssert(((i>=0) && (i<getNumTextures())), "Index out of bounds!");
+    tgtAssert(i<getNumTextures(), "Index out of bounds!");
     return textures_[i];
 }
 
@@ -453,17 +453,13 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
         */
         bvec3 splitNecessary = lessThan(maxTexSize, volumeDims);
 
-		//This checks if the texture would fit into the gpu memory
+		// Check if the texture would fit into the gpu memory
 		long numVoxels = static_cast<long>(volume_->getNumVoxels());
 		int bytesAllocated = volume_->getBitsAllocated() / 8;
 		int volumeSizeMB = static_cast<int>(ceil((numVoxels*bytesAllocated) / (1024.0 * 1024.0)));
-		bool fitsInGpuMemory;
 
-		//if availableGpuMemory_ is 0 we assume the volume fits into gpu memory
-		if ( (volumeSizeMB < availableGpuMemory_) || (availableGpuMemory_ ==0) )
-			fitsInGpuMemory = true;
-		else
-			fitsInGpuMemory = false;
+		// if availableGpuMemory_ is 0 we assume the volume fits into gpu memory
+        bool fitsInGpuMemory = (volumeSizeMB < availableGpuMemory_ || availableGpuMemory_ <= 0);
 
 		//Do the dimensions of the texture exceed the max3DTexSize?
 		bool dimensionsFit = !hor(splitNecessary);
@@ -517,28 +513,29 @@ void VolumeGL::generateTextures(const TransFunc* tf, float alphaScale /*= 1.f*/)
             Volume::Filter filter = Volume::LINEAR;
     
             switch (lvSupport_) {
-                case RESIZE_NEAREST:
-                    filter = Volume::NEAREST;
-                    // fall through the next case statement
-                case RESIZE_LINEAR: {
-                    //float ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
-    
-                    try {
-                        volume_ = origVolume_->scale( ivec3(ratio * vec3(volumeDims)), filter);
-                    }
-                    catch (std::bad_alloc) {
-                        throw;
-                    }
-    
-                    // update new dims and spacing values
-                    volumeDims = volume_->getDimensions();
-                    volumeSpacing = volume_->getSpacing();
-    
-                    // bricking not necessary -> we have scaled
-                    volumeOK = true;
-                    break;
+            case RESIZE_NEAREST:
+                filter = Volume::NEAREST;
+                // fall through the next case statement
+            case RESIZE_LINEAR:
+                {
+                //float ratio = float(maxTexSize.x) / max( vec3(volumeDims) );
+
+                try {
+                    volume_ = origVolume_->scale( ivec3(ratio * vec3(volumeDims)), filter);
                 }
-                case BRICK: { /*do nothing*/ }
+                catch (std::bad_alloc) {
+                    throw;
+                }
+
+                // update new dims and spacing values
+                volumeDims = volume_->getDimensions();
+                volumeSpacing = volume_->getSpacing();
+    
+                // bricking not necessary -> we have scaled
+                volumeOK = true;
+                break;
+                }
+            case BRICK: { /*do nothing*/ }
             }
         }
     
@@ -764,25 +761,25 @@ void VolumeGL::uploadTexture(const TransFunc* tf, float alphaScale /*= 1.f*/,
         /*
             do software lookup of the transfer function
         */
-        if ( volumeType_ == typeid(VolumeUInt8) ) {
-            VolumeUInt8* v8 = (VolumeUInt8*) v;
+        if (volumeType_ == typeid(VolumeUInt8)) {
+            VolumeUInt8* v8 = static_cast<VolumeUInt8*>(v);
 
             for (size_t i = 0; i < v->getNumVoxels(); ++i) {
                 // calculate index: map voxel(i) to [0, 1] then map to [0, tex->width - 1] and round
-                int index = int((float(v8->voxel(i))/max) * float(width - 1) + 0.5f);
+                int index = static_cast<int>((static_cast<float>(v8->voxel(i))/max) * static_cast<float>(width - 1) + 0.5f);
                 temp[i*4    ] = tf->getTexture()->texel<col4>(index)[0];
                 temp[i*4 + 1] = tf->getTexture()->texel<col4>(index)[1];
                 temp[i*4 + 2] = tf->getTexture()->texel<col4>(index)[2];
                 temp[i*4 + 3] = static_cast<GLubyte>(tf->getTexture()->texel<col4>(index)[3] * alphaScale);
             }
         }
-        else if ( volumeType_ == typeid(VolumeUInt16) ) {
+        else if (volumeType_ == typeid(VolumeUInt16)) {
             // cast to VolumeUInt16
             VolumeUInt16* v16 = (VolumeUInt16*) v;
 
             for (size_t i = 0; i < v->getNumVoxels(); ++i) {
                 // calculate index: map voxel(i) to [0, 1] then map to [0, tex->width - 1] and round
-                int index = int( (float(v16->voxel(i))/max) * float(width - 1) + 0.5f );
+                int index = static_cast<int>( (static_cast<float>(v16->voxel(i))/max) * static_cast<float>(width - 1) + 0.5f );
                 temp[i*4    ] = tf->getTexture()->texel<col4>(index)[0];
                 temp[i*4 + 1] = tf->getTexture()->texel<col4>(index)[1];
                 temp[i*4 + 2] = tf->getTexture()->texel<col4>(index)[2];
@@ -796,7 +793,7 @@ void VolumeGL::uploadTexture(const TransFunc* tf, float alphaScale /*= 1.f*/,
 
     // create texture
     VolumeTexture* vTex = new VolumeTexture(
-        temp ? temp : (GLubyte*) v->getData(), // use temp data if this was created
+        temp ? temp : static_cast<GLubyte*>(v->getData()), // use temp data if this was created
         matrix, llf, urb, v->getDimensions(),
         format_, internalFormat_, dataType_, filter_
     );

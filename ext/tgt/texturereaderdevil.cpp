@@ -32,8 +32,7 @@
 #include "tgt/filesystem.h"
 #include <cstring>
 
-
-namespace tgt{
+namespace tgt {
 
 //------------------------------------------------------------------------------
 // TextureReaderDevil
@@ -90,7 +89,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
 #endif
 
     /*
-        I think the keepPixels option does not work properly
+        FIXME: I think the keepPixels option does not work properly
         -> I don't see why...afaik keepPixels has been used in some project (stefan)
     */
     ILuint ImageName;
@@ -102,10 +101,7 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
     File* file = FileSys.open(filename);
 
     // check if file is open
-    if (!file)
-        return false;
-
-    if (!file->open()) {
+    if (!file || !file->open()) {
         delete file;
         return false;
     }

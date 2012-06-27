@@ -33,7 +33,9 @@
 namespace voreen {
 
 RptTooltipTimer::RptTooltipTimer(QPoint p, qreal radius, QObject* parent)
-    : QTimer(parent), p_(p), radius_(radius)
+    : QTimer(parent)
+    , p_(p)
+    , radius_(radius)
 {}
 
 void RptTooltipTimer::setRadius(qreal radius) {
@@ -48,7 +50,8 @@ bool RptTooltipTimer::isDistant(const QPoint & p) {
     if (distance(p)>radius_) {
         stop();
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }

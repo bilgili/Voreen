@@ -1,5 +1,10 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/" >
+        <file>widgetstyle/voreen.qss</file>
+        <file>widgetstyle/closebutton.png</file>
+        <file>widgetstyle/logo.png</file>
+        <file>widgetstyle/menu.png</file>
+        <file>widgetstyle/scrollbar.png</file>
         <file>icons/3d-glasses.png</file>
         <file>icons/3dus.png</file>
         <file>icons/anterior2.png</file>
@@ -38,9 +43,10 @@
         <file>icons/information.png</file>
         <file>icons/lateral2.png</file>
         <file>icons/legend-overlay.png</file>
-		<file>icons/list-remove.png</file>
+        <file>icons/list-remove.png</file>
         <file>icons/magnet.png</file>
         <file>icons/mapping-function.png</file>
+        <file>icons/mapping-function-inverted.png</file>
         <file>icons/mapping.png</file>
         <file>icons/movie.png</file>
         <file>icons/open.png</file>
@@ -56,11 +62,16 @@
         <file>icons/player_stop.png</file>
         <file>icons/quad.png</file>
         <file>icons/save.png</file>
+        <file>icons/rebuildshaders.png</file>
         <file>icons/segmentation.png</file>
         <file>icons/septal2.png</file>
         <file>icons/snapshot.png</file>
         <file>icons/trackball-reset.png</file>
+        <file>icons/trackball-reset-inverted.png</file>
         <file>icons/transferfunc.png</file>
         <file>icons/vectorfield.png</file>
+        <file>icons/zoom-in.png</file>
+        <file>icons/zoom-out.png</file>
+        <file>icons/zoom-original.png</file>
     </qresource>
 </RCC>

@@ -33,6 +33,7 @@
 #include "tgt/gpucapabilities.h"
 #include "voreen/core/vis/identifier.h"
 
+#include "tgt/types.h"
 
 namespace voreen {
 
@@ -128,7 +129,7 @@ GLint TexUnitMapper::getGLTexUnit(const Identifier& ident) {
     else {
         GLint foundID = found->second;
         if (foundID < static_cast<GLint>(GpuCaps.getNumTextureUnits()))
-            return GL_TEXTURE0 + found->second;
+            return GL_TEXTURE0 + foundID;
         else
             throw texUnit_Exception("not enough texture units available");
     }

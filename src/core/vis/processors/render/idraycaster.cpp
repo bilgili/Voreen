@@ -34,41 +34,25 @@
 
 namespace voreen {
 
-/*
-    init statics
-*/
+const Identifier IDRaycaster::firstHitPointsTexUnit_("firstHitPointsTexUnit");     
 
-const Identifier IDRaycaster::firstHitTexUnit_        = "firstHitTexUnit";
-const Identifier IDRaycaster::firstHitDepthTexUnit_   = "firstHitDepthTexUnit";
-
-IDRaycaster::IDRaycaster():
-    VolumeRaycaster("rc_id.frag"),
+IDRaycaster::IDRaycaster(): VolumeRaycaster(),
     coarse_(false),
-    standAlone_(true),
-    useBlurring_("set.useBlurring", "use blurring", false),
-    blurDelta_("set.blurDelta", "Delta", 2.0f, 0.1f, 10.f),
-    penetrationDepth_("set.penetrationDepth", "penetration depth", 0.05f, 0.f, 0.5f),
-    transferFunc_(setTransFunc_, "not used", 0, false)
+    penetrationDepth_("set.penetrationDepth", "penetration depth", 0.05f, 0.f, 0.5f)
 {
+    addProperty(&penetrationDepth_ );
 
-	// initialize transfer function
-	TransFuncIntensity* tf = new TransFuncIntensity();
-	tf->createStdFunc();
-    transferFunc_.set(tf);
+    tm_.addTexUnit(entryParamsTexUnit_);
+    tm_.addTexUnit(entryParamsTexUnit_);
+    tm_.addTexUnit(firstHitPointsTexUnit_);
+    tm_.addTexUnit(exitParamsTexUnit_);
+    tm_.addTexUnit(exitParamsTexUnit_);
 
-    addProperty(&transferFunc_);
-    addProperty( &penetrationDepth_ );
-    addProperty( &useBlurring_ );
-    addProperty( &blurDelta_ );
-
-    tm_.addTexUnit(firstHitTexUnit_);
-    tm_.addTexUnit(firstHitDepthTexUnit_);
-
-    createInport("volumehandle.dataset");
 	createInport("volumehandle.segmentation");
-    
     createInport("image.entrypoints");
+    createInport("image.firsthitpoints");
     createInport("image.exitpoints");
+    
     createOutport("image.idmap");
 }
 
@@ -83,10 +67,7 @@ const std::string IDRaycaster::getProcessorInfo() const {
 void IDRaycaster::setPropertyDestination(Identifier dest) {
     VolumeRaycaster::setPropertyDestination(dest);
     MsgDistr.insert(this);
-    transferFunc_.setMsgDestination(dest);
     penetrationDepth_.setMsgDestination(dest);
-    blurDelta_.setMsgDestination(dest);
-    useBlurring_.setMsgDestination(dest);
 }
 
 void IDRaycaster::processMessage(Message* msg, const Identifier& dest) {
@@ -96,26 +77,6 @@ void IDRaycaster::processMessage(Message* msg, const Identifier& dest) {
         coarse_ = msg->getValue<bool>();
     else if (msg->id_ == "set.penetrationDepth") {
         penetrationDepth_.set( msg->getValue<float>());
-        invalidate();
-    }
-    else if (msg->id_ == setTransFunc_) {
-		TransFunc* tf = msg->getValue<TransFunc*>();
-        if (tf != transferFunc_.get()) {
-            // shader has to be recompiled, if the transferfunc header has changed
-            std::string definesOld = transferFunc_.get() ? transferFunc_.get()->getShaderDefines() : "";
-            std::string definesNew = tf ? tf->getShaderDefines() : "";
-            if ( definesOld != definesNew )
-                invalidateShader();
-            transferFunc_.set(tf);
-        }
-		invalidate();
-	}
-    else if (msg->id_ == "set.useBlurring") {
-		useBlurring_.set( msg->getValue<bool>() );
-		invalidate();
-	}
-    else if (msg->id_ == "set.blurDelta") {
-        blurDelta_.set( msg->getValue<float>() );
         invalidate();
     }
 }
@@ -130,21 +91,9 @@ int IDRaycaster::initializeGL() {
  *
  */
 void IDRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", this->fragmentShaderFilename_.c_str(), generateHeader(), false);
-    blurShader_ = ShdrMgr.loadSeparate("pp_identity.vert", "pp_blur.frag", generateHeader(), false);
+    raycastPrg_ = ShdrMgr.loadSeparate("pp_identity.vert", "rc_id.frag", generateHeader(), false);
 	invalidateShader();
 }
-
-/**
- * If set to false, the entry-exit-param's RTs will
- * not be freed. Use this, if IDRaycaster is followed
- * by another raycaster.
- * Default is true.
- */
-void IDRaycaster::setStandAlone(bool standAlone) {
-    standAlone_ = standAlone;
-}
-
 
 /**
  * Compile and link the shader program
@@ -164,33 +113,44 @@ void IDRaycaster::compile() {
 void IDRaycaster::process(LocalPortMapping* portMapping) {
     compileShader();
     LGL_ERROR;
-    int entryParams = portMapping->getTarget("image.entrypoints");
-    int exitParams = portMapping->getTarget("image.exitpoints");
-    // get render target for first rendering pass: id-raycasting
-	int tempDest = portMapping->getTarget("image.idmap");
-
-    // FIXME: implement portmapping for new volume concept.
-    // Also fetch volume for segmentation...
-    //int segmentationNumber = portMapping->getVolumeNumber("volume.segmentation");
-
-    tc_->setActiveTarget(tempDest, "IDRaycaster::render");
+    int entryPoints = portMapping->getTarget("image.entrypoints");
+    int firstHitPoints = portMapping->getTarget("image.firsthitpoints");
+    int exitPoints = portMapping->getTarget("image.exitpoints");
+	int dest = portMapping->getTarget("image.idmap");
+    
+    tc_->setActiveTarget(dest, "IDRaycaster::render");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    VolumeHandle* volumeHandle = portMapping->getVolumeHandle("volumehandle.segmentation");
+    if (volumeHandle != 0) {
+       if (!volumeHandle->isIdentical(currentVolumeHandle_))
+           setVolumeHandle(volumeHandle);
+    }
+    else
+       setVolumeHandle(0); 
+
+    if ((currentVolumeHandle_ == 0) || (currentVolumeHandle_->getVolumeGL() == 0))
+		return;
 
     // don't render when coarse
     if (coarse_)
         return;
 
-    // bind entry params
+    // bind entry points
     glActiveTexture(tm_.getGLTexUnit(entryParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(entryParams), tc_->getGLTexID(entryParams));
+    glBindTexture(tc_->getGLTexTarget(entryPoints), tc_->getGLTexID(entryPoints));
     glActiveTexture(tm_.getGLTexUnit(entryParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(entryParams), tc_->getGLDepthTexID(entryParams));
+    glBindTexture(tc_->getGLDepthTexTarget(entryPoints), tc_->getGLDepthTexID(entryPoints));
 
-    // bind exit params
+    // bind first hit points
+    glActiveTexture(tm_.getGLTexUnit(firstHitPointsTexUnit_));
+    glBindTexture(tc_->getGLTexTarget(firstHitPoints), tc_->getGLTexID(firstHitPoints));
+
+    // bind exit points
     glActiveTexture(tm_.getGLTexUnit(exitParamsTexUnit_));
-    glBindTexture(tc_->getGLTexTarget(exitParams), tc_->getGLTexID(exitParams));
+    glBindTexture(tc_->getGLTexTarget(exitPoints), tc_->getGLTexID(exitPoints));
     glActiveTexture(tm_.getGLTexUnit(exitParamsDepthTexUnit_));
-    glBindTexture(tc_->getGLDepthTexTarget(exitParams), tc_->getGLDepthTexID(exitParams));
+    glBindTexture(tc_->getGLDepthTexTarget(exitPoints), tc_->getGLDepthTexID(exitPoints));
     LGL_ERROR;
 
     // vector containing the volumes to bind
@@ -199,54 +159,25 @@ void IDRaycaster::process(LocalPortMapping* portMapping) {
     volumes.push_back(VolumeStruct(
         currentVolumeHandle_->getVolumeGL(),
         volTexUnit_,
-        "volume_",
-        "volumeParameters_")
+        "segmentation_",
+        "segmentationParameters_")
     );
 
+    glActiveTexture(tm_.getGLTexUnit(segmentationTexUnit_));
+    currentVolumeHandle_->getVolumeGL()->getTexture()->bind();
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    
-    //FIXME: if (volumeContainer_->getVolumeGL(segmentationNumber)) {
-    if( false ) {
-         // segmentation volume
-         volumes.push_back(VolumeStruct(
-            0, // FIXME: volumeContainer_->getVolumeGL(segmentationNumber),
-            segmentationTexUnit_,
-            "segmentation_",
-            "segmentationParameters_")
-        );
-        // set texture filters for this volume/texunit
-        glActiveTexture(tm_.getGLTexUnit(segmentationTexUnit_));
-        // FIXME: volumeContainer_->getVolumeGL(segmentationNumber)->getTexture()->bind();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        // set render target to type id-raycasting
-    }
-    else {
-        LERROR("No segmentation volume");
-        return;
-    }
-
-    // bind transfer function
-    glActiveTexture(tm_.getGLTexUnit(transferTexUnit_));
-    transferFunc_.get()->bind();
     // initialize shader
     raycastPrg_->activate();
     setGlobalShaderParameters(raycastPrg_);
     bindVolumes(raycastPrg_, volumes);
-    raycastPrg_->setUniform("lowerThreshold_", lowerTH_.get());
-    raycastPrg_->setUniform("upperThreshold_", upperTH_.get());
-    raycastPrg_->setUniform("entryParams_", tm_.getTexUnit(entryParamsTexUnit_));
-    raycastPrg_->setUniform("entryParamsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
-    raycastPrg_->setUniform("exitParams_", tm_.getTexUnit(exitParamsTexUnit_));
-    raycastPrg_->setUniform("exitParamsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
-    if ( (currentVolumeHandle_->getVolume() != 0) 
-        && (currentVolumeHandle_->getVolume()->getBitsStored() == 12) )
-        raycastPrg_->setUniform("volumeScaleFactor_", 16.0f);
-    else
-        raycastPrg_->setUniform("volumeScaleFactor_", 1.0f);
+    raycastPrg_->setUniform("entryPoints_", tm_.getTexUnit(entryParamsTexUnit_));
+    raycastPrg_->setUniform("entryPointsDepth_", tm_.getTexUnit(entryParamsDepthTexUnit_));
+    raycastPrg_->setUniform("firstHitPoints_", tm_.getTexUnit(firstHitPointsTexUnit_));
+    raycastPrg_->setUniform("exitPoints_", tm_.getTexUnit(exitParamsTexUnit_));
+    raycastPrg_->setUniform("exitPointsDepth_", tm_.getTexUnit(exitParamsDepthTexUnit_));
     
-    raycastPrg_->setUniform("transferFunc_", tm_.getTexUnit(transferTexUnit_));
-    // raycastPrg_->setUniform("viewMatrix_", tgt::mat4::identity);
     raycastPrg_->setUniform("penetrationDepth_", penetrationDepth_.get());
     renderQuad();
 

@@ -62,9 +62,7 @@ void DepthOfField::setDepthThreshold(float depthThreshold) {
 }
 
 void DepthOfField::process(LocalPortMapping* portMapping) {
-    glViewport(0,0,size_.x,size_.y);
-
-	int source = portMapping->getTarget("image.inport");
+    int source = portMapping->getTarget("image.inport");
     int dest = portMapping->getTarget("image.outport");
 
 	tc_->setActiveTarget(dest, "DepthOfField::process");

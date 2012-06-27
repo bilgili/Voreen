@@ -33,17 +33,16 @@
 namespace voreen {
 
 RptPropertyListWidget::RptPropertyListWidget(QWidget* parent)
-    : QTableWidget(parent),
-	painter_(0),
-	epsilon_(0.001f)
+    : QTableWidget(parent)
+    , painter_(0)
+    , epsilon_(0.001f)
 {
-   setMinimumWidth(300);
-   horizontalHeader()->hide(); 
-   horizontalScrollBar()->hide();  
-   verticalHeader()->hide();
-   
+    setMinimumSize(200, 200);
+    horizontalHeader()->hide();
+    horizontalScrollBar()->hide();
+    verticalHeader()->hide();
 
-   MsgDistr.insert(this); 
+    MsgDistr.insert(this);
 }
 
 RptPropertyListWidget::~RptPropertyListWidget() {
@@ -52,16 +51,13 @@ RptPropertyListWidget::~RptPropertyListWidget() {
 
 
 void RptPropertyListWidget::resizeEvent(QResizeEvent* /*event*/) {
-   setColumnWidth(0,width()/2);
-   setColumnWidth(1,width()/2);
-  // if (this->verticalScrollBar()->isVisible()){
-		setColumnWidth(0,width() / 2 - verticalScrollBar()->width() / 2);
-		setColumnWidth(1,width() / 2 - verticalScrollBar()->width() / 2);
-//   }
-
+    setColumnWidth(0,width()/2);
+    setColumnWidth(1,width()/2);
+    setColumnWidth(0,width() / 2 - verticalScrollBar()->width() / 2);
+    setColumnWidth(1,width() / 2 - verticalScrollBar()->width() / 2);
 }
 
-void RptPropertyListWidget::setProcessor(Processor* processor, QVector<int> unequalEntries) {
+void RptPropertyListWidget::setProcessor(Processor* processor) {
     propertyList_.clear();
     clear();
     vectorWidgetList_.clear();
@@ -71,27 +67,22 @@ void RptPropertyListWidget::setProcessor(Processor* processor, QVector<int> uneq
         return;
 
     processor_ = processor;
-	unequalEntries_ = unequalEntries;
 
-//    hide();
     insertProperties(processor_->getProperties());
-//    show();
-
 }
 
-void RptPropertyListWidget::deselectProcessor(Processor* processor){
+void RptPropertyListWidget::deselectProcessor(Processor* processor) {
     if (processor == processor_){
         clear();
         reset();
         propertyList_.clear();
         vectorWidgetList_.clear();
         setRowCount(0);
-		unequalEntries_.clear(); 
     }
 }
 
 
-void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList){
+void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList) {
     QStringList vHeader;
     int index = 0;
     propertyList_ = propertyList;
@@ -109,14 +100,15 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
 		switch (propertyList.at(i)->getType()){
             case Property::INT_PROP:
                 {
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
                 IntProp* prop = static_cast<IntProp*>(propertyList.at(i));
                 QSpinBox* spinBox = getIntPropertyWidget(prop->getMinValue(), prop->getMaxValue(),prop->get());
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e)); 
                 // needed for Qt 4.4.0
                 spinBox->blockSignals(true);
+                // workaround: Qt resets the spinbox value during insertation
+                int value = spinBox->value();
                 setCellWidget(index, 1, spinBox);
+                spinBox->setValue(value);
                 spinBox->blockSignals(false);
 
                 index++;
@@ -124,14 +116,15 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 }
             case Property::FLOAT_PROP:
                 {
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
                 FloatProp* prop = static_cast<FloatProp*>(propertyList.at(i));
                 QDoubleSpinBox* spinBox = getFloatPropertyWidget(prop->getMinValue(), prop->getMaxValue(),prop->get());
                 setCellWidget(index, 0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e));
                 // needed for Qt 4.4.0
                 spinBox->blockSignals(true);
+                // workaround: Qt resets the spinbox value during insertation
+                double value = spinBox->value();
                 setCellWidget(index, 1, spinBox);
+                spinBox->setValue(value);
                 spinBox->blockSignals(false);
                 index++;
             break;
@@ -151,9 +144,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 {
                 EnumProp* prop = static_cast<EnumProp*>(propertyList.at(i));
                 setCellWidget(index,1,getEnumPropertyWidget(prop->getStrings(),prop->get()));
-
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e));
 
                 index++;
@@ -163,11 +153,8 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
             case Property::BOOL_PROP:
                 {
                 BoolProp* prop = static_cast<BoolProp*>(propertyList.at(i));
-                setCellWidget(index,1,getBoolPropertyWidget(prop->get()));
-
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
-                setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e));  
+                setCellWidget(index, 1, getBoolPropertyWidget(prop->get()));
+                setCellWidget(index, 0, new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e));  
 
                 index++;
              break;
@@ -177,9 +164,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
 					
                 StringProp* prop = static_cast<StringProp*>(propertyList.at(i));
 				setCellWidget(index,1,getStringPropertyWidget(prop) );
-				//setCellWidget(index,1,getIntPropertyWidget(prop->getMinValue(),prop->getMaxValue(),prop->get()));
-                
-				if (unequalEntries_.contains(i)) color_s = QString("<font color=red>");
 				setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e)); 
 
 				index++;
@@ -190,9 +174,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
 					
                 StringVectorProp* prop = static_cast<StringVectorProp*>(propertyList.at(i));
 				setCellWidget(index,1,getStringVectorPropertyWidget(prop) );
-				//setCellWidget(index,1,getIntPropertyWidget(prop->getMinValue(),prop->getMaxValue(),prop->get()));
-                
-				if (unequalEntries_.contains(i)) color_s = QString("<font color=red>");
 				setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_e)); 
 
 				index++;
@@ -206,17 +187,30 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 setCellWidget(index,1,vecWid.at(0));
                 vecWid.at(0)->blockSignals(false);
 
-                if (unequalEntries_.contains(i)) color_s = QString("<font color=red>");
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s));  
 
                 vecWid.at(1)->blockSignals(true);
-                setCellWidget(index+1,1,vecWid.at(1));
+                setCellWidget(index+1, 1, vecWid.at(1));
                 vecWid.at(1)->blockSignals(false);
                 setCellWidget(index+1,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - y")+ bold_e + color_s));  
 
                 index+=2;
             break;
                 }
+            case Property::FILEDIALOG_PROP:
+                 {
+                 FileDialogProp* prop = static_cast<FileDialogProp*>(propertyList.at(i));
+                 setCellWidget(index, 0, new QLabel(bold_s + prop->getGuiText().c_str() + bold_e));
+                 FileDialogPropertyWidget* fileWidget = new FileDialogPropertyWidget(this, prop);
+                 setCellWidget(index, 1, fileWidget);
+
+                 std::vector<QWidget*> vec;
+                 vec.push_back(fileWidget);
+                 vectorWidgetList_.push_back(vec);
+
+                index++;
+            break;
+                 }
             case Property::INTEGER_VEC3_PROP:
                 {
                 IntVec3Prop* prop = static_cast<IntVec3Prop*>(propertyList.at(i));
@@ -224,9 +218,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 vecWid.at(0)->blockSignals(true);
                 setCellWidget(index, 1, vecWid.at(0));
                 vecWid.at(0)->blockSignals(false);
-
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
 
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s ));  
                 vecWid.at(1)->blockSignals(true);
@@ -250,8 +241,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 vecWid.at(0)->blockSignals(true);
                 setCellWidget(index, 1, vecWid.at(0));
                 vecWid.at(0)->blockSignals(false);
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
 
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s ));  
                 vecWid.at(1)->blockSignals(true);
@@ -280,8 +269,7 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 vecWid.at(0)->blockSignals(true);
                 setCellWidget(index, 1, vecWid.at(0));
                 vecWid.at(0)->blockSignals(false);
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
+
                 setCellWidget(index, 0, new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s ));  
 
                 vecWid.at(1)->blockSignals(true);
@@ -300,8 +288,7 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 vecWid.at(0)->blockSignals(true);
                 setCellWidget(index, 1, vecWid.at(0));
                 vecWid.at(0)->blockSignals(false);
-                if (unequalEntries_.contains(i))
-                    color_s = QString("<font color=red>");
+
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s ));  
 
                 vecWid.at(1)->blockSignals(true);
@@ -324,8 +311,7 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                vecWid.at(0)->blockSignals(true);
                setCellWidget(index, 1, vecWid.at(0));
                vecWid.at(0)->blockSignals(false);
-               if (unequalEntries_.contains(i))
-                   color_s = QString("<font color=red>");
+
                setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + QString(" - x")+ bold_e + color_s ));  
 
                vecWid.at(1)->blockSignals(true);
@@ -355,7 +341,6 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
                 vec.push_back(colorProp);
                 vectorWidgetList_.push_back(vec);
                 setCellWidget(index,1,colorProp);
-		   		if (unequalEntries_.contains(i)) color_s = QString("<font color=red>");
                 setCellWidget(index,0,new QLabel(color_s + bold_s + QString(prop->getGuiText().c_str()) + bold_e + color_s ));  
 		    
                 index++; 
@@ -366,26 +351,15 @@ void RptPropertyListWidget::insertProperties(std::vector<Property*> propertyList
         }
    }
    setRowCount(index);
-   
-//   setVerticalHeaderLabels(vHeader); 
-//   this->resizeRowsToContents(); 
-//   this->setColumnWidth(0,this->width()/2);
-//   this->setColumnWidth(1,this->width()/2);
-////   if (this->verticalScrollBar()->isVisible()){
-//		this->setColumnWidth(0,this->width() / 2 - verticalScrollBar()->width() / 2);
-//		this->setColumnWidth(1,this->width() / 2 - verticalScrollBar()->width() / 2);
-//  // }
-
- }
-
-void RptPropertyListWidget::widgetChanged(int){
-    exportCellValues();
 
 }
 
-void RptPropertyListWidget::widgetChanged(double){
+void RptPropertyListWidget::widgetChanged(int) {
     exportCellValues();
+}
 
+void RptPropertyListWidget::widgetChanged(double) {
+    exportCellValues();
 }
 
 void RptPropertyListWidget::stringPropButtonPushed(StringProp* prop) {
@@ -408,7 +382,8 @@ void RptPropertyListWidget::propertyButtonClicked(Property* prop) {
 		if (stringVectorProp) {
 			stringVectorPropButtonPushed(stringVectorProp);
 		}
-	} else if (prop->getType() == Property::STRING_PROP) {
+	}
+    else if (prop->getType() == Property::STRING_PROP) {
 		StringProp* stringProp = dynamic_cast<StringProp*>(prop);
 		if (stringProp) {
 			stringPropButtonPushed(stringProp);
@@ -437,7 +412,7 @@ void RptPropertyListWidget::stringVectorPropButtonPushed(StringVectorProp* prop)
 }
 
 
-QComboBox* RptPropertyListWidget::getBoolPropertyWidget(bool startValue){
+QComboBox* RptPropertyListWidget::getBoolPropertyWidget(bool startValue) {
     QComboBox* boolProp = new QComboBox();
 
     boolProp->insertItem(1,"true");
@@ -458,7 +433,6 @@ QDialogButtonBox* RptPropertyListWidget::getStringPropertyWidget(StringProp* pro
 	QGridLayout* grid = new QGridLayout();
 	buttonBox->setLayout(grid);
 
-	//QPushButton* datasetButton = new QPushButton("dataset");
 	RptPropertyButton* datasetButton = new RptPropertyButton("dataset");
 	datasetButton->setProperty(prop);
 	buttonBox->addButton(datasetButton,QDialogButtonBox::ActionRole);
@@ -480,9 +454,7 @@ QDialogButtonBox* RptPropertyListWidget::getStringVectorPropertyWidget(StringVec
 
 	RptPropertyButton* sliceButton = new RptPropertyButton("Select");
 	sliceButton->setProperty(prop);
-	//QPushButton* stringButton = new QPushButton("Select");
 	buttonBox->addButton(sliceButton,QDialogButtonBox::ActionRole);
-	//buttonBox->addButton(QDialogButtonBox::Ok);
 
 	std::vector<QWidget*> vec;
     vec.push_back(buttonBox);
@@ -494,7 +466,7 @@ QDialogButtonBox* RptPropertyListWidget::getStringVectorPropertyWidget(StringVec
 	return buttonBox;
 }
 
-QComboBox* RptPropertyListWidget::getEnumPropertyWidget(std::vector<std::string> descr, int startValue){
+QComboBox* RptPropertyListWidget::getEnumPropertyWidget(std::vector<std::string> descr, int startValue) {
     QComboBox* enumProp = new QComboBox();
 
     for (size_t i=0; i< descr.size(); i++)
@@ -510,7 +482,7 @@ QComboBox* RptPropertyListWidget::getEnumPropertyWidget(std::vector<std::string>
     return enumProp;
 }
 
-QSpinBox* RptPropertyListWidget::getIntPropertyWidget(int min, int max, int startValue){
+QSpinBox* RptPropertyListWidget::getIntPropertyWidget(int min, int max, int startValue) {
     QSpinBox* spinProp = new QSpinBox();
 
     spinProp->setMinimum(min);
@@ -518,17 +490,21 @@ QSpinBox* RptPropertyListWidget::getIntPropertyWidget(int min, int max, int star
     spinProp->setSingleStep(1); 
     spinProp->setValue(startValue);
 
+    int i = spinProp->value();
+
     std::vector<QWidget*> vec;
     vec.push_back(spinProp);
     vectorWidgetList_.push_back(vec);
 
     connect(spinProp, SIGNAL(valueChanged(int)), this, SLOT(widgetChanged(int)));
 
+    i = spinProp->value();
+
     return spinProp;
 }
 
 
-QDoubleSpinBox* RptPropertyListWidget::getFloatPropertyWidget(float min, float max, float startValue){
+QDoubleSpinBox* RptPropertyListWidget::getFloatPropertyWidget(float min, float max, float startValue) {
     QDoubleSpinBox* spinProp = new QDoubleSpinBox();
 
     spinProp->setMinimum(min);
@@ -547,7 +523,7 @@ QDoubleSpinBox* RptPropertyListWidget::getFloatPropertyWidget(float min, float m
     return spinProp;
 }
 
-std::vector<QWidget*> RptPropertyListWidget::getIVec2PropertyWidget(tgt::ivec2 val,tgt::ivec2 min,tgt::ivec2 max){
+std::vector<QWidget*> RptPropertyListWidget::getIVec2PropertyWidget(tgt::ivec2 val,tgt::ivec2 min,tgt::ivec2 max) {
 
     QSpinBox* value1 = new QSpinBox();
     QSpinBox* value2 = new QSpinBox();
@@ -574,7 +550,7 @@ std::vector<QWidget*> RptPropertyListWidget::getIVec2PropertyWidget(tgt::ivec2 v
     return vec;
 }
 
-std::vector<QWidget*> RptPropertyListWidget::getIVec3PropertyWidget(tgt::ivec3 val,tgt::ivec3 min,tgt::ivec3 max){
+std::vector<QWidget*> RptPropertyListWidget::getIVec3PropertyWidget(tgt::ivec3 val,tgt::ivec3 min,tgt::ivec3 max) {
 
     QSpinBox* value1 = new QSpinBox();
     QSpinBox* value2 = new QSpinBox();
@@ -608,7 +584,7 @@ std::vector<QWidget*> RptPropertyListWidget::getIVec3PropertyWidget(tgt::ivec3 v
     return vec;
 }
 
-std::vector<QWidget*> RptPropertyListWidget::getIVec4PropertyWidget(tgt::ivec4 val,tgt::ivec4 min,tgt::ivec4 max){
+std::vector<QWidget*> RptPropertyListWidget::getIVec4PropertyWidget(tgt::ivec4 val,tgt::ivec4 min,tgt::ivec4 max) {
 
     QSpinBox* value1 = new QSpinBox();
     QSpinBox* value2 = new QSpinBox();
@@ -651,7 +627,7 @@ std::vector<QWidget*> RptPropertyListWidget::getIVec4PropertyWidget(tgt::ivec4 v
 }
 
 
-std::vector<QWidget*> RptPropertyListWidget::getFVec2PropertyWidget(tgt::vec2 val,tgt::vec2 min,tgt::vec2 max){
+std::vector<QWidget*> RptPropertyListWidget::getFVec2PropertyWidget(tgt::vec2 val,tgt::vec2 min,tgt::vec2 max) {
    
     QDoubleSpinBox* value1 = new QDoubleSpinBox();
     QDoubleSpinBox* value2 = new QDoubleSpinBox();
@@ -677,7 +653,7 @@ std::vector<QWidget*> RptPropertyListWidget::getFVec2PropertyWidget(tgt::vec2 va
     return vec;
 }
 
-std::vector<QWidget*> RptPropertyListWidget::getFVec3PropertyWidget(tgt::vec3 val,tgt::vec3 min,tgt::vec3 max){
+std::vector<QWidget*> RptPropertyListWidget::getFVec3PropertyWidget(tgt::vec3 val,tgt::vec3 min,tgt::vec3 max) {
    
     QDoubleSpinBox* value1 = new QDoubleSpinBox();
     QDoubleSpinBox* value2 = new QDoubleSpinBox();
@@ -711,7 +687,7 @@ std::vector<QWidget*> RptPropertyListWidget::getFVec3PropertyWidget(tgt::vec3 va
     return vec;
 }
 
-std::vector<QWidget*> RptPropertyListWidget::getFVec4PropertyWidget(tgt::vec4 val,tgt::vec4 min,tgt::vec4 max){
+std::vector<QWidget*> RptPropertyListWidget::getFVec4PropertyWidget(tgt::vec4 val,tgt::vec4 min,tgt::vec4 max) {
    
     QDoubleSpinBox* value1 = new QDoubleSpinBox();
     QDoubleSpinBox* value2 = new QDoubleSpinBox();
@@ -753,7 +729,7 @@ std::vector<QWidget*> RptPropertyListWidget::getFVec4PropertyWidget(tgt::vec4 va
     return vec;
 }
 
-void RptPropertyListWidget::exportCellValues(){
+void RptPropertyListWidget::exportCellValues() {
  
  int cellNr = -1;
    
@@ -806,7 +782,6 @@ void RptPropertyListWidget::exportCellValues(){
                 cellNr++;
                 BoolProp* prop = dynamic_cast<BoolProp*>(propertyList_.at(i));
                 QComboBox* comb = dynamic_cast<QComboBox*>(vectorWidgetList_.at(cellNr).at(0));  
-                   
                 if (prop->get() != (comb->currentIndex()==1))  
                 {
                     prop->set(comb->currentIndex()==1);
@@ -932,6 +907,13 @@ void RptPropertyListWidget::exportCellValues(){
                 }
                 break;
                 }
+            case Property::FILEDIALOG_PROP:
+                {
+                cellNr++;
+                FileDialogProp* prop = dynamic_cast<FileDialogProp*>(propertyList_.at(i));
+                    processor_->postMessage(new StringMsg(prop->getIdent(), prop->get()));
+                break;
+                }
             case Property::INTEGER_VEC4_PROP:
                 {
                 cellNr++;
@@ -998,7 +980,6 @@ ColorPropertyWidget::ColorPropertyWidget(QWidget* parent, tgt::Color color)
 
 void ColorPropertyWidget::clickedColorBt(){
     QColor myColor;
-   
  
     myColor.setRgba(QColorDialog::getRgba(QColor(static_cast<int>(curColor_.r*255), static_cast<int>(curColor_.g*255), static_cast<int>(curColor_.b*255),
                                                  static_cast<int>(curColor_.a*255)).rgba()));
@@ -1014,6 +995,43 @@ void ColorPropertyWidget::clickedColorBt(){
 
 tgt::vec4 ColorPropertyWidget::getSelectedColor(){
     return tgt::vec4(curColor_.r,curColor_.g,curColor_.b,curColor_.a); 
+}
+
+
+//---------------------------------------------------------------------
+
+FileDialogPropertyWidget::FileDialogPropertyWidget(QWidget* parent, FileDialogProp* prop)
+    : QWidget(parent)
+{
+
+    openFileDialogBtn_ = new QPushButton(this);
+    std::string filename(prop->get());
+    if (filename != "") {
+        size_t index = filename.find_last_of('/');
+        std::string endFilename = filename.substr(index + 1, filename.length());
+        openFileDialogBtn_->setText(endFilename.c_str());
+    } 
+    else
+        openFileDialogBtn_->setText(tr("open file"));
+
+    connect(openFileDialogBtn_, SIGNAL(clicked(void)), this, SLOT(clicked(void)));
+
+    dialogCaption_ = prop->getDialogCaption();
+    directory_ = prop->getDirectory();
+    fileFilter_ = prop->getFileFilter();
+    myProp_ = prop;
+}
+
+void FileDialogPropertyWidget::clicked() {
+    std::string filename = QString(QFileDialog::getOpenFileName(QWidget::parentWidget(), dialogCaption_.c_str(), directory_.c_str() , fileFilter_.c_str())).toStdString();
+    myProp_->set(filename);
+    if (filename != "") {
+        size_t index = filename.find_last_of('/');
+        std::string endFilename = filename.substr(index + 1, filename.length());
+        openFileDialogBtn_->setText(endFilename.c_str());
+        openFileDialogBtn_->hide();
+        openFileDialogBtn_->show();
+    }
 }
 
 } // namespace voreen
