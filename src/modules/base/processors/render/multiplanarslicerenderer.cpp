@@ -106,13 +106,6 @@ void MultiplanarSliceRenderer::process() {
     if (!ready())
         return;
 
-    // disable filtering
-    if (!filterTexture_.get()) {
-        volUnit.activate();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
-
     transferUnit.activate();
     transferFunc_.get()->bind();
 
@@ -147,13 +140,6 @@ void MultiplanarSliceRenderer::process() {
     glPopMatrix();
 
     deactivateShader();
-
-    // restore filtering mode
-    if (!filterTexture_.get()) {
-        volUnit.activate();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
 
     glActiveTexture(GL_TEXTURE0);
     outport_.deactivateTarget();

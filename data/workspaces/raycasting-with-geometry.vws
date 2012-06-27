@@ -32,9 +32,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="35" y="108" />
                             </MetaData>
-                            <position x="-2.88679743" y="0.1079969" z="0.10618315" />
-                            <focus x="-0.00063178" y="0.10557197" z="-0.01691852" />
-                            <upVector x="0.00122021" y="0.99995983" z="0.00888206" />
+                            <position x="-2.85659361" y="0.72158545" z="1.30332065" />
+                            <focus x="-0.00115926" y="0.03085553" z="-0.01862908" />
+                            <upVector x="0.20095263" y="0.97662973" z="-0.07623929" />
                         </Property>
                         <Property name="classification" value="transfer-function" />
                         <Property name="compositing" value="dvr" />
@@ -135,9 +135,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
-                            <position x="-2.88679743" y="0.1079969" z="0.10618315" />
-                            <focus x="-0.00063178" y="0.10557197" z="-0.01691852" />
-                            <upVector x="0.00122021" y="0.99995983" z="0.00888206" />
+                            <position x="-2.85659361" y="0.72158545" z="1.30332065" />
+                            <focus x="-0.00115926" y="0.03085553" z="-0.01862908" />
+                            <upVector x="0.20095263" y="0.97662973" z="-0.07623929" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" value="false" />
@@ -188,9 +188,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="20" y="-15" />
                             </MetaData>
-                            <position x="-2.88679743" y="0.1079969" z="0.10618315" />
-                            <focus x="-0.00063178" y="0.10557197" z="-0.01691852" />
-                            <upVector x="0.00122021" y="0.99995983" z="0.00888206" />
+                            <position x="-2.85659361" y="0.72158545" z="1.30332065" />
+                            <focus x="-0.00115926" y="0.03085553" z="-0.01862908" />
+                            <upVector x="0.20095263" y="0.97662973" z="-0.07623929" />
                         </Property>
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
@@ -215,9 +215,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="20" y="-15" />
                             </MetaData>
-                            <position x="-2.88679743" y="0.1079969" z="0.10618315" />
-                            <focus x="-0.00063178" y="0.10557197" z="-0.01691852" />
-                            <upVector x="0.00122021" y="0.99995983" z="0.00888206" />
+                            <position x="-2.85659361" y="0.72158545" z="1.30332065" />
+                            <focus x="-0.00115926" y="0.03085553" z="-0.01862908" />
+                            <upVector x="0.20095263" y="0.97662973" z="-0.07623929" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>

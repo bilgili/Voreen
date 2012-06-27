@@ -47,12 +47,21 @@ Port::Port(const std::string& name, PortDirection direction, bool allowMultipleC
     , isLoopPort_(false)
     , numLoopIterations_(1)
     , currentLoopIteration_(0)
+    , initialized_(false)
 {
     if (isOutport())
         allowMultipleConnections_ = true;
 }
 
 Port::~Port() {
+    if (isInitialized()) {
+        std::string id;
+        if (getProcessor())
+            id = getProcessor()->getName() + ".";
+        id += getName();
+        LWARNING("~Port() '" << id << "' has not been deinitialized");
+    }
+
     disconnectAll();
 }
 
@@ -281,11 +290,35 @@ void Port::setLoopIteration(int iteration) {
 }
 
 void Port::initialize() throw (VoreenException) {
-    // nothing
+
+    if (isInitialized()) {
+        std::string id;
+        if (getProcessor())
+            id = getProcessor()->getName() + ".";
+        id += getName();
+        LWARNING("initialize(): '" << id << "' already initialized");
+        return;
+    }
+
+    initialized_ = true;
 }
 
 void Port::deinitialize() throw (VoreenException) {
-    // nothing
+
+    if (!isInitialized()) {
+        std::string id;
+        if (getProcessor())
+            id = getProcessor()->getName() + ".";
+        id += getName();
+        LWARNING("deinitialize(): '" << id << "' not initialized");
+        return;
+    }
+
+    initialized_ = false;
+}
+
+bool Port::isInitialized() const {
+    return initialized_;
 }
 
 } // namespace voreen

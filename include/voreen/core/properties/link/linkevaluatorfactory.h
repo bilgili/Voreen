@@ -44,14 +44,6 @@ public:
     ///Gets the singleton instance of the factory
     static LinkEvaluatorFactory* getInstance();
 
-    /*
-     * Returns a LinkEvaluator instance identified by the
-     * provided function name or throws an Exception
-     *
-     * @deprecated Use createType instead!
-     */
-    //LinkEvaluatorBase* createLinkEvaluator(std::string functionName);
-
     ///Returns the complete list of functions registered with the factory.
     std::vector<std::string> listFunctionNames();
 

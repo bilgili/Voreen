@@ -66,6 +66,7 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     QHBoxLayout* filterSortLayout = new QHBoxLayout();
     info_->resize(120, 100);
+    info_->setContextMenuPolicy(Qt::NoContextMenu);
     info_->setReadOnly(true);
 
     connect(edit_, SIGNAL(textChanged(const QString&)), tree_, SLOT(filter(const QString&)));

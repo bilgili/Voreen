@@ -40,9 +40,9 @@
 
 namespace voreen {
 
-QProcessorWidget::QProcessorWidget(Processor* processor, QWidget* parent) :
-    QWidget(parent, Qt::Tool),
-    ProcessorWidget(processor)
+QProcessorWidget::QProcessorWidget(Processor* processor, QWidget* parent)
+    : QWidget(parent, Qt::Tool)
+    , ProcessorWidget(processor)
 {
     tgtAssert(processor, "No processor");
     setWindowTitle(QString::fromStdString(processor->getName()));

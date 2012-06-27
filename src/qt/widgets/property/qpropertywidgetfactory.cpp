@@ -109,7 +109,7 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatVec4Property* p) {
         return new LightPropertyWidget(p, 0);
     else if(p->getViews() == (Property::LIGHT_POSITION | Property::DEFAULT)) {
         GroupPropertyWidget* tab = new GroupPropertyWidget(p, true, "");
-        tab->addWidget(new LightPropertyWidget(p, 0), "Light");
+        tab->addWidget(new LightPropertyWidget(p, 0), "Widget");
         tab->addWidget(new FloatVec4PropertyWidget(p, 0), "Vector");
         return tab;
     }

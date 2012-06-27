@@ -71,9 +71,8 @@ vec4 directRendering(in vec3 first, in vec3 last, vec2 p) {
 
             // perform compositing
             if (color.a > 0.0) {
-                // multiply alpha by samplingStepSizeComposite_
-                // to accomodate for variable slice spacing
-                color.a *= samplingStepSizeComposite_;
+                // accomodate for variable sampling rates (base interval defined by mod_compositing.frag)
+                color.a = 1.0 - pow(1.0 - color.a, samplingStepSize_ * SAMPLING_BASE_INTERVAL_RCP);
                 result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
                 result.a = result.a + (1.0 -result.a) * color.a;
             }

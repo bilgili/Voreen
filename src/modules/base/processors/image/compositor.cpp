@@ -73,6 +73,16 @@ std::string Compositor::getProcessorInfo() const {
     return "Composites two images with a selectable blending method.";
 }
 
+bool Compositor::isReady() const {
+    // in takeFirst/takeSecond mode, it is sufficient when the respective port is ready
+    bool ready = false;
+    ready |= (inport0_.isReady() && inport1_.isReady());
+    ready |= (inport0_.isReady() && compositingMode_.isSelected("take-first"));
+    ready |= (inport1_.isReady() && compositingMode_.isSelected("take-second"));
+
+    return ready;
+}
+
 void Compositor::process() {
 
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)

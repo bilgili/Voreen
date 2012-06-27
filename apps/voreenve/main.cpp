@@ -45,17 +45,20 @@ public:
 #else
         : VoreenApplicationQt("voreenve", "VoreenVE", argc, argv, VoreenApplication::APP_DEFAULT)
 #endif
-    {}
+    {
+        resetSettings_ = false;
+    }
 
     virtual void prepareCommandParser() {
         VoreenApplicationQt::prepareCommandParser();
 
         CommandlineParser* p = getCommandLineParser();
         p->addCommand(new Command_LoadDatasetSingle(&datasetFilename_));
-        p->addCommandForNamelessArguments(new Command_LoadDatasetSingle(&datasetFilename_));
-
         p->addCommand(new SingleCommand<std::string>(&workspaceFilename_, "--workspace", "-w",
                                                      "Loads a workspace", "<workspace file>"));
+        p->addCommand(new SingleCommandZeroArguments(&resetSettings_, "--resetSettings", "",
+            "Restores window settings and default paths"));
+
 #ifdef VRN_MODULE_PYTHON
         p->addCommand(new SingleCommand<std::string>(&scriptFilename_, "--script", "-s",
                                                      "Runs a python script", "<script file>"));
@@ -65,6 +68,7 @@ public:
     std::string datasetFilename_;
     std::string workspaceFilename_;
     std::string scriptFilename_;
+    bool resetSettings_;
 };
 
 /// Reimplement QApplication to catch unhandled exceptions
@@ -170,7 +174,7 @@ int main(int argc, char** argv) {
 #ifdef VRN_SPLASHSCREEN
     splash.showMessage("Creating main window...");
 #endif
-    VoreenMainWindow mainWindow(vapp.workspaceFilename_, vapp.datasetFilename_);
+    VoreenMainWindow mainWindow(vapp.workspaceFilename_, vapp.datasetFilename_, vapp.resetSettings_);
     vapp.setMainWindow(&mainWindow);
     mainWindow.show();
 #ifdef VRN_SPLASHSCREEN

@@ -400,6 +400,30 @@ protected:
     /// @overload
     void removePort(Port& port);
 
+    /**
+     * Initializes the passed port.
+     *
+     * @note Ports are automatically initialized by the Processor
+     *  base class. Therefore, it is not necessary to call this
+     *  function, unless a port is added \e after its processor
+     *  has been initialized.
+     *
+     * @throw VoreenException If port initialization has failed.
+     */
+    void initializePort(Port* port) throw (VoreenException);
+
+    /**
+     * Deinitializes the passed port.
+     *
+     * @note Ports are automatically deinitialized by the Processor
+     *  base class. Therefore, it is not necessary to call this
+     *  function, unless a port is to be removed \e before its processor
+     *  has been deinitialized.
+     *
+     * @throw VoreenException If port deinitialization has failed.
+     */
+    void deinitializePort(Port* port) throw (VoreenException);
+
     /// Adds an event property to this processor.
     void addEventProperty(EventPropertyBase* prop);
 

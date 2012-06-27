@@ -35,15 +35,24 @@
  */
 
 /**
+ * Reciprocal value of the reference sampling interval used
+ * for the opacity correction that is necessary to compensate
+ * variable sampling rates.
+ *
+ * See Engel et. al.: "Real-Time Volume Graphics" - Ch 9.1.3
+ */
+const float SAMPLING_BASE_INTERVAL_RCP = 200.0;
+
+/**
  * Performs regular DVR compositing. Expects the current voxels color
  * and the intermediate result. Returns the result after compositing.
  *
  */
 vec4 compositeDVR(in vec4 curResult, in vec4 color, in float t, inout float tDepth) {
     vec4 result = curResult;
-    // multiply alpha by samplingStepSizeComposite_
-    // to accomodate for variable slice spacing
-    color.a *= samplingStepSizeComposite_;
+
+    // apply opacity correction to accomodate for variable sampling intervals
+    color.a = 1.0 - pow(1.0 - color.a, samplingStepSize_ * SAMPLING_BASE_INTERVAL_RCP);
 
     result.rgb = result.rgb + (1.0 - result.a) * color.a * color.rgb;
     result.a = result.a + (1.0 -result.a) * color.a;

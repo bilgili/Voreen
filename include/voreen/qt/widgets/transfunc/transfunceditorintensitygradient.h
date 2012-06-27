@@ -155,12 +155,6 @@ public slots:
      */
     void repaintSignal();
 
-signals:
-    /**
-     * Signal that is emited when the volume rendering needs to be repainted.
-     */
-    void transferFunctionChanged();
-
 private:
 
     /**

@@ -32,9 +32,7 @@
 using tgt::TextureUnit;
 
 //TODOs:
-// - remove friend from Port and RenderPort
 // - enable transfer function usage
-// - correctly handle renaming and removing of name label
 // - prepare for shader version 120
 
 namespace voreen {
@@ -60,7 +58,17 @@ DynamicGLSLProcessor::~DynamicGLSLProcessor() {
 
 
 std::string DynamicGLSLProcessor::getProcessorInfo() const {
-    return "";
+    return "This is a highly customizable processor. It can be customized \
+            by using the associated GLSL shader. Within the shader it is \
+            possible to define a varying number of inports for receiving \
+            image or volume data. Furthermore, up to eight render outports \
+            can be defined. To allow further customization, properties can \
+            be initialized and used as regular properties, e.g., linking \
+            is possible. To learn how to setup ports and properties have \
+            a look at the standard shader, which is associated with the \
+            processor."
+            "<br><b>Note:</b> To update ports and properties the refresh button \
+            has to be pressed.";
 }
 
 Processor* DynamicGLSLProcessor::create() const {
@@ -287,14 +295,14 @@ void DynamicGLSLProcessor::addNewInport(glslparser::GLSLVariableSymbol* symbol) 
                 LINFO("Adding image inport '" + portName + "'");
                 RenderPort* imgInport = new RenderPort(Port::INPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
                 addPort(imgInport);
-                imgInport->initialize();
+                initializePort(imgInport);
                 break;
             }
             case 3 : {
                 LINFO("Adding volume inport '" + portName + "'");
                 VolumePort* volInport = new VolumePort(Port::INPORT, portName);
                 addPort(volInport);
-                volInport->initialize();
+                initializePort(volInport);
                 break;
             }
     }
@@ -302,21 +310,23 @@ void DynamicGLSLProcessor::addNewInport(glslparser::GLSLVariableSymbol* symbol) 
 
 void DynamicGLSLProcessor::updateInports(glslparser::GLSLVariableSymbol* symbol) {
     std::string portName = symbol->getAnnotationValueString("name");
-    if (portName != "") {
+    if (!portName.empty()) {
         if (getPort(portName)) {
             Port* oldPort = getPort(portName);
             if (oldPort->isOutport()) {
                 // old port was an outport, but now its an inport
                 removeOldPort(oldPort);
                 addNewInport(symbol);
-            } else {
+            }
+            else {
                 if (dynamic_cast<RenderPort*>(oldPort)) {
                     // old port was a render port, but now its a volume port
                     if (symbol->getNumInternalElements() != 2) {
                         removeOldPort(oldPort);
                         addNewInport(symbol);
                     }
-                } else if (dynamic_cast<VolumePort*>(oldPort)) {
+                }
+                else if (dynamic_cast<VolumePort*>(oldPort)) {
                     // old port was a volume port, but now its a render port
                     if (symbol->getNumInternalElements() != 3) {
                         removeOldPort(oldPort);
@@ -324,7 +334,8 @@ void DynamicGLSLProcessor::updateInports(glslparser::GLSLVariableSymbol* symbol)
                     }
                 }
             }
-        } else
+        }
+        else
             addNewInport(symbol);
 
         if (symbol->getNumInternalElements() == 2 || symbol->getNumInternalElements() == 3)
@@ -338,24 +349,27 @@ void DynamicGLSLProcessor::updateOutports(glslparser::GLSLVariableSymbol* symbol
     if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_FLOAT &&
         symbol->getNumInternalElements() == 4) {
         std::string portName = symbol->getAnnotationValueString("name");
-        if (portName != "") {
+        if (!portName.empty()) {
             if (getPort(portName)) {
                 Port* oldPort = getPort(portName);
                 if (oldPort->isInport()) {
                     removeOldPort(oldPort);
                     RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
                     addPort(outport);
-                    outport->initialize();
+                    initializePort(outport);
                 }
-            } else {
+            }
+            else {
                 LINFO("Adding outport '" + portName + "'");
                 RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
                 addPort(outport);
-                outport->initialize();
+                initializePort(outport);
             }
             outportIDs_.push_back(portName);
-        } else LWARNING("Annotation 'name' not defined for '" + symbol->getID() + "'.");
-    } else LWARNING("Found an 'out' declaration, which is not of type 'vec4'. Ignoring for now.");
+        }
+        else LWARNING("Annotation 'name' not defined for '" + symbol->getID() + "'.");
+    }
+    else LWARNING("Found an 'out' declaration, which is not of type 'vec4'. Ignoring for now.");
 }
 
 void DynamicGLSLProcessor::addNewProperty(glslparser::GLSLVariableSymbol* symbol) {
@@ -369,33 +383,40 @@ void DynamicGLSLProcessor::addNewProperty(glslparser::GLSLVariableSymbol* symbol
                     BoolProperty* boolProp = new BoolProperty(propertyName, labelText);
                     updatePropertyValues(boolProp, symbol);
                     addProperty(boolProp);
-                } else LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
+                }
+                else
+                    LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
                 break;
-                                                         }
+            }
             case glslparser::GLSLSymbol::INTERNAL_FLOAT : {
                 if (symbol->getNumInternalElements() == 1) {
                     LINFO("Adding float property '" + symbol->getID() + "'");
                     FloatProperty* floatProp = new FloatProperty(propertyName, labelText);
                     updatePropertyValues(floatProp, symbol);
                     addProperty(floatProp);
-                } else if (symbol->getNumInternalElements() == 2) {
+                }
+                else if (symbol->getNumInternalElements() == 2) {
                     LINFO("Adding vec2 property '" + symbol->getID() + "'");
                     FloatVec2Property* vec2Prop = new FloatVec2Property(propertyName, labelText, tgt::vec2(0.0));
                     updatePropertyValues(vec2Prop, symbol);
                     addProperty(vec2Prop);
-                } else if (symbol->getNumInternalElements() == 3) {
+                }
+                else if (symbol->getNumInternalElements() == 3) {
                     LINFO("Adding vec3 property '" + symbol->getID() + "'");
                     FloatVec3Property* vec3Prop = new FloatVec3Property(propertyName, labelText, tgt::vec3(0.0));
                     updatePropertyValues(vec3Prop, symbol);
                     addProperty(vec3Prop);
-                } else if (symbol->getNumInternalElements() == 4) {
+                }
+                else if (symbol->getNumInternalElements() == 4) {
                     LINFO("Adding vec4 property '" + symbol->getID() + "'");
                     FloatVec4Property* vec4Prop = new FloatVec4Property(propertyName, labelText, tgt::vec4(0.0));
                     updatePropertyValues(vec4Prop, symbol);
                     addProperty(vec4Prop);
-                } else LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
+                }
+                else
+                    LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
                 break;
-                                                          }
+            }
             case glslparser::GLSLSymbol::INTERNAL_INT :
             case glslparser::GLSLSymbol::INTERNAL_UINT : {
                 if (symbol->getNumInternalElements() == 1) {
@@ -403,24 +424,29 @@ void DynamicGLSLProcessor::addNewProperty(glslparser::GLSLVariableSymbol* symbol
                     IntProperty* intProp = new IntProperty(propertyName, labelText);
                     updatePropertyValues(intProp, symbol);
                     addProperty(intProp);
-                } else if (symbol->getNumInternalElements() == 2) {
+                }
+                else if (symbol->getNumInternalElements() == 2) {
                     LINFO("Adding ivec2 property '" + symbol->getID() + "'");
                     IntVec2Property* ivec2Prop = new IntVec2Property(propertyName, labelText, tgt::ivec2(0));
                     updatePropertyValues(ivec2Prop, symbol);
                     addProperty(ivec2Prop);
-                } else if (symbol->getNumInternalElements() == 3) {
+                }
+                else if (symbol->getNumInternalElements() == 3) {
                     LINFO("Adding ivec3 property '" + symbol->getID() + "'");
                     IntVec3Property* ivec3Prop = new IntVec3Property(propertyName, labelText, tgt::ivec3(0));
                     updatePropertyValues(ivec3Prop, symbol);
                     addProperty(ivec3Prop);
-                } else if (symbol->getNumInternalElements() == 4) {
+                }
+                else if (symbol->getNumInternalElements() == 4) {
                     LINFO("Adding ivec4 property '" + symbol->getID() + "'");
                     IntVec4Property* ivec4Prop = new IntVec4Property(propertyName, labelText, tgt::ivec4(0));
                     updatePropertyValues(ivec4Prop, symbol);
                     addProperty(ivec4Prop);
-                } else LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
+                }
+                else
+                    LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
                 break;
-                                                         }
+            }
             default :
                 LWARNING("Type of uniform '" + symbol->getID() + "' not supported.");
         }
@@ -439,7 +465,7 @@ void DynamicGLSLProcessor::removeOldProperty(Property* property) {
 
 void DynamicGLSLProcessor::removeOldPort(Port* port) {
     LINFO("Removing port '" + port->getName() + "'");
-    port->deinitialize();
+    deinitializePort(port);
     removePort(port);
 }
 
@@ -507,35 +533,43 @@ void DynamicGLSLProcessor::updateProperties(glslparser::GLSLVariableSymbol* symb
             if (dynamic_cast<BoolProperty*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_BOOL)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<FloatProperty*>(oldProperty)) {
+            }
+            else if (dynamic_cast<FloatProperty*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_FLOAT &&
                     symbol->getNumInternalElements() == 1)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<FloatVec2Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<FloatVec2Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_FLOAT &&
                     symbol->getNumInternalElements() == 2)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<FloatVec3Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<FloatVec3Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_FLOAT &&
                     symbol->getNumInternalElements() == 3)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<FloatVec4Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<FloatVec4Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_FLOAT &&
                     symbol->getNumInternalElements() == 4)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<IntProperty*>(oldProperty)) {
+            }
+            else if (dynamic_cast<IntProperty*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_INT &&
                     symbol->getNumInternalElements() == 1)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<IntVec2Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<IntVec2Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_INT &&
                     symbol->getNumInternalElements() == 2)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<IntVec3Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<IntVec3Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_INT &&
                     symbol->getNumInternalElements() == 3)
                     onlyUpdateValues = true;
-            } else if (dynamic_cast<IntVec4Property*>(oldProperty)) {
+            }
+            else if (dynamic_cast<IntVec4Property*>(oldProperty)) {
                 if (symbol->getInternalType() == glslparser::GLSLSymbol::INTERNAL_INT &&
                     symbol->getNumInternalElements() == 4)
                     onlyUpdateValues = true;
@@ -544,12 +578,14 @@ void DynamicGLSLProcessor::updateProperties(glslparser::GLSLVariableSymbol* symb
             if (onlyUpdateValues) {
                 // we have the same property type and only the values are updated
                 updatePropertyValues(oldProperty, symbol);
-            } else {
+            }
+            else {
                 // the property type has changed and a new property is generated
                 removeOldProperty(oldProperty);
                 addNewProperty(symbol);
             }
-        } else
+        }
+        else
             addNewProperty(symbol);
 
         propertyIDs_.push_back(propertyName);

@@ -29,7 +29,7 @@
 
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 
-#include "voreen/core/properties/link/dependancylinkevaluators.h"
+#include "voreen/core/properties/link/dependencylinkevaluators.h"
 #include "voreen/core/properties/link/linkevaluatorboolinvert.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
 #include "voreen/core/properties/link/linkevaluatoridnormalized.h"
@@ -90,7 +90,7 @@ LinkEvaluatorFactory::LinkEvaluatorFactory() {
     //registerClass(new DependancyLinkEvaluatorIVec4());
     //registerClass(new DependancyLinkEvaluatorFileDialog());
     //registerClass(new DependancyLinkEvaluatorString());
-    registerClass(new DependancyLinkEvaluatorVolumeHandle());
+    registerClass(new DependencyLinkEvaluatorVolumeHandle());
 
     //Other:
     //registerClass(new LinkEvaluatorId()); //is only created in create method
@@ -98,16 +98,6 @@ LinkEvaluatorFactory::LinkEvaluatorFactory() {
     registerClass(new LinkEvaluatorIdNormalized());
     registerClass(new LinkEvaluatorPlotSelection());
 }
-
-//LinkEvaluatorBase* LinkEvaluatorFactory::createLinkEvaluator(std::string functionName) {
-    //for (std::map<std::string, LinkEvaluatorBase*>::const_iterator it = classList_.begin();
-        //it != classList_.end(); ++it)
-    //{
-        //if (it->second->name() == functionName)
-            //return it->second->create();
-    //}
-    //return 0;
-//}
 
 std::vector<std::string> LinkEvaluatorFactory::listFunctionNames() {
     std::vector<std::string> result;
@@ -131,13 +121,6 @@ const std::string LinkEvaluatorFactory::getTypeString(const std::type_info& type
 }
 
 Serializable* LinkEvaluatorFactory::createType(const std::string& typeString) {
-    //std::map<std::string, LinkEvaluatorBase*>::iterator it = classList_.find(typeString);
-    //if (it != classList_.end() && it->second != 0) {
-        //LinkEvaluatorBase* le = it->second->create();
-        //tgtAssert(le, "No LinkEvaluator created");
-        //return le;
-    //}
-    //return 0;
     return create(typeString);
 }
 

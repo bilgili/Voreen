@@ -155,18 +155,6 @@ bool GpuCapabilities::isTextureCompressionSupported() {
     return textureCompression_;
 }
 
-bool GpuCapabilities::arePalettedTexturesSupported() {
-    return palettedTextures_;
-}
-
-bool GpuCapabilities::areSharedPalettedTexturesSupported() {
-    return sharedPalettedTextures_;
-}
-
-int GpuCapabilities::getColorTableWidth() {
-    return colorTableWidth_;
-}
-
 bool GpuCapabilities::areFramebufferObjectsSupported() {
     return framebufferObjects_;
 }
@@ -370,12 +358,6 @@ void GpuCapabilities::detectCapabilities() {
     else
         maxTextureAnisotropy_ = 1.0;
     textureCompression_ = (isExtensionSupported("GL_ARB_texture_compression"));
-    palettedTextures_ = (isExtensionSupported("GL_EXT_paletted_texture"));
-    sharedPalettedTextures_ = (isExtensionSupported("GL_EXT_shared_texture_palette"));
-    if (sharedPalettedTextures_)
-        glGetColorTableParameteriv(GL_SHARED_TEXTURE_PALETTE_EXT, GL_COLOR_TABLE_WIDTH, (GLint *) &colorTableWidth_);
-    else
-        colorTableWidth_ = 0;
 
     framebufferObjects_ = (isExtensionSupported("GL_EXT_framebuffer_object"));
 
@@ -450,7 +432,18 @@ void GpuCapabilities::detectOS() {
     osVersionString_ = oss.str();
 }
 
-
+bool GpuCapabilities::overrideGLSLVersion(const std::string& versionString){
+    GlVersion overrideVersion;
+    if (overrideVersion.parseVersionString(versionString)) {
+        shaderVersion_ = overrideVersion;
+        return true;
+    }
+    else {
+        LERROR("GLSL version string '" << versionString << "' could not be parsed. "
+               << "Keeping detected version: " << shaderVersion_);
+        return false;
+    }
+}
 
 //-----------------------------------------------------------------------------------
 

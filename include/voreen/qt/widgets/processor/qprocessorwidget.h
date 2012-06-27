@@ -39,9 +39,8 @@
 namespace voreen {
 
 class QProcessorWidget : public QWidget, public ProcessorWidget {
-    Q_OBJECT
+Q_OBJECT
 public:
-
     QProcessorWidget(Processor* processor, QWidget* parent = 0);
 
     virtual void setVisible(bool);
@@ -64,9 +63,7 @@ protected:
     void moveEvent(QMoveEvent*);
     /// Passes the resize event to the super classes.
     void resizeEvent(QResizeEvent*);
-
 };
-
 
 } //namespace voreen
 

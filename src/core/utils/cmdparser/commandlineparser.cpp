@@ -184,7 +184,7 @@ void CommandlineParser::execute() {
     for (multimap<Command*, vector<string> >::iterator it = parameterMap.begin(); it != parameterMap.end(); ++it) {
         bool correct = (*it).first->checkParameters((*it).second);
         if (!correct)
-            exitWithError("One of the parameters for " + (*it).first->getName() + " was not correct",
+            exitWithError("Failed to parse arguments for " + (*it).first->getName() + ": " + (*it).first->getErrorMessage(),
                           (*it).first->getName());
     }
 

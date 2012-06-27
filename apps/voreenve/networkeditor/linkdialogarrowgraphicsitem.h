@@ -87,7 +87,6 @@ public:
     /// Returns the destination item of this arrow or 0 if there is no such item
     LinkDialogPropertyGraphicsItem* getDestinationItem() const;
 
-protected:
     /// Returns the anchor point of the source item
     QPointF getSourcePoint() const;
 
@@ -95,6 +94,7 @@ protected:
     /// the point to which this arrow points.
     QPointF getDestinationPoint() const;
 
+protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);

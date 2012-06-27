@@ -100,7 +100,8 @@ void QPropertyWidgetWithEditorWindow::createEditorWindow(Qt::DockWidgetArea area
 
     QMainWindow* mainWindow = VoreenApplicationQt::qtApp()->getMainWindow();
     editorWindow_ = new VoreenToolWindow(new QAction(title, mainWindow), mainWindow, createEditorWindowWidget(), title, false);
-    mainWindow->addDockWidget(area, editorWindow_);
+    if (mainWindow)
+        mainWindow->addDockWidget(area, editorWindow_);
     customizeEditorWindow();
 
     // set default size, might be overwritten by meta data

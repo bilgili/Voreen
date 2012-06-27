@@ -39,6 +39,7 @@
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QApplication>
+#include <QDesktopServices>
 
 namespace voreen {
 
@@ -311,6 +312,8 @@ const QString PythonEditor::getOpenFileName(QString filter) {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getScriptPath().c_str());
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
 
     if (fileDialog.exec() && !fileDialog.selectedFiles().empty()) {
@@ -329,6 +332,8 @@ const QString PythonEditor::getSaveFileName(QStringList filters) {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getScriptPath().c_str());
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
 
     QStringList fileList;
@@ -375,7 +380,7 @@ bool PythonEditor::saveScriptInternal(QString filename, QString source) {
         return false;
     }
 
-    updateGuiState();
+    //updateGuiState(); //cannot be reached
 }
 
 void PythonEditor::clearScript() {

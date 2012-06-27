@@ -27,17 +27,19 @@
  *                                                                    *
  **********************************************************************/
 
+#include "modules/vrn_shaderincludes.frag"
+
 /*******************/
 /* Declare Inports */
 /*******************/
 //$ @name = "inport", @depthtex = "inputTexDepth_", @params = "inputTexParams_"
 uniform sampler2D inputTex_;
 uniform sampler2D inputTexDepth_;
-//uniform TEXTURE_PARAMETERS inputTexParams_;
+uniform TEXTURE_PARAMETERS inputTexParams_;
 
 //$ @name = "volumeport", @params = "volParams_"
 uniform sampler3D volume_;
-//uniform VOLUME_PARAMETERS volParams_;
+uniform VOLUME_PARAMETERS volParams_;
 
 
 /********************/
@@ -56,9 +58,6 @@ out vec4 FragData1;
 /**********************/
 //$ @name = "test", @label = "Test property"
 uniform float test_;
-
-uniform vec2 screenDimRCP_;
-
 
 /***
  * The main method.

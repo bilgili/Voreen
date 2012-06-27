@@ -10,7 +10,7 @@ CONFIG -= dll
 
 # check qmake version
 QMAKE_VERS = $$[QMAKE_VERSION]
-QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\\.")
 isEmpty(QMAKE_VERSION_CHECK) {
    error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }
@@ -286,8 +286,8 @@ SOURCES += \
 SOURCES += \
     properties/link/boxobject.cpp\
     properties/link/boxobjecthelper.cpp\
-    properties/link/dependancylinkevaluatorbase.cpp \
-    properties/link/dependancylinkevaluators.cpp \
+    properties/link/dependencylinkevaluatorbase.cpp \
+    properties/link/dependencylinkevaluators.cpp \
     properties/link/linkevaluatorbase.cpp \
     properties/link/linkevaluatorboolinvert.cpp \
     properties/link/linkevaluatorfactory.cpp \
@@ -625,8 +625,8 @@ HEADERS += \
 HEADERS += \
     ../../include/voreen/core/properties/link/boxobject.h \
     ../../include/voreen/core/properties/link/boxobjecthelper.h \
-	../../include/voreen/core/properties/link/dependancylinkevaluatorbase.h \
-	../../include/voreen/core/properties/link/dependancylinkevaluators.h \
+	../../include/voreen/core/properties/link/dependencylinkevaluatorbase.h \
+	../../include/voreen/core/properties/link/dependencylinkevaluators.h \
     ../../include/voreen/core/properties/link/linkevaluatorbase.h \
     ../../include/voreen/core/properties/link/linkevaluatorboolinvert.h \
     ../../include/voreen/core/properties/link/linkevaluatorfactory.h \

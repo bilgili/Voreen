@@ -41,6 +41,7 @@ Command::Command(const std::string& name, const std::string& shortName, const st
     , parameterList_(parameterList)
     , argumentNum_(argumentNum)
     , allowMultipleCalls_(allowMultipleCalls)
+    , errorMsg_("")
 {}
 
 Command::~Command() {}
@@ -92,6 +93,10 @@ const std::string Command::help() {
         result = getName() + ": \t" + getInfoText();
 
     return result;
+}
+
+const std::string Command::getErrorMessage() {
+    return errorMsg_;
 }
 
 bool Command::checkParameters(const std::vector<std::string>& parameters) {

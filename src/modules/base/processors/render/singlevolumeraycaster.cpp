@@ -42,26 +42,37 @@ const std::string SingleVolumeRaycaster::loggerCat_("voreen.SingleVolumeRaycaste
 
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
-    , raycastPrg_(0)
-    , transferFunc_("transferFunction", "Transfer Function")
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
-    , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
-    , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
-    , texClampMode_("textureClampMode_", "Texture Clamp")
-    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
     , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_PROGRAM)
     , entryPort_(Port::INPORT, "image.entrypoints")
     , exitPort_(Port::INPORT, "image.exitpoints")
     , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM)
     , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM)
     , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM)
+    , raycastPrg_(0)
+    , transferFunc_("transferFunction", "Transfer Function")
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
+    , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
+    , texFilterMode_("textureFilterMode_", "Texture Filtering")
+    , texClampMode_("textureClampMode_", "Texture Clamp")
+    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
 {
+    // ports
+    addPort(volumeInport_);
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPort(outport_);
+    addPort(outport1_);
+    addPort(outport2_);
+
+    // shading / classification props
     addProperty(transferFunc_);
     addProperty(camera_);
-
     addProperty(gradientMode_);
     addProperty(classificationMode_);
     addProperty(shadeMode_);
+
+    // compositing modes
     addProperty(compositingMode_);
     compositingMode1_.addOption("dvr", "DVR");
     compositingMode1_.addOption("mip", "MIP");
@@ -77,16 +88,9 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     compositingMode2_.addOption("fhn", "FHN");
     addProperty(compositingMode2_);
 
-    // volume texture clamping
-    texClampMode_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode_);
-    addProperty(texBorderIntensity_);
-
     addProperty(isoValue_);
 
+    // lighting
     addProperty(lightPosition_);
     addProperty(lightAmbient_);
     addProperty(lightDiffuse_);
@@ -105,19 +109,34 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     lightAttenuation_.setGroupID("lighting");
     setPropertyGroupGuiName("lighting", "Lighting Parameters");
 
+    // volume texture filtering
+    texFilterMode_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode_.selectByKey("linear");
+    addProperty(texFilterMode_);
+
+    // volume texture clamping
+    texClampMode_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode_);
+    addProperty(texBorderIntensity_);
+
+    // assign texture access properties to property group
+    texFilterMode_.setGroupID("textureAccess");
+    texClampMode_.setGroupID("textureAccess");
+    texBorderIntensity_.setGroupID("textureAccess");
+    setPropertyGroupGuiName("textureAccess", "Volume Texture Access");
+
+    // listen to changes of properties that influence the GUI state (i.e. visibility of other props)
     classificationMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     shadeMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     compositingMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     compositingMode1_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     compositingMode2_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     applyLightAttenuation_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
-
-    addPort(volumeInport_);
-    addPort(entryPort_);
-    addPort(exitPort_);
-    addPort(outport_);
-    addPort(outport1_);
-    addPort(outport2_);
+    texClampMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
 }
 
 std::string SingleVolumeRaycaster::getProcessorInfo() const {
@@ -227,7 +246,8 @@ void SingleVolumeRaycaster::process() {
         "volumeParameters_",
         true,
         texClampMode_.getValue(),
-        tgt::vec4(texBorderIntensity_.get()))
+        tgt::vec4(texBorderIntensity_.get()),
+        texFilterMode_.getValue())
     );
 
     updateBrickingParameters(volumeInport_.getData());
@@ -251,9 +271,9 @@ void SingleVolumeRaycaster::process() {
     raycastPrg_->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(raycastPrg_, "exitParameters_");
 
-    if (compositingMode_.get() ==  "iso" ||
-        compositingMode1_.get() == "iso" ||
-        compositingMode2_.get() == "iso")
+    if (compositingMode_.isSelected("iso")  ||
+        compositingMode1_.isSelected("iso") ||
+        compositingMode2_.isSelected("iso") )
         raycastPrg_->setUniform("isoValue_", isoValue_.get());
 
     if (classificationMode_.get() == "transfer-function")
@@ -281,28 +301,28 @@ std::string SingleVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
 
     // configure compositing mode for port 2
     headerSource += "#define RC_APPLY_COMPOSITING_1(result, color, samplePos, gradient, t, tDepth) ";
-    if (compositingMode1_.get() == "dvr")
+    if (compositingMode1_.isSelected("dvr"))
         headerSource += "compositeDVR(result, color, t, tDepth);\n";
-    else if (compositingMode1_.get() == "mip")
+    else if (compositingMode1_.isSelected("mip"))
         headerSource += "compositeMIP(result, color, t, tDepth);\n";
-    else if (compositingMode1_.get() == "iso")
+    else if (compositingMode1_.isSelected("iso"))
         headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
-    else if (compositingMode1_.get() == "fhp")
+    else if (compositingMode1_.isSelected("fhp"))
         headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-    else if (compositingMode1_.get() == "fhn")
+    else if (compositingMode1_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     // configure compositing mode for port 3
     headerSource += "#define RC_APPLY_COMPOSITING_2(result, color, samplePos, gradient, t, tDepth) ";
-    if (compositingMode2_.get() == "dvr")
+    if (compositingMode2_.isSelected("dvr"))
         headerSource += "compositeDVR(result, color, t, tDepth);\n";
-    else if (compositingMode2_.get() == "mip")
+    else if (compositingMode2_.isSelected("mip"))
         headerSource += "compositeMIP(result, color, t, tDepth);\n";
-    else if (compositingMode2_.get() == "iso")
+    else if (compositingMode2_.isSelected("iso"))
         headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
-    else if (compositingMode2_.get() == "fhp")
+    else if (compositingMode2_.isSelected("fhp"))
         headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-    else if (compositingMode2_.get() == "fhn")
+    else if (compositingMode2_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     portGroup_.reattachTargets();
@@ -320,8 +340,8 @@ void SingleVolumeRaycaster::adjustPropertyVisibilities() {
     isoValue_.setVisible(useIsovalue);
 
     lightAttenuation_.setVisible(applyLightAttenuation_.get());
+
+    texBorderIntensity_.setVisible(!texClampMode_.isSelected("clamp-to-edge"));
 }
-
-
 
 } // namespace

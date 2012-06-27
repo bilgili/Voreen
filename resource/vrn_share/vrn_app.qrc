@@ -1,18 +1,18 @@
 <!DOCTYPE RCC><RCC version="1.0">
   <qresource prefix="/voreenve" >
     <file>icons/about.png</file>
-	<file>icons/aggregate.png</file>
+    <file>icons/aggregate.png</file>
     <file>icons/arrow-left.png</file>
     <file>icons/arrow-leftright.png</file>
     <file>icons/arrow-right.png</file>
     <file>icons/cancel.png</file>
     <file>icons/clear.png</file>
-	<file>icons/clear_dependancy.png</file>
+    <file>icons/clear_dependency.png</file>
     <file>icons/configure.png</file>
     <file>icons/development-mode.png</file>
     <file>icons/document-new_32x32.png</file>
     <file>icons/dataflow-mode.png</file>
-	<file>icons/deaggregate.png</file>
+    <file>icons/deaggregate.png</file>
     <file>icons/edit-copy.png</file>
     <file>icons/edit-paste.png</file>
     <file>icons/eraser.png</file>
@@ -39,6 +39,7 @@
     <file>icons/open-dicom.png</file>
     <file>icons/open-network.png</file>
     <file>icons/open-volume.png</file>
+    <file>icons/pdf.png</file>
     <file>icons/player-pause.png</file>
     <file>icons/player-start.png</file>
     <file>icons/player-stop.png</file>
@@ -46,11 +47,11 @@
     <file>icons/processor-stable.png</file>
     <file>icons/processor-testing.png</file>
     <file>icons/python.png</file>
-	<file>icons/python_2.png</file>
+    <file>icons/python_2.png</file>
     <file>icons/rebuild.png</file>
     <file>icons/refresh.png</file>
-	<file>icons/rename.png</file>
-	<file>icons/revert.png</file>
+    <file>icons/rename.png</file>
+    <file>icons/revert.png</file>
     <file>icons/save.png</file>
     <file>icons/saveas.png</file>
     <file>icons/segmentation.png</file>

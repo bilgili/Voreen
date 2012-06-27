@@ -54,16 +54,46 @@ namespace voreen {
 SliceRendererBase::SliceRendererBase()
     : VolumeRenderer(),
     transferFunc_("transferFunction", "Transfer Function"),
-    filterTexture_("filterTexture", "Filter Texture", true),
+    texFilterMode_("textureFilterMode", "Texture Filtering"),
+    texClampMode_("textureClampMode_", "Texture Clamp"),
+    texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f),
     sliceShader_(0),
     outport_(Port::OUTPORT, "image.outport"),
     inport_(Port::INPORT, "volumehandle.volumehandle")
 {
-    addProperty(transferFunc_);
-    addProperty(filterTexture_);
-
     addPort(outport_);
     addPort(inport_);
+
+    addProperty(transferFunc_);
+
+    // volume texture filtering
+    texFilterMode_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode_.selectByKey("linear");
+    addProperty(texFilterMode_);
+
+    // volume texture clamping
+    texClampMode_.addOption("clamp",           "Clamp",             GL_CLAMP);
+    texClampMode_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
+    texClampMode_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
+    texClampMode_.selectByKey("clamp-to-edge");
+    addProperty(texClampMode_);
+    addProperty(texBorderIntensity_);
+
+    // assign texture access properties to property group
+    texFilterMode_.setGroupID("textureAccess");
+    texClampMode_.setGroupID("textureAccess");
+    texBorderIntensity_.setGroupID("textureAccess");
+    setPropertyGroupGuiName("textureAccess", "Volume Texture Access");
+
+    texClampMode_.onChange(CallMemberAction<SliceRendererBase>(this,
+        &SliceRendererBase::adjustPropertyVisibilities));
+}
+
+void SliceRendererBase::initialize() throw (VoreenException) {
+    VolumeRenderer::initialize();
+
+    adjustPropertyVisibilities();
 }
 
 void SliceRendererBase::deinitialize() throw (VoreenException) {
@@ -134,7 +164,10 @@ bool SliceRendererBase::setupShader(VolumeGL* volume, TextureUnit* volUnit, Text
                 volUnit,
                 "volume_",
                 "volumeParameters_",
-                true)
+                true,
+                texClampMode_.getValue(),
+                tgt::vec4(texBorderIntensity_.get()),
+                texFilterMode_.getValue())
                 );
             bindVolumes(sliceShader_, volumeTextures, camera, lightPosition);
 
@@ -150,10 +183,6 @@ std::string SliceRendererBase::buildShaderHeader() {
 
     header += transferFunc_.get()->getShaderDefines();
 
-    // FIXME This code seems to be deprecated, since a uniform matrix is used in the shaders instead of gl_TextureMatrix[i]? FL
-    //std::ostringstream oss;
-    //oss << "#define VOL_TEX " << tm_.getTexUnit(volTexUnit_) << std::endl;
-    //header += oss.str();
     return header;
 }
 
@@ -170,5 +199,10 @@ void SliceRendererBase::deactivateShader() {
     if (sliceShader_ && sliceShader_->isActivated())
         sliceShader_->deactivate();
 }
+
+void SliceRendererBase::adjustPropertyVisibilities() {
+    texBorderIntensity_.setVisible(!texClampMode_.isSelected("clamp-to-edge"));
+}
+
 
 }   // namespace

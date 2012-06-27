@@ -175,11 +175,14 @@ void SnapshotPlugin::sizeComboChanged(int index) {
 void SnapshotPlugin::takeSnapshot() {
     QFileDialog filedialog(this);
     filedialog.setWindowTitle(tr("Save Snapshot"));
+    filedialog.setDirectory(VoreenApplication::app()->getSnapshotPath().c_str());
     filedialog.setDefaultSuffix(tr("png"));
 
     QStringList filter;
     filter << tr("PNG image (*.png)");
     filter << tr("JPEG image (*.jpg)");
+    filter << tr("Windows Bitmap (*.bmp)");
+    filter << tr("TIFF image (*.tif)");
     filedialog.setFilters(filter);
     filedialog.setAcceptMode(QFileDialog::AcceptSave);
 
@@ -207,7 +210,8 @@ void SnapshotPlugin::takeSnapshot() {
     QString file = fileList.at(0);
     path_ = filedialog.directory().absolutePath();
 
-    if (!file.endsWith(".jpg", Qt::CaseInsensitive) && !file.endsWith(".png", Qt::CaseInsensitive)) {
+    if (!file.endsWith(".jpg", Qt::CaseInsensitive) && !file.endsWith(".png", Qt::CaseInsensitive) &&
+        !file.endsWith(".tif", Qt::CaseInsensitive) && !file.endsWith(".bmp", Qt::CaseInsensitive)) {
         QString text = tr("Image file could not be saved.\n");
         int index = file.lastIndexOf(".");
         if ((index == -1) || (index+1 == fileList[0].size()))

@@ -10,7 +10,7 @@ CONFIG -= qt
 
 # check qmake version
 QMAKE_VERS = $$[QMAKE_VERSION]
-QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\.")
+QMAKE_VERSION_CHECK = $$find(QMAKE_VERS, "^[234]\\.")
 isEmpty(QMAKE_VERSION_CHECK) {
    error("Your qmake version '$$QMAKE_VERS' is too old, qmake from Qt 4 is required!")
 }

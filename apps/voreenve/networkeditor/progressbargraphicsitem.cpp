@@ -118,15 +118,18 @@ void ProgressBarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphic
 
     // paint the background
     QLinearGradient upperBackgroundGradient(boundingRect_.x(), boundingRect_.y(), boundingRect_.x(), boundingRect_.y() + boundingRect_.height() / 2.0);
-    upperBackgroundGradient.setColorAt(0.0, QColor(163, 163, 163));
-    upperBackgroundGradient.setColorAt(1.0, QColor(208, 208, 208));
+    //upperBackgroundGradient.setColorAt(0.0, QColor(163, 163, 163));
+    //upperBackgroundGradient.setColorAt(1.0, QColor(208, 208, 208));
+    upperBackgroundGradient.setColorAt(0.0, QColor(3, 3, 3));
+    upperBackgroundGradient.setColorAt(0.0, QColor(21, 21, 21));
 
     QBrush upperBackgroundBrush(upperBackgroundGradient);
     painter->setBrush(upperBackgroundBrush);
     painter->setPen(Qt::NoPen);
     painter->drawRect(boundingRect_.x(), boundingRect_.y(), boundingRect_.width(), boundingRect_.height() / 2.0);
 
-    painter->setBrush(QBrush(Qt::white));
+    //painter->setBrush(QBrush(Qt::white));
+    painter->setBrush(QBrush(Qt::black));
     painter->drawRect(boundingRect_.x(), boundingRect_.y() + boundingRect_.height() / 2.0, boundingRect_.width(), boundingRect_.height() / 2.0);
 
     // now the progress overlay
@@ -134,14 +137,17 @@ void ProgressBarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphic
     progressRect.setWidth(boundingRect_.width() * progress_);
 
     QLinearGradient upperForegroundGradient(progressRect.x(), progressRect.y(), progressRect.x(), progressRect.y() + progressRect.height() / 2.0);
-    upperForegroundGradient.setColorAt(0.0, QColor(173, 235, 199));
-    upperForegroundGradient.setColorAt(1.0, QColor(139, 227, 176));
+    //upperForegroundGradient.setColorAt(0.0, QColor(173, 235, 199));
+    //upperForegroundGradient.setColorAt(1.0, QColor(139, 227, 176));
+    upperForegroundGradient.setColorAt(0.0, QColor(176, 191, 217));
+    upperForegroundGradient.setColorAt(1.0, QColor(59, 106, 193));
 
     QBrush upperForegroundBrush(upperForegroundGradient);
     painter->setBrush(upperForegroundBrush);
     painter->drawRect(progressRect.x(), progressRect.y(), progressRect.width(), progressRect.height() / 2.0 + 1.0);
 
-    QBrush lowerForegroundBrush(QColor(38, 214, 118));
+    //QBrush lowerForegroundBrush(QColor(38, 214, 118));
+    QBrush lowerForegroundBrush(QColor(22, 85, 200));
     painter->setBrush(lowerForegroundBrush);
     painter->drawRect(progressRect.x(), progressRect.y() + progressRect.height() / 2.0, progressRect.width(), progressRect.height() / 2.0);
 }

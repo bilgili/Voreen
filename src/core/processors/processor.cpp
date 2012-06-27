@@ -127,9 +127,10 @@ void Processor::initialize() throw (VoreenException) {
 
     // initialize ports
     const std::vector<Port*>& ports = getPorts();
-    for (size_t i=0; i < ports.size(); ++i)
-        ports[i]->initialize();
-
+    for (size_t i=0; i < ports.size(); ++i) {
+        if (!ports[i]->isInitialized())
+            ports[i]->initialize();
+    }
 
     // initialize properties
     const std::vector<Property*>& properties = getProperties();
@@ -213,6 +214,12 @@ void Processor::addPort(Port& port) {
 
 void Processor::removePort(Port* port) {
     tgtAssert(port, "Null pointer passed");
+
+    if (port->isInitialized()) {
+        LWARNING("removePort() Port '" << getName() << "." << port->getName() << "' "
+            << "has not been deinitialized");
+    }
+
     //port->setProcessor(NULL);
     CoProcessorPort* cpp = dynamic_cast<CoProcessorPort*>(port);
     if (port->isOutport()) {
@@ -560,6 +567,28 @@ void Processor::onEvent(tgt::Event* e) {
 
 void Processor::deregisterWidget() {
     processorWidget_ = 0;
+}
+
+void Processor::initializePort(Port* port) throw (VoreenException) {
+    tgtAssert(port, "Null pointer passed");
+    if (port->isInitialized()) {
+        LWARNING("initializePort() port '" << getName() << "." << port->getName()
+            << "' already initialized");
+        return;
+    }
+
+    port->initialize();
+}
+
+void Processor::deinitializePort(Port* port) throw (VoreenException) {
+    tgtAssert(port, "Null pointer passed");
+    if (!port->isInitialized()) {
+        LWARNING("deinitializePort() port '" << getName() << "." << port->getName()
+            << "' not initialized");
+        return;
+    }
+
+    port->deinitialize();
 }
 
 } // namespace voreen

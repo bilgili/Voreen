@@ -59,6 +59,7 @@ public:
     virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
+    /// All inports and at least one outport need to be connected
     virtual bool isReady() const;
 
 protected:
@@ -67,13 +68,6 @@ protected:
      */
     virtual void beforeProcess();
 
-    /**
-     * Performs the raycasting.
-     *
-     * Initialize two texture units with the entry and exit params and renders
-     * a screen aligned quad. The render destination is determined by the
-     * invoking class.
-     */
     virtual void process();
 
     /**
@@ -99,17 +93,6 @@ protected:
 private:
     void adjustPropertyVisibilities();
 
-    tgt::Shader* raycastPrg_;         ///< The shader program used by this raycaster.
-
-    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
-    CameraProperty camera_;           ///< the camera used for lighting calculations
-
-    StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
-    StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport
-
-    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
-    FloatProperty texBorderIntensity_;        ///< clamp border intensity
-
     VolumePort volumeInport_;
     RenderPort entryPort_;
     RenderPort exitPort_;
@@ -119,6 +102,18 @@ private:
     RenderPort outport2_;
 
     PortGroup portGroup_;
+
+    tgt::Shader* raycastPrg_;         ///< The shader program used by this raycaster.
+
+    TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
+    CameraProperty camera_;           ///< the camera used for lighting calculations
+
+    StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport
+    StringOptionProperty compositingMode2_;   ///< What compositing mode should be applied for third outport
+
+    IntOptionProperty texFilterMode_;         ///< texture filtering mode to use for volume access
+    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
+    FloatProperty texBorderIntensity_;        ///< clamp border intensity
 
     static const std::string loggerCat_; ///< category used in logging
 };

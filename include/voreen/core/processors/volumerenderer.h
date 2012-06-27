@@ -66,12 +66,13 @@ protected:
         VolumeStruct(const VolumeGL* volume, tgt::TextureUnit* texUnit,
                      const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier,
                      bool applyDatasetTrafoMatrix = true, GLenum wrapMode = GL_CLAMP_TO_EDGE,
-                     tgt::vec4 borderColor = tgt::vec4(0.f));
+                     tgt::vec4 borderColor = tgt::vec4(0.f), GLint filterMode = GL_LINEAR);
 
         const VolumeGL* volume_;                        ///< the volume whose texture is to be bound
         tgt::TextureUnit* texUnit_;                     ///< the texture unit to bind to
         GLenum wrapMode_;                               ///< the texture wrapping mode to set
         tgt::vec4 borderColor_;                         ///< the texture's border color
+        GLint filterMode_;                              ///< the filtering mode to use for this texture
         std::string samplerIdentifier_;                 ///< the sampler by which the
                                                         ///  volume is accessed in the shader
         std::string volumeParametersIdentifier_;        ///< the identifier of the volume parameter struct

@@ -112,7 +112,10 @@ void SingleVolumeSlicer::process() {
 
     // compute front index needed for clipping
     int frontIdx = 0; // index of the vertex closest to the camera
+    int backIdx = 0;  // index furthest from the camera
     float minCameraDistance = 1000.0;//std::numeric_limits<float>::max(); // distance between camera and closest vertex
+    float maxCameraDistance = 0.0;
+
     tgt::vec3 camPos = camera_.get().getPosition();
     for (unsigned int i=0;i<8;i++) {
         float cameraDistance = length(camPos-cubeVertices_[i]);
@@ -120,7 +123,12 @@ void SingleVolumeSlicer::process() {
             minCameraDistance = cameraDistance;
             frontIdx = i;
         }
+        if (cameraDistance > maxCameraDistance) {
+            maxCameraDistance = cameraDistance;
+            backIdx = i;
+        }
     }
+    float maxLength = dot(camera_.get().getLook(), cubeVertices_[backIdx] - cubeVertices_[frontIdx]);
 
     // bind transfer function
     TextureUnit transferUnit;
@@ -159,9 +167,8 @@ void SingleVolumeSlicer::process() {
     slicingPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
     //clipping uniforms
     slicingPrg_->setUniform("frontIdx_", frontIdx);
-    slicingPrg_->setUniform("vecView_", camera_.get().getLook()-camera_.get().getPosition());
-    //slicingPrg_->setUniform("vecView_", camera_.get().getFocus()-camera_.get().getPosition());
-    slicingPrg_->setUniform("camDistance_", length(camera_.get().getPosition()-cubeVertices_[frontIdx]));
+    slicingPrg_->setUniform("vecView_", camera_.get().getLook());
+    slicingPrg_->setUniform("dPlaneStart_", dot(camera_.get().getLook(), cubeVertices_[frontIdx]));
     slicingPrg_->setUniform("dPlaneIncr_", sliceDistance);
     slicingPrg_->setUniform("nSequence_", nSeq_, 64);
     slicingPrg_->setUniform("vecVertices_", cubeVertices_, 8);
@@ -184,7 +191,7 @@ void SingleVolumeSlicer::process() {
     glPushMatrix();
     tgt::loadMatrix(camera_.get().getViewMatrix());
 
-    unsigned int numSlices = static_cast<unsigned int>(1.0f / sliceDistance);
+    unsigned int numSlices = static_cast<unsigned int>(maxLength / sliceDistance);
 
     slicingPrg_->activate();
     outport_.activateTarget();

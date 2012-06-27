@@ -261,8 +261,8 @@ void Workspace::load(const std::string& filename)
     // open file for reading
     std::fstream fileStream(filename.c_str(), std::ios_base::in);
     if (fileStream.fail()) {
-        LERROR("Failed to open file '" << filename << "' for reading.");
-        throw SerializationException("Failed to open file '" + filename + "' for reading.");
+        //LERROR("Failed to open file '" << tgt::FileSystem::absolutePath(filename) << "' for reading.");
+        throw SerializationException("Failed to open file '" + tgt::FileSystem::absolutePath(filename) + "' for reading.");
     }
 
     // read data stream into deserializer

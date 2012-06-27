@@ -77,50 +77,50 @@ std::string VolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
 
     // configure gradient calculation
     headerSource += "#define RC_CALC_GRADIENTS(voxel, samplePos, volume, volumeParameters, t, rayDirection, entryPoints, entryParameters) ";
-    if (gradientMode_.get() == "none")
+    if (gradientMode_.isSelected("none"))
         headerSource += "(voxel.xyz-vec3(0.5))*2.0;\n";
-    else if (gradientMode_.get() == "forward-differences")
+    else if (gradientMode_.isSelected("forward-differences"))
         headerSource += "calcGradientAFD(volume, volumeParameters, samplePos, t, rayDirection, entryPoints, entryParameters);\n";
-    else if (gradientMode_.get() == "central-differences")
+    else if (gradientMode_.isSelected("central-differences"))
         headerSource += "calcGradientA(volume, volumeParameters, samplePos, t, rayDirection, entryPoints, entryParameters);\n";
-    else if (gradientMode_.get() == "filtered")
+    else if (gradientMode_.isSelected("filtered"))
         headerSource += "calcGradientFiltered(volume, volumeParameters, samplePos, entryPoints, entryParameters);\n";
 
     // configure classification
     headerSource += "#define RC_APPLY_CLASSIFICATION(transferFunc, voxel) ";
-    if (classificationMode_.get() == "none")
+    if (classificationMode_.isSelected("none"))
         headerSource += "vec4(voxel.a);\n";
-    else if (classificationMode_.get() == "transfer-function")
+    else if (classificationMode_.isSelected("transfer-function"))
         headerSource += "applyTF(transferFunc, voxel);\n";
 
     // configure shading mode
     headerSource += "#define RC_APPLY_SHADING(gradient, samplePos, volumeParameters, ka, kd, ks) ";
-    if (shadeMode_.get() == "none")
+    if (shadeMode_.isSelected("none"))
         headerSource += "ka;\n";
-    else if (shadeMode_.get() == "phong-diffuse")
+    else if (shadeMode_.isSelected("phong-diffuse"))
         headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
-    else if (shadeMode_.get() == "phong-specular")
+    else if (shadeMode_.isSelected("phong-specular"))
         headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
-    else if (shadeMode_.get() == "phong-diffuse-ambient")
+    else if (shadeMode_.isSelected("phong-diffuse-ambient"))
         headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
-    else if (shadeMode_.get() == "phong-diffuse-specular")
+    else if (shadeMode_.isSelected("phong-diffuse-specular"))
         headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
-    else if (shadeMode_.get() == "phong")
+    else if (shadeMode_.isSelected("phong"))
         headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
-    else if (shadeMode_.get() == "toon")
+    else if (shadeMode_.isSelected("toon"))
         headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
 
     // configure compositing mode
     headerSource += "#define RC_APPLY_COMPOSITING(result, color, samplePos, gradient, t, tDepth) ";
-    if (compositingMode_.get() == "dvr")
+    if (compositingMode_.isSelected("dvr"))
         headerSource += "compositeDVR(result, color, t, tDepth);\n";
-    else if (compositingMode_.get() == "mip")
+    else if (compositingMode_.isSelected("mip"))
         headerSource += "compositeMIP(result, color, t, tDepth);\n";
-    else if (compositingMode_.get() == "iso")
+    else if (compositingMode_.isSelected("iso"))
         headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
-    else if (compositingMode_.get() == "fhp")
+    else if (compositingMode_.isSelected("fhp"))
         headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-    else if (compositingMode_.get() == "fhn")
+    else if (compositingMode_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     // configure bricking
@@ -128,9 +128,9 @@ std::string VolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
         if (volumeHandle->getModality() == Modality::MODALITY_BRICKED_VOLUME) {
             headerSource+= "#define BRICKED_VOLUME\n";
             headerSource+= "#define LOOKUP_VOXEL(sample,brickStartPos,indexVolumeSample) ";
-            if (brickingInterpolationMode_.get() == "intrablock")
+            if (brickingInterpolationMode_.isSelected("intrablock"))
                 headerSource += "clampedPackedVolumeLookup(sample,brickStartPos,indexVolumeSample);\n";
-            else if (brickingInterpolationMode_.get() == "interblock")
+            else if (brickingInterpolationMode_.isSelected("interblock"))
                 headerSource += "interBlockInterpolationLookup(brickStartPos,sample, indexVolumeSample);\n";
 
             if (useAdaptiveSampling_.get() ) {
@@ -560,8 +560,6 @@ void VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeS
                 samplingStepSize /= interactionQuality_.get();
 
             shader->setUniform("samplingStepSize_", samplingStepSize);
-            shader->setUniform("samplingStepSizeComposite_", samplingStepSize * 200.f);
-
             LGL_ERROR;
         }
     }

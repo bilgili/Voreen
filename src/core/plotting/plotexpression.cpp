@@ -27,6 +27,9 @@
  *                                                                    *
  **********************************************************************/
 
+//activate this option to get the debug messages of the parser
+//#define VRN_PLOTEXPRESSION_DEBUG
+
 #include "voreen/core/plotting/plotexpression.h"
 #include "voreen/core/plotting/parser/plotfunctionlexer.h"
 #include "voreen/core/plotting/parser/plotfunctionparser.h"
@@ -63,29 +66,34 @@ PlotExpression::PlotExpression(const std::string& value, const std::string& expr
     std::istringstream is(representation_);
     if (expressionName.size() > 0)
         expressionName_ = expressionName;
-    if (debug_)
-        LINFO("Try to parse \"" << value << "\"");
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+    LINFO("Try to parse \"" << value << "\"");
+#endif
     glslparser::PlotFunctionParser parser(&is);
-    parser.setDebugging(debug_);
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+    parser.setDebugging(true);
+#endif
     glslparser::PlotFunctionNode* node =  dynamic_cast<glslparser::PlotFunctionNode*>(parser.parse());
-    if (debug_) {
-        std::string parserLog = parser.getLog().str();
-        LINFO("FunctionParser Debug Messages:\n" << parserLog);
-    }
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+    std::string parserLog = parser.getLog().str();
+    LINFO("FunctionParser Debug Messages:\n" << parserLog);
+#endif
     if (node == 0)
         throw VoreenException("Not Validate String");
+#ifdef VRN_PLOTEXPRESSION_DEBUG
     std::ostringstream elog_;
     LINFO("Expression accepted.");
+#endif
     glslparser::PlotFunctionVisitor plotfunctionvisitor;
     std::vector<glslparser::PlotFunctionVisitor::TokenVector> functionTokenVector = plotfunctionvisitor.getPlotFunctionToken(node);
     functionVector_.resize(functionTokenVector.size());
-    if (debug_) {
-        elog_ << "Number of Partialfunctions: " << functionTokenVector.size() << "\n";
-    }
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+    elog_ << "Number of Partialfunctions: " << functionTokenVector.size() << "\n";
+#endif
     for (size_t j = 0; j < functionTokenVector.size(); ++j) {
-        if (debug_) {
-            elog_ << j+1 << ". PartialFunction\n";
-        }
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+        elog_ << j+1 << ". PartialFunction\n";
+#endif
         functionVector_.at(j).function = functionTokenVector.at(j).function;
         functionVector_.at(j).interval = functionTokenVector.at(j).interval;
         for (size_t i = 0; i < functionTokenVector.at(j).function.size(); ++i) {
@@ -93,24 +101,25 @@ PlotExpression::PlotExpression(const std::string& value, const std::string& expr
                 std::string var = dynamic_cast<glslparser::IdentifierToken* const>(functionTokenVector.at(j).function.at(i))->getValue();
                 ++(variables_[var[0]-PlotExpression::charOffset_].count);
             }
-            if (debug_)
-                elog_ << functionTokenVector.at(j).function.at(i)->toString() << "\n";
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+            elog_ << functionTokenVector.at(j).function.at(i)->toString() << "\n";
+#endif
         }
     }
     numberOfVariables_ = calculateNumberOfVariables();
     calculateDomain();
-    if (debug_) {
-        elog_ << "\nDomain:";
-        elog_ << "\nNumber of Variables: " << numberOfVariables() << "\n";
-        for (size_t i = 0; i < domain_.size(); ++i) {
-            elog_ << i+1 << ". PartialFunction\n";
-            for (size_t j = 0; j < domain_[i].size(); ++j) {
-                elog_ << domain_[i].at(j).toString() << "\n";
-            }
+#ifdef VRN_PLOTEXPRESSION_DEBUG
+    elog_ << "\nDomain:";
+    elog_ << "\nNumber of Variables: " << numberOfVariables() << "\n";
+    for (size_t i = 0; i < domain_.size(); ++i) {
+        elog_ << i+1 << ". PartialFunction\n";
+        for (size_t j = 0; j < domain_[i].size(); ++j) {
+            elog_ << domain_[i].at(j).toString() << "\n";
         }
-        std::string visitorLog = elog_.str();
-        LINFO("FunctionVisitor Debug Messages:\n" << visitorLog);
     }
+    std::string visitorLog = elog_.str();
+    LINFO("FunctionVisitor Debug Messages:\n" << visitorLog);
+#endif
     LINFO("Expression parsed correct.");
 }
 
@@ -135,7 +144,6 @@ void PlotExpression::initialize() {
     numberOfVariables_ = 0;
     domain_.clear();
     variables_.resize(26);
-    debug_ = false;
 }
 
 int PlotExpression::calculateNumberOfVariables() {
@@ -155,9 +163,9 @@ void PlotExpression::evaluateDomain(std::stack<glslparser::Token*>& tokens, int 
 
     glslparser::Token* token = tokens.top();
     tokens.pop();
-    if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_COLON) {
+    if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_COLON) { // ":"
     }
-    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_COMMA) {
+    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_COMMA) {  // ","
         glslparser::BracketToken* const leftbracket = dynamic_cast<glslparser::BracketToken* const>(tokens.top());
         tokens.pop();
         plot_t leftrange = evaluate(tokens,std::vector<plot_t>());
@@ -170,10 +178,10 @@ void PlotExpression::evaluateDomain(std::stack<glslparser::Token*>& tokens, int 
         functionVector_[index].domain[number] = interval;
         ++number;
     }
-    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_VERTICAL_BAR) {
+    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_VERTICAL_BAR) { // "|"
 //        ++number;
     }
-    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_DASH) {
+    else if (token->getTokenID() == glslparser::PlotFunctionTerminals::ID_DASH) { // "-"
 //        ++number;
     }
 }
@@ -313,10 +321,16 @@ plot_t PlotExpression::evaluate(std::stack<glslparser::Token*>& tokens, const st
             return result;
         }
         else if (stringFunction == "int") {
+            return int(plotvalue);
+        }
+        else if (stringFunction == "floor") {
             return std::floor(plotvalue);
         }
+        else if (stringFunction == "ceil") {
+            return std::ceil(plotvalue);
+        }
         else if (stringFunction == "rnd") {
-            return int(plotvalue);
+            return std::floor(plotvalue+0.5);
         }
         else if (stringFunction == "sgn") {
             return plotvalue > 0 ? 1 : (plotvalue == 0 ? 0 : -1);

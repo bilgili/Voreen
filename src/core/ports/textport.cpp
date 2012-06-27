@@ -31,10 +31,6 @@
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/processors/renderprocessor.h"
 
-#ifdef VRN_WITH_DEVIL
-    #include <IL/il.h>
-#endif
-
 namespace voreen {
 
 const std::string TextPort::loggerCat_("voreen.TextPort");

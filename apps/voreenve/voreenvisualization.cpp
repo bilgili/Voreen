@@ -262,7 +262,7 @@ void VoreenVisualization::newWorkspace() {
 
 void VoreenVisualization::openWorkspace(const QString& filename) throw (SerializationException) {
 
-    LINFO("Loading workspace " << filename.toStdString());
+    LINFO("Loading workspace " << tgt::FileSystem::absolutePath(filename.toStdString()));
     if (!VoreenApplication::app()->getProcessorWidgetFactory())
         LWARNING("No ProcessorWidgetFactory assigned to VoreenApplication: No ProcessorWidgets are generated!");
 

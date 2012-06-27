@@ -132,11 +132,17 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
 
             LGL_ERROR;
 
+            // texture filtering
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, volumeStruct.filterMode_);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, volumeStruct.filterMode_);
+            LGL_ERROR;
+
             // texture wrapping
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, volumeStruct.wrapMode_);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, volumeStruct.wrapMode_);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, volumeStruct.wrapMode_);
             glTexParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, volumeStruct.borderColor_.elem);
+            LGL_ERROR;
         }
 
         // set volume meta-data
@@ -204,11 +210,12 @@ VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeGL* volume, tgt::TextureU
                                            const std::string& samplerIdentifier,
                                            const std::string& volumeParametersIdentifier,
                                            bool applyDatasetTrafoMatrix, GLenum wrapMode,
-                                           tgt::vec4 borderColor)
+                                           tgt::vec4 borderColor, GLint filterMode)
     : volume_(volume),
       texUnit_(texUnit),
       wrapMode_(wrapMode),
       borderColor_(borderColor),
+      filterMode_(filterMode),
       samplerIdentifier_(samplerIdentifier),
       volumeParametersIdentifier_(volumeParametersIdentifier),
       applyDatasetTrafoMatrix_(applyDatasetTrafoMatrix)

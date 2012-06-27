@@ -51,6 +51,8 @@ public:
     virtual std::string getProcessorInfo() const;
     virtual Processor* create() const {return new Compositor();}
 
+    virtual bool isReady() const;
+
 protected:
     void process();
     virtual std::string generateHeader();

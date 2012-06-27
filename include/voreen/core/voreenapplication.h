@@ -378,6 +378,8 @@ private:
     tgt::Timer* schedulingTimer_;       ///< Timer for scheduled network processing.
     tgt::EventHandler eventHandler_;    ///< Local event handler for the scheduling events.
     std::string shaderPath_;
+
+    std::string overrideGLSLVersion_; ///< cmdparser writes the passed shader version string to this
 };
 
 } // namespace

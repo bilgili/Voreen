@@ -1,6 +1,39 @@
 Voreen Changelog
 ----------------
 
+2010-11-04: Voreen 2.6.1 (r39, internal r12656)
+-----------------------------------------------
+
+   * Framework/API changes:
+     o RenderPort::readColorBuffer expects image data type as template parameter.
+     o VolumeRaycaster::bindVolumes() supports specification of texture filter mode.
+     o Added command line option for overriding detected GLSL version (--glslVersion)
+
+   * Features:
+     o RenderPort::saveToImage (and SnapshotPlugin) save PNG and TIFF snapshots 
+       with 16 bits per channel.
+     o SingleVolumeRaycaster, MultiVolumeRaycaster, SliceViewer provide properties
+       for specification of volume texture filtering modes.
+     o SEGY volume reader (module 'segy'), written by Aqeel Al-Naser.  
+     
+   * Bug fixes:
+     o Crash of command line parser on incorrect number of arguments
+     o Crash when opening context menu of processor info widget in VoreenVE     
+     o Qt warning "redefined signal" in transfer function editor
+         
+   * Minor changes: 
+     o Qt 4.7 support
+     o Added Vis10 tutorial slides, accessible from VoreenVE help menu
+     o GUI improvements:
+       o Autoscrolling in PropertyLinkDialog
+       o Added Desktop to side bar URLs of file dialogs
+       o Renaming of processors with "F2" in NetworkEditor
+       o Grouping of texture access properties in Single/MultiVolumeRaycaster
+     o Cleaned up shader modules
+     o Added command line option for VoreenVE session reset (window settings, paths)
+     o Added sample workspace for "DynamicGLSLRaycaster"
+
+   
 2010-10-18: Voreen 2.6 (r38, internal r12585)
 ----------------------------------------------
 

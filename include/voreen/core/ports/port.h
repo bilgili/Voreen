@@ -46,7 +46,6 @@ class Port {
     friend class Processor;
     friend class ProcessorNetwork;
     friend class NetworkEvaluator;
-    friend class DynamicGLSLProcessor;
 
 public:
     enum PortDirection {
@@ -240,6 +239,11 @@ protected:
      */
     virtual void deinitialize() throw (VoreenException);
 
+    /**
+     * Returns whether the port has been initialized.
+     */
+    bool isInitialized() const;
+
     virtual bool connect(Port* inport);
     ///Disconnect from other port (must not be NULL or this port)
     virtual void disconnect(Port* other);
@@ -271,6 +275,9 @@ private:
                                ///  it is used to define loops in the network
     int numLoopIterations_;    ///< specifies the number of iterations, in case the port is a loop.
     int currentLoopIteration_; ///< current iteration, to be retrieved by the processor
+
+    /// Set to true by after successful initialization.
+    bool initialized_;
 
     /// category used in logging
     static const std::string loggerCat_;

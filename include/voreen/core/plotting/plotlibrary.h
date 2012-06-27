@@ -274,7 +274,7 @@ public:
     /**
      * \brief   Renders a node graph of the nodes and connections in \a graph.
      */
-    void renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY) const;
+    void renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY, int indexDx, int indexDy) const;
 
     /**
      * \brief   Renders a legend for the current color map with given interval in the top right edge

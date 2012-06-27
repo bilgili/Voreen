@@ -45,6 +45,7 @@ VolumeCombine::VolumeCombine()
     , inportFirst_(Port::INPORT, "volume.first")
     , inportSecond_(Port::INPORT, "volume.second")
     , outport_(Port::OUTPORT, "outport", true)
+    , disableOptimization_("opti", "Optimization", false)
     , enableProcessing_("enabled", "Enable", true)
     , combineFunction_("combineFunction", "Combine Function")
     , factorC_("factorC", "Factor c", 0.5f, -2.f, 2.f)
@@ -86,6 +87,7 @@ VolumeCombine::VolumeCombine()
     addProperty(factorC_);
     addProperty(factorD_);
     addProperty(referenceVolume_);
+    addProperty(disableOptimization_);
 
     adjustPropertyVisibilities();
 }
@@ -101,6 +103,7 @@ std::string VolumeCombine::getProcessorInfo() const {
 }
 
 void VolumeCombine::process() {
+    clock_t startTime = clock();
     tgtAssert(inportFirst_.getData() && inportFirst_.getData()->getVolume(), "No input volume");
     tgtAssert(inportSecond_.getData() && inportSecond_.getData()->getVolume(), "No input volume");
 
@@ -123,7 +126,9 @@ void VolumeCombine::process() {
     // optimized combination for volumes that share a common grid in world-space
     if (firstVolume->getDimensions() == secondVolume->getDimensions() &&
         firstVolume->getCubeSize() == secondVolume->getCubeSize()     &&
-        firstVolume->getTransformation() == secondVolume->getTransformation()) {
+        firstVolume->getTransformation() == secondVolume->getTransformation() &&
+        disableOptimization_.get() == false
+        ) {
 
         try {
             if (referenceVolume_.isSelected("first"))
@@ -164,6 +169,10 @@ void VolumeCombine::process() {
         outport_.setData(0, volumeOwner_);
         volumeOwner_ = false;
     }
+
+    clock_t endTime = clock();
+
+    std::cout << endTime - startTime << std::endl;
 }
 
 void VolumeCombine::deinitialize() throw (VoreenException) {

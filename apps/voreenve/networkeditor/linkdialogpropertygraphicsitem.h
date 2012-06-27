@@ -86,11 +86,24 @@ public:
 
 signals:
     /**
-     * This signal is emitted, as soon as a valid LinkDialogArrowGraphicsItem
+     * This signal is emitted as soon as a valid LinkDialogArrowGraphicsItem
      * is created. The ownership of this arrow is transferred as well.
      * \param arrow The newly created LinkDialogArrowGraphicsItem
      */
     void createdArrow(LinkDialogArrowGraphicsItem* arrow);
+
+    /**
+     * This signal is emitted each time an arrow is moved within the scene it belongs
+     * to.
+     * \param arrow The moved LinkDialogArrowGraphicsItem
+     */
+    void movedArrow(LinkDialogArrowGraphicsItem* arrow);
+
+    /**
+     * This signal is emitted as soon as the creation of a new arrow is aborted,
+     * whether it was successful or not
+     */
+    void endedArrow();
 
     /**
      * This signal is emitted if a \sa LinkDialogArrowGraphicsItem is dragged

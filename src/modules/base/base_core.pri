@@ -72,6 +72,7 @@ SOURCES += \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/cubemeshproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/cubeproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/explosionproxygeometry.cpp \
+    $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/multiplanarproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/multivolumeproxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/proxygeometry/proxygeometry.cpp \
     $${VRN_MODULE_SRC_DIR}/base/processors/render/cpuraycaster.cpp \
@@ -217,6 +218,7 @@ HEADERS += \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/cubemeshproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/cubeproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/explosionproxygeometry.h \
+    $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/multiplanarproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/multivolumeproxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/proxygeometry/proxygeometry.h \
     $${VRN_MODULE_INC_DIR}/base/processors/render/cpuraycaster.h \

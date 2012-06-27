@@ -41,7 +41,6 @@
                         <Property name="boundaryColor">
                             <value x="1" y="1" z="1" w="1" />
                         </Property>
-                        <Property name="filterTexture" value="true" />
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -59,13 +58,16 @@
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
                         <Property name="sliceIndex" value="50" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode" value="linear" />
                         <Property name="transferFunction">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="658" y="396" width="587" height="321" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
                                 <Keys>
-                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                    <key type="TransFuncMappingKey" intensity="0.02013423" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
                                     </key>
                                     <key type="TransFuncMappingKey" intensity="0.13265306" split="false">

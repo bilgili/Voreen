@@ -853,18 +853,33 @@ void PlotLibrary::renderBars(const PlotData& data, std::vector<int> indicesY) co
     }
 }
 
-void PlotLibrary::renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY) const {
+void PlotLibrary::renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY, int indexDx, int indexDy) const {
     std::vector<PlotRowValue>::const_iterator it;
 
     // render nodes
-    glColor4fv(drawingColor_.elem);
     plot_t glyphSize = (maxGlyphSize_ + minGlyphSize_)/2;
-    for (it = nodeData.getRowsBegin(); it != nodeData.getRowsEnd(); ++it) {
+    int i = 0;
+    for (it = nodeData.getRowsBegin(); it != nodeData.getRowsEnd(); ++it, ++i) {
+        // render node
+        glColor4fv(drawingColor_.elem);
         renderGlyph(it->getValueAt(indexX), it->getValueAt(indexY), 0, glyphSize);
+
+        // render force vector
+        glColor4fv(fillColor_.elem);
+        glBegin(GL_LINE_STRIP);
+            logGlVertex2d(it->getValueAt(indexX), it->getValueAt(indexY));
+            logGlVertex2d(it->getValueAt(indexX) + it->getValueAt(indexDx), it->getValueAt(indexY) + it->getValueAt(indexDy));
+        glEnd();
+
+        // render node label
+        std::stringstream ss;
+        ss << i;
+        renderLabel(tgt::dvec3(it->getValueAt(indexX), it->getValueAt(indexY), 0), SmartLabel::CENTERED, ss.str(), false, 0);
     }
 
     // render connections
     glLineWidth(lineWidth_);
+    glColor4fv(drawingColor_.elem);
     for (it = connectionData.getRowsBegin(); it != connectionData.getRowsEnd(); ++it) {
         const PlotRowValue& first = nodeData.getRow(static_cast<int>(it->getValueAt(0)));
         const PlotRowValue& second = nodeData.getRow(static_cast<int>(it->getValueAt(1)));

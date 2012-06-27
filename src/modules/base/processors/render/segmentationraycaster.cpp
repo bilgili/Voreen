@@ -283,15 +283,11 @@ void SegmentationRaycaster::process() {
             &segUnit,
             "segmentation_",
             "segmentationParameters_",
-            true)
+            true,
+            GL_CLAMP_TO_EDGE,
+            tgt::vec4(0.f),
+            GL_NEAREST)
         );
-
-        segUnit.activate();
-
-        // set texture filtering for this texture unit
-        segVolume->getTexture()->bind();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 
     if (segVolume && applySegmentation_.get()) {
@@ -338,11 +334,6 @@ void SegmentationRaycaster::process() {
     renderQuad();
 
     raycastPrg_->deactivate();
-
-    // restore default texture filtering mode
-    segUnit.activate();
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     TextureUnit::setZeroUnit();
     portGroup_.deactivateTargets();

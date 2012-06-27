@@ -350,7 +350,7 @@ void OverviewWidget::renderPreviews() {
                 preview = new QImage(QSize(quadSize,quadSize), QImage::Format_ARGB32);
                 emit currentFrameChanged(i);
                 networkEvaluator_->process();
-                tgt::col4* buffer = renderPort_->readColorBuffer(); // TODO: catch exceptions
+                tgt::col4* buffer = renderPort_->readColorBuffer<uint8_t>(); // TODO: catch exceptions
                 for (int x = quadSize-1; x >= 0; x-=1) {
                     for (int y = 0; y < quadSize; y+=1) {
                         QColor color(buffer->r, buffer->g, buffer->b, 255);

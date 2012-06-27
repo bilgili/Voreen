@@ -204,6 +204,10 @@ VoreenApplication::~VoreenApplication() {
 void VoreenApplication::prepareCommandParser() {
     cmdParser_.addCommand(new Command_LogLevel(&logLevel_));
     cmdParser_.addCommand(new Command_LogFile(&logFile_));
+
+    cmdParser_.addCommand(new SingleCommand<std::string>(&overrideGLSLVersion_,
+        "--glslVersion", "",
+        "Overrides the detected GLSL version", "<1.10|1.20|1.30|1.40|1.50|3.30|4.00>"));
 }
 
 void VoreenApplication::init() {
@@ -386,6 +390,18 @@ void VoreenApplication::initGL() throw (VoreenException) {
     LDEBUG("tgt::initGL");
     tgt::initGL();
 
+    if (!overrideGLSLVersion_.empty()) {
+        LWARNING("Overriding detected GLSL version " << GpuCaps.getShaderVersion()
+            << " with version: " << overrideGLSLVersion_);
+#ifdef _MSC_VER
+        bool success = GpuCaps.overrideGLSLVersion(overrideGLSLVersion_);
+        if (success)
+            GpuCapsWin.overrideGLSLVersion(overrideGLSLVersion_);
+#else
+        GpuCaps.overrideGLSLVersion(overrideGLSLVersion_);
+#endif
+    }
+
 #ifdef _MSC_VER
     GpuCapsWin.logCapabilities(false, true);
 #else
@@ -538,7 +554,11 @@ std::string VoreenApplication::getTransFuncPath(const std::string& filename) con
 
 std::string VoreenApplication::getModulePath(const std::string& filename) const {
 #ifdef VRN_DEPLOYMENT
-    return basePath_ + "/modules" + (filename.empty() ? "" : "/" + filename);
+    #if defined(__APPLE__)
+        return appBundleResourcesPath_ + "/modules" + (filename.empty() ? "" : "/" + filename);
+    #else
+        return basePath_ + "/modules" + (filename.empty() ? "" : "/" + filename);
+    #endif
 #else
     return basePath_ + "/src/modules" + (filename.empty() ? "" : "/" + filename);
 #endif

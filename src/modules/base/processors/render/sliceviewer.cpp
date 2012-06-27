@@ -71,6 +71,7 @@ SliceViewer::SliceViewer()
 {
     boundaryColor_.setViews(Property::COLOR);
 
+    // interaction
     mouseEventShift_ = new EventProperty<SliceViewer>("mouseEvent.Shift", "Slice Shift",
         this, &SliceViewer::shiftEvent,
         tgt::MouseEvent::MOUSE_BUTTON_LEFT,
@@ -95,6 +96,7 @@ SliceViewer::SliceViewer()
     addInteractionHandler(mwheelCycleHandler_);
     addInteractionHandler(mwheelZoomHandler_);
 
+    // slice arrangement
     sliceAlignment_.addOption("xy-plane", "XY-Plane (axial)", XY_PLANE);
     sliceAlignment_.addOption("xz-plane", "XZ-Plane (coronal)", XZ_PLANE);
     sliceAlignment_.addOption("yz-plane", "YZ-Plane (sagittal)", YZ_PLANE);
@@ -109,6 +111,16 @@ SliceViewer::SliceViewer()
     addProperty(renderSliceBoundaries_);
     addProperty(boundaryColor_);
 
+    // group slice arrangement properties
+    sliceAlignment_.setGroupID("sliceArrangement");
+    sliceIndex_.setGroupID("sliceArrangement");
+    numSlicesPerRow_.setGroupID("sliceArrangement");
+    numSlicesPerCol_.setGroupID("sliceArrangement");
+    renderSliceBoundaries_.setGroupID("sliceArrangement");
+    boundaryColor_.setGroupID("sliceArrangement");
+    setPropertyGroupGuiName("sliceArrangement", "Slice Arrangement");
+
+    // information overlay
     showCursorInfos_.addOption("never", "Never");
     showCursorInfos_.addOption("onClick", "On Mouse Click");
     showCursorInfos_.addOption("onMove", "On Mouse Move");
@@ -117,11 +129,24 @@ SliceViewer::SliceViewer()
     addProperty(showSliceNumber_);
     addProperty(fontSize_);
 
+    // group information overlay properties
+    showCursorInfos_.setGroupID("informationOverlay");
+    showSliceNumber_.setGroupID("informationOverlay");
+    fontSize_.setGroupID("informationOverlay");
+    setPropertyGroupGuiName("informationOverlay", "Information Overlay");
+
+    // zooming
     addProperty(voxelOffset_);
     zoomFactor_.setStepping(0.01f);
     addProperty(zoomFactor_);
     pickingMatrix_.setWidgetsEnabled(false);
     addProperty(pickingMatrix_);
+
+    // group zooming props
+    voxelOffset_.setGroupID("zooming");
+    zoomFactor_.setGroupID("zooming");
+    pickingMatrix_.setGroupID("zooming");
+    setPropertyGroupGuiName("zooming", "Zooming");
 
     // call this method to set the correct permutation for the
     // screen-position-to-voxel-position mapping.
@@ -306,13 +331,6 @@ void SliceViewer::process() {
         sliceLowerLeft_.y += zoomOffset.y + focusOffset.y;
     }
 
-    // disable filtering on volume tex unit, if specified
-    if (!filterTexture_.get()) {
-        volUnit.activate();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
-
     transferUnit.activate();
     transferFunc_.get()->bind();
 
@@ -397,13 +415,6 @@ void SliceViewer::process() {
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     LGL_ERROR;
-
-    // restore filtering mode
-    if (!filterTexture_.get()) {
-        volUnit.activate();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
 
     glActiveTexture(GL_TEXTURE0);
     outport_.deactivateTarget();

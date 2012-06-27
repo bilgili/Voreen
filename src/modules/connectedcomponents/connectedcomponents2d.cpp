@@ -110,7 +110,7 @@ void ConnectedComponents2D::process() {
     outport_.activateTarget();
     outport_.clearTarget();
 
-    tgt::col4* colorBuffer = inport_.readColorBuffer();
+    tgt::col4* colorBuffer = inport_.readColorBuffer<uint8_t>();
     LGL_ERROR;
     int numPixels = tgt::hmul(inport_.getSize());
     uint8_t* img = new uint8_t[numPixels];

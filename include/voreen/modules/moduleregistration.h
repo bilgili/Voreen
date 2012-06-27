@@ -65,6 +65,10 @@
 #include "voreen/modules/python/pythonmodule.h"
 #endif
 
+#ifdef VRN_MODULE_SEGY
+#include "voreen/modules/segy/segymodule.h"
+#endif
+
 #ifdef VRN_MODULE_TIFF
 #include "voreen/modules/tiff/tiffmodule.h"
 #endif
@@ -105,6 +109,10 @@ void addAllModules(VoreenApplication* vapp) {
 
     #ifdef VRN_MODULE_PYTHON
         vapp->addModule(new PythonModule());
+    #endif
+
+    #ifdef VRN_MODULE_SEGY
+        vapp->addModule(new SEGYModule());
     #endif
 
     #ifdef VRN_MODULE_TIFF

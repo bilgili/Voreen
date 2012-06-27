@@ -31,21 +31,16 @@
 uniform int frontIdx_;
 uniform vec3 vecView_;
 uniform float camDistance_;
+uniform float dPlaneStart_;
 uniform float dPlaneIncr_;
 uniform int[64] nSequence_;
 uniform vec3[8] vecVertices_;
 uniform int[24] v1_;
 uniform int[24] v2_;
 
-uniform float dummy_;
-
 void main() {
-    vec3 position;
-    vec3 frontPos = vecVertices_[frontIdx_];
-    float dPlaneIncr = dPlaneIncr_ * 15.0; // FIXME: constant needed for diagonal vecView_
-    frontPos = frontPos - (camDistance_+length(vecView_))*normalize(vecView_);
-    vec3 slicePos = frontPos + ((gl_Vertex.y * dPlaneIncr) * normalize(vecView_));
-    float dPlane = dot(slicePos,normalize(vecView_));
+    vec3 position = vec3(0.0);
+    float dPlane = dPlaneStart_ + gl_Vertex.y * dPlaneIncr_;
 
     for (int e=0; e<4; e++) {
         int vidx1 = nSequence_[int(frontIdx_*8 + v1_[int(gl_Vertex.x*4 + e)])];
@@ -54,14 +49,16 @@ void main() {
         vec3 vecV2 = vecVertices_[vidx2];
         vec3 vecDir = vecV2-vecV1;
         float denom = dot(vecDir,vecView_);
-        float lambda = -1.0;
-        if (denom != 0.0)
-            lambda =  (dPlane-dot(vecV1,vecView_))/denom;
+
+        if (denom == 0.0)
+            continue;
+
+        float lambda =  (dPlane-dot(vecV1,vecView_))/denom;
         if (lambda >= 0.0 && lambda <= 1.0) {
             position = vecV1 + lambda * vecDir;
             break;
         }
     }
-    gl_TexCoord[0] = vec4((position+vec3(1.0))/vec3(2.0), 1.0);
+    gl_TexCoord[0] = vec4(0.5*position + 0.5, 1.0);
     gl_Position =  gl_ModelViewProjectionMatrix * vec4(position, 1.0);
 }

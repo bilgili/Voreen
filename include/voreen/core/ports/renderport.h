@@ -34,10 +34,10 @@
 #include "tgt/textureunit.h"
 #include "tgt/tgt_gl.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/texture.h"
 
 namespace tgt {
     class FramebufferObject;
-    class Texture;
     class Shader;
 }
 
@@ -49,7 +49,6 @@ class RenderPort : public Port {
 
     friend class RenderProcessor;
     friend class NetworkEvaluator;
-    friend class DynamicGLSLProcessor;
 
 public:
     RenderPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
@@ -248,18 +247,19 @@ public:
     void saveToImage(const std::string &filename) throw (VoreenException);
 
     /**
-     * Returns the current content of the color buffer, converted
-     * to 8 Bit RGBA format.
+     * \brief Returns the current content of the color buffer, converted
+     * to RGBA format. The data type is specified as template parameter.
+     *
+     * @tparam T Specifies the data type of the returned image data.
+     *         Supported types: uint8_t, uint16_t, float
      *
      * @note Releasing the allocated memory is up to the caller!
-     *
-     * @return Copy of the color buffer in 8 Bit RGBA format.
-     *         Releasing the allocated memory is up to the caller.
      *
      * @throw VoreenException if the color buffer content could not be read
      *        or converted
      */
-    tgt::col4* readColorBuffer() throw (VoreenException);
+    template<typename T>
+    tgt::Vector4<T>* readColorBuffer() throw (VoreenException);
 
     // administrative stuff regarding RenderPort size origins.
     void sizeOriginChanged(void* so);
@@ -328,6 +328,39 @@ private:
 
     static const std::string loggerCat_; ///< category used in logging
 };
+
+template<typename T>
+tgt::Vector4<T>* voreen::RenderPort::readColorBuffer() throw (VoreenException) {
+    if (!getColorTexture()) {
+        throw VoreenException("RenderPort::readColorBuffer() called on an empty render port");
+    }
+
+    // determine OpenGL data type from template parameter
+    GLenum dataType;
+    if (typeid(T) == typeid(uint8_t))
+        dataType = GL_UNSIGNED_BYTE;
+    else if (typeid(T) == typeid(uint16_t))
+        dataType = GL_UNSIGNED_SHORT;
+    else if (typeid(T) == typeid(float))
+        dataType = GL_FLOAT;
+    else
+        throw VoreenException("RenderPort::readColorBuffer(): unsupported data type. "
+            "Expected: uint8_t, uint16_t, float");
+
+    GLubyte* pixels = 0;
+    try {
+        pixels = getColorTexture()->downloadTextureToBuffer(GL_RGBA, dataType);
+    }
+    catch (std::bad_alloc&) {
+        throw VoreenException("RenderPort::readColorBuffer(): bad allocation");
+    }
+    LGL_ERROR;
+
+    if (pixels)
+        return reinterpret_cast<tgt::Vector4<T>*>(pixels);
+    else
+        throw VoreenException("RenderPort::readColorBuffer(): failed to download texture");
+}
 
 
 //------------------------------------------------------------------------------------------------------

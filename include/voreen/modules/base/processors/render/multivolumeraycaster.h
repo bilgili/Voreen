@@ -50,7 +50,6 @@ namespace voreen {
 class MultiVolumeRaycaster : public VolumeRaycaster {
 public:
     MultiVolumeRaycaster();
-    virtual ~MultiVolumeRaycaster();
     virtual Processor* create() const;
 
     virtual std::string getClassName() const    { return "MultiVolumeRaycaster"; }
@@ -70,12 +69,11 @@ protected:
 
     virtual void deinitialize() throw (VoreenException);
 
-    virtual void loadShader();
-
     virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
     virtual void compile(VolumeHandle* volumeHandle);
 
 private:
+    void adjustPropertyVisibilities();
 
     VolumePort volumeInport1_;
     VolumePort volumeInport2_;
@@ -100,6 +98,11 @@ private:
     TransFuncProperty transferFunc2_;       ///< transfer function to apply to volume 2
     TransFuncProperty transferFunc3_;       ///< transfer function to apply to volume 3
     TransFuncProperty transferFunc4_;       ///< transfer function to apply to volume 4
+
+    IntOptionProperty texFilterMode1_;      ///< filter mode for volume 1
+    IntOptionProperty texFilterMode2_;      ///< filter mode for volume 2
+    IntOptionProperty texFilterMode3_;      ///< filter mode for volume 3
+    IntOptionProperty texFilterMode4_;      ///< filter mode for volume 4
 
     GLEnumOptionProperty texClampMode1_;    ///< clamp mode for volume 1
     GLEnumOptionProperty texClampMode2_;    ///< clamp mode for volume 2

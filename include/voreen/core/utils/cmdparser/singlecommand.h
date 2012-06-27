@@ -98,15 +98,40 @@ public:
     }
 
     bool checkParameters(const std::vector<std::string>& parameters) {
+        std::ostringstream errorStr;
+
         bool result = parameters.size() == static_cast<size_t>(argumentNum_);
+        if (!result) {
+            errorStr << "Invalid number of parameters: " << parameters.size();
+            errorStr << ", expected: " << argumentNum_;
+            errorMsg_ = errorStr.str();
+            return false;
+        }
 
         result &= is<T>(parameters[0]);
-        if (ptr2_ != 0)
+        if (!result)
+            errorStr << "First parameter invalid";
+
+        if (result && ptr2_) {
             result &= is<U>(parameters[1]);
-        if (ptr3_ != 0)
+            if (!result)
+                errorStr << "Second parameter invalid";
+        }
+
+        if (result && ptr3_) {
             result &= is<V>(parameters[2]);
-        if (ptr4_ != 0)
+            if (!result)
+                errorStr << "Third parameter invalid";
+        }
+
+        if (result && ptr4_) {
             result &= is<W>(parameters[3]);
+            if (!result)
+                errorStr << "Fourth parameter invalid";
+        }
+
+        if (!result)
+            errorMsg_ = errorStr.str();
 
         return result;
     }

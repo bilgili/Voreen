@@ -27,6 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
+#pragma OPENCL EXTENSION cl_khr_byte_addressable_store: enable
+
 const sampler_t smp = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
 const sampler_t smpLin = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
 

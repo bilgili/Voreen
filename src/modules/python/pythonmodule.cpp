@@ -143,7 +143,7 @@ void PythonModule::initialize() throw (VoreenException) {
 
     // load output redirector script and run it once
     std::string filename = "outputcatcher.py";
-    LINFO("Loading Python init script '" << filename << "'");
+    LDEBUG("Loading Python init script '" << filename << "'");
     PythonScript* initScript = load(filename);
     if (initScript) {
         if (!initScript->run())
@@ -218,7 +218,7 @@ void PythonModule::addModulePath(const std::string& path) {
     // convert windows back slashes to slashes
     std::string pathConv = strReplaceAll(path, "\\", "/");
 
-    LINFO("Adding '" << pathConv << "' to Python module search path");
+    LDEBUG("Adding '" << pathConv << "' to Python module search path");
     std::string runString = "import sys\n";
     runString.append(std::string("sys.path.append('") + pathConv + std::string("')"));
     int ret = PyRun_SimpleString(runString.c_str());

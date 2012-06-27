@@ -419,7 +419,7 @@ tgt::Texture* RenderPort::getDepthTexture() {
 void RenderPort::saveToImage(const std::string& filename) throw (VoreenException) {
 
     // get color buffer content
-    tgt::col4* colorBuffer = readColorBuffer();
+    tgt::Vector4<uint16_t>* colorBuffer = readColorBuffer<uint16_t>();
     tgt::ivec2 size = getSize();
 
     // create Devil image from image data and write it to file
@@ -427,7 +427,7 @@ void RenderPort::saveToImage(const std::string& filename) throw (VoreenException
     ilGenImages(1, &img);
     ilBindImage(img);
     // put pixels into IL-Image
-    ilTexImage(size.x, size.y, 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, colorBuffer);
+    ilTexImage(size.x, size.y, 1, 4, IL_RGBA, IL_UNSIGNED_SHORT, colorBuffer);
     ilEnable(IL_FILE_OVERWRITE);
     ILboolean success = ilSaveImage(const_cast<char*>(filename.c_str()));
     ilDeleteImages(1, &img);
@@ -451,27 +451,6 @@ void RenderPort::saveToImage(const std::string& /*filename*/) throw (VoreenExcep
 }
 
 #endif // VRN_WITH_DEVIL
-
-tgt::col4* RenderPort::readColorBuffer() throw (VoreenException) {
-
-    if (!getColorTexture()) {
-        throw VoreenException("RenderPort::readColorBuffer() called on an empty render port");
-    }
-
-    GLubyte* pixels = 0;
-    try {
-        pixels = getColorTexture()->downloadTextureToBuffer(GL_RGBA, GL_UNSIGNED_BYTE);
-    }
-    catch (std::bad_alloc&) {
-        throw VoreenException("RenderPort::readColorBuffer(): bad allocation");
-    }
-    LGL_ERROR;
-
-    if (pixels)
-        return reinterpret_cast<tgt::col4*>(pixels);
-    else
-        throw VoreenException("RenderPort::readColorBuffer(): failed to download texture");
-}
 
 void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
     if (isOutport()) {

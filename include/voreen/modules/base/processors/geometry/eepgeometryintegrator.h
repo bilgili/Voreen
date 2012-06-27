@@ -72,6 +72,10 @@ protected:
     static const std::string depthTexUnit1_;
     static const std::string shadeTexUnit2_;
     static const std::string depthTexUnit2_;
+
+private:
+    /// category used in logging
+    static const std::string loggerCat_;
 };
 
 

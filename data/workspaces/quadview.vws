@@ -21,7 +21,7 @@
                             </MetaData>
                             <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
                             <focus x="-0.050576" y="0.128565" z="-0.26432699" />
-                            <upVector x="0.29123011" y="0.37554321" z="0.87985939" />
+                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" lod="1" value="false" />
@@ -111,6 +111,7 @@
                         <Property name="shading" value="phong" />
                         <Property name="textureBorderIntensity" value="0" />
                         <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode_" value="linear" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -204,7 +205,7 @@
                             </MetaData>
                             <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
                             <focus x="-0.050576" y="0.128565" z="-0.26432699" />
-                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
+                            <upVector x="0.29123011" y="0.37554321" z="0.87985939" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>
@@ -256,7 +257,6 @@
                         <Property name="boundaryColor" id="ref29">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
-                        <Property name="filterTexture" value="true" />
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -274,6 +274,9 @@
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
                         <Property name="sliceIndex" value="62" id="ref19" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode" value="linear" />
                         <Property name="transferFunction" id="ref31">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -315,7 +318,6 @@
                         <Property name="boundaryColor" id="ref27">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="filterTexture" value="true" />
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -333,6 +335,9 @@
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="yz-plane" />
                         <Property name="sliceIndex" value="61" id="ref25" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode" value="linear" />
                         <Property name="transferFunction" id="ref33">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -374,7 +379,6 @@
                         <Property name="boundaryColor" id="ref23">
                             <value x="0" y="1" z="0" w="1" />
                         </Property>
-                        <Property name="filterTexture" value="true" />
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -392,6 +396,9 @@
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xz-plane" />
                         <Property name="sliceIndex" value="41" id="ref21" />
+                        <Property name="textureBorderIntensity" value="0" />
+                        <Property name="textureClampMode_" value="clamp-to-edge" />
+                        <Property name="textureFilterMode" value="linear" />
                         <Property name="transferFunction" id="ref32">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />

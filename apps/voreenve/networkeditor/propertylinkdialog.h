@@ -33,6 +33,7 @@
 #include <QDialog>
 #include <QMap>
 #include <QPushButton>
+#include <QTimer>
 
 #include "linkdialogpropertygraphicsitem.h"
 
@@ -92,7 +93,12 @@ private slots:
      void hideAutoLinks();
      void confirmAutoLinks();
      void deleteAllLinks();
-     void setDependancyHistoryLengthLabel(int newValue);
+     void setDependencyHistoryLengthLabel(int newValue);
+     void scrollUpSlot();
+     void scrollDownSlot();
+
+     void movedArrow(LinkDialogArrowGraphicsItem* arrow);
+     void endedArrow();
 
 private:
     struct ConnectionInfo {
@@ -122,7 +128,7 @@ private:
     LinkDialogPropertyGraphicsItem* destinationPropertyItem_;
 
     QPushButton* propertyLinkModeButton_;
-    QPushButton* dependancyLinkModeButton_;
+    QPushButton* dependencyLinkModeButton_;
     LinkDialogGraphicsView* view_;
     QButtonGroup* arrowButtonGroup_;
     QPushButton* deleteArrowButton_;
@@ -130,13 +136,16 @@ private:
     QPushButton* bidirectionalArrowButton_;
     QPushButton* rightArrowButton_;
 
-    QWidget* dependancyLinkHistoryContainer_;
-    QLabel* dependancyHistoryLengthLabel_;
-    QSlider* dependancyHistoryLengthSlider_;
+    QWidget* dependencyLinkHistoryContainer_;
+    QLabel* dependencyHistoryLengthLabel_;
+    QSlider* dependencyHistoryLengthSlider_;
 
     QPushButton* autolinkName_;
 
     QComboBox* functionCB_;
+
+    QTimer scrollTimerUp_;
+    QTimer scrollTimerDown_;
 
     QMap<LinkDialogArrowGraphicsItem*, ConnectionInfo> connectionMap_;
     QMap<LinkDialogArrowGraphicsItem*, ConnectionInfo> probationalConnectionMap_;

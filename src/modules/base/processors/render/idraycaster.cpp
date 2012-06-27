@@ -143,14 +143,11 @@ void IDRaycaster::process() {
         &volUnit,
         "segmentation_",
         "segmentationParameters_",
-        true)
+        true,
+        GL_CLAMP_TO_EDGE,
+        tgt::vec4(0.f),
+        GL_NEAREST)
     );
-
-    TextureUnit segUnit;
-    segUnit.activate();
-    volumePort_.getData()->getVolumeGL()->getTexture()->bind();
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // initialize shader
     raycastPrg_->activate();

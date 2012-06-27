@@ -58,6 +58,10 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , transferFunc2_("transferFunction2", "Transfer Function 2")
     , transferFunc3_("transferFunction3", "Transfer Function 3")
     , transferFunc4_("transferFunction4", "Transfer Function 4")
+    , texFilterMode1_("textureFilterMode1_", "Texture Filtering 1")
+    , texFilterMode2_("textureFilterMode2_", "Texture Filtering 2")
+    , texFilterMode3_("textureFilterMode3_", "Texture Filtering 3")
+    , texFilterMode4_("textureFilterMode4_", "Texture Filtering 4")
     , texClampMode1_("textureClampMode1_", "Texture Clamp 1")
     , texClampMode2_("textureClampMode2_", "Texture Clamp 2")
     , texClampMode3_("textureClampMode3_", "Texture Clamp 3")
@@ -67,7 +71,7 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
 {
-
+    // ports
     addPort(volumeInport1_);
     addPort(volumeInport2_);
     addPort(volumeInport3_);
@@ -78,13 +82,14 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     addPort(outport1_);
     addPort(outport2_);
 
+    // tf properties
     addProperty(transferFunc1_);
     addProperty(transferFunc2_);
     addProperty(transferFunc3_);
     addProperty(transferFunc4_);
     addProperty(camera_);
 
-//    addProperty(maskingMode_);
+    // shading properties
     addProperty(gradientMode_);
     shadeMode1_.addOption("none", "none");
     shadeMode1_.addOption("phong-diffuse", "Phong (Diffuse)");
@@ -123,6 +128,59 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     shadeMode4_.select("phong");
     addProperty(shadeMode4_);
 
+    // compositing modes
+    addProperty(compositingMode_);
+    compositingMode1_.addOption("dvr", "DVR");
+    compositingMode1_.addOption("mip", "MIP");
+    compositingMode1_.addOption("iso", "ISO");
+    compositingMode1_.addOption("fhp", "W-FHP");
+    //compositingMode1_.addOption("fhn", "FHN");
+    addProperty(compositingMode1_);
+    compositingMode2_.addOption("dvr", "DVR");
+    compositingMode2_.addOption("mip", "MIP");
+    compositingMode2_.addOption("iso", "ISO");
+    compositingMode2_.addOption("fhp", "W-FHP");
+    //compositingMode2_.addOption("fhn", "FHN");
+    addProperty(compositingMode2_);
+    addProperty(isoValue_);
+
+    // lighting properties
+    addProperty(lightPosition_);
+    addProperty(lightAmbient_);
+    addProperty(lightDiffuse_);
+    addProperty(lightSpecular_);
+    addProperty(materialShininess_);
+    addProperty(applyLightAttenuation_);
+    addProperty(lightAttenuation_);
+
+    // assign lighting properties to property group
+    lightPosition_.setGroupID("lighting");
+    lightAmbient_.setGroupID("lighting");
+    lightDiffuse_.setGroupID("lighting");
+    lightSpecular_.setGroupID("lighting");
+    materialShininess_.setGroupID("lighting");
+    applyLightAttenuation_.setGroupID("lighting");
+    lightAttenuation_.setGroupID("lighting");
+    setPropertyGroupGuiName("lighting", "Lighting Parameters");
+
+    // volume texture filtering
+    texFilterMode1_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode1_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode1_.selectByKey("linear");
+    addProperty(texFilterMode1_);
+    texFilterMode2_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode2_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode2_.selectByKey("linear");
+    addProperty(texFilterMode2_);
+    texFilterMode3_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode3_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode3_.selectByKey("linear");
+    addProperty(texFilterMode3_);
+    texFilterMode4_.addOption("nearest", "Nearest",  GL_NEAREST);
+    texFilterMode4_.addOption("linear",  "Linear",   GL_LINEAR);
+    texFilterMode4_.selectByKey("linear");
+    addProperty(texFilterMode4_);
+
     // volume texture clamping
     texClampMode1_.addOption("clamp",           "Clamp",             GL_CLAMP);
     texClampMode1_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
@@ -146,43 +204,29 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     addProperty(texClampMode4_);
     addProperty(texBorderIntensity_);
 
-    // compositing modes
-    addProperty(compositingMode_);
-    compositingMode1_.addOption("dvr", "DVR");
-    compositingMode1_.addOption("mip", "MIP");
-    compositingMode1_.addOption("iso", "ISO");
-    compositingMode1_.addOption("fhp", "W-FHP");
-    //compositingMode1_.addOption("fhn", "FHN");
-    addProperty(compositingMode1_);
-    compositingMode2_.addOption("dvr", "DVR");
-    compositingMode2_.addOption("mip", "MIP");
-    compositingMode2_.addOption("iso", "ISO");
-    compositingMode2_.addOption("fhp", "W-FHP");
-    //compositingMode2_.addOption("fhn", "FHN");
-    addProperty(compositingMode2_);
+    // assign texture access properties to property group
+    texFilterMode1_.setGroupID("textureAccess");
+    texFilterMode2_.setGroupID("textureAccess");
+    texFilterMode3_.setGroupID("textureAccess");
+    texFilterMode4_.setGroupID("textureAccess");
+    texClampMode1_.setGroupID("textureAccess");
+    texClampMode2_.setGroupID("textureAccess");
+    texClampMode3_.setGroupID("textureAccess");
+    texClampMode4_.setGroupID("textureAccess");
+    texBorderIntensity_.setGroupID("textureAccess");
+    setPropertyGroupGuiName("textureAccess", "Volume Texture Access");
 
-    addProperty(isoValue_);
-
-    addProperty(lightPosition_);
-    addProperty(lightAmbient_);
-    addProperty(lightDiffuse_);
-    addProperty(lightSpecular_);
-    addProperty(materialShininess_);
-    addProperty(applyLightAttenuation_);
-    addProperty(lightAttenuation_);
-
-    // assign lighting properties to property group
-    lightPosition_.setGroupID("lighting");
-    lightAmbient_.setGroupID("lighting");
-    lightDiffuse_.setGroupID("lighting");
-    lightSpecular_.setGroupID("lighting");
-    materialShininess_.setGroupID("lighting");
-    applyLightAttenuation_.setGroupID("lighting");
-    lightAttenuation_.setGroupID("lighting");
-    setPropertyGroupGuiName("lighting", "Lighting Parameters");
-}
-
-MultiVolumeRaycaster::~MultiVolumeRaycaster() {
+    // listen to changes of properties that influence the GUI state (i.e. visibility of other props)
+    classificationMode_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    shadeMode_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode1_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode2_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    applyLightAttenuation_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    texClampMode1_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    texClampMode2_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    texClampMode3_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
+    texClampMode4_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
 }
 
 Processor* MultiVolumeRaycaster::create() const {
@@ -190,23 +234,26 @@ Processor* MultiVolumeRaycaster::create() const {
 }
 
 std::string MultiVolumeRaycaster::getProcessorInfo() const {
-    return "Performs a single-pass multi-volume raycasting of up to four volumes, providing several shading and compositing modes. "
-           "It allows to generate three output renderings, whereas only the first one provides depth values.<br/>"
+    return "Performs a single-pass multi-volume raycasting of up to four volumes, "
+           "providing several shading and compositing modes. It allows one to generate "
+           "three output renderings, whereas only the first one provides depth values.<br/>"
            "See MultiVolumeProxyGeometry, MeshEntryExitPoints.";
 }
 
 void MultiVolumeRaycaster::initialize() throw (VoreenException) {
     VolumeRaycaster::initialize();
 
-    loadShader();
-
+    raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_multivolume.frag",
+        generateHeader(), false);
     if (!raycastPrg_)
-        throw VoreenException(getClassName() + ": Failed to load shaders!");
+        throw VoreenException("Failed to load shaders: passthrough.vert, rc_multivolume.frag");
 
     portGroup_.initialize();
     portGroup_.addPort(outport_);
     portGroup_.addPort(outport1_);
     portGroup_.addPort(outport2_);
+
+    adjustPropertyVisibilities();
 }
 
 void MultiVolumeRaycaster::deinitialize() throw (VoreenException) {
@@ -217,11 +264,6 @@ void MultiVolumeRaycaster::deinitialize() throw (VoreenException) {
     LGL_ERROR;
 
     VolumeRaycaster::deinitialize();
-}
-
-void MultiVolumeRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_multivolume.frag",
-                                       generateHeader(), false);
 }
 
 void MultiVolumeRaycaster::compile(VolumeHandle* volumeHandle) {
@@ -286,9 +328,9 @@ void MultiVolumeRaycaster::process() {
     // vector containing the volumes to bind; is passed to bindVolumes()
     std::vector<VolumeStruct> volumeTextures;
 
-    // add volumes
+    // bind volumes
     TextureUnit volUnit1, volUnit2, volUnit3, volUnit4;
-    if(volumeInport1_.isReady()) {
+    if (volumeInport1_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
                     volumeInport1_.getData()->getVolumeGL(),
                     &volUnit1,
@@ -296,10 +338,11 @@ void MultiVolumeRaycaster::process() {
                     "volumeParameters1_",
                     true,
                     texClampMode1_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()))
+                    tgt::vec4(texBorderIntensity_.get()),
+                    texFilterMode1_.getValue())
                 );
     }
-    if(volumeInport2_.isReady()) {
+    if (volumeInport2_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
                     volumeInport2_.getData()->getVolumeGL(),
                     &volUnit2,
@@ -307,10 +350,11 @@ void MultiVolumeRaycaster::process() {
                     "volumeParameters2_",
                     true,
                     texClampMode2_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()))
+                    tgt::vec4(texBorderIntensity_.get()),
+                    texFilterMode2_.getValue())
                 );
     }
-    if(volumeInport3_.isReady()) {
+    if (volumeInport3_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
                     volumeInport3_.getData()->getVolumeGL(),
                     &volUnit3,
@@ -318,10 +362,11 @@ void MultiVolumeRaycaster::process() {
                     "volumeParameters3_",
                     true,
                     texClampMode3_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()))
+                    tgt::vec4(texBorderIntensity_.get()),
+                    texFilterMode3_.getValue())
                 );
     }
-    if(volumeInport4_.isReady()) {
+    if (volumeInport4_.isReady()) {
         volumeTextures.push_back(VolumeStruct(
                     volumeInport4_.getData()->getVolumeGL(),
                     &volUnit4,
@@ -329,7 +374,8 @@ void MultiVolumeRaycaster::process() {
                     "volumeParameters4_",
                     true,
                     texClampMode4_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()))
+                    tgt::vec4(texBorderIntensity_.get()),
+                    texFilterMode4_.getValue())
                 );
     }
 
@@ -390,7 +436,12 @@ void MultiVolumeRaycaster::process() {
         }
 
         raycastPrg_->setUniform("samplingStepSize_", samplingStepSizeWorld);
-        raycastPrg_->setUniform("samplingStepSizeComposite_", samplingStepSizeTexture * 200.f);
+        if (compositingMode_.isSelected("dvr")  ||
+            (compositingMode1_.isSelected("dvr") && outport1_.isConnected()) ||
+            (compositingMode2_.isSelected("dvr") && outport2_.isConnected()) ) {
+            // adapts the compositing of the multivolume RC to the one of the singlevolume RC (see below).
+            raycastPrg_->setUniform("mvOpacityCorrectionFactor_", samplingStepSizeTexture / samplingStepSizeWorld);
+        }
         LGL_ERROR;
     }
     LGL_ERROR;
@@ -425,96 +476,141 @@ std::string MultiVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     headerSource += "#define RC_APPLY_SHADING_1(gradient, samplePos, volumeParameters, ka, kd, ks) ";
     if (shadeMode1_.get() == "none")
         headerSource += "ka;\n";
-    else if (shadeMode1_.get() == "phong-diffuse")
+    else if (shadeMode1_.isSelected("phong-diffuse"))
         headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
-    else if (shadeMode1_.get() == "phong-specular")
+    else if (shadeMode1_.isSelected("phong-specular"))
         headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
-    else if (shadeMode1_.get() == "phong-diffuse-ambient")
+    else if (shadeMode1_.isSelected("phong-diffuse-ambient"))
         headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
-    else if (shadeMode1_.get() == "phong-diffuse-specular")
+    else if (shadeMode1_.isSelected("phong-diffuse-specular"))
         headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
-    else if (shadeMode1_.get() == "phong")
+    else if (shadeMode1_.isSelected("phong"))
         headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
-    else if (shadeMode1_.get() == "toon")
+    else if (shadeMode1_.isSelected("toon"))
         headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
 
     headerSource += "#define RC_APPLY_SHADING_2(gradient, samplePos, volumeParameters, ka, kd, ks) ";
     if (shadeMode2_.get() == "none")
         headerSource += "ka;\n";
-    else if (shadeMode2_.get() == "phong-diffuse")
+    else if (shadeMode2_.isSelected("phong-diffuse"))
         headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
-    else if (shadeMode2_.get() == "phong-specular")
+    else if (shadeMode2_.isSelected("phong-specular"))
         headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
-    else if (shadeMode2_.get() == "phong-diffuse-ambient")
+    else if (shadeMode2_.isSelected("phong-diffuse-ambient"))
         headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
-    else if (shadeMode2_.get() == "phong-diffuse-specular")
+    else if (shadeMode2_.isSelected("phong-diffuse-specular"))
         headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
-    else if (shadeMode2_.get() == "phong")
+    else if (shadeMode2_.isSelected("phong"))
         headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
-    else if (shadeMode2_.get() == "toon")
+    else if (shadeMode2_.isSelected("toon"))
         headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
 
     headerSource += "#define RC_APPLY_SHADING_3(gradient, samplePos, volumeParameters, ka, kd, ks) ";
     if (shadeMode3_.get() == "none")
         headerSource += "ka;\n";
-    else if (shadeMode3_.get() == "phong-diffuse")
+    else if (shadeMode3_.isSelected("phong-diffuse"))
         headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
-    else if (shadeMode3_.get() == "phong-specular")
+    else if (shadeMode3_.isSelected("phong-specular"))
         headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
-    else if (shadeMode3_.get() == "phong-diffuse-ambient")
+    else if (shadeMode3_.isSelected("phong-diffuse-ambient"))
         headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
-    else if (shadeMode3_.get() == "phong-diffuse-specular")
+    else if (shadeMode3_.isSelected("phong-diffuse-specular"))
         headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
-    else if (shadeMode3_.get() == "phong")
+    else if (shadeMode3_.isSelected("phong"))
         headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
-    else if (shadeMode3_.get() == "toon")
+    else if (shadeMode3_.isSelected("toon"))
         headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
 
     headerSource += "#define RC_APPLY_SHADING_4(gradient, samplePos, volumeParameters, ka, kd, ks) ";
     if (shadeMode4_.get() == "none")
         headerSource += "ka;\n";
-    else if (shadeMode4_.get() == "phong-diffuse")
+    else if (shadeMode4_.isSelected("phong-diffuse"))
         headerSource += "phongShadingD(gradient, samplePos, volumeParameters, kd);\n";
-    else if (shadeMode4_.get() == "phong-specular")
+    else if (shadeMode4_.isSelected("phong-specular"))
         headerSource += "phongShadingS(gradient, samplePos, volumeParameters, ks);\n";
-    else if (shadeMode4_.get() == "phong-diffuse-ambient")
+    else if (shadeMode4_.isSelected("phong-diffuse-ambient"))
         headerSource += "phongShadingDA(gradient, samplePos, volumeParameters, kd, ka);\n";
-    else if (shadeMode4_.get() == "phong-diffuse-specular")
+    else if (shadeMode4_.isSelected("phong-diffuse-specular"))
         headerSource += "phongShadingDS(gradient, samplePos, volumeParameters, kd, ks);\n";
-    else if (shadeMode4_.get() == "phong")
+    else if (shadeMode4_.isSelected("phong"))
         headerSource += "phongShading(gradient, samplePos, volumeParameters, ka, kd, ks);\n";
-    else if (shadeMode4_.get() == "toon")
+    else if (shadeMode4_.isSelected("toon"))
         headerSource += "toonShading(gradient, samplePos, volumeParameters, kd, 3);\n";
 
-    // configure compositing mode for port 2
+    // DVR opacity correction function adapting the MV compositing to the SVRC compositing,
+    // used by the compositing macros below.
+    // The adaption is necessary, because the multivolume RC samples in world space
+    // instead of in texture space. Due to differing sampling base intervals, we would otherwise
+    // still get correct compositing results, but the compositing would slightly differ from
+    // the one performed by the SingleVolumeRaycaster.
+    headerSource += "uniform float mvOpacityCorrectionFactor_;\n";
+    headerSource += "vec4 mvOpacityCorrection(in vec4 color) {\n";
+    headerSource += "  return vec4(color.rgb, 1.0 - pow(1.0-color.a, mvOpacityCorrectionFactor_));\n";
+    headerSource += "}\n";
+
+    // configure compositing mode for port 1
     headerSource += "#define RC_APPLY_COMPOSITING_1(result, color, samplePos, gradient, t, tDepth) ";
-    if (compositingMode1_.get() == "dvr")
-        headerSource += "compositeDVR(result, color, t, tDepth);\n";
-    else if (compositingMode1_.get() == "mip")
+    if (compositingMode_.isSelected("dvr"))
+        headerSource += "compositeDVR(result, mvOpacityCorrection(color), t, tDepth);\n";
+    else if (compositingMode_.isSelected("mip"))
         headerSource += "compositeMIP(result, color, t, tDepth);\n";
-    else if (compositingMode1_.get() == "iso")
+    else if (compositingMode_.isSelected("iso"))
         headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
-    else if (compositingMode1_.get() == "fhp")
+    else if (compositingMode_.isSelected("fhp"))
         headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-    else if (compositingMode1_.get() == "fhn")
+    else if (compositingMode_.isSelected("fhn"))
+        headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
+
+    // configure compositing mode for port 2
+    headerSource += "#define RC_APPLY_COMPOSITING_2(result, color, samplePos, gradient, t, tDepth) ";
+    if (compositingMode1_.isSelected("dvr"))
+        headerSource += "compositeDVR(result, mvOpacityCorrection(color), t, tDepth);\n";
+    else if (compositingMode1_.isSelected("mip"))
+        headerSource += "compositeMIP(result, color, t, tDepth);\n";
+    else if (compositingMode1_.isSelected("iso"))
+        headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
+    else if (compositingMode1_.isSelected("fhp"))
+        headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+    else if (compositingMode1_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     // configure compositing mode for port 3
-    headerSource += "#define RC_APPLY_COMPOSITING_2(result, color, samplePos, gradient, t, tDepth) ";
-    if (compositingMode2_.get() == "dvr")
-        headerSource += "compositeDVR(result, color, t, tDepth);\n";
-    else if (compositingMode2_.get() == "mip")
+    headerSource += "#define RC_APPLY_COMPOSITING_3(result, color, samplePos, gradient, t, tDepth) ";
+    if (compositingMode2_.isSelected("dvr"))
+        headerSource += "compositeDVR(result, mvOpacityCorrection(color), t, tDepth);\n";
+    else if (compositingMode2_.isSelected("mip"))
         headerSource += "compositeMIP(result, color, t, tDepth);\n";
-    else if (compositingMode2_.get() == "iso")
+    else if (compositingMode2_.isSelected("iso"))
         headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
-    else if (compositingMode2_.get() == "fhp")
+    else if (compositingMode2_.isSelected("fhp"))
         headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
-    else if (compositingMode2_.get() == "fhn")
+    else if (compositingMode2_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
     portGroup_.reattachTargets();
     headerSource += portGroup_.generateHeader(raycastPrg_);
     return headerSource;
+}
+
+void MultiVolumeRaycaster::adjustPropertyVisibilities() {
+    bool useLighting = !shadeMode1_.isSelected("none") |
+                       !shadeMode2_.isSelected("none") |
+                       !shadeMode3_.isSelected("none") |
+                       !shadeMode4_.isSelected("none");
+    setPropertyGroupVisible("lighting", useLighting);
+
+    bool useIsovalue = (compositingMode_.isSelected("iso")  ||
+        compositingMode1_.isSelected("iso") ||
+        compositingMode2_.isSelected("iso")   );
+    isoValue_.setVisible(useIsovalue);
+
+    lightAttenuation_.setVisible(applyLightAttenuation_.get());
+
+    bool showBorderIntensity = !texClampMode1_.isSelected("clamp-to-edge") |
+                               !texClampMode2_.isSelected("clamp-to-edge") |
+                               !texClampMode3_.isSelected("clamp-to-edge") |
+                               !texClampMode4_.isSelected("clamp-to-edge");
+    texBorderIntensity_.setVisible(showBorderIntensity);
 }
 
 } // namespace

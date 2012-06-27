@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include <QApplication>
+#include <QMainWindow>
 
 #include "tgt/init.h"
 #include "tgt/qt/qtcanvas.h"
@@ -49,35 +50,39 @@ using namespace voreen;
     there are others in the simple/-folder, like a glut-version.
 */
 int main(int argc, char* argv[]) {
-    // a QApplication is always needed
+    // init both Qt and Voreen application (does not require OpenGL context)
     QApplication myapp(argc, argv);
-
     VoreenApplicationQt vapp("simple-Qt", "simple-Qt", argc, argv, VoreenApplication::APP_ALL);
     vapp.init();
 
-    // this is the actual canvas we will paint on
+    // create the mainwindow and assign a canvas to it as central widget
+    QMainWindow* mainwindow = new QMainWindow();
+    VoreenApplicationQt::qtApp()->setMainWindow(mainwindow);
     tgt::QtCanvas* canvas = new tgt::QtCanvas("Voreen - The Volume Rendering Engine");
-    canvas->show();
+    mainwindow->setCentralWidget(canvas);
+    mainwindow->resize(512, 512);
+    mainwindow->show();
 
+    // must be called *after* a OpenGL context has been created (canvas)
+    // and *before* any further OpenGL access
     vapp.initGL();
 
+    // load workspace from disc
     Workspace* workspace = new Workspace();
     workspace->load(VoreenApplication::app()->getWorkspacePath("/standard.vws"));
 
-    // initialize the network evaluator, which -among others- tests the network for errors
+    // initialize the network evaluator
     NetworkEvaluator* networkEvaluator = new NetworkEvaluator();
     ProcessorNetwork* network = workspace->getProcessorNetwork();
     std::vector<CanvasRenderer*> canvasRenderer = network->getProcessorsByType<CanvasRenderer>();
 
-    // init painter and connect it to the canvas
+    // init painter and connect it to canvas, evaluator and canvas renderer
     VoreenPainter* painter = new VoreenPainter(canvas, networkEvaluator, canvasRenderer[0]);
     canvas->setPainter(painter);
     canvasRenderer[0]->setCanvas(canvas);
-    // give the network to the network evaluator
-    networkEvaluator->setProcessorNetwork(network);
 
-    // resize the window, so resizeGL is called and we have a picture
-    canvas->resize(512, 512);
+    // pass the network to the network evaluator, which also initializes the processors
+    networkEvaluator->setProcessorNetwork(network);
 
     // start the event process; the program runs as long as theres no exit-event
     myapp.exec();
@@ -86,7 +91,7 @@ int main(int argc, char* argv[]) {
     delete painter;
     delete workspace;
     delete networkEvaluator;
-    delete canvas;
+    delete mainwindow;
 
     vapp.deinitGL();
     vapp.deinit();

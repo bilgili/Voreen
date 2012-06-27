@@ -339,25 +339,6 @@ public:
     bool isTextureCompressionSupported();
 
     /**
-     * Returns wether paletted textures
-     * are supported (extension GL_EXT_paletted_texture).
-     */
-    bool arePalettedTexturesSupported();
-
-    /**
-     * Returns wether shared paletted textures
-     * are supported (extension GL_EXT_shared_texture_palette).
-     */
-    bool areSharedPalettedTexturesSupported();
-
-    /**
-     * Returns the number of elements in a color table
-     * when shared paletted textures are supported. 
-     * Otherwise 0 is returned.
-     */
-    int getColorTableWidth();
-
-    /**
      * Returns wether FramebufferObjects (FBOs)
      * are supported (extension GL_EXT_framebuffer_object).
      */
@@ -365,6 +346,14 @@ public:
 
 	///Returns the maximal number of color attachments for a FBO
 	int getMaxColorAttachments(); 
+
+    /**
+     * Overrides the detected GLSL language version.
+     *
+     * @return false, if the passed version string could not be parsed.
+     *      In this case, the detected GLSL version is kept. 
+     */
+    bool overrideGLSLVersion(const std::string& versionString);
 
     /**
      * Writes the most important GPU features to the
@@ -433,9 +422,6 @@ private:
     bool anisotropicFiltering_;
     float maxTextureAnisotropy_;
     bool textureCompression_;
-    bool palettedTextures_;
-    bool sharedPalettedTextures_;
-    int colorTableWidth_;
     bool framebufferObjects_;
 	int maxColorAttachments_;
 };

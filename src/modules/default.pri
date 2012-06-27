@@ -8,4 +8,7 @@ VRN_MODULES += base
 VRN_MODULES += connectedcomponents
 VRN_MODULES += flowreen
 VRN_MODULES += pvm
+!macx {
+  VRN_MODULES += segy  # may cause startup crash on mac
+}
 VRN_MODULES += triangle

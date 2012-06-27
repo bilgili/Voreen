@@ -107,6 +107,12 @@ public:
     bool getAllowMultipleCalls();
 
     /**
+     * Returns a message describing the error reported by checkParameters(),
+     * or an empty string, if no error has occurred.
+     */
+    const std::string getErrorMessage();
+
+    /**
      * Executes this command with the given parameters
      * \param parameters The parameters needed for the execution of this command.
      * \return true, if the execution was successful, false otherwise
@@ -147,7 +153,7 @@ protected:
 
     /**
      * Checks if there is a corresponding value from the string value s to the
-     * template type T. As the method trys to convert the value, only those types
+     * template type T. As the method tries to convert the value, only those types
      * are possible, which are supported by the std::istringstream
      */
     template <class T>
@@ -176,6 +182,8 @@ protected:
     int argumentNum_;
     /// Stores, if the command can be called multiple times in a single commandline
     bool allowMultipleCalls_;
+    /// Error message set by checkParameters().
+    std::string errorMsg_;
 };
 
 }   //namespace voreen

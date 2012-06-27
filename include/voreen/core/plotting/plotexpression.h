@@ -119,8 +119,6 @@ private:
     std::vector<std::vector<Interval<plot_t> > > domain_;
     std::vector<TokenFunction> functionVector_;
 
-    bool debug_;
-
     static const int charOffset_;
     static const std::string loggerCat_;
 };

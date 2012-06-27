@@ -23,7 +23,10 @@ def benchmark():
     # resize canvas and initialize camera
     voreen.setPropertyValue(canvas, "canvasSize", canvasDim)
     voreen.setPropertyValue(processor, cameraProp, initCam)
-    voreen.repaint()  
+    voreen.repaint()
+
+    # make sure all Qt events have been processed before starting
+    voreenqt.processEvents()  
 
     # start loop for animation
     counter = 0
@@ -37,10 +40,6 @@ def benchmark():
 
         # render network state
         voreen.repaint()
-        
-        # gives more accurate (faster) timings, 
-        # but frames are not visible on screen:  
-        #voreen.render(1)  
     end = time.time()
 
     # restore canvas and camera

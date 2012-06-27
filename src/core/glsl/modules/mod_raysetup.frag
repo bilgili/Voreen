@@ -35,8 +35,14 @@
  */
 
 uniform float samplingStepSize_;
-uniform float samplingStepSizeComposite_;
 uniform float isoValue_;
+
+/**
+ * This parameter defines the minimum opacity saturation
+ * a ray has to reach before it is terminated.
+ * Setting this value to 1.0 disables early ray termination.
+ */
+#define EARLY_RAY_TERMINATION_OPACITY 0.95
 
 /***
  * Calculates the direction of the ray and returns the number
@@ -130,14 +136,14 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
  */
 #ifdef ADAPTIVE_SAMPLING
 #define RC_END_LOOP(result)                                        \
-            RC_EARLY_RAY_TERMINATION(result.a, 0.95, finished);    \
+            RC_EARLY_RAY_TERMINATION(result.a, EARLY_RAY_TERMINATION_OPACITY, finished);    \
             t += (tIncr * float(numberOfSkippedSamples));          \
             finished = finished || (t > tEnd);                     \
     RC_END_LOOP_BRACES                                             \
     WRITE_DEPTH_VALUE(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
 #else
 #define RC_END_LOOP(result)                                        \
-            RC_EARLY_RAY_TERMINATION(result.a, 0.95, finished);    \
+            RC_EARLY_RAY_TERMINATION(result.a, EARLY_RAY_TERMINATION_OPACITY, finished);    \
             t += tIncr;                                            \
             finished = finished || (t > tEnd);                     \
     RC_END_LOOP_BRACES                                             \

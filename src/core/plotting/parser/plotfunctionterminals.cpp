@@ -66,7 +66,7 @@ const std::vector<std::string>& PlotFunctionTerminals::getAllowedFunctionList() 
 
 std::vector<std::string> PlotFunctionTerminals::setFunctionList() {
     std::vector<std::string> functionList;
-    functionList.resize(19);
+    functionList.resize(21);
     functionList[0] = "abs";
     functionList[1] = "sqrt";
     functionList[2] = "sin";
@@ -83,9 +83,11 @@ std::vector<std::string> PlotFunctionTerminals::setFunctionList() {
     functionList[13] = "exp";
     functionList[14] = "fac";
     functionList[15] = "int";
-    functionList[16] = "rnd";
-    functionList[17] = "sgn";
-    functionList[18] = "sgx";
+    functionList[16] = "floor";
+    functionList[17] = "ceil";
+    functionList[18] = "rnd";
+    functionList[19] = "sgn";
+    functionList[20] = "sgx";
 
     return functionList;
 }

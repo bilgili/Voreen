@@ -35,6 +35,8 @@ using tgt::TextureUnit;
 
 namespace voreen {
 
+const std::string EEPGeometryIntegrator::loggerCat_("voreen.EEPGeometryIntegrator");
+
 EEPGeometryIntegrator::EEPGeometryIntegrator()
     : ImageProcessor("eep_geometry")
     , inport0_(Port::INPORT, "image.entry")
